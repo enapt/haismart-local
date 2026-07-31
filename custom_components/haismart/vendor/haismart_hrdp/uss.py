@@ -824,6 +824,10 @@ def parse_full_status(
 
     out["current_temperature"] = _sensor_temp(data[layout.indoor_temp], scale=0.5, offset=0.0)
     out["outdoor_temperature"] = _sensor_temp(data[layout.outdoor_temp], scale=1.0, offset=-64.0)
+    # The unit states its own heat capability: bit 7 of the byte after the outdoor reading is set on
+    # a cooling-only unit. Worth having because it needs no model of any kind -- it is the one signal
+    # that distinguishes a reverse-cycle unit from a cooling-only one without asking anything else.
+    out["heat_capable"] = not (data[layout.outdoor_temp + 1] >> 7) & 1
     words = data[layout.baseline]
     out["swing_horizontal"] = vane_h_sweeping(_field_from_words(words, "windDirectionHorizontal"))
     # the secondary toggles + eco, read back from the report's grSetDAC word block (confirmed map)

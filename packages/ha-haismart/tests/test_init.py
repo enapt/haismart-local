@@ -1075,7 +1075,7 @@ async def test_diagnostics_propose_layouts_for_an_unrecognised_report(
         key: truth[key]
         for key in (
             "power", "target_temperature", "current_temperature", "outdoor_temperature",
-            "operation_mode", "wind_speed", "swing_vertical",
+            "operation_mode", "wind_speed", "swing_vertical", "heat_capable",
         )
     }
 
@@ -1542,3 +1542,46 @@ async def test_fault_sensor_reads_clear_when_the_bitmap_is_empty(
     fault = hass.states.get("binary_sensor.downstairs_ac_fault")
     assert fault is not None and fault.state == "off"
     assert fault.attributes["faults"] == []
+
+
+async def test_the_unit_can_veto_heat_that_its_model_advertises(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A model listing Heat does not make the hardware capable of it.
+
+    The unit states its own heat capability in every status frame, and that has to win over a model
+    claiming otherwise -- or the user gets a Heat button that silently does nothing. Putting Heat
+    back needs the profile to be able to encode the mode as well, so capability alone is not enough.
+    """
+    from haismart_hrdp import STATUS_LAYOUTS
+
+    heating_model = {"attributes": [
+        {"name": "operationMode", "writable": True, "valueRange": {"type": "LIST", "dataList": [
+            {"data": "1", "desc": "cool"}, {"data": "4", "desc": "heat"}]}},
+        {"name": "windSpeed", "writable": True, "valueRange": {
+            "type": "LIST", "dataList": [{"data": "5", "desc": "auto"}]}},
+    ]}
+
+    # the model says the unit heats; the unit says it does not
+    cooling_only = bytearray(mock_uss.frame)
+    cooling_only[STATUS_LAYOUTS[len(mock_uss.frame)].outdoor_temp + 1] |= 0x80
+    mock_uss.read.return_value = [bytes(cooling_only)]
+
+    await _setup_with_model(hass, heating_model)
+    climate = hass.states.get("climate.downstairs_ac")
+    assert "heat" not in climate.attributes["hvac_modes"], "cooling-only unit was offered Heat"
+
+
+async def test_heat_is_offered_when_the_unit_and_its_model_agree(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The same model on a unit that does report heat capability keeps Heat."""
+    heating_model = {"attributes": [
+        {"name": "operationMode", "writable": True, "valueRange": {"type": "LIST", "dataList": [
+            {"data": "1", "desc": "cool"}, {"data": "4", "desc": "heat"}]}},
+        {"name": "windSpeed", "writable": True, "valueRange": {
+            "type": "LIST", "dataList": [{"data": "5", "desc": "auto"}]}},
+    ]}
+    await _setup_with_model(hass, heating_model)
+    climate = hass.states.get("climate.downstairs_ac")
+    assert "heat" in climate.attributes["hvac_modes"]

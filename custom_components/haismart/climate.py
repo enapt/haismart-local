@@ -86,6 +86,9 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
                 continue
             seen.append(hvac)
         self._attr_hvac_modes = seen
+        # Whether Heat can be *encoded* at all -- the profile has to name the mode. Capability is a
+        # separate question, answered by the unit itself; see `hvac_modes`.
+        self._heat_encodable = "heat" in profile.mode_values.values()
         fans: list[str] = []
         for token in profile.fan_values.values():
             if token not in fans:
@@ -94,6 +97,26 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
         self._attr_min_temp = profile.min_temp
         self._attr_max_temp = profile.max_temp
         self._attr_target_temperature_step = profile.temp_step
+
+    @property
+    def hvac_modes(self) -> list[HVACMode]:
+        """The profile's modes, corrected by what the unit says about itself.
+
+        The unit reports its own heat capability in every status frame, which is better evidence
+        than any model: it needs no cloud lookup, it is right for a model we have never seen, and it
+        cannot disagree with the hardware. So it may both *remove* Heat from a profile that lists it
+        generically -- avoiding a button that does nothing -- and *add* it for a reverse-cycle unit
+        whose profile is only the generic fallback, provided the profile can encode the mode.
+        """
+        modes = list(self._attr_hvac_modes)
+        capable = self._state.get("heat_capable")
+        if capable is None:
+            return modes
+        if not capable:
+            return [mode for mode in modes if mode is not HVACMode.HEAT]
+        if HVACMode.HEAT not in modes and self._heat_encodable:
+            modes.append(HVACMode.HEAT)
+        return modes
 
     @property
     def _state(self) -> dict[str, Any]:

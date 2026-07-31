@@ -124,7 +124,10 @@ def test_parse_full_status_confirmed_fields():
     # secondary toggles read back from the same grSetDAC word block: both units have only the display
     # light on (lamp=True); health/strong/quiet/sleep off and eco=0 (computed from the real blobs)
     _toggles = {"health": False, "strong": False, "quiet": False, "sleep": False, "lamp": True, "eco": 0,
-                "swing_horizontal": True}  # both units report word4 bits0-2 == 7 (left-right auto)
+                "swing_horizontal": True,
+                # both reference units are cooling-only and say so: the flag after the outdoor
+                # reading is set. A reverse-cycle unit clears it.
+                "heat_capable": False}  # both units report word4 bits0-2 == 7 (left-right auto)
     d = uss.parse_full_status(REAL_STATUS_DOWN, prof)
     assert d == {"power": True, "target_temperature": 24.0, "current_temperature": 30.0,
                  "operation_mode": "6", "wind_speed": "3", "swing_vertical": False,
@@ -587,7 +590,7 @@ def test_parse_full_status_decodes_the_125_byte_variant():
         "operation_mode": "1", "wind_speed": "5", "swing_vertical": True,
         "swing_horizontal": True, "outdoor_temperature": 32.0,
         "health": False, "strong": False, "quiet": False, "sleep": False, "lamp": True, "eco": 0,
-        "mode": "cool", "fan_mode": "auto",
+        "heat_capable": True, "mode": "cool", "fan_mode": "auto",
     }
 
 
@@ -669,7 +672,7 @@ def test_extended36_decodes_the_real_reports():
         "power": False, "target_temperature": 22.0, "current_temperature": 30.0,
         "operation_mode": "1", "wind_speed": "1", "swing_vertical": False,
         "swing_horizontal": True, "mode": "cool", "fan_mode": "high",
-        "layout": "extended36", "writable": True,
+        "heat_capable": True, "layout": "extended36", "writable": True,
     }
     on = uss.parse_full_status(STATUS_165_ON, prof)
     assert on["power"] is True and on["target_temperature"] == 20.0
@@ -782,7 +785,7 @@ def test_extended46_decodes_the_real_reports():
     assert off == {
         "power": False, "target_temperature": 24.0, "current_temperature": 25.5,
         "outdoor_temperature": 37.0, "operation_mode": "1", "swing_vertical": False,
-        "mode": "cool", "layout": "extended46", "writable": True,
+        "heat_capable": True, "mode": "cool", "layout": "extended46", "writable": True,
     }
     cool = uss.parse_full_status(STATUS_209_COOL, prof)
     assert cool["power"] is True and cool["target_temperature"] == 22.0 and cool["mode"] == "cool"
@@ -1245,3 +1248,20 @@ def test_alarm_positions_track_the_frame_length():
 def test_parse_alarm_frame_ignores_other_reports():
     assert uss.parse_alarm_frame(REAL_STATUS_DOWN) is None
     assert uss.parse_alarm_frame(b"") is None
+
+
+def test_heat_capability_is_reported_by_the_unit():
+    """Bit 7 after the outdoor reading is set on a cooling-only unit.
+
+    Checked against real reports from both kinds of hardware rather than a synthesised bit: the
+    reference units are cooling-only, while the 165- and 209-byte reporters run reverse-cycle models
+    whose published mode list includes heat. The flag agrees with the hardware in every case, on
+    three different report layouts.
+    """
+    cooling_only = (REAL_STATUS_DOWN, REAL_STATUS_UP)
+    reverse_cycle = (STATUS_165_OFF, STATUS_165_ON, STATUS_209_OFF, STATUS_209_COOL, STATUS_209_FAN)
+
+    for report in cooling_only:
+        assert uss.parse_full_status(report)["heat_capable"] is False, len(report)
+    for report in reverse_cycle:
+        assert uss.parse_full_status(report)["heat_capable"] is True, len(report)

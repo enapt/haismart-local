@@ -79,6 +79,8 @@ class WireField:
         raw = ((data[off] << 8) | data[off + 1]) >> self.bit & ((1 << self.length) - 1)
         if self.kind == "bool":
             return bool(raw)
+        if self.kind == "bool_inv":
+            return not raw
         if self.kind == "vane_v":
             return vane_v_sweeping(raw)
         if self.kind == "vane_h":
@@ -417,6 +419,7 @@ EXTENDED36 = WireModel(
         "target_temperature": WireField(20, 8, 8, kind="int", k=1.0, c=16.0),
         "current_temperature": WireField(25, 8, 8, kind="temp", k=0.5, c=0.0),
         "outdoor_temperature": WireField(26, 8, 8, kind="temp", k=1.0, c=-64.0),
+        "heat_capable": WireField(26, 7, 1, kind="bool_inv"),
         "operation_mode": WireField(21, 13, 3, kind="enum", enum=_EXT36_MODE),
         "wind_speed": WireField(21, 8, 3, kind="enum", enum=_EXT36_FAN),
         # the vane nibble is a position code shared with the classic map; only the auto codes sweep
@@ -490,6 +493,7 @@ EXTENDED46 = WireModel(
         "target_temperature": WireField(20, 8, 8, kind="int", k=0.5, c=0.0),
         "current_temperature": WireField(35, 8, 8, kind="temp", k=0.5, c=0.0),
         "outdoor_temperature": WireField(36, 8, 8, kind="temp", k=1.0, c=-64.0),
+        "heat_capable": WireField(36, 7, 1, kind="bool_inv"),
         "operation_mode": WireField(21, 13, 3, kind="enum", enum=_EXT36_MODE),
         "swing_vertical": WireField(25, 0, 4, kind="vane_v"),
     },
@@ -513,6 +517,7 @@ _CLASSIC_PROBE = WireModel(
         "target_temperature": WireField(1, 8, 8, kind="int", k=1.0, c=16.0),
         "current_temperature": WireField(6, 8, 8, kind="temp", k=0.5, c=0.0),
         "outdoor_temperature": WireField(7, 8, 8, kind="temp", k=1.0, c=-64.0),
+        "heat_capable": WireField(7, 7, 1, kind="bool_inv"),
         "operation_mode": WireField(2, 13, 3, kind="enum", enum=_EXT36_MODE),
         "wind_speed": WireField(2, 8, 3, kind="enum", enum=_EXT36_FAN),
         "swing_vertical": WireField(1, 0, 4, kind="vane_v"),

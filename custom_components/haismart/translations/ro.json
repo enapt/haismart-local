@@ -225,6 +225,9 @@
       },
       "fault": {
         "name": "Defecțiune"
+      },
+      "self_cleaning": {
+        "name": "Autocurățare"
       }
     }
   },

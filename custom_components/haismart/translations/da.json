@@ -225,6 +225,9 @@
       },
       "fault": {
         "name": "Fejl"
+      },
+      "self_cleaning": {
+        "name": "Selvrens"
       }
     }
   },

@@ -225,6 +225,9 @@
       },
       "fault": {
         "name": "Hiba"
+      },
+      "self_cleaning": {
+        "name": "Öntisztítás"
       }
     }
   },

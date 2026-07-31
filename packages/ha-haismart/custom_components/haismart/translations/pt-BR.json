@@ -225,6 +225,9 @@
       },
       "fault": {
         "name": "Falha"
+      },
+      "self_cleaning": {
+        "name": "Autolimpeza"
       }
     }
   },

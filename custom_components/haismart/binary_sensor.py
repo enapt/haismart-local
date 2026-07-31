@@ -44,6 +44,15 @@ BINARY_SENSORS: tuple[HaismartBinarySensorDescription, ...] = (
         value_fn=lambda s: s.get("fan_running"),
     ),
     HaismartBinarySensorDescription(
+        key="self_cleaning",
+        translation_key="self_cleaning",
+        device_class=BinarySensorDeviceClass.RUNNING,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        # Reported, not controlled. The cycle runs to completion and ignores a second press, so
+        # there is nothing a switch could usefully do with an "off".
+        value_fn=lambda s: s.get("self_cleaning"),
+    ),
+    HaismartBinarySensorDescription(
         key="fault",
         translation_key="fault",
         device_class=BinarySensorDeviceClass.PROBLEM,

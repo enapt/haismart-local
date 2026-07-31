@@ -225,6 +225,9 @@
       },
       "fault": {
         "name": "Usterka"
+      },
+      "self_cleaning": {
+        "name": "Samoczyszczenie"
       }
     }
   },

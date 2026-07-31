@@ -225,6 +225,9 @@
       },
       "fault": {
         "name": "Porucha"
+      },
+      "self_cleaning": {
+        "name": "Samočištění"
       }
     }
   },

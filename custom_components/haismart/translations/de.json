@@ -225,6 +225,9 @@
       },
       "fault": {
         "name": "Störung"
+      },
+      "self_cleaning": {
+        "name": "Selbstreinigung"
       }
     }
   },

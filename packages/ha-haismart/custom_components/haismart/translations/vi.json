@@ -225,6 +225,9 @@
       },
       "fault": {
         "name": "Lỗi"
+      },
+      "self_cleaning": {
+        "name": "Tự làm sạch"
       }
     }
   },

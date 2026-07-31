@@ -225,6 +225,9 @@
       },
       "fault": {
         "name": "故障"
+      },
+      "self_cleaning": {
+        "name": "自清洁"
       }
     }
   },

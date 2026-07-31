@@ -127,7 +127,8 @@ def test_parse_full_status_confirmed_fields():
                 "swing_horizontal": True,
                 # both reference units are cooling-only and say so: the flag after the outdoor
                 # reading is set. A reverse-cycle unit clears it.
-                "heat_capable": False, "error_code": 0, "last_changed_by": "network"}  # both units report word4 bits0-2 == 7 (left-right auto)
+                "heat_capable": False, "error_code": 0, "last_changed_by": "network",
+                "self_cleaning": False}  # both units report word4 bits0-2 == 7 (left-right auto)
     d = uss.parse_full_status(REAL_STATUS_DOWN, prof)
     assert d == {"power": True, "target_temperature": 24.0, "current_temperature": 30.0,
                  "operation_mode": "6", "wind_speed": "3", "swing_vertical": False,
@@ -591,7 +592,7 @@ def test_parse_full_status_decodes_the_125_byte_variant():
         "swing_horizontal": True, "outdoor_temperature": 32.0,
         "health": False, "strong": False, "quiet": False, "sleep": False, "lamp": True, "eco": 0,
         "heat_capable": True, "error_code": 0, "last_changed_by": "network",
-        "mode": "cool", "fan_mode": "auto",
+        "self_cleaning": False, "mode": "cool", "fan_mode": "auto",
     }
 
 
@@ -1268,3 +1269,23 @@ def test_heat_capability_is_reported_by_the_unit():
         assert uss.parse_full_status(report)["heat_capable"] is False, len(report)
     for report in reverse_cycle:
         assert uss.parse_full_status(report)["heat_capable"] is True, len(report)
+
+
+def test_self_clean_is_reported_from_the_flag_word():
+    """A self-clean cycle sets one bit in the flag word and clears it when the cycle ends.
+
+    Confirmed on hardware across a full cycle: the bit set when the cycle was started at the handset
+    and cleared when the unit finished, and no other control bit moved in between.
+    """
+    assert uss.parse_full_status(REAL_STATUS_DOWN)["self_cleaning"] is False
+
+    cleaning = bytearray(REAL_STATUS_DOWN)
+    flag_at = 92 + (uss._FLAG_WORD - 1) * 2
+    cleaning[flag_at + 1] |= 1 << uss._SELF_CLEAN_BIT
+    decoded = uss.parse_full_status(bytes(cleaning))
+    assert decoded["self_cleaning"] is True
+    # ...and nothing else moved with it
+    baseline = uss.parse_full_status(REAL_STATUS_DOWN)
+    assert {k: v for k, v in decoded.items() if k != "self_cleaning"} == {
+        k: v for k, v in baseline.items() if k != "self_cleaning"
+    }

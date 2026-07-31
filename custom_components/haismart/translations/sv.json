@@ -225,6 +225,9 @@
       },
       "fault": {
         "name": "Fel"
+      },
+      "self_cleaning": {
+        "name": "Självrengöring"
       }
     }
   },

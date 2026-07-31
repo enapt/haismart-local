@@ -225,6 +225,9 @@
       },
       "fault": {
         "name": "Vika"
+      },
+      "self_cleaning": {
+        "name": "Itsepuhdistus"
       }
     }
   },

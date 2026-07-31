@@ -225,6 +225,9 @@
       },
       "fault": {
         "name": "Guasto"
+      },
+      "self_cleaning": {
+        "name": "Autopulizia"
       }
     }
   },

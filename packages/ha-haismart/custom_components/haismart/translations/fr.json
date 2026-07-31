@@ -225,6 +225,9 @@
       },
       "fault": {
         "name": "Défaut"
+      },
+      "self_cleaning": {
+        "name": "Autonettoyage"
       }
     }
   },

@@ -615,6 +615,10 @@ _OFF_ONOFF = 97          # onOffStatus lives in bit 0 of this byte ONLY — see 
 # required — reading the whole byte reports the unit as ON whenever any of those toggles is set, and
 # this integration's own switches write four of them.
 _ONOFF_MASK = 0x01
+# The flag word: fresh air, humidification, the cleaning modes, the display light and the
+# self-clean cycle, one bit each. Word 5 of the control block on this family.
+_FLAG_WORD = 5
+_SELF_CLEAN_BIT = 4
 _OFF_INDOOR_TEMP = 104   # indoorTemperature = byte / 2  (the /2 == the model's 0.5° step)
 _OFF_OUTDOOR_TEMP = 106  # outdoorTemperature = byte - 64  (correlated across 3 states, 2 distinct pts)
 
@@ -842,6 +846,14 @@ def parse_full_status(
     # The word after the sensors carries the fault code and who made the last change. `error_code`
     # is a single code (0 = healthy) and is a different view of the fault frame, not a duplicate:
     # it names one fault where the frame carries the full set.
+    # Whether a self-clean cycle is running. The unit frosts the coil with the indoor fan stopped,
+    # then stops the compressor and lets the ice melt off; it runs to completion and ignores a second
+    # press. Read-only -- see the note beside GRSETDAC_FIELDS.
+    if layout.words >= _FLAG_WORD:
+        flag_word = int.from_bytes(
+            data[_OFF_ATTRS + (_FLAG_WORD - 1) * 2:_OFF_ATTRS + _FLAG_WORD * 2], "big"
+        )
+        out["self_cleaning"] = bool(flag_word >> _SELF_CLEAN_BIT & 1)
     out["error_code"] = data[layout.outdoor_temp + 2]
     out["last_changed_by"] = OPERATION_SOURCE.get(data[layout.outdoor_temp + 3] & 0x03)
     words = data[layout.baseline]

@@ -225,6 +225,9 @@
       },
       "fault": {
         "name": "Gangguan"
+      },
+      "self_cleaning": {
+        "name": "Bersih otomatis"
       }
     }
   },

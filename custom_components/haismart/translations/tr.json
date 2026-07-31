@@ -225,6 +225,9 @@
       },
       "fault": {
         "name": "Arıza"
+      },
+      "self_cleaning": {
+        "name": "Kendi kendini temizleme"
       }
     }
   },

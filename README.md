@@ -4,6 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/enapt/haismart-local?color=green)](https://github.com/enapt/haismart-local/releases/latest)
 [![Validate](https://img.shields.io/github/actions/workflow/status/enapt/haismart-local/validate.yml?branch=main&label=validate)](https://github.com/enapt/haismart-local/actions/workflows/validate.yml)
 [![License](https://img.shields.io/github/license/enapt/haismart-local)](LICENSE)
+[![Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/EFfknne8Bm)
 
 _Control your Haier air conditioner from Home Assistant entirely over your own network. You sign in
 once so the integration can fetch your unit's key — after that it talks only to the AC, on your LAN._
@@ -360,6 +361,10 @@ logger:
 </details>
 
 ## Before you open an issue
+
+For a quick question — "is my model likely to work?", "does this log line mean what I think?" — there
+is a channel for this project on [Discord](https://discord.gg/EFfknne8Bm). Bug reports and new-model
+captures still belong in an issue, where they can be found again.
 
 This protocol is not publicly documented and behaviour varies between models, so a good report is
 worth a great deal:

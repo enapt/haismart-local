@@ -202,6 +202,11 @@ five, 8 = auto — reaching the wire as 0/2/4/6/8/10 and 12. Horizontal: 0 = fix
 7 = auto. Only the auto codes mean the vane is sweeping; testing a single bit also matches the vane
 parked low.
 
+Some handset buttons are vane positions rather than separate settings. A "health airflow" button, for
+instance, simply moves the vertical vane to wire code 3 — there is no flag for it anywhere else in
+the report. That is the practical reason the field has to be read as a position: a unit sitting on
+one of these is not sweeping, however the button was labelled.
+
 ### Heat capability
 
 Bit 7 of the byte after the outdoor reading is set on a cooling-only unit. The unit states this

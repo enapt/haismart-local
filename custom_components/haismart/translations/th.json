@@ -166,6 +166,15 @@
       "indoor_temperature": {
         "name": "อุณหภูมิภายในห้อง"
       },
+      "last_changed_by": {
+        "name": "เปลี่ยนแปลงล่าสุดโดย",
+        "state": {
+          "other": "อื่น ๆ",
+          "remote": "รีโมท",
+          "panel": "แผงควบคุม",
+          "network": "แอปหรือ Home Assistant"
+        }
+      },
       "local_key": {
         "name": "คีย์ภายใน"
       },

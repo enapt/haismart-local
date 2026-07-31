@@ -166,6 +166,15 @@
       "indoor_temperature": {
         "name": "Температура в приміщенні"
       },
+      "last_changed_by": {
+        "name": "Востаннє змінено",
+        "state": {
+          "other": "Інше",
+          "remote": "Пульт",
+          "panel": "Панель",
+          "network": "Застосунок або Home Assistant"
+        }
+      },
       "local_key": {
         "name": "Локальний ключ"
       },

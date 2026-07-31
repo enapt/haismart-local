@@ -166,6 +166,15 @@
       "indoor_temperature": {
         "name": "Sisälämpötila"
       },
+      "last_changed_by": {
+        "name": "Viimeksi muuttanut",
+        "state": {
+          "other": "Muu",
+          "remote": "Kaukosäädin",
+          "panel": "Paneeli",
+          "network": "Sovellus tai Home Assistant"
+        }
+      },
       "local_key": {
         "name": "Paikallinen avain"
       },

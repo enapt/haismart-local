@@ -166,6 +166,15 @@
       "indoor_temperature": {
         "name": "உட்புற வெப்பநிலை"
       },
+      "last_changed_by": {
+        "name": "கடைசியாக மாற்றியவர்",
+        "state": {
+          "other": "மற்றவை",
+          "remote": "ரிமோட்",
+          "panel": "பேனல்",
+          "network": "ஆப் அல்லது Home Assistant"
+        }
+      },
       "local_key": {
         "name": "லோக்கல் கீ"
       },

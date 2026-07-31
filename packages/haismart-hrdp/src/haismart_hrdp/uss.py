@@ -33,7 +33,12 @@ from typing import Any
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-from .wire_models import select_wire_model, vane_h_sweeping, vane_v_sweeping
+from .wire_models import (
+    OPERATION_SOURCE,
+    select_wire_model,
+    vane_h_sweeping,
+    vane_v_sweeping,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -470,6 +475,12 @@ GRSETDAC_FIELDS = {
     #   vertical nibble stayed put. Unlike windDirectionVertical the raw EPP value equals the STD
     #   code the digital model lists (0 = 左右摆位置一(固定), 7 = 左右摆位置八(自动)).
     "ecoMode":               (4, 3, 3),  # app: "eco" — device-specific MULTI-LEVEL: 0=off, 5/6/7 = 3 levels
+    # TODO: `echoStatus` (word 3, bit 7 — the command-confirmation beeper, where set = silent) and
+    # `selfCleaningStatus` (the flag word, bit 4) are both marked user-facing by the device model and
+    # decode cleanly, but neither has been seen written in observed traffic. They are deliberately
+    # absent here rather than added on inference: the point of this table is that a field reaches the
+    # unit only once a real write of it has been seen, and a wrong bit in a group-set is applied to
+    # the whole word. Add each with the observed value the moment one is captured.
     # ^ ecoMode is NOT the digital model's energySavingStatus bool (word5 b6, which never moves here); this
     #   unit repurposes word4 b3-5 into a 3-bit eco level. Confirmed by an eco-only sweep (values 0/5/6/7).
 }
@@ -828,6 +839,11 @@ def parse_full_status(
     # a cooling-only unit. Worth having because it needs no model of any kind -- it is the one signal
     # that distinguishes a reverse-cycle unit from a cooling-only one without asking anything else.
     out["heat_capable"] = not (data[layout.outdoor_temp + 1] >> 7) & 1
+    # The word after the sensors carries the fault code and who made the last change. `error_code`
+    # is a single code (0 = healthy) and is a different view of the fault frame, not a duplicate:
+    # it names one fault where the frame carries the full set.
+    out["error_code"] = data[layout.outdoor_temp + 2]
+    out["last_changed_by"] = OPERATION_SOURCE.get(data[layout.outdoor_temp + 3] & 0x03)
     words = data[layout.baseline]
     out["swing_horizontal"] = vane_h_sweeping(_field_from_words(words, "windDirectionHorizontal"))
     # the secondary toggles + eco, read back from the report's grSetDAC word block (confirmed map)

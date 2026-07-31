@@ -166,6 +166,15 @@
       "indoor_temperature": {
         "name": "Beltéri hőmérséklet"
       },
+      "last_changed_by": {
+        "name": "Utoljára módosította",
+        "state": {
+          "other": "Egyéb",
+          "remote": "Távirányító",
+          "panel": "Kezelőpanel",
+          "network": "Alkalmazás vagy Home Assistant"
+        }
+      },
       "local_key": {
         "name": "Helyi kulcs"
       },

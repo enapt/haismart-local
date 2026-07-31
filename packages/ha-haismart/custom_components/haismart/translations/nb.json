@@ -166,6 +166,15 @@
       "indoor_temperature": {
         "name": "Innetemperatur"
       },
+      "last_changed_by": {
+        "name": "Sist endret av",
+        "state": {
+          "other": "Annet",
+          "remote": "Fjernkontroll",
+          "panel": "Panel",
+          "network": "App eller Home Assistant"
+        }
+      },
       "local_key": {
         "name": "Lokal nøkkel"
       },

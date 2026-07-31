@@ -166,6 +166,15 @@
       "indoor_temperature": {
         "name": "Vnitřní teplota"
       },
+      "last_changed_by": {
+        "name": "Naposledy změnil",
+        "state": {
+          "other": "Jiné",
+          "remote": "Dálkový ovladač",
+          "panel": "Panel",
+          "network": "Aplikace nebo Home Assistant"
+        }
+      },
       "local_key": {
         "name": "Lokální klíč"
       },

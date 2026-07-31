@@ -166,6 +166,15 @@
       "indoor_temperature": {
         "name": "Температура на закрито"
       },
+      "last_changed_by": {
+        "name": "Последна промяна от",
+        "state": {
+          "other": "Друго",
+          "remote": "Дистанционно",
+          "panel": "Панел",
+          "network": "Приложение или Home Assistant"
+        }
+      },
       "local_key": {
         "name": "Локален ключ"
       },

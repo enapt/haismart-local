@@ -166,6 +166,15 @@
       "indoor_temperature": {
         "name": "Indendørstemperatur"
       },
+      "last_changed_by": {
+        "name": "Sidst ændret af",
+        "state": {
+          "other": "Andet",
+          "remote": "Fjernbetjening",
+          "panel": "Panel",
+          "network": "App eller Home Assistant"
+        }
+      },
       "local_key": {
         "name": "Lokal nøgle"
       },

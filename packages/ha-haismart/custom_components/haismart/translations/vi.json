@@ -166,6 +166,15 @@
       "indoor_temperature": {
         "name": "Nhiệt độ trong nhà"
       },
+      "last_changed_by": {
+        "name": "Thay đổi lần cuối bởi",
+        "state": {
+          "other": "Khác",
+          "remote": "Điều khiển từ xa",
+          "panel": "Bảng điều khiển",
+          "network": "Ứng dụng hoặc Home Assistant"
+        }
+      },
       "local_key": {
         "name": "Khóa cục bộ"
       },

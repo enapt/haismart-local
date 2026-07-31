@@ -166,6 +166,15 @@
       "indoor_temperature": {
         "name": "İç ortam sıcaklığı"
       },
+      "last_changed_by": {
+        "name": "Son değiştiren",
+        "state": {
+          "other": "Diğer",
+          "remote": "Uzaktan kumanda",
+          "panel": "Panel",
+          "network": "Uygulama veya Home Assistant"
+        }
+      },
       "local_key": {
         "name": "Yerel anahtar"
       },

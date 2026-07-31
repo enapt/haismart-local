@@ -166,6 +166,15 @@
       "indoor_temperature": {
         "name": "Temperatura interna"
       },
+      "last_changed_by": {
+        "name": "Ultima modifica di",
+        "state": {
+          "other": "Altro",
+          "remote": "Telecomando",
+          "panel": "Pannello",
+          "network": "App o Home Assistant"
+        }
+      },
       "local_key": {
         "name": "Chiave locale"
       },

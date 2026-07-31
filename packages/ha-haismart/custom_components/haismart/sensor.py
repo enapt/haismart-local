@@ -57,6 +57,16 @@ SENSORS: tuple[HaismartSensorDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         value_fn=lambda s: s.get("outdoor_temperature"),
     ),
+    HaismartSensorDescription(
+        key="last_changed_by",
+        translation_key="last_changed_by",
+        device_class=SensorDeviceClass.ENUM,
+        options=["other", "remote", "panel", "network"],
+        entity_category=EntityCategory.DIAGNOSTIC,
+        # The unit says who made the last change, which lets an automation react to someone
+        # picking up the handset rather than to the change itself.
+        value_fn=lambda s: s.get("last_changed_by"),
+    ),
     # --- running power / compressor figures, from the extended-status report ---------------------
     # Present only on units that answer the extended query; `native_value` returns None on the rest,
     # so these exist but stay unavailable rather than appearing and vanishing between polls.

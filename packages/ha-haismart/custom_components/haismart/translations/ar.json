@@ -166,6 +166,15 @@
       "indoor_temperature": {
         "name": "درجة الحرارة الداخلية"
       },
+      "last_changed_by": {
+        "name": "آخر تغيير بواسطة",
+        "state": {
+          "other": "أخرى",
+          "remote": "جهاز التحكم",
+          "panel": "اللوحة",
+          "network": "التطبيق أو Home Assistant"
+        }
+      },
       "local_key": {
         "name": "المفتاح المحلي"
       },

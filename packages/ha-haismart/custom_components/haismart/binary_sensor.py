@@ -131,4 +131,7 @@ class HaismartBinarySensor(HaismartEntity, BinarySensorEntity):
         return {
             "faults": data.get("alarm_labels") or [],
             "fault_codes": data.get("alarm_codes") or [],
+            # a second, independent view: the status report names one fault where the fault frame
+            # carries the whole set, so a disagreement is itself worth seeing
+            "error_code": data.get("error_code"),
         }

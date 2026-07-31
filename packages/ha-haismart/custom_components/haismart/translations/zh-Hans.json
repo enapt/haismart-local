@@ -166,6 +166,15 @@
       "indoor_temperature": {
         "name": "室内温度"
       },
+      "last_changed_by": {
+        "name": "最后更改者",
+        "state": {
+          "other": "其他",
+          "remote": "遥控器",
+          "panel": "面板",
+          "network": "应用或 Home Assistant"
+        }
+      },
       "local_key": {
         "name": "本地密钥"
       },

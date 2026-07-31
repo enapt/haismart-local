@@ -166,6 +166,15 @@
       "indoor_temperature": {
         "name": "अंदरूनी तापमान"
       },
+      "last_changed_by": {
+        "name": "अंतिम बार बदला गया",
+        "state": {
+          "other": "अन्य",
+          "remote": "रिमोट कंट्रोल",
+          "panel": "पैनल",
+          "network": "ऐप या Home Assistant"
+        }
+      },
       "local_key": {
         "name": "लोकल की"
       },

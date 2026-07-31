@@ -39,7 +39,10 @@ _HVAC_TO_MODE = {v: k for k, v in _MODE_TO_HVAC.items()}
 
 # Fan-only mode on this unit won't accept fan=auto; when entering it (or if the user picks auto
 # while in it) we fall back to this concrete speed. "medium" is a neutral default airflow.
-_FAN_ONLY_DEFAULT_SPEED = "medium"
+# Fan-only will not accept an "auto" wind speed -- the unit drops the command and stays put -- so a
+# concrete speed is substituted. Low is the value the unit's own model names for this case, and the
+# one it sends itself when fan-only is selected.
+_FAN_ONLY_DEFAULT_SPEED = "low"
 
 
 async def async_setup_entry(

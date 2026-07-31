@@ -166,6 +166,15 @@
       "indoor_temperature": {
         "name": "Temperatură interioară"
       },
+      "last_changed_by": {
+        "name": "Ultima modificare de",
+        "state": {
+          "other": "Altul",
+          "remote": "Telecomandă",
+          "panel": "Panou",
+          "network": "Aplicație sau Home Assistant"
+        }
+      },
       "local_key": {
         "name": "Cheie locală"
       },

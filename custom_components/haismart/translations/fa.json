@@ -166,6 +166,15 @@
       "indoor_temperature": {
         "name": "دمای داخل"
       },
+      "last_changed_by": {
+        "name": "آخرین تغییر توسط",
+        "state": {
+          "other": "سایر",
+          "remote": "کنترل از راه دور",
+          "panel": "پنل",
+          "network": "برنامه یا Home Assistant"
+        }
+      },
       "local_key": {
         "name": "کلید محلی"
       },

@@ -286,7 +286,9 @@ async def test_fan_only_mode_substitutes_concrete_fan(hass: HomeAssistant, mock_
     )
     assert _sent_field(mock_uss.send, "operationMode") == 6   # fan_only
     assert _sent_field(mock_uss.send, "onOffStatus") == 1
-    assert _sent_field(mock_uss.send, "windSpeed") == 2       # medium substituted, NOT auto(5)
+    # low (3) substituted, NOT auto(5): low is what the unit's own model names for fan-only, and
+    # what the unit sends itself when fan-only is selected
+    assert _sent_field(mock_uss.send, "windSpeed") == 3
 
 
 async def test_heat_mode_offered_and_sent_when_the_model_declares_it(
@@ -1076,6 +1078,7 @@ async def test_diagnostics_propose_layouts_for_an_unrecognised_report(
         for key in (
             "power", "target_temperature", "current_temperature", "outdoor_temperature",
             "operation_mode", "wind_speed", "swing_vertical", "heat_capable",
+            "error_code", "last_changed_by",
         )
     }
 

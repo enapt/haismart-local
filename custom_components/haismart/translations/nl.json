@@ -166,6 +166,15 @@
       "indoor_temperature": {
         "name": "Binnentemperatuur"
       },
+      "last_changed_by": {
+        "name": "Laatst gewijzigd door",
+        "state": {
+          "other": "Overig",
+          "remote": "Afstandsbediening",
+          "panel": "Paneel",
+          "network": "App of Home Assistant"
+        }
+      },
       "local_key": {
         "name": "Lokale sleutel"
       },

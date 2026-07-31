@@ -166,6 +166,15 @@
       "indoor_temperature": {
         "name": "Εσωτερική θερμοκρασία"
       },
+      "last_changed_by": {
+        "name": "Τελευταία αλλαγή από",
+        "state": {
+          "other": "Άλλο",
+          "remote": "Τηλεχειριστήριο",
+          "panel": "Πίνακας",
+          "network": "Εφαρμογή ή Home Assistant"
+        }
+      },
       "local_key": {
         "name": "Τοπικό κλειδί"
       },

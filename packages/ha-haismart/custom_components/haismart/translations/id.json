@@ -166,6 +166,15 @@
       "indoor_temperature": {
         "name": "Suhu dalam ruangan"
       },
+      "last_changed_by": {
+        "name": "Terakhir diubah oleh",
+        "state": {
+          "other": "Lainnya",
+          "remote": "Remot",
+          "panel": "Panel",
+          "network": "Aplikasi atau Home Assistant"
+        }
+      },
       "local_key": {
         "name": "Kunci lokal"
       },

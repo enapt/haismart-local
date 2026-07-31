@@ -166,6 +166,15 @@
       "indoor_temperature": {
         "name": "Vnútorná teplota"
       },
+      "last_changed_by": {
+        "name": "Naposledy zmenil",
+        "state": {
+          "other": "Iné",
+          "remote": "Diaľkový ovládač",
+          "panel": "Panel",
+          "network": "Aplikácia alebo Home Assistant"
+        }
+      },
       "local_key": {
         "name": "Lokálny kľúč"
       },

@@ -1208,3 +1208,40 @@ def test_checksum_counts_escape_bytes():
     withff = uss.build_epp_frame(0x01, uss.EPP_CMD_GRSETDAC, bytes([0xFF]) + bytes(11))
     body2 = withff[2:-1]
     assert withff[-1] == (sum(body2) + 0x55) & 0xFF
+
+
+def _alarm_frame(flags: bytes) -> bytes:
+    """A fault frame carrying ``flags``, wrapped exactly as the unit sends one."""
+    frame = uss.build_epp_frame(0x04, b"\x0f\x5a", flags)
+    return b"\x00\x00\x27\x15" + bytes(76) + frame
+
+
+def test_alarm_bitmap_is_one_big_endian_integer():
+    """Fault 0 is the LOW bit of the LAST flag byte, so the bytes read as one big-endian value."""
+    clear = uss.parse_alarm_frame(_alarm_frame(bytes(8)))
+    assert clear == {"alarm_count": 0, "alarm_codes": [], "alarm_labels": []}
+
+    # fault 0 lives in the last byte, not the first
+    first = uss.parse_alarm_frame(_alarm_frame(bytes(7) + b"\x01"))
+    assert first["alarm_codes"] == [0]
+    assert first["alarm_labels"] == ["F1 - Outdoor module failure"]
+
+    # ...and the first byte carries the HIGH positions
+    high = uss.parse_alarm_frame(_alarm_frame(b"\x01" + bytes(7)))
+    assert high["alarm_codes"] == [56]
+
+    # a mid-range one: E1, indoor temperature sensor, is position 20
+    e1 = uss.parse_alarm_frame(_alarm_frame(bytes(5) + b"\x10" + bytes(2)))
+    assert e1["alarm_codes"] == [20]
+    assert e1["alarm_labels"] == ["E1 - Indoor temperature sensor failure"]
+
+
+def test_alarm_positions_track_the_frame_length():
+    """The byte count comes from the frame, so a shorter frame shifts every position."""
+    assert uss.parse_alarm_frame(_alarm_frame(bytes(3) + b"\x01"))["alarm_codes"] == [0]
+    assert uss.parse_alarm_frame(_alarm_frame(b"\x01" + bytes(3)))["alarm_codes"] == [24]
+
+
+def test_parse_alarm_frame_ignores_other_reports():
+    assert uss.parse_alarm_frame(REAL_STATUS_DOWN) is None
+    assert uss.parse_alarm_frame(b"") is None

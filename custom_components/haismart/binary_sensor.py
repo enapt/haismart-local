@@ -43,6 +43,15 @@ BINARY_SENSORS: tuple[HaismartBinarySensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda s: s.get("fan_running"),
     ),
+    HaismartBinarySensorDescription(
+        key="fault",
+        translation_key="fault",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        # `alarm_count` is absent until a fault frame has been seen, which must read as unknown
+        # rather than "no fault" -- a unit we have not heard from is not a healthy one.
+        value_fn=lambda s: None if s.get("alarm_count") is None else s["alarm_count"] > 0,
+    ),
 )
 
 
@@ -109,3 +118,17 @@ class HaismartBinarySensor(HaismartEntity, BinarySensorEntity):
         if not self.coordinator.data:
             return None
         return self.entity_description.value_fn(self.coordinator.data)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Name the active faults on the fault sensor, so "problem" is actionable rather than a
+        bare flag. Absent on the other sensors, which have nothing to add."""
+        if self.entity_description.key != "fault" or not self.coordinator.data:
+            return None
+        data = self.coordinator.data
+        if data.get("alarm_count") is None:
+            return None
+        return {
+            "faults": data.get("alarm_labels") or [],
+            "fault_codes": data.get("alarm_codes") or [],
+        }

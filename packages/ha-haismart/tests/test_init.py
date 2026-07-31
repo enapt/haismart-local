@@ -1503,3 +1503,42 @@ async def test_cloud_sensor_labels_the_raw_code(hass: HomeAssistant, mock_uss, f
     assert state.state == "off"
     assert state.attributes["raw_state"] == 1010
     assert state.attributes["state_name"] == "retrying"
+
+
+async def test_fault_sensor_names_the_active_faults(hass: HomeAssistant, mock_uss) -> None:
+    """A fault frame arrives with every status push, so the problem sensor costs no extra request.
+
+    Naming the faults matters: "problem: on" tells an owner nothing, while the service code is what
+    they quote to an engineer.
+    """
+    from haismart_hrdp import build_epp_frame
+
+    def alarm_frame(flags: bytes) -> bytes:
+        return b"\x00\x00\x27\x15" + bytes(76) + build_epp_frame(0x04, b"\x0f\x5a", flags)
+
+    # position 20 = E1, indoor temperature sensor: low bit of the last byte is position 0, so
+    # position 20 is bit 4 of the third byte from the end
+    mock_uss.read.return_value = [mock_uss.frame, alarm_frame(bytes(5) + b"\x10" + bytes(2))]
+    entry = await _setup(hass)
+
+    fault = hass.states.get("binary_sensor.downstairs_ac_fault")
+    assert fault is not None and fault.state == "on"
+    assert fault.attributes["faults"] == ["E1 - Indoor temperature sensor failure"]
+    assert fault.attributes["fault_codes"] == [20]
+    assert entry.runtime_data.data["alarm_count"] == 1
+
+
+async def test_fault_sensor_reads_clear_when_the_bitmap_is_empty(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """An all-clear frame is a real answer -- distinct from never having seen one."""
+    from haismart_hrdp import build_epp_frame
+
+    mock_uss.read.return_value = [
+        mock_uss.frame,
+        b"\x00\x00\x27\x15" + bytes(76) + build_epp_frame(0x04, b"\x0f\x5a", bytes(8)),
+    ]
+    await _setup(hass)
+    fault = hass.states.get("binary_sensor.downstairs_ac_fault")
+    assert fault is not None and fault.state == "off"
+    assert fault.attributes["faults"] == []

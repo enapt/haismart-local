@@ -42,6 +42,7 @@ from haismart_hrdp import (
     grsetdac_baseline_from_status,
     grsetdac_op_frame,
     model_enum_codes,
+    parse_alarm_frame,
     parse_extended_status,
     parse_full_status,
     probe_localkey_version,
@@ -170,6 +171,18 @@ def _model_authorized_codes(model: dict[str, Any] | None) -> dict[str, set[int]]
     return {name: values for name, values in codes.items() if values}
 
 
+def _alarms_from(blobs: list[bytes]) -> dict[str, Any]:
+    """Active faults out of a session's blobs, or ``{}`` if it carried no fault frame.
+
+    The unit pushes one alongside every status report, so this needs no extra request. An all-clear
+    frame yields a count of 0 -- distinct from "no frame seen", which must not clear a stale alarm.
+    """
+    for blob in blobs:
+        if (alarms := parse_alarm_frame(blob)) is not None:
+            return alarms
+    return {}
+
+
 def _telemetry_from(blobs: list[bytes]) -> dict[str, Any]:
     """The running-power/compressor figures out of a session's blobs, or ``{}`` if it carried no
     extended report (the usual case for a control session, which does not query for one)."""
@@ -290,6 +303,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         await self._async_poll_cloud_state()
 
         telemetry = _telemetry_from(blobs)
+        alarms = _alarms_from(blobs)
 
         for blob in blobs:
             if state := parse_full_status(
@@ -326,6 +340,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         "sensors will stay unavailable for this unit", self.host,
                     )
                 self._apply_telemetry(state, telemetry)
+                state.update(alarms)
                 return state
 
         # Connected fine but nothing decoded — either the AC pushed no full report this

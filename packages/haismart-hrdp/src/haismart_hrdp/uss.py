@@ -908,6 +908,105 @@ def parse_extended_status(data: bytes) -> dict[str, Any]:
     return out
 
 
+# --- fault bitmap -------------------------------------------------------------
+
+# The unit pushes a fault frame alongside every status report, and answers a fault query with the
+# same payload. It is a bitmap: after the command word come N bytes of flags, read as ONE big-endian
+# integer whose least-significant bit is fault 0. So the LAST byte carries faults 0-7, the one before
+# it 8-15, and so on. N comes from the frame's own length -- it is not fixed, and a unit sending
+# fewer bytes shifts every position, so it must never be hardcoded.
+_ALARM_MAX_BYTES = 32
+
+# Fault labels by bit position. The service codes (E1, F4, ...) are the ones printed on the unit and
+# shown by the handset, so they are the useful half of the label.
+ALARM_LABELS: tuple[str, ...] = (
+    "F1 - Outdoor module failure",
+    "Outdoor defrost sensor failure",
+    "F14 - Outdoor compressor exhaust sensor failure",
+    "F11 - Outdoor EEPROM abnormality",
+    "E2 - Indoor coil sensor failure",
+    "E7 - Indoor-outdoor communication failure",
+    "Power supply overvoltage protection",
+    "Communication failure between panel and indoor unit",
+    "F4 - Outdoor compressor overheat protection",
+    "Outdoor environmental sensor abnormality",
+    "Full water protection",
+    "E4 - Indoor EEPROM failure",
+    "Outdoor out air sensor failure",
+    "F13 - PCB and module communication failure",
+    "E14 - Indoor DC fan failure",
+    "F2 - Outdoor DC fan failure",
+    "Door switch failure",
+    "Dust filter needs cleaning",
+    "Water shortage protection",
+    "Humidity sensor failure",
+    "E1 - Indoor temperature sensor failure",
+    "Manipulator limit failure",
+    "Indoor PM2.5 sensor failure",
+    "Outdoor PM2.5 sensor failure",
+    "Indoor heating overload alarm",
+    "Outdoor AC current protection",
+    "Outdoor compressor operation abnormality",
+    "Outdoor DC current protection",
+    "Outdoor no-load failure",
+    "CT current abnormality",
+    "Indoor cooling freeze protection",
+    "High and low pressure protection",
+    "Compressor out air temperature too high",
+    "Outdoor evaporator sensor failure",
+    "Outdoor cooling overload",
+    "Water pump drainage failure",
+    "Three-phase power supply failure",
+    "Four-way valve failure",
+    "External alarm / flow switch failure",
+    "E18 - Temperature cutoff protection",
+    "Different mode operation failure",
+    "Electronic expansion valve failure",
+    "Dual heat source sensor Tw failure",
+    "Communication failure with the wired controller",
+    "Indoor unit address duplication failure",
+    "50Hz zero crossing failure",
+    "Outdoor unit failure",
+    "Formaldehyde sensor failure",
+    "VOC sensor failure",
+    "CO2 sensor failure",
+    "Firewall failure",
+)
+
+
+def alarm_label(code: int) -> str:
+    """The label for a fault position, or a placeholder for one this model does not name."""
+    return ALARM_LABELS[code] if 0 <= code < len(ALARM_LABELS) else f"Unknown fault {code}"
+
+
+def parse_alarm_frame(data: bytes) -> dict[str, Any] | None:
+    """Decode a fault frame into active fault positions, or ``None`` if ``data`` is not one.
+
+    Returns ``{"alarm_count", "alarm_codes", "alarm_labels"}``; an all-clear unit yields a count of 0
+    and empty lists, which is a meaningful answer and distinct from ``None`` ("no fault frame here").
+    """
+    at = data.find(EPP_FRAME_HEAD)
+    if at < 0 or len(data) < at + 12 or data[at + 10:at + 12] != _EPP_RPT_ALARM:
+        return None
+    declared = data[at + 2]
+    payload = data[at + 10:at + 10 + max(declared - 8, 0)]
+    flags = payload[2:]
+    if not flags or len(flags) > _ALARM_MAX_BYTES:
+        return None
+    count = len(flags)
+    codes = [
+        bit + ((count - 1 - index) << 3)
+        for index in range(count - 1, -1, -1)
+        for bit in range(8)
+        if flags[index] & (1 << bit)
+    ]
+    return {
+        "alarm_count": len(codes),
+        "alarm_codes": codes,
+        "alarm_labels": [alarm_label(code) for code in codes],
+    }
+
+
 # --- live session (sync + async), READ-ONLY -----------------------------------
 
 def read_status(ip: str, device_id: str, local_key: str, *,

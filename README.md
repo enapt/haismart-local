@@ -68,7 +68,7 @@ One device per air conditioner, with:
 
 | Entity | What it does |
 |---|---|
-| **Climate** | Temperature setpoint, mode (cool / heat / dry / fan-only / auto), fan speed, swing, on/off |
+| **Climate** | Temperature setpoint, mode (cool / heat / dry / fan-only / auto), fan speed, swing, on/off. Heat is offered only when the unit itself reports it can heat |
 | **Indoor temperature** | The AC's own room-temperature reading |
 | **Outdoor temperature** | Outdoor probe, on units that have one |
 | **Switches** | Strong, Quiet, Health, Sleep, Display light |
@@ -77,6 +77,8 @@ One device per air conditioner, with:
 | **Compressor current / frequency** *(diagnostic)* | What the outdoor unit is actually doing |
 | **Coil / discharge temperature** *(diagnostic)* | Evaporator and compressor-discharge temperatures |
 | **Compressor / Fan** *(diagnostic, on/off)* | Whether the compressor and indoor fan are actually running |
+| **Fault** *(diagnostic, problem)* | Whether the unit is reporting a fault. Its attributes name the active faults with the service code the unit shows (E1, F4, …) — that is what an engineer will ask for |
+| **Last changed by** *(diagnostic)* | Whether the last change came from the handset, the unit's own panel, or the network. Useful as an automation trigger when someone picks up the remote |
 | **Model ID** *(diagnostic)* | The identifier that selects your unit's report layout. Shown shortened (it's 64 characters); the exact value is on the entity's `uplus_id` attribute — quote that in a bug report about a model that isn't decoded |
 | **Cloud connection** *(diagnostic, on/off)* | Whether the AC itself can still reach Haier's servers — see [going fully cloud-independent](#going-fully-cloud-independent) |
 | **Local key** *(diagnostic, off by default)* | Your unit's key, so it rides along in HA backups |

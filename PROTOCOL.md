@@ -177,6 +177,37 @@ A session can therefore return three different report kinds sharing the same con
 command word, not by length or arrival order** — the fault frame is long enough to pass a status
 parser's length checks and decodes into a plausible-looking powered-off unit with a 16 °C setpoint.
 
+### Escaped bytes
+
+`0xFF` starts a frame, so an `0xFF` occurring *inside* one is escaped as `FF 55`. The two leading
+separators are the delimiter and are never escaped; escaping begins after them, and the inserted
+`0x55` counts toward the frame checksum.
+
+This shows up in ordinary use: a report whose checksum happens to be `0xFF` arrives one byte longer
+than its family's fixed length. Unescape before anything looks at a length, or that report misses
+every length-keyed lookup — reads still work, but the write path refuses control on a perfectly good
+report and recovers on the next one.
+
+### Fault bitmap
+
+The `0f5a` frame is a bitmap. After the command word come N flag bytes, read as **one big-endian
+integer** whose least-significant bit is fault 0 — so the *last* byte carries faults 0–7, the byte
+before it 8–15, and so on. N comes from the frame's own length: a unit sending fewer bytes shifts
+every position, so it must never be hardcoded.
+
+### Vane positions
+
+Both vane fields are position codes, not bitmasks. Vertical: 0 = fixed, 2/4/5/6/7 = positions one to
+five, 8 = auto — reaching the wire as 0/2/4/6/8/10 and 12. Horizontal: 0 = fixed, 3–6 = positions,
+7 = auto. Only the auto codes mean the vane is sweeping; testing a single bit also matches the vane
+parked low.
+
+### Heat capability
+
+Bit 7 of the byte after the outdoor reading is set on a cooling-only unit. The unit states this
+itself on every report, which is a better answer than any model: it is right for hardware nobody has
+catalogued and cannot disagree with itself.
+
 ## grSetDAC control words
 
 Writes are a **group-set**: the whole word block is sent at once, so it must be seeded from the AC's

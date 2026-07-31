@@ -236,11 +236,16 @@ group-set carries. Stepping through a handset's full set shows an **"I feel"** b
 
 Watching **every** word of the report, not just the control block, neither moves anything.
 
-For **"I feel"** that is by design. The handset has its own temperature sensor and re-transmits its
-reading to the unit every few minutes so the unit regulates to the temperature where the handset is —
-but that exchange happens over infrared only and never enters this protocol. It cannot be read here,
-and it cannot be driven from here either; feeding a room sensor to a unit this way needs an infrared
-transmitter, not a network command.
+For **"I feel"** that is structural. The handset has its own temperature sensor and re-transmits its
+reading every few minutes so the unit regulates to the temperature where the handset is — but that
+exchange is infrared and never enters this protocol. It cannot be read here and cannot be driven from
+here; feeding a room sensor to a unit this way needs an infrared transmitter, not a network command.
+
+Worth being precise about what that does and does not mean. It is not that the feature is
+undocumented — the manufacturer describes it plainly — but that the infrared side of it has not been
+decoded for these units. The equivalent is well understood for several other makes, whose remotes are
+known to carry a temperature field; the published descriptions of this one carry no such field for
+any of its infrared variants. So this is an open question on a different transport, not a dead end.
 
 The **timer** is different, and worth checking per model rather than assuming. Some units publish it:
 `timingPowerOn` and `timingPowerOff` as minute counts (0–1440) alongside a `timingStatus` of

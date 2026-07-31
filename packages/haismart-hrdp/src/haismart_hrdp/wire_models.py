@@ -414,9 +414,29 @@ _EXT36_WRITE = {
 # unit has no such probes and every capture read 0), and `specialMode`. `outdoorTemperature` IS read,
 # but as a ``"temp"`` field — both captures report the 0 sentinel, which surfaces as "no reading"
 # rather than a fabricated −64 C.
+#
+# **175 B is the same map with five words on the end** (haismart-local issue #8, a Malaysian
+# HS-25VRB03). Every field above sits at the same word, and the unit's own published attribute values
+# agree with what this map decodes out of its report on ten of them — setpoint, mode, fan speed,
+# power, screen light, self-clean, both vane POSITIONS (vertical 2, horizontal 5) and indoor
+# temperature to within the half degree the two readings were taken apart. So the longer report is
+# this family, not a new one, and the extra words are additional registers rather than a displacement.
+#
+# What those five carry, from the same comparison: a cumulative counter at words 34+35 (32-bit) and
+# again at 39+40 — the unit publishes `accumulatedUseMainsPower` and `totalElectricityUsed` with one
+# identical value, and both wire pairs read the same number, slightly ahead of the published one as a
+# counter should be — and an input-power register at word 41 (`acInput`, watts, 1318 on the wire
+# against 1313 published). None is published as an entity: the counters' unit is not established (the
+# same reason the extended-46 family's counter stays out) and one sample cannot show that word 41
+# tracks. A second capture in a known state would settle both.
 EXTENDED36 = WireModel(
     family="extended36",
-    report_lengths=frozenset({165}),
+    report_lengths=frozenset({165, 175}),
+    # The uPlusId of the 175-byte variant, which the units report on the discovery channel — so a
+    # unit that answers it is keyed exactly rather than by length.
+    uplus_ids=frozenset({
+        "2008610800820324021200118018900000000000000000000000000000000040",
+    }),
     writable=True,
     group_cmd=b"\x60\x01",
     word_count=5,

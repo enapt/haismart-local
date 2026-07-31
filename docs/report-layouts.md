@@ -27,7 +27,7 @@ of the partial "unknown layout" path, so a wrong family is never published as fa
 |---|---|---|---|---|
 | 109 / 121 / 125 / 127 B | **classic** | `°C − 16` @ w1.b8 | indoor w6.b8, outdoor w7.b8 | ✅ read + control |
 | 117 B | **compact-12** | whole °C @ w12 | indoor w1, outdoor w2 (not published) | ✅ read + control |
-| 165 B | **extended-36** | `°C − 16` @ w20.b8 | indoor w25.b8, outdoor w26.b8 | ✅ read + control |
+| 165 / 175 B | **extended-36** | `°C − 16` @ w20.b8 | indoor w25.b8, outdoor w26.b8 | ✅ read + control |
 | 209 B | **extended-46** | **half-degrees** @ w20.b8 | indoor w35.b8, outdoor w36.b8 | ✅ read + control (no fan/swing yet) |
 | 133 B | *unclaimed* — map below | `°C − 16` @ w1.b12 (4 bits) | indoor w5.b8, outdoor w6.b8 | ⏳ documented, not shipped |
 | 149 / 155 B | *unclaimed* — floor/heat-pump class | @ w25.b8 | — | ⏳ two conflicting maps at 149 B |
@@ -82,6 +82,13 @@ dialect); the climate block starts at word 20. This is the family where a classi
 incomplete but actively wrong: byte 92 is the module's `volume`, typically 100, which reads as a
 48 °C setpoint, and the classic power bit lands in an unrelated word so the unit looks permanently
 off.
+
+Two report lengths belong to this family. **175 B is the same map with five words on the end** — no
+displacement, every climate field at the same word — carrying a cumulative counter at words 34+35
+and again at 39+40, and an input-power register at word 41. None of the three is published: the
+counters' unit is not established, and a single report cannot show that the power register tracks.
+The unit that reported this length publishes `accumulatedUseMainsPower`, `totalElectricityUsed` and
+`acInput` values that match those words, which is how they were identified.
 
 ### extended-46
 

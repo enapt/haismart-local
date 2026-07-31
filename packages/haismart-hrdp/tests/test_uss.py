@@ -560,6 +560,21 @@ STATUS_165_ON = bytes.fromhex(
 )
 
 
+# --- 175 B: the same family with five words on the end (issue #8, HS-25VRB03) -------------
+# Every climate field sits at the same word as on the 165-byte reports above; words 34..41 carry two
+# cumulative counters and an input-power register that nothing reads. One real report, cool 24 C, fan
+# low, room 26.0, outdoor 33, screen light on, vertical vane parked at 2 and horizontal at 5.
+STATUS_175 = bytes.fromhex(
+    "00002715000000004e5601000003020000040100000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000005fffff5c000000000000066d0120640000"
+    "0000000000000000000000000000000000000000000000000000000000000100"
+    "0000080223000201160500003400618000030000000000000000000000000000"
+    "6ccb00000000000000006ccb052651"
+)
+UPLUS_175 = "2008610800820324021200118018900000000000000000000000000000000040"
+
+
 def test_status_layout_recognises_both_report_lengths():
     assert len(STATUS_125) == 125
     assert uss.status_layout(REAL_STATUS_DOWN) == uss.StatusLayout(
@@ -688,6 +703,43 @@ def test_extended36_decodes_the_real_reports():
     assert "outdoor_temperature" not in off and "outdoor_temperature" not in on
     # the classic decode's wrong answer, for the record: byte 92 is the media module's `volume`
     assert STATUS_165_OFF[92] + 16 == 48
+
+
+def test_extended36_claims_the_175_byte_variant_too():
+    """A 175-byte report is this family with five extra words on the end, not a new one.
+
+    It decoded to nothing before — an unrecognised length reaching the partial path, which is what
+    the reporting unit showed. The map needs no displacement: the unit's own published values agree
+    with what these words say, including both vane POSITIONS, which a wrong map would not reproduce.
+    """
+    from haismart_hrdp import profile_for
+
+    assert len(STATUS_175) == 175
+    wm = uss.select_wire_model(175)
+    assert wm is not None and wm.family == "extended36"
+    # and exactly, from the identifier the unit reports on the discovery channel
+    assert uss.select_wire_model(0, UPLUS_175) is wm
+
+    state = uss.parse_full_status(STATUS_175, profile_for("AAC1UKZ01"), uplus_id=UPLUS_175)
+    assert state == {
+        "power": True, "target_temperature": 24.0, "current_temperature": 26.0,
+        "outdoor_temperature": 33.0, "operation_mode": "1", "wind_speed": "3",
+        "swing_vertical": False, "swing_horizontal": False, "mode": "cool", "fan_mode": "low",
+        "heat_capable": False, "error_code": 0, "last_changed_by": "network",
+        "self_cleaning": False, "layout": "extended36", "writable": True,
+    }
+    assert "partial" not in state
+    # the vanes are parked at positions 2 and 5, which is why neither reads as sweeping
+    assert STATUS_175[131] == 2 and STATUS_175[137] & 0x07 == 5
+    # screen light on, every other toggle off -- as the unit itself publishes them
+    assert wm.current_write_value(STATUS_175, "screenDisplayStatus") == 1
+    assert wm.current_write_value(STATUS_175, "healthMode") == 0
+
+    # control seeds from the same five words as on a 165-byte report
+    base = wm.baseline_words(STATUS_175)
+    assert bytes(base) == STATUS_175[130:140]
+    words = wm.encode_control(base, {"targetTemperature": 25 - 16})
+    assert words[0] == 25 - 16 and words[1:] == base[1:]
 
 
 def test_extended36_reads_the_secondary_toggles_through_its_write_map():

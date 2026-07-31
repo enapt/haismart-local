@@ -609,6 +609,33 @@ async def test_eco_select_sends_level(hass: HomeAssistant, mock_uss) -> None:
     assert _sent_field(mock_uss.send, "ecoMode") == 6  # level2 -> code 6
 
 
+async def test_extended36_family_covers_its_longer_report_too(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A 175-byte report is the same family with five words of counters on the end (issue #8).
+
+    The reporting unit connected, decoded nothing, and raised the new-model repair. It must now come
+    up as a fully decoded, controllable unit — the layout is known, so nothing about it is a repair.
+    """
+    frame = make_extended36_frame(length=175, power=True, target_temp=24, indoor_temp=26.0)
+    mock_uss.read.return_value = [frame]
+    mock_uss.send.baseline = frame
+    entry = await _setup(hass)
+
+    climate = hass.states.get(CLIMATE)
+    assert climate.state == "cool"
+    assert climate.attributes["current_temperature"] == 26.0
+    assert climate.attributes["temperature"] == 24.0
+
+    coord = entry.runtime_data
+    assert coord.unknown_layout is None and coord.read_only_layout is None
+
+    await coord.async_send_control({"targetTemperature": 25 - 16})
+    sent = mock_uss.send.last_frame
+    assert sent[:2] == b"\xff\xff" and sent[10:12] == b"\x60\x01"
+    assert sent[12] == 25 - 16                      # setpoint at group-set word 1, from report w20
+
+
 async def test_vane_positions_come_from_the_units_own_model(
     hass: HomeAssistant, mock_uss
 ) -> None:

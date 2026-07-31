@@ -118,11 +118,16 @@ def make_extended36_frame(
     swing_v: bool = False,
     swing_h: bool = True,
     lamp: bool = True,
+    length: int = 165,
 ) -> bytes:
     """Build a synthetic 165-byte 'extended-36' full-status report (issue #5). Same bit map as the
     classic family, but displaced 19 words: the report keeps a voice/media block at words 1..19 and
-    the climate block from word 20 (positions per wire_models.EXTENDED36)."""
-    frame = bytearray(165)
+    the climate block from word 20 (positions per wire_models.EXTENDED36).
+
+    ``length`` covers the 175-byte variant of the same family (issue #8), which carries five further
+    words of counters after the climate block and is otherwise identical.
+    """
+    frame = bytearray(length)
     frame[2:4] = b"\x27\x15"
 
     def setword(w: int, val: int) -> None:

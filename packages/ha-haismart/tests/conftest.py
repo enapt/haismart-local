@@ -133,6 +133,36 @@ def make_extended36_frame(
     return bytes(frame)
 
 
+def make_extended46_frame(
+    *,
+    power: bool = True,
+    target_temp: int = 22,
+    indoor_temp: float = 27.0,
+    mode_code: int = 1,   # STD code == EPP value on this family (1 = cool)
+    swing_v: bool = False,
+) -> bytes:
+    """Build a synthetic 209-byte 'extended-46' full-status report (issue #6).
+
+    The extended-36 map with a ten-word block inserted at word 25, so everything from there up moves
+    ten words later — and the setpoint counts half degrees from zero rather than whole degrees
+    offset by 16 (positions per wire_models.EXTENDED46).
+    """
+    frame = bytearray(209)
+    frame[2:4] = b"\x27\x15"
+
+    def setword(w: int, val: int) -> None:
+        off = 92 + (w - 1) * 2
+        frame[off], frame[off + 1] = (val >> 8) & 0xFF, val & 0xFF
+
+    setword(1, 0x2064)                                    # the media block (volume etc.)
+    setword(20, int(target_temp * 2) << 8)                # targetTemperature is degC x 2 here
+    setword(21, mode_code << 13)
+    setword(22, 1 if power else 0)
+    setword(25, 0x08 if swing_v else 0)                   # the vane, inside the inserted block
+    setword(35, int(indoor_temp * 2) << 8)                # indoorTemperature (k=0.5)
+    return bytes(frame)
+
+
 def heat_capable_digital_model() -> dict:
     """A digital model like a heat-pump AC's: the reference unit's attributes plus operationMode 4
     (heat), which our own cooling-only hardware doesn't declare. The model is what authorizes heat,

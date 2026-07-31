@@ -68,7 +68,7 @@ One device per air conditioner, with:
 
 | Entity | What it does |
 |---|---|
-| **Climate** | Temperature setpoint, mode (cool / heat / dry / fan-only / auto), fan speed, swing, on/off |
+| **Climate** | Temperature setpoint, mode (cool / heat / dry / fan-only / auto), fan speed, swing, preset (eco / sleep / boost), on/off |
 | **Indoor temperature** | The AC's own room-temperature reading |
 | **Outdoor temperature** | Outdoor probe, on units that have one |
 | **Switches** | Strong, Quiet, Health, Sleep, Display light |
@@ -83,6 +83,17 @@ One device per air conditioner, with:
 
 Which of these appear depends on your model — the integration only exposes controls it can actually
 drive on your unit, rather than showing buttons that do nothing.
+
+The climate entity also carries **presets** for the three comfort modes — eco, sleep and boost — so
+they work from the thermostat card, from a voice assistant and from `climate.set_preset_mode`, not
+only from the switches. A preset is exclusive: choosing one clears the others in a single write to
+the AC. The switches and the Eco select are still there for the individual fields and for choosing
+which eco level you want.
+
+**Swing** comes as both controls Home Assistant offers. The four-way one (off / up-down / left-right
+/ both) moves the two vanes together and is unchanged; alongside it, `climate.set_swing_horizontal_mode`
+moves the left-right vane on its own, without touching the up-down one. Units whose left-right
+position we haven't confirmed get only the four-way control.
 
 Not everything the air conditioner reports becomes an entity — its **firmware version**, for
 instance, is a property of the unit rather than a reading that changes, so it appears on the device

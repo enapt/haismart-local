@@ -1,6 +1,7 @@
 """Entry setup, coordinator read cycle, entity state, and localKey-rotation reauth."""
 from __future__ import annotations
 
+import asyncio
 import json
 from datetime import timedelta
 
@@ -30,10 +31,12 @@ from custom_components.haismart.const import (
     CONF_UPLUS_ID,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    EXTENDED_MISSES,
     REDISCOVER_COOLDOWN,
     TELEMETRY_MAX_AGE,
     UDISCOVERY_INTERVAL,
     UDISCOVERY_MISSES,
+    UDISCOVERY_RETIRE_INTERVAL,
 )
 
 CLIMATE = "climate.downstairs_ac"
@@ -136,6 +139,9 @@ async def test_unit_without_extended_status_stops_asking(
 ) -> None:
     """A unit that ignores the extended query keeps working, and we stop appending the frame.
 
+    It takes EXTENDED_MISSES cycles rather than one, because a single dropped reply must not be
+    mistaken for a unit that has no extended report at all.
+
     The sensors are still created (so they appear if a firmware update ever answers) but report
     unknown rather than a made-up zero.
     """
@@ -143,16 +149,93 @@ async def test_unit_without_extended_status_stops_asking(
     entry = await _setup(hass)
     assert entry.state is ConfigEntryState.LOADED
     coordinator = entry.runtime_data
-    assert coordinator.supports_extended is False
+    assert coordinator.supports_extended is None             # not concluded yet, one cycle in
 
     power = hass.states.get("sensor.downstairs_ac_power")
     assert power is not None and power.state == "unknown"
+
+    for _ in range(EXTENDED_MISSES - 1):
+        await _tick(hass, freezer)
+    assert coordinator.supports_extended is False
 
     # and the next poll must not ask again
     mock_uss.read.reset_mock()
     await _tick(hass, freezer)
     for call in mock_uss.read.await_args_list:
         assert call.kwargs.get("extra_request") is None
+
+
+def _honest_read(*, answer_from_ask: int = 1, empty: dict | None = None):
+    """A read side effect that returns an extended report ONLY on a cycle that asked for one.
+
+    `mock_uss.read.return_value` cannot express that — it hands back the extended frame whether or
+    not the coordinator appended the query — and that difference is the whole subject of the two
+    tests below. ``answer_from_ask`` is the first ask that gets an answer (earlier ones dropped);
+    ``empty``, if given, is a dict whose truthy ``["now"]`` makes a cycle decode nothing at all.
+    """
+    asks: list[bool] = []
+
+    async def _read(*args, **kwargs):
+        asked = kwargs.get("extra_request") is not None
+        asks.append(asked)
+        if empty is not None and empty.get("now"):
+            return []
+        frames = [make_status_frame()]
+        if asked and sum(asks) >= answer_from_ask:
+            frames.append(make_extended_frame())
+        return frames
+
+    _read.asks = asks
+    return _read
+
+
+async def test_one_missing_extended_reply_does_not_retire_the_query(
+    hass: HomeAssistant, mock_uss, freezer
+) -> None:
+    """A single cycle without an extended report must keep asking.
+
+    Retiring on the first miss meant one dropped reply cost the unit its power, current, frequency,
+    coil, discharge, compressor and fan entities until the entry was reloaded.
+    """
+    mock_uss.read.side_effect = _honest_read(answer_from_ask=2)  # the first reply is dropped
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data
+    assert coordinator.supports_extended is None             # not written off after one miss
+
+    await _tick(hass, freezer)                                # asked again, and answered this time
+    assert coordinator.supports_extended is True
+    power = hass.states.get("sensor.downstairs_ac_power")
+    assert power is not None and float(power.state) == 910.0
+
+
+async def test_empty_cycle_does_not_disprove_a_proven_extended_unit(
+    hass: HomeAssistant, mock_uss, freezer
+) -> None:
+    """A cycle that decodes nothing says nothing about the extended query.
+
+    It is the localKey-rotation window or a dropped push, not the extra frame — so a unit that has
+    already answered one keeps its telemetry: the query pauses for a cycle and is re-armed as soon
+    as status decodes again.
+    """
+    outage = {"now": False}
+    read = _honest_read(empty=outage)
+    mock_uss.read.side_effect = read
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data
+    assert coordinator.supports_extended is True
+
+    outage["now"] = True                                      # nothing decodes this cycle
+    await _tick(hass, freezer)
+    assert coordinator.supports_extended is True              # still believed, only paused
+    assert read.asks[-1] is True
+
+    outage["now"] = False
+    await _tick(hass, freezer)                                # plain read works again -> re-arm
+    assert read.asks[-1] is False
+
+    await _tick(hass, freezer)                                # asking again, and answered
+    assert read.asks[-1] is True
+    assert float(hass.states.get("sensor.downstairs_ac_power").state) == 910.0
 
 
 async def test_powered_off_reports_hvac_off(hass: HomeAssistant, mock_uss) -> None:
@@ -189,6 +272,23 @@ async def test_compact12_family_decodes_and_controls_via_4d5f(
     words = sent[12:-1]
     assert len(words) == 24
     assert words[(12 - 1) * 2 + 1] == 24 - 16  # setpoint packed at word 12
+
+
+async def test_compact12_omits_the_controls_it_cannot_write(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A family whose write map has none of the secondary fields must not get their entities.
+
+    They used to be created regardless, so a compact-12 unit showed five switches and an eco select
+    that read `unknown` forever and raised the moment they were touched.
+    """
+    mock_uss.read.return_value = [make_compact12_frame()]
+    await _setup(hass)
+
+    assert hass.states.get(CLIMATE) is not None                  # the climate entity still works
+    assert hass.states.get("switch.downstairs_ac_sleep") is None
+    assert hass.states.get("switch.downstairs_ac_strong") is None
+    assert hass.states.get("select.downstairs_ac_eco") is None
 
 
 async def test_extended36_family_decodes_and_controls_from_word_20(
@@ -360,6 +460,129 @@ async def test_set_swing_mode_sends_toggle(hass: HomeAssistant, mock_uss) -> Non
     assert _sent_field(mock_uss.send, "windDirectionVertical") == 0x0C
 
 
+def _with_fields(frame: bytes, **fields: int) -> bytes:
+    """A status frame with grSetDAC fields set, packed by the library rather than by hand here."""
+    from haismart_hrdp import uss
+
+    layout = uss.status_layout(frame)
+    words = uss.grsetdac_baseline_from_status(frame)
+    for name, value in fields.items():
+        words = uss.set_grsetdac_field(words, name, value)
+    out = bytearray(frame)
+    out[layout.baseline] = words
+    return bytes(out)
+
+
+async def test_presets_are_offered_for_the_comfort_modes(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """eco / sleep / boost belong on the thermostat, not only on separate switches — that is what
+    makes them reachable from the climate card, a voice assistant and climate.set_preset_mode."""
+    await _setup(hass)
+
+    climate = hass.states.get(CLIMATE)
+    assert climate.attributes["preset_modes"] == ["none", "eco", "sleep", "boost"]
+    assert climate.attributes["preset_mode"] == "none"       # nothing set in the default frame
+
+
+async def test_setting_a_preset_clears_the_others_in_one_group_set(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A preset is exclusive, and a group-set writes the whole attribute vector — so one op sets the
+    chosen field and clears the rest, instead of three switch writes in three sessions."""
+    await _setup(hass)
+    mock_uss.send.baseline = _with_fields(make_status_frame(), ecoMode=7)  # eco L3 currently on
+
+    await hass.services.async_call(
+        "climate", "set_preset_mode", {"entity_id": CLIMATE, "preset_mode": "boost"}, blocking=True
+    )
+    assert mock_uss.send.await_count == 1                    # one session, not one per field
+    assert _sent_field(mock_uss.send, "rapidMode") == 1
+    assert _sent_field(mock_uss.send, "ecoMode") == 0
+    assert _sent_field(mock_uss.send, "silentSleepStatus") == 0
+    # and the rest of the state is preserved, as any group-set must
+    assert _sent_field(mock_uss.send, "operationMode") == 1
+    assert _sent_field(mock_uss.send, "onOffStatus") == 1
+
+    await hass.services.async_call(
+        "climate", "set_preset_mode", {"entity_id": CLIMATE, "preset_mode": "none"}, blocking=True
+    )
+    assert _sent_field(mock_uss.send, "rapidMode") == 0
+    assert _sent_field(mock_uss.send, "ecoMode") == 0
+    assert _sent_field(mock_uss.send, "silentSleepStatus") == 0
+
+
+async def test_preset_reads_back_the_most_assertive_of_several(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The fields are independent on the wire and the switches write them one at a time, so a unit
+    can have two on at once. Home Assistant needs one answer: the most assertive wins."""
+    mock_uss.read.return_value = [_with_fields(make_status_frame(), ecoMode=5)]
+    await _setup(hass)
+    assert hass.states.get(CLIMATE).attributes["preset_mode"] == "eco"
+
+    mock_uss.read.return_value = [
+        _with_fields(make_status_frame(), ecoMode=5, silentSleepStatus=1)
+    ]
+    await hass.config_entries.async_reload(hass.config_entries.async_entries(DOMAIN)[0].entry_id)
+    await hass.async_block_till_done()
+    assert hass.states.get(CLIMATE).attributes["preset_mode"] == "sleep"
+
+
+async def test_presets_absent_on_a_family_that_cannot_write_them(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The compact-12 family's write map has none of these fields, so the control must not appear —
+    an offered preset that can only raise is worse than no preset."""
+    mock_uss.read.return_value = [make_compact12_frame()]
+    await _setup(hass)
+
+    climate = hass.states.get(CLIMATE)
+    assert "preset_modes" not in climate.attributes
+    assert "preset_mode" not in climate.attributes
+
+
+async def test_horizontal_swing_moves_only_that_axis(hass: HomeAssistant, mock_uss) -> None:
+    """The axis-at-a-time control must leave the other vane where the user put it.
+
+    Through the four-way control alone, "start left-right swing" has to be spelled
+    `swing_mode: both`, which also starts the up-down vane.
+    """
+    mock_uss.read.return_value = [make_status_frame(swing=True)]   # vertical swinging
+    await _setup(hass)
+    climate = hass.states.get(CLIMATE)
+    assert climate.attributes["swing_horizontal_modes"] == ["off", "on"]
+    assert climate.attributes["swing_horizontal_mode"] == "off"
+    assert climate.attributes["swing_mode"] == "vertical"          # the old control is unchanged
+
+    mock_uss.send.baseline = make_status_frame(swing=True)
+    await hass.services.async_call(
+        "climate",
+        "set_swing_horizontal_mode",
+        {"entity_id": CLIMATE, "swing_horizontal_mode": "on"},
+        blocking=True,
+    )
+    assert _sent_field(mock_uss.send, "windDirectionHorizontal") == 0x07
+    # the vertical nibble goes back exactly as the AC reported it (8 = the swinging flag), rather
+    # than being rewritten to the 0x0c the encoder uses to turn it on
+    assert _sent_field(mock_uss.send, "windDirectionVertical") == 0x08
+
+
+async def test_horizontal_swing_absent_when_the_family_omits_it(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """extended-46 leaves windDirectionHorizontal out of its write map on purpose (the position is
+    not settled), so the control must not be offered on that family."""
+    from conftest import make_extended46_frame
+
+    mock_uss.read.return_value = [make_extended46_frame()]
+    await _setup(hass)
+
+    climate = hass.states.get(CLIMATE)
+    assert "swing_horizontal_modes" not in climate.attributes
+    assert "swing_horizontal_mode" not in climate.attributes
+
+
 async def test_switch_toggles_confirmed_bit(hass: HomeAssistant, mock_uss) -> None:
     await _setup(hass)
     await hass.services.async_call(
@@ -452,6 +675,74 @@ async def test_control_falls_back_to_read_when_reply_has_no_status(
     assert hass.states.get(CLIMATE).attributes["temperature"] == 26.0
     # one read: the post-op fallback confirmation cycle (the baseline came from the op's own push)
     assert mock_uss.read.await_count == reads_after_setup + 1
+
+
+async def test_concurrent_commands_never_share_the_session(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Two commands at once must not open two uSS sessions.
+
+    Applying a scene fires its entities concurrently, so a scene that carries the thermostat *and*
+    one of the switches sends two control ops with nothing in between. These units accept one
+    connection at a time, and each op seeds its group-set from the status the AC pushes on its OWN
+    connection — so an overlap does not half-apply, it REVERTS: the second baseline predates the
+    first change and a group-set rewrites the whole attribute vector.
+    """
+    await _setup(hass)
+    depth = peak = 0
+    frames: list[bytes] = []
+
+    async def _slow_op(*args, **kwargs):
+        nonlocal depth, peak
+        depth += 1
+        peak = max(peak, depth)
+        await asyncio.sleep(0.01)      # an unserialized second op would land inside this window
+        frames.append(kwargs["build_frame"](mock_uss.send.baseline))
+        depth -= 1
+        return [make_status_frame()]
+
+    mock_uss.send.side_effect = _slow_op
+    await asyncio.gather(
+        hass.services.async_call(
+            "climate", "set_temperature", {"entity_id": CLIMATE, "temperature": 22}, blocking=True
+        ),
+        hass.services.async_call(
+            "switch", "turn_on", {"entity_id": "switch.downstairs_ac_sleep"}, blocking=True
+        ),
+    )
+    assert peak == 1            # one session at a time
+    assert len(frames) == 2     # and neither command was dropped to get there
+
+
+async def test_a_command_waits_for_the_poll_holding_the_session(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A command that lands mid-poll queues behind it instead of opening a second connection."""
+    entry = await _setup(hass)
+    order: list[str] = []
+    reading = asyncio.Event()
+
+    async def _slow_read(*args, **kwargs):
+        order.append("read-start")
+        reading.set()
+        await asyncio.sleep(0.01)
+        order.append("read-end")
+        return [make_status_frame()]
+
+    async def _op(*args, **kwargs):
+        order.append("op")
+        kwargs["build_frame"](mock_uss.send.baseline)
+        return [make_status_frame(target_temp=22)]
+
+    mock_uss.read.side_effect = _slow_read
+    mock_uss.send.side_effect = _op
+    poll = hass.async_create_task(entry.runtime_data.async_refresh())
+    await reading.wait()
+    await hass.services.async_call(
+        "climate", "set_temperature", {"entity_id": CLIMATE, "temperature": 22}, blocking=True
+    )
+    await poll
+    assert order == ["read-start", "read-end", "op"]
 
 
 async def test_control_keeps_the_telemetry_readings(hass: HomeAssistant, mock_uss) -> None:
@@ -1199,12 +1490,12 @@ async def test_silent_unit_reads_unknown_not_disconnected(
     assert state.attributes["raw_state"] is None
 
 
-async def test_cloud_query_is_throttled_and_then_abandoned(
+async def test_cloud_query_is_throttled_and_then_backed_off(
     hass: HomeAssistant, mock_uss, freezer
 ) -> None:
     """Two behaviours that keep this cheap: the query runs on its own slow cadence rather than every
     status read (the flag only moves on a ~4-minute timescale), and a unit that stays silent while
-    demonstrably reachable stops being asked at all."""
+    demonstrably reachable stops being asked on that cadence."""
     await _setup(hass)
     assert mock_uss.cloud.await_count == 1
 
@@ -1216,10 +1507,46 @@ async def test_cloud_query_is_throttled_and_then_abandoned(
         freezer.tick(timedelta(seconds=UDISCOVERY_INTERVAL + 1))
         await _tick(hass, freezer)
     # the successful query at setup, then exactly UDISCOVERY_MISSES silent ones, then it stops
+    # asking on the minute cadence (see the retry test below for what happens an hour later)
     assert mock_uss.cloud.await_count == 1 + UDISCOVERY_MISSES
 
     # ...and the entity says "unknown" rather than inventing a state
     assert hass.states.get(CLOUD).state == "unknown"
+
+
+async def test_a_silent_unit_is_retried_an_hour_later(
+    hass: HomeAssistant, mock_uss, freezer
+) -> None:
+    """Backing off must not mean giving up for the rest of the run.
+
+    Three lost datagrams in a row is something a busy access point does, and a module can gain the
+    capability in a firmware update — so an hour later it is asked again, and an answer restores the
+    sensor, the firmware version and the cloud-free uPlusId learning.
+    """
+    from haismart_hrdp.udiscovery import DeviceInfo
+
+    mock_uss.cloud.return_value = None
+    entry = await _setup(hass)
+    for _ in range(UDISCOVERY_MISSES + 1):
+        freezer.tick(timedelta(seconds=UDISCOVERY_INTERVAL + 1))
+        await _tick(hass, freezer)
+    assert entry.runtime_data.supports_udiscovery is False
+    asked_when_given_up = mock_uss.cloud.await_count
+
+    # nothing more on the minute cadence...
+    freezer.tick(timedelta(seconds=UDISCOVERY_INTERVAL + 1))
+    await _tick(hass, freezer)
+    assert mock_uss.cloud.await_count == asked_when_given_up
+
+    # ...but an hour later it tries again, and the unit is answering now
+    mock_uss.cloud.return_value = DeviceInfo(
+        device_id="A1B2C3D4E5F6", host="192.168.1.50", cloud_state=1000, firmware=("1.2.3",)
+    )
+    freezer.tick(timedelta(seconds=UDISCOVERY_RETIRE_INTERVAL))
+    await _tick(hass, freezer)
+    assert mock_uss.cloud.await_count == asked_when_given_up + 1
+    assert entry.runtime_data.supports_udiscovery is True
+    assert hass.states.get(CLOUD).state == "on"
 
 
 async def test_cloud_query_failure_never_breaks_polling(
@@ -1346,6 +1673,36 @@ async def test_firmware_reaches_the_device_registry(hass: HomeAssistant, mock_us
     assert device.sw_version == "e_4.3.00 / R_6.0.01"
 
 
+async def test_firmware_learned_late_still_reaches_the_device_page(
+    hass: HomeAssistant, mock_uss, freezer
+) -> None:
+    """Firmware that arrives after the entities exist must still land on the device page.
+
+    DeviceInfo is built once per entity, so a unit whose first discovery query went unanswered used
+    to show no firmware version for the rest of the run even once it started answering.
+    """
+    from haismart_hrdp.udiscovery import DeviceInfo
+    from homeassistant.helpers import device_registry as dr
+
+    mock_uss.cloud.return_value = None                       # silent at setup
+    await _setup(hass)
+    registry = dr.async_get(hass)
+    device = registry.async_get_device(identifiers={(DOMAIN, "A1B2C3D4E5F6")})
+    assert device is not None and device.sw_version is None
+
+    mock_uss.cloud.return_value = DeviceInfo(
+        device_id="A1B2C3D4E5F6",
+        host="192.168.1.50",
+        firmware=("e_4.3.00", "R_6.0.01"),
+        cloud_state=1000,
+    )
+    freezer.tick(timedelta(seconds=UDISCOVERY_INTERVAL + 1))
+    await _tick(hass, freezer)
+
+    device = registry.async_get_device(identifiers={(DOMAIN, "A1B2C3D4E5F6")})
+    assert device.sw_version == "e_4.3.00 / R_6.0.01"
+
+
 async def test_localkey_backup_sensor_carries_the_uplus_id(
     hass: HomeAssistant, mock_uss, entity_registry
 ) -> None:
@@ -1389,6 +1746,11 @@ async def test_ac_that_moved_on_dhcp_is_followed_automatically(
     assert entry.runtime_data.host == "192.168.1.77"
     # recovered inside the same cycle: the user never sees it go unavailable
     assert hass.states.get(CLIMATE).state == "cool"
+    # ...and the device page's link follows too, rather than pointing at the address it left
+    from homeassistant.helpers import device_registry as dr
+
+    device = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, "A1B2C3D4E5F6")})
+    assert device.configuration_url == "http://192.168.1.77"
 
 
 async def test_rediscovery_leaves_host_alone_when_nothing_matches(

@@ -44,7 +44,15 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator = entry.runtime_data
-    async_add_entities(HaismartSwitch(coordinator, desc) for desc in SWITCHES)
+    # Only the toggles this unit's report family can actually write. The classic family has all
+    # five; compact-12 has none of them, and creating a switch there produced a control that read
+    # `unknown` forever and raised the moment it was touched. Same rule the readings follow: expose
+    # what the unit really has, not a button that does nothing.
+    async_add_entities(
+        HaismartSwitch(coordinator, desc)
+        for desc in SWITCHES
+        if coordinator.supports_field(desc.field)
+    )
 
 
 class HaismartSwitch(HaismartEntity, SwitchEntity):

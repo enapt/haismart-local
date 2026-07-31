@@ -211,6 +211,19 @@
           "level2": "节能 6",
           "level3": "节能 7"
         }
+      },
+      "vane_horizontal": {
+        "name": "左右风板",
+        "state": {
+          "fixed": "固定",
+          "position_2": "位置2",
+          "position_3": "位置3",
+          "position_4": "位置4",
+          "position_5": "位置5",
+          "position_6": "位置6",
+          "position_7": "位置7",
+          "auto": "自动（摆动）"
+        }
       }
     },
     "binary_sensor": {

@@ -211,6 +211,19 @@
           "level2": "इको 6",
           "level3": "इको 7"
         }
+      },
+      "vane_horizontal": {
+        "name": "क्षैतिज वेन",
+        "state": {
+          "fixed": "स्थिर",
+          "position_2": "स्थिति 2",
+          "position_3": "स्थिति 3",
+          "position_4": "स्थिति 4",
+          "position_5": "स्थिति 5",
+          "position_6": "स्थिति 6",
+          "position_7": "स्थिति 7",
+          "auto": "स्वचालित (स्विंग)"
+        }
       }
     },
     "binary_sensor": {

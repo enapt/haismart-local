@@ -28,6 +28,7 @@ def make_status_frame(
     mode_code: int = 1,  # STD operationMode (1 = cool on AAC1UKZ01)
     fan_code: int = 5,  # STD windSpeed (5 = auto)
     swing: bool = True,
+    vane_h: int = 0,  # left-right vane POSITION code (0 = fixed .. 7 = auto), word 4 bits 0-2
 ) -> bytes:
     """Build a synthetic AAC1UKZ01 127-byte full-status report (offsets per uss.py)."""
     frame = bytearray(127)
@@ -39,6 +40,7 @@ def make_status_frame(
     frame[93] = 0x0c if swing else 0x00
     frame[94] = (mode_code << 5) | fan_code
     frame[97] = 1 if power else 0
+    frame[99] = vane_h                        # word 4 low byte; eco (bits 3-5) stays 0
     frame[104] = int(indoor_temp * 2)
     frame[106] = outdoor_temp + 64
     return bytes(frame)
@@ -203,6 +205,23 @@ def heat_capable_digital_model() -> dict:
             },
         ]
     }
+
+
+def vane_positions_digital_model(codes: tuple[int, ...] = (0, 1, 2, 3, 4, 5, 6, 7)) -> dict:
+    """The model above, plus the left-right vane's published stops.
+
+    A unit that lists all eight names position one (fixed) through position eight (auto); one that
+    lists only ``(0, 7)`` has the two ends and nothing in between. The vane's raw wire value is the
+    code the model lists, which is what lets the model authorize a position.
+    """
+    model = heat_capable_digital_model()
+    model["attributes"].append({
+        "name": "windDirectionHorizontal", "writable": True,
+        "valueRange": {"type": "LIST", "dataList": [
+            {"data": str(code), "desc": f"左右摆位置{code + 1}"} for code in codes
+        ]},
+    })
+    return model
 
 
 if _HA_AVAILABLE:

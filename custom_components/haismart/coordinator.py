@@ -923,6 +923,26 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return name in wm.write_fields
         return name in GRSETDAC_FIELDS
 
+    def field_codes(self, name: str) -> frozenset[int]:
+        """The raw codes this unit's own digital model authorizes for ``name``, or empty.
+
+        Only the fields the encoder lets a model widen (:data:`GRSETDAC_MODEL_AUTHORIZED`) have such
+        a list, and only on the classic family: every other family maps the vane as a plain on/off
+        and would pack any position as its auto code, so a control offering the positions there
+        would quietly do something else. Empty is also the answer with no stored model (the manual
+        onboarding path) — nothing then authorizes more than the encoder's own values.
+
+        An entity that offers a *choice* of codes asks here for the list, rather than assuming the
+        set one unit happens to have. A code too wide for the field it would be packed into is left
+        out: the encoder refuses it, so offering it would only ever produce a control that fails.
+        """
+        if self._wire_model is not None or name not in GRSETDAC_MODEL_AUTHORIZED:
+            return frozenset()
+        width = GRSETDAC_FIELDS[name][2]
+        return frozenset(
+            code for code in self.model_codes.get(name) or () if code < (1 << width)
+        )
+
     def current_field(self, name: str) -> int | None:
         """The live raw EPP value of a grSetDAC field (for the toggle/select entities), or None.
 

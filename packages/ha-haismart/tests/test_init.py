@@ -12,6 +12,7 @@ from conftest import (
     make_extended36_frame,
     make_extended_frame,
     make_status_frame,
+    vane_positions_digital_model,
 )
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
 from homeassistant.core import HomeAssistant
@@ -40,6 +41,7 @@ from custom_components.haismart.const import (
 )
 
 CLIMATE = "climate.downstairs_ac"
+VANE_H = "select.downstairs_ac_left_right_vane"
 
 
 def _entry(**overrides) -> MockConfigEntry:
@@ -605,6 +607,77 @@ async def test_eco_select_sends_level(hass: HomeAssistant, mock_uss) -> None:
         {"entity_id": "select.downstairs_ac_eco", "option": "level2"}, blocking=True,
     )
     assert _sent_field(mock_uss.send, "ecoMode") == 6  # level2 -> code 6
+
+
+async def test_vane_positions_come_from_the_units_own_model(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The left-right vane is a position, not a flag, so where a unit's model publishes the stops
+    they can be selected. Only the two ends have ever been seen written, so the model is what
+    authorizes the rest — the same mechanism heat mode uses."""
+    mock_uss.read.return_value = [make_status_frame(vane_h=4)]  # parked at position five
+    entry = _entry(digital_model=json.dumps(vane_positions_digital_model()))
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    vane = hass.states.get(VANE_H)
+    assert vane.attributes["options"] == [
+        "fixed", "position_2", "position_3", "position_4",
+        "position_5", "position_6", "position_7", "auto",
+    ]
+    assert vane.state == "position_5"                       # code 4 is the model's position five
+    # a parked vane is not a swinging one, and the climate control still says so
+    assert hass.states.get(CLIMATE).attributes["swing_horizontal_mode"] == "off"
+
+    await hass.services.async_call(
+        "select", "select_option", {"entity_id": VANE_H, "option": "position_3"}, blocking=True,
+    )
+    assert _sent_field(mock_uss.send, "windDirectionHorizontal") == 2
+
+
+async def test_vane_positions_not_offered_without_them(hass: HomeAssistant, mock_uss) -> None:
+    """Two cases that must not get the entity: a unit whose model lists only the two ends (the
+    swing control already expresses those), and one onboarded with no model at all (nothing then
+    authorizes a position)."""
+    entry = _entry(digital_model=json.dumps(vane_positions_digital_model(codes=(0, 7))))
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert hass.states.get(VANE_H) is None
+    await hass.config_entries.async_unload(entry.entry_id)
+
+    await _setup(hass)
+    assert hass.states.get(VANE_H) is None
+
+
+async def test_vane_positions_leave_out_a_code_the_field_cannot_hold(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The vane's field is three bits wide. A model listing something wider describes an attribute
+    this field is not, so that code is left out rather than offered as an option that could only
+    ever fail on the way to the unit."""
+    entry = _entry(digital_model=json.dumps(vane_positions_digital_model(codes=(0, 4, 7, 9))))
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get(VANE_H).attributes["options"] == ["fixed", "position_5", "auto"]
+
+
+async def test_vane_positions_not_offered_where_they_cannot_be_placed(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A family that maps this vane as a plain on/off would pack any position as its auto code, so
+    the entity must not appear there however many stops the model publishes."""
+    mock_uss.read.return_value = [make_extended36_frame()]
+    entry = _entry(digital_model=json.dumps(vane_positions_digital_model()))
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get(CLIMATE) is not None                  # the unit still works
+    assert hass.states.get(VANE_H) is None
 
 
 async def test_control_confirms_from_op_reply_without_extra_read(

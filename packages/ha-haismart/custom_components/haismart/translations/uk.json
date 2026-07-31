@@ -211,6 +211,19 @@
           "level2": "Еко 6",
           "level3": "Еко 7"
         }
+      },
+      "vane_horizontal": {
+        "name": "Горизонтальна заслінка",
+        "state": {
+          "fixed": "Фіксовано",
+          "position_2": "Позиція 2",
+          "position_3": "Позиція 3",
+          "position_4": "Позиція 4",
+          "position_5": "Позиція 5",
+          "position_6": "Позиція 6",
+          "position_7": "Позиція 7",
+          "auto": "Авто (гойдання)"
+        }
       }
     },
     "binary_sensor": {

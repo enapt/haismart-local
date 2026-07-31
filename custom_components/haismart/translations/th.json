@@ -211,6 +211,19 @@
           "level2": "Eco 6",
           "level3": "Eco 7"
         }
+      },
+      "vane_horizontal": {
+        "name": "บานเกล็ดซ้าย-ขวา",
+        "state": {
+          "fixed": "คงที่",
+          "position_2": "ตำแหน่ง 2",
+          "position_3": "ตำแหน่ง 3",
+          "position_4": "ตำแหน่ง 4",
+          "position_5": "ตำแหน่ง 5",
+          "position_6": "ตำแหน่ง 6",
+          "position_7": "ตำแหน่ง 7",
+          "auto": "อัตโนมัติ (ส่าย)"
+        }
       }
     },
     "binary_sensor": {

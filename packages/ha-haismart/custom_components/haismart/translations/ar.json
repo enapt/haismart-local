@@ -211,6 +211,19 @@
           "level2": "اقتصادي 6",
           "level3": "اقتصادي 7"
         }
+      },
+      "vane_horizontal": {
+        "name": "الريشة الأفقية",
+        "state": {
+          "fixed": "ثابتة",
+          "position_2": "الوضع 2",
+          "position_3": "الوضع 3",
+          "position_4": "الوضع 4",
+          "position_5": "الوضع 5",
+          "position_6": "الوضع 6",
+          "position_7": "الوضع 7",
+          "auto": "تلقائي (تأرجح)"
+        }
       }
     },
     "binary_sensor": {

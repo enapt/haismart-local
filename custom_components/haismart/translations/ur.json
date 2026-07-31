@@ -211,6 +211,19 @@
           "level2": "ایکو 6",
           "level3": "ایکو 7"
         }
+      },
+      "vane_horizontal": {
+        "name": "افقی پنکھڑی",
+        "state": {
+          "fixed": "ثابت",
+          "position_2": "پوزیشن 2",
+          "position_3": "پوزیشن 3",
+          "position_4": "پوزیشن 4",
+          "position_5": "پوزیشن 5",
+          "position_6": "پوزیشن 6",
+          "position_7": "پوزیشن 7",
+          "auto": "خودکار (جھولنا)"
+        }
       }
     },
     "binary_sensor": {

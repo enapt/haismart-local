@@ -211,6 +211,19 @@
           "level2": "Eco 6",
           "level3": "Eco 7"
         }
+      },
+      "vane_horizontal": {
+        "name": "Vízszintes lamella",
+        "state": {
+          "fixed": "Rögzített",
+          "position_2": "2. pozíció",
+          "position_3": "3. pozíció",
+          "position_4": "4. pozíció",
+          "position_5": "5. pozíció",
+          "position_6": "6. pozíció",
+          "position_7": "7. pozíció",
+          "auto": "Automatikus (lengés)"
+        }
       }
     },
     "binary_sensor": {

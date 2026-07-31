@@ -211,6 +211,19 @@
           "level2": "اکو ۶",
           "level3": "اکو ۷"
         }
+      },
+      "vane_horizontal": {
+        "name": "پره افقی",
+        "state": {
+          "fixed": "ثابت",
+          "position_2": "موقعیت 2",
+          "position_3": "موقعیت 3",
+          "position_4": "موقعیت 4",
+          "position_5": "موقعیت 5",
+          "position_6": "موقعیت 6",
+          "position_7": "موقعیت 7",
+          "auto": "خودکار (نوسان)"
+        }
       }
     },
     "binary_sensor": {

@@ -1018,11 +1018,38 @@ def test_horizontal_swing_refuses_unobserved_values():
 
 
 def test_horizontal_swing_enum_matches_the_digital_model_codes():
-    # the model lists exactly two codes: 0 = fixed, 7 = auto. Unlike windDirectionVertical, the raw
-    # EPP value equals the STD code, which is why the coordinator can gate it against valueRange.
+    # 0 = fixed and 7 = auto are the two codes ever seen written, and the only two the encoder
+    # allows on its own. Unlike windDirectionVertical, the raw EPP value equals the STD code, which
+    # is why the coordinator can gate it against valueRange -- and why the model may widen it.
     assert uss.GRSETDAC_ENUMS["windDirectionHorizontal"] == {"off": 0x00, "on": 0x07}
     assert uss.GRSETDAC_ALLOWED_VALUES["windDirectionHorizontal"] == {0x00, 0x07}
     assert uss.GRSETDAC_FIELDS["windDirectionHorizontal"] == (4, 0, 3)
+    assert "windDirectionHorizontal" in uss.GRSETDAC_MODEL_AUTHORIZED
+
+
+def test_model_declared_vane_positions_are_encodable():
+    """The stops between fixed and auto are the device model's to authorize.
+
+    A model that lists eight codes for this vane describes eight real positions, and the field's
+    raw value is the code the model names -- so a unit can be pointed at one of them without the
+    encoder having ever seen that code written. A code the model does not list stays refused.
+    """
+    base = uss.grsetdac_baseline_from_status(STATUS_125)
+    declared = {0, 1, 2, 3, 4, 5, 6, 7}
+    with pytest.raises(ValueError):
+        uss.set_grsetdac_field(base, "windDirectionHorizontal", 4)   # no model, no position
+    parked = uss.set_grsetdac_field(base, "windDirectionHorizontal", 4, model_values=declared)
+    assert (parked[6] << 8) | parked[7] == 0x0004
+    assert parked[:6] == base[:6] and parked[8:] == base[8:]   # nothing outside word 4 moved
+
+    # a vane parked at a position is NOT sweeping, and eco (same word) is untouched
+    report = STATUS_125[:92] + parked + STATUS_125[92 + len(parked):]
+    state = uss.parse_full_status(report)
+    assert state["swing_horizontal"] is False
+    assert state["eco"] == 0
+
+    with pytest.raises(ValueError):
+        uss.set_grsetdac_field(base, "windDirectionHorizontal", 5, model_values={0, 4, 7})
 
 
 def test_check_hello_resp_rejects_a_refused_session():

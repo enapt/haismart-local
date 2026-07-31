@@ -211,6 +211,19 @@
           "level2": "Eko 6",
           "level3": "Eko 7"
         }
+      },
+      "vane_horizontal": {
+        "name": "Yatay kanat",
+        "state": {
+          "fixed": "Sabit",
+          "position_2": "Konum 2",
+          "position_3": "Konum 3",
+          "position_4": "Konum 4",
+          "position_5": "Konum 5",
+          "position_6": "Konum 6",
+          "position_7": "Konum 7",
+          "auto": "Otomatik (salınım)"
+        }
       }
     },
     "binary_sensor": {

@@ -211,6 +211,19 @@
           "level2": "Eco 6",
           "level3": "Eco 7"
         }
+      },
+      "vane_horizontal": {
+        "name": "Vandret lamel",
+        "state": {
+          "fixed": "Fast",
+          "position_2": "Position 2",
+          "position_3": "Position 3",
+          "position_4": "Position 4",
+          "position_5": "Position 5",
+          "position_6": "Position 6",
+          "position_7": "Position 7",
+          "auto": "Automatisk (sving)"
+        }
       }
     },
     "binary_sensor": {

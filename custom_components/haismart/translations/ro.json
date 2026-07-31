@@ -211,6 +211,19 @@
           "level2": "Eco 6",
           "level3": "Eco 7"
         }
+      },
+      "vane_horizontal": {
+        "name": "Clapetă orizontală",
+        "state": {
+          "fixed": "Fixă",
+          "position_2": "Poziția 2",
+          "position_3": "Poziția 3",
+          "position_4": "Poziția 4",
+          "position_5": "Poziția 5",
+          "position_6": "Poziția 6",
+          "position_7": "Poziția 7",
+          "auto": "Automat (baleiaj)"
+        }
       }
     },
     "binary_sensor": {

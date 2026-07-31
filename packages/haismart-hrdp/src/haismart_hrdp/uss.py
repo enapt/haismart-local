@@ -494,18 +494,30 @@ GRSETDAC_ALLOWED_VALUES = {
     "operationMode": {0, 1, 2, 4, 6},   # 4 = heat; see GRSETDAC_ENUMS
     "windSpeed":     {1, 2, 3, 5},
     "windDirectionVertical": {0x00, 0x0c},   # off / on (the app's exact on-nibble)
-    "windDirectionHorizontal": {0x00, 0x07}, # fixed / auto (the model's only two codes)
+    "windDirectionHorizontal": {0x00, 0x07}, # the two codes ever seen written: fixed / auto. The
+                                             # positions between them come from the device's own
+                                             # model — see GRSETDAC_MODEL_AUTHORIZED.
     "ecoMode":               {0, 5, 6, 7},   # off / three levels (5/6/7)
 }
 
 # Fields whose value space the DEVICE'S OWN digital model may extend beyond the observed set above
-# (pass the model's codes as ``model_values``). Both are plain STD enums that the model describes
-# attribute-for-attribute (``valueRange`` LIST) and whose STD code IS the raw EPP value — the wire
-# model maps stdValue -> eppValue 1:1 for them — so a mode a heat-pump unit has and ours doesn't is
-# taken from that unit's model rather than guessed. The device-specific fields are deliberately NOT
-# here: no model attribute describes ``windDirectionVertical``'s 0x0c toggle or this unit's
-# repurposed 3-bit ``ecoMode``, so those stay pinned to the observed values alone.
-GRSETDAC_MODEL_AUTHORIZED = frozenset({"operationMode", "windSpeed"})
+# (pass the model's codes as ``model_values``). All three are plain STD enums that the model
+# describes attribute-for-attribute (``valueRange`` LIST) and whose STD code IS the raw EPP value —
+# the wire model maps stdValue -> eppValue 1:1 for them — so a mode a heat-pump unit has and ours
+# doesn't is taken from that unit's model rather than guessed.
+#
+# ``windDirectionHorizontal`` qualifies on the same terms: the model lists eight codes (0 = position
+# one/fixed .. 7 = position eight/auto) and the field's raw wire value IS that code — a unit reports
+# the vane parked at position five as the same 4 the model names. So a unit that publishes
+# intermediate vane positions can be pointed at one, authorized by its own model rather than by
+# inference.
+# ``windDirectionVertical`` does NOT qualify and must not be added: its on-nibble is 0x0c while the
+# model calls auto 8, so the model's codes are not this field's wire values — pointing that vane
+# needs a captured write. Nor does ``ecoMode``: no model attribute describes this unit's repurposed
+# 3-bit field. Both stay pinned to the observed values alone.
+GRSETDAC_MODEL_AUTHORIZED = frozenset(
+    {"operationMode", "windSpeed", "windDirectionHorizontal"}
+)
 
 GRSETDAC_ENUMS = {  # semantic token -> raw EPP value, for the multi-value fields
     # operationMode 4 = heat. Absent originally because the reference unit (AAC1UKZ01 /

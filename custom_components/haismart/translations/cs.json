@@ -211,6 +211,19 @@
           "level2": "Eko 6",
           "level3": "Eko 7"
         }
+      },
+      "vane_horizontal": {
+        "name": "Vodorovná lamela",
+        "state": {
+          "fixed": "Pevná",
+          "position_2": "Poloha 2",
+          "position_3": "Poloha 3",
+          "position_4": "Poloha 4",
+          "position_5": "Poloha 5",
+          "position_6": "Poloha 6",
+          "position_7": "Poloha 7",
+          "auto": "Automaticky (kývání)"
+        }
       }
     },
     "binary_sensor": {

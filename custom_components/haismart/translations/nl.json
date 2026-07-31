@@ -211,6 +211,19 @@
           "level2": "Eco 6",
           "level3": "Eco 7"
         }
+      },
+      "vane_horizontal": {
+        "name": "Horizontale lamel",
+        "state": {
+          "fixed": "Vast",
+          "position_2": "Positie 2",
+          "position_3": "Positie 3",
+          "position_4": "Positie 4",
+          "position_5": "Positie 5",
+          "position_6": "Positie 6",
+          "position_7": "Positie 7",
+          "auto": "Automatisch (zwenken)"
+        }
       }
     },
     "binary_sensor": {

@@ -211,6 +211,19 @@
           "level2": "Eco 6",
           "level3": "Eco 7"
         }
+      },
+      "vane_horizontal": {
+        "name": "Cánh gió trái-phải",
+        "state": {
+          "fixed": "Cố định",
+          "position_2": "Vị trí 2",
+          "position_3": "Vị trí 3",
+          "position_4": "Vị trí 4",
+          "position_5": "Vị trí 5",
+          "position_6": "Vị trí 6",
+          "position_7": "Vị trí 7",
+          "auto": "Tự động (đảo gió)"
+        }
       }
     },
     "binary_sensor": {

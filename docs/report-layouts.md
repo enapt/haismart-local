@@ -44,6 +44,7 @@ a confident but invented value.
 | fault code + last-changed-by | ✅ | — | ✅ | ✅ |
 | fault bitmap | ✅ (its own frame, family-independent) | ✅ | ✅ | ✅ |
 | self-clean | ✅ | ❌ | ✅ | ❌ |
+| left-right vane positions | ✅ | ❌ | ❌ | ❌ |
 
 Heat capability, the fault code and last-changed-by all sit in the sensor block, one and two words
 past the outdoor reading, so they follow wherever that lands. The fault bitmap arrives in a separate
@@ -55,6 +56,12 @@ there and the self-clean bit clear on units that were not cleaning. It does **no
 extended-46, which places its vane outside that displacement, so its control block is not the same
 shape; nor on compact-12, whose map differs throughout. One report from either family taken while a
 cycle is running would settle it.
+
+**Left-right vane positions** — a `select` offering the stops the vane can hold, rather than just
+sweeping or not — are classic-only, and for a different reason: the other families pack that vane as
+a plain on/off, so a position sent to one of them would be applied as its auto code. The positions
+themselves come from the device's own model, so even on classic the entity appears only for a unit
+that publishes more than the two ends.
 
 ### classic
 

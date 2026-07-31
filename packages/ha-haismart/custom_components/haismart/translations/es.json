@@ -211,6 +211,19 @@
           "level2": "Eco 6",
           "level3": "Eco 7"
         }
+      },
+      "vane_horizontal": {
+        "name": "Lama horizontal",
+        "state": {
+          "fixed": "Fija",
+          "position_2": "Posición 2",
+          "position_3": "Posición 3",
+          "position_4": "Posición 4",
+          "position_5": "Posición 5",
+          "position_6": "Posición 6",
+          "position_7": "Posición 7",
+          "auto": "Automático (oscilación)"
+        }
       }
     },
     "binary_sensor": {

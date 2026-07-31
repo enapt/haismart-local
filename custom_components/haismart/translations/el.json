@@ -211,6 +211,19 @@
           "level2": "Eco 6",
           "level3": "Eco 7"
         }
+      },
+      "vane_horizontal": {
+        "name": "Οριζόντιο πτερύγιο",
+        "state": {
+          "fixed": "Σταθερό",
+          "position_2": "Θέση 2",
+          "position_3": "Θέση 3",
+          "position_4": "Θέση 4",
+          "position_5": "Θέση 5",
+          "position_6": "Θέση 6",
+          "position_7": "Θέση 7",
+          "auto": "Αυτόματο (αιώρηση)"
+        }
       }
     },
     "binary_sensor": {

@@ -211,6 +211,19 @@
           "level2": "Эко 6",
           "level3": "Эко 7"
         }
+      },
+      "vane_horizontal": {
+        "name": "Горизонтальная заслонка",
+        "state": {
+          "fixed": "Фиксировано",
+          "position_2": "Позиция 2",
+          "position_3": "Позиция 3",
+          "position_4": "Позиция 4",
+          "position_5": "Позиция 5",
+          "position_6": "Позиция 6",
+          "position_7": "Позиция 7",
+          "auto": "Авто (качание)"
+        }
       }
     },
     "binary_sensor": {

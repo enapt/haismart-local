@@ -211,6 +211,19 @@
           "level2": "Eco 6",
           "level3": "Eco 7"
         }
+      },
+      "vane_horizontal": {
+        "name": "Aletta orizzontale",
+        "state": {
+          "fixed": "Fissa",
+          "position_2": "Posizione 2",
+          "position_3": "Posizione 3",
+          "position_4": "Posizione 4",
+          "position_5": "Posizione 5",
+          "position_6": "Posizione 6",
+          "position_7": "Posizione 7",
+          "auto": "Automatico (oscillazione)"
+        }
       }
     },
     "binary_sensor": {

@@ -20,6 +20,9 @@
     "select": {
       "eco": {
         "default": "mdi:leaf-circle"
+      },
+      "vane_horizontal": {
+        "default": "mdi:arrow-left-right"
       }
     },
     "sensor": {

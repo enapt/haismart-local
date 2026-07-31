@@ -228,6 +228,25 @@ sets all three in a single group-set; a unit commanded from its handset sets the
 Worth knowing before reading a control as a single bit, or writing one: a group-set carries the whole
 word block, so a partial write leaves the rest of a multi-bit setting at whatever the seed held.
 
+### Controls that are handset-side only
+
+Not every button on a handset reaches the unit. Stepping through a handset's full set and watching the
+report shows that an **"I feel"** button and the **timer** change nothing at all — no control bit, no
+change to the reported room temperature. The "I feel" style feature is the handset controlling to its
+own sensor, so it never has to tell the unit anything, and this device's published attribute set
+contains no timer fields either. Both display an icon on the handset regardless, so an owner will
+reasonably expect them in an integration; there is nothing to read.
+
+### Turbo and quiet are one control
+
+They occupy separate bits but the unit treats them as mutually exclusive: engaging turbo clears quiet
+in the same report, and a handset typically cycles turbo -> quiet -> off through a single button.
+Engaging turbo **also parks the vertical vane at centre**, and the vane stays there when turbo is
+cancelled.
+
+Both are worth knowing before writing either: a group-set carries the whole word block, so a change
+that looks like one bit can leave the unit in a state the owner did not ask for.
+
 ### Heat capability
 
 Bit 7 of the byte after the outdoor reading is set on a cooling-only unit. The unit states this

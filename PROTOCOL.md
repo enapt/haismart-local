@@ -203,9 +203,30 @@ five, 8 = auto — reaching the wire as 0/2/4/6/8/10 and 12. Horizontal: 0 = fix
 parked low.
 
 Some handset buttons are vane positions rather than separate settings. A "health airflow" button, for
-instance, simply moves the vertical vane to wire code 3 — there is no flag for it anywhere else in
-the report. That is the practical reason the field has to be read as a position: a unit sitting on
-one of these is not sweeping, however the button was labelled.
+instance, cycles the vertical vane between wire codes 1, 3 and 12 — there is no flag for it anywhere
+else in the report. Note it also locks out the ordinary louver control until the cycle returns to
+auto, so a unit can appear unresponsive to the position button while it is engaged.
+
+Stepping a unit through every position gives, on the wire: vertical **1, 2, 3, 4, 6, 8** and auto
+**12**; horizontal **0, 3, 4, 5, 6** and auto **7**. Vertical **8** is the vane parked pointing down
+and horizontal **3–6** are ordinary parked positions — none of them sweeping. Both are worth spelling
+out because they are exactly the values a bit test gets wrong: `& 0x08` calls vertical 8 a sweep, and
+a plain truthiness test calls all four horizontal positions one.
+
+Watching the louver while stepping the horizontal control gives the physical order — auto, far left,
+left, centre, right, far right, back to auto — which matches the published naming of those codes
+(3 = far left, 4 = left, 5 = right, 6 = far right, 0 = centre, 7 = auto). The observed wire order is
+`7 -> 0 -> 3 -> 4 -> 5 -> 6 -> 7`, so the code set and the naming agree even though the stop the
+cycle starts from is not worth relying on.
+
+### One control, several bits
+
+A setting is not always one bit. Health moves **three** together — its own flag plus the two
+purification-status bits in the flag word — and they have never been observed apart. The vendor app
+sets all three in a single group-set; a unit commanded from its handset sets the other two itself.
+
+Worth knowing before reading a control as a single bit, or writing one: a group-set carries the whole
+word block, so a partial write leaves the rest of a multi-bit setting at whatever the seed held.
 
 ### Heat capability
 

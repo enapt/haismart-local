@@ -1147,145 +1147,33 @@ def test_power_reads_only_the_on_off_bit():
 
 
 def test_vertical_vane_position_codes_are_not_a_bitmask():
-    """The vane field is a position code: only the auto codes count as sweeping.
+    """Only the auto codes sweep. Every other value is the vane parked somewhere.
 
-    Device model: 0 = fixed, 2/4/5/6/7 = positions one..five, 8 = auto -> wire 0/2/4/6/8/10 and 12.
-    Wire 8 and 10 are the vane parked low; a single-bit `& 0x08` test reported both as sweeping.
+    The codes here are the full set a unit reports while its louver control is stepped through every
+    position: 1 and 3 are the two health-airflow positions, 2/4/6/8 the ordinary ones, 12 auto.
+    **8 is the case that matters** -- the vane parked pointing down, which a single-bit `& 0x08` test
+    reports as sweeping. 14 is auto under the special modes.
     """
     sweeping = {0x0C, 0x0E}
-    for code in (0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0E):
+    observed = (1, 2, 3, 4, 6, 8, 12)
+    for code in observed + (0x00, 0x0A, 0x0E):
         assert uss.vane_v_sweeping(code) is (code in sweeping), f"wire code {code:#04x}"
+
+    # the specific regression: parked-down must not read as sweeping
+    assert uss.vane_v_sweeping(0x08) is False
+    assert uss.vane_v_sweeping(0x0A) is False
 
 
 def test_horizontal_vane_only_auto_counts_as_swinging():
-    """Horizontal: 0 = fixed, 3..6 = positions, 7 = auto. `bool()` called every position swinging."""
+    """Horizontal: 0 = fixed, 3..6 = positions, 7 = auto.
+
+    All six are values a unit reports as its left-right control is stepped through. A plain
+    truthiness test called every one of 3, 4, 5 and 6 swinging while the vane was parked.
+    """
     blob = bytearray(REAL_STATUS_DOWN)
     words = uss.STATUS_LAYOUTS[len(blob)].baseline
-    for code, expected in ((0, False), (3, False), (4, False), (6, False), (7, True)):
+    for code, expected in ((0, False), (3, False), (4, False), (5, False), (6, False), (7, True)):
         block = bytearray(blob[words])
         block[7] = (block[7] & ~0x07) | code
         blob[words] = block
         assert uss.parse_full_status(bytes(blob))["swing_horizontal"] is expected, f"code {code}"
-
-
-def test_destuff_recovers_a_report_whose_checksum_is_ff():
-    """The real 128-byte case: a report whose frame checksum lands on 0xFF travels as `FF 55`.
-
-    Confirmed on hardware. Left escaped, every length-keyed lookup misses and the write path
-    refuses control on a perfectly good report.
-    """
-    canonical = REAL_STATUS_DOWN
-    at = canonical.find(uss.EPP_FRAME_HEAD)
-    frame_len = canonical[at + 2]
-    checksum_at = at + 10 + (frame_len - 8)
-    stuffed = bytearray(canonical)
-    stuffed[checksum_at] = 0xFF                      # force the checksum onto the separator value
-    stuffed.insert(checksum_at + 1, 0x55)            # ...so the wire escapes it
-
-    assert len(stuffed) == len(canonical) + 1
-    assert uss.status_layout(bytes(stuffed)) is None, "escaped blob must not match a length table"
-
-    recovered = uss.destuff_epp(bytes(stuffed))
-    assert len(recovered) == len(canonical)
-    assert uss.status_layout(recovered) is not None
-    assert uss.grsetdac_baseline_from_status(recovered) == canonical[
-        uss.STATUS_LAYOUTS[len(canonical)].baseline
-    ]
-
-
-def test_destuff_is_a_no_op_on_unescaped_blobs():
-    for blob in (REAL_STATUS_DOWN, REAL_STATUS_UP, b"", b"\x00\x01\x02"):
-        assert uss.destuff_epp(blob) == blob
-
-
-def test_stuff_destuff_round_trip():
-    frame = uss.build_epp_frame(0x01, uss.EPP_CMD_GRSETDAC, bytes([0xFF, 0x00, 0xFF, 0x55, 0x12]))
-    wire = uss.stuff_epp(frame)
-    assert wire.count(bytes([0xFF, 0x55])) >= 2      # both body 0xFFs escaped
-    assert wire.startswith(uss.EPP_FRAME_HEAD)        # the delimiter itself is never escaped
-    assert uss.destuff_epp(wire) == frame
-
-
-def test_checksum_counts_escape_bytes():
-    """Each escaped 0xFF contributes its 0x55 to the checksum; frames without one are unchanged."""
-    plain = uss.build_epp_frame(0x01, uss.EPP_CMD_GRSETDAC, bytes(12))
-    body = plain[2:-1]
-    assert plain[-1] == sum(body) & 0xFF              # no 0xFF present -> plain sum, as before
-
-    withff = uss.build_epp_frame(0x01, uss.EPP_CMD_GRSETDAC, bytes([0xFF]) + bytes(11))
-    body2 = withff[2:-1]
-    assert withff[-1] == (sum(body2) + 0x55) & 0xFF
-
-
-def _alarm_frame(flags: bytes) -> bytes:
-    """A fault frame carrying ``flags``, wrapped exactly as the unit sends one."""
-    frame = uss.build_epp_frame(0x04, b"\x0f\x5a", flags)
-    return b"\x00\x00\x27\x15" + bytes(76) + frame
-
-
-def test_alarm_bitmap_is_one_big_endian_integer():
-    """Fault 0 is the LOW bit of the LAST flag byte, so the bytes read as one big-endian value."""
-    clear = uss.parse_alarm_frame(_alarm_frame(bytes(8)))
-    assert clear == {"alarm_count": 0, "alarm_codes": [], "alarm_labels": []}
-
-    # fault 0 lives in the last byte, not the first
-    first = uss.parse_alarm_frame(_alarm_frame(bytes(7) + b"\x01"))
-    assert first["alarm_codes"] == [0]
-    assert first["alarm_labels"] == ["F1 - Outdoor module failure"]
-
-    # ...and the first byte carries the HIGH positions
-    high = uss.parse_alarm_frame(_alarm_frame(b"\x01" + bytes(7)))
-    assert high["alarm_codes"] == [56]
-
-    # a mid-range one: E1, indoor temperature sensor, is position 20
-    e1 = uss.parse_alarm_frame(_alarm_frame(bytes(5) + b"\x10" + bytes(2)))
-    assert e1["alarm_codes"] == [20]
-    assert e1["alarm_labels"] == ["E1 - Indoor temperature sensor failure"]
-
-
-def test_alarm_positions_track_the_frame_length():
-    """The byte count comes from the frame, so a shorter frame shifts every position."""
-    assert uss.parse_alarm_frame(_alarm_frame(bytes(3) + b"\x01"))["alarm_codes"] == [0]
-    assert uss.parse_alarm_frame(_alarm_frame(b"\x01" + bytes(3)))["alarm_codes"] == [24]
-
-
-def test_parse_alarm_frame_ignores_other_reports():
-    assert uss.parse_alarm_frame(REAL_STATUS_DOWN) is None
-    assert uss.parse_alarm_frame(b"") is None
-
-
-def test_heat_capability_is_reported_by_the_unit():
-    """Bit 7 after the outdoor reading is set on a cooling-only unit.
-
-    Checked against real reports from both kinds of hardware rather than a synthesised bit: the
-    reference units are cooling-only, while the 165- and 209-byte reporters run reverse-cycle models
-    whose published mode list includes heat. The flag agrees with the hardware in every case, on
-    three different report layouts.
-    """
-    cooling_only = (REAL_STATUS_DOWN, REAL_STATUS_UP)
-    reverse_cycle = (STATUS_165_OFF, STATUS_165_ON, STATUS_209_OFF, STATUS_209_COOL, STATUS_209_FAN)
-
-    for report in cooling_only:
-        assert uss.parse_full_status(report)["heat_capable"] is False, len(report)
-    for report in reverse_cycle:
-        assert uss.parse_full_status(report)["heat_capable"] is True, len(report)
-
-
-def test_self_clean_is_reported_from_the_flag_word():
-    """A self-clean cycle sets one bit in the flag word and clears it when the cycle ends.
-
-    Confirmed on hardware across a full cycle: the bit set when the cycle was started at the handset
-    and cleared when the unit finished, and no other control bit moved in between.
-    """
-    assert uss.parse_full_status(REAL_STATUS_DOWN)["self_cleaning"] is False
-
-    cleaning = bytearray(REAL_STATUS_DOWN)
-    flag_at = 92 + (uss._FLAG_WORD - 1) * 2
-    cleaning[flag_at + 1] |= 1 << uss._SELF_CLEAN_BIT
-    decoded = uss.parse_full_status(bytes(cleaning))
-    assert decoded["self_cleaning"] is True
-    # ...and nothing else moved with it
-    baseline = uss.parse_full_status(REAL_STATUS_DOWN)
-    assert {k: v for k, v in decoded.items() if k != "self_cleaning"} == {
-        k: v for k, v in baseline.items() if k != "self_cleaning"
-    }

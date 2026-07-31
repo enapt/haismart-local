@@ -242,11 +242,14 @@ but that exchange happens over infrared only and never enters this protocol. It 
 and it cannot be driven from here either; feeding a room sensor to a unit this way needs an infrared
 transmitter, not a network command.
 
-The **timer** must be held by the unit, since it has to fire when the handset is out of range. It is
-simply not published: nothing moves in any word, and this device declares no timer attribute.
+The **timer** is different, and worth checking per model rather than assuming. Some units publish it:
+`timingPowerOn` and `timingPowerOff` as minute counts (0–1440) alongside a `timingStatus` of
+cancel / set / keep. Others, including this one, declare no timer attribute at all — the unit accepts
+a timer from the handset and holds the countdown internally, but never reports it. So a timer set at
+the handset is invisible here, while a unit whose model declares those attributes could support one.
 
-Both light an icon on the handset, so an owner will reasonably expect them in an integration. Neither
-is available.
+Both light an icon on the handset, so an owner will reasonably expect them. "I feel" is never
+available; a timer depends on the model.
 
 ### Turbo and quiet are one control
 

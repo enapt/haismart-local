@@ -49,7 +49,17 @@ they have never been observed apart. Our encoder maps `healthMode` to its own bi
 commanded from its handset sets the other two itself, so a single-bit write most likely suffices.
 That is an assumption. One write from our side, with the report watched, settles it.
 
-## 3. Two settings that decode but cannot be written
+## 3. Self-clean reporting on two more families
+
+Offered on the classic and 165-byte families. Not on the 209-byte or 117-byte ones, because the flag
+word's position there is not supported by evidence: the 209-byte family places its vane outside the
+displacement its control block otherwise follows, so it does not share the same shape, and the
+117-byte family has a different map entirely.
+
+One report from either, taken while a self-clean cycle is running, settles it — the bit that changes
+is the answer.
+
+## 4. Two settings that decode but cannot be written
 
 `echoStatus` (the command-confirmation beeper, where set = silent) and `selfCleaningStatus` both
 decode cleanly and are marked user-facing by the device model, but neither has been seen written.
@@ -58,14 +68,14 @@ the whole word block, so a wrong bit is not a local mistake.
 
 Self-clean now has both halves of a state transition observed. A captured write is what is missing.
 
-## 4. A timer, on units that publish one
+## 5. A timer, on units that publish one
 
 Some units declare `timingPowerOn` / `timingPowerOff` (minute counts, 0–1440) and a `timingStatus` of
 cancel / set / keep. Others declare no timer attribute at all and merely hold a handset-set countdown
 internally. Where the attributes exist, a timer entity is straightforward and would be the first in
 this ecosystem; where they do not, it cannot be offered. Needs hardware that declares them.
 
-## 5. Layout probing without the cloud
+## 6. Layout probing without the cloud
 
 `probe_layout` already treats the cloud shadow as optional, but scores only on plausibility. The
 issue template collects three captures **in known states** plus the room temperature the reporter
@@ -78,13 +88,13 @@ Beware invariants that do not discriminate. "Error code is zero" sounds useful a
 reward a candidate whose fields land on empty words, which is the exact failure the prober guards
 against.
 
-## 6. Conditional writability is implemented but not wired
+## 7. Conditional writability is implemented but not wired
 
 `locked_attributes` reads the device model's rules for when an attribute cannot be written — a unit in
 fan-only ignores a setpoint; one reporting a fault ignores most settings. It is tested and unused.
 Wiring it to entity availability would stop the integration offering controls the unit will discard.
 
-## 7. The fault decode has not met a real fault
+## 8. The fault decode has not met a real fault
 
 The bitmap decode follows the vendor's own parser and the labels match the published fault list, but
 no unit here has reported a fault. `errCode` gives a free cross-check when one occurs: it names a

@@ -675,7 +675,7 @@ def test_extended36_decodes_the_real_reports():
         "operation_mode": "1", "wind_speed": "1", "swing_vertical": False,
         "swing_horizontal": True, "mode": "cool", "fan_mode": "high",
         "heat_capable": True, "error_code": 0, "last_changed_by": "panel",
-        "layout": "extended36", "writable": True,
+        "self_cleaning": False, "layout": "extended36", "writable": True,
     }
     on = uss.parse_full_status(STATUS_165_ON, prof)
     assert on["power"] is True and on["target_temperature"] == 20.0
@@ -1177,3 +1177,24 @@ def test_horizontal_vane_only_auto_counts_as_swinging():
         block[7] = (block[7] & ~0x07) | code
         blob[words] = block
         assert uss.parse_full_status(bytes(blob))["swing_horizontal"] is expected, f"code {code}"
+
+
+def test_extended36_reports_self_clean_from_its_flag_word():
+    """The 165-byte family carries the flag word four words into its control block.
+
+    Both reports have it reading 0x000c -- bits 2 and 3, the pair the health setting drives -- with
+    bit 4 clear, which is what a unit that is not cleaning looks like.
+    """
+    for report in (STATUS_165_OFF, STATUS_165_ON):
+        assert uss.parse_full_status(report)["self_cleaning"] is False
+
+    cleaning = bytearray(STATUS_165_OFF)
+    flag_at = 92 + (24 - 1) * 2          # report word 24
+    cleaning[flag_at + 1] |= 1 << 4
+    assert uss.parse_full_status(bytes(cleaning))["self_cleaning"] is True
+
+
+def test_self_clean_is_absent_where_the_flag_word_is_unconfirmed():
+    """Offered only where the position is supported by evidence -- absent beats wrong."""
+    for report in (STATUS_209_OFF, STATUS_117_OFF):
+        assert "self_cleaning" not in uss.parse_full_status(report)

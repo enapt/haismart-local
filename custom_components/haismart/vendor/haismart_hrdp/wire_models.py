@@ -436,6 +436,13 @@ EXTENDED36 = WireModel(
         # (see `vane_v_sweeping`). Reading bit 3 alone also matched the parked-low positions.
         "swing_vertical": WireField(20, 0, 4, kind="vane_v"),
         "swing_horizontal": WireField(23, 0, 3, kind="vane_h"),
+        # The flag word sits four words past the control block's first word, as on the classic
+        # family. Supported by what the reports show there: bits 2 and 3 are set together, which is
+        # the pattern the health setting produces, and bit 4 -- self-clean -- is clear on units that
+        # were not cleaning. Deliberately not offered on the other families: extended-46 places its
+        # vane outside this displacement, so its control block does not follow the same shape, and
+        # compact-12 has a different map entirely. Both want a report from a unit mid-cycle.
+        "self_cleaning": WireField(24, 4, 1, kind="bool"),
     },
 )
 

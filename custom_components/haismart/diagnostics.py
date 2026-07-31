@@ -1,6 +1,7 @@
 """Diagnostics: a redacted snapshot for bug reports."""
 from __future__ import annotations
 
+from functools import partial
 from typing import Any
 
 from haismart_hrdp import (
@@ -48,6 +49,7 @@ async def async_get_config_entry_diagnostics(
 ) -> dict[str, Any]:
     coordinator = entry.runtime_data
     profile = coordinator.profile
+    layout = await _async_layout_summary(hass, coordinator)
     return {
         "entry": async_redact_data(dict(entry.data), TO_REDACT),
         "options": dict(entry.options),
@@ -70,7 +72,7 @@ async def async_get_config_entry_diagnostics(
             "read_only_layout": coordinator.read_only_layout,
             "known_lengths": sorted(STATUS_LAYOUTS),
             "uplus_id": coordinator.uplus_id,
-            "layout": _layout_summary(coordinator),
+            "layout": layout,
         },
         # Whether the AC itself can reach Haier's cloud (key-free UDISCOVERY query). Worth having
         # in a bug report: a unit that is cut off cannot be re-keyed, which explains a stale
@@ -104,7 +106,7 @@ async def async_get_config_entry_diagnostics(
     }
 
 
-def _layout_summary(coordinator) -> dict[str, Any] | None:
+async def _async_layout_summary(hass: HomeAssistant, coordinator) -> dict[str, Any] | None:
     """Which layout was used for the stored blob, and whether it was confirmed or derived."""
     blob = coordinator.last_raw_status
     if not blob:
@@ -121,7 +123,10 @@ def _layout_summary(coordinator) -> dict[str, Any] | None:
         # family whose fields are displaced from some word onward, and the device's own reported
         # attribute values decide between the candidates. This makes a diagnostics download
         # self-sufficient for adding the model — no second round-trip to the reporter.
-        return {"resolved": False, "candidates": _layout_candidates(coordinator)}
+        return {
+            "resolved": False,
+            "candidates": await _async_layout_candidates(hass, coordinator),
+        }
     return {
         "resolved": True,
         "verified": layout.verified,      # False == derived from the length, not a confirmed entry
@@ -131,12 +136,18 @@ def _layout_summary(coordinator) -> dict[str, Any] | None:
     }
 
 
-def _layout_candidates(coordinator) -> list[dict[str, Any]]:
+async def _async_layout_candidates(
+    hass: HomeAssistant, coordinator
+) -> list[dict[str, Any]]:
     """Ranked layout proposals for a report nothing recognises (see :func:`probe_layout`).
 
     Every report the coordinator has kept is offered, because a candidate has to explain all of them
     and the reports were captured in different states. The device's own attribute values from its
     digital model are passed as the tie-breaker.
+
+    The search itself runs in an executor: it builds and decodes on the order of a thousand
+    candidate models per report, which is pure CPU and has no business on the event loop — least of
+    all here, since this path only runs for the user whose model is not decoding properly yet.
     """
     reports: list[bytes] = []
     for blob in (coordinator.last_raw_status, *coordinator.recent_reports):
@@ -150,7 +161,7 @@ def _layout_candidates(coordinator) -> list[dict[str, Any]]:
         for attr in model.get("attributes") or []
         if isinstance(attr, dict) and attr.get("name") and attr.get("value") is not None
     }
-    return probe_layout(reports, shadow=shadow)
+    return await hass.async_add_executor_job(partial(probe_layout, reports, shadow=shadow))
 
 
 def _model_summary(model: dict[str, Any] | None) -> dict[str, Any] | None:

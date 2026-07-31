@@ -26,7 +26,11 @@ async def async_setup_entry(
     entry: HaismartConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    async_add_entities([HaismartEcoSelect(entry.runtime_data)])
+    coordinator = entry.runtime_data
+    # This unit's multi-level eco is a repurposed 3-bit field that no other wire family maps, so on
+    # those the select could only ever raise — leave it out rather than offer it.
+    if coordinator.supports_field("ecoMode"):
+        async_add_entities([HaismartEcoSelect(coordinator)])
 
 
 class HaismartEcoSelect(HaismartEntity, SelectEntity):

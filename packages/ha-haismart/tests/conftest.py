@@ -33,7 +33,10 @@ def make_status_frame(
     frame = bytearray(127)
     frame[2:4] = b"\x27\x15"
     frame[92] = target_temp - 16
-    frame[93] = 0x08 if swing else 0x00
+    # 0x0c is the vane's auto/sweep code. 0x08 -- used here previously -- is the vane parked
+    # pointing down, which is not swinging, so a fixture built with it could not represent the
+    # state its own argument name claims.
+    frame[93] = 0x0c if swing else 0x00
     frame[94] = (mode_code << 5) | fan_code
     frame[97] = 1 if power else 0
     frame[104] = int(indoor_temp * 2)
@@ -130,6 +133,36 @@ def make_extended36_frame(
     setword(22, (1 if power else 0) | (0x200 if lamp else 0))
     setword(23, 0x07 if swing_h else 0x00)                         # windDirectionHorizontal
     setword(25, int(indoor_temp * 2) << 8)                         # indoorTemperature (k=0.5)
+    return bytes(frame)
+
+
+def make_extended46_frame(
+    *,
+    power: bool = True,
+    target_temp: int = 22,
+    indoor_temp: float = 27.0,
+    mode_code: int = 1,   # STD code == EPP value on this family (1 = cool)
+    swing_v: bool = False,
+) -> bytes:
+    """Build a synthetic 209-byte 'extended-46' full-status report (issue #6).
+
+    The extended-36 map with a ten-word block inserted at word 25, so everything from there up moves
+    ten words later — and the setpoint counts half degrees from zero rather than whole degrees
+    offset by 16 (positions per wire_models.EXTENDED46).
+    """
+    frame = bytearray(209)
+    frame[2:4] = b"\x27\x15"
+
+    def setword(w: int, val: int) -> None:
+        off = 92 + (w - 1) * 2
+        frame[off], frame[off + 1] = (val >> 8) & 0xFF, val & 0xFF
+
+    setword(1, 0x2064)                                    # the media block (volume etc.)
+    setword(20, int(target_temp * 2) << 8)                # targetTemperature is degC x 2 here
+    setword(21, mode_code << 13)
+    setword(22, 1 if power else 0)
+    setword(25, 0x08 if swing_v else 0)                   # the vane, inside the inserted block
+    setword(35, int(indoor_temp * 2) << 8)                # indoorTemperature (k=0.5)
     return bytes(frame)
 
 

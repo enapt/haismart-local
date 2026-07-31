@@ -57,7 +57,12 @@ CONF_LOCALKEY_VERSION = "localkey_version"
 # implement it, and there is no point querying those forever.
 UDISCOVERY_INTERVAL = 60.0   # seconds between cloud-state queries
 UDISCOVERY_TIMEOUT = 2.0     # per-query socket timeout (a healthy unit answers in <50 ms)
-UDISCOVERY_MISSES = 3        # consecutive silent queries (while reachable) before we stop asking
+UDISCOVERY_MISSES = 3        # consecutive silent queries (while reachable) before we back off
+# ...and how long we then leave it before trying again. Not "never": three lost datagrams in a
+# row is a thing a busy access point does, and a module can gain the capability in a firmware
+# update — while giving up for good costs the cloud-connection sensor, the firmware version and
+# the cloud-free uPlusId learning for the rest of the run. Hourly is cheap enough to be free.
+UDISCOVERY_RETIRE_INTERVAL = 3600.0
 # Rediscovery after a failed read: these units move on DHCP, and a moved unit is indistinguishable
 # from a dead one until you go looking for it. Cooled down so a genuinely offline AC (powered off,
 # off the network) doesn't trigger a network sweep on every poll.
@@ -68,6 +73,12 @@ REDISCOVER_COOLDOWN = 300.0  # seconds between attempts
 # slow-moving measurements, so a value from seconds ago beats a gap, while a unit that has genuinely
 # stopped reporting still ends up honestly unknown rather than frozen on an old number.
 TELEMETRY_MAX_AGE = 120.0    # seconds a previous extended reading may stand in for a missing one
+# Consecutive cycles that carry status but no extended report before we conclude the unit does not
+# answer that query and stop appending it. More than one, because a single reply can simply be
+# dropped and the conclusion is expensive: it removes the power, current, frequency, coil,
+# discharge, compressor and fan entities for the rest of the run. Same reasoning as
+# UDISCOVERY_MISSES.
+EXTENDED_MISSES = 3
 
 CONF_SCAN_INTERVAL = "scan_interval"
 DEFAULT_SCAN_INTERVAL = 30  # seconds between read cycles (each is handshake+collect+close)

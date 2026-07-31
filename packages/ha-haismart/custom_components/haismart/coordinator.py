@@ -15,6 +15,7 @@ ConfigEntryAuthFailed so HA starts a reauth flow for the new key.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from collections.abc import Callable
@@ -31,6 +32,7 @@ from haismart_extractor import (
 )
 from haismart_extractor.cloud import SEA_APP_CREDENTIALS, CloudError
 from haismart_hrdp import (
+    GRSETDAC_FIELDS,
     GRSETDAC_MODEL_AUTHORIZED,
     STATUS_LAYOUTS,
     AttributeProfile,
@@ -58,6 +60,7 @@ from haismart_hrdp import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -79,6 +82,7 @@ from .const import (
     DEFAULT_PRODUCT_CODE,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    EXTENDED_MISSES,
     ISSUE_STALE_LOCALKEY,
     ISSUE_UNKNOWN_LAYOUT,
     READ_TIMEOUT,
@@ -86,6 +90,7 @@ from .const import (
     TELEMETRY_MAX_AGE,
     UDISCOVERY_INTERVAL,
     UDISCOVERY_MISSES,
+    UDISCOVERY_RETIRE_INTERVAL,
     UDISCOVERY_TIMEOUT,
     WRITE_TIMEOUT,
 )
@@ -258,6 +263,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # None = not yet known; settled on the first cycle that produces a status report.
         self.supports_extended: bool | None = None
         self._ask_extended = True
+        # consecutive cycles that carried status but no extended report (see EXTENDED_MISSES)
+        self._extended_misses = 0
         # The last extended reading actually reported, with when it arrived and the on/off state it
         # described. A cycle that carries no extended report re-publishes it (see
         # `_apply_telemetry`) so a control op does not blank the telemetry entities.
@@ -296,6 +303,15 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # the non-classic wire model in use (set on decode), or None for the classic family. Drives
         # the family-specific control encoder.
         self._wire_model: WireModel | None = None
+        # These units accept ONE connection at a time (§2.1), and nothing in Home Assistant
+        # serializes a command against a poll — or against another command: applying a scene fires
+        # its entities concurrently, so one carrying the thermostat and a switch sends two ops at
+        # once. Every uSS session therefore goes through this lock. It is not only about the refused
+        # second connection: a control op seeds its group-set from the status the AC pushes on the
+        # op's OWN connection, so two overlapping ops each seed from a baseline taken before the
+        # other applied, and a group-set writes the WHOLE attribute vector — so the later reply
+        # silently reverts the earlier change instead of half-applying it.
+        self._session = asyncio.Lock()
         super().__init__(
             hass,
             _LOGGER,
@@ -359,30 +375,52 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 )
                 if telemetry:
                     self.supports_extended = True
+                    self._extended_misses = 0
+                elif self.supports_extended is True and not self._ask_extended:
+                    # The query was paused by an empty cycle (see below), and reads are working
+                    # again — so ask for the extended report again rather than leaving a unit that
+                    # has already answered one without its telemetry for the rest of the run.
+                    self._ask_extended = True
                 elif self._ask_extended and self.supports_extended is None:
-                    # Status arrived but no extended report: this unit does not offer one. Stop
-                    # asking rather than appending a frame it ignores on every poll from now on.
-                    self.supports_extended = False
-                    self._ask_extended = False
-                    _LOGGER.debug(
-                        "%s does not answer the extended-status query; the power and compressor "
-                        "sensors will stay unavailable for this unit", self.host,
-                    )
+                    # Status arrived but no extended report, which usually means this unit does not
+                    # offer one -- so stop appending a frame it ignores on every poll from now on.
+                    # But not on the first cycle: a single reply can simply be dropped, and writing
+                    # the capability off costs the unit seven entities until the entry is reloaded.
+                    # Same reasoning (and the same threshold) as UDISCOVERY_MISSES.
+                    self._extended_misses += 1
+                    if self._extended_misses >= EXTENDED_MISSES:
+                        self.supports_extended = False
+                        self._ask_extended = False
+                        _LOGGER.debug(
+                            "%s did not answer the extended-status query in %d cycles; the power "
+                            "and compressor sensors will stay unavailable for this unit",
+                            self.host, EXTENDED_MISSES,
+                        )
                 self._apply_telemetry(state, telemetry)
                 state.update(alarms)
                 return state
 
         # Connected fine but nothing decoded — either the AC pushed no full report this
         # cycle (transient) or every biz payload failed the MD5 check (stale localKey).
-        # If we appended the extended query, retire it first so the next cycle retries with a plain
-        # read: a unit that cannot cope with the extra frame must not lose its status because of it.
+        # If we appended the extended query, stop asking for now so the next cycle retries with a
+        # plain read: a unit that cannot cope with the extra frame must not lose its status over it.
         if self._ask_extended:
             self._ask_extended = False
-            self.supports_extended = False
-            _LOGGER.debug(
-                "no decodable status from %s while asking for extended status; dropping the extra "
-                "query and retrying with a plain read", self.host,
-            )
+            if self.supports_extended is True:
+                # This unit HAS answered the extended query, so the extra frame is not what broke
+                # this cycle — a stale key or a dropped push is. Pause it for one cycle to be sure,
+                # then re-arm above once a status decodes again. Concluding "unsupported" here used
+                # to be permanent, so one empty cycle took the telemetry entities out for good.
+                _LOGGER.debug(
+                    "no decodable status from %s; pausing the extended-status query for one cycle "
+                    "(this unit has answered it before)", self.host,
+                )
+            else:
+                self.supports_extended = False
+                _LOGGER.debug(
+                    "no decodable status from %s while asking for extended status; dropping the "
+                    "extra query and retrying with a plain read", self.host,
+                )
         self._log_undecodable(blobs)
         self._misses += 1
         # capture BEFORE the probe below resets it, or the message always reports 0
@@ -397,11 +435,12 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
     async def _async_read(self) -> list[bytes]:
-        """One read cycle against the current host."""
-        return await async_read_status(
-            self.host, self.device_id, self._local_key, timeout=READ_TIMEOUT,
-            extra_request=extended_status_epp_frame() if self._ask_extended else None,
-        )
+        """One read cycle against the current host, holding the single-session lock."""
+        async with self._session:
+            return await async_read_status(
+                self.host, self.device_id, self._local_key, timeout=READ_TIMEOUT,
+                extra_request=extended_status_epp_frame() if self._ask_extended else None,
+            )
 
     async def _async_rediscover_host(self) -> bool:
         """Find this AC at a new address after a failed read. ``True`` if the host changed.
@@ -429,7 +468,32 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.hass.config_entries.async_update_entry(
             self.config_entry, data={**self.config_entry.data, CONF_HOST: host}
         )
+        self._sync_device_registry()
         return True
+
+    def _sync_device_registry(self) -> None:
+        """Keep the HA device's firmware version and configuration link in step with what we learn.
+
+        `entity.py` builds its DeviceInfo once per entity, so both values freeze at the moment the
+        entities are created. Firmware that arrives on a later UDISCOVERY reply -- because the
+        first query went unanswered, or the module was slow -- then never shows up at all, and
+        after the AC moves on DHCP the configuration link still points at the address it left, on
+        the very page someone opens to work out why it stopped answering.
+
+        Never raises, and a no-op once both agree: this runs on every successful discovery query.
+        """
+        registry = dr.async_get(self.hass)
+        device = registry.async_get_device(identifiers={(DOMAIN, self.device_id)})
+        if device is None:
+            return      # the first refresh runs before the platforms create the device
+        updates: dict[str, Any] = {}
+        if self.firmware and device.sw_version != self.firmware:
+            updates["sw_version"] = self.firmware
+        url = f"http://{self.host}"
+        if device.configuration_url != url:
+            updates["configuration_url"] = url
+        if updates:
+            registry.async_update_device(device.id, **updates)
 
     async def _async_poll_cloud_state(self) -> None:
         """Refresh whether the AC can reach Haier's cloud, on its own slow cadence.
@@ -437,9 +501,11 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         One UDP round trip on :7083, no localKey and no account involved -- which is the point: it
         lets someone who has firewalled their AC confirm the block holds without asking Haier
         anything. Never raises: this is a diagnostic signal and must not be able to fail a poll.
+
+        A unit that stays silent is backed off to UDISCOVERY_RETIRE_INTERVAL rather than abandoned:
+        the answer can come back (a firmware update, or simply an access point that stopped eating
+        the datagrams), and one query an hour costs nothing against what giving up loses.
         """
-        if self.supports_udiscovery is False:
-            return
         now = self.hass.loop.time()
         if now < self._udiscovery_next:
             return
@@ -454,11 +520,14 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.cloud_connected = None
             self._udiscovery_misses += 1
             if self._udiscovery_misses >= UDISCOVERY_MISSES:
-                self.supports_udiscovery = False
-                _LOGGER.debug(
-                    "%s does not answer the UDISCOVERY query; the cloud-connection sensor will "
-                    "stay unavailable for this unit", self.host,
-                )
+                self._udiscovery_next = now + UDISCOVERY_RETIRE_INTERVAL
+                if self.supports_udiscovery is not False:
+                    self.supports_udiscovery = False
+                    _LOGGER.debug(
+                        "%s does not answer the UDISCOVERY query; the cloud-connection sensor will "
+                        "stay unavailable for this unit, and the query drops to one attempt every "
+                        "%.0f s in case that changes", self.host, UDISCOVERY_RETIRE_INTERVAL,
+                    )
             return
         self._udiscovery_misses = 0
         self.supports_udiscovery = True
@@ -487,6 +556,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.firmware = " / ".join(info.firmware)
         self.reported_host = info.host or None
         self.reported_port = info.port or None
+        self._sync_device_registry()
         uplus_id = info.uplus_id.strip("0")  # an all-zero field means "not reported"
         if not uplus_id or info.uplus_id == self.uplus_id:
             return
@@ -684,10 +754,15 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # One short session: the CAE counter starts at 1 and the biz sequence base is
             # auto-derived from HELLO_DONE_RESP (a wrong sn drops the connection). build_frame
             # seeds from the AC's in-session status push.
-            reply = await async_send_op(
-                self.host, self.device_id, self._local_key,
-                build_frame=_build, counter=1, timeout=WRITE_TIMEOUT,
-            )
+            # Under the session lock, so this op cannot overlap a poll or a second command: the
+            # baseline `_build` seeds from must be the state left by whatever ran before it. Waiting
+            # costs at most one read (READ_TIMEOUT), against an op that would otherwise be refused
+            # by the AC or quietly undone by the other one.
+            async with self._session:
+                reply = await async_send_op(
+                    self.host, self.device_id, self._local_key,
+                    build_frame=_build, counter=1, timeout=WRITE_TIMEOUT,
+                )
         except HomeAssistantError:
             raise
         except (ValueError, KeyError) as err:
@@ -835,6 +910,19 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         sensor — it's a secret, so that entity is diagnostic + disabled by default."""
         return self._local_key
 
+    def supports_field(self, name: str) -> bool:
+        """Whether a control field can be written on the family this unit actually reports.
+
+        The classic family's write map is :data:`GRSETDAC_FIELDS`; a non-classic family carries its
+        own, which is generally smaller — compact-12 has none of the secondary toggles, extended-46
+        no swing, and neither has this unit's multi-level ``ecoMode``. A control that advertises a
+        field its family cannot place could only ever raise, so the entities that group several
+        fields into one control ask here before offering themselves.
+        """
+        if (wm := self._wire_model) is not None:
+            return name in wm.write_fields
+        return name in GRSETDAC_FIELDS
+
     def current_field(self, name: str) -> int | None:
         """The live raw EPP value of a grSetDAC field (for the toggle/select entities), or None.
 
@@ -857,11 +945,13 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         localKey from the Haier cloud MQTT gateway; only fall back to a manual reauth flow if the
         gateway refresh isn't configured or fails."""
         try:
-            current = await self.hass.async_add_executor_job(
-                partial(
-                    probe_localkey_version, self.host, self.device_id, timeout=READ_TIMEOUT
+            # Also a uSS session (a handshake, key-free), so it takes the same lock.
+            async with self._session:
+                current = await self.hass.async_add_executor_job(
+                    partial(
+                        probe_localkey_version, self.host, self.device_id, timeout=READ_TIMEOUT
+                    )
                 )
-            )
         except (OSError, RuntimeError) as err:
             raise UpdateFailed(f"localKey version probe failed: {err}") from err
         if self.localkey_version is None or current == self.localkey_version:

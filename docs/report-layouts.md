@@ -32,6 +32,30 @@ of the partial "unknown layout" path, so a wrong family is never published as fa
 | 133 B | *unclaimed* — map below | `°C − 16` @ w1.b12 (4 bits) | indoor w5.b8, outdoor w6.b8 | ⏳ documented, not shipped |
 | 149 / 155 B | *unclaimed* — floor/heat-pump class | @ w25.b8 | — | ⏳ two conflicting maps at 149 B |
 
+### Secondary readings, by family
+
+Beyond the climate block, families differ in what else is placed. A field is offered only where its
+position is supported by the reports themselves — absent beats wrong, since a misplaced offset shows
+a confident but invented value.
+
+| | classic | compact-12 | extended-36 | extended-46 |
+|---|---|---|---|---|
+| heat capability | ✅ | — | ✅ | ✅ |
+| fault code + last-changed-by | ✅ | — | ✅ | ✅ |
+| fault bitmap | ✅ (its own frame, family-independent) | ✅ | ✅ | ✅ |
+| self-clean | ✅ | ❌ | ✅ | ❌ |
+
+Heat capability, the fault code and last-changed-by all sit in the sensor block, one and two words
+past the outdoor reading, so they follow wherever that lands. The fault bitmap arrives in a separate
+frame and needs no layout at all.
+
+**Self-clean** comes from the flag word, four words into the control block. That holds on classic and
+extended-36 — on the latter the reports corroborate it, with the two purification bits set together
+there and the self-clean bit clear on units that were not cleaning. It does **not** hold on
+extended-46, which places its vane outside that displacement, so its control block is not the same
+shape; nor on compact-12, whose map differs throughout. One report from either family taken while a
+cycle is running would settle it.
+
 ### classic
 
 The baseline: a leading block of settable control words, then the read-only sensors. Setpoint at

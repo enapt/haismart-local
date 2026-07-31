@@ -33,7 +33,7 @@ from typing import Any
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-from .wire_models import select_wire_model
+from .wire_models import select_wire_model, vane_h_sweeping, vane_v_sweeping
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -221,7 +221,9 @@ def biz_decrypt(ciphertext: bytes, local_key: str) -> tuple[int, bytes]:
         raise ValueError("bad rawlen")
     if hashlib.md5(pt[0x26:0x26 + datalen + 4]).digest() != pt[6:22]:
         raise ValueError("biz integrity (MD5) check failed — wrong/stale localKey?")
-    return sn, pt[0x2A:0x2A + datalen]
+    # Unescape here, not at each call site: every caller wants canonical fixed-length blobs, and a
+    # single missed site reappears as a rare, state-dependent decode failure. See `destuff_epp`.
+    return sn, destuff_epp(pt[0x2A:0x2A + datalen])
 
 
 def biz_encrypt(sn: int, data: bytes, local_key: str, *,
@@ -259,6 +261,63 @@ def biz_encrypt(sn: int, data: bytes, local_key: str, *,
 FLAG_BIZ_ENCRYPTED = 1  # header[7] for an encrypted biz-data message (op / push)
 
 EPP_FRAME_HEAD = b"\xff\xff"
+
+# --- transport byte stuffing -------------------------------------------------
+# 0xFF is the frame separator, so any 0xFF *inside* a frame is escaped on the wire as `FF 55`. The
+# two leading separators are the delimiter itself and are never escaped; escaping starts after them.
+#
+# This is not theoretical. A report whose checksum happens to be 0xFF arrives one byte longer than
+# its family's fixed length (128 instead of 127 on the classic family), so a small fraction of
+# otherwise ordinary reports are escaped. Every length-keyed lookup then misses, and because the write path gates on the blob length
+# (`status_layout`), control fails with "control is unavailable for this model" while reads carry on
+# working. Worse, an 0xFF in the *payload* would shift every following offset.
+#
+# So unescape once, as close to decryption as possible, and let everything downstream see canonical
+# fixed-length blobs.
+_SEPARATOR_BYTE = 0xFF
+_SEPARATOR_POST_BYTE = 0x55
+
+
+def destuff_epp(blob: bytes) -> bytes:
+    """Undo `FF 55` -> `FF` escaping inside the EPP frame of a decrypted blob.
+
+    Returns ``blob`` unchanged when it carries no frame or no escapes, so this is safe to apply
+    unconditionally. `FF 55` is unambiguous: a real 0xFF is always escaped, so the pair can only ever
+    mean "one escaped 0xFF".
+    """
+    at = blob.find(EPP_FRAME_HEAD)
+    if at < 0:
+        return blob
+    body = blob[at + 2:]
+    if bytes([_SEPARATOR_BYTE, _SEPARATOR_POST_BYTE]) not in body:
+        return blob
+    out = bytearray()
+    i = 0
+    while i < len(body):
+        byte = body[i]
+        out.append(byte)
+        i += 1
+        if byte == _SEPARATOR_BYTE and i < len(body) and body[i] == _SEPARATOR_POST_BYTE:
+            i += 1  # drop the escape byte
+    return blob[:at + 2] + bytes(out)
+
+
+def stuff_epp(frame: bytes) -> bytes:
+    """Apply `FF` -> `FF 55` escaping to an EPP frame for transmission.
+
+    The inverse of :func:`destuff_epp`, over a bare frame (leading separators preserved). Outbound
+    frames we build today never contain an 0xFF body byte, but a group-set word block is seeded from
+    live device state, so one can appear — `energySavePeriod` and `targetHumidity` are both full-range
+    bytes.
+    """
+    if not frame.startswith(EPP_FRAME_HEAD):
+        return frame
+    out = bytearray(EPP_FRAME_HEAD)
+    for byte in frame[2:]:
+        out.append(byte)
+        if byte == _SEPARATOR_BYTE:
+            out.append(_SEPARATOR_POST_BYTE)
+    return bytes(out)
 # EPP control commands (frameType=1 for all):
 EPP_CMD_GETALLPROPERTY = b"\x4d\x01"  # read-only status query — the SAFE probe (changes nothing)
 EPP_CMD_GRSETDAC = b"\x60\x01"        # group set (words 1-5)
@@ -287,7 +346,11 @@ def build_epp_frame(frame_type: int, epp_cmd: bytes, data: bytes = b"") -> bytes
     payload = b"\x00" * 6 + bytes([frame_type & 0xFF]) + epp_cmd + data
     length = len(payload) + 1  # +1 accounts for the trailing checksum byte
     body = bytes([length]) + payload
-    checksum = sum(body) & 0xFF
+    # Escaped bytes count toward the checksum: each 0xFF travels as `FF 55`, and the 0x55 is summed
+    # too. No frame we have ever sent contains an 0xFF body byte, so this term is 0 today and cannot
+    # change any currently-working frame — but a group-set is seeded from live device state, where a
+    # full-range byte (`energySavePeriod`, `targetHumidity`) could produce one.
+    checksum = (sum(body) + _SEPARATOR_POST_BYTE * body.count(_SEPARATOR_BYTE)) & 0xFF
     return EPP_FRAME_HEAD + body + bytes([checksum])
 
 
@@ -354,13 +417,18 @@ def build_cae_op_request(epp_frame: bytes, device_id: str, counter: int) -> byte
                     | counter(BE32) | len(epp_frame)(BE32) | epp_frame
 
     ``counter`` is the app's per-op sequence (observed 1, 3, 5 — the app steps it by 2 per session).
+
+    The frame is escaped on the way out (:func:`stuff_epp`) and the declared length is the escaped
+    length, matching how the device sends its own frames. This is a no-op for every frame we have
+    ever built — none contains an 0xFF body byte — so it cannot alter a currently-working op.
     """
     did = device_id.encode("ascii")
     if len(did) > 32:
         raise ValueError("device_id too long for the 32-byte field")
     field = did + b"\x00" * (32 - len(did))
+    wire = stuff_epp(epp_frame)
     return (struct.pack(">I", CAE_OP_TYPE_REQUEST) + b"\x00" * 36 + field
-            + struct.pack(">II", counter, len(epp_frame)) + epp_frame)
+            + struct.pack(">II", counter, len(wire)) + wire)
 
 
 def build_op_request_message(sn: int, epp_frame: bytes, local_key: str, session: int,
@@ -528,7 +596,7 @@ def parse_status_container(data: bytes) -> StatusContainer:
 _FULL_STATUS_LEN = 127   # AAC1UKZ01 report length — the historical default
 _OFF_ATTRS = 92          # first packed attribute byte; identical on every known variant
 _OFF_TARGET_TEMP = 92    # targetTemperature = byte + 16
-_OFF_SWING_V = 93        # vertical: bit3(0x08)=auto up-down swing, bits0-2=vane position
+_OFF_SWING_V = 93        # vertical vane: a 4-bit POSITION CODE, not a bitmask (see `vane_v_sweeping`)
 _OFF_MODE_FAN = 94       # (operationMode << 5) | windSpeed  — both STD codes packed in one byte
 _OFF_ONOFF = 97          # onOffStatus lives in bit 0 of this byte ONLY — see _ONOFF_MASK
 # This byte carries EIGHT packed flags, not just the on/off bit: bit0 onOffStatus, bit1 health,
@@ -740,7 +808,7 @@ def parse_full_status(
         "target_temperature": float(data[_OFF_TARGET_TEMP] + 16),
         "operation_mode": mode_code,
         "wind_speed": fan_code,
-        "swing_vertical": bool(data[_OFF_SWING_V] & 0x08),
+        "swing_vertical": vane_v_sweeping(data[_OFF_SWING_V] & 0x0F),
     }
     if profile is not None:
         out["mode"] = profile.normalized_mode(mode_code)
@@ -757,7 +825,7 @@ def parse_full_status(
     out["current_temperature"] = _sensor_temp(data[layout.indoor_temp], scale=0.5, offset=0.0)
     out["outdoor_temperature"] = _sensor_temp(data[layout.outdoor_temp], scale=1.0, offset=-64.0)
     words = data[layout.baseline]
-    out["swing_horizontal"] = bool(_field_from_words(words, "windDirectionHorizontal"))
+    out["swing_horizontal"] = vane_h_sweeping(_field_from_words(words, "windDirectionHorizontal"))
     # the secondary toggles + eco, read back from the report's grSetDAC word block (confirmed map)
     for field, label in _STATUS_TOGGLE_FIELDS.items():
         try:

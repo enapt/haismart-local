@@ -118,14 +118,16 @@ def test_parse_full_status_confirmed_fields():
     from haismart_hrdp import profile_for
     prof = profile_for("AAC1UKZ01")
     # Downstairs: ON, target 24, indoor 30.0, mode 6=fan_only, fan 3=low (byte[94]=0xc3),
-    #   swing on (byte[93]=0x08)
+    #   vertical vane byte[93]=0x08 -> position four, PARKED. The vane field is a position code and
+    #   only 0x0C/0x0E are auto; this previously asserted True via a single-bit test that also
+    #   matched the parked-low codes 8 and 10.
     # secondary toggles read back from the same grSetDAC word block: both units have only the display
     # light on (lamp=True); health/strong/quiet/sleep off and eco=0 (computed from the real blobs)
     _toggles = {"health": False, "strong": False, "quiet": False, "sleep": False, "lamp": True, "eco": 0,
                 "swing_horizontal": True}  # both units report word4 bits0-2 == 7 (left-right auto)
     d = uss.parse_full_status(REAL_STATUS_DOWN, prof)
     assert d == {"power": True, "target_temperature": 24.0, "current_temperature": 30.0,
-                 "operation_mode": "6", "wind_speed": "3", "swing_vertical": True,
+                 "operation_mode": "6", "wind_speed": "3", "swing_vertical": False,
                  "outdoor_temperature": 30.0, **_toggles, "mode": "fan_only", "fan_mode": "low"}
     # Upstairs: OFF, target 23, indoor 31.0, mode 1=cool, fan 2=medium, swing off, outdoor 30
     u = uss.parse_full_status(REAL_STATUS_UP, prof)
@@ -671,7 +673,10 @@ def test_extended36_decodes_the_real_reports():
     }
     on = uss.parse_full_status(STATUS_165_ON, prof)
     assert on["power"] is True and on["target_temperature"] == 20.0
-    assert on["current_temperature"] == 27.5 and on["swing_vertical"] is True
+    # This is the reported "Cool, 22 C, Fan Low, FIXED louver position" state, and its vane code is
+    # 8 -- position four, parked. It must not read as sweeping; only 0x0C/0x0E do. The old
+    # single-bit test called this True, contradicting the stated louver position.
+    assert on["current_temperature"] == 27.5 and on["swing_vertical"] is False
     # outdoorTemperature IS mapped, but both units report the 0 "no probe" sentinel, which must read
     # as absent rather than a confident -64 C that would poison long-term statistics
     assert "outdoor_temperature" not in off and "outdoor_temperature" not in on
@@ -1132,3 +1137,74 @@ def test_power_reads_only_the_on_off_bit():
     at = blob.index(b"\xff\xff")
     blob[-1] = sum(blob[at + 2:-1]) & 0xFF
     assert uss.parse_full_status(bytes(blob))["power"] is True
+
+
+def test_vertical_vane_position_codes_are_not_a_bitmask():
+    """The vane field is a position code: only the auto codes count as sweeping.
+
+    Device model: 0 = fixed, 2/4/5/6/7 = positions one..five, 8 = auto -> wire 0/2/4/6/8/10 and 12.
+    Wire 8 and 10 are the vane parked low; a single-bit `& 0x08` test reported both as sweeping.
+    """
+    sweeping = {0x0C, 0x0E}
+    for code in (0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0E):
+        assert uss.vane_v_sweeping(code) is (code in sweeping), f"wire code {code:#04x}"
+
+
+def test_horizontal_vane_only_auto_counts_as_swinging():
+    """Horizontal: 0 = fixed, 3..6 = positions, 7 = auto. `bool()` called every position swinging."""
+    blob = bytearray(REAL_STATUS_DOWN)
+    words = uss.STATUS_LAYOUTS[len(blob)].baseline
+    for code, expected in ((0, False), (3, False), (4, False), (6, False), (7, True)):
+        block = bytearray(blob[words])
+        block[7] = (block[7] & ~0x07) | code
+        blob[words] = block
+        assert uss.parse_full_status(bytes(blob))["swing_horizontal"] is expected, f"code {code}"
+
+
+def test_destuff_recovers_a_report_whose_checksum_is_ff():
+    """The real 128-byte case: a report whose frame checksum lands on 0xFF travels as `FF 55`.
+
+    Confirmed on hardware. Left escaped, every length-keyed lookup misses and the write path
+    refuses control on a perfectly good report.
+    """
+    canonical = REAL_STATUS_DOWN
+    at = canonical.find(uss.EPP_FRAME_HEAD)
+    frame_len = canonical[at + 2]
+    checksum_at = at + 10 + (frame_len - 8)
+    stuffed = bytearray(canonical)
+    stuffed[checksum_at] = 0xFF                      # force the checksum onto the separator value
+    stuffed.insert(checksum_at + 1, 0x55)            # ...so the wire escapes it
+
+    assert len(stuffed) == len(canonical) + 1
+    assert uss.status_layout(bytes(stuffed)) is None, "escaped blob must not match a length table"
+
+    recovered = uss.destuff_epp(bytes(stuffed))
+    assert len(recovered) == len(canonical)
+    assert uss.status_layout(recovered) is not None
+    assert uss.grsetdac_baseline_from_status(recovered) == canonical[
+        uss.STATUS_LAYOUTS[len(canonical)].baseline
+    ]
+
+
+def test_destuff_is_a_no_op_on_unescaped_blobs():
+    for blob in (REAL_STATUS_DOWN, REAL_STATUS_UP, b"", b"\x00\x01\x02"):
+        assert uss.destuff_epp(blob) == blob
+
+
+def test_stuff_destuff_round_trip():
+    frame = uss.build_epp_frame(0x01, uss.EPP_CMD_GRSETDAC, bytes([0xFF, 0x00, 0xFF, 0x55, 0x12]))
+    wire = uss.stuff_epp(frame)
+    assert wire.count(bytes([0xFF, 0x55])) >= 2      # both body 0xFFs escaped
+    assert wire.startswith(uss.EPP_FRAME_HEAD)        # the delimiter itself is never escaped
+    assert uss.destuff_epp(wire) == frame
+
+
+def test_checksum_counts_escape_bytes():
+    """Each escaped 0xFF contributes its 0x55 to the checksum; frames without one are unchanged."""
+    plain = uss.build_epp_frame(0x01, uss.EPP_CMD_GRSETDAC, bytes(12))
+    body = plain[2:-1]
+    assert plain[-1] == sum(body) & 0xFF              # no 0xFF present -> plain sum, as before
+
+    withff = uss.build_epp_frame(0x01, uss.EPP_CMD_GRSETDAC, bytes([0xFF]) + bytes(11))
+    body2 = withff[2:-1]
+    assert withff[-1] == (sum(body2) + 0x55) & 0xFF

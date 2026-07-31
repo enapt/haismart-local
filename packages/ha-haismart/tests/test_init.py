@@ -79,7 +79,10 @@ async def test_setup_creates_entities_from_status(hass: HomeAssistant, mock_uss)
     assert climate.attributes["current_temperature"] == 26.5
     assert climate.attributes["temperature"] == 24.0
     assert climate.attributes["fan_mode"] == "auto"
-    assert climate.attributes["swing_mode"] == "vertical"
+    # the fixture's vertical vane code is 8 = position four, PARKED, so swing reads off. Only the
+    # auto codes (0x0C/0x0E) sweep; this asserted "vertical" under the old single-bit test, which
+    # also matched the parked-low positions.
+    assert climate.attributes["swing_mode"] == "off"
     # both axes are independent fields on the wire but are presented as ONE conventional control
     assert climate.attributes["swing_modes"] == ["off", "vertical", "horizontal", "both"]
     assert climate.attributes["min_temp"] == 16.0

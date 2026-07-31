@@ -79,6 +79,10 @@ class WireField:
         raw = ((data[off] << 8) | data[off + 1]) >> self.bit & ((1 << self.length) - 1)
         if self.kind == "bool":
             return bool(raw)
+        if self.kind == "vane_v":
+            return vane_v_sweeping(raw)
+        if self.kind == "vane_h":
+            return vane_h_sweeping(raw)
         if self.kind == "enum":
             return None if self.enum is None else self.enum.get(raw)
         if self.kind == "temp":
@@ -88,6 +92,31 @@ class WireField:
             lo, hi = _PLAUSIBLE_SENSOR_C
             return value if lo <= value <= hi else None
         return raw * self.k + self.c
+
+
+# --- vane semantics, defined once -------------------------------------------
+# The vane fields are POSITION CODES, not bitmasks, on every family that inherits the classic map.
+# The device model spells them out: vertical 0 = fixed, 2/4/5/6/7 = positions one..five, 8 = auto,
+# mapping to wire 0/2/4/6/8/10 and 12; horizontal 0 = fixed, 3..6 = positions, 7 = auto.
+#
+# Only the auto codes sweep. Testing bit 3 alone also matches wire 8 and 10 -- the vane parked LOW --
+# so a stationary vane gets reported to HA as sweeping. Both auto codes (0x0C, and 0x0E used by the
+# special modes) have bits 2 and 3 set, so mask for both.
+#
+# The 117-byte compact family is the exception and is NOT covered here: its own model collapses the
+# vane to a genuine 1-bit flag (STD 8/7 auto -> EPP 1, STD 0 fixed -> EPP 0), so it keeps `kind="bool"`.
+VANE_V_AUTO_MASK = 0x0C
+VANE_H_AUTO = 0x07
+
+
+def vane_v_sweeping(raw: int) -> bool:
+    """True only for the vertical vane's auto codes (0x0C, 0x0E)."""
+    return (raw & VANE_V_AUTO_MASK) == VANE_V_AUTO_MASK
+
+
+def vane_h_sweeping(raw: int) -> bool:
+    """True only for the horizontal vane's auto code (7)."""
+    return raw == VANE_H_AUTO
 
 
 @dataclass(frozen=True)
@@ -390,10 +419,10 @@ EXTENDED36 = WireModel(
         "outdoor_temperature": WireField(26, 8, 8, kind="temp", k=1.0, c=-64.0),
         "operation_mode": WireField(21, 13, 3, kind="enum", enum=_EXT36_MODE),
         "wind_speed": WireField(21, 8, 3, kind="enum", enum=_EXT36_FAN),
-        # bit 3 of the vane nibble is the "swinging" flag on the classic map (byte 93 & 0x08); the
-        # remaining bits are a fixed vane position, which is not swing.
-        "swing_vertical": WireField(20, 3, 1, kind="bool"),
-        "swing_horizontal": WireField(23, 0, 3, kind="bool"),
+        # the vane nibble is a position code shared with the classic map; only the auto codes sweep
+        # (see `vane_v_sweeping`). Reading bit 3 alone also matched the parked-low positions.
+        "swing_vertical": WireField(20, 0, 4, kind="vane_v"),
+        "swing_horizontal": WireField(23, 0, 3, kind="vane_h"),
     },
 )
 
@@ -462,7 +491,7 @@ EXTENDED46 = WireModel(
         "current_temperature": WireField(35, 8, 8, kind="temp", k=0.5, c=0.0),
         "outdoor_temperature": WireField(36, 8, 8, kind="temp", k=1.0, c=-64.0),
         "operation_mode": WireField(21, 13, 3, kind="enum", enum=_EXT36_MODE),
-        "swing_vertical": WireField(25, 3, 1, kind="bool"),
+        "swing_vertical": WireField(25, 0, 4, kind="vane_v"),
     },
 )
 
@@ -486,7 +515,7 @@ _CLASSIC_PROBE = WireModel(
         "outdoor_temperature": WireField(7, 8, 8, kind="temp", k=1.0, c=-64.0),
         "operation_mode": WireField(2, 13, 3, kind="enum", enum=_EXT36_MODE),
         "wind_speed": WireField(2, 8, 3, kind="enum", enum=_EXT36_FAN),
-        "swing_vertical": WireField(1, 3, 1, kind="bool"),
+        "swing_vertical": WireField(1, 0, 4, kind="vane_v"),
     },
 )
 

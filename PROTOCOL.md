@@ -230,12 +230,23 @@ word block, so a partial write leaves the rest of a multi-bit setting at whateve
 
 ### Controls that are handset-side only
 
-Not every button on a handset reaches the unit. Stepping through a handset's full set and watching the
-report shows that an **"I feel"** button and the **timer** change nothing at all — no control bit, no
-change to the reported room temperature. The "I feel" style feature is the handset controlling to its
-own sensor, so it never has to tell the unit anything, and this device's published attribute set
-contains no timer fields either. Both display an icon on the handset regardless, so an owner will
-reasonably expect them in an integration; there is nothing to read.
+Not every button on a handset reaches the unit, and the ones that do need not land in the words a
+group-set carries. Stepping through a handset's full set shows an **"I feel"** button and the
+**timer** leaving the *control block* untouched.
+
+Watching **every** word of the report, not just the control block, neither moves anything.
+
+For **"I feel"** that is by design. The handset has its own temperature sensor and re-transmits its
+reading to the unit every few minutes so the unit regulates to the temperature where the handset is —
+but that exchange happens over infrared only and never enters this protocol. It cannot be read here,
+and it cannot be driven from here either; feeding a room sensor to a unit this way needs an infrared
+transmitter, not a network command.
+
+The **timer** must be held by the unit, since it has to fire when the handset is out of range. It is
+simply not published: nothing moves in any word, and this device declares no timer attribute.
+
+Both light an icon on the handset, so an owner will reasonably expect them in an integration. Neither
+is available.
 
 ### Turbo and quiet are one control
 

@@ -273,7 +273,8 @@ EPP_FRAME_HEAD = b"\xff\xff"
 #
 # This is not theoretical. A report whose checksum happens to be 0xFF arrives one byte longer than
 # its family's fixed length (128 instead of 127 on the classic family), so a small fraction of
-# otherwise ordinary reports are escaped. Every length-keyed lookup then misses, and because the write path gates on the blob length
+# otherwise ordinary reports are escaped. Every length-keyed lookup then misses, and because the
+# write path gates on the blob length
 # (`status_layout`), control fails with "control is unavailable for this model" while reads carry on
 # working. Worse, an 0xFF in the *payload* would shift every following offset.
 #

@@ -22,11 +22,20 @@ horizontal, and a field only enters that list once a *write* of it has been seen
 above was observed being *reported*, which is weaker evidence: it establishes the code, not that the
 unit accepts it as a command.
 
-**What would settle it.** Either capture the vendor app setting a position, or take the route already
-built for mode and fan speed: `GRSETDAC_MODEL_AUTHORIZED` lets a device's own model widen the
-allowlist. Horizontal is the easy half — its wire value equals the model's code, so the model's
-`valueRange` gates it directly. Vertical is not: the model's codes map through a translation
-(5→6, 6→8, 7→10, 8→12), so it needs that table rather than the raw value.
+**The two axes are not symmetric, and this is the crux.** Checked against a real device model:
+
+- **Horizontal** — the model authorises all eight codes (`0` fixed … `7` auto), and its wire value
+  equals the model's code. So it routes straight through `GRSETDAC_MODEL_AUTHORIZED`, the mechanism
+  that already lets a device's own model widen mode and fan speed. No new risk, and the encoder's
+  existing `valueRange` gate does the work.
+- **Vertical** — the same model lists **only** `0` (fixed) and `8` (auto), while the handset visibly
+  steps the vane through wire codes 1, 2, 3, 4, 6 and 8. The model understates the hardware. Writing
+  a value the device's own model does not list is exactly what the allowlist exists to prevent, and
+  "the unit reported it" is weaker than "something commanded it".
+
+So horizontal can be done on the existing machinery; vertical needs either a captured write of a
+position, or a deliberate decision to trust the bundled translation table (`5→6, 6→8, 7→10, 8→12`)
+over the device's own published range. Do not widen both together and call it one change.
 
 Home Assistant's climate entity has no vane-position concept, so this wants `select` entities beside
 the existing swing controls — the shape the eco level already uses. Note this is not a presentation

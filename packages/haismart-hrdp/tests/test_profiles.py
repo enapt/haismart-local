@@ -113,3 +113,76 @@ def test_profile_from_real_device_config():
     assert (p.min_temp, p.max_temp, p.temp_step) == (16.0, 30.0, 1.0)
     # matches the hand-verified hardcoded profile
     assert p.mode_values == AAC1UKZ01.mode_values and p.fan_values == AAC1UKZ01.fan_values
+
+
+# The rules a real device model carries, verbatim in shape.
+_RULES = {
+    "constraints": [
+        {"pendingCondition": {"operator": "AND", "commands": {"operationMode": ["6"]}},
+         "additionalCommands": {"mergeType": "PREPEND", "commands": [
+             {"name": "windSpeed", "value": "3"},
+             {"name": "muteStatus", "value": "false"},
+             {"name": "generatorMode", "value": "0"}]}},
+        {"pendingCondition": {"operator": "AND", "commands": {"rapidMode": ["true"]}},
+         "additionalCommands": {"commands": [{"name": "muteStatus", "value": "false"}]}},
+        {"pendingCondition": {"operator": "AND", "commands": {"windSpeed": ["1", "2", "3"]}},
+         "additionalCommands": {"commands": [
+             {"name": "rapidMode", "value": "false"},
+             {"name": "muteStatus", "value": "false"}]}},
+    ],
+    "modifiers": [
+        {"priority": 4, "trigger": {"operator": "AND", "conditions": {"operationMode": ["6"]}},
+         "actions": [{"name": "targetTemperature", "writable": False},
+                     {"name": "muteStatus", "writable": False}]},
+        {"priority": 1, "trigger": {"operator": "OR", "conditions": {},
+                                    "alarms": ["indoorTempSensorErr", "outdoorFanErr"]},
+         "actions": [{"name": "operationMode", "writable": False}]},
+    ],
+}
+
+
+def test_constraint_commands_adds_what_the_unit_requires():
+    from haismart_hrdp import constraint_commands
+
+    # fan-only will not take an auto wind speed, and the model says which speed to send with it
+    assert constraint_commands(_RULES, {"operationMode": "6"}) == {
+        "windSpeed": "3", "muteStatus": "false", "generatorMode": "0"
+    }
+    # strong and quiet are mutually exclusive
+    assert constraint_commands(_RULES, {"rapidMode": "true"}) == {"muteStatus": "false"}
+    # ...and choosing a concrete speed cancels both
+    assert constraint_commands(_RULES, {"windSpeed": "2"}) == {
+        "rapidMode": "false", "muteStatus": "false"
+    }
+
+
+def test_an_explicit_request_outranks_a_rule():
+    """A rule supplies a default, so it must not overwrite what the caller actually asked for."""
+    from haismart_hrdp import constraint_commands
+
+    extra = constraint_commands(_RULES, {"operationMode": "6", "windSpeed": "1"})
+    assert "windSpeed" not in extra, "the caller's own choice of speed was overwritten"
+    # setting a concrete speed is itself a trigger, so that rule's commands come along too
+    assert extra == {"muteStatus": "false", "generatorMode": "0", "rapidMode": "false"}
+
+
+def test_constraint_commands_is_quiet_without_rules():
+    from haismart_hrdp import constraint_commands
+
+    assert constraint_commands(None, {"operationMode": "6"}) == {}
+    assert constraint_commands({}, {"operationMode": "6"}) == {}
+    assert constraint_commands(_RULES, {"operationMode": "1"}) == {}
+
+
+def test_locked_attributes_covers_state_and_faults():
+    from haismart_hrdp import locked_attributes
+
+    assert locked_attributes(_RULES, {"operationMode": "6"}) == frozenset(
+        {"targetTemperature", "muteStatus"}
+    )
+    assert locked_attributes(_RULES, {"operationMode": "1"}) == frozenset()
+    # a fault locks the rule's attributes whatever the state is
+    assert locked_attributes(_RULES, {"operationMode": "1"}, ["outdoorFanErr"]) == frozenset(
+        {"operationMode"}
+    )
+    assert locked_attributes(None, {"operationMode": "6"}) == frozenset()

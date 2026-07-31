@@ -1588,3 +1588,47 @@ async def test_heat_is_offered_when_the_unit_and_its_model_agree(
     await _setup_with_model(hass, heating_model)
     climate = hass.states.get("climate.downstairs_ac")
     assert "heat" in climate.attributes["hvac_modes"]
+
+
+_CO_COMMAND_MODEL = {
+    "attributes": [
+        {"name": "operationMode", "writable": True, "valueRange": {"type": "LIST", "dataList": [
+            {"data": "1", "desc": "cool"}, {"data": "6", "desc": "fan"}]}},
+        {"name": "windSpeed", "writable": True, "valueRange": {"type": "LIST", "dataList": [
+            {"data": "3", "desc": "low"}, {"data": "5", "desc": "auto"}]}},
+        {"name": "muteStatus", "writable": True, "valueRange": {"type": "LIST", "dataList": [
+            {"data": "false"}, {"data": "true"}]}},
+    ],
+    "constraints": [
+        {"pendingCondition": {"operator": "AND", "commands": {"operationMode": ["6"]}},
+         "additionalCommands": {"commands": [
+             {"name": "windSpeed", "value": "3"},
+             {"name": "muteStatus", "value": "false"}]}},
+    ],
+}
+
+
+async def test_the_model_s_co_commands_travel_with_the_change(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The unit drops a mode change that conflicts with the state it would leave behind.
+
+    The model states which settings have to travel together, so sending the mode alone is what
+    fails. Asserting on the frame proves the extras really reached the unit.
+    """
+    entry = await _setup_with_model(hass, _CO_COMMAND_MODEL)
+    await entry.runtime_data.async_send_control({"operationMode": 6})
+
+    assert _sent_field(mock_uss.send, "operationMode") == 6
+    assert _sent_field(mock_uss.send, "windSpeed") == 3       # low, not the auto it was on
+    assert _sent_field(mock_uss.send, "muteStatus") == 0
+
+
+async def test_co_commands_never_override_an_explicit_choice(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A rule supplies a default; it must not overwrite what the user actually asked for."""
+    entry = await _setup_with_model(hass, _CO_COMMAND_MODEL)
+    await entry.runtime_data.async_send_control({"operationMode": 6, "windSpeed": 5})
+
+    assert _sent_field(mock_uss.send, "windSpeed") == 5

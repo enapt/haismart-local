@@ -52,6 +52,7 @@ from haismart_hrdp import (
     select_wire_model,
     set_grsetdac_field,
     udiscovery,
+    constraint_commands,
     validate_write,
 )
 from homeassistant.config_entries import ConfigEntry
@@ -124,6 +125,34 @@ _RECENT_REPORTS = 3
 # encoder allowlist in ``set_grsetdac_field`` alone.
 def _bool_code(epp: int) -> str:
     return "true" if epp else "false"
+
+
+def _bool_epp(value: str) -> int:
+    return 1 if str(value).lower() == "true" else 0
+
+
+# The inverse of `_MODEL_VALUE_FROM_EPP`, for turning a co-command the model asks for back into the
+# wire value the encoder wants. Only fields that map 1:1 appear; anything else is skipped rather
+# than guessed, so an unmappable rule is dropped instead of sending a wrong value.
+_EPP_FROM_MODEL_VALUE: dict[str, Callable[[str], int]] = {
+    "targetTemperature": lambda v: round(float(v)) - 16,
+    "operationMode": lambda v: int(float(v)),
+    "windSpeed": lambda v: int(float(v)),
+    "onOffStatus": _bool_epp,
+    "healthMode": _bool_epp,
+    "rapidMode": _bool_epp,
+    "muteStatus": _bool_epp,
+    "silentSleepStatus": _bool_epp,
+    "screenDisplayStatus": _bool_epp,
+    "windDirectionHorizontal": lambda v: int(float(v)),
+}
+
+# The model calls the multi-level economy setting `generatorMode` and numbers its levels 1..3; on
+# the wire this unit packs them as 5/6/7 in the field the encoder knows as `ecoMode`. Only "off"
+# appears in the rules, but map the levels too so a condition on them still matches.
+_ECO_MODEL_NAME = "generatorMode"
+_ECO_EPP_BY_MODEL = {"0": 0, "1": 5, "2": 6, "3": 7}
+_ECO_MODEL_BY_EPP = {epp: model for model, epp in _ECO_EPP_BY_MODEL.items()}
 
 
 _MODEL_VALUE_FROM_EPP: dict[str, Callable[[int], object]] = {
@@ -594,6 +623,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # product constraints reject an out-of-range temperature or an unsupported enum. Only
         # fields mapping 1:1 to a model attribute are checked; device-specific ones (swing/eco) stay
         # gated by the encoder allowlist alone.
+        changes = self._with_required_co_commands(changes)
         self._validate_against_model(changes)
 
         if self.read_only_layout is not None:
@@ -727,6 +757,46 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._telemetry = {}
             return
         state.update(self._telemetry)
+
+    def _with_required_co_commands(self, changes: dict[str, int]) -> dict[str, int]:
+        """Add the settings the model requires alongside ``changes``.
+
+        Some commands are dropped by the unit unless they travel with others -- selecting fan-only
+        while the fan is on auto being the one users hit. The model states these rules per device,
+        so honouring them generally beats hard-coding each case as it is reported. A no-op without a
+        stored model, which is the manual onboarding path; the explicit fan-only handling in the
+        climate entity stays as the fallback for that case.
+
+        An attribute the caller set explicitly is never overridden, and a co-command that cannot be
+        expressed as a wire value is skipped rather than guessed.
+        """
+        model = self.digital_model
+        if not model:
+            return changes
+        pending: dict[str, str] = {}
+        for name, epp in changes.items():
+            if name == "ecoMode":
+                pending[_ECO_MODEL_NAME] = _ECO_MODEL_BY_EPP.get(epp, str(epp))
+            elif (to_model := _MODEL_VALUE_FROM_EPP.get(name)) is not None:
+                pending[name] = str(to_model(epp)).lower()
+
+        merged = dict(changes)
+        for name, value in constraint_commands(model, pending).items():
+            if name == _ECO_MODEL_NAME:
+                field, epp = "ecoMode", _ECO_EPP_BY_MODEL.get(str(value))
+            elif (to_epp := _EPP_FROM_MODEL_VALUE.get(name)) is not None:
+                field = name
+                try:
+                    epp = to_epp(value)
+                except (TypeError, ValueError):
+                    epp = None
+            else:
+                continue
+            if epp is None or field in merged:
+                continue
+            _LOGGER.debug("model requires %s=%s alongside %s", field, epp, sorted(changes))
+            merged[field] = epp
+        return merged
 
     def _validate_against_model(self, changes: dict[str, int]) -> None:
         """Reject a control change the device's digital model forbids (out-of-range temperature, an

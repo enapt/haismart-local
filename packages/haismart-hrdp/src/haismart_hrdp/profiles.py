@@ -13,6 +13,8 @@ No prior open-source project maps this uSDK-EPP local path (haier-esphome/smarta
 from __future__ import annotations
 
 import logging
+from collections.abc import Collection, Mapping
+from typing import Any
 
 from .models import STD_OPERATION_MODE, STD_WIND_SPEED, AttributeProfile
 
@@ -269,3 +271,73 @@ def profile_for(type_id: str | None) -> AttributeProfile:
     if type_id and type_id in PROFILES:
         return PROFILES[type_id]
     return AttributeProfile()
+
+
+# --- co-command rules ---------------------------------------------------------
+# Some settings cannot be sent alone. The unit silently drops a command that conflicts with the
+# state it would leave behind -- selecting fan-only while the fan is on auto is the case seen most
+# often, where the mode change simply does not happen. The device model carries these rules, so they
+# can be honoured for any model rather than one hard-coded case at a time.
+#
+# A rule reads "if the write sets X, also send Y". Values here are the model's own (STD) values, as
+# strings; the caller converts to and from wire values, which keeps this free of any per-field
+# encoding knowledge.
+
+
+def constraint_commands(
+    model: Mapping[str, Any] | None, pending: Mapping[str, str]
+) -> dict[str, str]:
+    """The extra commands the model requires alongside ``pending``.
+
+    ``pending`` and the result are ``{attribute: model value}``. A rule fires when *every* attribute
+    it names is being set to one of the values it lists. Anything already in ``pending`` is left
+    alone -- an explicit request outranks a rule's default.
+    """
+    if not model:
+        return {}
+    extra: dict[str, str] = {}
+    for rule in model.get("constraints") or ():
+        condition = ((rule.get("pendingCondition") or {}).get("commands")) or {}
+        if not condition:
+            continue
+        if not all(str(pending.get(name)) in [str(v) for v in values]
+                   for name, values in condition.items()):
+            continue
+        for command in ((rule.get("additionalCommands") or {}).get("commands")) or ():
+            name, value = command.get("name"), command.get("value")
+            if name and value is not None and name not in pending:
+                extra[name] = str(value)
+    return extra
+
+
+def locked_attributes(
+    model: Mapping[str, Any] | None,
+    state: Mapping[str, str],
+    active_alarms: Collection[str] = (),
+) -> frozenset[str]:
+    """Attributes the model marks non-writable while ``state`` holds (or a fault is active).
+
+    Distinct from the per-attribute ``writable`` flag, which misclassifies several settings this
+    hardware demonstrably accepts. These rules are conditional and match observed behaviour: a unit
+    in fan-only really does ignore a setpoint, and one reporting a fault ignores most of the rest.
+    """
+    if not model:
+        return frozenset()
+    locked: set[str] = set()
+    for rule in model.get("modifiers") or ():
+        trigger = rule.get("trigger") or {}
+        conditions = trigger.get("conditions") or {}
+        alarms = trigger.get("alarms") or []
+        matched = [str(state.get(name)) in [str(v) for v in values]
+                   for name, values in conditions.items()]
+        if alarms:
+            matched.append(any(name in active_alarms for name in alarms))
+        if not matched:
+            continue
+        fired = any(matched) if str(trigger.get("operator")).upper() == "OR" else all(matched)
+        if not fired:
+            continue
+        for action in rule.get("actions") or ():
+            if action.get("writable") is False and action.get("name"):
+                locked.add(action["name"])
+    return frozenset(locked)

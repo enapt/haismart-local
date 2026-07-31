@@ -251,6 +251,11 @@ the handset is invisible here, while a unit whose model declares those attribute
 Both light an icon on the handset, so an owner will reasonably expect them. "I feel" is never
 available; a timer depends on the model.
 
+The vendor app does not offer either for a unit like this one, which is worth knowing before hunting
+for a command that would expose them: its control surface names neither, and the attribute set it is
+driven by contains neither. If an app build ever does show them for a given unit, that would be the
+thing to chase — its control surface is served as a resource bundle and can change.
+
 ### Turbo and quiet are one control
 
 They occupy separate bits but the unit treats them as mutually exclusive: engaging turbo clears quiet

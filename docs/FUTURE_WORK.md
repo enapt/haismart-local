@@ -143,6 +143,13 @@ membership comes from the device's own model and position from the map, and the 
 independently. On a real 125-byte report they read sensibly, and the screen-display flag agrees with
 what that unit published through the cloud.
 
+**Codes are included, and were not always.** An unscaled number is a code, and for a while every one
+of them was dropped on the grounds that the wire numbering need not be the published numbering.
+That is true of exactly two attributes in the whole map, and the map carries the correspondence for
+both — so the rest were being withheld for want of an answer already given. They are now read: a
+code the map translates is translated, and one it does not is already the published value. This is
+also what finally made the indoor-humidity reading in item 10 appear.
+
 They stop at diagnostics on purpose. A wrong value there costs nothing; the same value wired into
 someone's dashboard is a fault report. What would move them further is the ordinary evidence: a
 capture of a unit with one of them switched on.

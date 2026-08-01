@@ -160,9 +160,6 @@
       "coil_temperature": {
         "name": "Coil temperature"
       },
-      "discharge_temperature": {
-        "name": "Discharge temperature"
-      },
       "indoor_temperature": {
         "name": "Indoor temperature"
       },
@@ -177,6 +174,9 @@
       },
       "local_key": {
         "name": "Local key"
+      },
+      "outdoor_out_air_temperature": {
+        "name": "Outdoor air outlet temperature"
       },
       "outdoor_temperature": {
         "name": "Outdoor temperature"

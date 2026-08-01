@@ -78,9 +78,12 @@ class WireField:
       whole classes of these air conditioners carry the register and leave it at zero for their
       whole service life, and a total that is permanently 0 is worse than absent: it sits in the
       Energy dashboard reporting no consumption.
-    * ``"enum"``  -> ``enum[raw]`` — maps the raw EPP value to a **Haier STD code string** (so the
-      per-model :class:`~haismart_hrdp.models.AttributeProfile` can name it), or drops the field when
-      the raw value isn't in the map.
+    * ``"enum"``  -> ``enum[raw]`` — translates the raw wire value into the code the device
+      **publishes** for that attribute, or drops the field when the raw value isn't in the map. Most
+      attributes number themselves the same way in both places and need no entry here; the few that
+      do not are the reason this exists. The mapped-to value is a Haier STD code — a string where a
+      per-model :class:`~haismart_hrdp.models.AttributeProfile` names it, an integer where the
+      published map carries the translation itself.
     """
 
     word: int
@@ -89,7 +92,7 @@ class WireField:
     kind: str = "int"
     k: float = 1.0
     c: float = 0.0
-    enum: Mapping[int, str] | None = None
+    enum: Mapping[int, str] | Mapping[int, int] | None = None
 
     def read(self, data: bytes):
         # The words this field spans, ending at its own: one for anything that fits a single word,
@@ -517,20 +520,26 @@ def declared_fields(
         span = (c.bit + c.length + 15) // 16
         if word - span + 1 < 1 or word > word_limit:
             continue
-        kind = _DTYPE_KINDS[c.dtype]
+        kind, enum = _DTYPE_KINDS[c.dtype], None
         if kind is None:
-            # A number the map scales or offsets is a reading, and the wire carries it directly.
-            # An unscaled one is a bare CODE, and a code on the wire is not necessarily the code
-            # the device publishes -- these models routinely number an attribute one way in their
-            # published values and another on the wire, and the translation lives in a per-model
-            # table this map does not carry. Checked against a live unit, every boolean and every
-            # scaled reading agreed with what it published; the one unscaled code disagreed,
-            # reading 0 for a value published as 1. So a code is dropped rather than reported as
-            # something it may not mean -- the same rule the control encoder follows.
-            if (c.k, c.c) == (1.0, 0.0):
-                continue
-            kind = "int"
-        out[name] = WireField(word, c.bit, c.length, kind=kind, k=c.k, c=c.c)
+            # How a number is read depends on what the published map says about its codes, and the
+            # map states this for every attribute it carries -- there is no third case where the
+            # answer is unknown.
+            #
+            #  * scaled or offset -> a READING, which the wire carries directly.
+            #  * unscaled with a translation -> a CODE the device publishes under different numbers
+            #    than it puts on the wire. The map carries that translation as `enum`, so apply it;
+            #    reporting the raw value here means reporting something the device never says.
+            #  * unscaled with no translation -> a CODE the map states is the same in both places,
+            #    so the wire value is already the published one. An absent `enum` is the map saying
+            #    the two agree, not the map having nothing to say.
+            if (c.k, c.c) != (1.0, 0.0):
+                kind = "int"
+            elif c.enum:
+                kind, enum = "enum", c.enum
+            else:
+                kind = "raw"
+        out[name] = WireField(word, c.bit, c.length, kind=kind, k=c.k, c=c.c, enum=enum)
     return out
 
 

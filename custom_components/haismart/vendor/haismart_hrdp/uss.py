@@ -934,11 +934,32 @@ def _sensor_temp(raw: int, *, scale: float, offset: float) -> float | None:
 # offsets are byte positions inside the decrypted blob, confirmed on a 24 000-BTU-class wall-mounted
 # split (the "classic" family, whose extended report is 141 bytes).
 _EXT_STATUS_LEN = 141
-_EXT_OFF_POWER = 126          # BE16, watts
-_EXT_OFF_COIL_DISCHARGE = 128  # high byte = indoor coil temp, low byte = compressor discharge temp
+_EXT_OFF_POWER = 126          # BE16, watts -- a register the unit keeps, not a figure we compute
+_EXT_OFF_COIL = 128           # indoor coil temp, x0.5 - 20
+_EXT_OFF_OUTDOOR_OUT_AIR = 129   # outdoor unit air-outlet temp, -64
+_EXT_OFF_OUTDOOR_COIL = 130      # outdoor coil temp, -64
+_EXT_OFF_OUTDOOR_IN_AIR = 131    # outdoor unit air-inlet temp, -64
+_EXT_OFF_OUTDOOR_DEFROST = 132   # outdoor defrost sensor, -64
 _EXT_OFF_FREQ = 133           # compressor frequency, Hz
 _EXT_OFF_CURRENT = 134        # BE16, amps x 10
-_EXT_OFF_ACTUATORS = 136      # BE16 of 2-bit actuator states: bits 0-1 compressor, bits 2-3 indoor fan
+_EXT_OFF_ACTUATORS = 136      # BE16 of six 2-bit actuator states, see _EXT_ACTUATORS
+_EXT_OFF_EXPANSION_VALVE = 138   # BE16, electronic expansion valve opening
+
+# The actuator word packs six two-bit states. The published map gives each one's position and says
+# its value is 0, 1 or 2 -- but not what those mean, so only the two whose behaviour has been watched
+# against a running unit are reported as booleans. The rest are reported as the codes they are: an
+# idle unit sends a non-zero value for several of them, so reading "not zero" as "running" would say
+# the outdoor fan and the reversing valve were active on a unit drawing no power.
+_EXT_ACTUATOR_FLAGS: tuple[tuple[str, int], ...] = (
+    ("compressor_running", 0),
+    ("fan_running", 2),                  # indoor fan
+)
+_EXT_ACTUATOR_CODES: tuple[tuple[str, int], ...] = (
+    ("four_way_valve_status", 4),
+    ("indoor_electric_heating_status", 6),
+    ("outdoor_fan_status", 8),
+    ("defrost_status", 10),
+)
 # A unit that is not reporting simply sends 0. Anything above these is not a real domestic reading and
 # is treated as "no data" rather than published into long-term statistics.
 _MAX_PLAUSIBLE_W = 20_000
@@ -953,9 +974,15 @@ def parse_extended_status(data: bytes) -> dict[str, Any]:
     "classic" family's 141-byte report is confirmed; other families append their engineering block at
     different offsets and need their own entry before this can decode them.
 
-    Keys (each omitted when the unit does not report it):
+    Keys (each temperature omitted when the unit does not carry that probe):
       ``power_w``, ``compressor_current_a``, ``compressor_frequency_hz``,
-      ``coil_temperature``, ``discharge_temperature``, ``compressor_running``, ``fan_running``
+      ``expansion_valve_opening``, the refrigeration-circuit temperatures ``coil_temperature``,
+      ``outdoor_out_air_temperature``, ``outdoor_coil_temperature``, ``outdoor_in_air_temperature``
+      and ``outdoor_defrost_temperature``, and the actuator states named in
+      :data:`_EXT_ACTUATOR_FLAGS` and :data:`_EXT_ACTUATOR_CODES`.
+
+    Only some of these are surfaced as entities; the rest are decoded because the published map
+    states where they are, and they reach a diagnostics download rather than a dashboard.
     """
     if len(data) != _EXT_STATUS_LEN or data[2:4] != b"\x27\x15":
         return {}
@@ -972,16 +999,25 @@ def parse_extended_status(data: bytes) -> dict[str, Any]:
         out["compressor_current_a"] = round(amps, 1)
     out["compressor_frequency_hz"] = data[_EXT_OFF_FREQ]
     # Same absent-sensor policy as the status report's temperatures: 0 must not become a confident
-    # -20/-64 C reading in a user's statistics.
-    coil = _sensor_temp(data[_EXT_OFF_COIL_DISCHARGE], scale=0.5, offset=-20.0)
-    if coil is not None:
-        out["coil_temperature"] = coil
-    discharge = _sensor_temp(data[_EXT_OFF_COIL_DISCHARGE + 1], scale=1.0, offset=-64.0)
-    if discharge is not None:
-        out["discharge_temperature"] = discharge
+    # -20/-64 C reading in a user's statistics. Most units carry only some of these probes.
+    for key, off, scale, offset in (
+        ("coil_temperature", _EXT_OFF_COIL, 0.5, -20.0),
+        ("outdoor_out_air_temperature", _EXT_OFF_OUTDOOR_OUT_AIR, 1.0, -64.0),
+        ("outdoor_coil_temperature", _EXT_OFF_OUTDOOR_COIL, 1.0, -64.0),
+        ("outdoor_in_air_temperature", _EXT_OFF_OUTDOOR_IN_AIR, 1.0, -64.0),
+        ("outdoor_defrost_temperature", _EXT_OFF_OUTDOOR_DEFROST, 1.0, -64.0),
+    ):
+        value = _sensor_temp(data[off], scale=scale, offset=offset)
+        if value is not None:
+            out[key] = value
     actuators = int.from_bytes(data[_EXT_OFF_ACTUATORS:_EXT_OFF_ACTUATORS + 2], "big")
-    out["compressor_running"] = bool(actuators & 0x03)
-    out["fan_running"] = bool((actuators >> 2) & 0x03)
+    for key, bit in _EXT_ACTUATOR_FLAGS:
+        out[key] = bool((actuators >> bit) & 0x03)
+    for key, bit in _EXT_ACTUATOR_CODES:
+        out[key] = (actuators >> bit) & 0x03
+    out["expansion_valve_opening"] = int.from_bytes(
+        data[_EXT_OFF_EXPANSION_VALVE:_EXT_OFF_EXPANSION_VALVE + 2], "big"
+    )
     return out
 
 

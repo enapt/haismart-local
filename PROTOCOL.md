@@ -369,11 +369,13 @@ Two limits, both deliberate:
 * **Only where the displacement is confirmed.** Extended-46 has no single whole-word offset — six of
   its nine mapped positions disagree with any — so it declines rather than placing three dozen
   attributes plausibly and wrongly. Compact-12 is not this lineage at all.
-* **Booleans and scaled readings only.** An unscaled number is a bare *code*, and a code on the wire
-  is not necessarily the code the device publishes; these models number an attribute one way in
-  their published values and another on the wire, and that translation is not in this map. Checked
-  against a live unit, all 21 booleans and scaled readings agreed with the values it published,
-  and the one unscaled code did not.
+* **A code is read as the device publishes it.** An unscaled number is a bare *code*, and a few
+  attributes number themselves one way in their published values and another on the wire. The map
+  states which: where the two differ it carries the correspondence, and where they agree it carries
+  nothing, so an attribute with no correspondence is one the map says needs none. Two attributes in
+  the whole map translate. Checked against a live unit, all 21 booleans and scaled readings agreed
+  with the values it published, and the one code that disagreed is one of those two — reading 0 for
+  a value published as 1, which is exactly what its entry says.
 
 ## What the device's own model supplies
 

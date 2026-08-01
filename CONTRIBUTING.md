@@ -125,9 +125,12 @@ Two rules make this safe:
   as the layout-independent fields allow and flagged `partial`. `STATUS_LAYOUTS` stays the allowlist
   for writes, because a wrong word count sends a sensor byte back to the AC as a control word.
 - **A position may be inferred from the published map; a meaning may not.** Reading a device's other
-  declared attributes off the map is fair — the map states where they are, and the device states
-  that it has them. Deciding what an unscaled *code* means is not, because the published value and
-  the wire value are numbered separately, so codes are dropped rather than reported.
+  declared attributes off the map is fair — the map states where they are, the device states that it
+  has them, and for a *code* the map also states whether the wire numbering is the published
+  numbering. Deciding what a code means where nothing states it is not fair: the extended report
+  places six two-bit actuator states whose values are declared to be 0, 1 or 2 with no meanings
+  attached, so those are reported as the codes they are rather than as booleans. A live unit sends
+  the same value for two of them whether it is cooling hard or idle at 0 W.
 - **A new grSetDAC field or value needs an observation, not a deduction.** The way to get one is a
   single-attribute sweep: change exactly one setting in the vendor app and diff the report. That is
   how every field in the current map was established, and how horizontal swing and heat were added.

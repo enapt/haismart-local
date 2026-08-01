@@ -327,11 +327,14 @@ worse than no value:
 
 - **A family with no confirmed displacement returns nothing.** Placing three dozen attributes from a
   guessed offset would put every one of them somewhere plausible and wrong.
-- **Bare codes are dropped.** Booleans and scaled readings are kept, because the wire value *is* the
-  value. An unscaled number is a code, and these models number an attribute one way in their
-  published values and another on the wire; that translation is not in this map. Checked against a
-  live unit, all 21 booleans and scaled readings matched the values the device publishes through its
-  cloud profile, and the one unscaled code did not — reading 0 where the device published 1.
+- **A code is translated where the map says it must be.** Booleans and scaled readings are kept as
+  they stand, because the wire value *is* the value. An unscaled number is a code, and a few
+  attributes number themselves one way in their published values and another on the wire — so the
+  map carries that correspondence for the two attributes that need it, and carries none for the rest
+  because they need none. An absent correspondence is the map answering, not the map staying silent.
+  Checked against a live unit, all 21 booleans and scaled readings matched the values the device
+  publishes through its cloud profile, and the one code that did not — reading 0 where the device
+  published 1 — is one of the two, behaving exactly as its entry describes.
 
 The readings land in a diagnostics download (`model_declared_fields`), beside the device's own
 published values (`digital_model.reported_values`) so the two can be compared directly. They are not

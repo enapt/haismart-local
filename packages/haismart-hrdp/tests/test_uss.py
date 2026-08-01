@@ -1313,9 +1313,13 @@ def test_parse_extended_status_decodes_a_running_unit():
     assert got["compressor_frequency_hz"] == 35
     assert got["compressor_running"] is True
     assert got["fan_running"] is True
-    # a cold evaporator while cooling, and a hot discharge line
+    # a cold evaporator while cooling, and warm air leaving the outdoor unit
     assert got["coil_temperature"] == 12.0
-    assert got["discharge_temperature"] == 57.0
+    assert got["outdoor_out_air_temperature"] == 57.0
+    # the outdoor probes this unit does not carry are absent rather than reported as -64 C
+    assert "outdoor_coil_temperature" not in got
+    assert "outdoor_in_air_temperature" not in got
+    assert "outdoor_defrost_temperature" not in got
 
 
 def test_parse_extended_status_decodes_an_idle_unit():
@@ -1326,6 +1330,22 @@ def test_parse_extended_status_decodes_an_idle_unit():
     assert got["compressor_running"] is False
     assert got["fan_running"] is False
     assert got["coil_temperature"] == 28.0      # coil sits at room temperature
+
+
+def test_extended_actuator_codes_are_reported_as_codes():
+    """The published map places six two-bit actuator states and says each is 0, 1 or 2 -- without
+    saying what those mean. Only the two watched against a running unit are reported as booleans.
+
+    The rest are the codes they are, because "not zero" is not "on": this unit reports the same
+    value for its reversing valve and outdoor fan whether it is cooling hard or sitting idle at
+    0 W, so a boolean would claim both were running on a unit doing nothing."""
+    cooling = uss.parse_extended_status(EXT_COOLING)
+    idle = uss.parse_extended_status(EXT_IDLE)
+
+    assert cooling["compressor_running"] is True and idle["compressor_running"] is False
+    for key in ("four_way_valve_status", "outdoor_fan_status"):
+        assert isinstance(cooling[key], int) and not isinstance(cooling[key], bool)
+        assert cooling[key] == idle[key] == 2
 
 
 def test_parse_extended_status_rejects_anything_else():
@@ -1530,20 +1550,27 @@ def test_declared_fields_refuse_a_family_with_no_confirmed_displacement():
     assert ext46.model_fields(["lockStatus", "freshAirStatus", "targetHumidity"], 209) == {}
 
 
-def test_declared_fields_drop_a_bare_code():
-    """A code on the wire is not necessarily the code the device publishes -- these models number an
-    attribute one way in their published values and another on the wire, and the translation is not
-    in this map. Checked against a live unit, every boolean and scaled reading agreed with what it
-    published and the one unscaled code did not, reading 0 for a value published as 1. So codes are
-    dropped; booleans and scaled readings, whose wire value IS the value, are kept."""
+def test_declared_fields_read_a_code_as_the_device_publishes_it():
+    """An unscaled number is a CODE, and the published map states, for every attribute it carries,
+    whether the wire numbering is the published numbering. Where the two differ it carries the
+    translation; where they agree it carries none. So a code is translated or taken as it stands --
+    never guessed at, and never dropped for want of an answer the map already gives."""
     from haismart_hrdp.canonical_map import CANONICAL
     from haismart_hrdp.wire_models import declared_fields
 
     fields = declared_fields(-19, ["tempUnit", "specialMode", "lockStatus", "targetHumidity"],
                              word_limit=17)
-    assert "tempUnit" not in fields and "specialMode" not in fields
-    assert set(fields) == {"lockStatus", "targetHumidity"}
-    # ...and the scaled one keeps the offset that makes it the published value
+    assert set(fields) == {"tempUnit", "specialMode", "lockStatus", "targetHumidity"}
+    # tempUnit is one of the two attributes that number themselves differently in the two places:
+    # it puts 0 on the wire for the value it publishes as 1. Reporting the raw value reported
+    # something the device never states, so the map's translation is applied.
+    assert fields["tempUnit"].kind == "enum"
+    assert fields["tempUnit"].enum == CANONICAL["tempUnit"].enum
+    assert fields["tempUnit"].read(STATUS_125) == CANONICAL["tempUnit"].enum[0] == 1
+    # specialMode's numbering is the same in both places, so its wire value is already the answer
+    assert fields["specialMode"].kind == "raw"
+    assert fields["specialMode"].read(STATUS_125) == 0
+    # ...and a scaled one keeps the offset that makes it the published value
     assert fields["targetHumidity"].c == CANONICAL["targetHumidity"].c
 
 

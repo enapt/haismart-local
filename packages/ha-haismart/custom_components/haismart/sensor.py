@@ -83,11 +83,14 @@ SENSORS: tuple[HaismartSensorDescription, ...] = (
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfPower.WATT,
-        # Diagnostic, which groups it with the rest of the telemetry: on most units this is a
-        # derived reading, computed from the current sensor rather than measured. (One family
-        # reports a measured wattage instead, from its own register.) Still MEASUREMENT either way,
-        # so it records into long-term statistics and a Riemann-sum helper can turn it into the kWh
-        # the Energy dashboard needs on the units that keep no total of their own.
+        # Read from the unit's own register, which the published map states is in watts -- not a
+        # figure computed here. On the units measured so far the register tracks the current sensor
+        # closely enough to look calculated, but that is the firmware's business: what reaches this
+        # entity is what the air conditioner reports.
+        #
+        # Diagnostic, which groups it with the rest of the engineering telemetry. MEASUREMENT, so it
+        # records into long-term statistics and a Riemann-sum helper can turn it into the kWh the
+        # Energy dashboard needs on the units that keep no total of their own.
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda s: s.get("power_w"),
     ),
@@ -140,14 +143,18 @@ SENSORS: tuple[HaismartSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda s: s.get("coil_temperature"),
     ),
+    # The outdoor unit's air-outlet probe. `key` is deliberately left at the name this entity was
+    # first published under: it forms the unique id, so changing it would abandon every existing
+    # entity and the history attached to it, for a reading that has not itself changed. Only the
+    # name shown to the user is corrected.
     HaismartSensorDescription(
         key="discharge_temperature",
-        translation_key="discharge_temperature",
+        translation_key="outdoor_out_air_temperature",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda s: s.get("discharge_temperature"),
+        value_fn=lambda s: s.get("outdoor_out_air_temperature"),
     ),
 )
 

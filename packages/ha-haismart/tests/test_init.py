@@ -129,8 +129,11 @@ async def test_extended_status_creates_power_sensors(hass: HomeAssistant, mock_u
     assert frequency is not None and float(frequency.state) == 43.0
     coil = hass.states.get("sensor.downstairs_ac_coil_temperature")
     assert coil is not None and float(coil.state) == 12.0
-    discharge = hass.states.get("sensor.downstairs_ac_discharge_temperature")
-    assert discharge is not None and float(discharge.state) == 58.0
+    # The outdoor unit's air-outlet probe. Its unique id is still the name this entity was first
+    # published under, so an existing install keeps its entity and its history; only the name -- and
+    # so the entity id a NEW install derives from it -- reflects what the reading actually is.
+    out_air = hass.states.get("sensor.downstairs_ac_outdoor_air_outlet_temperature")
+    assert out_air is not None and float(out_air.state) == 58.0
 
     # These units measure, but they keep no running total: their cumulative register exists and
     # stays at zero for the unit's life, so the Energy sensor is unavailable rather than reporting a

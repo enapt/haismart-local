@@ -171,8 +171,29 @@ carry `generatorMode` at all** — it is one of the attributes that exists in a 
 not in the shared map, so the trick that placed two dozen others (item 8) cannot place this one.
 Nothing short of captures will do it: Eco off, then each level in turn, one download per state.
 
-Asked for on issue #8, whose owner has the hardware and has offered. Until then those units keep the
-Eco setting their app shows and Home Assistant does not.
+**★ The captures arrived (issue #8) and the position is now known — what is left is to build the
+control.** Four reports, one per state, taken minutes apart on a unit held in cool:
+
+| | w23 bits 3–4 | live input power (w41) |
+|---|---|---|
+| Eco off | 0 | 1969 W |
+| Eco L1 | 1 | 1951 W |
+| Eco L2 | 2 | 1798 W |
+| Eco L3 | 3 | 1205 W |
+
+Nothing else in the report moved but the outdoor temperature and the energy counters. The ladder
+descends with the level, as it does on the classic family, so higher is more restrictive here too.
+
+Two differences from the classic family are worth carrying into the implementation. The field is
+**word 23 bits 3–4 counting 0/1/2/3** — the classic family puts it in the same word at bit 3 but
+spends three bits on it, with an enable bit above two level bits (0/5/6/7). And **bit 4 is one the
+shared map assigns to `freshWindSpeed`**, so this is a model-specific attribute overlapping a shared
+one; it must be driven from the device's own declaration (this unit declares `generatorMode`), not
+from the shared map, which carries no `generatorMode` at all.
+
+⚠️ **Off and L1 are only 18 W apart**, which is not the separation the other steps show. Either L1
+caps above what the unit was drawing, or it had not finished ramping. Worth one more reading before
+anyone describes what L1 *does*; it does not affect where the field is.
 
 ## 10. Indoor humidity, on the units that have the probe
 

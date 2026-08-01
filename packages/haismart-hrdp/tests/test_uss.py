@@ -595,6 +595,26 @@ STATUS_175 = bytes.fromhex(
 )
 UPLUS_175 = "2008610800820324021200118018900000000000000000000000000000000040"
 
+# The same unit with a comfort setting on: one report taken with boost enabled, one with sleep.
+# Its owner reported both as commands that appeared to do nothing -- the air conditioner obeyed and
+# the family map simply did not read the word back.
+STATUS_175_BOOST = bytes.fromhex(
+    "00002715000000004e5601000003020000040100000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000005fffff5c000000000000066d0120640000"
+    "0000000000000000000000000000000000000000000000000000000000000100"
+    "0000080225000209160500003500658000030000000000000000000000000000"
+    "be6b0000000000000000be6b06e908"
+)
+STATUS_175_SLEEP = bytes.fromhex(
+    "00002715000000004e5601000003020000040100000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000005fffff5c000000000000066d0120640000"
+    "0000000000000000000000000000000000000000000000000000000000000100"
+    "0000080225000221160500003400658000030000000000000000000000000000"
+    "be6b0000000000000000be6b061f55"
+)
+
 
 def test_status_layout_recognises_both_report_lengths():
     assert len(STATUS_125) == 125
@@ -715,6 +735,8 @@ def test_extended36_decodes_the_real_reports():
         "swing_horizontal": True, "mode": "cool", "fan_mode": "high",
         "heat_capable": True, "error_code": 0, "last_changed_by": "panel",
         "self_cleaning": False, "layout": "extended36", "writable": True,
+        # the comfort settings this family offers as switches, read from the same word as power
+        "strong": False, "quiet": False, "health": True, "sleep": False, "lamp": True,
     }
     on = uss.parse_full_status(STATUS_165_ON, prof)
     assert on["power"] is True and on["target_temperature"] == 20.0
@@ -727,6 +749,28 @@ def test_extended36_decodes_the_real_reports():
     assert "outdoor_temperature" not in off and "outdoor_temperature" not in on
     # the classic decode's wrong answer, for the record: byte 92 is the media module's `volume`
     assert STATUS_165_OFF[92] + 16 == 48
+
+
+def test_extended36_reads_back_the_comfort_settings_it_offers():
+    """This family offers boost, quiet, health, sleep and the display light as switches, and for a
+    while read none of them: every switch sat at off however the unit was set.
+
+    That is worse than a missing entity. The command reaches the air conditioner and the air
+    conditioner obeys it, but the switch it was thrown from springs back at the next poll, so the
+    owner sees a control that does nothing and stops trusting the rest. The settings share one word
+    with the power flag, at the positions the published map states."""
+    off = uss.parse_full_status(STATUS_175, uplus_id=UPLUS_175)
+    boost = uss.parse_full_status(STATUS_175_BOOST, uplus_id=UPLUS_175)
+    sleep = uss.parse_full_status(STATUS_175_SLEEP, uplus_id=UPLUS_175)
+
+    for name in ("strong", "quiet", "health", "sleep"):
+        assert off[name] is False, name
+    assert off["lamp"] is True                      # this unit's display light was on throughout
+
+    # each report differs from the others in exactly the setting it was taken for
+    assert boost["strong"] is True and boost["sleep"] is False
+    assert sleep["sleep"] is True and sleep["strong"] is False
+    assert boost["power"] is sleep["power"] is True
 
 
 def test_extended36_claims_the_175_byte_variant_too():
@@ -751,6 +795,7 @@ def test_extended36_claims_the_175_byte_variant_too():
         "swing_vertical": False, "swing_horizontal": False, "mode": "cool", "fan_mode": "low",
         "heat_capable": False, "error_code": 0, "last_changed_by": "network",
         "self_cleaning": False, "layout": "extended36", "writable": True,
+        "strong": False, "quiet": False, "health": False, "sleep": False, "lamp": True,
         # this variant carries its own live power reading; the shorter report has no such word
         "power_w": 1318,
         # and a cumulative energy total, in watt-hours
@@ -1519,25 +1564,25 @@ def test_declared_fields_reads_what_a_device_says_it_has():
     from haismart_hrdp.wire_models import _CLASSIC_PROBE
 
     declared = [
-        "screenDisplayStatus", "lockStatus", "healthMode", "targetHumidity", "freshAirStatus",
-        "onOffStatus",                 # already in the family map -- must not be duplicated
+        "lockStatus", "targetHumidity", "freshAirStatus", "indoorHumidity",
+        "onOffStatus", "healthMode",   # already in the family map -- must not be duplicated
         "someAttributeNobodyPublishes",  # not in the map -- must be ignored, not guessed at
     ]
     fields = _CLASSIC_PROBE.model_fields(declared, 125)
 
-    assert "onOffStatus" not in fields, "re-read an attribute the family map already carries"
+    for covered in ("onOffStatus", "healthMode"):
+        assert covered not in fields, "re-read an attribute the family map already carries"
     assert "someAttributeNobodyPublishes" not in fields
-    assert set(fields) == {"screenDisplayStatus", "lockStatus", "healthMode", "targetHumidity",
-                           "freshAirStatus"}
+    assert set(fields) == {"lockStatus", "targetHumidity", "freshAirStatus", "indoorHumidity"}
     # positions are the published ones, displaced by the family's confirmed offset
     for name, wf in fields.items():
         c = CANONICAL[name]
         assert (wf.word, wf.bit, wf.length) == (c.word - 19, c.bit, c.length), name
 
-    # ...and they decode a real report. This unit's screen was on when the capture was taken, which
-    # its own published attribute values confirm independently of anything read off the wire.
-    assert fields["screenDisplayStatus"].read(STATUS_125) is True
+    # ...and they decode a real report. The child lock was off on the unit this capture came from,
+    # and its humidity probe read 55 -- a reading nothing else in the report exposes.
     assert fields["lockStatus"].read(STATUS_125) is False
+    assert fields["indoorHumidity"].read(STATUS_125) == 55
 
 
 def test_declared_fields_refuse_a_family_with_no_confirmed_displacement():

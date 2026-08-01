@@ -1523,16 +1523,18 @@ async def test_diagnostics_read_the_attributes_the_device_declares(
     entry = await _setup_with_model(hass, {
         "attributes": [
             {"name": "lockStatus", "valueRange": {"type": "LIST"}},
-            {"name": "screenDisplayStatus", "valueRange": {"type": "LIST"}},
+            {"name": "indoorHumidity", "valueRange": {"type": "STEP"}},
             {"name": "onOffStatus", "valueRange": {"type": "LIST"}},   # the map already has it
+            # so does the display light, now that this family reads its comfort settings back
+            {"name": "screenDisplayStatus", "valueRange": {"type": "LIST"}},
         ],
     })
     diag = await async_get_config_entry_diagnostics(hass, entry)
 
     declared = diag["model_declared_fields"]
     assert declared is not None, "a classic unit's declared attributes were not read"
-    assert set(declared) == {"lockStatus", "screenDisplayStatus"}
-    assert all(isinstance(v, bool) for v in declared.values())
+    assert set(declared) == {"lockStatus", "indoorHumidity"}
+    assert declared["lockStatus"] is False
 
 
 async def test_diagnostics_carry_the_values_the_device_reports(

@@ -459,6 +459,14 @@ _CLIMATE_SPEC: Mapping[str, tuple] = {
     "swing_horizontal": ("windDirectionHorizontal", "vane_h"),
     "self_cleaning": ("selfCleaningStatus", "bool"),
     "energy_wh": ("totalElectricityUsed", "counter"),
+    # The comfort settings, which share one word with the power flag. A family that offers these as
+    # switches must also READ them: a switch whose state never moves looks to its owner like a
+    # command that did nothing, even when the air conditioner obeyed it.
+    "strong": ("rapidMode", "bool"),
+    "quiet": ("muteStatus", "bool"),
+    "health": ("healthMode", "bool"),
+    "sleep": ("silentSleepStatus", "bool"),
+    "lamp": ("screenDisplayStatus", "bool"),
 }
 
 
@@ -640,6 +648,10 @@ EXTENDED36 = WireModel(
             "power", "target_temperature", "current_temperature", "outdoor_temperature",
             "heat_capable", "error_code", "last_changed_by", "operation_mode", "wind_speed",
             "swing_vertical", "swing_horizontal", "self_cleaning",
+            # The comfort settings this family offers as switches. They sit in the same word as the
+            # power flag, at the positions the published map states, and a report from a unit with
+            # boost on and another with sleep on carry exactly those two bits.
+            "strong", "quiet", "health", "sleep", "lamp",
             # Cumulative energy, in watt-hours (see above). Absent on the units that leave the
             # register at zero, which includes every 165-byte report seen — that length reaches the
             # word, so it is the register being unpopulated rather than the field being off the end.

@@ -139,14 +139,31 @@ single fault where the frame carries the set, so the bit that is set must be `er
 Nothing to do but keep the diagnostic in place and check the first report that arrives.
 
 
-## 8. The attributes a device declares are read, but not yet offered as entities
+## 8. The attributes a device declares — read, and the user-facing ones now surfaced
 
 A unit declares three or four times the attributes any family map carries — on the reference units,
 42 declared against 14 mapped — and every one of them sits where the published map already says.
-Those extra readings are now decoded and reported in diagnostics (`model_declared_fields`), because
+Those extra readings are decoded and reported in diagnostics (`model_declared_fields`), because
 membership comes from the device's own model and position from the map, and the two are arrived at
 independently. On a real 125-byte report they read sensibly, and the screen-display flag agrees with
 what that unit published through the cloud.
+
+**The optional ones are now entities** (read-only, diagnostic): the user-facing comfort and
+air-treatment functions — fresh air, electric heating, a 10 °C keep-warm, ambient light, an
+intelligent mode, humidification, the buzzer, presence-based airflow — appear as sensors on any unit
+that *actually has* them. Two gates make that safe: the family must have a confirmed map displacement
+(classic and extended-36; the others place nothing), and the model must be known well enough to tell
+a real feature from one the generic model over-declares. **A generic model lists every attribute the
+product line might have and marks the ones a given unit lacks `invisible`** (they read a permanent
+zero); those are dropped, and where that flag is not yet known the unit gets no such entities at all
+rather than a guess. Confirmed on a live unit: of 42 declared attributes exactly one is a
+non-invisible optional feature, and that one alone appears.
+
+**Still read-only, deliberately.** A group-set write applies the whole word block, so making these
+*controls* needs a confirmed write per field — see the write-contract note below. And the ones the
+canonical map does not yet place (`mouldProof`, `drying`, `uvSterilizationSwitch`, `pvPowerSavingMode`,
+the dual-airflow `*L`/`*R` set, ...) wait on a position; they are declared but cannot be read off any
+report.
 
 **Codes are included, and were not always.** An unscaled number is a code, and for a while every one
 of them was dropped on the grounds that the wire numbering need not be the published numbering.

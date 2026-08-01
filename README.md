@@ -81,6 +81,8 @@ One device per air conditioner, with:
 | **Coil / discharge temperature** *(diagnostic)* | Evaporator and compressor-discharge temperatures |
 | **Compressor / Fan** *(diagnostic, on/off)* | Whether the compressor and indoor fan are actually running |
 | **Self-clean** *(diagnostic, on/off)* | Whether a self-clean cycle is running. Reported, not controlled — the cycle runs to completion and ignores a second press, so there is nothing an off switch could do |
+| **Optional features** *(diagnostic, on/off)* | The extra functions a unit reports having — fresh air, electric heating, a 10 °C keep-warm, ambient light, an intelligent mode, humidification, the buzzer, and others — each read-only, and only the ones your unit *actually* has (a model over-declares; the ones it lacks are hidden) |
+| **Presence airflow** *(diagnostic, enum)* | Where a presence-sensing unit is directing air: off / avoid / follow. Only on units with the sensor |
 | **Fault** *(diagnostic, problem)* | Whether the unit is reporting a fault. Its attributes name the active faults with the service code the unit shows (E1, F4, …) — that is what an engineer will ask for |
 | **Last changed by** *(diagnostic)* | Whether the last change came from the handset, the unit's own panel, or the network. Useful as an automation trigger when someone picks up the remote |
 | **Model ID** *(diagnostic)* | The identifier that selects your unit's report layout. Shown shortened (it's 64 characters); the exact value is on the entity's `uplus_id` attribute — quote that in a bug report about a model that isn't decoded |

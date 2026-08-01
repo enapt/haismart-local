@@ -92,6 +92,7 @@ from .uss import (
     set_grsetdac_field,
     status_layout,
 )
+from .features import OPTIONAL_BOOL_FEATURES, declared_bool_features, read_bool_features
 from .wire_models import (
     VANE_V_EPP_TO_MODEL,
     VANE_V_MODEL_TO_EPP,
@@ -135,6 +136,9 @@ __all__ = [
     "WIRE_MODELS",
     "select_wire_model",
     "declared_fields",
+    "OPTIONAL_BOOL_FEATURES",
+    "declared_bool_features",
+    "read_bool_features",
     "probe_layout",
     "StatedState",
     "VANE_V_MODEL_TO_EPP",

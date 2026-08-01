@@ -1756,3 +1756,28 @@ def test_declared_order_rejects_the_families_that_arrange_settings_differently()
         "classic": False, "extended36": False,      # this lineage: every candidate passes
         "extended46": True, "compact12": True,      # a different arrangement: all refused
     }
+
+
+def test_declared_bool_features_reads_from_the_model_and_the_map():
+    """The optional features a device declares, read read-only from the published map. Membership is
+    the device's model, position the map, value the bit -- confirmed 7/7 against the cloud on a real
+    unit. Family with no confirmed displacement yields nothing (no guess)."""
+    from haismart_hrdp import declared_bool_features, read_bool_features
+    from haismart_hrdp.wire_models import _CLASSIC_PROBE, EXTENDED46
+
+    model = {"attributes": [
+        {"name": "freshAirStatus"}, {"name": "electricHeatingStatus"}, {"name": "lightStatus"},
+        {"name": "onOffStatus"},               # not an optional feature -- ignored
+        {"name": "somethingNobodyLists"},       # not in the map -- ignored
+    ]}
+    assert declared_bool_features(model) == frozenset(
+        {"freshAirStatus", "electricHeatingStatus", "lightStatus"})
+    # also accepts a name->spec map and a bare list of names
+    assert declared_bool_features({"attributes": {"freshAirStatus": {}}}) == frozenset({"freshAirStatus"})
+    assert declared_bool_features(["lightStatus", "x"]) == frozenset({"lightStatus"})
+
+    got = read_bool_features(_CLASSIC_PROBE, model, STATUS_125)
+    assert set(got) == {"freshAirStatus", "electricHeatingStatus", "lightStatus"}
+    assert all(isinstance(v, bool) for v in got.values())
+    # a family whose map is not pinned places nothing
+    assert read_bool_features(EXTENDED46, model, b"\x00" * 209) == {}

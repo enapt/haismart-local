@@ -34,6 +34,7 @@ from haismart_extractor.cloud import SEA_APP_CREDENTIALS, CloudError
 from haismart_hrdp import (
     GRSETDAC_FIELDS,
     GRSETDAC_MODEL_AUTHORIZED,
+    OPTIONAL_BOOL_FEATURES,
     STATUS_LAYOUTS,
     VANE_V_EPP_TO_MODEL,
     VANE_V_MODEL_TO_EPP,
@@ -44,6 +45,7 @@ from haismart_hrdp import (
     async_send_op,
     build_epp_frame,
     constraint_commands,
+    declared_bool_features,
     extended_status_epp_frame,
     grsetdac_baseline_from_status,
     grsetdac_op_frame,
@@ -59,6 +61,7 @@ from haismart_hrdp import (
     read_grsetdac_field,
     select_wire_model,
     set_grsetdac_field,
+    read_bool_features,
     udiscovery,
     validate_write,
     with_rules,
@@ -433,6 +436,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         )
                 self._apply_telemetry(state, telemetry)
                 state.update(alarms)
+                state["features"] = self._feature_states(blob)
                 return state
 
         # Connected fine but nothing decoded — either the AC pushed no full report this
@@ -957,6 +961,33 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if (wm := self._wire_model) is not None:
             return name in wm.write_fields
         return name in GRSETDAC_FIELDS
+
+    def _feature_wire_model(self, length: int) -> WireModel | None:
+        """The family map to read declared features with -- the classic probe for the lengths
+        ``uss`` decodes inline, else the registry model. ``model_fields`` on it yields nothing
+        unless the family has a confirmed displacement, which is the safety gate."""
+        if length in STATUS_LAYOUTS:
+            from haismart_hrdp.wire_models import _CLASSIC_PROBE
+            return _CLASSIC_PROBE
+        return self._wire_model or select_wire_model(length, self.uplus_id)
+
+    def _feature_states(self, blob: bytes) -> dict[str, bool]:
+        """The declared optional boolean features read out of this report, or ``{}``.
+
+        Membership is the device's own model, position is the published map, and the two are
+        independent -- the same basis as the diagnostics ``model_declared_fields``, promoted here to
+        read-only entities. Empty for a family whose map has no confirmed displacement (nothing is
+        placed on a guess) or a unit with no model (the manual path).
+        """
+        wm = self._feature_wire_model(len(blob))
+        if wm is None or not self.digital_model:
+            return {}
+        return read_bool_features(wm, self.digital_model, blob)
+
+    @property
+    def declared_features(self) -> frozenset[str]:
+        """The optional boolean features this unit declares -- which read-only entities to create."""
+        return declared_bool_features(self.digital_model)
 
     @property
     def supports_eco(self) -> bool:

@@ -9,6 +9,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from haismart_hrdp import OPTIONAL_BOOL_FEATURES
 from haismart_hrdp.udiscovery import CLOUD_STATES
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -74,6 +75,14 @@ async def async_setup_entry(
         HaismartBinarySensor(coordinator, desc) for desc in BINARY_SENSORS
     ]
     entities.append(HaismartCloudConnectionSensor(coordinator))
+    # Read-only observability for the extra features a unit's own model declares -- fresh air,
+    # electric-heat, ambient light, and the rest a unit may declare. Which ones exist comes
+    # from the device model; where each sits comes from the published map; the value is the bit at
+    # that position. Only families with a confirmed map displacement produce any, so a device on an
+    # unpinned family simply gets none. Not controls: a group-set write of one of these applies the
+    # whole word block, which needs its own confirmation -- these are state, not switches.
+    for name in sorted(coordinator.declared_features):
+        entities.append(HaismartFeatureSensor(coordinator, name))
     async_add_entities(entities)
 
 
@@ -110,6 +119,28 @@ class HaismartCloudConnectionSensor(HaismartEntity, BinarySensorEntity):
             "raw_state": self.coordinator.cloud_state,
             "state_name": CLOUD_STATES.get(self.coordinator.cloud_state or -1),
         }
+
+
+class HaismartFeatureSensor(HaismartEntity, BinarySensorEntity):
+    """One declared boolean feature, read-only, from the device's own model + the published map.
+
+    The attribute name (``freshAirStatus``) is the model's; the translation slug
+    (``fresh_air``) is ours. Diagnostic, and ``None`` until a report carries it -- a feature a unit
+    declares but has not yet reported reads unknown, never a fabricated off.
+    """
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: HaismartCoordinator, attribute: str) -> None:
+        super().__init__(coordinator)
+        self._attribute = attribute
+        self._attr_translation_key = OPTIONAL_BOOL_FEATURES[attribute]
+        self._attr_unique_id = f"{coordinator.device_id}_{OPTIONAL_BOOL_FEATURES[attribute]}"
+
+    @property
+    def is_on(self) -> bool | None:
+        features = (self.coordinator.data or {}).get("features") or {}
+        return features.get(self._attribute)
 
 
 class HaismartBinarySensor(HaismartEntity, BinarySensorEntity):

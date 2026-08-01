@@ -240,11 +240,26 @@
       }
     },
     "binary_sensor": {
+      "ambient_light": {
+        "name": "Ambient light"
+      },
+      "buzzer_silent": {
+        "name": "Buzzer silent"
+      },
       "cloud_connection": {
         "name": "Cloud connection"
       },
       "compressor": {
         "name": "Compressor"
+      },
+      "constant_dehumidify": {
+        "name": "Constant dehumidify"
+      },
+      "drying": {
+        "name": "Drying"
+      },
+      "electric_heating": {
+        "name": "Electric heating"
       },
       "fan": {
         "name": "Fan"
@@ -252,8 +267,41 @@
       "fault": {
         "name": "Fault"
       },
+      "fresh_air": {
+        "name": "Fresh air"
+      },
+      "heat_accumulation": {
+        "name": "Heat accumulation"
+      },
+      "humidification": {
+        "name": "Humidification"
+      },
+      "intelligent": {
+        "name": "Intelligent mode"
+      },
+      "keep_warm_10c": {
+        "name": "10°C keep-warm"
+      },
+      "mould_proof": {
+        "name": "Mould prevention"
+      },
+      "prevent_heatstroke": {
+        "name": "Heatstroke prevention"
+      },
+      "prevent_supercooling": {
+        "name": "Supercooling prevention"
+      },
+      "pv_saving": {
+        "name": "Solar power saving"
+      },
       "self_cleaning": {
         "name": "Self-clean"
+      },
+      "uv_sterilize": {
+        "name": "UV steriliser"
+      },
+      "wind_avoidance": {
+        "name": "Wind avoidance"
       }
     }
   },

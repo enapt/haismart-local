@@ -100,9 +100,18 @@ app's 7.52 kWh. That unit now has an Energy sensor.
 The classic family's register is published too, on the same reasoning: that family **is** the
 published map 19 words earlier, checked against a real report field for field, so the attribute's
 unit and position are inherited rather than assumed, and it lands on the report's last two words.
-One unit is known to keep a total there; every other classic unit met so far carries the register
-and leaves it at zero, and zero is reported as absent. What is missing is only a reading off that
-owner's own app to confirm the magnitude, which has been asked for.
+Every classic unit met so far carries the register and leaves it at zero, and zero is reported as
+absent — so this changes nothing for almost everyone.
+
+⚠️ **Exactly one unit is known to keep a total, and its magnitude is unconfirmed.** It reads
+3,138,753, i.e. ≈ 3,139 kWh, and no reading off that owner's own app has ever been compared against
+it. This shipped on *weaker* evidence than the 165/175-byte sensor did: that one had three
+measurements on three timescales, this one has a single static capture from hardware nobody here
+owns. The justification is that a different question is being asked — there the unit of measure was
+unknown, here only the instance is — and that the two candidate readings are far enough apart to
+argue for the one taken (a fortnight of use against a few years, on a large reverse-cycle unit long
+in service). **Asked for on issue #1. If the answer disagrees, withdraw the sensor rather than
+defend it** — a wrong total is not recoverable from once it is in someone's history.
 
 The 209-byte family has a register that works too — the same published attribute, reading a real
 total where the classic family reports zero — and it is **not** published. That family is the one
@@ -142,6 +151,37 @@ Two families cannot have them at all, and that is correct rather than missing. *
 no single whole-word displacement — 6 of its 9 mapped positions disagree with any offset, because of
 the ten-word insert whose start is still not pinned (item 3) — and **compact-12** is not this
 lineage. Both decline rather than place attributes plausibly and wrongly.
+
+
+## 9. Eco, on the families that publish the setting but not its place
+
+The Eco ladder is `generatorMode`, and on the classic family it is a three-level current limit whose
+position was established from captures: enable plus two level bits, in a word the control block
+already covers.
+
+Other families publish the attribute and get no Eco control, because **the published map does not
+carry `generatorMode` at all** — it is one of the attributes that exists in a device's own model but
+not in the shared map, so the trick that placed two dozen others (item 8) cannot place this one.
+Nothing short of captures will do it: Eco off, then each level in turn, one download per state.
+
+Asked for on issue #8, whose owner has the hardware and has offered. Until then those units keep the
+Eco setting their app shows and Home Assistant does not.
+
+## 10. Indoor humidity, on the units that have the probe
+
+The published map gives the position — the low byte of the word carrying indoor temperature — and it
+has been read as zero on every unit here, which is why no sensor is offered.
+
+**That reason is no longer quite true.** A real 125-byte capture reads **55** there, a thoroughly
+plausible humidity, and the map that places it is the same one verified field for field against that
+very report. So the honest statement is not "every unit reads zero" but "every unit *here* reads
+zero, and one unit elsewhere does not".
+
+What is missing is the same thing item 6 is missing for the same capture: nothing has compared it
+against what that unit reports through any other channel. A diagnostics download from a unit with a
+humidity probe, taken with the room's actual humidity noted, settles it. The reading already appears
+in `model_declared_fields` on any unit that declares the attribute, so the evidence may well arrive
+on its own.
 
 
 # Settled

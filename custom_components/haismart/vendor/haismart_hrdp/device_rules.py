@@ -189,6 +189,22 @@ DEVICE_RULES: Mapping[str, Mapping[str, Any]] = {
 }
 
 
+# The sections a published model carries that a device's shadow does not: which settings it ignores
+# in which state, the faults those rules name, and which settings must travel together.
+RULE_SECTIONS = ("modifiers", "alarms", "constraints")
+
+
+def merge_rules(model: dict[str, Any], published: Mapping[str, Any]) -> dict[str, Any]:
+    """``model`` (a device's shadow: attributes and their live values) with the rule sections of its
+    ``published`` model laid over it. Returns a new dict; sections the published model does not
+    carry are left as they were."""
+    merged = dict(model)
+    for section in RULE_SECTIONS:
+        if published.get(section):
+            merged[section] = published[section]
+    return merged
+
+
 def rules_for(uplus_id: str | None) -> Mapping[str, Any] | None:
     """The recorded rules for a model identifier, or ``None`` when none are known."""
     return DEVICE_RULES.get(uplus_id) if uplus_id else None

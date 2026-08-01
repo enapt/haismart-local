@@ -318,10 +318,38 @@ known case is **fan-only combined with fan=auto**; the digital model's `constrai
 this (and, on the reference unit, asks for `windSpeed=3` when entering fan-only). Heat needs no such
 rule, confirmed on hardware.
 
-## Deriving a new model's layout
+## The families are one map
 
-See [`docs/new-model.md`](docs/new-model.md). Three status captures in known states are enough to
-pin the word block and identify the sensor bytes by elimination.
+Every air conditioner packs the same attributes into the same words, at the same bits, with the same
+widths and scaling. What differs is only **where the block starts**. The published device models
+agree on it completely — same widths, same bits, same order, one whole-word displacement each — and
+[`canonical_map.py`](packages/haismart-hrdp/src/haismart_hrdp/canonical_map.py) carries that map,
+84 attributes of it.
+
+| family | is |
+|---|---|
+| classic | the map 19 words earlier |
+| extended-36 | the map exactly — its "media block" is the part classic units do not carry |
+| extended-46 | the map with a ten-word block inserted at word 25 |
+| compact-12 | genuinely different: one attribute per whole word |
+
+So a **new** model's layout is this map at some displacement, which makes the unknown one integer
+rather than a field table. See [`docs/new-model.md`](docs/new-model.md): three status captures in
+known states are enough to pin it, and the layout prober scores candidates against those states.
+
+## What the device's own model supplies
+
+Onboarding fetches two things about a device and uses both:
+
+* its **shadow** — every attribute with its value range, enums and current value. This is what makes
+  the integration self-configuring: which modes and fan speeds a unit really has, what setpoint
+  range it accepts, and (for four fields) which extra codes it authorises.
+* its **published model** — the same attributes plus the parts the shadow leaves out: `modifiers`
+  (which settings the unit ignores in which state, which drives entity availability), `alarms` (the
+  fault names those rules refer to) and `constraints` (which settings must travel together).
+
+The second is not fetched by name — the model is looked up in the account's resource service, which
+answers with a download URL carrying a build stamp, the file's version and its MD5.
 
 ## A second local protocol: UDISCOVERY on UDP `:7083`
 

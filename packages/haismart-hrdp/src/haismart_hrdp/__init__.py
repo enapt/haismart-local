@@ -16,7 +16,7 @@ Home-Assistant-agnostic. The local protocol lives in ``uss.py``:
 from __future__ import annotations
 
 from .canonical_map import CANONICAL, DISPLACEMENTS, CanonicalField
-from .device_rules import DEVICE_RULES, rules_for, with_rules
+from .device_rules import DEVICE_RULES, RULE_SECTIONS, merge_rules, rules_for, with_rules
 from .models import AttributeProfile
 from .profiles import (
     AAC1UKZ01,
@@ -176,6 +176,8 @@ __all__ = [
     "alarm_names",
     "DEVICE_RULES",
     "rules_for",
+    "merge_rules",
+    "RULE_SECTIONS",
     "with_rules",
     "AAC1UKZ01",
     "AAC1UKZ01_ATTRIBUTES",

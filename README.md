@@ -89,6 +89,11 @@ One device per air conditioner, with:
 Which of these appear depends on your model — the integration only exposes controls it can actually
 drive on your unit, rather than showing buttons that do nothing.
 
+**Your air conditioner describes itself, and the integration listens.** When you sign in it fetches
+your unit's own model: the modes and fan speeds it really has, the setpoint range it accepts, the
+positions its vanes can hold, and the rules saying which settings it ignores in which state. That is
+why a heat pump gets Heat and a cooling-only unit does not, without anyone maintaining a list.
+
 **Some controls come and go with the mode, and that is deliberate.** Air conditioners ignore certain
 settings in certain states — a unit in fan-only discards the temperature you set, and most of them
 ignore boost while dehumidifying. Your unit's own model says which, so those controls go

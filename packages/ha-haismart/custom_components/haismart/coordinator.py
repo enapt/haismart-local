@@ -48,6 +48,7 @@ from haismart_hrdp import (
     grsetdac_baseline_from_status,
     grsetdac_op_frame,
     locked_attributes,
+    merge_rules,
     model_enum_codes,
     parse_alarm_frame,
     parse_extended_status,
@@ -1152,10 +1153,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         except (CloudError, OSError, RuntimeError, TimeoutError, ValueError) as err:
             _LOGGER.debug("could not fetch the model rules for %s: %s", self.device_id, err)
             return False
-        merged = dict(model)
-        for section in ("modifiers", "alarms", "constraints"):
-            if published.get(section):
-                merged[section] = published[section]
+        merged = merge_rules(model, published)
         if merged == model:
             return False
         self.digital_model = merged

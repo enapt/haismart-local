@@ -29,7 +29,7 @@ from typing import TYPE_CHECKING, Any
 import voluptuous as vol
 from haismart_extractor import GatewayCreds, GatewayError, get_localkey_via_gateway
 from haismart_extractor.cloud import SEA_APP_CREDENTIALS, CloudError, HaierCloud
-from haismart_hrdp import async_read_status, probe_localkey_version
+from haismart_hrdp import async_read_status, merge_rules, probe_localkey_version
 from homeassistant.config_entries import (
     ConfigFlow,
     ConfigFlowResult,
@@ -408,10 +408,7 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         except (CloudError, OSError, RuntimeError, TimeoutError, ValueError) as err:
             _LOGGER.debug("no published model rules for %s: %s", picked.model, err)
             return model
-        merged = dict(model)
-        for section in ("modifiers", "alarms", "constraints"):
-            if published.get(section):
-                merged[section] = published[section]
+        merged = merge_rules(model, published)
         _LOGGER.debug(
             "model rules for %s: %d modifier(s), %d constraint(s)", picked.model,
             len(merged.get("modifiers") or ()), len(merged.get("constraints") or ()),

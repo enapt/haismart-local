@@ -310,6 +310,24 @@ def constraint_commands(
     return extra
 
 
+def alarm_names(model: Mapping[str, Any] | None, codes: Collection[int]) -> frozenset[str]:
+    """The model's own names for the active fault positions in ``codes``.
+
+    A fault frame gives positions; the rules in :func:`locked_attributes` are written against names,
+    so one has to be turned into the other. The model's alarm list starts with its "fault cleared"
+    entry, which is not a position at all, so position N is the model's entry **N + 1** — the same
+    offset the unit's own error code uses. A position past the end of the list is dropped rather
+    than guessed at.
+    """
+    alarms = (model or {}).get("alarms") or ()
+    names: set[str] = set()
+    for code in codes:
+        index = code + 1
+        if 0 <= index < len(alarms) and (name := alarms[index].get("name")):
+            names.add(name)
+    return frozenset(names)
+
+
 def locked_attributes(
     model: Mapping[str, Any] | None,
     state: Mapping[str, str],

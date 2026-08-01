@@ -88,6 +88,11 @@ class HaismartEcoSelect(HaismartEntity, SelectEntity):
         self._attr_unique_id = f"{coordinator.device_id}_eco"
 
     @property
+    def available(self) -> bool:
+        # The model states when a unit ignores its economy setting -- fan-only and auto both do.
+        return super().available and "ecoMode" not in self.coordinator.locked_fields
+
+    @property
     def current_option(self) -> str | None:
         value = self.coordinator.current_field("ecoMode")
         return None if value is None else _ECO_REVERSE.get(value)
@@ -135,6 +140,11 @@ class HaismartVaneSelect(HaismartEntity, SelectEntity):
             return "auto"
         positions = sorted(codes - {self._vane.fixed, self._vane.auto})
         return f"position_{positions.index(code) + 1}"
+
+    @property
+    def available(self) -> bool:
+        # A faulted unit, or one running a self-clean cycle, will not move its vanes.
+        return super().available and self._vane.field not in self.coordinator.locked_fields
 
     @property
     def current_option(self) -> str | None:

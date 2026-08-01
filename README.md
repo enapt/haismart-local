@@ -89,6 +89,14 @@ One device per air conditioner, with:
 Which of these appear depends on your model — the integration only exposes controls it can actually
 drive on your unit, rather than showing buttons that do nothing.
 
+**Some controls come and go with the mode, and that is deliberate.** Air conditioners ignore certain
+settings in certain states — a unit in fan-only discards the temperature you set, and most of them
+ignore boost while dehumidifying. Your unit's own model says which, so those controls go
+*unavailable* while they would have no effect, and the temperature disappears from the thermostat
+card rather than sitting there accepting numbers the unit throws away. A unit reporting a fault
+keeps only its power and mode controls. Nothing is hidden while the AC is merely switched off — that
+is when you are most likely to be setting it up.
+
 The climate entity also carries **presets** for the three comfort modes — eco, sleep and boost — so
 they work from the thermostat card, from a voice assistant and from `climate.set_preset_mode`, not
 only from the switches. A preset is exclusive: choosing one clears the others in a single write to

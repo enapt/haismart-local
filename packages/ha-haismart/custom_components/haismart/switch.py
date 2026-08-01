@@ -66,6 +66,19 @@ class HaismartSwitch(HaismartEntity, SwitchEntity):
         self._attr_unique_id = f"{coordinator.device_id}_{description.key}"
 
     @property
+    def available(self) -> bool:
+        """Unavailable while the unit's own model says this setting is ignored.
+
+        Boost in dry mode, quiet in fan-only, anything at all while a fault is active: the model
+        states which settings a unit discards in which state, and a switch that reports "on" and
+        changes nothing is worse than one that says it cannot be used right now.
+        """
+        return (
+            super().available
+            and self.entity_description.field not in self.coordinator.locked_fields
+        )
+
+    @property
     def is_on(self) -> bool | None:
         value = self.coordinator.current_field(self.entity_description.field)
         return None if value is None else bool(value)

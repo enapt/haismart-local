@@ -186,3 +186,21 @@ def test_locked_attributes_covers_state_and_faults():
         {"operationMode"}
     )
     assert locked_attributes(None, {"operationMode": "6"}) == frozenset()
+
+
+def test_alarm_names_offsets_past_the_cleared_entry():
+    """A fault frame reports positions; the rules are written against names. The model's alarm list
+    begins with its "cleared" entry, which is not a position, so position N is entry N+1 — the same
+    offset the unit's own error code uses. Getting this wrong locks controls on the wrong fault."""
+    from haismart_hrdp import alarm_names
+
+    model = {"alarms": [
+        {"name": "alarmCancel"}, {"name": "outdoorModuleErr"}, {"name": "outdoorDeforstSensorErr"},
+    ]}
+    assert alarm_names(model, [0]) == frozenset({"outdoorModuleErr"})
+    assert alarm_names(model, [0, 1]) == frozenset(
+        {"outdoorModuleErr", "outdoorDeforstSensorErr"}
+    )
+    assert alarm_names(model, []) == frozenset()
+    assert alarm_names(model, [99]) == frozenset()      # past the end: dropped, never guessed
+    assert alarm_names(None, [0]) == frozenset()

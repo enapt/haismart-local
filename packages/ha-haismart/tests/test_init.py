@@ -8,12 +8,14 @@ from datetime import timedelta
 import pytest
 from conftest import (
     heat_capable_digital_model,
+    locking_digital_model,
     make_compact12_frame,
     make_extended36_frame,
     make_extended_frame,
     make_status_frame,
     vane_positions_digital_model,
 )
+from homeassistant.components.climate import ClimateEntityFeature
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -2150,3 +2152,114 @@ async def test_co_commands_never_override_an_explicit_choice(
     await entry.runtime_data.async_send_control({"operationMode": 6, "windSpeed": 5})
 
     assert _sent_field(mock_uss.send, "windSpeed") == 5
+
+
+async def test_controls_the_unit_ignores_go_unavailable(hass: HomeAssistant, mock_uss) -> None:
+    """A unit in fan-only discards its setpoint, boost, quiet and sleep — its own model says so.
+
+    Offering those controls anyway is how an owner ends up believing a setting took effect. The
+    switches go unavailable, and the climate entity drops the temperature control rather than the
+    whole entity, which would take the mode and power with it.
+    """
+    mock_uss.read.return_value = [make_status_frame(mode_code=6, fan_code=3)]  # fan-only
+    entry = _entry(digital_model=json.dumps(locking_digital_model()))
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.runtime_data.locked_fields == {
+        "targetTemperature", "silentSleepStatus", "muteStatus", "rapidMode", "ecoMode",
+    }
+    for key in ("sleep", "quiet", "strong"):
+        assert hass.states.get(f"switch.downstairs_ac_{key}").state == "unavailable"
+    assert hass.states.get("switch.downstairs_ac_health").state != "unavailable"
+    assert hass.states.get("select.downstairs_ac_eco").state == "unavailable"
+
+    climate = hass.states.get(CLIMATE)
+    assert climate.state == "fan_only"                          # the entity itself still works
+    features = ClimateEntityFeature(climate.attributes["supported_features"])
+    assert ClimateEntityFeature.TARGET_TEMPERATURE not in features
+    assert ClimateEntityFeature.FAN_MODE in features            # fan speed is still settable
+    assert ClimateEntityFeature.TURN_ON in features
+    # every preset's field is locked in this mode, so the control goes rather than standing empty
+    assert ClimateEntityFeature.PRESET_MODE not in features
+    assert "preset_modes" not in climate.attributes
+
+
+async def test_a_fault_locks_the_settings_but_never_the_power(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A faulted unit ignores nearly every setting. It must still be possible to turn it off."""
+    from haismart_hrdp import build_epp_frame
+
+    alarm = b"\x00\x00\x27\x15" + bytes(76) + build_epp_frame(
+        0x04, b"\x0f\x5a", bytes(7) + b"\x01"       # position 0 = the model's first real alarm
+    )
+    mock_uss.read.return_value = [make_status_frame(), alarm]
+    entry = _entry(digital_model=json.dumps(locking_digital_model()))
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert "windSpeed" in entry.runtime_data.locked_fields
+    features = ClimateEntityFeature(hass.states.get(CLIMATE).attributes["supported_features"])
+    assert ClimateEntityFeature.FAN_MODE not in features
+    assert ClimateEntityFeature.TARGET_TEMPERATURE not in features
+    assert ClimateEntityFeature.TURN_OFF in features and ClimateEntityFeature.TURN_ON in features
+    # and the mode picker stays, because it is the way back
+    assert hass.states.get(CLIMATE).attributes["hvac_modes"]
+
+
+async def test_an_off_unit_keeps_its_controls(hass: HomeAssistant, mock_uss) -> None:
+    """The model marks nearly everything unwritable while a unit is off, and that rule is not
+    honoured on purpose: it also marks the MODE unwritable, which is exactly what this integration
+    writes to turn a unit on — and hardware accepts it. Honouring it would hide the controls someone
+    reaches for while setting up an air conditioner that is off."""
+    mock_uss.read.return_value = [make_status_frame(power=False)]
+    entry = _entry(digital_model=json.dumps(locking_digital_model()))
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.runtime_data.locked_fields == frozenset()
+    climate = hass.states.get(CLIMATE)
+    assert climate.state == "off"
+    features = ClimateEntityFeature(climate.attributes["supported_features"])
+    assert ClimateEntityFeature.TARGET_TEMPERATURE in features
+    assert hass.states.get("switch.downstairs_ac_health").state != "unavailable"
+
+
+async def test_locking_is_a_no_op_without_a_model(hass: HomeAssistant, mock_uss) -> None:
+    """The manual onboarding path stores no model, so nothing states these rules — every control
+    stays as it was rather than guessing which ones a unit ignores."""
+    mock_uss.read.return_value = [make_status_frame(mode_code=6, fan_code=3)]
+    entry = await _setup(hass)
+
+    assert entry.runtime_data.locked_fields == frozenset()
+    assert hass.states.get("switch.downstairs_ac_quiet").state != "unavailable"
+
+
+async def test_sleep_does_not_strand_the_preset_control(hass: HomeAssistant, mock_uss) -> None:
+    """Sleep locks boost, so the Strong SWITCH goes unavailable — but Boost must stay selectable as
+    a preset, because a preset write clears sleep in the very same command. Filtering it out there
+    would leave a unit stuck in whichever preset it was last given."""
+    frame = make_status_frame()
+    frame = bytes(frame[:97] + bytes([frame[97] | 0x20]) + frame[98:])   # sleep bit on
+    mock_uss.read.return_value = [frame]
+    mock_uss.send.baseline = frame
+    entry = _entry(digital_model=json.dumps(locking_digital_model()))
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert "rapidMode" in entry.runtime_data.locked_fields
+    assert hass.states.get("switch.downstairs_ac_strong").state == "unavailable"
+
+    climate = hass.states.get(CLIMATE)
+    assert climate.attributes["preset_mode"] == "sleep"
+    assert "boost" in climate.attributes["preset_modes"]
+    await hass.services.async_call(
+        "climate", "set_preset_mode", {"entity_id": CLIMATE, "preset_mode": "boost"}, blocking=True
+    )
+    assert _sent_field(mock_uss.send, "rapidMode") == 1
+    assert _sent_field(mock_uss.send, "silentSleepStatus") == 0    # cleared in the same write

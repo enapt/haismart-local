@@ -215,6 +215,62 @@ def heat_capable_digital_model() -> dict:
     }
 
 
+def locking_digital_model() -> dict:
+    """The model above plus the conditional rules a real one carries: which settings a unit ignores
+    in which state. Transcribed from a real device model, including the rule that fires on a fault
+    (shortened to two alarm names) and the one that fires while the unit is off."""
+    model = heat_capable_digital_model()
+    model["alarms"] = [
+        {"name": "alarmCancel"},          # not a position -- position N is entry N+1
+        {"name": "outdoorModuleErr"},
+        {"name": "outdoorDeforstSensorErr"},
+    ]
+    model["modifiers"] = [
+        {
+            "priority": 5,
+            "trigger": {"operator": "AND", "conditions": {"silentSleepStatus": ["true"]}},
+            "actions": [{"name": "rapidMode", "writable": False}],
+        },
+        {
+            "priority": 4,
+            "trigger": {"operator": "AND", "conditions": {"operationMode": ["6"]}},
+            "actions": [
+                {"name": name, "writable": False}
+                for name in ("targetTemperature", "silentSleepStatus", "muteStatus",
+                             "rapidMode", "generatorMode")
+            ],
+        },
+        {
+            "priority": 3,
+            "trigger": {"operator": "AND", "conditions": {"operationMode": ["2"]}},
+            "actions": [{"name": "muteStatus", "writable": False},
+                        {"name": "rapidMode", "writable": False}],
+        },
+        {
+            "priority": 1,
+            "trigger": {"operator": "OR", "conditions": {},
+                        "alarms": ["outdoorModuleErr", "outdoorDeforstSensorErr"]},
+            "actions": [
+                {"name": name, "writable": False}
+                for name in ("targetTemperature", "windDirectionVertical", "operationMode",
+                             "windSpeed", "screenDisplayStatus", "silentSleepStatus",
+                             "muteStatus", "rapidMode", "healthMode", "generatorMode")
+            ],
+        },
+        {
+            "priority": 0,
+            "trigger": {"operator": "OR",
+                        "conditions": {"onOffStatus": ["false"], "selfCleaningStatus": ["true"]}},
+            "actions": [
+                {"name": name, "writable": False}
+                for name in ("targetTemperature", "windDirectionVertical", "operationMode",
+                             "windSpeed", "healthMode")
+            ],
+        },
+    ]
+    return model
+
+
 def vane_positions_digital_model(
     codes: tuple[int, ...] = (0, 1, 2, 3, 4, 5, 6, 7),
     vertical: tuple[int, ...] = (),

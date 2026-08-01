@@ -18,7 +18,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from dataclasses import replace
 from datetime import timedelta
 from functools import partial
@@ -39,6 +39,7 @@ from haismart_hrdp import (
     VANE_V_MODEL_TO_EPP,
     AttributeProfile,
     WireModel,
+    alarm_names,
     async_read_status,
     async_send_op,
     build_epp_frame,
@@ -46,6 +47,7 @@ from haismart_hrdp import (
     extended_status_epp_frame,
     grsetdac_baseline_from_status,
     grsetdac_op_frame,
+    locked_attributes,
     model_enum_codes,
     parse_alarm_frame,
     parse_extended_status,
@@ -936,6 +938,60 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if (wm := self._wire_model) is not None:
             return name in wm.write_fields
         return name in GRSETDAC_FIELDS
+
+    @property
+    def locked_fields(self) -> frozenset[str]:
+        """The control fields this unit is currently ignoring, for the entities to reflect."""
+        return self._locked_fields(self.data or {})
+
+    def locked_fields_excluding(self, ignore: Collection[str]) -> frozenset[str]:
+        """The same, evaluated as if ``ignore`` were not set on the unit.
+
+        For a control that clears those fields in the very command it sends. Sleep locks boost, so a
+        boost switch is rightly unavailable while the unit is sleeping — but the preset control
+        writes every comfort field at once, clearing sleep in the same group-set, so answering "you
+        cannot pick boost" there would strand a user in the preset they chose last.
+        """
+        return self._locked_fields(self.data or {}, ignore=ignore)
+
+    def _locked_fields(
+        self, state: dict[str, Any], ignore: Collection[str] = ()
+    ) -> frozenset[str]:
+        """Control fields this unit will discard right now, per its own model's rules.
+
+        A model states these conditionally — a unit in fan-only ignores a setpoint, one in dry
+        ignores boost, one reporting a fault ignores nearly everything — and they are the difference
+        between a control that does nothing and a control that is not offered. Translated to the
+        field names control uses, so entities can ask directly.
+
+        ``onOffStatus`` is deliberately left out of the state handed to the rules. A model marks
+        almost everything unwritable while the unit is off, including ``operationMode`` — and this
+        integration turns a unit on by writing exactly that, which real hardware accepts. So that
+        rule describes an app greying out its own buttons, not what the unit discards, and honouring
+        it would take away the controls someone reaches for while setting up a unit that is off.
+        The self-clean half of the same rule still applies: a cycle really does hold the unit.
+        """
+        model = self.digital_model
+        if not model:
+            return frozenset()
+        pending: dict[str, str] = {}
+        for name, to_model in _MODEL_VALUE_FROM_EPP.items():
+            if name == "onOffStatus" or name in ignore:
+                continue
+            if (epp := self.current_field(name)) is not None:
+                pending[name] = str(to_model(epp)).lower()
+        if "ecoMode" not in ignore and (eco := self.current_field("ecoMode")) is not None:
+            pending[_ECO_MODEL_NAME] = _ECO_MODEL_BY_EPP.get(eco, str(eco))
+        if state.get("self_cleaning"):
+            pending["selfCleaningStatus"] = "true"
+        locked = locked_attributes(
+            model, pending, alarm_names(model, state.get("alarm_codes") or ())
+        )
+        # back to the names control uses: the model calls the multi-level economy setting
+        # `generatorMode`, everything else shares its name
+        return frozenset(
+            "ecoMode" if name == _ECO_MODEL_NAME else name for name in locked
+        )
 
     def field_codes(self, name: str) -> frozenset[int]:
         """The wire values this unit's own digital model authorizes for ``name``, or empty.

@@ -67,11 +67,22 @@ Beware invariants that do not discriminate. "Error code is zero" sounds useful a
 reward a candidate whose fields land on empty words, which is the exact failure the prober guards
 against.
 
-## 7. Conditional writability is implemented but not wired
+## 7. The one rule we decline to honour
 
-`locked_attributes` reads the device model's rules for when an attribute cannot be written — a unit in
-fan-only ignores a setpoint; one reporting a fault ignores most settings. It is tested and unused.
-Wiring it to entity availability would stop the integration offering controls the unit will discard.
+`locked_attributes` now drives entity availability: a unit in fan-only shows no setpoint, boost and
+quiet go unavailable in the modes that discard them, and a faulted unit keeps only its power and
+mode controls. The rules come from the device's own model, so they are right per device rather than
+hard-coded.
+
+One rule is deliberately skipped, and it is worth knowing why before anyone "fixes" it. A model marks
+nearly everything unwritable **while the unit is off** — including `operationMode`, which is exactly
+what this integration writes to turn a unit on, and which real hardware accepts. So that rule
+describes an app greying out its own buttons, not what the unit discards, and honouring it would take
+away the controls someone reaches for while setting up an air conditioner that is off. The self-clean
+half of the same rule is honoured; a cycle really does hold the unit.
+
+If a unit is ever seen to genuinely discard a setpoint while off, this becomes a real rule and the
+exclusion should narrow to `operationMode` alone.
 
 ## 8. The fault decode has not met a real fault
 

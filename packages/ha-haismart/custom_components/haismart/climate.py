@@ -147,6 +147,56 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
             self._attr_supported_features |= ClimateEntityFeature.SWING_HORIZONTAL_MODE
 
     @property
+    def supported_features(self) -> ClimateEntityFeature:
+        """The features minus whatever this unit is currently ignoring.
+
+        A unit in fan-only discards a setpoint; a faulted one discards nearly everything. Its own
+        model states which, so the control disappears from the card rather than sitting there doing
+        nothing. Two things stay put whatever the model says: turning the unit on or off, and
+        choosing a mode. A model marks the mode unwritable while the unit is off, yet writing it is
+        precisely how this integration turns a unit on — and hardware accepts that — so removing it
+        would take away the way back.
+        """
+        features = self._attr_supported_features
+        locked = self.coordinator.locked_fields
+        if not locked:
+            return features
+        for field, flag in (
+            ("targetTemperature", ClimateEntityFeature.TARGET_TEMPERATURE),
+            ("windSpeed", ClimateEntityFeature.FAN_MODE),
+            ("windDirectionHorizontal", ClimateEntityFeature.SWING_HORIZONTAL_MODE),
+        ):
+            if field in locked:
+                features &= ~flag
+        # the four-way control moves both vanes, so it only goes when neither axis will move
+        if {"windDirectionVertical", "windDirectionHorizontal"} <= locked:
+            features &= ~ClimateEntityFeature.SWING_MODE
+        if not self.preset_modes:
+            features &= ~ClimateEntityFeature.PRESET_MODE
+        return features
+
+    @property
+    def preset_modes(self) -> list[str] | None:
+        """The presets whose field the unit will act on right now — boost is ignored in dry mode,
+        and both it and sleep are while a fault is active."""
+        offered = self._attr_preset_modes
+        if not offered:
+            return offered
+        # Evaluated as if no comfort setting were on: choosing a preset clears the others in the
+        # same command, so a preset that only sleep is holding back is still reachable from here.
+        # What does apply is a mode or a fault that locks the field regardless — boost stays out
+        # while the unit is dehumidifying, whatever the other presets are doing.
+        locked = self.coordinator.locked_fields_excluding(
+            [field for field, _ in _PRESET_FIELDS.values()]
+        )
+        available = [
+            preset
+            for preset in offered
+            if preset == PRESET_NONE or _PRESET_FIELDS[preset][0] not in locked
+        ]
+        return available if len(available) > 1 else None
+
+    @property
     def hvac_modes(self) -> list[HVACMode]:
         """The profile's modes, corrected by what the unit says about itself.
 
@@ -214,8 +264,9 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
         independently — so the answer is the most assertive one that is on (_PRESET_PRECEDENCE).
         """
         known = False
+        offered = self.preset_modes or ()
         for preset in _PRESET_PRECEDENCE:
-            if preset not in (self._attr_preset_modes or ()):
+            if preset not in offered:
                 continue
             value = self.coordinator.current_field(_PRESET_FIELDS[preset][0])
             if value:
@@ -230,7 +281,7 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
         attribute vector — so this cannot leave two of them on, and it costs one session where
         setting the switches by hand costs one each.
         """
-        offered = self._attr_preset_modes or ()
+        offered = self.preset_modes or ()
         if preset_mode not in offered:
             raise ServiceValidationError(
                 translation_domain=DOMAIN,

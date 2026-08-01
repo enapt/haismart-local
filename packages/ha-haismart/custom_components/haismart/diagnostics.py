@@ -65,6 +65,9 @@ async def async_get_config_entry_diagnostics(
         "model_authorized_codes": {
             name: sorted(codes) for name, codes in coordinator.model_codes.items()
         },
+        # Settings the unit is ignoring in the state it is in, per its own model's rules — the
+        # answer to "why is this switch unavailable", which otherwise reads as a broken integration.
+        "locked_fields": sorted(coordinator.locked_fields),
         # Everything a maintainer needs to add a layout, without a second round-trip.
         "report": {
             "length": len(coordinator.last_raw_status or b"") or None,

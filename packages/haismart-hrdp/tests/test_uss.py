@@ -582,9 +582,9 @@ STATUS_165_ON = bytes.fromhex(
 
 
 # --- 175 B: the same family with five words on the end (issue #8, HS-25VRB03) -------------
-# Every climate field sits at the same word as on the 165-byte reports above; words 34..41 carry two
-# cumulative counters and an input-power register that nothing reads. One real report, cool 24 C, fan
-# low, room 26.0, outdoor 33, screen light on, vertical vane parked at 2 and horizontal at 5.
+# Every climate field sits at the same word as on the 165-byte reports above; words 34..41 carry the
+# cumulative energy total (twice) and an input-power register. One real report, cool 24 C, fan low,
+# room 26.0, outdoor 33, screen light on, vertical vane parked at 2 and horizontal at 5.
 STATUS_175 = bytes.fromhex(
     "00002715000000004e5601000003020000040100000000000000000000000000"
     "0000000000000000000000000000000000000000000000000000000000000000"
@@ -750,6 +750,8 @@ def test_extended36_claims_the_175_byte_variant_too():
         "self_cleaning": False, "layout": "extended36", "writable": True,
         # this variant carries its own live power reading; the shorter report has no such word
         "power_w": 1318,
+        # and a cumulative energy total, in watt-hours
+        "energy_wh": 27851,
     }
     assert "partial" not in state
     # the vanes are parked at positions 2 and 5, which is why neither reads as sweeping
@@ -782,6 +784,50 @@ def test_extended36_reads_the_secondary_toggles_through_its_write_map():
     assert wm.current_write_value(STATUS_165_ON, "operationMode") == 1     # cool
     assert wm.current_write_value(STATUS_165_ON, "windSpeed") == 1         # high
     assert wm.current_write_value(STATUS_165_ON, "ecoMode") is None        # not mapped on this family
+
+
+def test_a_32_bit_register_runs_back_into_the_word_before_it():
+    """The published map places an attribute by its LEAST significant end, so one wider than a word
+    continues into the words *before* it — not after.
+
+    The 209-byte family's report is what settles the direction: its counter's two halves are 11 and
+    31040, which read backwards give 751936 and forwards give a number four orders of magnitude out.
+    The map's own layout says the same thing independently — its two 24-bit stamps sit at word 7
+    bit 8 and word 8 bit 0, which tile words 6..8 exactly when read backwards and overlap when read
+    forwards.
+    """
+    from haismart_hrdp.canonical_map import CANONICAL
+    from haismart_hrdp.wire_models import WireField
+
+    assert CANONICAL["totalElectricityUsed"].length == 32
+    # the counter sits ten words later on this family, the width of its inserted block
+    assert WireField(45, 0, 32, kind="raw").read(STATUS_209_OFF) == 0x000B7940 == 751936
+    assert (STATUS_209_OFF[92 + 43 * 2:92 + 45 * 2].hex()) == "000b7940"
+    # read the other way it would be nonsense, which is the check that the direction is not arbitrary
+    assert int.from_bytes(STATUS_209_OFF[92 + 44 * 2:92 + 46 * 2], "big") == 0x79400000
+
+    # and a single-word field is unaffected: same answer as the plain two-byte read
+    assert WireField(41, 0, 16, kind="raw").read(STATUS_175) == 1318
+
+
+def test_the_energy_total_reads_absent_until_the_unit_populates_it():
+    """A cumulative register reading exactly zero is one the firmware never fills in, not a unit
+    that has consumed nothing — so it is reported absent rather than as a permanent 0 kWh.
+
+    Both 165-byte reports reach the word (it is not off the end of the shorter report) and both
+    read zero there, which is the same state our own units are in.
+    """
+    from haismart_hrdp import profile_for
+
+    for report in (STATUS_165_OFF, STATUS_165_ON):
+        assert len(report) > 92 + 35 * 2                       # the word is present...
+        assert report[92 + 33 * 2:92 + 35 * 2] == b"\0\0\0\0"  # ...and reads zero
+        assert "energy_wh" not in uss.parse_full_status(report, profile_for("AAC1UKZ01"))
+
+    state = uss.parse_full_status(STATUS_175, profile_for("AAC1UKZ01"))
+    assert state["energy_wh"] == 27851
+    # the unit publishes the same total twice, at both wire positions -- they agree
+    assert int.from_bytes(STATUS_175[92 + 38 * 2:92 + 40 * 2], "big") == 27851
 
 
 def test_extended36_control_encodes_a_6001_group_set_from_word_20():

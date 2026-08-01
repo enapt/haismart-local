@@ -120,13 +120,15 @@ def make_extended36_frame(
     lamp: bool = True,
     length: int = 165,
     power_w: int = 0,
+    energy_wh: int = 0,
 ) -> bytes:
     """Build a synthetic 165-byte 'extended-36' full-status report (issue #5). Same bit map as the
     classic family, but displaced 19 words: the report keeps a voice/media block at words 1..19 and
     the climate block from word 20 (positions per wire_models.EXTENDED36).
 
     ``length`` covers the 175-byte variant of the same family (issue #8), which carries five further
-    words of counters after the climate block and is otherwise identical.
+    words — the cumulative energy total and a live power reading — after the climate block and is
+    otherwise identical.
     """
     frame = bytearray(length)
     frame[2:4] = b"\x27\x15"
@@ -143,6 +145,10 @@ def make_extended36_frame(
     setword(25, int(indoor_temp * 2) << 8)                         # indoorTemperature (k=0.5)
     if length >= 175:
         setword(41, power_w)                                       # live input power, watts
+        # cumulative energy in watt-hours: 32 bits whose LOW half sits at word 35, the high half in
+        # the word before it
+        setword(34, (energy_wh >> 16) & 0xFFFF)
+        setword(35, energy_wh & 0xFFFF)
     return bytes(frame)
 
 

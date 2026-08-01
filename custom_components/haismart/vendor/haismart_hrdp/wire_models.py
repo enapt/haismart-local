@@ -51,7 +51,16 @@ class WireField:
     """One attribute's position in the word array plus how to turn its raw bits into a value.
 
     ``word`` is 1-based (word 1 = bytes 92..93). ``bit`` is the LSB within the 16-bit big-endian
-    word (bit 0 = least-significant). ``kind`` selects the decode:
+    word (bit 0 = least-significant).
+
+    An attribute wider than the word that holds its LSB simply continues into the words **before**
+    it: ``word``/``bit`` locate the least-significant end, and significance grows backwards through
+    the array. The published map is written that way and only makes sense read that way — its
+    32-bit cumulative counter puts its low half at the stated word and its high half one word
+    earlier (both families carrying it agree), and its two 24-bit stamps, at word 7 bit 8 and word 8
+    bit 0, tile words 6..8 exactly with no overlap backwards and collide forwards.
+
+    ``kind`` selects the decode:
 
     * ``"bool"``  -> ``bool(raw)``
     * ``"int"``   -> ``raw * k + c`` (a temperature/number)
@@ -64,6 +73,11 @@ class WireField:
     * ``"raw"``   -> the field's integer value, unscaled: a code, or a reading that needs no
       scaling at all (a register already in watts). ``"int"`` would return the same number as a
       float, which is right for a scaled temperature and wrong for a whole-unit counter.
+    * ``"counter"`` -> like ``"raw"``, but ``None`` for zero. A cumulative register that reads
+      exactly 0 is one the firmware never populates rather than a unit that has used nothing —
+      whole classes of these air conditioners carry the register and leave it at zero for their
+      whole service life, and a total that is permanently 0 is worse than absent: it sits in the
+      Energy dashboard reporting no consumption.
     * ``"enum"``  -> ``enum[raw]`` — maps the raw EPP value to a **Haier STD code string** (so the
       per-model :class:`~haismart_hrdp.models.AttributeProfile` can name it), or drops the field when
       the raw value isn't in the map.
@@ -78,14 +92,20 @@ class WireField:
     enum: Mapping[int, str] | None = None
 
     def read(self, data: bytes):
-        off = _ATTR_BASE + (self.word - 1) * 2
-        if off + 1 >= len(data):
+        # The words this field spans, ending at its own: one for anything that fits a single word,
+        # more for an attribute whose significance runs back into the words before it.
+        span = (self.bit + self.length + 15) // 16
+        end = _ATTR_BASE + self.word * 2
+        start = end - span * 2
+        if start < _ATTR_BASE or end > len(data):
             return None
-        raw = ((data[off] << 8) | data[off + 1]) >> self.bit & ((1 << self.length) - 1)
+        raw = int.from_bytes(data[start:end], "big") >> self.bit & ((1 << self.length) - 1)
         if self.kind == "bool":
             return bool(raw)
         if self.kind == "raw":
             return raw
+        if self.kind == "counter":
+            return raw or None
         if self.kind == "bool_inv":
             return not raw
         if self.kind == "vane_v":
@@ -415,6 +435,7 @@ _CLIMATE_SPEC: Mapping[str, tuple] = {
     "swing_vertical": ("windDirectionVertical", "vane_v"),
     "swing_horizontal": ("windDirectionHorizontal", "vane_h"),
     "self_cleaning": ("selfCleaningStatus", "bool"),
+    "energy_wh": ("totalElectricityUsed", "counter"),
 }
 
 
@@ -486,13 +507,25 @@ _EXT36_WRITE = {
 # temperature to within the half degree the two readings were taken apart. So the longer report is
 # this family, not a new one, and the extra words are additional registers rather than a displacement.
 #
-# What those five carry, from the same comparison: a cumulative counter at words 34+35 (32-bit) and
-# again at 39+40 — the unit publishes `accumulatedUseMainsPower` and `totalElectricityUsed` with one
-# identical value, and both wire pairs read the same number, slightly ahead of the published one as a
-# counter should be — and an input-power register at word 41 (`acInput`, watts, 1318 on the wire
-# against 1313 published). None is published as an entity: the counters' unit is not established (the
-# same reason the extended-46 family's counter stays out) and one sample cannot show that word 41
-# tracks. A second capture in a known state would settle both.
+# What those five carry, from the same comparison: an input-power register at word 41 (`acInput`,
+# watts) and the published map's cumulative counter at words 34+35, mirrored at 39+40 — the unit
+# publishes `accumulatedUseMainsPower` and `totalElectricityUsed` with one identical value, and both
+# wire pairs read that number.
+#
+# **The counter is in watt-hours**, settled against a unit whose owner captured it in known states
+# and read its own app's energy page at the same moment. Three measurements, on three timescales:
+#
+#   * The register accumulates in fixed intervals rather than continuously — the model publishes the
+#     interval as `energySavePeriod`, 15 minutes on this unit. One whole interval spent cooling
+#     added 347, i.e. 1388 W held for 15 minutes, against the 1224..1432 W its own power register
+#     read across that same quarter hour.
+#   * A 26-minute session at a measured ~1190 W average added 478, against 494 expected.
+#   * Between a capture at 00:53 and one at 12:07, on a day whose usage began after the first, it
+#     added 7516 — and the app reported 7.52 kWh for that day.
+#
+# So one count is one watt-hour to within the precision of the comparison, three times over, and the
+# entity is published. It reads absent while the register is zero, which is the state our own units
+# and the 165-byte reports are in — those carry the register and never populate it.
 EXTENDED36 = WireModel(
     family="extended36",
     report_lengths=frozenset({165, 175}),
@@ -513,6 +546,10 @@ EXTENDED36 = WireModel(
             "power", "target_temperature", "current_temperature", "outdoor_temperature",
             "heat_capable", "error_code", "last_changed_by", "operation_mode", "wind_speed",
             "swing_vertical", "swing_horizontal", "self_cleaning",
+            # Cumulative energy, in watt-hours (see above). Absent on the units that leave the
+            # register at zero, which includes every 165-byte report seen — that length reaches the
+            # word, so it is the register being unpopulated rather than the field being off the end.
+            "energy_wh",
         ]),
         # Live input power, on the units whose report runs to word 41 (the 175-byte variant; a
         # shorter report simply has no such word and the field reads absent). Watts: zero with the
@@ -520,11 +557,6 @@ EXTENDED36 = WireModel(
         # publishes an `acInput` of its own that agrees. This is a real measurement rather than the
         # figure the classic family derives from its current sensor.
         "power_w": WireField(41, 0, 16, kind="raw"),
-        # NOT read: the cumulative counter at words 34+35, mirrored at 39+40. It climbs, monotonically
-        # and in jumps rather than continuously, and the unit publishes `accumulatedUseMainsPower` and
-        # `totalElectricityUsed` that track it — but nothing so far establishes what one unit of it
-        # IS. Watt-hours is the closest fit and is not close enough to publish: a wrong unit would
-        # settle permanently into someone's energy history.
     },
 )
 
@@ -573,9 +605,13 @@ _EXT46_WRITE = {
 # Deliberately omitted from the READ: `windSpeed` (this family reports a code its own device model
 # does not declare, so its position is not settled — the enum below would drop it anyway, leaving the
 # fan mode absent rather than wrong), horizontal swing, and the air-quality/humidity attributes.
-# Read but not published as climate: this family DOES carry a working cumulative-energy register at
-# words 44+45 (32-bit), unlike the classic family where it reads zero — its unit is not yet
-# established, so it stays out until it can be labelled correctly.
+# Also left out: the cumulative-energy register at words 44+45, which works on this family (unlike
+# the classic one, where it reads zero). The register is now known to count watt-hours on
+# extended-36, and it is the same published attribute here — but this is the one family that has
+# been caught departing from the published map three times over, and its counter's position is
+# itself derived from the inserted block. Inheriting an unverified unit into somebody's energy
+# history is not a thing to do on the strength of a map this family already disagrees with. One
+# reading off the owner's app, against a capture, settles it the same way it was settled there.
 # This family is NOT built from the published map, and deliberately: its vane sits five words past
 # where the map puts it, its setpoint counts half degrees rather than whole degrees offset by 16,
 # and its fan speed answers from the inserted block. Written out, those read as what they are —

@@ -101,11 +101,28 @@ of its own that agrees. That makes this the only family whose power figure is a 
 than one derived from a current reading — and it arrives in the status report, so a unit that never
 answers the extended-status query still gets it.
 
-The counter is **not** published. It climbs monotonically, in jumps rather than continuously, and
-the unit's `accumulatedUseMainsPower` and `totalElectricityUsed` track it — but nothing so far
-establishes what one unit of it is. Watt-hours is the closest fit and is not close enough: a wrong
-unit would settle permanently into someone's energy history. Comparing the register against the
-total the vendor app's energy page shows would settle it.
+The counter is published too, as the Energy sensor, and **it counts watt-hours**. It is the
+published map's `totalElectricityUsed`, whose 32 bits put their low half at word 35 and their high
+half in the word before it; the unit reports the same total again at words 39+40, and its own
+`accumulatedUseMainsPower` and `totalElectricityUsed` agree with both.
+
+The unit was settled by an owner who captured the register in known states while reading the vendor
+app's energy page, and three measurements on three timescales agree:
+
+| what | counter | expected |
+|---|---|---|
+| one accumulation interval spent cooling | +347 | 15 min at the 1224–1432 W its own power register read = ~1390 Wh |
+| a 26-minute session at ~1190 W average | +478 | ~494 Wh |
+| a whole day, 00:53 to 12:07 | +7516 | the app's 7.52 kWh for that day |
+
+The register accumulates in fixed steps rather than continuously, which is why a reading taken
+minutes apart can show no change at all: the model publishes the interval as `energySavePeriod`,
+15 minutes on that unit and settable up to 270.
+
+A register reading exactly **zero** is treated as absent, not as a unit that has consumed nothing.
+Whole classes of these air conditioners carry the register and never populate it — every 165-byte
+report seen reaches the word and reads zero there, as do our own units — and a permanent 0 kWh in
+the Energy dashboard is worse than no sensor at all.
 
 ### extended-46
 
@@ -121,8 +138,11 @@ carry directly:
 - the vertical vane answers at word 25, inside the inserted block, with the classic vane encoding
   (the "swinging" flag is bit 3 of the nibble);
 - the cumulative **energy register at words 44+45 works** on this family — a 32-bit counter that
-  reads a real total, where the classic family reports zero. Its unit is not yet established, so it
-  is not published as a sensor;
+  reads a real total, where the classic family reports zero. It is the same published attribute
+  that counts watt-hours on extended-36, but it is **not** published here: this is the one family
+  already caught departing from the published map in three places, and the counter's position is
+  itself derived from the inserted block, so inheriting an unverified unit into someone's energy
+  history is not warranted. One reading off that owner's app against a capture settles it;
 - **fan speed answers at word 26 bit 9**, inside the inserted block and beside the vane at word 25 —
   not at word 21 bit 8, where every other family keeps it and where these units read a constant 6
   that their own model does not define. The three captures were taken in stated states, and word 26

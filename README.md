@@ -131,7 +131,14 @@ Units that report their power draw get a **Power** sensor in watts. That is a li
 records into Home Assistant's history and long-term statistics on its own — but the **Energy
 dashboard** needs a running total in kWh, which is a different thing.
 
-To get one, add a Riemann-sum integral helper over the power sensor:
+**Some units keep that total themselves**, and those get an **Energy** sensor you can add straight
+to the Energy dashboard under **Settings → Dashboards → Energy → Individual devices**. It is the
+figure the air conditioner's own meter keeps, so it survives restarts and outages and does not
+depend on how often Home Assistant polls. If your unit has one, use it and skip the rest of this
+section. If your Energy sensor shows as unavailable, your unit is one of the many that carries the
+register and never fills it in — read on.
+
+To build a total from the power reading instead, add a Riemann-sum integral helper over it:
 
 1. **Settings → Devices & services → Helpers → Create helper → Integral sensor**
 2. Pick your AC's **Power** sensor as the input
@@ -151,8 +158,8 @@ Two things worth knowing before you trust the numbers:
   operation status data of devices", and they stop counting entirely while the unit is offline. If you
   need billing-grade numbers, use a clamp meter or a metering plug.
 
-These units keep no running energy total of their own, which is why the integration does not offer a
-kWh sensor directly — there is nothing to read, so it would have to be invented.
+The integration never invents a kWh total. Where a unit keeps one, you get it as it is counted;
+where it does not, the helper above is the honest way to build one.
 
 ### How often it polls
 

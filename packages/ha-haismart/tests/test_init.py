@@ -132,6 +132,12 @@ async def test_extended_status_creates_power_sensors(hass: HomeAssistant, mock_u
     discharge = hass.states.get("sensor.downstairs_ac_discharge_temperature")
     assert discharge is not None and float(discharge.state) == 58.0
 
+    # These units measure, but they keep no running total: their cumulative register exists and
+    # stays at zero for the unit's life, so the Energy sensor is unavailable rather than reporting a
+    # permanent 0 kWh into the Energy dashboard.
+    energy = hass.states.get("sensor.downstairs_ac_energy")
+    assert energy is not None and energy.state == "unknown"
+
     # running-state binary sensors
     comp = hass.states.get("binary_sensor.downstairs_ac_compressor")
     assert comp is not None and comp.state == "on"
@@ -624,7 +630,7 @@ async def test_extended36_family_covers_its_longer_report_too(
     up as a fully decoded, controllable unit — the layout is known, so nothing about it is a repair.
     """
     frame = make_extended36_frame(
-        length=175, power=True, target_temp=24, indoor_temp=26.0, power_w=1432
+        length=175, power=True, target_temp=24, indoor_temp=26.0, power_w=1432, energy_wh=37022
     )
     mock_uss.read.return_value = [frame]
     mock_uss.send.baseline = frame
@@ -641,6 +647,12 @@ async def test_extended36_family_covers_its_longer_report_too(
     # unit that never answers the extended-status query the classic family's telemetry comes from
     assert float(hass.states.get("sensor.downstairs_ac_power").state) == 1432
     assert hass.states.get("sensor.downstairs_ac_current").state == "unknown"
+    # and it keeps a cumulative total of its own, which the Energy dashboard can take directly:
+    # counted in watt-hours by the unit, shown in kWh
+    energy = hass.states.get("sensor.downstairs_ac_energy")
+    assert float(energy.state) == 37.022
+    assert energy.attributes["unit_of_measurement"] == "kWh"
+    assert energy.attributes["state_class"] == "total_increasing"
 
     await coord.async_send_control({"targetTemperature": 25 - 16})
     sent = mock_uss.send.last_frame

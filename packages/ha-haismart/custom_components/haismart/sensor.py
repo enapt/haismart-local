@@ -4,9 +4,12 @@ Only fields the read path actually decodes become entities (a basic cooling unit
 humidity/air-quality hardware — those attributes read 0 in the report and are skipped).
 
 Units that answer the extended-status query also expose the running power draw, compressor current
-and compressor frequency. `power` is published as a MEASUREMENT in watts; to feed the Energy
-dashboard, add a Riemann-sum integral helper over it to produce the kWh total the dashboard needs —
-see the README. These units keep no running energy total of their own, so there is no kWh to read.
+and compressor frequency. `power` is published as a MEASUREMENT in watts.
+
+A few units additionally keep a cumulative energy total of their own, and those get an Energy
+sensor that the Energy dashboard can use directly. Most do not: their register exists but stays at
+zero for the unit's whole life, and for those the way to get a kWh total is still a Riemann-sum
+integral helper over the power sensor — see the README.
 """
 from __future__ import annotations
 
@@ -23,6 +26,7 @@ from homeassistant.components.sensor import (
 from homeassistant.const import (
     EntityCategory,
     UnitOfElectricCurrent,
+    UnitOfEnergy,
     UnitOfFrequency,
     UnitOfPower,
     UnitOfTemperature,
@@ -79,11 +83,33 @@ SENSORS: tuple[HaismartSensorDescription, ...] = (
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfPower.WATT,
-        # Diagnostic: it's a derived reading (computed from the current sensor), and this groups it
-        # with the other telemetry. Still MEASUREMENT, so it records into long-term statistics and a
-        # Riemann-sum helper can turn it into the kWh the Energy dashboard needs.
+        # Diagnostic, which groups it with the rest of the telemetry: on most units this is a
+        # derived reading, computed from the current sensor rather than measured. (One family
+        # reports a measured wattage instead, from its own register.) Still MEASUREMENT either way,
+        # so it records into long-term statistics and a Riemann-sum helper can turn it into the kWh
+        # the Energy dashboard needs on the units that keep no total of their own.
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda s: s.get("power_w"),
+    ),
+    # Cumulative energy, from the unit's own register — on the units that keep one. It is a running
+    # total the air conditioner maintains across restarts and outages, so it is exactly what the
+    # Energy dashboard wants, and TOTAL_INCREASING lets Home Assistant handle the reset if the unit
+    # is ever replaced or the register wraps.
+    #
+    # Not diagnostic: this one is a headline reading rather than an engineering aid, and the Energy
+    # dashboard is where it belongs. It is stated in watt-hours because that is what the register
+    # counts, and displayed in kWh because that is what anyone reading it wants.
+    #
+    # The register is absent (rather than zero) on every unit whose firmware does not populate it,
+    # so this sensor exists everywhere and stays unavailable on the units that keep no total.
+    HaismartSensorDescription(
+        key="energy_wh",
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        suggested_display_precision=2,
+        value_fn=lambda s: s.get("energy_wh"),
     ),
     HaismartSensorDescription(
         key="compressor_current_a",

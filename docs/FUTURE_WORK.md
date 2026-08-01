@@ -89,7 +89,26 @@ describes an app greying out its own buttons, not what the unit discards, and ho
 away the controls someone reaches for while setting up an air conditioner that is off. The self-clean
 half of the same rule is honoured; a cycle really does hold the unit.
 
-## 8. The fault decode has not met a real fault
+## 8. The energy total, on the family whose map already has exceptions
+
+The cumulative register counts **watt-hours**, settled on the 165/175-byte family against an owner's
+own app: one 15-minute accumulation interval spent cooling added 347 against ~1390 Wh of measured
+draw, a 26-minute session added 478 against ~494 expected, and a whole day added 7516 against the
+app's 7.52 kWh. That unit now has an Energy sensor.
+
+The 209-byte family has a register that works too — the same published attribute, reading a real
+total where the classic family reports zero — and it is **not** published. That family is the one
+that has been caught departing from the published map three times over (its setpoint counts half
+degrees, its vane sits five words on, its fan speed answers from the inserted block), and its
+counter's position is derived from the same inserted block. A unit is not the sort of thing to
+inherit on the strength of a map the family already disagrees with, because a wrong one settles
+permanently into someone's energy history.
+
+One reading off that owner's app, taken beside a diagnostics download, settles it exactly as it was
+settled on the other family. The same goes for any new family whose register turns out to be
+populated.
+
+## 9. The fault decode has not met a real fault
 
 The bitmap decode follows the vendor's own parser and the labels match the published fault list, but
 no unit here has reported a fault. `errCode` gives a free cross-check when one occurs: it names a

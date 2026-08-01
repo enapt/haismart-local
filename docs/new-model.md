@@ -47,9 +47,10 @@ make sense of the capture.
 ## What happens next
 
 The three captures are diffed to locate the control-word block and the sensor bytes. The room
-temperature you noted confirms the indoor-temperature byte immediately, since it is stored as twice
-the reading. Adding the layout is then usually a single table entry, and you will be asked to confirm
-the result on your unit before it ships.
+temperature you noted confirms the indoor-temperature byte immediately — most families store it as
+twice the reading, so it stands out at once (a few store whole degrees, which the same check finds).
+Adding the layout is then usually a single table entry, and you will be asked to confirm the result
+on your unit before it ships.
 
 Much of that is now done for you inside the diagnostics file itself. When a report's layout isn't
 recognised, the file carries a **ranked list of candidate layouts** — each naming a known model

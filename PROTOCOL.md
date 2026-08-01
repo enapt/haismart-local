@@ -164,9 +164,16 @@ Two things to know before relying on these:
   a nominal mains voltage, with a small fixed baseline. Current is the real sensor, quantised to
   0.5 A. Do not treat watts and amps as two independent readings, and do not hard-code the 220: a
   unit on a different nominal supply may well use a different constant.
-- **There is no running energy total.** The report has a field for a cumulative watt-hour counter, but
-  it reads zero on every unit tested and in every reading taken from them, so a kWh sensor would
-  have to be invented rather than read. Integrate the power sensor host-side instead.
+- **The energy counter in *this* frame is dead.** It has a field for a cumulative watt-hour total,
+  and it reads zero on every unit that answers this query and in every reading taken from them — the
+  firmware never populates it. So on these units a kWh figure has to be integrated from the power
+  sensor host-side rather than read.
+
+  That is a property of this frame, not of the protocol. Another report family carries a counter in
+  its **ordinary status report** that does work, and it counts watt-hours — see
+  [`docs/report-layouts.md`](docs/report-layouts.md). A counter reading exactly zero is therefore
+  best treated as *absent* rather than as a real total: it is the signal that this firmware does not
+  keep one.
 
 Not every unit answers the query. One that does not simply refuses this one frame — with a short
 reply carrying no data — and still sends normal status, so it is safe to ask unconditionally. The

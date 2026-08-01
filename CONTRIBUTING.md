@@ -47,6 +47,11 @@ deviceIds/keys — never a real device `localKey`, MAC, or LAN address (see [SEC
   temperature helpers already guard this; keep new fields to the same bar. The extended report's byte
   offsets are **per report family** — the ones in `parse_extended_status` are for the classic
   (141-byte) family, so another family needs its own offsets confirmed before it can decode there.
+- **A cumulative register reading zero is absent, not zero.** Whole classes of these units carry a
+  counter and never populate it. Publishing that as a total gives someone a permanent 0 kWh in their
+  Energy dashboard, which is worse than no sensor — so a counter decodes to *unavailable* until the
+  unit actually fills it in (`WireField` kind `"counter"`). The same goes for a counter whose
+  **unit** is unestablished: a total with the wrong unit settles permanently into a user's history.
 - **Never commit secrets.** `*.local.json` and `*.apk` are git-ignored; keep them that way.
 - **`custom_components/` at the repo root is generated** — the HACS-installable build with the two
   libraries vendored in. Don't edit it directly: change the source under `packages/`, then run
@@ -107,7 +112,7 @@ Two rules make this safe:
   single-attribute sweep: change exactly one setting in the vendor app and diff the report. That is
   how every field in the current map was established, and how horizontal swing and heat were added.
 
-## New AC models
+### Where the code for it lives
 
 Per-model semantics live in `packages/haismart-hrdp/src/haismart_hrdp/profiles.py` as an
 `AttributeProfile`, keyed by the cloud `product_code`. `profile_from_device_config()` can self-derive
@@ -115,12 +120,14 @@ one from Haier's digital model, so most models need no hand-coding — contribut
 mapping and, where possible, a status vector for the test suite.
 
 Where a model packs its status *differently*, that is a **report layout**, and it lives in
-`wire_models.py` rather than in a profile. [`docs/report-layouts.md`](docs/report-layouts.md) is the
-inventory of every known one and the rules for adding another. Two conventions matter when you do:
+`wire_models.py` rather than in a profile. Most of a layout is not written by hand either:
+`canonical_map.py` carries the attribute map these models share, so a new family is usually a
+displacement plus its exceptions. [`docs/report-layouts.md`](docs/report-layouts.md) is the inventory
+of every known one and the rules for adding another. Two conventions matter when you do:
 
 - **Key on the Model ID as well as the length.** Length is a decent key but not a sound one — the
-  presets contain a genuine collision at 149 bytes. The Model ID is reported by the units themselves
-  on the discovery channel, so it is available even without cloud credentials.
+  published models contain a genuine collision at 149 bytes. The Model ID is reported by the units
+  themselves on the discovery channel, so it is available even without cloud credentials.
 - **Leave out what the captures did not settle.** A field whose position is unconfirmed stays off the
   read *and* out of the write map, so it reads as unavailable rather than wrong. Several shipped
   families omit fields for exactly this reason, each with the reason written next to it.

@@ -53,7 +53,7 @@ body:
     id: versions
     attributes:
       label: Integration and Home Assistant versions
-      placeholder: "integration 0.7.0, HA 2026.7.4"
+      placeholder: "integration 0.29.1, HA 2026.7.4"
     validations:
       required: true
   - type: textarea

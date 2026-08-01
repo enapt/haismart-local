@@ -7,8 +7,15 @@ in and to fetch each AC's per-device `localKey`.
 
 | Module | What it is |
 |---|---|
-| `src/haismart_extractor/cloud.py` | Account **email/password login** + token refresh, device list, digital model. Device-center request signing: `SHA-256(path + strippedBody + appId + appKey + timestamp)`. |
+| `src/haismart_extractor/cloud.py` | Account **email/password login** + token refresh, device list, digital model, and a device's **published model** (`get_device_config`). Device-center request signing: `SHA-256(path + strippedBody + appId + appKey + timestamp)`. |
 | `src/haismart_extractor/gateway.py` | Per-device **`localKey`** fetch over the cloud MQTT gateway (`gw-sgp.haieriot.net:58702`). All CONNECT credentials are derived (`derive_client_id`, `derive_gateway_auth`). |
+
+**A device hands out two descriptions of itself, and both are needed.** `get_digital_model` returns
+its *shadow* — attributes, value ranges, enums and current values — and carries **no rules at all**.
+The rules that say which settings a unit ignores in which state, what its faults are called, and which
+commands imply others live in its **published model**, fetched separately by `get_device_config` and
+merged onto the shadow. Its URL cannot be constructed: the resource service is asked for a listing and
+answers with one, the file is downloaded and checked against the MD5 it gives.
 
 The CONNECT `username`/`password` are derived, not stored (`derive_gateway_auth`):
 `username = "01" + 8 digits`, `password = hex(AES-128-CBC(MD5(body), iv=0, BE16(9)+"haier_sdk" padded))`.

@@ -36,11 +36,20 @@ write path. No cloud at runtime.
   configured or fails does it raise `ConfigEntryAuthFailed` (→ manual reauth) **and surface a repair**
   advising the user to add account credentials so future rotations self-heal.
 - **Profile-based entities**, generated from the model's `AttributeProfile` (not hardcoded per model):
-  - `climate` — target temperature, HVAC mode (off / auto / cool / dry / fan-only), fan speed, swing
-    (up-down toggle), turn on/off.
+  - `climate` — target temperature, HVAC mode (off / auto / cool / dry / fan-only, plus **heat** where
+    the unit reports it can), fan speed, swing on both axes, **presets** (eco / sleep / boost), on/off.
+    Controls go *unavailable* in the states the unit's own model says it discards them in.
   - `switch` ×5 — **strong** (rapid), **quiet** (mute), **health**, **sleep**, **lamp** (front display).
-  - `select` — **eco** (off / level 1 / level 2 / level 3).
-  - `sensor` ×2 — indoor + outdoor temperature.
+  - `select` ×3 — **eco** (off / level 1..3), and **up-down** / **left-right vane**, each offering the
+    stops that unit's model publishes, on the families that pack a vane as a position rather than a flag.
+  - `sensor` — indoor + outdoor temperature, and **who last changed it** (handset / panel / network).
+  - `sensor` — **Energy** (kWh), on the units that keep a running total themselves. Most carry the
+    register and never populate it; there it reads *unavailable* rather than a permanent zero.
+  - `sensor` ×5 + `binary_sensor` ×2 (diagnostic) — running **power**, compressor **current** and
+    **frequency**, **coil** and **discharge** temperatures, and whether the **compressor** / indoor
+    **fan** are running. From a second frame that only some units answer; absent on the rest.
+  - `binary_sensor` — **Self-clean** (is a cycle running) and **Fault**, whose attributes name the
+    active faults with the service code the unit displays.
   - `sensor` — **Model ID** (diagnostic): the `uPlusId` that selects the report layout. Its own entity
     rather than an attribute of the localKey sensor, because it is a model identifier and not a secret —
     reading it should not require enabling an entity whose state is your key. The state is shortened

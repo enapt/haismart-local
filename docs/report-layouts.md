@@ -46,6 +46,7 @@ a confident but invented value.
 | self-clean | ✅ | ❌ | ✅ | ❌ |
 | vane positions (both axes) | ✅ | ❌ | ✅ | ❌ |
 | live power, from the report itself | ❌ | ❌ | ✅ (175 B only) | ❌ |
+| cumulative energy total | ❌ (register present, never populated) | ❌ | ✅ (where populated) | ❌ (works, unit unsettled) |
 
 Heat capability, the fault code and last-changed-by all sit in the sensor block, one and two words
 past the outdoor reading, so they follow wherever that lands. The fault bitmap arrives in a separate
@@ -53,10 +54,18 @@ frame and needs no layout at all.
 
 **Self-clean** comes from the flag word, four words into the control block. That holds on classic and
 extended-36 — on the latter the reports corroborate it, with the two purification bits set together
-there and the self-clean bit clear on units that were not cleaning. It does **not** hold on
-extended-46, which places its vane outside that displacement, so its control block is not the same
-shape; nor on compact-12, whose map differs throughout. One report from either family taken while a
-cycle is running would settle it.
+there and the self-clean bit clear on units that were not cleaning.
+
+It is **not offered** on the other two, for different reasons. On **compact-12** nothing carries
+over:
+its map differs throughout, so the flag needs its own evidence — a report taken while a cycle runs,
+where the bit that changes is the answer. On **extended-46** the position is actually known: the flag
+sits at word 24 and that family's insert begins at word 25, so it is below the insert, inside the
+range this family places exactly where extended-36 does. (An earlier note here gave the vane's
+displacement as the reason it could not be placed; that reasoning was wrong — the vane sits above the
+insert, the flag below it.) What is missing is only positive confirmation: every capture from that
+family reads 0 there, which fits the position being right and fits any other quiet bit equally well.
+One report taken during a cycle turns it from a decision into a deduction.
 
 **Vane positions** — a `select` offering the stops a vane can hold, rather than just sweeping or
 not — need a family that packs the vane as the multi-bit code it is. Classic and extended-36 do;

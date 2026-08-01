@@ -76,6 +76,7 @@ One device per air conditioner, with:
 | **Eco** | Eco level, on models where it's confirmed |
 | **Left-right vane** / **Up-down vane** | Where each vane points, on units that publish its positions |
 | **Power** *(diagnostic)* | Live power draw in watts, on units that report it |
+| **Energy** | A running kWh total, on the units that keep one themselves. Goes straight on the Energy dashboard — no helper needed. Most units carry the register but never fill it in, and there the sensor stays unavailable; see [Energy monitoring](#energy-monitoring) |
 | **Compressor current / frequency** *(diagnostic)* | What the outdoor unit is actually doing |
 | **Coil / discharge temperature** *(diagnostic)* | Evaporator and compressor-discharge temperatures |
 | **Compressor / Fan** *(diagnostic, on/off)* | Whether the compressor and indoor fan are actually running |

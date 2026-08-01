@@ -214,6 +214,54 @@ async def test_get_device_config_looks_the_file_up_then_downloads_it() -> None:
     assert cfg["modifiers"] and cfg["attributes"][0]["name"] == "operationMode"
 
 
+async def test_get_device_config_picks_the_right_device_out_of_the_listing() -> None:
+    """The listing is scoped to the account, not to the request.
+
+    It answers with the configs published for the caller's own devices and reports success whatever
+    model and typeId are sent, so an account with two air conditioners gets both back. Taking the
+    first would hand one device the other's rulebook -- its modifiers would make the wrong entities
+    unavailable and its alarms would name the wrong faults. The uPlusId decides, and the model
+    number is not required to match: a sticker may read `HSU-24HFAB/013WUSDC(W)-T3` where the
+    service says `HSU-24HFAB`.
+    """
+    signed = "a" * 64 + json.dumps({"attributes": [{"name": "wanted"}]})
+    other = "a" * 64 + json.dumps({"attributes": [{"name": "the other AC"}]})
+    listing = json.dumps({"retCode": "00000", "data": {"resources": [
+        {"name": "SOME-OTHER-AC@1111", "resUrl": "https://cdn/other.signed.json",
+         "md5": hashlib.md5(other.encode()).hexdigest()},
+        {"name": "HSU-24HFAB@2222", "resUrl": "https://cdn/wanted.signed.json",
+         "md5": hashlib.md5(signed.encode()).hexdigest()},
+    ]}})
+
+    async def transport(request: Request) -> Response:
+        if request.method == "POST":
+            return Response(200, listing)
+        return Response(200, signed if "wanted" in request.url else other)
+
+    cloud = HaierCloud(AppCredentials("a", "k", "c"), "T", transport=transport)
+    cfg = await cloud.get_device_config("HSU-24HFAB/013WUSDC(W)-T3", "2222")
+    assert cfg["attributes"][0]["name"] == "wanted"
+
+
+async def test_get_device_config_refuses_a_model_the_account_does_not_have() -> None:
+    """A device not in the listing must raise, not return whatever the account does have.
+
+    Success is reported for any arguments, so a served-looking answer is not evidence the requested
+    model was found. No rules at all locks nothing, which is the safe direction; another device's
+    rules are not recoverable from once they are stored against this one.
+    """
+    listing = json.dumps({"retCode": "00000", "data": {"resources": [
+        {"name": "SOME-OTHER-AC@1111", "resUrl": "https://cdn/other.signed.json"},
+    ]}})
+
+    async def transport(request: Request) -> Response:
+        return Response(200, listing)
+
+    cloud = HaierCloud(AppCredentials("a", "k", "c"), "T", transport=transport)
+    with pytest.raises(CloudError, match="SOME-OTHER-AC@1111"):
+        await cloud.get_device_config("HS-25VRB03", "9999")
+
+
 async def test_get_device_config_refuses_a_download_that_fails_its_md5() -> None:
     """The listing publishes the file's MD5, so a truncated or swapped download is caught here
     rather than surfacing later as a model that parses but is not this device's."""

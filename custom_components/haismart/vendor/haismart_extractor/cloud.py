@@ -254,8 +254,10 @@ DEVICE_CONFIG_HOST = "resource-sea.haieriot.net"
 DEVICE_CONFIG_PATH = "/download/resource/selfService/hardware/constraintfile/{name}"
 # A device model is not fetched by guessing a filename: it is looked up in the account's resource
 # service, which answers with the URL to download (the filename carries a build stamp no caller can
-# construct) plus that file's version and MD5. ``model`` and ``typeId`` are both required — the
-# lookup returns nothing for either alone — and ``typeId`` is the uPlusId, not the deviceType.
+# construct) plus that file's version and MD5. ``model`` and ``typeId`` are both sent — the lookup
+# returns nothing for either alone — and ``typeId`` is the uPlusId, not the deviceType. The listing
+# is scoped to the ACCOUNT, though, not to those two fields: it answers with the configs published
+# for the caller's own devices whatever is asked for, so the response has to be selected from.
 DEVICE_CONFIG_LIST_PATH = "/uplussea/resources/v1/conf/list"
 DEVICE_CONFIG_RES_TYPE = "DeviceConfig"
 
@@ -547,6 +549,13 @@ class HaierCloud:
         ``model`` is the model number (e.g. ``HSU-24VRRA03TF``) and ``uplus_id`` the uPlusId, both
         of which the account device list provides. Both are required: the lookup returns an empty
         list if either is missing. Needs a valid accessToken.
+
+        ⚠️ **The listing is scoped to the account, not to the arguments.** It answers with the
+        configs published for the caller's own devices and reports success whatever ``model`` and
+        ``uplus_id`` contain, so this is not a way to look up a model belonging to someone else --
+        and the entry has to be picked out of the response by uPlusId rather than assumed. When the
+        device is not among them this raises, because no rules at all is the safe direction and
+        another device's rules are worse than none.
         """
         body = {
             "resType": DEVICE_CONFIG_RES_TYPE,
@@ -561,12 +570,26 @@ class HaierCloud:
                 f"device config list -> retCode {resp.get('retCode')}: {resp.get('retInfo')}"
             )
         resources = (resp.get("data") or {}).get("resources") or []
+        # ⚠️ The listing is NOT filtered by what was asked for -- by ANY of it. It answers with the
+        # device configs published for the ACCOUNT, with retCode 00000, whatever `model`, `typeId`
+        # and even `resType` say: a model number that exists nowhere paired with another device's
+        # uPlusId comes back with the caller's own device, and so does a `resType` this service has
+        # never heard of. So the caller has to do the selecting,
+        # and taking the first entry on trust would hand one device another device's rulebook:
+        # its modifiers would make the wrong entities unavailable and its alarms would name the
+        # wrong faults. An account with two different air conditioners is all that needs.
+        # The uPlusId is what identifies the device here; the model number is the half whose
+        # spelling varies (a sticker may read `HSU-24HFAB/013WUSDC(W)-T3` where the service says
+        # `HSU-24HFAB`), so an exact `model@uPlusId` is preferred and the uPlusId alone decides.
         wanted = f"{model}@{uplus_id}"
-        entry = next((r for r in resources if r.get("name") == wanted), None) or (
-            resources[0] if resources else None
+        entry = next((r for r in resources if r.get("name") == wanted), None) or next(
+            (r for r in resources if str(r.get("name", "")).endswith(f"@{uplus_id}")), None
         )
         if not entry or not entry.get("resUrl"):
-            raise CloudError(f"no device config published for {wanted}")
+            # No rules is the safe direction -- it locks nothing -- and a wrong model's rules are
+            # not recoverable from once stored, so this refuses rather than approximates.
+            served = ", ".join(str(r.get("name")) for r in resources) or "nothing"
+            raise CloudError(f"no device config published for {wanted} (served: {served})")
         resp = await self._transport(Request("GET", entry["resUrl"], {}, ""))
         if resp.status != 200:
             raise CloudError(f"device config download -> HTTP {resp.status}")

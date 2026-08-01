@@ -163,6 +163,15 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "human_sensing": {
+        "name": "Presence airflow",
+        "state": {
+          "off": "Off",
+          "avoid": "Avoid",
+          "follow": "Follow",
+          "on": "On"
+        }
+      },
       "indoor_temperature": {
         "name": "Indoor temperature"
       },

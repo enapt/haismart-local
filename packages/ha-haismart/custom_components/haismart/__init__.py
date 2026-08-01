@@ -16,11 +16,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> 
     coordinator.clear_stale_localkey_issue()
 
     # Entries set up before the model rules were fetched hold a model with none in it, which leaves
-    # the integration offering controls the unit discards. Top it up once, in the background: it is
-    # a cloud round trip and nothing here should wait on it.
-    entry.async_create_background_task(
-        hass, coordinator.async_fetch_model_rules(), "haismart model rules"
-    )
+    # the integration offering controls the unit discards. Top it up once. Normally in the
+    # background -- it is a cloud round trip and nothing should wait on it -- but for an entry that
+    # also predates the model carrying its `invisible_attributes`, wait for it: the optional-feature
+    # entities are created next, and without that flag they would be built for features the generic
+    # model over-declares (which read a permanent, meaningless off) rather than the ones the unit
+    # actually has. A fresh onboarding already has the flag, so it never waits.
+    if coordinator.needs_invisible_topup:
+        await coordinator.async_fetch_model_rules()
+    else:
+        entry.async_create_background_task(
+            hass, coordinator.async_fetch_model_rules(), "haismart model rules"
+        )
 
     entry.runtime_data = coordinator
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))

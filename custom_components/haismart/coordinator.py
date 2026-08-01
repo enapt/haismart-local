@@ -46,6 +46,7 @@ from haismart_hrdp import (
     build_epp_frame,
     constraint_commands,
     declared_bool_features,
+    declared_enum_features,
     extended_status_epp_frame,
     grsetdac_baseline_from_status,
     grsetdac_op_frame,
@@ -62,6 +63,7 @@ from haismart_hrdp import (
     select_wire_model,
     set_grsetdac_field,
     read_bool_features,
+    read_enum_features,
     udiscovery,
     validate_write,
     with_rules,
@@ -437,6 +439,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 self._apply_telemetry(state, telemetry)
                 state.update(alarms)
                 state["features"] = self._feature_states(blob)
+                state["features_enum"] = self._feature_enum_states(blob)
                 return state
 
         # Connected fine but nothing decoded — either the AC pushed no full report this
@@ -984,10 +987,46 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return {}
         return read_bool_features(wm, self.digital_model, blob)
 
+    def _feature_enum_states(self, blob: bytes) -> dict[str, str]:
+        """The declared optional multi-state features read out of this report, labelled, or ``{}``.
+        Same basis and gate as :meth:`_feature_states`."""
+        wm = self._feature_wire_model(len(blob))
+        if wm is None or not self.digital_model:
+            return {}
+        return read_enum_features(wm, self.digital_model, blob)
+
+    @property
+    def needs_invisible_topup(self) -> bool:
+        """Whether the stored model predates carrying its ``invisible_attributes`` and a refresh
+        token is on hand to fetch it. Used to decide whether the model top-up must finish before the
+        optional-feature entities are created, so they are built for the real feature set."""
+        stored = _stored_digital_model(self.config_entry)
+        return bool(
+            stored
+            and "invisible_attributes" not in stored
+            and self.config_entry.data.get(CONF_REFRESH_TOKEN)
+        )
+
     @property
     def declared_features(self) -> frozenset[str]:
-        """The optional boolean features this unit declares -- which read-only entities to create."""
-        return declared_bool_features(self.digital_model)
+        """The optional boolean features to create read-only entities for: the ones this unit
+        declares AND its family can actually place. Basing it on what reads a value (rather than the
+        declaration alone) means a family with no confirmed displacement -- which reads nothing --
+        creates no dead entities, and neither does a declared attribute the map cannot place."""
+        blob = self.last_raw_status
+        if not blob or not self.digital_model:
+            return frozenset()
+        wm = self._feature_wire_model(len(blob))
+        return frozenset(read_bool_features(wm, self.digital_model, blob)) if wm else frozenset()
+
+    @property
+    def declared_enum_features(self) -> frozenset[str]:
+        """The optional multi-state features to create enum sensors for -- same read-backed gate."""
+        blob = self.last_raw_status
+        if not blob or not self.digital_model:
+            return frozenset()
+        wm = self._feature_wire_model(len(blob))
+        return frozenset(read_enum_features(wm, self.digital_model, blob)) if wm else frozenset()
 
     @property
     def supports_eco(self) -> bool:
@@ -1178,7 +1217,12 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """
         data = self.config_entry.data
         stored = _stored_digital_model(self.config_entry)
-        if not stored or stored.get("modifiers") or not data.get(CONF_REFRESH_TOKEN):
+        if not stored or not data.get(CONF_REFRESH_TOKEN):
+            return False
+        # Re-fetch if the rules are missing OR the model predates carrying `invisible_attributes`
+        # (which the optional-feature entities need to tell a real feature from one the generic
+        # model over-declares). An entry with modifiers but no invisible list is one of those.
+        if stored.get("modifiers") and "invisible_attributes" in stored:
             return False
         model = stored
         usdk_client_id = data.get(CONF_CLOUD_CLIENT_ID)

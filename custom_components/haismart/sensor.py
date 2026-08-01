@@ -17,6 +17,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from haismart_hrdp import OPTIONAL_ENUM_FEATURES
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -171,7 +172,31 @@ async def async_setup_entry(
     # It's a secret, so it's diagnostic + DISABLED by default (enable it, back it up, done).
     entities.append(HaismartModelIdSensor(coordinator))
     entities.append(HaismartLocalKeySensor(coordinator))
+    # Read-only enum state for the multi-state optional features a unit declares (presence-based
+    # airflow and the like). Membership from the model, position from the map -- same safe basis as
+    # the feature binary sensors, and read-only for the same reason.
+    for name in sorted(coordinator.declared_enum_features):
+        entities.append(HaismartFeatureEnumSensor(coordinator, name))
     async_add_entities(entities)
+
+
+class HaismartFeatureEnumSensor(HaismartEntity, SensorEntity):
+    """One declared multi-state optional feature, read-only, as a labelled enum sensor."""
+
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: HaismartCoordinator, attribute: str) -> None:
+        super().__init__(coordinator)
+        slug, states = OPTIONAL_ENUM_FEATURES[attribute]
+        self._attribute = attribute
+        self._attr_translation_key = slug
+        self._attr_unique_id = f"{coordinator.device_id}_{slug}"
+        self._attr_options = sorted(set(states.values()))
+
+    @property
+    def native_value(self) -> str | None:
+        return ((self.coordinator.data or {}).get("features_enum") or {}).get(self._attribute)
 
 
 class HaismartSensor(HaismartEntity, SensorEntity):

@@ -208,7 +208,27 @@ def merge_rules(model: dict[str, Any], published: Mapping[str, Any]) -> dict[str
     for section in MERGED_SECTIONS:
         if published.get(section):
             merged[section] = published[section]
+    if published.get("attributes"):
+        # Always record the invisible set (even empty) once a real published model is in hand: its
+        # PRESENCE is the signal that we know which of a device's attributes it actually has, which
+        # is what the optional-feature entities gate on. A model without the key is one we cannot
+        # yet tell real features from over-declared ones for, and gets no such entities.
+        merged["invisible_attributes"] = sorted(invisible_attributes(published))
     return merged
+
+
+def invisible_attributes(published: Mapping[str, Any] | None) -> frozenset[str]:
+    """The attributes a published model marks ``invisible`` -- ones a generic model declares but this
+    particular unit does not actually have, so the device reports them as a constant zero. The
+    device shadow does not carry the flag; only the published constraintfile does. Empty when the
+    model carries no such flags (e.g. one that was never topped up from its published form)."""
+    out: set[str] = set()
+    for attr in (published or {}).get("attributes") or []:
+        if isinstance(attr, Mapping) and attr.get("name") and (
+            attr.get("invisible") or attr.get("invisiable")
+        ):
+            out.add(str(attr["name"]))
+    return frozenset(out)
 
 
 def declared_order(model: Mapping[str, Any] | None) -> tuple[str, ...]:

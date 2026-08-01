@@ -16,6 +16,8 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
+from .canonical_map import CANONICAL
+
 # attribute name (as the device declares it) -> our stable key / translation slug.
 OPTIONAL_BOOL_FEATURES: Mapping[str, str] = {
     "electricHeatingStatus": "electric_heating",
@@ -37,27 +39,85 @@ OPTIONAL_BOOL_FEATURES: Mapping[str, str] = {
 }
 
 
+# Optional MULTI-STATE features: attribute -> (slug, {wire value: state}). Read-only, like the
+# booleans -- a select would write, and a group-set write needs its own confirmation.
+OPTIONAL_ENUM_FEATURES: Mapping[str, tuple[str, Mapping[int, str]]] = {
+    "humanSensingStatus": ("human_sensing", {0: "off", 1: "avoid", 2: "follow", 3: "on"}),
+}
+
+
 def _attribute_names(model) -> set[str]:
-    """The attribute names a device declares, from any shape the model turns up in: a digital model
-    ``{"attributes": [...]}``, that ``attributes`` list itself (dicts or a name->spec map), or a bare
-    collection of names."""
+    """The attribute names a device actually has: the ones it declares, minus the ones its model
+    marks ``invisible``.
+
+    A generic model over-declares -- it lists every attribute the product line might have, and marks
+    the ones a given unit lacks ``invisible`` (they then report a constant zero). Surfacing an
+    invisible attribute would be an entity that reads a permanent, meaningless off. So they are
+    removed here, from any shape the model turns up in: a digital model ``{"attributes": [...],
+    "invisible_attributes": [...]}``, that ``attributes`` list itself, or a bare collection of names.
+    """
     if not model:
         return set()
-    if isinstance(model, Mapping) and "attributes" in model:
-        model = model["attributes"]
+    invisible: set[str] = set()
     if isinstance(model, Mapping):
-        return {str(n) for n in model}
-    names: set[str] = set()
-    for a in model:
-        name = a.get("name") if isinstance(a, Mapping) else a
-        if name:
-            names.add(str(name))
-    return names
+        invisible = {str(n) for n in model.get("invisible_attributes") or ()}
+        attrs = model["attributes"] if "attributes" in model else model
+    else:
+        attrs = model
+    if isinstance(attrs, Mapping):
+        names = {str(n) for n in attrs}
+    else:
+        names = {str(a.get("name") if isinstance(a, Mapping) else a) for a in attrs}
+        names.discard("None")
+    return {n for n in names if n} - invisible
+
+
+# Only features the canonical map can place: a declared attribute the map does not carry cannot be
+# read off any report, so surfacing it would be an entity that never has a value. The map covers 8
+# of the boolean set; the rest (mould-proof, drying, UV, PV, ...) wait on a position.
+_PLACEABLE_BOOL = frozenset(n for n in OPTIONAL_BOOL_FEATURES if n in CANONICAL)
+_PLACEABLE_ENUM = frozenset(n for n in OPTIONAL_ENUM_FEATURES if n in CANONICAL)
+
+
+def _known_feature_set(model) -> bool:
+    """Whether a model carries the ``invisible_attributes`` key -- present (even empty) means we know
+    which attributes this unit actually has; absent means we do NOT, so no optional-feature entities
+    are offered rather than risk surfacing ones the generic model over-declares. A bare list/set of
+    names (no digital model) is treated as known -- the caller vouched for it (tests, direct use)."""
+    return not isinstance(model, Mapping) or "invisible_attributes" in model
 
 
 def declared_bool_features(model) -> frozenset[str]:
-    """The optional boolean features a device declares, from its digital model."""
-    return frozenset(OPTIONAL_BOOL_FEATURES) & _attribute_names(model)
+    """The optional boolean features a device declares AND the map can place -- empty unless we know
+    the unit's real feature set (see :func:`_known_feature_set`)."""
+    if not _known_feature_set(model):
+        return frozenset()
+    return _PLACEABLE_BOOL & _attribute_names(model)
+
+
+def declared_enum_features(model) -> frozenset[str]:
+    """The optional multi-state features a device declares AND the map can place -- same gate."""
+    if not _known_feature_set(model):
+        return frozenset()
+    return _PLACEABLE_ENUM & _attribute_names(model)
+
+
+def read_enum_features(wire_model, declared, blob: bytes) -> dict[str, str]:
+    """Read the declared multi-state features out of ``blob`` as their labelled state.
+
+    Same map-and-position basis as :func:`read_bool_features`; the raw value is looked up in the
+    attribute's state map, and a value the map does not name is dropped rather than shown as a code.
+    """
+    names = declared_enum_features(declared)
+    if not names:
+        return {}
+    out: dict[str, str] = {}
+    for name, field in wire_model.model_fields(sorted(names), len(blob)).items():
+        states = OPTIONAL_ENUM_FEATURES[name][1]
+        value = field.read(blob)
+        if isinstance(value, int) and value in states:
+            out[name] = states[value]
+    return out
 
 
 def read_bool_features(wire_model, declared, blob: bytes) -> dict[str, bool]:

@@ -21,6 +21,7 @@ from .device_rules import (
     MERGED_SECTIONS,
     RULE_SECTIONS,
     declared_order,
+    invisible_attributes,
     merge_rules,
     rules_for,
     with_rules,
@@ -92,7 +93,14 @@ from .uss import (
     set_grsetdac_field,
     status_layout,
 )
-from .features import OPTIONAL_BOOL_FEATURES, declared_bool_features, read_bool_features
+from .features import (
+    OPTIONAL_BOOL_FEATURES,
+    OPTIONAL_ENUM_FEATURES,
+    declared_bool_features,
+    declared_enum_features,
+    read_bool_features,
+    read_enum_features,
+)
 from .wire_models import (
     VANE_V_EPP_TO_MODEL,
     VANE_V_MODEL_TO_EPP,
@@ -139,6 +147,9 @@ __all__ = [
     "OPTIONAL_BOOL_FEATURES",
     "declared_bool_features",
     "read_bool_features",
+    "OPTIONAL_ENUM_FEATURES",
+    "declared_enum_features",
+    "read_enum_features",
     "probe_layout",
     "StatedState",
     "VANE_V_MODEL_TO_EPP",
@@ -191,6 +202,7 @@ __all__ = [
     "DEVICE_RULES",
     "rules_for",
     "merge_rules",
+    "invisible_attributes",
     "RULE_SECTIONS",
     "MERGED_SECTIONS",
     "declared_order",

@@ -1765,16 +1765,23 @@ def test_declared_bool_features_reads_from_the_model_and_the_map():
     from haismart_hrdp import declared_bool_features, read_bool_features
     from haismart_hrdp.wire_models import _CLASSIC_PROBE, EXTENDED46
 
-    model = {"attributes": [
+    # `invisible_attributes` present (even empty) is the signal that the unit's real feature set is
+    # known; a model without it gets no optional-feature entities at all -- never a guess.
+    model = {"invisible_attributes": [], "attributes": [
         {"name": "freshAirStatus"}, {"name": "electricHeatingStatus"}, {"name": "lightStatus"},
         {"name": "onOffStatus"},               # not an optional feature -- ignored
         {"name": "somethingNobodyLists"},       # not in the map -- ignored
     ]}
     assert declared_bool_features(model) == frozenset(
         {"freshAirStatus", "electricHeatingStatus", "lightStatus"})
-    # also accepts a name->spec map and a bare list of names
-    assert declared_bool_features({"attributes": {"freshAirStatus": {}}}) == frozenset({"freshAirStatus"})
+    # a model that does NOT yet know its invisible set offers nothing (no phantoms while unsure)
+    assert declared_bool_features({"attributes": [{"name": "freshAirStatus"}]}) == frozenset()
+    # a bare list of names is a caller vouching for the set directly
     assert declared_bool_features(["lightStatus", "x"]) == frozenset({"lightStatus"})
+    # an attribute the model marks invisible is one this unit does not have -- dropped, so no phantom
+    # entity that reads a permanent off (the generic model over-declares; invisible is how it says so)
+    model_inv = dict(model, invisible_attributes=["electricHeatingStatus"])
+    assert declared_bool_features(model_inv) == frozenset({"freshAirStatus", "lightStatus"})
 
     got = read_bool_features(_CLASSIC_PROBE, model, STATUS_125)
     assert set(got) == {"freshAirStatus", "electricHeatingStatus", "lightStatus"}

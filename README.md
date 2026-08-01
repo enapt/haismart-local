@@ -90,7 +90,9 @@ One device per air conditioner, with:
 | **Local key** *(diagnostic, off by default)* | Your unit's key, so it rides along in HA backups |
 
 Which of these appear depends on your model — the integration only exposes controls it can actually
-drive on your unit, rather than showing buttons that do nothing.
+drive on your unit, and only reports the features your unit genuinely has, rather than showing
+buttons or sensors that do nothing. A model tends to describe every function its product line might
+have; the ones your particular unit lacks are recognised and left out.
 
 **Your air conditioner describes itself, and the integration listens.** When you sign in it fetches
 your unit's own model: the modes and fan speeds it really has, the setpoint range it accepts, the

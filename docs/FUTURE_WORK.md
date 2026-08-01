@@ -70,14 +70,30 @@ places the whole flag block at once, self-clean included.
 **The 117-byte family is separately open.** It is not a displacement of the published map at all, so
 nothing carries over: it needs its own report taken while a cycle runs.
 
-## 4. Two settings that decode but cannot be written
+## 4. Two settings that decode and read but cannot be *written* — now tested, not just assumed
 
 `echoStatus` (the command-confirmation beeper, where set = silent) and `selfCleaningStatus` both
-decode cleanly and are marked user-facing by the device model, but neither has been seen written.
-They are deliberately absent from the write map rather than added on inference — a group-set applies
-the whole word block, so a wrong bit is not a local mistake.
+decode cleanly and are marked `writeType=G`/writable by the device model. On paper they belong in the
+write map. They are still deliberately kept out of it, and this is no longer an assumption.
 
-Self-clean now has both halves of a state transition observed. A captured write is what is missing.
+**A live write settled `echoStatus`: the hardware silently ignores it.** On a real unit, a
+self-verifying write — seed from the unit's own status, flip exactly one bit, read back, revert —
+was run against two bits of the same word: `screenDisplayStatus` (the display light, a control we
+already ship) flipped and reverted cleanly, while `echoStatus`, byte-identical treatment, left the
+word **unchanged**. The op is accepted and the bit never lands. So `writeType=G` is necessary but not
+sufficient; the unit is the only authority on whether a group-set write takes. As a control it would
+silently do nothing, which is worse than absent — so it stays a **read-only sensor**, which is
+exactly how it now ships.
+
+`selfCleaningStatus` was not tested the same way because writing it starts a self-clean cycle that
+runs to completion and cannot be called back — not a thing to trigger on a whim on someone's unit.
+It has both halves of its *state transition* observed but no confirmed *write*, and on the evidence
+of `echoStatus` the assumption that `writeType=G` implies a working write is not one to make. It also
+stays read-only.
+
+The general rule this leaves: **the model gives the candidate list of controls; a live self-verifying
+write gives the verdict.** Any control added beyond the confirmed set must pass that live write on
+real hardware first.
 
 ## 5. A timer, on units that publish one
 

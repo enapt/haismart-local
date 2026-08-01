@@ -872,6 +872,25 @@ def test_extended46_decodes_the_real_reports():
     assert fan["mode"] == "fan_only" and fan["swing_vertical"] is True
     assert fan["current_temperature"] == 26.0 and fan["outdoor_temperature"] == 36.0
 
+
+def test_extended46_reads_fan_speed_from_the_inserted_block():
+    """Fan speed on this family is NOT where every other family keeps it.
+
+    Word 21 bit 8 -- the classic position -- reads 6 in all three captures, and 6 is not a code this
+    unit's own model lists, so that field is something else here. Word 26 bit 9, inside the inserted
+    block and next to the vane at word 25, reads the speeds the captures were taken at: low in the
+    one set to low, high in the one set to high, and nothing at all with the unit off.
+    """
+    from haismart_hrdp import profile_for
+
+    prof = profile_for("AAC1UKZ01")
+    assert uss.parse_full_status(STATUS_209_COOL, prof)["fan_mode"] == "low"
+    assert uss.parse_full_status(STATUS_209_FAN, prof)["fan_mode"] == "high"
+    # off: the word reads 0, which is not a speed, so the field is absent rather than invented
+    assert "fan_mode" not in uss.parse_full_status(STATUS_209_OFF, prof)
+    # the classic position would have reported a code the unit's model does not define
+    assert ((STATUS_209_COOL[92 + 20 * 2] << 8) >> 8) & 0x07 == 6
+
     # The classic partial decode is what this family REPLACES: byte 92 is the media module's
     # `volume` (100), which reads as a 48 C setpoint, and the classic power bit lands elsewhere so
     # the unit looks permanently off. Both are the symptoms the family was added to fix.

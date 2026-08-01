@@ -122,11 +122,17 @@ carry directly:
   (the "swinging" flag is bit 3 of the nibble);
 - the cumulative **energy register at words 44+45 works** on this family — a 32-bit counter that
   reads a real total, where the classic family reports zero. Its unit is not yet established, so it
-  is not published as a sensor.
+  is not published as a sensor;
+- **fan speed answers at word 26 bit 9**, inside the inserted block and beside the vane at word 25 —
+  not at word 21 bit 8, where every other family keeps it and where these units read a constant 6
+  that their own model does not define. The three captures were taken in stated states, and word 26
+  reads that model's codes for exactly those: low in the capture set to low, high in the one set to
+  high, nothing with the unit off.
 
-Not yet settled, and therefore neither read nor settable: **fan speed** and the swings. These units
-report a wind-speed code their own device profile does not list, so the field's position is not
-confirmed; the encoder refuses any field it cannot place rather than write to a guessed word.
+Fan speed is **read only** here. The settable word array runs 20..24, so word 26 is outside anything
+the group-set can reach on this family; a longer array may exist but nothing has shown one. The
+swings are still unsettled in both directions, so the encoder refuses them rather than writing to a
+guessed word.
 
 ### 133 B — documented, not shipped
 

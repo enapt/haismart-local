@@ -59,7 +59,9 @@ class WireField:
       would turn into a confident −64 °C, and one fabricated MEASUREMENT permanently skews the
       min/max/mean of a user's long-term statistics. This mirrors ``uss._sensor_temp`` on the classic
       family.
-    * ``"raw"``   -> the field's integer value, unscaled (a code, not a measurement).
+    * ``"raw"``   -> the field's integer value, unscaled: a code, or a reading that needs no
+      scaling at all (a register already in watts). ``"int"`` would return the same number as a
+      float, which is right for a scaled temperature and wrong for a whole-unit counter.
     * ``"enum"``  -> ``enum[raw]`` — maps the raw EPP value to a **Haier STD code string** (so the
       per-model :class:`~haismart_hrdp.models.AttributeProfile` can name it), or drops the field when
       the raw value isn't in the map.
@@ -490,7 +492,7 @@ EXTENDED36 = WireModel(
         # unit off, 1432 at full cooling, and a thousand-odd while it holds a room — and the unit
         # publishes an `acInput` of its own that agrees. This is a real measurement rather than the
         # figure the classic family derives from its current sensor.
-        "power_w": WireField(41, 0, 16, kind="int"),
+        "power_w": WireField(41, 0, 16, kind="raw"),
         # NOT read: the cumulative counter at words 34+35, mirrored at 39+40. It climbs, monotonically
         # and in jumps rather than continuously, and the unit publishes `accumulatedUseMainsPower` and
         # `totalElectricityUsed` that track it — but nothing so far establishes what one unit of it
@@ -568,6 +570,14 @@ EXTENDED46 = WireModel(
         "last_changed_by": WireField(37, 0, 2, kind="enum", enum=OPERATION_SOURCE),
         "operation_mode": WireField(21, 13, 3, kind="enum", enum=_EXT36_MODE),
         "swing_vertical": WireField(25, 0, 4, kind="vane_v"),
+        # Fan speed does NOT sit where every other family puts it. Word 21 bit 8 — the classic
+        # position — reads 6 in every capture from this family, and 6 is not a code its own model
+        # lists, so that field is something else here. It answers instead at word 26 bit 9, inside
+        # the inserted block, alongside the vane at word 25: three captures taken in stated states
+        # read 3 (stated low), 1 (stated high) and 0 with the unit off, which are that model's own
+        # codes for low and high. Read only — the settable word array runs 20..24, so this word is
+        # outside anything control can reach on this family.
+        "wind_speed": WireField(26, 9, 3, kind="enum", enum=_EXT36_FAN),
     },
 )
 

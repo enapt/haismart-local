@@ -408,6 +408,12 @@ worth a great deal:
    are exactly what's needed to diagnose a decode problem.
 1. Include your **AC model number**, the Wi-Fi module if you know it, and the app you pair with.
 
+A diagnostics download is close to self-contained now. Besides the raw report it carries **every
+attribute your unit declares, read off its own report** — the settings that have no entity as well as
+the ones that do — alongside the values your air conditioner publishes through its cloud profile, so
+the two can be compared without asking you for anything further. On the reference unit those two
+independent sources agree on all 21 comparable readings.
+
 **Adding support for a new model** is the most valuable contribution here, and it doesn't require
 writing any code — see [`docs/new-model.md`](docs/new-model.md) for a short capture procedure. When a
 report's layout isn't recognised, the diagnostics file proposes candidate layouts itself;

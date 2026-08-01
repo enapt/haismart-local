@@ -344,6 +344,37 @@ So a **new** model's layout is this map at some displacement, which makes the un
 rather than a field table. See [`docs/new-model.md`](docs/new-model.md): three status captures in
 known states are enough to pin it, and the layout prober scores candidates against those states.
 
+**The two single-displacement families are checked against real reports, not only against each
+other.** Displaced 19 words earlier, the map reproduces all nine of the classic family's mapped
+positions and decodes a real 125-byte report in agreement with the classic decoder on every field
+the two share. Run against the 127-byte reference reports the same displaced map agrees on only
+seven of eleven, and every disagreement is a field above word 5 — which is exactly where those units
+carry one extra word. The two displacements confirm each other, from opposite directions.
+
+One consequence worth stating outright, because it is easy to look for in the wrong place: the
+32-bit cumulative counter extends backwards from its word, so on a classic report it occupies the
+**final two words** — 15 and 16 on a 16-word report, 16 and 17 on a 17-word one. The word above it
+in the map carries nothing at all, which is what a 32-bit field's high half looks like.
+
+### Reading the attributes a device declares
+
+A unit declares three or four times the attributes any family map carries — 42 against 14 on the
+reference units — and every one of them sits where the map already states. Those are read too, from
+the map at the family's displacement: membership comes from the device's own model, position from
+the map, and the two are arrived at independently. They appear in a diagnostics download rather than
+as entities, since their placement rests on the map rather than on a capture apiece.
+
+Two limits, both deliberate:
+
+* **Only where the displacement is confirmed.** Extended-46 has no single whole-word offset — six of
+  its nine mapped positions disagree with any — so it declines rather than placing three dozen
+  attributes plausibly and wrongly. Compact-12 is not this lineage at all.
+* **Booleans and scaled readings only.** An unscaled number is a bare *code*, and a code on the wire
+  is not necessarily the code the device publishes; these models number an attribute one way in
+  their published values and another on the wire, and that translation is not in this map. Checked
+  against a live unit, all 21 booleans and scaled readings agreed with the values it published,
+  and the one unscaled code did not.
+
 ## What the device's own model supplies
 
 Onboarding fetches two things about a device and uses both:
@@ -357,6 +388,14 @@ Onboarding fetches two things about a device and uses both:
 
 The second is not fetched by name — the model is looked up in the account's resource service, which
 answers with a download URL carrying a build stamp, the file's version and its MD5.
+
+**That listing is scoped to the account, not to the request.** It answers with the configs published
+for the caller's own devices and reports success whatever model, identifier or resource type the
+request carries, so the response has to be selected from rather than trusted to contain one entry.
+The uPlusId is what identifies a device there; the model number is the half whose spelling varies,
+since a sticker may read `HSU-24HFAB/013WUSDC(W)-T3` where the service says `HSU-24HFAB`. A device
+that is not in the listing gets no rules at all, which locks nothing — the safe direction — rather
+than another device's.
 
 ## A second local protocol: UDISCOVERY on UDP `:7083`
 

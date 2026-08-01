@@ -112,11 +112,22 @@ scripts/probe-diagnostics.py off.json cool.json fan.json \
 to verify, never as a result: the ranking is a heuristic, close scores are common, and the same page
 explains why the registry, not the search, remains the authority on what ships.
 
+A diagnostics download also carries **every attribute the unit declares, read off its own report** —
+far more than the family map names — beside the values the device publishes through its cloud
+profile, so the two can be compared without a round-trip to the reporter. On a family whose
+displacement is confirmed those two independent sources should agree; a disagreement is a finding.
+Nothing there becomes an entity, and [`docs/report-layouts.md`](docs/report-layouts.md) explains what
+it will and will not read.
+
 Two rules make this safe:
 
 - **Reads may be widened on inference; writes may not.** An unknown report length is decoded as far
   as the layout-independent fields allow and flagged `partial`. `STATUS_LAYOUTS` stays the allowlist
   for writes, because a wrong word count sends a sensor byte back to the AC as a control word.
+- **A position may be inferred from the published map; a meaning may not.** Reading a device's other
+  declared attributes off the map is fair — the map states where they are, and the device states
+  that it has them. Deciding what an unscaled *code* means is not, because the published value and
+  the wire value are numbered separately, so codes are dropped rather than reported.
 - **A new grSetDAC field or value needs an observation, not a deduction.** The way to get one is a
   single-attribute sweep: change exactly one setting in the vendor app and diff the report. That is
   how every field in the current map was established, and how horizontal swing and heat were added.

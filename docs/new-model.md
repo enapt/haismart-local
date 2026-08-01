@@ -69,3 +69,9 @@ equally well, and only a change of state tells them apart. A candidate has to ex
 
 The candidates are a starting point, not the answer — they are checked against the states you
 describe and against your unit's own published settings before anything ships.
+
+The file carries one more thing that saves a round-trip. Once your unit's layout **is** recognised,
+diagnostics reads **every attribute your air conditioner declares** — the settings with no entity as
+well as the ones with — and prints them beside the values your unit publishes through its cloud
+profile. Two independent sources for the same readings, which is usually enough to confirm a layout
+outright, or to show exactly which field is off.

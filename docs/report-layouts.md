@@ -302,9 +302,41 @@ more exceptions than rule. A test asserts the correspondence for all of them fie
 change that drifts from it fails rather than diverging quietly. The practical consequence is for **new** models: a layout is the canonical map at
 some displacement, so what has to be discovered is one integer rather than a whole field table.
 
-The map also carries more than the decoder currently reads — 84 attributes against about a dozen —
-and it independently confirmed the up-down vane translation that was settled on hardware, including
-an entry no unit here has ever exercised.
+The map also independently confirmed the up-down vane translation that was settled on hardware,
+including an entry no unit here has ever exercised.
+
+### Reading what a device declares, not just what a family maps
+
+The map carries 84 attributes where a family map carries a dozen, and a *device* routinely declares
+three or four times what its family map holds — 42 against 14 on the reference units. Those extra
+attributes are read now, from the map at the family's displacement. It needs no capture per
+attribute, because membership comes from the device's own model and position from the map, and the
+two are arrived at independently: `WireModel.model_fields(declared, report_length)`.
+
+The displacement has to be earned, and `WireModel.canonical_displacement` records where it has been:
+
+| family | displacement | evidence |
+|---|---|---|
+| classic | −19 | all 9 mapped positions reproduced; decodes a real 125-byte report in agreement with the classic decoder on every shared field |
+| extended-36 | 0 | all 12 mapped positions reproduced |
+| extended-46 | — | 6 of its 9 disagree with any single offset (the ten-word insert), so it declines |
+| compact-12 | — | not this lineage |
+
+Two things it will not do, both for the same reason — a value that may not mean what it says is
+worse than no value:
+
+- **A family with no confirmed displacement returns nothing.** Placing three dozen attributes from a
+  guessed offset would put every one of them somewhere plausible and wrong.
+- **Bare codes are dropped.** Booleans and scaled readings are kept, because the wire value *is* the
+  value. An unscaled number is a code, and these models number an attribute one way in their
+  published values and another on the wire; that translation is not in this map. Checked against a
+  live unit, all 21 booleans and scaled readings matched the values the device publishes through its
+  cloud profile, and the one unscaled code did not — reading 0 where the device published 1.
+
+The readings land in a diagnostics download (`model_declared_fields`), beside the device's own
+published values (`digital_model.reported_values`) so the two can be compared directly. They are not
+entities: their placement rests on the published map rather than on a capture apiece, and a wrong
+value in a diagnostics file costs nothing where the same value on a dashboard is a fault report.
 
 ## Why the registry still exists
 

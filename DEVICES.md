@@ -8,6 +8,11 @@ The integration builds itself from the model description your AC's own cloud pro
 model missing from this table will very likely still work. The table records what has actually been
 **observed**, not the limit of what is supported.
 
+A diagnostics download from a unit on a recognised layout now reads **every attribute that unit
+declares** and prints it beside the values the unit publishes through its cloud profile — two
+independent sources for the same readings. That is usually enough to confirm a model belongs in this
+table without anyone here owning one.
+
 ## Confirmed working
 
 | Product code | Model | Report | Heat | Notes |

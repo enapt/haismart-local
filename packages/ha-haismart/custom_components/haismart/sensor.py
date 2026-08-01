@@ -143,18 +143,14 @@ SENSORS: tuple[HaismartSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda s: s.get("coil_temperature"),
     ),
-    # The outdoor unit's air-outlet probe. `key` is deliberately left at the name this entity was
-    # first published under: it forms the unique id, so changing it would abandon every existing
-    # entity and the history attached to it, for a reading that has not itself changed. Only the
-    # name shown to the user is corrected.
     HaismartSensorDescription(
         key="discharge_temperature",
-        translation_key="outdoor_out_air_temperature",
+        translation_key="discharge_temperature",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda s: s.get("outdoor_out_air_temperature"),
+        value_fn=lambda s: s.get("discharge_temperature"),
     ),
 )
 

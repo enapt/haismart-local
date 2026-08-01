@@ -936,7 +936,7 @@ def _sensor_temp(raw: int, *, scale: float, offset: float) -> float | None:
 _EXT_STATUS_LEN = 141
 _EXT_OFF_POWER = 126          # BE16, watts -- a register the unit keeps, not a figure we compute
 _EXT_OFF_COIL = 128           # indoor coil temp, x0.5 - 20
-_EXT_OFF_OUTDOOR_OUT_AIR = 129   # outdoor unit air-outlet temp, -64
+_EXT_OFF_DISCHARGE = 129      # compressor discharge line, -64. See the note above the parser.
 _EXT_OFF_OUTDOOR_COIL = 130      # outdoor coil temp, -64
 _EXT_OFF_OUTDOOR_IN_AIR = 131    # outdoor unit air-inlet temp, -64
 _EXT_OFF_OUTDOOR_DEFROST = 132   # outdoor defrost sensor, -64
@@ -969,6 +969,15 @@ _MAX_PLAUSIBLE_A = 100.0
 def parse_extended_status(data: bytes) -> dict[str, Any]:
     """Decode the running power / compressor figures from an extended-status report.
 
+    ⚠️ One name here deliberately departs from the published map. The map calls the reading at byte
+    129 the outdoor unit's *air-outlet* temperature, and its position is not in doubt -- five
+    neighbouring fields on both sides of it land exactly where the same offset puts them. But a live
+    unit reports **69 °C there while its own outdoor sensor reads 28 °C**, with the compressor at
+    52 Hz drawing 1020 W. Air leaving a condenser runs some ten to twenty degrees above ambient, not
+    forty; a discharge line at that frequency runs exactly this hot. The same section of the map
+    also gives the expansion valve's opening the unit "Hz", so its labels are not authoritative
+    where they conflict with the reading. Position from the map, name from the thermometer.
+
     Returns ``{}`` for anything that is not the confirmed extended-report layout, so a device whose
     extended report differs simply yields no telemetry rather than fabricated numbers. Only the
     "classic" family's 141-byte report is confirmed; other families append their engineering block at
@@ -977,7 +986,7 @@ def parse_extended_status(data: bytes) -> dict[str, Any]:
     Keys (each temperature omitted when the unit does not carry that probe):
       ``power_w``, ``compressor_current_a``, ``compressor_frequency_hz``,
       ``expansion_valve_opening``, the refrigeration-circuit temperatures ``coil_temperature``,
-      ``outdoor_out_air_temperature``, ``outdoor_coil_temperature``, ``outdoor_in_air_temperature``
+      ``discharge_temperature``, ``outdoor_coil_temperature``, ``outdoor_in_air_temperature``
       and ``outdoor_defrost_temperature``, and the actuator states named in
       :data:`_EXT_ACTUATOR_FLAGS` and :data:`_EXT_ACTUATOR_CODES`.
 
@@ -1002,7 +1011,7 @@ def parse_extended_status(data: bytes) -> dict[str, Any]:
     # -20/-64 C reading in a user's statistics. Most units carry only some of these probes.
     for key, off, scale, offset in (
         ("coil_temperature", _EXT_OFF_COIL, 0.5, -20.0),
-        ("outdoor_out_air_temperature", _EXT_OFF_OUTDOOR_OUT_AIR, 1.0, -64.0),
+        ("discharge_temperature", _EXT_OFF_DISCHARGE, 1.0, -64.0),
         ("outdoor_coil_temperature", _EXT_OFF_OUTDOOR_COIL, 1.0, -64.0),
         ("outdoor_in_air_temperature", _EXT_OFF_OUTDOOR_IN_AIR, 1.0, -64.0),
         ("outdoor_defrost_temperature", _EXT_OFF_OUTDOOR_DEFROST, 1.0, -64.0),

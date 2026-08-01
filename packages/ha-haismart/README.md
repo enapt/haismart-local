@@ -46,8 +46,7 @@ write path. No cloud at runtime.
   - `sensor` — **Energy** (kWh), on the units that keep a running total themselves. Most carry the
     register and never populate it; there it reads *unavailable* rather than a permanent zero.
   - `sensor` ×5 + `binary_sensor` ×2 (diagnostic) — running **power**, compressor **current** and
-    **frequency**, the **coil** and **outdoor air-outlet** temperatures, and whether the
-    **compressor** / indoor
+    **frequency**, **coil** and **discharge** temperatures, and whether the **compressor** / indoor
     **fan** are running. From a second frame that only some units answer; absent on the rest.
   - `binary_sensor` — **Self-clean** (is a cycle running) and **Fault**, whose attributes name the
     active faults with the service code the unit displays.

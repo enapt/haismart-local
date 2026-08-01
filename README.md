@@ -78,7 +78,7 @@ One device per air conditioner, with:
 | **Power** *(diagnostic)* | Live power draw in watts, on units that report it |
 | **Energy** | A running kWh total, on the units that keep one themselves. Goes straight on the Energy dashboard — no helper needed. Most units carry the register but never fill it in, and there the sensor stays unavailable; see [Energy monitoring](#energy-monitoring) |
 | **Compressor current / frequency** *(diagnostic)* | What the outdoor unit is actually doing |
-| **Coil / outdoor air-outlet temperature** *(diagnostic)* | Indoor evaporator coil, and the air leaving the outdoor unit |
+| **Coil / discharge temperature** *(diagnostic)* | Evaporator and compressor-discharge temperatures |
 | **Compressor / Fan** *(diagnostic, on/off)* | Whether the compressor and indoor fan are actually running |
 | **Self-clean** *(diagnostic, on/off)* | Whether a self-clean cycle is running. Reported, not controlled — the cycle runs to completion and ignores a second press, so there is nothing an off switch could do |
 | **Fault** *(diagnostic, problem)* | Whether the unit is reporting a fault. Its attributes name the active faults with the service code the unit shows (E1, F4, …) — that is what an engineer will ask for |
@@ -182,7 +182,7 @@ only moves on a scale of minutes, so there is nothing to gain from asking more o
 
 When you change a setting, the air conditioner confirms it on that same connection, so the thermostat
 card reflects the change at once instead of waiting for the next poll. The engineering readings —
-power, current, frequency, the coil and outdoor air-outlet temperatures, compressor and fan — are not part of
+power, current, frequency, the coil and discharge temperatures, compressor and fan — are not part of
 that confirmation, so they keep the values from the most recent poll until the next one arrives. They
 are held for at most two minutes, and cleared immediately if you switch the unit on or off, because
 the figures for a running unit say nothing about one that has just stopped.

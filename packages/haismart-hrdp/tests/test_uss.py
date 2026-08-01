@@ -1402,9 +1402,9 @@ def test_parse_extended_status_decodes_a_running_unit():
     assert got["compressor_frequency_hz"] == 35
     assert got["compressor_running"] is True
     assert got["fan_running"] is True
-    # a cold evaporator while cooling, and warm air leaving the outdoor unit
+    # a cold evaporator while cooling, and a hot discharge line
     assert got["coil_temperature"] == 12.0
-    assert got["outdoor_out_air_temperature"] == 57.0
+    assert got["discharge_temperature"] == 57.0
     # the outdoor probes this unit does not carry are absent rather than reported as -64 C
     assert "outdoor_coil_temperature" not in got
     assert "outdoor_in_air_temperature" not in got

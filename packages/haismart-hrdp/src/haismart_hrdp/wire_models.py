@@ -36,6 +36,8 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 
+from .canonical_map import CANONICAL
+
 # Attribute-array geometry, shared with uss.py (kept local to avoid an import cycle).
 _ATTR_BASE = 92          # first attribute byte; word N (1-based) starts at _ATTR_BASE + 2*(N-1)
 _PLAUSIBLE_INDOOR_C = (0.0, 60.0)   # a decoded indoorTemperature outside this ⇒ wrong family
@@ -391,6 +393,45 @@ COMPACT12 = WireModel(
 _EXT36_MODE = {0: "0", 1: "1", 2: "2", 4: "4", 6: "6"}   # auto / cool / dry / heat / fan_only
 _EXT36_FAN = {1: "1", 2: "2", 3: "3", 5: "5"}            # high / medium / low / auto
 
+# --- fields from the published map ------------------------------------------
+# The families below are the same published attribute map at different displacements (see
+# `canonical_map`). So their positions and scaling are read from it rather than written out again:
+# what stays here is the part the map does not state, which is how we choose to DECODE each field —
+# that a temperature sensor reporting its zero sentinel means "no probe" rather than 0 °C, that a
+# vane nibble is a position code with only some values meaning "sweeping", and which enum table
+# names a code. Those are policies, not published facts.
+#
+# Each entry is our key -> (published name, kind[, enum]).
+_CLIMATE_SPEC: Mapping[str, tuple] = {
+    "power": ("onOffStatus", "bool"),
+    "target_temperature": ("targetTemperature", "int"),
+    "current_temperature": ("indoorTemperature", "temp"),
+    "outdoor_temperature": ("outdoorTemperature", "temp"),
+    "heat_capable": ("acType", "bool_inv"),
+    "error_code": ("errCode", "raw"),
+    "last_changed_by": ("opSrc", "enum", OPERATION_SOURCE),
+    "operation_mode": ("operationMode", "enum", _EXT36_MODE),
+    "wind_speed": ("windSpeed", "enum", _EXT36_FAN),
+    "swing_vertical": ("windDirectionVertical", "vane_v"),
+    "swing_horizontal": ("windDirectionHorizontal", "vane_h"),
+    "self_cleaning": ("selfCleaningStatus", "bool"),
+}
+
+
+def canonical_fields(
+    displacement: int, keys: Sequence[str], spec: Mapping[str, tuple] = _CLIMATE_SPEC
+) -> dict[str, WireField]:
+    """Our decode fields for ``keys``, taken from the published map at ``displacement`` words."""
+    out: dict[str, WireField] = {}
+    for key in keys:
+        name, kind, *rest = spec[key]
+        c = CANONICAL[name]
+        out[key] = WireField(c.word + displacement, c.bit, c.length, kind=kind,
+                             k=c.k, c=c.c, enum=rest[0] if rest else None)
+    return out
+
+
+
 # Control: the preset's own `grSetDAC` Operation gives the group command (`6001`) and a five-word
 # array whose bit map is **byte-for-byte the classic family's** — targetTemperature w1.b8,
 # windDirectionVertical w1.b0, operationMode w2.b13, windSpeed w2.b8, then the w3 boolean block
@@ -467,29 +508,15 @@ EXTENDED36 = WireModel(
     write_fields=_EXT36_WRITE,
     position_fields=frozenset({"windDirectionVertical", "windDirectionHorizontal"}),
     fields={
-        "power": WireField(22, 0, 1, kind="bool"),
-        "target_temperature": WireField(20, 8, 8, kind="int", k=1.0, c=16.0),
-        "current_temperature": WireField(25, 8, 8, kind="temp", k=0.5, c=0.0),
-        "outdoor_temperature": WireField(26, 8, 8, kind="temp", k=1.0, c=-64.0),
-        "heat_capable": WireField(26, 7, 1, kind="bool_inv"),
-        "error_code": WireField(27, 8, 8, kind="raw"),
-        "last_changed_by": WireField(27, 0, 2, kind="enum", enum=OPERATION_SOURCE),
-        "operation_mode": WireField(21, 13, 3, kind="enum", enum=_EXT36_MODE),
-        "wind_speed": WireField(21, 8, 3, kind="enum", enum=_EXT36_FAN),
-        # the vane nibble is a position code shared with the classic map; only the auto codes sweep
-        # (see `vane_v_sweeping`). Reading bit 3 alone also matched the parked-low positions.
-        "swing_vertical": WireField(20, 0, 4, kind="vane_v"),
-        "swing_horizontal": WireField(23, 0, 3, kind="vane_h"),
-        # The flag word sits four words past the control block's first word, as on the classic
-        # family. Supported by what the reports show there: bits 2 and 3 are set together, which is
-        # the pattern the health setting produces, and bit 4 -- self-clean -- is clear on units that
-        # were not cleaning. Deliberately not offered on the other families: extended-46 places its
-        # vane outside this displacement, so its control block does not follow the same shape, and
-        # compact-12 has a different map entirely. Both want a report from a unit mid-cycle.
-        "self_cleaning": WireField(24, 4, 1, kind="bool"),
+        # the published map, undisplaced -- this family is where it starts
+        **canonical_fields(0, [
+            "power", "target_temperature", "current_temperature", "outdoor_temperature",
+            "heat_capable", "error_code", "last_changed_by", "operation_mode", "wind_speed",
+            "swing_vertical", "swing_horizontal", "self_cleaning",
+        ]),
         # Live input power, on the units whose report runs to word 41 (the 175-byte variant; a
         # shorter report simply has no such word and the field reads absent). Watts: zero with the
-        # unit off, 1432 at full cooling, and a thousand-odd while it holds a room — and the unit
+        # unit off, 1432 at full cooling, and a thousand-odd while it holds a room -- and the unit
         # publishes an `acInput` of its own that agrees. This is a real measurement rather than the
         # figure the classic family derives from its current sensor.
         "power_w": WireField(41, 0, 16, kind="raw"),
@@ -549,6 +576,11 @@ _EXT46_WRITE = {
 # Read but not published as climate: this family DOES carry a working cumulative-energy register at
 # words 44+45 (32-bit), unlike the classic family where it reads zero — its unit is not yet
 # established, so it stays out until it can be labelled correctly.
+# This family is NOT built from the published map, and deliberately: its vane sits five words past
+# where the map puts it, its setpoint counts half degrees rather than whole degrees offset by 16,
+# and its fan speed answers from the inserted block. Written out, those read as what they are —
+# a family with three exceptions — where a displacement plus three overrides would read as a rule
+# with more exceptions than rule.
 EXTENDED46 = WireModel(
     family="extended46",
     report_lengths=frozenset({209}),
@@ -594,22 +626,16 @@ WIRE_MODELS: tuple[WireModel, ...] = (COMPACT12, EXTENDED36, EXTENDED46)
 _CLASSIC_PROBE = WireModel(
     family="classic",
     report_lengths=frozenset(),
-    fields={
-        "power": WireField(3, 0, 1, kind="bool"),
-        "target_temperature": WireField(1, 8, 8, kind="int", k=1.0, c=16.0),
-        "current_temperature": WireField(6, 8, 8, kind="temp", k=0.5, c=0.0),
-        "outdoor_temperature": WireField(7, 8, 8, kind="temp", k=1.0, c=-64.0),
-        "heat_capable": WireField(7, 7, 1, kind="bool_inv"),
-        "error_code": WireField(8, 8, 8, kind="raw"),
-        "last_changed_by": WireField(8, 0, 2, kind="enum", enum=OPERATION_SOURCE),
-        "operation_mode": WireField(2, 13, 3, kind="enum", enum=_EXT36_MODE),
-        "wind_speed": WireField(2, 8, 3, kind="enum", enum=_EXT36_FAN),
-        "swing_vertical": WireField(1, 0, 4, kind="vane_v"),
-    },
+    fields=canonical_fields(-19, [
+        "power", "target_temperature", "current_temperature", "outdoor_temperature",
+        "heat_capable", "error_code", "last_changed_by", "operation_mode", "wind_speed",
+        "swing_vertical",
+    ]),
 )
 
-# Families the prober tries. Ordered widest-first so an equal score prefers the map that explains
-# more of the report.
+# The probe list. The classic and extended families are one map at two displacements, so the search
+# over displacements covers both from either entry; compact-12 is a genuinely different packing and
+# has to be its own candidate.
 PROBE_FAMILIES: tuple[WireModel, ...] = (EXTENDED46, EXTENDED36, COMPACT12, _CLASSIC_PROBE)
 
 # How the prober weighs each piece of agreement. Sensor plausibility is worth less than agreeing with

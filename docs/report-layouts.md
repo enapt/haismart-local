@@ -243,8 +243,14 @@ model — same widths, same bits, same order, one whole-word displacement each.
 | extended-46 | the canonical map with a ten-word block inserted at word 25 |
 | compact-12 | genuinely different — one attribute per whole word, not this lineage |
 
-A test asserts that correspondence field by field, so a change that drifts from it fails rather than
-diverging quietly. The practical consequence is for **new** models: a layout is the canonical map at
+Two of them are now *built* from it — the classic probe candidate and extended-36 read their
+positions and scaling straight out of the map, and only state what the map does not: how each field
+should be decoded (that a temperature sensor's zero means "no probe", that a vane nibble is a
+position code, which table names an enum). Extended-46 keeps an explicit table on purpose: its vane
+sits five words past where the map puts it, its setpoint counts half degrees, and its fan speed
+answers from the inserted block, so a displacement plus three overrides would read as a rule with
+more exceptions than rule. A test asserts the correspondence for all of them field by field, so a
+change that drifts from it fails rather than diverging quietly. The practical consequence is for **new** models: a layout is the canonical map at
 some displacement, so what has to be discovered is one integer rather than a whole field table.
 
 The map also carries more than the decoder currently reads — 84 attributes against about a dozen —

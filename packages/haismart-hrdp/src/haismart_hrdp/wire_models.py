@@ -811,6 +811,10 @@ PROBE_FAMILIES: tuple[WireModel, ...] = (EXTENDED46, EXTENDED36, COMPACT12, _CLA
 _SCORE_SHADOW_MATCH = 4
 _SCORE_STATED_MATCH = 4
 _SCORE_STATED_MISS = -6
+_SCORE_ORDER_MATCH = 1
+# A contradiction costs far more than an agreement earns: consecutive settings agreeing is the
+# default even for a wrong map, while a swap is the device saying outright that this is not it.
+_SCORE_ORDER_MISS = -8
 _SCORE_ENUM_KNOWN = 2
 _SCORE_SENSOR_PLAUSIBLE = 1
 
@@ -901,6 +905,32 @@ def _score_stated(decoded: Sequence[dict], stated: Sequence[StatedState | None])
     return score
 
 
+def _score_order(model: WireModel, order: Sequence[str]) -> int:
+    """Score a candidate against the order the device declares its settings in.
+
+    What this catches is a **family** whose map arranges its settings differently — extended-46 puts
+    a vane five words on and its fan speed inside an inserted block, and compact-12 is not this
+    lineage at all. Against a real declaration both are refused outright, every candidate of them,
+    while every classic and extended-36 candidate passes.
+
+    What it does NOT catch is a wrong displacement, and the reason is worth stating so nobody
+    expects more of it: the search only ever moves fields *later*, so a pivot and a positive shift
+    preserve an ascending order whatever they are. Order prunes the family branch; the offset still
+    has to come from the reports and the states they were captured in.
+    """
+    ranks = {name: i for i, name in enumerate(order)}
+    placed = sorted(
+        (ranks[name], f.word, -f.bit)
+        for key, f in model.fields.items()
+        if (name := _CLIMATE_SPEC.get(key, (None,))[0]) in ranks
+    )
+    score = 0
+    for (_, word, bit), (_, next_word, next_bit) in zip(placed, placed[1:]):
+        agrees = (word, bit) <= (next_word, next_bit)
+        score += _SCORE_ORDER_MATCH if agrees else _SCORE_ORDER_MISS
+    return score
+
+
 def _shift_model(model: WireModel, pivot: int, shift: int, setpoint: tuple) -> WireModel:
     """``model`` with every field at or above ``pivot`` moved ``shift`` words later, and its setpoint
     read with the ``setpoint`` encoding ``(name, k, c)``.
@@ -961,6 +991,7 @@ def probe_layout(
     *,
     shadow: Mapping[str, str] | None = None,
     stated: Sequence[StatedState | None] | None = None,
+    order: Sequence[str] | None = None,
     max_shift: int = 24,
     limit: int = 3,
 ) -> list[dict]:
@@ -982,6 +1013,14 @@ def probe_layout(
     * **``shadow``** — the device's own attribute values, from its ``digital_model``, keyed by
       attribute name. A candidate that reproduces values the device published through a different
       channel is almost certainly right.
+    * **``order``** — the settings the device declares its group-set carries, in wire order, from
+      :func:`~haismart_hrdp.declared_order`. It cannot place anything on its own: displacing every
+      field alike preserves the order exactly, so it says nothing about *where* a block starts. What
+      it does is reject a **family** that arranges its settings differently: on a real declaration
+      it rules out every extended-46 and compact-12 candidate — **375 of 800** — before any of them
+      is decoded, and passes every classic and extended-36 one. It prunes the family branch, not the
+      offset: the search only moves fields later, so no pivot or shift can violate an ascending
+      order. It therefore adds to the stated states rather than replacing them.
     * **``stated``** — what each capture was known to be in, one :class:`StatedState` per report (or
       ``None`` for a capture nobody described). This is the ground truth a new-model report already
       collects: three captures in stated states, plus the room temperature off the handset. It is
@@ -1034,6 +1073,8 @@ def probe_layout(
                     score = min(scores)
                     if stated:
                         score += _score_stated(decodes, stated)
+                    if order:
+                        score += _score_order(candidate, order)
                     out.append(
                         {
                             "family": model.family,

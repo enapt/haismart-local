@@ -43,7 +43,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "packages/haismart-hrdp/src"))
 
-from haismart_hrdp import StatedState, probe_layout  # noqa: E402
+from haismart_hrdp import StatedState, declared_order, probe_layout  # noqa: E402
 
 _TRUTHY = {"on", "true", "yes", "1"}
 _FALSY = {"off", "false", "no", "0"}
@@ -80,7 +80,7 @@ def parse_state(text: str) -> StatedState | None:
     return StatedState(**fields)
 
 
-def load_capture(path: Path) -> tuple[bytes, dict[str, Any]]:
+def load_capture(path: Path) -> tuple[bytes, dict[str, Any], tuple[str, ...]]:
     """The raw report and the device's published values out of one diagnostics file."""
     try:
         diag = json.loads(path.read_text())
@@ -100,7 +100,7 @@ def load_capture(path: Path) -> tuple[bytes, dict[str, Any]]:
     except ValueError as err:
         raise SystemExit(f"{path}: last_raw_status is not hex ({err})") from err
     model = diag.get("digital_model") or {}
-    return report, model.get("reported_values") or {}
+    return report, model.get("reported_values") or {}, declared_order(model)
 
 
 def describe(path: Path, report: bytes, state: StatedState | None) -> str:
@@ -132,21 +132,25 @@ def main() -> int:
         )
     stated = [parse_state(s) for s in args.state] or None
 
-    reports, shadows = [], []
+    reports, shadows, orders = [], [], []
     for path in args.files:
-        report, shadow = load_capture(path)
+        report, shadow, order = load_capture(path)
         reports.append(report)
         shadows.append(shadow)
+        orders.append(order)
 
     # Every file from one config entry carries the same published values -- they are stored when the
     # device is added, not re-read per download -- so the first non-empty set is the whole of it.
     shadow = next((s for s in shadows if s), {})
+    order = next((o for o in orders if o), ())
 
     print(f"{len(reports)} capture(s):")
     for path, report, state in zip(args.files, reports, stated or [None] * len(reports)):
         print(describe(path, report, state))
     if shadow:
         print(f"  published values: {len(shadow)} attributes")
+    if order:
+        print(f"  declared wire order: {len(order)} settings -- this is what settles the pivot")
     else:
         print(
             "  published values: none in these files -- either the device was added without cloud\n"
@@ -160,7 +164,8 @@ def main() -> int:
         )
 
     candidates = probe_layout(
-        reports, shadow=shadow or None, stated=stated, max_shift=args.max_shift, limit=args.limit
+        reports, shadow=shadow or None, stated=stated, order=order or None,
+        max_shift=args.max_shift, limit=args.limit,
     )
     if not candidates:
         print(

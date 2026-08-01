@@ -193,16 +193,42 @@ DEVICE_RULES: Mapping[str, Mapping[str, Any]] = {
 # in which state, the faults those rules name, and which settings must travel together.
 RULE_SECTIONS = ("modifiers", "alarms", "constraints")
 
+# Not a rule, but it arrives in the same place and a shadow leaves it empty: the group commands, one
+# of which lists the settings it carries IN WIRE ORDER. See :func:`declared_order`.
+ORDER_SECTION = "groupCommands"
+
+MERGED_SECTIONS = (*RULE_SECTIONS, ORDER_SECTION)
+
 
 def merge_rules(model: dict[str, Any], published: Mapping[str, Any]) -> dict[str, Any]:
-    """``model`` (a device's shadow: attributes and their live values) with the rule sections of its
+    """``model`` (a device's shadow: attributes and their live values) with the extra sections of its
     ``published`` model laid over it. Returns a new dict; sections the published model does not
     carry are left as they were."""
     merged = dict(model)
-    for section in RULE_SECTIONS:
+    for section in MERGED_SECTIONS:
         if published.get(section):
             merged[section] = published[section]
     return merged
+
+
+def declared_order(model: Mapping[str, Any] | None) -> tuple[str, ...]:
+    """The settings a device's group-set command carries, **in wire order**, or ``()``.
+
+    A published model lists them word by word and, within a word, from the highest bit down. That
+    ordering is the only thing any model says about attributes the shared position map does not
+    carry: it cannot place one on its own, but it brackets each between the two mapped attributes
+    either side of it, which turns "somewhere in this report" into a word and a few bits.
+
+    Returns ``()`` for a shadow that was never topped up from its published model, which is what an
+    un-merged one looks like — the section is present but empty.
+    """
+    section = (model or {}).get(ORDER_SECTION)
+    groups = section.values() if isinstance(section, Mapping) else (section or ())
+    for group in groups:
+        names = (group or {}).get("attrNameList") if isinstance(group, Mapping) else None
+        if names:
+            return tuple(str(n) for n in names)
+    return ()
 
 
 def rules_for(uplus_id: str | None) -> Mapping[str, Any] | None:

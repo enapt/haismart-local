@@ -1698,3 +1698,61 @@ def test_energy_offset_follows_the_control_word_count():
     with it -- so a derived layout places it by the same arithmetic rather than a constant."""
     for words, expected in ((5, 122), (6, 124), (7, 126)):
         assert uss.StatusLayout.for_words(words, verified=False).energy == expected
+
+
+_DECLARED_ORDER = (
+    "targetTemperature", "windDirectionVertical", "operationMode", "specialMode", "windSpeed",
+    "energySavePeriod", "selfCleaning56Status", "tempUnit", "screenDisplayStatus", "echoStatus",
+    "lockStatus", "silentSleepStatus", "muteStatus", "rapidMode", "healthMode", "onOffStatus",
+    "windDirectionHorizontal", "selfCleaningStatus",
+)
+
+
+def test_declared_order_is_read_from_a_model_and_empty_from_a_shadow():
+    """A device's published model lists its group-set settings in wire order. A shadow that was
+    never topped up from it has the section but leaves it empty, which must read as "no order
+    stated" rather than as an empty order that would reject everything."""
+    from haismart_hrdp import declared_order
+
+    model = {"groupCommands": [{"name": "grSetDAC", "attrNameList": list(_DECLARED_ORDER)}]}
+    assert declared_order(model) == _DECLARED_ORDER
+    assert declared_order({"groupCommands": {}}) == ()
+    assert declared_order({}) == ()
+    assert declared_order(None) == ()
+
+
+def test_declared_order_rejects_the_families_that_arrange_settings_differently():
+    """The order is relative, so it cannot say WHERE a block starts. What it can do is refuse a
+    family whose map arranges its settings in a different sequence.
+
+    Two of the four do: extended-46 puts a vane five words on with its fan speed inside an inserted
+    block, and compact-12 is not this lineage at all. Against a real declaration every candidate of
+    both is refused and every classic and extended-36 candidate passes -- roughly half the search
+    space pruned before anything is decoded.
+
+    And the limit, asserted so nobody expects more of it: the search only ever moves fields LATER,
+    so a pivot and a positive shift preserve an ascending order whatever they are. This prunes the
+    family branch, never the offset."""
+    from haismart_hrdp.wire_models import (
+        _SETPOINT_ENCODINGS, EXTENDED36, PROBE_FAMILIES, _score_order, _shift_model,
+    )
+
+    # a displacement -- any pivot, any shift -- leaves the order exactly as it was
+    base = _score_order(_shift_model(EXTENDED36, 1, 0, _SETPOINT_ENCODINGS[0]), _DECLARED_ORDER)
+    assert base > 0
+    for pivot, shift in ((1, 7), (22, 6), (21, 19)):
+        moved = _shift_model(EXTENDED36, pivot, shift, _SETPOINT_ENCODINGS[0])
+        assert _score_order(moved, _DECLARED_ORDER) == base, (pivot, shift)
+
+    verdicts = {}
+    for model in PROBE_FAMILIES:
+        scores = [
+            _score_order(_shift_model(model, pivot, shift, _SETPOINT_ENCODINGS[0]), _DECLARED_ORDER)
+            for pivot in sorted({f.word for f in model.fields.values()} | {1})
+            for shift in range(25)
+        ]
+        verdicts[model.family] = all(s < 0 for s in scores)
+    assert verdicts == {
+        "classic": False, "extended36": False,      # this lineage: every candidate passes
+        "extended46": True, "compact12": True,      # a different arrangement: all refused
+    }

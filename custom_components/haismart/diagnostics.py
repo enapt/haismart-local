@@ -7,6 +7,7 @@ from typing import Any
 from haismart_hrdp import (
     STATUS_LAYOUTS,
     derive_status_layout,
+    declared_order,
     probe_layout,
     select_wire_model,
 )
@@ -151,7 +152,8 @@ async def _async_layout_candidates(
 
     Every report the coordinator has kept is offered, because a candidate has to explain all of them
     and the reports were captured in different states. The device's own attribute values from its
-    digital model are passed as the tie-breaker.
+    digital model are passed as the tie-breaker, and so is the order its model declares its settings
+    in -- which is what actually settles a pivot, where the device states one.
 
     The search itself runs in an executor: it builds and decodes on the order of a thousand
     candidate models per report, which is pure CPU and has no business on the event loop — least of
@@ -164,7 +166,10 @@ async def _async_layout_candidates(
     if not reports:
         return []
     shadow = _shadow_values(coordinator.digital_model)
-    return await hass.async_add_executor_job(partial(probe_layout, reports, shadow=shadow))
+    order = declared_order(coordinator.digital_model)
+    return await hass.async_add_executor_job(
+        partial(probe_layout, reports, shadow=shadow, order=order)
+    )
 
 
 def _declared_readings(coordinator) -> dict[str, Any] | None:

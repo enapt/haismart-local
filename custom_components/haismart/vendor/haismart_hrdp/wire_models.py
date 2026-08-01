@@ -584,11 +584,19 @@ _EXT46_WRITE = {
 }
 
 # The "extended-46" family: a 58-word report (209 B) that is the **extended-36 layout with a ten-word
-# block inserted at word 25**. Words 1..24 sit exactly where extended-36 puts them — the same
-# voice/media module in words 1..19, then the climate block at words 20..22 — and every attribute
-# from extended-36's word 25 upward is found ten words later. The inserted block belongs to a
-# dual-airflow cabinet (the device model for these units carries a second set of per-tower fan and
-# vane attributes); a single-flow unit leaves most of it at zero.
+# block inserted around word 25**. The climate block at words 20..22 sits exactly where extended-36
+# puts it, and every attribute from extended-36's word 25 upward is found ten words later. The
+# inserted block belongs to a dual-airflow cabinet (the device model for these units carries a second
+# set of per-tower fan and vane attributes); a single-flow unit leaves most of it at zero.
+#
+# ⚠️ **Where the block BEGINS is not pinned, and it matters for anything read from words 23..24.**
+# The captures confirm w20/w21/w22 unmoved, w35/w36 at +10, and a vane at w25 with the fan speed at
+# w26.b9 inside the block — so it starts after w22 and at or before w25, i.e. at w23, w24 or w25.
+# Every one of those predicts indoor temperature at w35, so that cannot separate them, and w23, w24,
+# w33 and w34 all read zero in every capture. Anything mapped into that gap would be a guess: the
+# flag word carrying `selfCleaningStatus` lands at report w24 under one reading and w34 under the
+# other two, which is why this family gets no self-clean field. A single capture with any flag-word
+# feature switched on (health, ambient light, fresh air) pins it.
 #
 # Because the report begins with that media module, the classic partial decode misfires here exactly
 # as it does on extended-36: byte 92 is the module's `volume` (100), which reads as a 48 C setpoint,

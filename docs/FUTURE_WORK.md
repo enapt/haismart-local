@@ -39,21 +39,36 @@ Offered on the classic and 165/175-byte families, not on the 209-byte or 117-byt
 remaining cases are no longer the same case, and the difference is worth stating before anyone
 picks this up.
 
-**The 209-byte family is ready to take.** The reason recorded here previously — that it places its
-vane outside the displacement its control block otherwise follows, so it does not share the same
-shape — was overtaken by the published map. `selfCleaningStatus` sits at word 24, and this family's
-insert begins at word 25: the flag is *below* the insert, inside the range words 1..24 that this
-family is known to place exactly where the 165-byte one does. That is the same standard the
-165-byte family's own self-clean ships on, so the field can be added on the same authority.
+**The 209-byte family: the insert point is not pinned, so the flag has two candidate homes.** An
+earlier revision of this entry claimed the position was known and only confirmation was missing.
+That was wrong, and the arithmetic is worth writing out so nobody repeats it.
 
-What keeps it a judgement rather than a certainty is only that all three captures from that family
-read 0 there, which is consistent with the position being right and equally consistent with any
-other quiet bit. One report taken while a cycle is running turns it into a certainty; adding it
-without one is defensible but is a decision, not a deduction.
+What the captures confirm on that family: w20/w21/w22 (setpoint, mode, power) sit unmoved; w35/w36
+(indoor, outdoor) sit +10; w25 carries a vane and w26.b9 the fan speed, both inside the inserted
+block. So the ten-word block starts **after w22 and at or before w25** — w23, w24 or w25. Each fits
+every observation, and they disagree about where the flag lands:
 
-**The 117-byte family is genuinely open.** It is the one family that is not a displacement of the
-published map at all, so nothing carries over to it. It needs its own evidence: a report taken
-while a self-clean cycle runs, where the bit that changes is the answer.
+| block starts at | canonical w24 lands at |
+|---|---|
+| w25 | report **w24** |
+| w24 | report **w34** |
+| w23 | report **w34** |
+
+Indoor temperature cannot separate them: all three predict canonical w25 → report w35, which is why
+it looked settled. Nor can the vane or fan speed — both are inside the block under every reading.
+And the frames are silent: **w23, w24, w33 and w34 all read zero in all three captures**, because
+nothing on that unit was switched on.
+
+So the flag is at w24 under one reading of three. Shipping it would be a guess wearing the clothes
+of a deduction.
+
+**What settles it is cheaper than catching a self-clean cycle.** Any capture from that family with
+*any* w24-block feature switched on — Health (which drives the two purification bits), the ambient
+light, fresh air — pins the insert point, because exactly one of w24 / w34 will be non-zero. That
+places the whole flag block at once, self-clean included.
+
+**The 117-byte family is separately open.** It is not a displacement of the published map at all, so
+nothing carries over: it needs its own report taken while a cycle runs.
 
 ## 4. Two settings that decode but cannot be written
 

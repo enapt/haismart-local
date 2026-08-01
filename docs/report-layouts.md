@@ -56,16 +56,18 @@ frame and needs no layout at all.
 extended-36 — on the latter the reports corroborate it, with the two purification bits set together
 there and the self-clean bit clear on units that were not cleaning.
 
-It is **not offered** on the other two, for different reasons. On **compact-12** nothing carries
-over:
-its map differs throughout, so the flag needs its own evidence — a report taken while a cycle runs,
-where the bit that changes is the answer. On **extended-46** the position is actually known: the flag
-sits at word 24 and that family's insert begins at word 25, so it is below the insert, inside the
-range this family places exactly where extended-36 does. (An earlier note here gave the vane's
-displacement as the reason it could not be placed; that reasoning was wrong — the vane sits above the
-insert, the flag below it.) What is missing is only positive confirmation: every capture from that
-family reads 0 there, which fits the position being right and fits any other quiet bit equally well.
-One report taken during a cycle turns it from a decision into a deduction.
+It is **not offered** on the other two, for different reasons.
+
+On **compact-12** nothing carries over: its map differs throughout, so the flag needs its own
+evidence — a report taken while a cycle runs, where the bit that changes is the answer.
+
+On **extended-46** the flag has two candidate homes and the captures cannot choose between them.
+That family confirms w20/w21/w22 unmoved, w35/w36 at +10, and a vane at w25 with fan speed at
+w26.b9 inside the inserted block — so the ten-word block starts after w22 and at or before w25.
+If it starts at w25 the flag is at report w24; if it starts at w23 or w24 the flag is at report
+w34. Every reading predicts indoor temperature at w35, so that cannot separate them, and w23, w24,
+w33 and w34 all read zero in all three captures. Any capture with a w24-block feature switched on
+(Health, the ambient light, fresh air) pins the insert point and places the whole block at once.
 
 **Vane positions** — a `select` offering the stops a vane can hold, rather than just sweeping or
 not — need a family that packs the vane as the multi-bit code it is. Classic and extended-36 do;

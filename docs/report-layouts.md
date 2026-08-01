@@ -176,16 +176,45 @@ the search is over `(family, pivot, shift, setpoint encoding)`. Two things keep 
   many attributes. A candidate that reproduces values the device reported through a different
   channel is almost certainly right — this is what settles a proposal from "plausible" to
   "confident", and it is the strongest single signal available.
+- **The states the captures were taken in**, which a new-model report already collects and which
+  cost nothing: off, then cool at 22 °C, then fan-only, plus the room temperature off the handset.
+  This is as strong as the published values and needs no cloud, so a model can be added from the
+  captures alone.
 
 The same search is callable directly:
 
 ```python
-from haismart_hrdp import probe_layout
+from haismart_hrdp import StatedState, probe_layout
 
 probe_layout([report1, report2, report3], shadow={"targetTemperature": "24", ...})
 # -> [{"family": "extended36", "pivot": 25, "shift": 10, "setpoint": "half", "score": 8,
 #      "decoded": [...]}, ...]
+
+# ...or, with no cloud profile at all, the states the reporter described:
+probe_layout(
+    [report1, report2, report3],
+    stated=[
+        StatedState(power=False),
+        StatedState(power=True, target_temperature=22, current_temperature=27.0,
+                    swing_vertical=False, mode_group="cool", fan_group="low"),
+        StatedState(power=True, swing_vertical=True, mode_group="fan_only", fan_group="high"),
+    ],
+)
 ```
+
+`mode_group` and `fan_group` are how a stated state is used without knowing the model's codes — a
+reporter says "cool" and "fan-only", not "1" and "6". Captures with different labels must decode to
+different codes, and captures sharing a label to the same one. A map whose mode field lands on a word
+that never changes reads one code in every state and fails that at once.
+
+The effect is large. On two real reports, 77 of 83 candidates tie at the top score on plausibility
+alone, and the ranking rests entirely on the tie-break; scoring the stated states pushes every
+candidate that reads a wrong setpoint far down. Contradicting a stated value costs more than matching
+one earns, because a report that is mostly zeros can agree by accident but rarely disagrees by
+accident.
+
+Beware invariants that do not discriminate. "The error code reads zero" sounds useful and is not: it
+rewards a candidate whose fields land on empty words, which is the exact failure this guards against.
 
 An empty result is itself informative: the report is not a displaced known family, and needs a map of
 its own.

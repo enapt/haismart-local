@@ -945,6 +945,68 @@ def test_probe_layout_proposes_the_209_family_unaided():
     assert [d["current_temperature"] for d in best["decoded"]] == [25.5, 25.5, 26.0]
 
 
+def test_probe_layout_scores_the_states_the_captures_were_taken_in():
+    """The states a reporter writes down are ground truth, and they do the shadow's job for free.
+
+    Without them almost every candidate ties: a report is mostly zeros, so a map whose fields land
+    on empty words decodes a cold, off unit just as "plausibly" as the right one, and the ranking
+    comes down to a tie-break. Told what the unit was actually doing, the wrong maps fall away.
+    """
+    from haismart_hrdp import StatedState, probe_layout
+
+    reports = [STATUS_165_OFF, STATUS_165_ON]
+    stated = [
+        StatedState(power=False, target_temperature=22, current_temperature=30.0,
+                    swing_vertical=False, mode_group="cool", fan_group="high"),
+        StatedState(power=True, target_temperature=20, current_temperature=27.5,
+                    swing_vertical=False, mode_group="cool", fan_group="high"),
+    ]
+    plain = probe_layout(reports, limit=500)
+    assert sum(1 for c in plain if c["score"] == plain[0]["score"]) > 50   # the tie it starts from
+
+    scored = probe_layout(reports, stated=stated, limit=500)
+    best = scored[0]
+    assert (best["family"], best["pivot"], best["shift"], best["setpoint"]) == (
+        "extended36", 1, 0, "offset16"
+    )
+    assert [d["target_temperature"] for d in best["decoded"]] == [22.0, 20.0]
+
+    # a candidate that reads the setpoint out of an empty word ties on plausibility alone and is
+    # decisively behind once the stated setpoint is scored
+    by_key = {(c["pivot"], c["shift"], c["setpoint"]): c for c in scored}
+    wrong = by_key[(1, 22, "offset16")]
+    assert wrong["decoded"][0]["target_temperature"] == 16.0
+    assert wrong["score"] < best["score"]
+
+
+def test_stated_states_catch_a_map_that_cannot_tell_two_modes_apart():
+    """The relational half, which is what makes stated states work without knowing a model's codes.
+
+    A reporter says "cool" and "fan-only", not "1" and "6". So captures given different labels must
+    decode to different codes — and a map whose mode field lands on a word that never changes reads
+    one code in both, which is precisely the failure mode the prober exists to catch.
+    """
+    from haismart_hrdp import StatedState, wire_models
+
+    cool, fan = STATUS_165_ON, bytearray(STATUS_165_ON)
+    fan[132] = (fan[132] & 0x1F) | (6 << 5)          # word 21 bits 13-15: mode -> fan-only
+    labelled = [StatedState(mode_group="cool"), StatedState(mode_group="fan_only")]
+    same = [StatedState(mode_group="cool"), StatedState(mode_group="cool")]
+
+    def score_of(stated, pivot, shift):
+        for c in wire_models.probe_layout([cool, bytes(fan)], stated=stated, limit=500):
+            if c["pivot"] == pivot and c["shift"] == shift and c["setpoint"] == "offset16":
+                return c["score"]
+        raise AssertionError("candidate not proposed")
+
+    # the true map reads two different codes, so it agrees with the two labels and disagrees with
+    # calling them the same
+    assert score_of(labelled, 1, 0) > score_of(same, 1, 0)
+    # a map displaced past the mode word reads the same code in both captures, so it fails the
+    # labels the true map satisfies -- and ends up behind by more than agreement alone would give
+    assert score_of(labelled, 1, 0) > score_of(labelled, 1, 22)
+
+
 def test_probe_layout_rejects_a_report_it_cannot_explain():
     """An empty word array has no plausible room temperature, so nothing is proposed — the prober
     must say "no idea" rather than rank a map that reads a powered-off 16 C unit out of zeros."""

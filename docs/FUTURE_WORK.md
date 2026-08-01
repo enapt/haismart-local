@@ -54,18 +54,19 @@ cancel / set / keep. Others declare no timer attribute at all and merely hold a 
 internally. Where the attributes exist, a timer entity is straightforward and would be the first in
 this ecosystem; where they do not, it cannot be offered. Needs hardware that declares them.
 
-## 6. Layout probing without the cloud
+## 6. The layout prober's ground truth is not collected automatically
 
-`probe_layout` already treats the cloud shadow as optional, but scores only on plausibility. The
-issue template collects three captures **in known states** plus the room temperature the reporter
-read off the handset, and none of it is used. Scoring against that ground truth — the power bit
-reading 0, 1, 1 across the three; the mode differing between captures two and three; the setpoint
-reading 22 in capture two; room temperature within a degree or so — would remove the shadow from the
-critical path entirely.
+`probe_layout` now scores against `stated=[StatedState(...)]` — what each capture was known to be in
+— as heavily as it scores the cloud shadow, and a contradiction costs more than a match earns. That
+takes the cloud off the critical path: on two real reports, 77 of 83 candidates tie at the top score
+on plausibility alone, and the stated states separate them. `mode_group`/`fan_group` carry the
+relational half, so a reporter's "cool" and "fan-only" work without anyone knowing the model's codes.
 
-Beware invariants that do not discriminate. "Error code is zero" sounds useful and is not: it would
-reward a candidate whose fields land on empty words, which is the exact failure the prober guards
-against.
+What is left is plumbing rather than method. The states live in the issue form as prose, so a
+maintainer types them into the call; nothing associates capture two with "cool, 22 °C, fan low". The
+diagnostics prober therefore still runs unaided, on plausibility plus whatever shadow is stored. A
+structured field in the issue form — or naming the three downloads — would let the proposal arrive
+already scored against them.
 
 ## 7. The one rule we decline to honour
 

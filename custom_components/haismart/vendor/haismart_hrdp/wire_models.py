@@ -604,10 +604,19 @@ PROBE_FAMILIES: tuple[WireModel, ...] = (EXTENDED46, EXTENDED36, COMPACT12, _CLA
 
 # How the prober weighs each piece of agreement. Sensor plausibility is worth less than agreeing with
 # a value the device itself reported through another channel, because plausibility is cheap to hit by
-# chance in a report that is mostly zeros.
+# chance in a report that is mostly zeros. A stated state is worth as much: someone set the unit that
+# way and wrote it down, which is evidence of the same kind — and unlike the shadow, it needs no
+# cloud. A contradiction costs more than agreement earns, because a report that is mostly zeros can
+# agree by accident but rarely disagrees by accident.
 _SCORE_SHADOW_MATCH = 4
+_SCORE_STATED_MATCH = 4
+_SCORE_STATED_MISS = -6
 _SCORE_ENUM_KNOWN = 2
 _SCORE_SENSOR_PLAUSIBLE = 1
+
+# How close a decoded room temperature must be to the one someone read off the handset. Wide enough
+# for a different sensor in a different part of the room and some minutes between the two readings.
+_STATED_INDOOR_TOLERANCE_C = 2.0
 
 # A report is mostly zeros, so a candidate whose fields all land on empty words "decodes" perfectly
 # into a cold, off, 16 C unit. The prober therefore demands a room temperature that a room could
@@ -628,6 +637,68 @@ _SHADOW_KEYS: Mapping[str, str] = {
     "windSpeed": "wind_speed",
     "onOffStatus": "power",
 }
+
+
+@dataclass(frozen=True)
+class StatedState:
+    """What a capture was known to be in, as the person who took it described it.
+
+    This is the ground truth a new-model report already collects and nothing used: three captures in
+    stated states plus the room temperature from the handset. It is worth as much as the device's own
+    cloud shadow and costs nothing to obtain, which is what takes the cloud off the critical path for
+    adding a model.
+
+    Every field is optional; only what was stated is scored.
+
+    ``mode_group`` and ``fan_group`` are how a state gets used without knowing the model's codes,
+    which is the whole difficulty — a reporter says "cool" and "fan-only", not "1" and "6". Give the
+    captures opaque labels instead: captures with *different* labels must decode to different codes,
+    captures sharing one must decode to the same. A map that lands on an empty word reads the same
+    code in every state and fails that immediately, which is exactly the failure the prober exists
+    to catch.
+    """
+
+    power: bool | None = None
+    target_temperature: float | None = None
+    current_temperature: float | None = None      # as read off the handset, ±2 °C
+    swing_vertical: bool | None = None
+    mode_group: str | None = None
+    fan_group: str | None = None
+
+
+def _score_stated(decoded: Sequence[dict], stated: Sequence[StatedState | None]) -> int:
+    """Score decoded reports against the states they were captured in."""
+    score = 0
+    for got, want in zip(decoded, stated, strict=False):
+        if want is None:
+            continue
+        for key in ("power", "swing_vertical"):
+            expected, actual = getattr(want, key), got.get(key)
+            if expected is None or actual is None:
+                continue
+            score += _SCORE_STATED_MATCH if bool(actual) is expected else _SCORE_STATED_MISS
+        for key, tolerance in (
+            ("target_temperature", 0.51), ("current_temperature", _STATED_INDOOR_TOLERANCE_C)
+        ):
+            expected, actual = getattr(want, key), got.get(key)
+            if expected is None or actual is None:
+                continue
+            score += (
+                _SCORE_STATED_MATCH if abs(float(actual) - float(expected)) <= tolerance
+                else _SCORE_STATED_MISS
+            )
+    # The relational half: same label => same code, different labels => different codes.
+    for attr, key in (("mode_group", "operation_mode"), ("fan_group", "wind_speed")):
+        labelled = [
+            (getattr(want, attr), got.get(key))
+            for got, want in zip(decoded, stated, strict=False)
+            if want is not None and getattr(want, attr) is not None and got.get(key) is not None
+        ]
+        for i, (label, code) in enumerate(labelled):
+            for other_label, other_code in labelled[i + 1:]:
+                agrees = (str(code) == str(other_code)) is (label == other_label)
+                score += _SCORE_STATED_MATCH if agrees else _SCORE_STATED_MISS
+    return score
 
 
 def _shift_model(model: WireModel, pivot: int, shift: int, setpoint: tuple) -> WireModel:
@@ -689,6 +760,7 @@ def probe_layout(
     reports: bytes | Sequence[bytes],
     *,
     shadow: Mapping[str, str] | None = None,
+    stated: Sequence[StatedState | None] | None = None,
     max_shift: int = 24,
     limit: int = 3,
 ) -> list[dict]:
@@ -710,6 +782,11 @@ def probe_layout(
     * **``shadow``** — the device's own attribute values, from its ``digital_model``, keyed by
       attribute name. A candidate that reproduces values the device published through a different
       channel is almost certainly right.
+    * **``stated``** — what each capture was known to be in, one :class:`StatedState` per report (or
+      ``None`` for a capture nobody described). This is the ground truth a new-model report already
+      collects: three captures in stated states, plus the room temperature off the handset. It is
+      worth as much as the shadow and needs no cloud, so a model can be added from the captures
+      alone. Contradicting a stated state costs more than matching one earns.
 
     Returns up to ``limit`` candidates, best first, each ``{"family", "pivot", "shift", "setpoint",
     "score", "decoded"}``. An empty list means nothing fits, which is itself the useful answer: the
@@ -751,13 +828,19 @@ def probe_layout(
                         )
                     if not scores:
                         continue
+                    # The per-report scores answer "is each of these plausible on its own"; the
+                    # stated states answer "do they agree with what the unit was actually doing",
+                    # which is a judgement over the set and so is added once.
+                    score = min(scores)
+                    if stated:
+                        score += _score_stated(decodes, stated)
                     out.append(
                         {
                             "family": model.family,
                             "pivot": pivot,
                             "shift": shift,
                             "setpoint": encoding[0],
-                            "score": min(scores),
+                            "score": score,
                             "decoded": decodes,
                         }
                     )

@@ -77,10 +77,15 @@ controls.
 **Where the rules come from is the open part.** A device hands out its model through the cloud
 shadow, and that copy carries its attributes and their values but **no `modifiers` and no
 `alarms`** — checked on every unit seen so far, including two people's hardware. The rules live in
-the *constraintfile*, a separate file the app caches at bind time, and the CDN path recorded for it
-answers 404 for every spelling tried (product code and model number, with and without a version
-segment) while serving other paths normally. So it is not that the endpoint is unimplemented; it is
-that we do not know it.
+the *constraintfile*, a separate file the app fetches when a device is bound and keeps on disk.
+
+The download is through a **resource service**, not a direct file path, which is why the URL
+recorded in `get_device_config` 404s. What is known: resources are typed and a device model is type
+**`DeviceConfig`**, the type whose files carry the `.signed.json` extension; the SE-Asia base is
+`https://uhome-sea.haieriot.net/uplussea/resources/`; the request carries
+`{resType, resList, localCode}`; and **auth is the ordinary account envelope** — with a refreshed
+accessToken that base answers a routing 404 for an unknown path rather than rejecting the token, so
+the only unknown left is the path segment itself and the response shape.
 
 Until it is found, `haismart_hrdp.device_rules` records the rules for the models where they are
 known and fills them in when a fetched model carries none — one family so far. Anything else gets no

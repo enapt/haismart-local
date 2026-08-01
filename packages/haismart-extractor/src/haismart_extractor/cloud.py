@@ -534,13 +534,29 @@ class HaierCloud:
 
         The file is a 64-hex-char signature prefix + the JSON object (see `strip_signed_config`).
 
-        ⚠️ **The URL here is not confirmed.** It is built from the name the app caches the file
-        under, and the CDN answers 404 for every spelling of it tried so far (product code and model
-        number, with and without a version segment) while serving other paths normally — so the real
-        download path is still unknown and this method has never completed against the live host.
-        Nothing depends on it: what onboarding stores comes from :meth:`get_digital_model`, and the
-        rules that file carries and the shadow does not are recorded in
-        ``haismart_hrdp.device_rules``. The model-function flags at
+        ⚠️ **The URL below is not the one the app uses**, and this method has never completed
+        against the live host — the CDN 404s every spelling of it (product code and model number,
+        with and without a version segment) while serving its other paths normally. It was built
+        from the *filename* the app caches the file under, which is not the same thing.
+
+        What the app actually does, and what a working implementation needs:
+
+        * files are fetched through a **resource service**, not by direct CDN path. Resources are
+          typed, and a device model is type **``DeviceConfig``** — the type whose files carry the
+          ``.signed.json`` extension this method strips.
+        * the SE-Asia base is **``https://uhome-sea.haieriot.net/uplussea/resources/``** (with a
+          staging twin at ``uhome-sea-yanshou``), and the other regions use
+          ``api-gw/upmapi/appmanage/resource/v2/resList`` on ``zj.haier.net``.
+        * the request carries ``{resType, resList, localCode}``, where each entry of ``resList``
+          names a resource and the version already held.
+        * **auth is the ordinary account envelope.** With a refreshed accessToken the SE-Asia base
+          authenticates: it answers a routing 404 for an unknown path rather than the gateway's
+          "token missing", which is how the remaining unknown was narrowed to the path itself.
+
+        So what is missing is one path segment, and the response shape. Until it is found, the rules
+        this file carries and the device shadow does not are recorded per model in
+        ``haismart_hrdp.device_rules``; everything onboarding stores comes from
+        :meth:`get_digital_model`. The model-function flags at
         `acadvance-sgp.haier.net/uhome/acbiz/dict/getDeviceFuncNew?mode=<productCode>` do answer.
         """
         name = f"{model}@{uplus_id}" + (f"@{version}" if version else "")

@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "Mallitunnus"
+      },
+      "human_sensing": {
+        "name": "Läsnäolon ilmavirta",
+        "state": {
+          "avoid": "Väistä",
+          "follow": "Seuraa",
+          "off": "Pois",
+          "on": "Päällä"
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "Itsepuhdistus"
+      },
+      "ambient_light": {
+        "name": "Tunnelmavalo"
+      },
+      "buzzer_silent": {
+        "name": "Äänimerkki vaimennettu"
+      },
+      "constant_dehumidify": {
+        "name": "Jatkuva kosteudenpoisto"
+      },
+      "drying": {
+        "name": "Kuivaus"
+      },
+      "electric_heating": {
+        "name": "Sähkölämmitys"
+      },
+      "fresh_air": {
+        "name": "Raitis ilma"
+      },
+      "heat_accumulation": {
+        "name": "Lämmön varastointi"
+      },
+      "humidification": {
+        "name": "Kostutus"
+      },
+      "intelligent": {
+        "name": "Älytila"
+      },
+      "keep_warm_10c": {
+        "name": "10 °C:n ylläpito"
+      },
+      "mould_proof": {
+        "name": "Homeenesto"
+      },
+      "prevent_heatstroke": {
+        "name": "Lämpöhalvauksen esto"
+      },
+      "prevent_supercooling": {
+        "name": "Alijäähtymisen esto"
+      },
+      "pv_saving": {
+        "name": "Aurinkosähkön säästö"
+      },
+      "uv_sterilize": {
+        "name": "UV-sterilointi"
+      },
+      "wind_avoidance": {
+        "name": "Ilmavirran väistö"
       }
     }
   },

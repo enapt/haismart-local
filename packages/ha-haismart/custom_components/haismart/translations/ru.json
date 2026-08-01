@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "Идентификатор модели"
+      },
+      "human_sensing": {
+        "name": "Поток воздуха по присутствию",
+        "state": {
+          "avoid": "Избегать",
+          "follow": "Следовать",
+          "off": "Выкл.",
+          "on": "Вкл."
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "Самоочистка"
+      },
+      "ambient_light": {
+        "name": "Окружающая подсветка"
+      },
+      "buzzer_silent": {
+        "name": "Звук выключен"
+      },
+      "constant_dehumidify": {
+        "name": "Постоянное осушение"
+      },
+      "drying": {
+        "name": "Сушка"
+      },
+      "electric_heating": {
+        "name": "Электронагрев"
+      },
+      "fresh_air": {
+        "name": "Свежий воздух"
+      },
+      "heat_accumulation": {
+        "name": "Накопление тепла"
+      },
+      "humidification": {
+        "name": "Увлажнение"
+      },
+      "intelligent": {
+        "name": "Интеллектуальный режим"
+      },
+      "keep_warm_10c": {
+        "name": "Поддержание 10 °C"
+      },
+      "mould_proof": {
+        "name": "Защита от плесени"
+      },
+      "prevent_heatstroke": {
+        "name": "Защита от теплового удара"
+      },
+      "prevent_supercooling": {
+        "name": "Защита от переохлаждения"
+      },
+      "pv_saving": {
+        "name": "Экономия солнечной энергии"
+      },
+      "uv_sterilize": {
+        "name": "УФ-стерилизация"
+      },
+      "wind_avoidance": {
+        "name": "Отвод потока воздуха"
       }
     }
   },

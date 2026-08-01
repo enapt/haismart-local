@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "شناسه مدل"
+      },
+      "human_sensing": {
+        "name": "جریان هوای حضور",
+        "state": {
+          "avoid": "اجتناب",
+          "follow": "دنبال‌کردن",
+          "off": "خاموش",
+          "on": "روشن"
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "خودتمیزشونده"
+      },
+      "ambient_light": {
+        "name": "نور محیطی"
+      },
+      "buzzer_silent": {
+        "name": "بی‌صدا کردن بوق"
+      },
+      "constant_dehumidify": {
+        "name": "رطوبت‌زدایی پیوسته"
+      },
+      "drying": {
+        "name": "خشک‌کردن"
+      },
+      "electric_heating": {
+        "name": "گرمایش برقی"
+      },
+      "fresh_air": {
+        "name": "هوای تازه"
+      },
+      "heat_accumulation": {
+        "name": "ذخیره گرما"
+      },
+      "humidification": {
+        "name": "رطوبت‌ساز"
+      },
+      "intelligent": {
+        "name": "حالت هوشمند"
+      },
+      "keep_warm_10c": {
+        "name": "گرمادهی ۱۰°C"
+      },
+      "mould_proof": {
+        "name": "ضد کپک"
+      },
+      "prevent_heatstroke": {
+        "name": "پیشگیری از گرمازدگی"
+      },
+      "prevent_supercooling": {
+        "name": "پیشگیری از سرمای بیش‌ازحد"
+      },
+      "pv_saving": {
+        "name": "صرفه‌جویی انرژی خورشیدی"
+      },
+      "uv_sterilize": {
+        "name": "استریل‌کننده UV"
+      },
+      "wind_avoidance": {
+        "name": "اجتناب از جریان هوا"
       }
     }
   },

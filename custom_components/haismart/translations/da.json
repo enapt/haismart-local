@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "Model-id"
+      },
+      "human_sensing": {
+        "name": "Tilstedeværelses-luftstrøm",
+        "state": {
+          "avoid": "Undgå",
+          "follow": "Følg",
+          "off": "Fra",
+          "on": "Til"
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "Selvrens"
+      },
+      "ambient_light": {
+        "name": "Omgivelseslys"
+      },
+      "buzzer_silent": {
+        "name": "Lydsignal fra"
+      },
+      "constant_dehumidify": {
+        "name": "Konstant affugtning"
+      },
+      "drying": {
+        "name": "Tørring"
+      },
+      "electric_heating": {
+        "name": "Elvarme"
+      },
+      "fresh_air": {
+        "name": "Frisk luft"
+      },
+      "heat_accumulation": {
+        "name": "Varmeakkumulering"
+      },
+      "humidification": {
+        "name": "Befugtning"
+      },
+      "intelligent": {
+        "name": "Intelligent tilstand"
+      },
+      "keep_warm_10c": {
+        "name": "10 °C varmeholdelse"
+      },
+      "mould_proof": {
+        "name": "Skimmelbeskyttelse"
+      },
+      "prevent_heatstroke": {
+        "name": "Beskyttelse mod hedeslag"
+      },
+      "prevent_supercooling": {
+        "name": "Beskyttelse mod underafkøling"
+      },
+      "pv_saving": {
+        "name": "Solstrømbesparelse"
+      },
+      "uv_sterilize": {
+        "name": "UV-sterilisator"
+      },
+      "wind_avoidance": {
+        "name": "Luftstrøm undgåelse"
       }
     }
   },

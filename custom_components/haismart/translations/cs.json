@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "ID modelu"
+      },
+      "human_sensing": {
+        "name": "Proudění vzduchu dle přítomnosti",
+        "state": {
+          "avoid": "Vyhýbat se",
+          "follow": "Sledovat",
+          "off": "Vypnuto",
+          "on": "Zapnuto"
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "Samočištění"
+      },
+      "ambient_light": {
+        "name": "Okolní osvětlení"
+      },
+      "buzzer_silent": {
+        "name": "Ztlumení signálu"
+      },
+      "constant_dehumidify": {
+        "name": "Trvalé odvlhčování"
+      },
+      "drying": {
+        "name": "Sušení"
+      },
+      "electric_heating": {
+        "name": "Elektrické topení"
+      },
+      "fresh_air": {
+        "name": "Čerstvý vzduch"
+      },
+      "heat_accumulation": {
+        "name": "Akumulace tepla"
+      },
+      "humidification": {
+        "name": "Zvlhčování"
+      },
+      "intelligent": {
+        "name": "Inteligentní režim"
+      },
+      "keep_warm_10c": {
+        "name": "Udržování 10 °C"
+      },
+      "mould_proof": {
+        "name": "Ochrana proti plísni"
+      },
+      "prevent_heatstroke": {
+        "name": "Ochrana proti úpalu"
+      },
+      "prevent_supercooling": {
+        "name": "Ochrana proti podchlazení"
+      },
+      "pv_saving": {
+        "name": "Úspora solární energie"
+      },
+      "uv_sterilize": {
+        "name": "UV sterilizace"
+      },
+      "wind_avoidance": {
+        "name": "Vyhýbání proudu vzduchu"
       }
     }
   },

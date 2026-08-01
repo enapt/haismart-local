@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "Αναγνωριστικό μοντέλου"
+      },
+      "human_sensing": {
+        "name": "Ροή αέρα παρουσίας",
+        "state": {
+          "avoid": "Αποφυγή",
+          "follow": "Παρακολούθηση",
+          "off": "Ανενεργό",
+          "on": "Ενεργό"
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "Αυτοκαθαρισμός"
+      },
+      "ambient_light": {
+        "name": "Φωτισμός περιβάλλοντος"
+      },
+      "buzzer_silent": {
+        "name": "Σίγαση βομβητή"
+      },
+      "constant_dehumidify": {
+        "name": "Συνεχής αφύγρανση"
+      },
+      "drying": {
+        "name": "Στέγνωμα"
+      },
+      "electric_heating": {
+        "name": "Ηλεκτρική θέρμανση"
+      },
+      "fresh_air": {
+        "name": "Φρέσκος αέρας"
+      },
+      "heat_accumulation": {
+        "name": "Συσσώρευση θερμότητας"
+      },
+      "humidification": {
+        "name": "Ύγρανση"
+      },
+      "intelligent": {
+        "name": "Έξυπνη λειτουργία"
+      },
+      "keep_warm_10c": {
+        "name": "Διατήρηση 10°C"
+      },
+      "mould_proof": {
+        "name": "Προστασία από μούχλα"
+      },
+      "prevent_heatstroke": {
+        "name": "Προστασία από θερμοπληξία"
+      },
+      "prevent_supercooling": {
+        "name": "Προστασία από υπερψύξη"
+      },
+      "pv_saving": {
+        "name": "Εξοικονόμηση ηλιακής ενέργειας"
+      },
+      "uv_sterilize": {
+        "name": "Αποστείρωση UV"
+      },
+      "wind_avoidance": {
+        "name": "Αποφυγή ροής αέρα"
       }
     }
   },

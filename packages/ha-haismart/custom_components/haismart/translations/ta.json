@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "மாடல் ஐடி"
+      },
+      "human_sensing": {
+        "name": "இருப்பு காற்றோட்டம்",
+        "state": {
+          "avoid": "தவிர்",
+          "follow": "பின்தொடர்",
+          "off": "ஆஃப்",
+          "on": "ஆன்"
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "தானியங்கி சுத்தம்"
+      },
+      "ambient_light": {
+        "name": "சுற்றுப்புற ஒளி"
+      },
+      "buzzer_silent": {
+        "name": "சமிக்ஞை அமைதி"
+      },
+      "constant_dehumidify": {
+        "name": "தொடர் ஈரப்பதம் நீக்கம்"
+      },
+      "drying": {
+        "name": "உலர்த்துதல்"
+      },
+      "electric_heating": {
+        "name": "மின் வெப்பமூட்டல்"
+      },
+      "fresh_air": {
+        "name": "புத்தம் காற்று"
+      },
+      "heat_accumulation": {
+        "name": "வெப்பச் சேமிப்பு"
+      },
+      "humidification": {
+        "name": "ஈரப்படுத்தல்"
+      },
+      "intelligent": {
+        "name": "திறன்மிகு பயன்முறை"
+      },
+      "keep_warm_10c": {
+        "name": "10°C வெப்பம் பேணல்"
+      },
+      "mould_proof": {
+        "name": "பூஞ்சை தடுப்பு"
+      },
+      "prevent_heatstroke": {
+        "name": "வெப்ப அதிர்ச்சி தடுப்பு"
+      },
+      "prevent_supercooling": {
+        "name": "மிகைக் குளிர்ச்சி தடுப்பு"
+      },
+      "pv_saving": {
+        "name": "சூரிய மின் சேமிப்பு"
+      },
+      "uv_sterilize": {
+        "name": "UV கிருமிநீக்கி"
+      },
+      "wind_avoidance": {
+        "name": "காற்றோட்டம் தவிர்ப்பு"
       }
     }
   },

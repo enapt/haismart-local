@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "মডেল আইডি"
+      },
+      "human_sensing": {
+        "name": "উপস্থিতি বায়ুপ্রবাহ",
+        "state": {
+          "avoid": "এড়ানো",
+          "follow": "অনুসরণ",
+          "off": "বন্ধ",
+          "on": "চালু"
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "সেলফ-ক্লিন"
+      },
+      "ambient_light": {
+        "name": "পরিবেশ আলো"
+      },
+      "buzzer_silent": {
+        "name": "বাজার নীরব"
+      },
+      "constant_dehumidify": {
+        "name": "নিরন্তর আর্দ্রতা হ্রাস"
+      },
+      "drying": {
+        "name": "শুকানো"
+      },
+      "electric_heating": {
+        "name": "বৈদ্যুতিক গরম"
+      },
+      "fresh_air": {
+        "name": "তাজা বাতাস"
+      },
+      "heat_accumulation": {
+        "name": "তাপ সঞ্চয়"
+      },
+      "humidification": {
+        "name": "আর্দ্রীকরণ"
+      },
+      "intelligent": {
+        "name": "বুদ্ধিমান মোড"
+      },
+      "keep_warm_10c": {
+        "name": "১০°সে উষ্ণতা রক্ষা"
+      },
+      "mould_proof": {
+        "name": "ছত্রাক প্রতিরোধ"
+      },
+      "prevent_heatstroke": {
+        "name": "হিটস্ট্রোক প্রতিরোধ"
+      },
+      "prevent_supercooling": {
+        "name": "অতিশীতলতা প্রতিরোধ"
+      },
+      "pv_saving": {
+        "name": "সৌর শক্তি সাশ্রয়"
+      },
+      "uv_sterilize": {
+        "name": "UV জীবাণুমুক্তকরণ"
+      },
+      "wind_avoidance": {
+        "name": "বাতাস এড়ানো"
       }
     }
   },

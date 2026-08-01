@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "ماڈل آئی ڈی"
+      },
+      "human_sensing": {
+        "name": "موجودگی کے مطابق ہوا",
+        "state": {
+          "avoid": "گریز",
+          "follow": "پیروی",
+          "off": "بند",
+          "on": "آن"
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "خود صفائی"
+      },
+      "ambient_light": {
+        "name": "ماحولیاتی روشنی"
+      },
+      "buzzer_silent": {
+        "name": "بزر خاموش"
+      },
+      "constant_dehumidify": {
+        "name": "مسلسل نمی کمی"
+      },
+      "drying": {
+        "name": "خشک کرنا"
+      },
+      "electric_heating": {
+        "name": "برقی حرارت"
+      },
+      "fresh_air": {
+        "name": "تازہ ہوا"
+      },
+      "heat_accumulation": {
+        "name": "حرارت ذخیرہ"
+      },
+      "humidification": {
+        "name": "نمی افزائی"
+      },
+      "intelligent": {
+        "name": "ذہین موڈ"
+      },
+      "keep_warm_10c": {
+        "name": "10°C گرم رکھنا"
+      },
+      "mould_proof": {
+        "name": "پھپھوندی سے بچاؤ"
+      },
+      "prevent_heatstroke": {
+        "name": "لُو سے بچاؤ"
+      },
+      "prevent_supercooling": {
+        "name": "حد سے زیادہ ٹھنڈک سے بچاؤ"
+      },
+      "pv_saving": {
+        "name": "شمسی توانائی کی بچت"
+      },
+      "uv_sterilize": {
+        "name": "UV جراثیم کش"
+      },
+      "wind_avoidance": {
+        "name": "ہوا کے بہاؤ سے گریز"
       }
     }
   },

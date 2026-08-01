@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "मॉडल आईडी"
+      },
+      "human_sensing": {
+        "name": "उपस्थिति वायु प्रवाह",
+        "state": {
+          "avoid": "बचें",
+          "follow": "अनुसरण",
+          "off": "बंद",
+          "on": "चालू"
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "सेल्फ-क्लीन"
+      },
+      "ambient_light": {
+        "name": "परिवेश प्रकाश"
+      },
+      "buzzer_silent": {
+        "name": "बजर मौन"
+      },
+      "constant_dehumidify": {
+        "name": "सतत नमी हटाना"
+      },
+      "drying": {
+        "name": "सुखाना"
+      },
+      "electric_heating": {
+        "name": "विद्युत तापन"
+      },
+      "fresh_air": {
+        "name": "ताज़ी हवा"
+      },
+      "heat_accumulation": {
+        "name": "ऊष्मा संचय"
+      },
+      "humidification": {
+        "name": "आर्द्रीकरण"
+      },
+      "intelligent": {
+        "name": "बुद्धिमान मोड"
+      },
+      "keep_warm_10c": {
+        "name": "10°C गर्म रखना"
+      },
+      "mould_proof": {
+        "name": "फफूंद रोधी"
+      },
+      "prevent_heatstroke": {
+        "name": "लू से बचाव"
+      },
+      "prevent_supercooling": {
+        "name": "अति-शीतलन से बचाव"
+      },
+      "pv_saving": {
+        "name": "सौर ऊर्जा बचत"
+      },
+      "uv_sterilize": {
+        "name": "UV स्टरलाइज़र"
+      },
+      "wind_avoidance": {
+        "name": "वायु प्रवाह से बचाव"
       }
     }
   },

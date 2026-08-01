@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "ID model"
+      },
+      "human_sensing": {
+        "name": "Aliran udara kehadiran",
+        "state": {
+          "avoid": "Hindari",
+          "follow": "Ikuti",
+          "off": "Mati",
+          "on": "Nyala"
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "Bersih otomatis"
+      },
+      "ambient_light": {
+        "name": "Lampu suasana"
+      },
+      "buzzer_silent": {
+        "name": "Bunyi bip senyap"
+      },
+      "constant_dehumidify": {
+        "name": "Dehumidifikasi konstan"
+      },
+      "drying": {
+        "name": "Pengeringan"
+      },
+      "electric_heating": {
+        "name": "Pemanas listrik"
+      },
+      "fresh_air": {
+        "name": "Udara segar"
+      },
+      "heat_accumulation": {
+        "name": "Akumulasi panas"
+      },
+      "humidification": {
+        "name": "Pelembapan"
+      },
+      "intelligent": {
+        "name": "Mode cerdas"
+      },
+      "keep_warm_10c": {
+        "name": "Jaga hangat 10°C"
+      },
+      "mould_proof": {
+        "name": "Anti jamur"
+      },
+      "prevent_heatstroke": {
+        "name": "Pencegahan sengatan panas"
+      },
+      "prevent_supercooling": {
+        "name": "Pencegahan pendinginan berlebih"
+      },
+      "pv_saving": {
+        "name": "Hemat daya surya"
+      },
+      "uv_sterilize": {
+        "name": "Sterilisasi UV"
+      },
+      "wind_avoidance": {
+        "name": "Hindari aliran udara"
       }
     }
   },

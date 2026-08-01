@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "型号 ID"
+      },
+      "human_sensing": {
+        "name": "人感气流",
+        "state": {
+          "avoid": "避开",
+          "follow": "跟随",
+          "off": "关",
+          "on": "开"
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "自清洁"
+      },
+      "ambient_light": {
+        "name": "氛围灯"
+      },
+      "buzzer_silent": {
+        "name": "蜂鸣器静音"
+      },
+      "constant_dehumidify": {
+        "name": "连续除湿"
+      },
+      "drying": {
+        "name": "干燥"
+      },
+      "electric_heating": {
+        "name": "电辅热"
+      },
+      "fresh_air": {
+        "name": "新风"
+      },
+      "heat_accumulation": {
+        "name": "蓄热"
+      },
+      "humidification": {
+        "name": "加湿"
+      },
+      "intelligent": {
+        "name": "智能模式"
+      },
+      "keep_warm_10c": {
+        "name": "10°C保暖"
+      },
+      "mould_proof": {
+        "name": "防霉"
+      },
+      "prevent_heatstroke": {
+        "name": "防中暑"
+      },
+      "prevent_supercooling": {
+        "name": "防过冷"
+      },
+      "pv_saving": {
+        "name": "太阳能省电"
+      },
+      "uv_sterilize": {
+        "name": "UV杀菌"
+      },
+      "wind_avoidance": {
+        "name": "避风"
       }
     }
   },

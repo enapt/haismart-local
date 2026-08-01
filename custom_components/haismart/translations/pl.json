@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "Identyfikator modelu"
+      },
+      "human_sensing": {
+        "name": "Nawiew wg obecności",
+        "state": {
+          "avoid": "Unikaj",
+          "follow": "Podążaj",
+          "off": "Wył.",
+          "on": "Wł."
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "Samoczyszczenie"
+      },
+      "ambient_light": {
+        "name": "Światło otoczenia"
+      },
+      "buzzer_silent": {
+        "name": "Wyciszony sygnał"
+      },
+      "constant_dehumidify": {
+        "name": "Ciągłe osuszanie"
+      },
+      "drying": {
+        "name": "Suszenie"
+      },
+      "electric_heating": {
+        "name": "Ogrzewanie elektryczne"
+      },
+      "fresh_air": {
+        "name": "Świeże powietrze"
+      },
+      "heat_accumulation": {
+        "name": "Akumulacja ciepła"
+      },
+      "humidification": {
+        "name": "Nawilżanie"
+      },
+      "intelligent": {
+        "name": "Tryb inteligentny"
+      },
+      "keep_warm_10c": {
+        "name": "Utrzymanie 10 °C"
+      },
+      "mould_proof": {
+        "name": "Ochrona przed pleśnią"
+      },
+      "prevent_heatstroke": {
+        "name": "Ochrona przed udarem cieplnym"
+      },
+      "prevent_supercooling": {
+        "name": "Ochrona przed przechłodzeniem"
+      },
+      "pv_saving": {
+        "name": "Oszczędzanie energii słonecznej"
+      },
+      "uv_sterilize": {
+        "name": "Sterylizacja UV"
+      },
+      "wind_avoidance": {
+        "name": "Unikanie strumienia powietrza"
       }
     }
   },

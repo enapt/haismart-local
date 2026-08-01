@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "Model kimliği"
+      },
+      "human_sensing": {
+        "name": "Varlığa göre hava akışı",
+        "state": {
+          "avoid": "Kaçın",
+          "follow": "Takip et",
+          "off": "Kapalı",
+          "on": "Açık"
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "Kendi kendini temizleme"
+      },
+      "ambient_light": {
+        "name": "Ortam ışığı"
+      },
+      "buzzer_silent": {
+        "name": "Sesli uyarı kapalı"
+      },
+      "constant_dehumidify": {
+        "name": "Sürekli nem alma"
+      },
+      "drying": {
+        "name": "Kurutma"
+      },
+      "electric_heating": {
+        "name": "Elektrikli ısıtma"
+      },
+      "fresh_air": {
+        "name": "Temiz hava"
+      },
+      "heat_accumulation": {
+        "name": "Isı biriktirme"
+      },
+      "humidification": {
+        "name": "Nemlendirme"
+      },
+      "intelligent": {
+        "name": "Akıllı mod"
+      },
+      "keep_warm_10c": {
+        "name": "10 °C sıcak tutma"
+      },
+      "mould_proof": {
+        "name": "Küf önleme"
+      },
+      "prevent_heatstroke": {
+        "name": "Sıcak çarpması önleme"
+      },
+      "prevent_supercooling": {
+        "name": "Aşırı soğuma önleme"
+      },
+      "pv_saving": {
+        "name": "Güneş enerjisi tasarrufu"
+      },
+      "uv_sterilize": {
+        "name": "UV sterilizatör"
+      },
+      "wind_avoidance": {
+        "name": "Hava akımından kaçınma"
       }
     }
   },

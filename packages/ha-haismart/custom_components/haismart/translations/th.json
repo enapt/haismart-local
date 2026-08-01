@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "รหัสรุ่น"
+      },
+      "human_sensing": {
+        "name": "ลมตามการมีอยู่",
+        "state": {
+          "avoid": "หลีกเลี่ยง",
+          "follow": "ติดตาม",
+          "off": "ปิด",
+          "on": "เปิด"
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "ทำความสะอาดอัตโนมัติ"
+      },
+      "ambient_light": {
+        "name": "ไฟบรรยากาศ"
+      },
+      "buzzer_silent": {
+        "name": "ปิดเสียงเตือน"
+      },
+      "constant_dehumidify": {
+        "name": "ลดความชื้นต่อเนื่อง"
+      },
+      "drying": {
+        "name": "อบแห้ง"
+      },
+      "electric_heating": {
+        "name": "ทำความร้อนไฟฟ้า"
+      },
+      "fresh_air": {
+        "name": "อากาศบริสุทธิ์"
+      },
+      "heat_accumulation": {
+        "name": "สะสมความร้อน"
+      },
+      "humidification": {
+        "name": "เพิ่มความชื้น"
+      },
+      "intelligent": {
+        "name": "โหมดอัจฉริยะ"
+      },
+      "keep_warm_10c": {
+        "name": "รักษาอุณหภูมิ 10°C"
+      },
+      "mould_proof": {
+        "name": "ป้องกันเชื้อรา"
+      },
+      "prevent_heatstroke": {
+        "name": "ป้องกันโรคลมแดด"
+      },
+      "prevent_supercooling": {
+        "name": "ป้องกันความเย็นเกิน"
+      },
+      "pv_saving": {
+        "name": "ประหยัดพลังงานแสงอาทิตย์"
+      },
+      "uv_sterilize": {
+        "name": "ฆ่าเชื้อ UV"
+      },
+      "wind_avoidance": {
+        "name": "หลีกเลี่ยงลม"
       }
     }
   },

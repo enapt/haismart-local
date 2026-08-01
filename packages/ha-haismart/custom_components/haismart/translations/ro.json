@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "ID model"
+      },
+      "human_sensing": {
+        "name": "Flux de aer în funcție de prezență",
+        "state": {
+          "avoid": "Evită",
+          "follow": "Urmărește",
+          "off": "Oprit",
+          "on": "Pornit"
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "Autocurățare"
+      },
+      "ambient_light": {
+        "name": "Lumină ambientală"
+      },
+      "buzzer_silent": {
+        "name": "Semnal sonor oprit"
+      },
+      "constant_dehumidify": {
+        "name": "Dezumidificare continuă"
+      },
+      "drying": {
+        "name": "Uscare"
+      },
+      "electric_heating": {
+        "name": "Încălzire electrică"
+      },
+      "fresh_air": {
+        "name": "Aer proaspăt"
+      },
+      "heat_accumulation": {
+        "name": "Acumulare de căldură"
+      },
+      "humidification": {
+        "name": "Umidificare"
+      },
+      "intelligent": {
+        "name": "Mod inteligent"
+      },
+      "keep_warm_10c": {
+        "name": "Menținere 10 °C"
+      },
+      "mould_proof": {
+        "name": "Protecție anti-mucegai"
+      },
+      "prevent_heatstroke": {
+        "name": "Prevenirea insolației"
+      },
+      "prevent_supercooling": {
+        "name": "Prevenirea suprarăcirii"
+      },
+      "pv_saving": {
+        "name": "Economisire energie solară"
+      },
+      "uv_sterilize": {
+        "name": "Sterilizare UV"
+      },
+      "wind_avoidance": {
+        "name": "Evitarea fluxului de aer"
       }
     }
   },

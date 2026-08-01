@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "Identifiant du modèle"
+      },
+      "human_sensing": {
+        "name": "Flux d'air selon présence",
+        "state": {
+          "avoid": "Éviter",
+          "follow": "Suivre",
+          "off": "Désactivé",
+          "on": "Activé"
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "Autonettoyage"
+      },
+      "ambient_light": {
+        "name": "Lumière d'ambiance"
+      },
+      "buzzer_silent": {
+        "name": "Bip silencieux"
+      },
+      "constant_dehumidify": {
+        "name": "Déshumidification continue"
+      },
+      "drying": {
+        "name": "Séchage"
+      },
+      "electric_heating": {
+        "name": "Chauffage électrique"
+      },
+      "fresh_air": {
+        "name": "Air frais"
+      },
+      "heat_accumulation": {
+        "name": "Accumulation de chaleur"
+      },
+      "humidification": {
+        "name": "Humidification"
+      },
+      "intelligent": {
+        "name": "Mode intelligent"
+      },
+      "keep_warm_10c": {
+        "name": "Maintien à 10 °C"
+      },
+      "mould_proof": {
+        "name": "Anti-moisissure"
+      },
+      "prevent_heatstroke": {
+        "name": "Prévention des coups de chaleur"
+      },
+      "prevent_supercooling": {
+        "name": "Prévention du sous-refroidissement"
+      },
+      "pv_saving": {
+        "name": "Économie d'énergie solaire"
+      },
+      "uv_sterilize": {
+        "name": "Stérilisateur UV"
+      },
+      "wind_avoidance": {
+        "name": "Évitement du flux d'air"
       }
     }
   },

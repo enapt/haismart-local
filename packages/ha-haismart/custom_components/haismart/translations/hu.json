@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "Modellazonosító"
+      },
+      "human_sensing": {
+        "name": "Jelenlét szerinti légáram",
+        "state": {
+          "avoid": "Elkerülés",
+          "follow": "Követés",
+          "off": "Ki",
+          "on": "Be"
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "Öntisztítás"
+      },
+      "ambient_light": {
+        "name": "Környezeti fény"
+      },
+      "buzzer_silent": {
+        "name": "Hangjelzés némítva"
+      },
+      "constant_dehumidify": {
+        "name": "Folyamatos páramentesítés"
+      },
+      "drying": {
+        "name": "Szárítás"
+      },
+      "electric_heating": {
+        "name": "Elektromos fűtés"
+      },
+      "fresh_air": {
+        "name": "Friss levegő"
+      },
+      "heat_accumulation": {
+        "name": "Hőtárolás"
+      },
+      "humidification": {
+        "name": "Párásítás"
+      },
+      "intelligent": {
+        "name": "Intelligens üzemmód"
+      },
+      "keep_warm_10c": {
+        "name": "10 °C-os temperálás"
+      },
+      "mould_proof": {
+        "name": "Penészvédelem"
+      },
+      "prevent_heatstroke": {
+        "name": "Hőgutavédelem"
+      },
+      "prevent_supercooling": {
+        "name": "Túlhűlés elleni védelem"
+      },
+      "pv_saving": {
+        "name": "Napenergia-megtakarítás"
+      },
+      "uv_sterilize": {
+        "name": "UV-sterilizálás"
+      },
+      "wind_avoidance": {
+        "name": "Légáram elkerülése"
       }
     }
   },

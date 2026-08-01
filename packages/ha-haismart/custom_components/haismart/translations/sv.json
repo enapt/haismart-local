@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "Modell-ID"
+      },
+      "human_sensing": {
+        "name": "Luftflöde vid närvaro",
+        "state": {
+          "avoid": "Undvik",
+          "follow": "Följ",
+          "off": "Av",
+          "on": "På"
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "Självrengöring"
+      },
+      "ambient_light": {
+        "name": "Omgivningsljus"
+      },
+      "buzzer_silent": {
+        "name": "Ljudsignal av"
+      },
+      "constant_dehumidify": {
+        "name": "Konstant avfuktning"
+      },
+      "drying": {
+        "name": "Torkning"
+      },
+      "electric_heating": {
+        "name": "Elvärme"
+      },
+      "fresh_air": {
+        "name": "Frisk luft"
+      },
+      "heat_accumulation": {
+        "name": "Värmeackumulering"
+      },
+      "humidification": {
+        "name": "Befuktning"
+      },
+      "intelligent": {
+        "name": "Intelligent läge"
+      },
+      "keep_warm_10c": {
+        "name": "10 °C värmehållning"
+      },
+      "mould_proof": {
+        "name": "Mögelskydd"
+      },
+      "prevent_heatstroke": {
+        "name": "Skydd mot värmeslag"
+      },
+      "prevent_supercooling": {
+        "name": "Skydd mot underkylning"
+      },
+      "pv_saving": {
+        "name": "Solelsbesparing"
+      },
+      "uv_sterilize": {
+        "name": "UV-sterilisering"
+      },
+      "wind_avoidance": {
+        "name": "Undvik luftflöde"
       }
     }
   },

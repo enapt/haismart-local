@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "Идентификатор на модела"
+      },
+      "human_sensing": {
+        "name": "Въздушен поток при присъствие",
+        "state": {
+          "avoid": "Избягване",
+          "follow": "Следване",
+          "off": "Изкл.",
+          "on": "Вкл."
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "Самопочистване"
+      },
+      "ambient_light": {
+        "name": "Околна светлина"
+      },
+      "buzzer_silent": {
+        "name": "Тих сигнал"
+      },
+      "constant_dehumidify": {
+        "name": "Постоянно обезвлажняване"
+      },
+      "drying": {
+        "name": "Изсушаване"
+      },
+      "electric_heating": {
+        "name": "Електрическо отопление"
+      },
+      "fresh_air": {
+        "name": "Свеж въздух"
+      },
+      "heat_accumulation": {
+        "name": "Натрупване на топлина"
+      },
+      "humidification": {
+        "name": "Овлажняване"
+      },
+      "intelligent": {
+        "name": "Интелигентен режим"
+      },
+      "keep_warm_10c": {
+        "name": "Поддържане 10°C"
+      },
+      "mould_proof": {
+        "name": "Защита от плесен"
+      },
+      "prevent_heatstroke": {
+        "name": "Защита от топлинен удар"
+      },
+      "prevent_supercooling": {
+        "name": "Защита от преохлаждане"
+      },
+      "pv_saving": {
+        "name": "Пестене на слънчева енергия"
+      },
+      "uv_sterilize": {
+        "name": "UV стерилизатор"
+      },
+      "wind_avoidance": {
+        "name": "Избягване на въздушен поток"
       }
     }
   },

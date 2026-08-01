@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "Model-ID"
+      },
+      "human_sensing": {
+        "name": "Luchtstroom bij aanwezigheid",
+        "state": {
+          "avoid": "Vermijden",
+          "follow": "Volgen",
+          "off": "Uit",
+          "on": "Aan"
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "Zelfreiniging"
+      },
+      "ambient_light": {
+        "name": "Sfeerverlichting"
+      },
+      "buzzer_silent": {
+        "name": "Zoemer gedempt"
+      },
+      "constant_dehumidify": {
+        "name": "Continu ontvochtigen"
+      },
+      "drying": {
+        "name": "Drogen"
+      },
+      "electric_heating": {
+        "name": "Elektrische verwarming"
+      },
+      "fresh_air": {
+        "name": "Frisse lucht"
+      },
+      "heat_accumulation": {
+        "name": "Warmteopslag"
+      },
+      "humidification": {
+        "name": "Bevochtiging"
+      },
+      "intelligent": {
+        "name": "Intelligente modus"
+      },
+      "keep_warm_10c": {
+        "name": "10 °C warmhouden"
+      },
+      "mould_proof": {
+        "name": "Schimmelpreventie"
+      },
+      "prevent_heatstroke": {
+        "name": "Preventie hittberoerte"
+      },
+      "prevent_supercooling": {
+        "name": "Preventie onderkoeling"
+      },
+      "pv_saving": {
+        "name": "Zonne-energiebesparing"
+      },
+      "uv_sterilize": {
+        "name": "UV-sterilisatie"
+      },
+      "wind_avoidance": {
+        "name": "Luchtstroom vermijden"
       }
     }
   },

@@ -183,6 +183,15 @@
       },
       "uplus_id": {
         "name": "معرّف الطراز"
+      },
+      "human_sensing": {
+        "name": "تدفق هواء الحضور",
+        "state": {
+          "avoid": "تجنّب",
+          "follow": "تتبّع",
+          "off": "إيقاف",
+          "on": "تشغيل"
+        }
       }
     },
     "switch": {
@@ -254,6 +263,54 @@
       },
       "self_cleaning": {
         "name": "التنظيف الذاتي"
+      },
+      "ambient_light": {
+        "name": "إضاءة محيطة"
+      },
+      "buzzer_silent": {
+        "name": "كتم الجرس"
+      },
+      "constant_dehumidify": {
+        "name": "إزالة رطوبة مستمرة"
+      },
+      "drying": {
+        "name": "تجفيف"
+      },
+      "electric_heating": {
+        "name": "تسخين كهربائي"
+      },
+      "fresh_air": {
+        "name": "هواء نقي"
+      },
+      "heat_accumulation": {
+        "name": "تخزين الحرارة"
+      },
+      "humidification": {
+        "name": "ترطيب"
+      },
+      "intelligent": {
+        "name": "الوضع الذكي"
+      },
+      "keep_warm_10c": {
+        "name": "تدفئة 10°م"
+      },
+      "mould_proof": {
+        "name": "منع العفن"
+      },
+      "prevent_heatstroke": {
+        "name": "الوقاية من ضربة الشمس"
+      },
+      "prevent_supercooling": {
+        "name": "منع التبريد المفرط"
+      },
+      "pv_saving": {
+        "name": "توفير الطاقة الشمسية"
+      },
+      "uv_sterilize": {
+        "name": "معقم UV"
+      },
+      "wind_avoidance": {
+        "name": "تجنب الهواء"
       }
     }
   },

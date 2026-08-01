@@ -1734,7 +1734,11 @@ def test_declared_order_rejects_the_families_that_arrange_settings_differently()
     so a pivot and a positive shift preserve an ascending order whatever they are. This prunes the
     family branch, never the offset."""
     from haismart_hrdp.wire_models import (
-        _SETPOINT_ENCODINGS, EXTENDED36, PROBE_FAMILIES, _score_order, _shift_model,
+        _SETPOINT_ENCODINGS,
+        EXTENDED36,
+        PROBE_FAMILIES,
+        _score_order,
+        _shift_model,
     )
 
     # a displacement -- any pivot, any shift -- leaves the order exactly as it was

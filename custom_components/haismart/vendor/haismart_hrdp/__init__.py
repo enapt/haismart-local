@@ -26,6 +26,14 @@ from .device_rules import (
     rules_for,
     with_rules,
 )
+from .features import (
+    OPTIONAL_BOOL_FEATURES,
+    OPTIONAL_ENUM_FEATURES,
+    declared_bool_features,
+    declared_enum_features,
+    read_bool_features,
+    read_enum_features,
+)
 from .models import AttributeProfile
 from .profiles import (
     AAC1UKZ01,
@@ -92,14 +100,6 @@ from .uss import (
     read_status,
     set_grsetdac_field,
     status_layout,
-)
-from .features import (
-    OPTIONAL_BOOL_FEATURES,
-    OPTIONAL_ENUM_FEATURES,
-    declared_bool_features,
-    declared_enum_features,
-    read_bool_features,
-    read_enum_features,
 )
 from .wire_models import (
     VANE_V_EPP_TO_MODEL,

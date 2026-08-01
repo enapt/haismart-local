@@ -925,7 +925,7 @@ def _score_order(model: WireModel, order: Sequence[str]) -> int:
         if (name := _CLIMATE_SPEC.get(key, (None,))[0]) in ranks
     )
     score = 0
-    for (_, word, bit), (_, next_word, next_bit) in zip(placed, placed[1:]):
+    for (_, word, bit), (_, next_word, next_bit) in zip(placed, placed[1:], strict=False):
         agrees = (word, bit) <= (next_word, next_bit)
         score += _SCORE_ORDER_MATCH if agrees else _SCORE_ORDER_MISS
     return score

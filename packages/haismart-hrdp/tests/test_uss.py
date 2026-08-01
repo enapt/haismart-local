@@ -1485,3 +1485,71 @@ def test_canonical_map_reproduces_every_family_we_ship():
     assert ext46.fields["current_temperature"].word == CANONICAL["indoorTemperature"].word + 10
     assert ext46.fields["outdoor_temperature"].word == CANONICAL["outdoorTemperature"].word + 10
     assert ext46.fields["power"].word == CANONICAL["onOffStatus"].word      # before the insert
+
+
+def test_declared_fields_reads_what_a_device_says_it_has():
+    """A device declares three or four times the attributes any family map carries, and every one
+    of them sits where the published map already says. Reading them needs no capture per attribute:
+    membership comes from the device's own model, position from the map, and the two are arrived at
+    independently."""
+    from haismart_hrdp.canonical_map import CANONICAL
+    from haismart_hrdp.wire_models import _CLASSIC_PROBE
+
+    declared = [
+        "screenDisplayStatus", "lockStatus", "healthMode", "targetHumidity", "freshAirStatus",
+        "onOffStatus",                 # already in the family map -- must not be duplicated
+        "someAttributeNobodyPublishes",  # not in the map -- must be ignored, not guessed at
+    ]
+    fields = _CLASSIC_PROBE.model_fields(declared, 125)
+
+    assert "onOffStatus" not in fields, "re-read an attribute the family map already carries"
+    assert "someAttributeNobodyPublishes" not in fields
+    assert set(fields) == {"screenDisplayStatus", "lockStatus", "healthMode", "targetHumidity",
+                           "freshAirStatus"}
+    # positions are the published ones, displaced by the family's confirmed offset
+    for name, wf in fields.items():
+        c = CANONICAL[name]
+        assert (wf.word, wf.bit, wf.length) == (c.word - 19, c.bit, c.length), name
+
+    # ...and they decode a real report. This unit's screen was on when the capture was taken, which
+    # its own published attribute values confirm independently of anything read off the wire.
+    assert fields["screenDisplayStatus"].read(STATUS_125) is True
+    assert fields["lockStatus"].read(STATUS_125) is False
+
+
+def test_declared_fields_refuse_a_family_with_no_confirmed_displacement():
+    """extended-46 carries a ten-word insert whose start is not pinned, and 6 of its 9 mapped
+    positions disagree with any single whole-word offset. Reading a device's other attributes off
+    the map there would place every one of them plausibly and wrongly, so the family declines --
+    keeping what captures established and inventing nothing."""
+    ext46 = uss.select_wire_model(209)
+    assert ext46.canonical_displacement is None
+    assert ext46.model_fields(["lockStatus", "freshAirStatus", "targetHumidity"], 209) == {}
+
+
+def test_declared_fields_drop_a_bare_code():
+    """A code on the wire is not necessarily the code the device publishes -- these models number an
+    attribute one way in their published values and another on the wire, and the translation is not
+    in this map. Checked against a live unit, every boolean and scaled reading agreed with what it
+    published and the one unscaled code did not, reading 0 for a value published as 1. So codes are
+    dropped; booleans and scaled readings, whose wire value IS the value, are kept."""
+    from haismart_hrdp.canonical_map import CANONICAL
+    from haismart_hrdp.wire_models import declared_fields
+
+    fields = declared_fields(-19, ["tempUnit", "specialMode", "lockStatus", "targetHumidity"],
+                             word_limit=17)
+    assert "tempUnit" not in fields and "specialMode" not in fields
+    assert set(fields) == {"lockStatus", "targetHumidity"}
+    # ...and the scaled one keeps the offset that makes it the published value
+    assert fields["targetHumidity"].c == CANONICAL["targetHumidity"].c
+
+
+def test_declared_fields_drop_what_the_report_cannot_hold():
+    """An attribute the displacement would push past the end of a short report is dropped rather
+    than read off whatever follows the array."""
+    from haismart_hrdp.wire_models import declared_fields
+
+    # ErrAckFlag is canonical w27; at -19 it needs word 8, so a 6-word report cannot carry it
+    # while a 10-word one can.
+    assert "ErrAckFlag" not in declared_fields(-19, ["ErrAckFlag"], word_limit=6)
+    assert "ErrAckFlag" in declared_fields(-19, ["ErrAckFlag"], word_limit=10)

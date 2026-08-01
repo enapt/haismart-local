@@ -33,7 +33,7 @@ monitoring-only.
 """
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 
 from .canonical_map import CANONICAL
@@ -235,6 +235,26 @@ class WireModel:
     # (compact-12 does, and its own model describes it that way) must leave the field out: a position
     # packed there would arrive as "sweep", which is not what was asked for.
     position_fields: frozenset[str] = frozenset()
+    # This family's whole-word offset from the published map, when it HAS one. Set only where the
+    # map has been checked against real reports field for field -- classic at -19 (9 of 9 positions
+    # reproduced) and extended-36 at 0 (12 of 12). It stays ``None`` for a family that is not a
+    # single displacement: extended-46 carries a ten-word insert whose start is not pinned, and 6 of
+    # its 9 mapped positions disagree with any single offset, so reading its device's other declared
+    # attributes off the map would place them plausibly and wrongly. See :func:`declared_fields`.
+    canonical_displacement: int | None = None
+
+    def model_fields(self, declared: Iterable[str], report_length: int) -> dict[str, WireField]:
+        """Fields for the attributes ``declared`` by this device that the family map does not carry.
+
+        Empty for a family with no confirmed displacement, which is the safe direction: the device
+        keeps the attributes that were established from captures and gains nothing invented.
+        """
+        if self.canonical_displacement is None:
+            return {}
+        return declared_fields(
+            self.canonical_displacement, declared,
+            word_limit=(report_length - _ATTR_BASE) // 2,
+        )
 
     def matches(self, length: int, uplus_id: str | None) -> bool:
         if uplus_id and uplus_id in self.uplus_ids:
@@ -452,6 +472,68 @@ def canonical_fields(
     return out
 
 
+# A published attribute's declared type, mapped to how we decode it. `string` is deliberately absent:
+# a dozen attributes declare it, and a run of characters is not something a bit field at a word/bit
+# position renders into anything meaningful, so those are skipped rather than guessed at.
+_DTYPE_KINDS = {"bool": "bool", "int": None, "double": None}
+
+
+def declared_fields(
+    displacement: int, declared: Iterable[str], *, word_limit: int
+) -> dict[str, WireField]:
+    """Decode fields for the attributes a DEVICE ITSELF declares, placed by the published map.
+
+    The hand-written family maps carry the dozen or so attributes that were worked out from
+    captures. A device's own model routinely declares three or four times that many -- every one of
+    them at a position the published map already states -- and none of them was being read. This
+    closes that gap without needing a capture per attribute: membership comes from the device's own
+    model, position comes from the map, and the two are independent of each other.
+
+    Keys are the published attribute names (``lockStatus``), never our own field keys, so nothing
+    here can collide with or silently redefine a hand-mapped field. Attributes already covered by
+    :data:`_CLIMATE_SPEC` are skipped for the same reason.
+
+    ``displacement`` must be a family's *confirmed* whole-word displacement -- see
+    :attr:`WireModel.canonical_displacement`, which is set only for the families where the map has
+    been checked against real reports field for field, and is ``None`` for a family that carries an
+    insert. Passing a guessed displacement here would put every one of these attributes somewhere
+    plausible and wrong, which is exactly the failure the confirmed-displacement gate exists to
+    prevent.
+
+    ``word_limit`` is the report's word count; an attribute the displacement would push past the end
+    of the report is dropped rather than read off whatever follows.
+    """
+    covered = {name for name, *_ in _CLIMATE_SPEC.values()}
+    out: dict[str, WireField] = {}
+    for name in declared:
+        c = CANONICAL.get(name)
+        if c is None or name in covered:
+            continue
+        if c.dtype not in _DTYPE_KINDS:
+            continue
+        word = c.word + displacement
+        # The field's most significant end runs backwards from its word, so both ends must land
+        # inside the array -- see WireField.read.
+        span = (c.bit + c.length + 15) // 16
+        if word - span + 1 < 1 or word > word_limit:
+            continue
+        kind = _DTYPE_KINDS[c.dtype]
+        if kind is None:
+            # A number the map scales or offsets is a reading, and the wire carries it directly.
+            # An unscaled one is a bare CODE, and a code on the wire is not necessarily the code
+            # the device publishes -- these models routinely number an attribute one way in their
+            # published values and another on the wire, and the translation lives in a per-model
+            # table this map does not carry. Checked against a live unit, every boolean and every
+            # scaled reading agreed with what it published; the one unscaled code disagreed,
+            # reading 0 for a value published as 1. So a code is dropped rather than reported as
+            # something it may not mean -- the same rule the control encoder follows.
+            if (c.k, c.c) == (1.0, 0.0):
+                continue
+            kind = "int"
+        out[name] = WireField(word, c.bit, c.length, kind=kind, k=c.k, c=c.c)
+    return out
+
+
 
 # Control: the model's own `grSetDAC` operation gives the group command (`6001`) and a five-word
 # array whose bit map is **byte-for-byte the classic family's** — targetTemperature w1.b8,
@@ -528,6 +610,9 @@ _EXT36_WRITE = {
 # and the 165-byte reports are in — those carry the register and never populate it.
 EXTENDED36 = WireModel(
     family="extended36",
+    # This family IS the published map, unmoved: all 12 of its mapped positions are reproduced by
+    # the map at displacement 0, so a device's other declared attributes can be read off it too.
+    canonical_displacement=0,
     report_lengths=frozenset({165, 175}),
     # The uPlusId of the 175-byte variant, which the units report on the discovery channel — so a
     # unit that answers it is keyed exactly rather than by length.
@@ -669,6 +754,10 @@ WIRE_MODELS: tuple[WireModel, ...] = (COMPACT12, EXTENDED36, EXTENDED46)
 # in ``uss.py``, and an empty ``report_lengths``/``uplus_ids`` means this can never be *selected*.
 _CLASSIC_PROBE = WireModel(
     family="classic",
+    # The map 19 words earlier, and confirmed as such: displaced -19 it reproduces all 9 of this
+    # family's mapped positions, and decodes a real 125-byte report in agreement with the classic
+    # decoder on every field the two share.
+    canonical_displacement=-19,
     report_lengths=frozenset(),
     fields=canonical_fields(-19, [
         "power", "target_temperature", "current_temperature", "outdoor_temperature",

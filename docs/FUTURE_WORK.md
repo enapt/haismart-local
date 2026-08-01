@@ -118,6 +118,25 @@ single fault where the frame carries the set, so the bit that is set must be `er
 Nothing to do but keep the diagnostic in place and check the first report that arrives.
 
 
+## 8. The attributes a device declares are read, but not yet offered as entities
+
+A unit declares three or four times the attributes any family map carries — on the reference units,
+42 declared against 14 mapped — and every one of them sits where the published map already says.
+Those extra readings are now decoded and reported in diagnostics (`model_declared_fields`), because
+membership comes from the device's own model and position from the map, and the two are arrived at
+independently. On a real 125-byte report they read sensibly, and the screen-display flag agrees with
+what that unit published through the cloud.
+
+They stop at diagnostics on purpose. A wrong value there costs nothing; the same value wired into
+someone's dashboard is a fault report. What would move them further is the ordinary evidence: a
+capture of a unit with one of them switched on.
+
+Two families cannot have them at all, and that is correct rather than missing. **extended-46** has
+no single whole-word displacement — 6 of its 9 mapped positions disagree with any offset, because of
+the ten-word insert whose start is still not pinned (item 3) — and **compact-12** is not this
+lineage. Both decline rather than place attributes plausibly and wrongly.
+
+
 # Settled
 
 Not open items. They are here because each looks like something to "fix" until you know why it is

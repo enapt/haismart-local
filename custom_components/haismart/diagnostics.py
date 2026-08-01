@@ -98,6 +98,11 @@ async def async_get_config_entry_diagnostics(
             ),
         },
         "digital_model": _model_summary(coordinator.digital_model),
+        # Attributes this device declares that its family map does not carry, read off the published
+        # map at the family's confirmed displacement. Every unit declares three or four times what
+        # any hand-written map holds, so this is most of what a report actually says -- surfaced
+        # here first, where a wrong value costs nothing, rather than straight into entities.
+        "model_declared_fields": _declared_readings(coordinator),
         "profile": {
             "product_code": coordinator.product_code,
             "modes": dict(profile.mode_values),
@@ -160,6 +165,34 @@ async def _async_layout_candidates(
         return []
     shadow = _shadow_values(coordinator.digital_model)
     return await hass.async_add_executor_job(partial(probe_layout, reports, shadow=shadow))
+
+
+def _declared_readings(coordinator) -> dict[str, Any] | None:
+    """What this unit's own declared attributes read, beyond the fields its family map carries.
+
+    ``None`` when there is no report, no model, or the family has no confirmed displacement -- the
+    last of which is deliberate rather than a shortfall: extended-46 carries an insert whose start
+    is not pinned, so placing its attributes from the map would be guesswork wearing a decode.
+    """
+    blob = coordinator.last_raw_status
+    model = coordinator.digital_model
+    if not blob or not model:
+        return None
+    wm = select_wire_model(len(blob), coordinator.uplus_id) or _classic_probe_for(len(blob))
+    if wm is None:
+        return None
+    declared = [a.get("name") for a in model.get("attributes") or [] if a.get("name")]
+    fields = wm.model_fields(declared, len(blob))
+    if not fields:
+        return None
+    return {name: wf.read(blob) for name, wf in sorted(fields.items())}
+
+
+def _classic_probe_for(length: int):
+    """The classic family's map, for the report lengths ``select_wire_model`` leaves to ``uss``."""
+    from haismart_hrdp.wire_models import _CLASSIC_PROBE
+
+    return _CLASSIC_PROBE if length in STATUS_LAYOUTS else None
 
 
 def _shadow_values(model: dict[str, Any] | None) -> dict[str, Any]:

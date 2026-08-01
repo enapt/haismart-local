@@ -1504,6 +1504,34 @@ async def test_diagnostics_carry_what_a_new_model_report_needs(
     assert diag["last_raw_status"] == mock_uss.frame.hex()
 
 
+async def test_diagnostics_read_the_attributes_the_device_declares(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A unit declares far more attributes than any family map carries, all at published positions.
+
+    Diagnostics reads them and reports what they say. They land here rather than in entities first
+    because the placement rests on the published map rather than on a capture per attribute, and a
+    wrong value in a diagnostics file costs nothing.
+    """
+    from custom_components.haismart.diagnostics import (
+        async_get_config_entry_diagnostics,
+    )
+
+    entry = await _setup_with_model(hass, {
+        "attributes": [
+            {"name": "lockStatus", "valueRange": {"type": "LIST"}},
+            {"name": "screenDisplayStatus", "valueRange": {"type": "LIST"}},
+            {"name": "onOffStatus", "valueRange": {"type": "LIST"}},   # the map already has it
+        ],
+    })
+    diag = await async_get_config_entry_diagnostics(hass, entry)
+
+    declared = diag["model_declared_fields"]
+    assert declared is not None, "a classic unit's declared attributes were not read"
+    assert set(declared) == {"lockStatus", "screenDisplayStatus"}
+    assert all(isinstance(v, bool) for v in declared.values())
+
+
 async def test_diagnostics_carry_the_values_the_device_reports(
     hass: HomeAssistant, mock_uss
 ) -> None:

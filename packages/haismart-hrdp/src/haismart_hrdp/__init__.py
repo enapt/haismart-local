@@ -92,6 +92,7 @@ from .wire_models import (
     WireField,
     WireModel,
     WriteField,
+    declared_fields,
     probe_layout,
     select_wire_model,
 )
@@ -125,6 +126,7 @@ __all__ = [
     "WriteField",
     "WIRE_MODELS",
     "select_wire_model",
+    "declared_fields",
     "probe_layout",
     "StatedState",
     "VANE_V_MODEL_TO_EPP",

@@ -4,6 +4,8 @@ from __future__ import annotations
 import asyncio
 import json
 from datetime import timedelta
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from conftest import (
@@ -15,6 +17,7 @@ from conftest import (
     make_status_frame,
     vane_positions_digital_model,
 )
+from haismart_extractor import HaierCloud
 from homeassistant.components.climate import ClimateEntityFeature
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
 from homeassistant.core import HomeAssistant
@@ -2284,3 +2287,43 @@ async def test_recorded_rules_reach_a_unit_whose_model_arrived_without_them(
 
     assert "targetTemperature" in entry.runtime_data.locked_fields
     assert hass.states.get("switch.downstairs_ac_quiet").state == "unavailable"
+
+
+async def test_recorded_rules_do_not_suppress_fetching_the_published_ones(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The recorded fallback must not stand in for the real thing.
+
+    Rules for a known model are merged into the model in memory, so deciding whether to fetch on
+    *that* would mean the one family we hold rules for never fetched its own — the fallback masking
+    what it is a fallback for. The decision is made on what the entry stores.
+    """
+    from custom_components.haismart.const import CONF_UPLUS_ID
+
+    uplus = "2008610800820324021200118012560000000000000000000000000000000040"
+    entry = _entry(digital_model=json.dumps(heat_capable_digital_model()), **{
+        CONF_UPLUS_ID: uplus, "refresh_token": "r", "cloud_client_id": "c" * 32,
+    })
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    coord = entry.runtime_data
+    assert coord.digital_model["modifiers"]          # the fallback filled the in-memory model
+    # ...and the fetch still considers itself due, because the ENTRY holds no rules
+    called = False
+
+    async def _fake_config(*args, **kwargs):
+        nonlocal called
+        called = True
+        return {"modifiers": [{"trigger": {}, "actions": []}], "constraints": [{"x": 1}]}
+
+    with patch.object(HaierCloud, "refresh_token", new=AsyncMock(return_value=SimpleNamespace(
+        access_token="t"))), patch.object(
+        HaierCloud, "list_devices_v2", new=AsyncMock(return_value=[SimpleNamespace(
+            device_id="A1B2C3D4E5F6", model="M", uplus_id=uplus, prod_no="P", device_type="T")])
+    ), patch.object(HaierCloud, "get_device_config", new=_fake_config):
+        assert await coord.async_fetch_model_rules() is True
+    assert called
+    stored = json.loads(entry.data["digital_model"])
+    assert stored["constraints"] == [{"x": 1}]       # written back to the entry

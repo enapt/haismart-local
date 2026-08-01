@@ -187,6 +187,18 @@ _MODEL_VALUE_FROM_EPP: dict[str, Callable[[int], object]] = {
 }
 
 
+def _stored_digital_model(entry: HaismartConfigEntry) -> dict[str, Any] | None:
+    """The model exactly as the entry stores it, with nothing filled in."""
+    raw = entry.data.get(CONF_DIGITAL_MODEL)
+    if not raw:
+        return None
+    try:
+        model = json.loads(raw)
+    except (ValueError, TypeError):
+        return None
+    return model if isinstance(model, dict) and model.get("attributes") else None
+
+
 def _load_digital_model(entry: HaismartConfigEntry) -> dict[str, Any] | None:
     """The cloud-fetched digital model (device constraints) as a dict, or None if absent/bad.
 
@@ -195,17 +207,12 @@ def _load_digital_model(entry: HaismartConfigEntry) -> dict[str, Any] | None:
     known for the model, they are filled in (`with_rules`). A model that states its own is left
     alone.
     """
-    raw = entry.data.get(CONF_DIGITAL_MODEL)
-    if not raw:
+    stored = _stored_digital_model(entry)
+    if stored is None:
+        if entry.data.get(CONF_DIGITAL_MODEL):
+            _LOGGER.warning("stored digital model is unusable; model write-validation disabled")
         return None
-    try:
-        model = json.loads(raw)
-    except (ValueError, TypeError):
-        _LOGGER.warning("stored digital model is not valid JSON; model write-validation disabled")
-        return None
-    if not (isinstance(model, dict) and model.get("attributes")):
-        return None
-    return with_rules(model, entry.data.get(CONF_UPLUS_ID))
+    return with_rules(stored, entry.data.get(CONF_UPLUS_ID))
 
 
 def _model_authorized_codes(model: dict[str, Any] | None) -> dict[str, set[int]]:
@@ -1108,11 +1115,17 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         Onboarding fetches both now, so this is only for the entries that predate it — it runs once,
         needs the cloud credentials the entry already stores, and leaves everything alone on any
         failure.
+
+        The decision is made on what the entry **stores**, not on the model in memory: recorded
+        rules are merged into the latter for the models we hold them for, and reading that would
+        mean a unit covered by the fallback never fetched its own — the fallback masking the real
+        thing, which is the wrong way round.
         """
-        model = self.digital_model
         data = self.config_entry.data
-        if not model or model.get("modifiers") or not data.get(CONF_REFRESH_TOKEN):
+        stored = _stored_digital_model(self.config_entry)
+        if not stored or stored.get("modifiers") or not data.get(CONF_REFRESH_TOKEN):
             return False
+        model = stored
         usdk_client_id = data.get(CONF_CLOUD_CLIENT_ID)
         if not usdk_client_id:
             return False

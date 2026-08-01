@@ -44,7 +44,8 @@ a confident but invented value.
 | fault code + last-changed-by | ✅ | — | ✅ | ✅ |
 | fault bitmap | ✅ (its own frame, family-independent) | ✅ | ✅ | ✅ |
 | self-clean | ✅ | ❌ | ✅ | ❌ |
-| left-right vane positions | ✅ | ❌ | ❌ | ❌ |
+| vane positions (both axes) | ✅ | ❌ | ✅ | ❌ |
+| live power, from the report itself | ❌ | ❌ | ✅ (175 B only) | ❌ |
 
 Heat capability, the fault code and last-changed-by all sit in the sensor block, one and two words
 past the outdoor reading, so they follow wherever that lands. The fault bitmap arrives in a separate
@@ -57,11 +58,18 @@ extended-46, which places its vane outside that displacement, so its control blo
 shape; nor on compact-12, whose map differs throughout. One report from either family taken while a
 cycle is running would settle it.
 
-**Left-right vane positions** — a `select` offering the stops the vane can hold, rather than just
-sweeping or not — are classic-only, and for a different reason: the other families pack that vane as
-a plain on/off, so a position sent to one of them would be applied as its auto code. The positions
-themselves come from the device's own model, so even on classic the entity appears only for a unit
-that publishes more than the two ends.
+**Vane positions** — a `select` offering the stops a vane can hold, rather than just sweeping or
+not — need a family that packs the vane as the multi-bit code it is. Classic and extended-36 do;
+compact-12 collapses each vane to a single bit, so a position sent there would arrive as "sweep",
+and extended-46 keeps its vane outside the block the rest of its control map follows. The positions
+themselves come from the device's own model, so even on a family that can place them the entity
+appears only for a unit that publishes more than the two ends.
+
+The up-down axis needs one translation on the way out: a model numbers its stops `0, 2, 4, 5, 6, 8`
+while the wire counts `0, 2, 4, 6, 8, 12`. `VANE_V_MODEL_TO_EPP` holds it, and it is confirmed on
+hardware — a unit was stepped through every stop its app offers, one capture per stop, and reported
+the table's value each time, ending on the same `0x0c` the classic family has always used for auto.
+The left-right axis needs no table: its model code is its wire value.
 
 ### classic
 
@@ -85,10 +93,19 @@ off.
 
 Two report lengths belong to this family. **175 B is the same map with five words on the end** — no
 displacement, every climate field at the same word — carrying a cumulative counter at words 34+35
-and again at 39+40, and an input-power register at word 41. None of the three is published: the
-counters' unit is not established, and a single report cannot show that the power register tracks.
-The unit that reported this length publishes `accumulatedUseMainsPower`, `totalElectricityUsed` and
-`acInput` values that match those words, which is how they were identified.
+and again at 39+40, and **live input power at word 41**.
+
+Word 41 is published as the Power sensor: captures across a session read 0 W with the unit off,
+1432 W at full cooling and a thousand-odd while it held a room, and the unit publishes an `acInput`
+of its own that agrees. That makes this the only family whose power figure is a measurement rather
+than one derived from a current reading — and it arrives in the status report, so a unit that never
+answers the extended-status query still gets it.
+
+The counter is **not** published. It climbs monotonically, in jumps rather than continuously, and
+the unit's `accumulatedUseMainsPower` and `totalElectricityUsed` track it — but nothing so far
+establishes what one unit of it is. Watt-hours is the closest fit and is not close enough: a wrong
+unit would settle permanently into someone's energy history. Comparing the register against the
+total the vendor app's energy page shows would settle it.
 
 ### extended-46
 

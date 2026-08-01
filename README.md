@@ -74,7 +74,7 @@ One device per air conditioner, with:
 | **Outdoor temperature** | Outdoor probe, on units that have one |
 | **Switches** | Strong, Quiet, Health, Sleep, Display light |
 | **Eco** | Eco level, on models where it's confirmed |
-| **Left-right vane** | Where the left-right vane points, on units that publish its positions |
+| **Left-right vane** / **Up-down vane** | Where each vane points, on units that publish its positions |
 | **Power** *(diagnostic)* | Live power draw in watts, on units that report it |
 | **Compressor current / frequency** *(diagnostic)* | What the outdoor unit is actually doing |
 | **Coil / discharge temperature** *(diagnostic)* | Evaporator and compressor-discharge temperatures |
@@ -101,11 +101,12 @@ moves the left-right vane on its own, without touching the up-down one. Units wh
 position we haven't confirmed get only the four-way control.
 
 Swinging and pointing are different things, though, and a climate entity can only express the first.
-Where your unit publishes the stops its left-right vane can hold, a **Left-right vane** select
+Where your unit publishes the stops a vane can hold, a **Left-right vane** or **Up-down vane** select
 appears with those positions on it, so you can aim the airflow at one part of the room rather than
 sweeping it across the whole. Fixed and Auto are the same two states the swing control covers; the
-positions in between are the ones it cannot reach. The up-down vane has stops too, but they are not
-offered yet — what a unit reports about that axis is not enough to command it safely.
+positions in between are the ones it cannot reach. Positions are numbered as your unit numbers
+them — "Position 1" is the first stop it offers. A unit that publishes only fixed and auto for an
+axis gets no select for it, since the swing control already says everything there is to say.
 
 Not everything the air conditioner reports becomes an entity — its **firmware version**, for
 instance, is a property of the unit rather than a reading that changes, so it appears on the device

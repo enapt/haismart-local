@@ -511,12 +511,18 @@ GRSETDAC_ALLOWED_VALUES = {
 # the vane parked at position five as the same 4 the model names. So a unit that publishes
 # intermediate vane positions can be pointed at one, authorized by its own model rather than by
 # inference.
-# ``windDirectionVertical`` does NOT qualify and must not be added: its on-nibble is 0x0c while the
-# model calls auto 8, so the model's codes are not this field's wire values — pointing that vane
-# needs a captured write. Nor does ``ecoMode``: no model attribute describes this unit's repurposed
-# 3-bit field. Both stay pinned to the observed values alone.
+#
+# ``windDirectionVertical`` qualifies too, but with a catch the caller must honour: its model codes
+# are NOT its wire values (a model names auto 8; the wire has always used 0x0C). Pass the model's
+# codes through :data:`~haismart_hrdp.wire_models.VANE_V_MODEL_TO_EPP` first — ``model_values`` here
+# means wire values, as everything else in this module does. The translation is confirmed on
+# hardware, on the commanded path: a unit stepped through every stop its app offers reported the
+# table's value each time.
+#
+# ``ecoMode`` does not qualify: no model attribute describes this unit's repurposed 3-bit field, so
+# it stays pinned to the observed values alone.
 GRSETDAC_MODEL_AUTHORIZED = frozenset(
-    {"operationMode", "windSpeed", "windDirectionHorizontal"}
+    {"operationMode", "windSpeed", "windDirectionHorizontal", "windDirectionVertical"}
 )
 
 GRSETDAC_ENUMS = {  # semantic token -> raw EPP value, for the multi-value fields

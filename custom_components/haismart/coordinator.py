@@ -35,6 +35,8 @@ from haismart_hrdp import (
     GRSETDAC_FIELDS,
     GRSETDAC_MODEL_AUTHORIZED,
     STATUS_LAYOUTS,
+    VANE_V_EPP_TO_MODEL,
+    VANE_V_MODEL_TO_EPP,
     AttributeProfile,
     WireModel,
     async_read_status,
@@ -125,9 +127,11 @@ _RECENT_REPORTS = 3
 #   - booleans map the grSetDAC bit 0/1 to the model's LIST codes ``'false'``/``'true'`` — the model
 #     describes these as string enums, NOT 0/1, so a raw-int passthrough was rejected as e.g.
 #     ``screenDisplayStatus='1' not in ['false','true']``.
-# Device-specific fields (the vertical-swing toggle 0x0c and this unit's repurposed 3-bit
-# ``ecoMode``) have no standard model attribute, so they are absent here and stay gated by the
-# encoder allowlist in ``set_grsetdac_field`` alone.
+#   - the up-down vane is translated rather than passed through: 0x0c on the wire is the model's 8
+#     (see ``VANE_V_MODEL_TO_EPP``), so without that step the gate would test a value against a
+#     range it is not expressed in and refuse what the unit accepts.
+# ``ecoMode`` has no standard model attribute — this unit repurposes a 3-bit field — so it is absent
+# here and stays gated by the encoder allowlist in ``set_grsetdac_field`` alone.
 def _bool_code(epp: int) -> str:
     return "true" if epp else "false"
 
@@ -150,6 +154,7 @@ _EPP_FROM_MODEL_VALUE: dict[str, Callable[[str], int]] = {
     "silentSleepStatus": _bool_epp,
     "screenDisplayStatus": _bool_epp,
     "windDirectionHorizontal": lambda v: int(float(v)),
+    "windDirectionVertical": lambda v: VANE_V_MODEL_TO_EPP.get(int(float(v)), int(float(v))),
 }
 
 # The model calls the multi-level economy setting `generatorMode` and numbers its levels 1..3; on
@@ -170,10 +175,12 @@ _MODEL_VALUE_FROM_EPP: dict[str, Callable[[int], object]] = {
     "muteStatus": _bool_code,
     "silentSleepStatus": _bool_code,
     "screenDisplayStatus": _bool_code,
-    # raw EPP value == the STD code the model lists (0 / 7), so the valueRange gate applies
-    # directly. windDirectionVertical is deliberately absent: its EPP nibble (0x0c) is NOT its
-    # STD code (8), so it cannot be validated against the model's valueRange.
+    # raw EPP value == the STD code the model lists (0 / 7), so the valueRange gate applies directly
     "windDirectionHorizontal": lambda epp: epp,
+    # The up-down vane's EPP nibble is NOT its STD code — 0x0c on the wire is the model's 8 — so it
+    # is translated back before the model sees it. Without that, every value would be checked
+    # against a range it is not expressed in and the gate would reject what the unit accepts.
+    "windDirectionVertical": lambda epp: VANE_V_EPP_TO_MODEL.get(epp, epp),
 }
 
 
@@ -202,6 +209,13 @@ def _model_authorized_codes(model: dict[str, Any] | None) -> dict[str, set[int]]
     if model is None:
         return {}
     codes = {name: model_enum_codes(model, name) for name in GRSETDAC_MODEL_AUTHORIZED}
+    # The up-down vane is the one field whose model codes are not its wire values, and everything
+    # downstream of here works in wire values. Translate once, here, rather than leaving each caller
+    # to remember which axis needs it.
+    if vertical := codes.get("windDirectionVertical"):
+        codes["windDirectionVertical"] = {
+            VANE_V_MODEL_TO_EPP[code] for code in vertical if code in VANE_V_MODEL_TO_EPP
+        }
     return {name: values for name, values in codes.items() if values}
 
 
@@ -924,21 +938,27 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return name in GRSETDAC_FIELDS
 
     def field_codes(self, name: str) -> frozenset[int]:
-        """The raw codes this unit's own digital model authorizes for ``name``, or empty.
+        """The wire values this unit's own digital model authorizes for ``name``, or empty.
 
-        Only the fields the encoder lets a model widen (:data:`GRSETDAC_MODEL_AUTHORIZED`) have such
-        a list, and only on the classic family: every other family maps the vane as a plain on/off
-        and would pack any position as its auto code, so a control offering the positions there
-        would quietly do something else. Empty is also the answer with no stored model (the manual
-        onboarding path) — nothing then authorizes more than the encoder's own values.
+        Only fields a model is allowed to widen have such a list — :data:`GRSETDAC_MODEL_AUTHORIZED`
+        on the classic family, and a non-classic family's own ``position_fields``, which names the
+        fields it packs as the multi-bit codes they are. A family that collapses a vane to a single
+        bit is excluded there: a position packed into it would arrive as "sweep". Empty is also the
+        answer with no stored model (the manual onboarding path) — nothing then authorizes more than
+        the encoder's own values.
 
-        An entity that offers a *choice* of codes asks here for the list, rather than assuming the
-        set one unit happens to have. A code too wide for the field it would be packed into is left
+        An entity that offers a *choice* of values asks here for the list, rather than assuming the
+        set one unit happens to have. A value too wide for the field it would be packed into is left
         out: the encoder refuses it, so offering it would only ever produce a control that fails.
         """
-        if self._wire_model is not None or name not in GRSETDAC_MODEL_AUTHORIZED:
+        if (wm := self._wire_model) is not None:
+            if name not in wm.position_fields or (wf := wm.write_fields.get(name)) is None:
+                return frozenset()
+            width = wf.length
+        elif name not in GRSETDAC_MODEL_AUTHORIZED:
             return frozenset()
-        width = GRSETDAC_FIELDS[name][2]
+        else:
+            width = GRSETDAC_FIELDS[name][2]
         return frozenset(
             code for code in self.model_codes.get(name) or () if code < (1 << width)
         )

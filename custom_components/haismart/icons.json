@@ -23,6 +23,9 @@
       },
       "vane_horizontal": {
         "default": "mdi:arrow-left-right"
+      },
+      "vane_vertical": {
+        "default": "mdi:arrow-up-down"
       }
     },
     "sensor": {

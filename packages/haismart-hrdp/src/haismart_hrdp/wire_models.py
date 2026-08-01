@@ -118,6 +118,18 @@ OPERATION_SOURCE: Mapping[int, str] = {0: "other", 1: "remote", 2: "panel", 3: "
 VANE_V_AUTO_MASK = 0x0C
 VANE_H_AUTO = 0x07
 
+# Model code -> wire value for the UP-DOWN vane. The left-right vane needs no such table: the code
+# its model names is the value on the wire. This axis is different — a model numbers its stops 0, 2,
+# 4, 5, 6, 8 while the unit works in even steps — and the difference is why a position on this axis
+# cannot simply be passed through.
+#
+# Confirmed on hardware: a unit stepped through every stop its app offers, one capture per stop,
+# reported 0, 2, 4, 6, 8 and 12 for the model's 0, 2, 4, 5, 6 and 8. The last of those is the same
+# 0x0C the classic family has always used for "auto", which is the check that the two ends agree.
+# ``7`` completes the table on the same pattern; no model seen here lists it.
+VANE_V_MODEL_TO_EPP: Mapping[int, int] = {0: 0, 2: 2, 4: 4, 5: 6, 6: 8, 7: 10, 8: 12}
+VANE_V_EPP_TO_MODEL: Mapping[int, int] = {epp: std for std, epp in VANE_V_MODEL_TO_EPP.items()}
+
 
 def vane_v_sweeping(raw: int) -> bool:
     """True only for the vertical vane's auto codes (0x0C, 0x0E)."""
@@ -194,6 +206,11 @@ class WireModel:
     word_count: int = 0             # settable words 1..word_count
     write_base_word: int = 1        # report word holding group-set word 1 (1 = the report's own word 1)
     write_fields: Mapping[str, WriteField] = field(default_factory=dict)
+    # Write fields that carry a POSITION rather than an on/off state — the vanes, on a family that
+    # packs them as the multi-bit code they are. A family that collapses a vane to a single bit
+    # (compact-12 does, and its own model describes it that way) must leave the field out: a position
+    # packed there would arrive as "sweep", which is not what was asked for.
+    position_fields: frozenset[str] = frozenset()
 
     def matches(self, length: int, uplus_id: str | None) -> bool:
         if uplus_id and uplus_id in self.uplus_ids:
@@ -385,7 +402,11 @@ _EXT36_FAN = {1: "1", 2: "2", 3: "3", 5: "5"}            # high / medium / low /
 # meaning, and the encoder's job is to refuse what we cannot name.
 _EXT36_WRITE = {
     "targetTemperature": WriteField(1, 8, 8, "passthrough", min_epp=0, max_epp=14),  # 16..30 C
-    "windDirectionVertical": WriteField(1, 0, 4, "onoff", on_value=0x0C),
+    # Both vanes take their wire value straight through, so a POSITION reaches the unit rather than
+    # only "fixed" or "sweep". The caller passes the wire value — 0x0C is still what "swing on"
+    # means for the up-down axis — and the position codes a device publishes are translated to wire
+    # values before they get here (see `VANE_V_MODEL_TO_EPP`; the left-right axis needs no table).
+    "windDirectionVertical": WriteField(1, 0, 4, "passthrough", max_epp=0x0C),
     "operationMode": WriteField(2, 13, 3, "std_enum", std_to_epp={0: 0, 1: 1, 2: 2, 4: 4, 6: 6}),
     "windSpeed": WriteField(2, 8, 3, "std_enum", std_to_epp={1: 1, 2: 2, 3: 3, 5: 5}),
     "onOffStatus": WriteField(3, 0, 1, "passthrough"),
@@ -394,7 +415,7 @@ _EXT36_WRITE = {
     "muteStatus": WriteField(3, 4, 1, "passthrough"),
     "silentSleepStatus": WriteField(3, 5, 1, "passthrough"),
     "screenDisplayStatus": WriteField(3, 9, 1, "passthrough"),
-    "windDirectionHorizontal": WriteField(4, 0, 3, "onoff", on_value=0x07),
+    "windDirectionHorizontal": WriteField(4, 0, 3, "passthrough", max_epp=0x07),
 }
 
 # The "extended-36" family: a 36-word report (165 B) carrying the **classic** climate block displaced
@@ -442,6 +463,7 @@ EXTENDED36 = WireModel(
     word_count=5,
     write_base_word=20,     # report word 20 == group-set word 1 (the 19-word media block precedes it)
     write_fields=_EXT36_WRITE,
+    position_fields=frozenset({"windDirectionVertical", "windDirectionHorizontal"}),
     fields={
         "power": WireField(22, 0, 1, kind="bool"),
         "target_temperature": WireField(20, 8, 8, kind="int", k=1.0, c=16.0),
@@ -463,6 +485,17 @@ EXTENDED36 = WireModel(
         # vane outside this displacement, so its control block does not follow the same shape, and
         # compact-12 has a different map entirely. Both want a report from a unit mid-cycle.
         "self_cleaning": WireField(24, 4, 1, kind="bool"),
+        # Live input power, on the units whose report runs to word 41 (the 175-byte variant; a
+        # shorter report simply has no such word and the field reads absent). Watts: zero with the
+        # unit off, 1432 at full cooling, and a thousand-odd while it holds a room — and the unit
+        # publishes an `acInput` of its own that agrees. This is a real measurement rather than the
+        # figure the classic family derives from its current sensor.
+        "power_w": WireField(41, 0, 16, kind="int"),
+        # NOT read: the cumulative counter at words 34+35, mirrored at 39+40. It climbs, monotonically
+        # and in jumps rather than continuously, and the unit publishes `accumulatedUseMainsPower` and
+        # `totalElectricityUsed` that track it — but nothing so far establishes what one unit of it
+        # IS. Watt-hours is the closest fit and is not close enough to publish: a wrong unit would
+        # settle permanently into someone's energy history.
     },
 )
 

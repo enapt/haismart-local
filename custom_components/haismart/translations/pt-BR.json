@@ -216,12 +216,25 @@
         "name": "Aleta horizontal",
         "state": {
           "fixed": "Fixa",
+          "position_1": "Posição 1",
           "position_2": "Posição 2",
           "position_3": "Posição 3",
           "position_4": "Posição 4",
           "position_5": "Posição 5",
           "position_6": "Posição 6",
-          "position_7": "Posição 7",
+          "auto": "Automático (oscilação)"
+        }
+      },
+      "vane_vertical": {
+        "name": "Aleta vertical",
+        "state": {
+          "fixed": "Fixa",
+          "position_1": "Posição 1",
+          "position_2": "Posição 2",
+          "position_3": "Posição 3",
+          "position_4": "Posição 4",
+          "position_5": "Posição 5",
+          "position_6": "Posição 6",
           "auto": "Automático (oscilação)"
         }
       }

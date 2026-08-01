@@ -119,6 +119,7 @@ def make_extended36_frame(
     swing_h: bool = True,
     lamp: bool = True,
     length: int = 165,
+    power_w: int = 0,
 ) -> bytes:
     """Build a synthetic 165-byte 'extended-36' full-status report (issue #5). Same bit map as the
     classic family, but displaced 19 words: the report keeps a voice/media block at words 1..19 and
@@ -140,6 +141,8 @@ def make_extended36_frame(
     setword(22, (1 if power else 0) | (0x200 if lamp else 0))
     setword(23, 0x07 if swing_h else 0x00)                         # windDirectionHorizontal
     setword(25, int(indoor_temp * 2) << 8)                         # indoorTemperature (k=0.5)
+    if length >= 175:
+        setword(41, power_w)                                       # live input power, watts
     return bytes(frame)
 
 
@@ -212,12 +215,15 @@ def heat_capable_digital_model() -> dict:
     }
 
 
-def vane_positions_digital_model(codes: tuple[int, ...] = (0, 1, 2, 3, 4, 5, 6, 7)) -> dict:
-    """The model above, plus the left-right vane's published stops.
+def vane_positions_digital_model(
+    codes: tuple[int, ...] = (0, 1, 2, 3, 4, 5, 6, 7),
+    vertical: tuple[int, ...] = (),
+) -> dict:
+    """The model above, plus the stops each vane publishes.
 
-    A unit that lists all eight names position one (fixed) through position eight (auto); one that
-    lists only ``(0, 7)`` has the two ends and nothing in between. The vane's raw wire value is the
-    code the model lists, which is what lets the model authorize a position.
+    ``codes`` is the left-right axis, whose model code IS its wire value. ``vertical`` is the
+    up-down axis, whose codes are NOT wire values (a model's 8 reaches the wire as 0x0c) — the
+    values a real unit lists there are 0, 2, 4, 5, 6, 8.
     """
     model = heat_capable_digital_model()
     model["attributes"].append({
@@ -226,6 +232,13 @@ def vane_positions_digital_model(codes: tuple[int, ...] = (0, 1, 2, 3, 4, 5, 6, 
             {"data": str(code), "desc": f"左右摆位置{code + 1}"} for code in codes
         ]},
     })
+    if vertical:
+        model["attributes"].append({
+            "name": "windDirectionVertical", "writable": True,
+            "valueRange": {"type": "LIST", "dataList": [
+                {"data": str(code), "desc": "上下摆"} for code in vertical
+            ]},
+        })
     return model
 
 

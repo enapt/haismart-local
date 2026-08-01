@@ -216,12 +216,25 @@
         "name": "Horizontale lamel",
         "state": {
           "fixed": "Vast",
+          "position_1": "Positie 1",
           "position_2": "Positie 2",
           "position_3": "Positie 3",
           "position_4": "Positie 4",
           "position_5": "Positie 5",
           "position_6": "Positie 6",
-          "position_7": "Positie 7",
+          "auto": "Automatisch (zwenken)"
+        }
+      },
+      "vane_vertical": {
+        "name": "Verticale lamel",
+        "state": {
+          "fixed": "Vast",
+          "position_1": "Positie 1",
+          "position_2": "Positie 2",
+          "position_3": "Positie 3",
+          "position_4": "Positie 4",
+          "position_5": "Positie 5",
+          "position_6": "Positie 6",
           "auto": "Automatisch (zwenken)"
         }
       }

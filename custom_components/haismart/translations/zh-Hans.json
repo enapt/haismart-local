@@ -216,12 +216,25 @@
         "name": "左右风板",
         "state": {
           "fixed": "固定",
+          "position_1": "位置1",
           "position_2": "位置2",
           "position_3": "位置3",
           "position_4": "位置4",
           "position_5": "位置5",
           "position_6": "位置6",
-          "position_7": "位置7",
+          "auto": "自动（摆动）"
+        }
+      },
+      "vane_vertical": {
+        "name": "上下风板",
+        "state": {
+          "fixed": "固定",
+          "position_1": "位置1",
+          "position_2": "位置2",
+          "position_3": "位置3",
+          "position_4": "位置4",
+          "position_5": "位置5",
+          "position_6": "位置6",
           "auto": "自动（摆动）"
         }
       }

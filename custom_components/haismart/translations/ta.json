@@ -216,12 +216,25 @@
         "name": "இடம்-வலம் இதழ்",
         "state": {
           "fixed": "நிலையானது",
+          "position_1": "நிலை 1",
           "position_2": "நிலை 2",
           "position_3": "நிலை 3",
           "position_4": "நிலை 4",
           "position_5": "நிலை 5",
           "position_6": "நிலை 6",
-          "position_7": "நிலை 7",
+          "auto": "தானியங்கி (அசைவு)"
+        }
+      },
+      "vane_vertical": {
+        "name": "மேல்-கீழ் இதழ்",
+        "state": {
+          "fixed": "நிலையானது",
+          "position_1": "நிலை 1",
+          "position_2": "நிலை 2",
+          "position_3": "நிலை 3",
+          "position_4": "நிலை 4",
+          "position_5": "நிலை 5",
+          "position_6": "நிலை 6",
           "auto": "தானியங்கி (அசைவு)"
         }
       }

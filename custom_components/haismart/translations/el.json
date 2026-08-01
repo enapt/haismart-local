@@ -216,12 +216,25 @@
         "name": "Οριζόντιο πτερύγιο",
         "state": {
           "fixed": "Σταθερό",
+          "position_1": "Θέση 1",
           "position_2": "Θέση 2",
           "position_3": "Θέση 3",
           "position_4": "Θέση 4",
           "position_5": "Θέση 5",
           "position_6": "Θέση 6",
-          "position_7": "Θέση 7",
+          "auto": "Αυτόματο (αιώρηση)"
+        }
+      },
+      "vane_vertical": {
+        "name": "Κάθετο πτερύγιο",
+        "state": {
+          "fixed": "Σταθερό",
+          "position_1": "Θέση 1",
+          "position_2": "Θέση 2",
+          "position_3": "Θέση 3",
+          "position_4": "Θέση 4",
+          "position_5": "Θέση 5",
+          "position_6": "Θέση 6",
           "auto": "Αυτόματο (αιώρηση)"
         }
       }

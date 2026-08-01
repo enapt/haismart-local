@@ -216,12 +216,25 @@
         "name": "Żaluzja pozioma",
         "state": {
           "fixed": "Stała",
+          "position_1": "Pozycja 1",
           "position_2": "Pozycja 2",
           "position_3": "Pozycja 3",
           "position_4": "Pozycja 4",
           "position_5": "Pozycja 5",
           "position_6": "Pozycja 6",
-          "position_7": "Pozycja 7",
+          "auto": "Automatycznie (wachlowanie)"
+        }
+      },
+      "vane_vertical": {
+        "name": "Żaluzja pionowa",
+        "state": {
+          "fixed": "Stała",
+          "position_1": "Pozycja 1",
+          "position_2": "Pozycja 2",
+          "position_3": "Pozycja 3",
+          "position_4": "Pozycja 4",
+          "position_5": "Pozycja 5",
+          "position_6": "Pozycja 6",
           "auto": "Automatycznie (wachlowanie)"
         }
       }

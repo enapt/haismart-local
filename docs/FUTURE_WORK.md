@@ -2,44 +2,24 @@
 
 Each is written to be picked up cold: what it is, why it is not done, and what would settle it.
 
-## 1. Vane positioning, up-down axis
+## 1. Vane positions on a unit whose model understates it
 
-The vane fields are position codes, so pointing a louver somewhere specific is expressible on the
-wire. The **left-right** axis now offers it: a `select` beside the swing controls, its options taken
-from whatever positions the unit's own model publishes. The **up-down** axis still does not, and the
-two are not symmetric — which is the whole of what is left here.
+Both axes now offer their positions, as `select` entities beside the swing controls, built from the
+stops the unit's own model publishes. The up-down axis needs its model codes translated to reach the
+wire — a model numbers its stops `0, 2, 4, 5, 6, 8` while the unit works in `0, 2, 4, 6, 8, 12` —
+and that table is confirmed on hardware: a unit was stepped through every stop its app offers, one
+capture per stop, and reported the table's value each time. The left-right axis needs no table; its
+model code is its wire value.
 
-The codes a unit reports, stepping its louver controls through every stop:
+What is left is the case where **a model publishes less than the hardware has.** The reference units
+here are exactly that: their handsets step the up-down vane through six stops, but their model lists
+only `0` (fixed) and `8` (auto), so nothing authorises the six. They get no up-down entity, which is
+correct — an option nothing declares is a guess, and a group-set applies the whole word block, so a
+wrong value there is not a local mistake.
 
-| axis | positions | auto |
-|---|---|---|
-| vertical | 1, 2, 3, 4, 6, 8 | 12 |
-| horizontal | 0, 3, 4, 5, 6 | 7 |
-
-Physically, horizontal runs far-left, left, centre, right, far-right; vertical steps down from the
-top, and 1 and 3 are the two positions a "health airflow" button cycles through.
-
-**Why the up-down axis is still not done.** The encoder's allowlist permits only `{0, 0x0c}` there,
-and a field only enters that list once a *write* of it has been seen. Every position above was
-observed being *reported*, which is weaker evidence: it establishes the code, not that the unit
-accepts it as a command.
-
-What let the left-right axis through was its device model: it lists all eight codes (`0` fixed …
-`7` auto) and its wire value **equals** the model's code, so `GRSETDAC_MODEL_AUTHORIZED` — the
-mechanism that already lets a device's own model widen mode and fan speed — carries it, with the
-existing `valueRange` gate doing the work. The up-down axis fails exactly that test: the same model
-lists **only** `0` (fixed) and `8` (auto) while the handset visibly steps the vane through wire codes
-1, 2, 3, 4, 6 and 8, and the wire values are not the model's codes anyway (its "on" nibble is
-`0x0c`, its model's auto is `8`). The model both understates the hardware and speaks a different
-language, so it cannot authorize anything.
-
-That leaves two ways forward: a captured write of a position, or a deliberate decision to trust the
-bundled translation table (`5→6, 6→8, 7→10, 8→12`) over the device's own published range.
-
-Home Assistant's climate entity has no vane-position concept, so this wants a `select` — the shape
-the left-right axis and the eco level already use. Note this is not a presentation gap: the entity
-advertises `swing_modes` of off/vertical/horizontal/both and `swing_horizontal_modes` of off/on, so
-there is nothing for any card to render. Adding positions means adding entities.
+Settling it needs evidence from those units specifically: a recorded command carrying a position, or
+the same stepping exercise on hardware whose model does list the stops, enough times to establish
+that the translation table holds across models rather than on the one that confirmed it.
 
 ## 2. Health writes one bit where the vendor app writes three
 

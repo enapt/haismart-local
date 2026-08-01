@@ -216,12 +216,25 @@
         "name": "Vannrett spjeld",
         "state": {
           "fixed": "Fast",
+          "position_1": "Posisjon 1",
           "position_2": "Posisjon 2",
           "position_3": "Posisjon 3",
           "position_4": "Posisjon 4",
           "position_5": "Posisjon 5",
           "position_6": "Posisjon 6",
-          "position_7": "Posisjon 7",
+          "auto": "Automatisk (sving)"
+        }
+      },
+      "vane_vertical": {
+        "name": "Loddrett spjeld",
+        "state": {
+          "fixed": "Fast",
+          "position_1": "Posisjon 1",
+          "position_2": "Posisjon 2",
+          "position_3": "Posisjon 3",
+          "position_4": "Posisjon 4",
+          "position_5": "Posisjon 5",
+          "position_6": "Posisjon 6",
           "auto": "Automatisk (sving)"
         }
       }

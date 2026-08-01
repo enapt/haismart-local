@@ -216,12 +216,25 @@
         "name": "Vízszintes lamella",
         "state": {
           "fixed": "Rögzített",
+          "position_1": "1. pozíció",
           "position_2": "2. pozíció",
           "position_3": "3. pozíció",
           "position_4": "4. pozíció",
           "position_5": "5. pozíció",
           "position_6": "6. pozíció",
-          "position_7": "7. pozíció",
+          "auto": "Automatikus (lengés)"
+        }
+      },
+      "vane_vertical": {
+        "name": "Függőleges lamella",
+        "state": {
+          "fixed": "Rögzített",
+          "position_1": "1. pozíció",
+          "position_2": "2. pozíció",
+          "position_3": "3. pozíció",
+          "position_4": "4. pozíció",
+          "position_5": "5. pozíció",
+          "position_6": "6. pozíció",
           "auto": "Automatikus (lengés)"
         }
       }

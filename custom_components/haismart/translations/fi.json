@@ -216,12 +216,25 @@
         "name": "Vaakasuuntainen säle",
         "state": {
           "fixed": "Kiinteä",
+          "position_1": "Asento 1",
           "position_2": "Asento 2",
           "position_3": "Asento 3",
           "position_4": "Asento 4",
           "position_5": "Asento 5",
           "position_6": "Asento 6",
-          "position_7": "Asento 7",
+          "auto": "Automaattinen (huojunta)"
+        }
+      },
+      "vane_vertical": {
+        "name": "Pystysuuntainen säle",
+        "state": {
+          "fixed": "Kiinteä",
+          "position_1": "Asento 1",
+          "position_2": "Asento 2",
+          "position_3": "Asento 3",
+          "position_4": "Asento 4",
+          "position_5": "Asento 5",
+          "position_6": "Asento 6",
           "auto": "Automaattinen (huojunta)"
         }
       }

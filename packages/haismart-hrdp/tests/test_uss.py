@@ -353,15 +353,36 @@ def test_model_declared_mode_is_encodable_but_not_by_default():
 
 def test_model_values_cannot_widen_device_specific_fields_or_overflow():
     words = bytes.fromhex("0800230002030007080c0000")
-    # windDirectionVertical/ecoMode have no matching model attribute (this unit repurposes them), so
-    # the model is not allowed to authorize values for them — the observed set stays the authority.
-    with pytest.raises(ValueError):
-        uss.set_grsetdac_field(words, "windDirectionVertical", 8, model_values={0, 8})
+    # ecoMode has no matching model attribute (this unit repurposes a 3-bit field), so the model is
+    # not allowed to authorize values for it — the observed set stays the authority.
     with pytest.raises(ValueError):
         uss.set_grsetdac_field(words, "ecoMode", 1, model_values={0, 1})
     # a code that doesn't fit the field would silently corrupt neighbouring attributes
     with pytest.raises(ValueError):
         uss.set_grsetdac_field(words, "operationMode", 8, model_values={8})
+
+
+def test_model_declared_vane_positions_use_wire_values_not_model_codes():
+    """The up-down vane is widenable, but ``model_values`` means WIRE values, as everywhere here.
+
+    Its model numbers the stops 0, 2, 4, 5, 6, 8 while the wire counts 0, 2, 4, 6, 8, 12 — so a
+    caller hands over codes already translated (``VANE_V_MODEL_TO_EPP``). The distinction matters:
+    the model's 8 is auto, and the wire's 8 is the fourth position down.
+    """
+    from haismart_hrdp import VANE_V_MODEL_TO_EPP
+
+    words = bytes.fromhex("0800230002030007080c0000")
+    declared = {0, 2, 4, 5, 6, 8}                       # what a model lists
+    wire = {VANE_V_MODEL_TO_EPP[c] for c in declared}   # what the unit accepts
+    assert wire == {0, 2, 4, 6, 8, 12}
+
+    # nothing but the two observed values without a model to say otherwise
+    with pytest.raises(ValueError):
+        uss.set_grsetdac_field(words, "windDirectionVertical", 8)
+    parked = uss.set_grsetdac_field(words, "windDirectionVertical", 8, model_values=wire)
+    assert parked[0] & 0x0F == 8
+    # auto is the same 0x0c it has always been, and the table agrees
+    assert VANE_V_MODEL_TO_EPP[8] == uss.GRSETDAC_ENUMS["windDirectionVertical"]["on"]
 
 
 # --- control (grSetDAC) baseline + field read/write pipeline (HA layer building blocks) -------------
@@ -727,6 +748,8 @@ def test_extended36_claims_the_175_byte_variant_too():
         "swing_vertical": False, "swing_horizontal": False, "mode": "cool", "fan_mode": "low",
         "heat_capable": False, "error_code": 0, "last_changed_by": "network",
         "self_cleaning": False, "layout": "extended36", "writable": True,
+        # this variant carries its own live power reading; the shorter report has no such word
+        "power_w": 1318,
     }
     assert "partial" not in state
     # the vanes are parked at positions 2 and 5, which is why neither reads as sweeping

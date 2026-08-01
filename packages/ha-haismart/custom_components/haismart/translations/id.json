@@ -216,12 +216,25 @@
         "name": "Kisi kiri-kanan",
         "state": {
           "fixed": "Tetap",
+          "position_1": "Posisi 1",
           "position_2": "Posisi 2",
           "position_3": "Posisi 3",
           "position_4": "Posisi 4",
           "position_5": "Posisi 5",
           "position_6": "Posisi 6",
-          "position_7": "Posisi 7",
+          "auto": "Otomatis (ayun)"
+        }
+      },
+      "vane_vertical": {
+        "name": "Kisi atas-bawah",
+        "state": {
+          "fixed": "Tetap",
+          "position_1": "Posisi 1",
+          "position_2": "Posisi 2",
+          "position_3": "Posisi 3",
+          "position_4": "Posisi 4",
+          "position_5": "Posisi 5",
+          "position_6": "Posisi 6",
           "auto": "Otomatis (ayun)"
         }
       }

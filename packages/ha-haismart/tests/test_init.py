@@ -42,6 +42,7 @@ from custom_components.haismart.const import (
 
 CLIMATE = "climate.downstairs_ac"
 VANE_H = "select.downstairs_ac_left_right_vane"
+VANE_V = "select.downstairs_ac_up_down_vane"
 
 
 def _entry(**overrides) -> MockConfigEntry:
@@ -617,7 +618,9 @@ async def test_extended36_family_covers_its_longer_report_too(
     The reporting unit connected, decoded nothing, and raised the new-model repair. It must now come
     up as a fully decoded, controllable unit — the layout is known, so nothing about it is a repair.
     """
-    frame = make_extended36_frame(length=175, power=True, target_temp=24, indoor_temp=26.0)
+    frame = make_extended36_frame(
+        length=175, power=True, target_temp=24, indoor_temp=26.0, power_w=1432
+    )
     mock_uss.read.return_value = [frame]
     mock_uss.send.baseline = frame
     entry = await _setup(hass)
@@ -629,6 +632,10 @@ async def test_extended36_family_covers_its_longer_report_too(
 
     coord = entry.runtime_data
     assert coord.unknown_layout is None and coord.read_only_layout is None
+    # this variant reports live power in the status frame itself, so the Power sensor works on a
+    # unit that never answers the extended-status query the classic family's telemetry comes from
+    assert float(hass.states.get("sensor.downstairs_ac_power").state) == 1432
+    assert hass.states.get("sensor.downstairs_ac_current").state == "unknown"
 
     await coord.async_send_control({"targetTemperature": 25 - 16})
     sent = mock_uss.send.last_frame
@@ -650,17 +657,19 @@ async def test_vane_positions_come_from_the_units_own_model(
 
     vane = hass.states.get(VANE_H)
     assert vane.attributes["options"] == [
-        "fixed", "position_2", "position_3", "position_4",
-        "position_5", "position_6", "position_7", "auto",
+        "fixed", "position_1", "position_2", "position_3",
+        "position_4", "position_5", "position_6", "auto",
     ]
-    assert vane.state == "position_5"                       # code 4 is the model's position five
+    # positions are numbered by their place in the model's list, not by their code: this model lists
+    # 1..6 between fixed and auto, so the reported code 4 is the fourth stop it offers
+    assert vane.state == "position_4"
     # a parked vane is not a swinging one, and the climate control still says so
     assert hass.states.get(CLIMATE).attributes["swing_horizontal_mode"] == "off"
 
     await hass.services.async_call(
         "select", "select_option", {"entity_id": VANE_H, "option": "position_3"}, blocking=True,
     )
-    assert _sent_field(mock_uss.send, "windDirectionHorizontal") == 2
+    assert _sent_field(mock_uss.send, "windDirectionHorizontal") == 3
 
 
 async def test_vane_positions_not_offered_without_them(hass: HomeAssistant, mock_uss) -> None:
@@ -689,22 +698,71 @@ async def test_vane_positions_leave_out_a_code_the_field_cannot_hold(
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
-    assert hass.states.get(VANE_H).attributes["options"] == ["fixed", "position_5", "auto"]
+    assert hass.states.get(VANE_H).attributes["options"] == ["fixed", "position_1", "auto"]
 
 
 async def test_vane_positions_not_offered_where_they_cannot_be_placed(
     hass: HomeAssistant, mock_uss
 ) -> None:
-    """A family that maps this vane as a plain on/off would pack any position as its auto code, so
-    the entity must not appear there however many stops the model publishes."""
-    mock_uss.read.return_value = [make_extended36_frame()]
-    entry = _entry(digital_model=json.dumps(vane_positions_digital_model()))
+    """A family that packs a vane into a single bit cannot hold a position — it would arrive as
+    "sweep" — so the entity must not appear there however many stops the model publishes."""
+    mock_uss.read.return_value = [make_compact12_frame()]
+    entry = _entry(digital_model=json.dumps(
+        vane_positions_digital_model(vertical=(0, 2, 4, 5, 6, 8))
+    ))
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
     assert hass.states.get(CLIMATE) is not None                  # the unit still works
     assert hass.states.get(VANE_H) is None
+    assert hass.states.get(VANE_V) is None
+
+
+async def test_vane_positions_on_the_extended36_family(hass: HomeAssistant, mock_uss) -> None:
+    """Both axes, on a family that keeps its climate block 19 words in (issue #8).
+
+    The up-down axis is the one that needed settling: its model names stops 0, 2, 4, 5, 6, 8 while
+    the unit works in 0, 2, 4, 6, 8, 12, so a position only reaches the wire correctly if the
+    translation is applied. Auto lands on the same 0x0c the swing control has always sent.
+    """
+    frame = make_extended36_frame(length=175, power=True, target_temp=24, indoor_temp=26.0)
+    mock_uss.read.return_value = [frame]
+    mock_uss.send.baseline = frame
+    entry = _entry(digital_model=json.dumps(
+        vane_positions_digital_model(codes=(0, 3, 4, 5, 6, 7), vertical=(0, 2, 4, 5, 6, 8))
+    ))
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get(VANE_V).attributes["options"] == [
+        "fixed", "position_1", "position_2", "position_3", "position_4", "auto",
+    ]
+    assert hass.states.get(VANE_H).attributes["options"] == [
+        "fixed", "position_1", "position_2", "position_3", "position_4", "auto",
+    ]
+
+    coord = entry.runtime_data
+    # the model's third stop (code 5) is 6 on the wire, not 5
+    await hass.services.async_call(
+        "select", "select_option", {"entity_id": VANE_V, "option": "position_3"}, blocking=True,
+    )
+    words = mock_uss.send.last_frame[12:-1]
+    assert words[1] & 0x0F == 6
+    # and its auto is the 0x0c nibble, so the climate swing control still agrees with this entity
+    await hass.services.async_call(
+        "select", "select_option", {"entity_id": VANE_V, "option": "auto"}, blocking=True,
+    )
+    assert mock_uss.send.last_frame[12:-1][1] & 0x0F == 0x0C
+
+    # the left-right axis needs no translation: the model's code is the wire value
+    await hass.services.async_call(
+        "select", "select_option", {"entity_id": VANE_H, "option": "position_2"}, blocking=True,
+    )
+    words = mock_uss.send.last_frame[12:-1]
+    assert (words[6] << 8 | words[7]) & 0x07 == 4
+    assert coord.unknown_layout is None
 
 
 async def test_control_confirms_from_op_reply_without_extra_read(

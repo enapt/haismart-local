@@ -216,12 +216,25 @@
         "name": "Volet horizontal",
         "state": {
           "fixed": "Fixe",
+          "position_1": "Position 1",
           "position_2": "Position 2",
           "position_3": "Position 3",
           "position_4": "Position 4",
           "position_5": "Position 5",
           "position_6": "Position 6",
-          "position_7": "Position 7",
+          "auto": "Automatique (balayage)"
+        }
+      },
+      "vane_vertical": {
+        "name": "Volet vertical",
+        "state": {
+          "fixed": "Fixe",
+          "position_1": "Position 1",
+          "position_2": "Position 2",
+          "position_3": "Position 3",
+          "position_4": "Position 4",
+          "position_5": "Position 5",
+          "position_6": "Position 6",
           "auto": "Automatique (balayage)"
         }
       }

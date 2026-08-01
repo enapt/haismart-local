@@ -216,12 +216,25 @@
         "name": "क्षैतिज वेन",
         "state": {
           "fixed": "स्थिर",
+          "position_1": "स्थिति 1",
           "position_2": "स्थिति 2",
           "position_3": "स्थिति 3",
           "position_4": "स्थिति 4",
           "position_5": "स्थिति 5",
           "position_6": "स्थिति 6",
-          "position_7": "स्थिति 7",
+          "auto": "स्वचालित (स्विंग)"
+        }
+      },
+      "vane_vertical": {
+        "name": "ऊर्ध्वाधर वेन",
+        "state": {
+          "fixed": "स्थिर",
+          "position_1": "स्थिति 1",
+          "position_2": "स्थिति 2",
+          "position_3": "स्थिति 3",
+          "position_4": "स्थिति 4",
+          "position_5": "स्थिति 5",
+          "position_6": "स्थिति 6",
           "auto": "स्वचालित (स्विंग)"
         }
       }

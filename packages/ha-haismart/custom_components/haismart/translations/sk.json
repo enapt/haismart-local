@@ -216,12 +216,25 @@
         "name": "Vodorovná lamela",
         "state": {
           "fixed": "Pevná",
+          "position_1": "Poloha 1",
           "position_2": "Poloha 2",
           "position_3": "Poloha 3",
           "position_4": "Poloha 4",
           "position_5": "Poloha 5",
           "position_6": "Poloha 6",
-          "position_7": "Poloha 7",
+          "auto": "Automaticky (kývanie)"
+        }
+      },
+      "vane_vertical": {
+        "name": "Zvislá lamela",
+        "state": {
+          "fixed": "Pevná",
+          "position_1": "Poloha 1",
+          "position_2": "Poloha 2",
+          "position_3": "Poloha 3",
+          "position_4": "Poloha 4",
+          "position_5": "Poloha 5",
+          "position_6": "Poloha 6",
           "auto": "Automaticky (kývanie)"
         }
       }

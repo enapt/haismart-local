@@ -82,6 +82,8 @@ from .uss import (
     status_layout,
 )
 from .wire_models import (
+    VANE_V_EPP_TO_MODEL,
+    VANE_V_MODEL_TO_EPP,
     WIRE_MODELS,
     WireField,
     WireModel,
@@ -120,6 +122,8 @@ __all__ = [
     "WIRE_MODELS",
     "select_wire_model",
     "probe_layout",
+    "VANE_V_MODEL_TO_EPP",
+    "VANE_V_EPP_TO_MODEL",
     "StatusContainer",
     "parse_hello_resp",
     "check_hello_resp",

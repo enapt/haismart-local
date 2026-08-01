@@ -1778,6 +1778,9 @@ def test_declared_bool_features_reads_from_the_model_and_the_map():
     assert declared_bool_features({"attributes": [{"name": "freshAirStatus"}]}) == frozenset()
     # a bare list of names is a caller vouching for the set directly
     assert declared_bool_features(["lightStatus", "x"]) == frozenset({"lightStatus"})
+    # an entry with no name is dropped; one literally named "None" is not confused for it
+    assert declared_bool_features(dict(model, attributes=[{"foo": 1}, {"name": "lightStatus"}])) \
+        == frozenset({"lightStatus"})
     # an attribute the model marks invisible is one this unit does not have -- dropped, so no phantom
     # entity that reads a permanent off (the generic model over-declares; invisible is how it says so)
     model_inv = dict(model, invisible_attributes=["electricHeatingStatus"])
@@ -1788,3 +1791,48 @@ def test_declared_bool_features_reads_from_the_model_and_the_map():
     assert all(isinstance(v, bool) for v in got.values())
     # a family whose map is not pinned places nothing
     assert read_bool_features(EXTENDED46, model, b"\x00" * 209) == {}
+
+
+def test_declared_enum_features_reads_labelled_state():
+    """humanSensingStatus is a multi-state optional feature -- read read-only as its labelled state,
+    at its published-map position, and only where the unit's feature set is known (invisible gate)."""
+    from haismart_hrdp import declared_enum_features, read_enum_features
+    from haismart_hrdp.wire_models import _CLASSIC_PROBE, EXTENDED46
+
+    model = {"invisible_attributes": [], "attributes": [{"name": "humanSensingStatus"}]}
+    assert declared_enum_features(model) == frozenset({"humanSensingStatus"})
+    # unknown feature set -> nothing (never a guess)
+    assert declared_enum_features({"attributes": [{"name": "humanSensingStatus"}]}) == frozenset()
+    # invisible -> the unit does not have it -> dropped
+    assert declared_enum_features(
+        dict(model, invisible_attributes=["humanSensingStatus"])) == frozenset()
+
+    got = read_enum_features(_CLASSIC_PROBE, model, STATUS_125)
+    assert set(got) == {"humanSensingStatus"}
+    assert got["humanSensingStatus"] in {"off", "avoid", "follow", "on"}
+    # a family with no confirmed displacement places nothing
+    assert read_enum_features(EXTENDED46, model, b"\x00" * 209) == {}
+
+
+def test_invisible_attributes_and_merge_records_them():
+    """The published constraintfile marks attributes a generic model lists but this unit lacks
+    `invisible`; merge_rules records that set (always, even empty) so the feature entities can tell a
+    real feature from an over-declared one. The device shadow carries no such flag."""
+    from haismart_hrdp import invisible_attributes, merge_rules
+
+    published = {"attributes": [
+        {"name": "healthMode", "invisible": False},
+        {"name": "electricHeatingStatus", "invisible": True},
+        {"name": "freshAirStatus", "invisiable": True},   # the other spelling seen in the wild
+        {"name": "lightStatus"},                           # no flag == present
+    ]}
+    assert invisible_attributes(published) == frozenset(
+        {"electricHeatingStatus", "freshAirStatus"})
+
+    shadow = {"attributes": {"healthMode": {}, "electricHeatingStatus": {}}}
+    merged = merge_rules(shadow, published)
+    assert merged["invisible_attributes"] == ["electricHeatingStatus", "freshAirStatus"]
+    # a model with no invisible flags still records the key (empty) -- presence is the "known" signal
+    assert merge_rules(shadow, {"attributes": [{"name": "healthMode"}]})["invisible_attributes"] == []
+    # nothing published -> the key is not added at all (we do not claim to know the set)
+    assert "invisible_attributes" not in merge_rules(shadow, {})

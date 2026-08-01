@@ -67,8 +67,11 @@ def _attribute_names(model) -> set[str]:
     if isinstance(attrs, Mapping):
         names = {str(n) for n in attrs}
     else:
-        names = {str(a.get("name") if isinstance(a, Mapping) else a) for a in attrs}
-        names.discard("None")
+        names = set()
+        for a in attrs:
+            n = a.get("name") if isinstance(a, Mapping) else a
+            if n is not None:            # an entry with no name, not one named "None"
+                names.add(str(n))
     return {n for n in names if n} - invisible
 
 

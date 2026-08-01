@@ -640,6 +640,11 @@ _FLAG_WORD = 5
 _SELF_CLEAN_BIT = 4
 _OFF_INDOOR_TEMP = 104   # indoorTemperature = byte / 2  (the /2 == the model's 0.5° step)
 _OFF_OUTDOOR_TEMP = 106  # outdoorTemperature = byte - 64  (correlated across 3 states, 2 distinct pts)
+# How far past the indoor reading the cumulative total's low word sits. The published map puts the
+# two ten words apart, and this family is that map at a fixed displacement -- checked field for
+# field against a real report, where the displaced map reproduces the decode below on every field
+# the two share. On both known control-word counts it lands on the report's final two words.
+_ENERGY_WORDS_PAST_SENSORS = 10
 
 
 @dataclass(frozen=True)
@@ -655,6 +660,10 @@ class StatusLayout:
     indoor_temp: int    # byte offset of indoorTemperature (value = byte / 2)
     outdoor_temp: int   # byte offset of outdoorTemperature (value = byte - 64)
     verified: bool = True   # False when DERIVED from the length rather than a confirmed table entry
+    # Byte offset of the LOW word of the 32-bit cumulative watt-hour total. The attribute's
+    # significance runs backwards from there, so the reading spans this word and the one before it,
+    # i.e. the last two words of the report. ``None`` where the report is too short to hold it.
+    energy: int | None = None
 
     @property
     def baseline(self) -> slice:
@@ -668,21 +677,29 @@ class StatusLayout:
         Both confirmed models satisfy ``indoor = _OFF_ATTRS + 2*words`` and ``outdoor = indoor + 2``
         (127 B -> 6 words -> 104/106; 125 B -> 5 words -> 102/104), i.e. the sensor block begins
         immediately after the word block.
+
+        The cumulative total sits ten words past the sensor block by the same arithmetic, which on
+        both models is the last two words of the report (125 B -> 120..123, 127 B -> 122..125).
         """
         indoor = _OFF_ATTRS + 2 * words
-        return cls(words=words, indoor_temp=indoor, outdoor_temp=indoor + 2, verified=verified)
+        return cls(
+            words=words, indoor_temp=indoor, outdoor_temp=indoor + 2, verified=verified,
+            energy=indoor + 2 * _ENERGY_WORDS_PAST_SENSORS,
+        )
 
 
 STATUS_LAYOUTS: dict[int, StatusLayout] = {
     # typeId AAC1UKZ01 (HSU-24VRRA03TF): 6 control words, sensor block from byte 104.
-    127: StatusLayout(words=6, indoor_temp=_OFF_INDOOR_TEMP, outdoor_temp=_OFF_OUTDOOR_TEMP),
+    127: StatusLayout(words=6, indoor_temp=_OFF_INDOOR_TEMP, outdoor_temp=_OFF_OUTDOOR_TEMP,
+                      energy=_OFF_INDOOR_TEMP + 2 * _ENERGY_WORDS_PAST_SENSORS),
     # deviceType 0201201d: the report carries 2 attribute bytes fewer — 5 control words — so every
     # sensor offset after the word block shifts by -2. Verified on a live unit: every decoded field
     # agreed with the cloud digital-model shadow read in the same second (targetTemperature,
     # operationMode, windSpeed, onOffStatus, indoorTemperature, screenDisplayStatus,
     # windDirectionVertical), and a grSetDAC op built from the 5-word baseline was ACCEPTED — the AC
     # echoed the new targetTemperature on the op's own connection and preserved every other attribute.
-    125: StatusLayout(words=5, indoor_temp=102, outdoor_temp=104),
+    125: StatusLayout(words=5, indoor_temp=102, outdoor_temp=104,
+                      energy=102 + 2 * _ENERGY_WORDS_PAST_SENSORS),
 }
 
 
@@ -873,6 +890,15 @@ def parse_full_status(
             data[_OFF_ATTRS + (_FLAG_WORD - 1) * 2:_OFF_ATTRS + _FLAG_WORD * 2], "big"
         )
         out["self_cleaning"] = bool(flag_word >> _SELF_CLEAN_BIT & 1)
+    # The cumulative watt-hour total, where the unit keeps one. Most of this family carries the
+    # register and never populates it, and a permanent 0 kWh in someone's Energy dashboard is worse
+    # than no sensor at all -- so zero is reported as ABSENT rather than as a total of nothing.
+    # 32 bits, and its significance runs backwards from its own word, so it spans the two words
+    # ending at `layout.energy`.
+    if layout.energy is not None and len(data) >= layout.energy + 2:
+        total = int.from_bytes(data[layout.energy - 2:layout.energy + 2], "big")
+        if total:
+            out["energy_wh"] = total
     out["error_code"] = data[layout.outdoor_temp + 2]
     out["last_changed_by"] = OPERATION_SOURCE.get(data[layout.outdoor_temp + 3] & 0x03)
     words = data[layout.baseline]

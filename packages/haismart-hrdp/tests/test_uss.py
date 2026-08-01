@@ -599,10 +599,10 @@ UPLUS_175 = "2008610800820324021200118018900000000000000000000000000000000040"
 def test_status_layout_recognises_both_report_lengths():
     assert len(STATUS_125) == 125
     assert uss.status_layout(REAL_STATUS_DOWN) == uss.StatusLayout(
-        words=6, indoor_temp=104, outdoor_temp=106
+        words=6, indoor_temp=104, outdoor_temp=106, energy=124
     )
     assert uss.status_layout(STATUS_125) == uss.StatusLayout(
-        words=5, indoor_temp=102, outdoor_temp=104
+        words=5, indoor_temp=102, outdoor_temp=104, energy=122
     )
     # the 78-byte CAE envelope is identical across variants; only the inner EPP frame length differs
     assert STATUS_125[:78] == uss.CAE_REPORT_PREFIX
@@ -629,6 +629,9 @@ def test_parse_full_status_decodes_the_125_byte_variant():
         "health": False, "strong": False, "quiet": False, "sleep": False, "lamp": True, "eco": 0,
         "heat_capable": True, "error_code": 0, "last_changed_by": "network",
         "self_cleaning": False, "mode": "cool", "fan_mode": "auto",
+        # this unit keeps a cumulative total; the reference units carry the register and never fill
+        # it in, so they report none at all
+        "energy_wh": 3138753,
     }
 
 
@@ -1553,3 +1556,29 @@ def test_declared_fields_drop_what_the_report_cannot_hold():
     # while a 10-word one can.
     assert "ErrAckFlag" not in declared_fields(-19, ["ErrAckFlag"], word_limit=6)
     assert "ErrAckFlag" in declared_fields(-19, ["ErrAckFlag"], word_limit=10)
+
+
+def test_classic_family_reads_a_cumulative_total_where_one_is_kept():
+    """The classic family is the published map 19 words earlier, and that map puts a 32-bit
+    watt-hour total ten words past the sensor block -- which on both known control-word counts is
+    the report's last two words. The unit is the one settled on the extended-36 family against an
+    owner's own app; it is the same attribute at the same place in the same map."""
+    assert uss.parse_full_status(STATUS_125)["energy_wh"] == 3138753          # 5 control words
+    assert uss.STATUS_LAYOUTS[125].energy == 122 and uss.STATUS_LAYOUTS[127].energy == 124
+
+
+def test_classic_family_omits_a_total_it_never_populates():
+    """Most of this family carries the register and leaves it at zero for its whole service life --
+    both reference units do. A permanent 0 kWh sitting in someone's Energy dashboard is worse than
+    no sensor, so zero is reported as absent rather than as a total of nothing."""
+    for report in (REAL_STATUS_DOWN, REAL_STATUS_UP):
+        decoded = uss.parse_full_status(report)
+        assert "energy_wh" not in decoded
+        assert decoded["current_temperature"] is not None    # ...and the rest still decodes
+
+
+def test_energy_offset_follows_the_control_word_count():
+    """The sensor block moves with the number of control words a model reports, and the total moves
+    with it -- so a derived layout places it by the same arithmetic rather than a constant."""
+    for words, expected in ((5, 122), (6, 124), (7, 126)):
+        assert uss.StatusLayout.for_words(words, verified=False).energy == expected

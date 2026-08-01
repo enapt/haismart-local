@@ -97,6 +97,13 @@ own app: one 15-minute accumulation interval spent cooling added 347 against ~13
 draw, a 26-minute session added 478 against ~494 expected, and a whole day added 7516 against the
 app's 7.52 kWh. That unit now has an Energy sensor.
 
+The classic family's register is published too, on the same reasoning: that family **is** the
+published map 19 words earlier, checked against a real report field for field, so the attribute's
+unit and position are inherited rather than assumed, and it lands on the report's last two words.
+One unit is known to keep a total there; every other classic unit met so far carries the register
+and leaves it at zero, and zero is reported as absent. What is missing is only a reading off that
+owner's own app to confirm the magnitude, which has been asked for.
+
 The 209-byte family has a register that works too — the same published attribute, reading a real
 total where the classic family reports zero — and it is **not** published. That family is the one
 that has been caught departing from the published map three times over (its setpoint counts half

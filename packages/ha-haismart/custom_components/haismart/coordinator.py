@@ -60,6 +60,7 @@ from haismart_hrdp import (
     set_grsetdac_field,
     udiscovery,
     validate_write,
+    with_rules,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -187,7 +188,13 @@ _MODEL_VALUE_FROM_EPP: dict[str, Callable[[int], object]] = {
 
 
 def _load_digital_model(entry: HaismartConfigEntry) -> dict[str, Any] | None:
-    """The cloud-fetched digital model (device constraints) as a dict, or None if absent/bad."""
+    """The cloud-fetched digital model (device constraints) as a dict, or None if absent/bad.
+
+    The model a device hands out carries its attributes but, on every unit seen so far, none of the
+    conditional rules that say which settings it ignores in which state — so where those rules are
+    known for the model, they are filled in (`with_rules`). A model that states its own is left
+    alone.
+    """
     raw = entry.data.get(CONF_DIGITAL_MODEL)
     if not raw:
         return None
@@ -196,7 +203,9 @@ def _load_digital_model(entry: HaismartConfigEntry) -> dict[str, Any] | None:
     except (ValueError, TypeError):
         _LOGGER.warning("stored digital model is not valid JSON; model write-validation disabled")
         return None
-    return model if isinstance(model, dict) and model.get("attributes") else None
+    if not (isinstance(model, dict) and model.get("attributes")):
+        return None
+    return with_rules(model, entry.data.get(CONF_UPLUS_ID))
 
 
 def _model_authorized_codes(model: dict[str, Any] | None) -> dict[str, set[int]]:

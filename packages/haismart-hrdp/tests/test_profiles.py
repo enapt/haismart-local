@@ -204,3 +204,27 @@ def test_alarm_names_offsets_past_the_cleared_entry():
     assert alarm_names(model, []) == frozenset()
     assert alarm_names(model, [99]) == frozenset()      # past the end: dropped, never guessed
     assert alarm_names(None, [0]) == frozenset()
+
+
+def test_recorded_rules_fill_in_a_model_that_arrived_without_them():
+    """The model a device hands out carries its attributes but not its conditional rules, so the
+    rules it is missing are filled in from what is recorded for that model. A model that states its
+    own is never overridden, and an unknown model is left exactly as it came."""
+    from haismart_hrdp import DEVICE_RULES, locked_attributes, with_rules
+
+    uplus = next(iter(DEVICE_RULES))
+    bare = {"attributes": [{"name": "operationMode"}]}
+    assert locked_attributes(bare, {"operationMode": "6"}) == frozenset()   # nothing to read
+
+    filled = with_rules(bare, uplus)
+    assert filled["attributes"] == bare["attributes"]                      # untouched otherwise
+    assert locked_attributes(filled, {"operationMode": "6"}) == frozenset(
+        {"targetTemperature", "silentSleepStatus", "muteStatus", "rapidMode", "generatorMode"}
+    )
+    # a fault locks nearly everything, which is the other half of these rules
+    assert len(locked_attributes(filled, {}, ["outdoorModuleErr"])) == 12
+
+    own = {"attributes": [], "modifiers": [{"trigger": {}, "actions": []}]}
+    assert with_rules(own, uplus) is own                                   # its own rules win
+    assert with_rules(bare, "no-such-model").get("modifiers") is None
+    assert with_rules(None, uplus) is None

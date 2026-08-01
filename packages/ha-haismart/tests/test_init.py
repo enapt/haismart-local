@@ -2263,3 +2263,24 @@ async def test_sleep_does_not_strand_the_preset_control(hass: HomeAssistant, moc
     )
     assert _sent_field(mock_uss.send, "rapidMode") == 1
     assert _sent_field(mock_uss.send, "silentSleepStatus") == 0    # cleared in the same write
+
+
+async def test_recorded_rules_reach_a_unit_whose_model_arrived_without_them(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """End to end: the model a real unit hands out has no rules in it, so without filling them in
+    nothing is ever locked. With them, fan-only stops offering the settings it discards."""
+    from custom_components.haismart.const import CONF_UPLUS_ID
+
+    model = heat_capable_digital_model()          # attributes only, exactly as a unit hands it out
+    assert "modifiers" not in model
+    mock_uss.read.return_value = [make_status_frame(mode_code=6, fan_code=3)]
+    entry = _entry(digital_model=json.dumps(model), **{
+        CONF_UPLUS_ID: "2008610800820324021200118012560000000000000000000000000000000040",
+    })
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert "targetTemperature" in entry.runtime_data.locked_fields
+    assert hass.states.get("switch.downstairs_ac_quiet").state == "unavailable"

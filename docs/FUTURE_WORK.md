@@ -68,12 +68,25 @@ diagnostics prober therefore still runs unaided, on plausibility plus whatever s
 structured field in the issue form — or naming the three downloads — would let the proposal arrive
 already scored against them.
 
-## 7. The one rule we decline to honour
+## 7. The rules a model does not hand out
 
-`locked_attributes` now drives entity availability: a unit in fan-only shows no setpoint, boost and
-quiet go unavailable in the modes that discard them, and a faulted unit keeps only its power and
-mode controls. The rules come from the device's own model, so they are right per device rather than
-hard-coded.
+`locked_attributes` drives entity availability: a unit in fan-only shows no setpoint, boost and quiet
+go unavailable in the modes that discard them, and a faulted unit keeps only its power and mode
+controls.
+
+**Where the rules come from is the open part.** A device hands out its model through the cloud
+shadow, and that copy carries its attributes and their values but **no `modifiers` and no
+`alarms`** — checked on every unit seen so far, including two people's hardware. The rules live in
+the *constraintfile*, a separate file the app caches at bind time, and the CDN path recorded for it
+answers 404 for every spelling tried (product code and model number, with and without a version
+segment) while serving other paths normally. So it is not that the endpoint is unimplemented; it is
+that we do not know it.
+
+Until it is found, `haismart_hrdp.device_rules` records the rules for the models where they are
+known and fills them in when a fetched model carries none — one family so far. Anything else gets no
+rules and therefore no locking, which is the safe direction. Recovering the real path would make
+this work for every model instead of one; failing that, each model's rules can be added to that table
+as they turn up.
 
 One rule is deliberately skipped, and it is worth knowing why before anyone "fixes" it. A model marks
 nearly everything unwritable **while the unit is off** — including `operationMode`, which is exactly
@@ -81,9 +94,6 @@ what this integration writes to turn a unit on, and which real hardware accepts.
 describes an app greying out its own buttons, not what the unit discards, and honouring it would take
 away the controls someone reaches for while setting up an air conditioner that is off. The self-clean
 half of the same rule is honoured; a cycle really does hold the unit.
-
-If a unit is ever seen to genuinely discard a setpoint while off, this becomes a real rule and the
-exclusion should narrow to `operationMode` alone.
 
 ## 8. The fault decode has not met a real fault
 

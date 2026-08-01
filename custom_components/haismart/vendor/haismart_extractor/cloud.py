@@ -533,8 +533,15 @@ class HaierCloud:
         AttributeProfile for ANY model — no hand-coding.
 
         The file is a 64-hex-char signature prefix + the JSON object (see `strip_signed_config`).
-        Endpoint (SE-Asia): `resource-sea.haieriot.net` CDN; the model-function flags are also at
-        `acadvance-sgp.haier.net/uhome/acbiz/dict/getDeviceFuncNew?mode=<productCode>`.
+
+        ⚠️ **The URL here is not confirmed.** It is built from the name the app caches the file
+        under, and the CDN answers 404 for every spelling of it tried so far (product code and model
+        number, with and without a version segment) while serving other paths normally — so the real
+        download path is still unknown and this method has never completed against the live host.
+        Nothing depends on it: what onboarding stores comes from :meth:`get_digital_model`, and the
+        rules that file carries and the shadow does not are recorded in
+        ``haismart_hrdp.device_rules``. The model-function flags at
+        `acadvance-sgp.haier.net/uhome/acbiz/dict/getDeviceFuncNew?mode=<productCode>` do answer.
         """
         name = f"{model}@{uplus_id}" + (f"@{version}" if version else "")
         path = DEVICE_CONFIG_PATH.format(name=name)

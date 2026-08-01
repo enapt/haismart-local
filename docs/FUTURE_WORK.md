@@ -86,6 +86,11 @@ cancel / set / keep. Others declare no timer attribute at all and merely hold a 
 internally. Where the attributes exist, a timer entity is straightforward and would be the first in
 this ecosystem; where they do not, it cannot be offered. Needs hardware that declares them.
 
+⚠️ **The 175-byte family was checked (issue #8) and is the second case: it declares no timer
+attribute at all.** Its app timer is app/cloud-side scheduling, and two captures (timer on vs
+off) differ only in the live power/energy words. So this family cannot get a timer entity; the
+item still waits on hardware that declares `timingPowerOn`/`timingPowerOff`.
+
 The published map cannot answer this one either way, and its silence is not evidence: it carries no
 timer attribute, but it is built from the single richest model and keeps only that model's
 attributes, so anything another model declares alone never appears in it.

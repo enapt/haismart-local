@@ -3,9 +3,10 @@
 These tests need Home Assistant + pytest-homeassistant-custom-component. When those are not
 installed (e.g. the library-only CI job), skip the HA test files cleanly rather than erroring.
 
-No sockets are opened: the uSS read cycle (`async_read_status`) and the key-free version probe
+No sockets are opened. The uSS read cycle (`async_read_status`) and the key-free version probe
 (`probe_localkey_version`) are mocked at the point of use, fed with synthetic 127-byte
-full-status reports built by `make_status_frame` (same offsets `parse_full_status` decodes).
+full-status reports built by `make_status_frame` (same offsets `parse_full_status` decodes); the
+outbound cloud transport is refused for every test by `refused_cloud_requests` below.
 """
 from __future__ import annotations
 
@@ -315,6 +316,37 @@ if _HA_AVAILABLE:
     @pytest.fixture(autouse=True)
     def _enable_custom_integrations(enable_custom_integrations):  # noqa: ANN001, ANN201
         yield
+
+    @pytest.fixture(autouse=True)
+    def refused_cloud_requests():  # noqa: ANN202
+        """Refuse the outbound cloud transport, for every test. Yields the requests it refused.
+
+        Setting an entry up starts a background task that tops up the device model over the cloud,
+        and an entry carrying credentials makes that a real HTTPS request to Haier. Being a
+        background task it can outlive the test body and run during teardown, which is exactly what
+        it did — the suite intermittently resolved and dialled a real host while tearing a test
+        down. Nothing else stops it: this project's environment has no `pytest-socket`, so the
+        suite is not sandboxed from the network by anything but this.
+
+        Refusing it here rather than in the tests that happen to trigger it is deliberate. Every
+        cloud call in the integration goes through this one transport by design, so this is the
+        single place that can make the guarantee hold for tests written later too. The refusal is a
+        path the callers already handle — they log and leave everything alone — and a test that
+        wants a cloud response patches the client above this, which still works.
+        """
+        refused = []
+
+        async def _refuse(request):
+            refused.append(request)
+            raise OSError("the test suite makes no network requests")
+
+        # Both modules bind the name at import, so patching the source would not reach them.
+        with patch(
+            "custom_components.haismart.coordinator.async_cloud_transport", return_value=_refuse
+        ), patch(
+            "custom_components.haismart.config_flow.async_cloud_transport", return_value=_refuse
+        ):
+            yield refused
 
     @pytest.fixture
     def mock_uss():

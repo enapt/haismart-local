@@ -2301,6 +2301,32 @@ async def test_recorded_rules_reach_a_unit_whose_model_arrived_without_them(
     assert hass.states.get("switch.downstairs_ac_quiet").state == "unavailable"
 
 
+async def test_setting_up_a_credentialed_entry_makes_no_real_request(
+    hass: HomeAssistant, mock_uss, refused_cloud_requests
+) -> None:
+    """Setting an entry up starts the model-rules top-up in the background, and an entry carrying
+    credentials makes that a live cloud call.
+
+    That task can outlive the test body and run during teardown, which is how this suite came to
+    resolve and dial a real host intermittently. The transport is refused for every test now; this
+    asserts the path really is exercised on setup and really is intercepted, so the guard cannot
+    quietly stop covering the thing it was added for.
+    """
+    # A stored model with no rules in it plus credentials is what makes the top-up due, which is
+    # the shape the flaking test had.
+    entry = _entry(
+        digital_model=json.dumps(heat_capable_digital_model()),
+        refresh_token="2_RT",
+        cloud_client_id="c" * 32,
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert refused_cloud_requests, "the top-up did not reach the transport at all"
+    assert entry.state is ConfigEntryState.LOADED   # and a refused fetch changes nothing
+
+
 async def test_recorded_rules_do_not_suppress_fetching_the_published_ones(
     hass: HomeAssistant, mock_uss
 ) -> None:

@@ -262,6 +262,7 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         self._discovered: dict[str, str] = {}
         self._cloud_data: dict[str, str] = {}
         self._devices: list[Any] = []
+        self._picked: Any = None
         self._cloud: HaierCloud | None = None
         self._local_key: str | None = None
         self._localkey_version: int | None = None
@@ -374,12 +375,48 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                 # responses, which is fine (length keying still works).
                 if getattr(picked, "uplus_id", ""):
                     self._cloud_data[CONF_UPLUS_ID] = picked.uplus_id
+                self._picked = picked
                 return await self._async_setup_cloud_device(picked.device_id, picked.name)
         choices = {d.device_id: f"{d.name or d.device_id} ({d.device_id})" for d in available}
         return self.async_show_form(
             step_id="pick_device",
             data_schema=vol.Schema({vol.Required(CONF_DEVICE_ID): vol.In(choices)}),
         )
+
+    async def _async_add_device_rules(self, model: dict[str, Any]) -> dict[str, Any]:
+        """``model`` plus the parts the device shadow leaves out.
+
+        What a device hands out through the shadow is its attributes and their current values. The
+        rules — which settings it ignores in which state, which settings must travel together, and
+        the fault list those rules refer to — are published separately, per model. Without them the
+        integration offers controls a unit will discard.
+
+        Best effort: a unit whose model is not published, or a lookup that fails, keeps the shadow
+        exactly as it came, which is what every install had before this.
+        """
+        picked = self._picked
+        if self._cloud is None or picked is None or not (
+            getattr(picked, "model", "") and getattr(picked, "uplus_id", "")
+        ):
+            return model
+        try:
+            published = await self._cloud.get_device_config(
+                picked.model, picked.uplus_id,
+                prod_no=getattr(picked, "prod_no", "") or "",
+                device_type=getattr(picked, "device_type", "") or "",
+            )
+        except (CloudError, OSError, RuntimeError, TimeoutError, ValueError) as err:
+            _LOGGER.debug("no published model rules for %s: %s", picked.model, err)
+            return model
+        merged = dict(model)
+        for section in ("modifiers", "alarms", "constraints"):
+            if published.get(section):
+                merged[section] = published[section]
+        _LOGGER.debug(
+            "model rules for %s: %d modifier(s), %d constraint(s)", picked.model,
+            len(merged.get("modifiers") or ()), len(merged.get("constraints") or ()),
+        )
+        return merged
 
     async def _async_setup_cloud_device(
         self, device_id: str, name: str | None
@@ -396,6 +433,7 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         if self._cloud is not None:
             try:
                 model = await self._cloud.get_digital_model(device_id)
+                model = await self._async_add_device_rules(model)
                 self._cloud_data[CONF_DIGITAL_MODEL] = json.dumps(model)
             except (CloudError, OSError, RuntimeError, TimeoutError, ValueError) as err:
                 # degrades the profile and the write validation, so it should not be invisible

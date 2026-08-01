@@ -1099,6 +1099,63 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.hass, DOMAIN, f"{ISSUE_STALE_LOCALKEY}_{self.device_id}"
         )
 
+    async def async_fetch_model_rules(self) -> bool:
+        """Top up a stored model that arrived without its rules, for an entry set up before those
+        were fetched. Returns True when the entry was updated.
+
+        A device's shadow carries attributes and values; the rules that say which settings it
+        ignores in which state are published separately and are what entity availability reads.
+        Onboarding fetches both now, so this is only for the entries that predate it — it runs once,
+        needs the cloud credentials the entry already stores, and leaves everything alone on any
+        failure.
+        """
+        model = self.digital_model
+        data = self.config_entry.data
+        if not model or model.get("modifiers") or not data.get(CONF_REFRESH_TOKEN):
+            return False
+        usdk_client_id = data.get(CONF_CLOUD_CLIENT_ID)
+        if not usdk_client_id:
+            return False
+        try:
+            cloud = HaierCloud(
+                replace(SEA_APP_CREDENTIALS, client_id=usdk_client_id),
+                data.get(CONF_ACCESS_TOKEN) or "",
+                zone_info=data.get(CONF_ZONE_INFO, "0"),
+                transport=async_cloud_transport(self.hass),
+            )
+            cloud.access_token = (
+                await cloud.refresh_token(data[CONF_REFRESH_TOKEN])
+            ).access_token
+            device = next(
+                (d for d in await cloud.list_devices_v2()
+                 if d.device_id.upper() == self.device_id.upper()), None
+            )
+            if device is None or not (device.model and device.uplus_id):
+                return False
+            published = await cloud.get_device_config(
+                device.model, device.uplus_id,
+                prod_no=device.prod_no or "", device_type=device.device_type or "",
+            )
+        except (CloudError, OSError, RuntimeError, TimeoutError, ValueError) as err:
+            _LOGGER.debug("could not fetch the model rules for %s: %s", self.device_id, err)
+            return False
+        merged = dict(model)
+        for section in ("modifiers", "alarms", "constraints"):
+            if published.get(section):
+                merged[section] = published[section]
+        if merged == model:
+            return False
+        self.digital_model = merged
+        self.hass.config_entries.async_update_entry(
+            self.config_entry,
+            data={**data, CONF_DIGITAL_MODEL: json.dumps(merged)},
+        )
+        _LOGGER.info(
+            "model rules for %s: %d rule(s), %d co-command constraint(s)", self.device_id,
+            len(merged.get("modifiers") or ()), len(merged.get("constraints") or ()),
+        )
+        return True
+
     async def _async_gateway_refresh(self) -> bool:
         """Fetch the current localKey from the cloud MQTT gateway and update it in place.
 

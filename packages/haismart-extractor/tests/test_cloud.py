@@ -181,14 +181,52 @@ def test_strip_signed_config() -> None:
     assert strip_signed_config(body) == {"attributes": [{"name": "onOffStatus"}]}              # bare
 
 
-async def test_get_device_config_fetches_and_strips() -> None:
-    body = json.dumps({"attributes": [{"name": "operationMode", "writable": True}]})
-    cap = Capture(Response(200, "a" * 64 + body))  # 64-hex-char signature prefix + JSON
-    cloud = HaierCloud(AppCredentials("a", "k", "c"), "T", transport=cap)
-    cfg = await cloud.get_device_config("HSU-24VRRA03TF", "2008610", version="2.0.1")
-    assert cap.request is not None and cap.request.method == "GET"
-    assert cap.request.url.endswith("constraintfile/HSU-24VRRA03TF@2008610@2.0.1")
-    assert cfg["attributes"][0]["name"] == "operationMode"
+async def test_get_device_config_looks_the_file_up_then_downloads_it() -> None:
+    """A device model is not fetched by name: the resource service is asked for it and answers with
+    a URL carrying a build stamp no caller could construct, plus the file's MD5."""
+    signed = "a" * 64 + json.dumps({
+        "attributes": [{"name": "operationMode", "writable": True}],
+        "modifiers": [{"trigger": {}, "actions": []}],
+    })
+    listing = json.dumps({"retCode": "00000", "data": {"resources": [{
+        "name": "HSU-24VRRA03TF@2008610",
+        "resUrl": "https://cdn/constraintfile/HSU-24VRRA03TF@2008610_20231016061617347.signed.json",
+        "resVersion": "2.0.1",
+        "md5": hashlib.md5(signed.encode()).hexdigest(),
+    }]}})
+
+    seen: list[Request] = []
+
+    async def transport(request: Request) -> Response:
+        seen.append(request)
+        return Response(200, listing if request.method == "POST" else signed)
+
+    cloud = HaierCloud(AppCredentials("a", "k", "c"), "T", transport=transport)
+    cfg = await cloud.get_device_config("HSU-24VRRA03TF", "2008610", prod_no="AAC1UKZ01")
+
+    assert seen[0].method == "POST"
+    assert seen[0].url.endswith("/uplussea/resources/v1/conf/list")
+    # model and typeId are both required -- the lookup returns nothing for either on its own
+    assert json.loads(seen[0].body)["model"] == "HSU-24VRRA03TF"
+    assert json.loads(seen[0].body)["typeId"] == "2008610"
+    assert seen[1].method == "GET" and seen[1].url.endswith("_20231016061617347.signed.json")
+    # and it returns the sections the device shadow does not carry
+    assert cfg["modifiers"] and cfg["attributes"][0]["name"] == "operationMode"
+
+
+async def test_get_device_config_refuses_a_download_that_fails_its_md5() -> None:
+    """The listing publishes the file's MD5, so a truncated or swapped download is caught here
+    rather than surfacing later as a model that parses but is not this device's."""
+    listing = json.dumps({"retCode": "00000", "data": {"resources": [{
+        "name": "M@U", "resUrl": "https://cdn/x.signed.json", "md5": "0" * 32,
+    }]}})
+
+    async def transport(request: Request) -> Response:
+        return Response(200, listing if request.method == "POST" else "a" * 64 + "{}")
+
+    cloud = HaierCloud(AppCredentials("a", "k", "c"), "T", transport=transport)
+    with pytest.raises(CloudError, match="MD5"):
+        await cloud.get_device_config("M", "U")
 
 
 async def test_list_user_devices_uses_confirmed_path() -> None:

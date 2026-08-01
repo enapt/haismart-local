@@ -68,30 +68,19 @@ diagnostics prober therefore still runs unaided, on plausibility plus whatever s
 structured field in the issue form — or naming the three downloads — would let the proposal arrive
 already scored against them.
 
-## 7. The rules a model does not hand out
+## 7. The one rule we decline to honour
 
 `locked_attributes` drives entity availability: a unit in fan-only shows no setpoint, boost and quiet
 go unavailable in the modes that discard them, and a faulted unit keeps only its power and mode
 controls.
 
-**Where the rules come from is the open part.** A device hands out its model through the cloud
-shadow, and that copy carries its attributes and their values but **no `modifiers` and no
-`alarms`** — checked on every unit seen so far, including two people's hardware. The rules live in
-the *constraintfile*, a separate file the app fetches when a device is bound and keeps on disk.
-
-The download is through a **resource service**, not a direct file path, which is why the URL
-recorded in `get_device_config` 404s. What is known: resources are typed and a device model is type
-**`DeviceConfig`**, the type whose files carry the `.signed.json` extension; the SE-Asia base is
-`https://uhome-sea.haieriot.net/uplussea/resources/`; the request carries
-`{resType, resList, localCode}`; and **auth is the ordinary account envelope** — with a refreshed
-accessToken that base answers a routing 404 for an unknown path rather than rejecting the token, so
-the only unknown left is the path segment itself and the response shape.
-
-Until it is found, `haismart_hrdp.device_rules` records the rules for the models where they are
-known and fills them in when a fetched model carries none — one family so far. Anything else gets no
-rules and therefore no locking, which is the safe direction. Recovering the real path would make
-this work for every model instead of one; failing that, each model's rules can be added to that table
-as they turn up.
+The rules are fetched per device, from the model its own maker publishes. A device's shadow — what
+onboarding used to store on its own — carries attributes and their values but no rules at all, so
+they are looked up separately and merged in: the account's resource service answers with a URL, the
+file is downloaded and its `modifiers`, `alarms` and `constraints` kept. Entries created before that
+existed top themselves up once on startup. A unit whose model publishes no rules simply gets none,
+which locks nothing — the safe direction — and `haismart_hrdp.device_rules` still records them for
+one family as a fallback for an install with no cloud credentials at all.
 
 One rule is deliberately skipped, and it is worth knowing why before anyone "fixes" it. A model marks
 nearly everything unwritable **while the unit is off** — including `operationMode`, which is exactly

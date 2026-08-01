@@ -25,6 +25,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> 
     # over from a rotation (e.g. after a manual reauth, which reloads the entry).
     coordinator.clear_stale_localkey_issue()
 
+    # Entries set up before the model rules were fetched hold a model with none in it, which leaves
+    # the integration offering controls the unit discards. Top it up once, in the background: it is
+    # a cloud round trip and nothing here should wait on it.
+    entry.async_create_background_task(
+        hass, coordinator.async_fetch_model_rules(), "haismart model rules"
+    )
+
     entry.runtime_data = coordinator
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

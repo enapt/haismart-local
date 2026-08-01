@@ -252,6 +252,12 @@ DEVICE_MODEL_PATH = "/dcs/device-service-2c/get/device/model-info/find/info"
 # the app downloads at bind time. Verified on-device (up_http_plugin.db / uplus-resource-database2.db).
 DEVICE_CONFIG_HOST = "resource-sea.haieriot.net"
 DEVICE_CONFIG_PATH = "/download/resource/selfService/hardware/constraintfile/{name}"
+# A device model is not fetched by guessing a filename: it is looked up in the account's resource
+# service, which answers with the URL to download (the filename carries a build stamp no caller can
+# construct) plus that file's version and MD5. ``model`` and ``typeId`` are both required — the
+# lookup returns nothing for either alone — and ``typeId`` is the uPlusId, not the deviceType.
+DEVICE_CONFIG_LIST_PATH = "/uplussea/resources/v1/conf/list"
+DEVICE_CONFIG_RES_TYPE = "DeviceConfig"
 
 
 def strip_signed_config(text: str) -> dict:
@@ -525,48 +531,51 @@ class HaierCloud:
             "device model",
         )
 
-    async def get_device_config(self, model: str, uplus_id: str, *, version: str = "") -> dict:
-        """Fetch the **device digital model / constraintfile** — the queryable per-model attribute spec
-        (every attribute's `valueRange`/enums). This is what the app downloads during device binding
-        ("choose your model") and caches at `app_uplus-resource/DeviceConfig/<model>@<uPlusId>@<ver>
-        .signed.json`. Feed the result to `haismart_hrdp.profile_from_device_config` to self-build the
-        AttributeProfile for ANY model — no hand-coding.
+    async def get_device_config(
+        self, model: str, uplus_id: str, *, prod_no: str = "", device_type: str = ""
+    ) -> dict:
+        """Fetch a device's **constraintfile** — the full model, including the parts the device
+        shadow does not carry: the conditional `modifiers` (which settings a unit ignores in which
+        state), the `alarms` list, and the `constraints` (co-command rules).
 
-        The file is a 64-hex-char signature prefix + the JSON object (see `strip_signed_config`).
+        Two steps, because that is how the app does it. The account's resource service is asked for
+        the device-config resource, and answers with a download URL, a version and an MD5; the file
+        is then fetched from that URL and its signature prefix stripped. The URL cannot be
+        constructed — the filename carries a build stamp — which is why a direct guess at the CDN
+        path returns 404.
 
-        ⚠️ **The URL below is not the one the app uses**, and this method has never completed
-        against the live host — the CDN 404s every spelling of it (product code and model number,
-        with and without a version segment) while serving its other paths normally. It was built
-        from the *filename* the app caches the file under, which is not the same thing.
-
-        What the app actually does, and what a working implementation needs:
-
-        * files are fetched through a **resource service**, not by direct CDN path. Resources are
-          typed, and a device model is type **``DeviceConfig``** — the type whose files carry the
-          ``.signed.json`` extension this method strips.
-        * the SE-Asia base is **``https://uhome-sea.haieriot.net/uplussea/resources/``** (with a
-          staging twin at ``uhome-sea-yanshou``), and the other regions use
-          ``api-gw/upmapi/appmanage/resource/v2/resList`` on ``zj.haier.net``.
-        * the request carries ``{resType, resList, localCode}``, where each entry of ``resList``
-          names a resource and the version already held.
-        * **auth is the ordinary account envelope.** With a refreshed accessToken the SE-Asia base
-          authenticates: it answers a routing 404 for an unknown path rather than the gateway's
-          "token missing", which is how the remaining unknown was narrowed to the path itself.
-
-        So what is missing is one path segment, and the response shape. Until it is found, the rules
-        this file carries and the device shadow does not are recorded per model in
-        ``haismart_hrdp.device_rules``; everything onboarding stores comes from
-        :meth:`get_digital_model`. The model-function flags at
-        `acadvance-sgp.haier.net/uhome/acbiz/dict/getDeviceFuncNew?mode=<productCode>` do answer.
+        ``model`` is the model number (e.g. ``HSU-24VRRA03TF``) and ``uplus_id`` the uPlusId, both
+        of which the account device list provides. Both are required: the lookup returns an empty
+        list if either is missing. Needs a valid accessToken.
         """
-        name = f"{model}@{uplus_id}" + (f"@{version}" if version else "")
-        path = DEVICE_CONFIG_PATH.format(name=name)
-        url = f"https://{DEVICE_CONFIG_HOST}{path}"
-        resp = await self._transport(Request("GET", url, {}, ""))
+        body = {
+            "resType": DEVICE_CONFIG_RES_TYPE,
+            "model": model,
+            "typeId": uplus_id,
+            "prodNo": prod_no,
+            "deviceType": device_type,
+        }
+        resp = await self.post(self.domains.uhome, DEVICE_CONFIG_LIST_PATH, body)
+        if str(resp.get("retCode")) != "00000":
+            raise CloudError(
+                f"device config list -> retCode {resp.get('retCode')}: {resp.get('retInfo')}"
+            )
+        resources = (resp.get("data") or {}).get("resources") or []
+        wanted = f"{model}@{uplus_id}"
+        entry = next((r for r in resources if r.get("name") == wanted), None) or (
+            resources[0] if resources else None
+        )
+        if not entry or not entry.get("resUrl"):
+            raise CloudError(f"no device config published for {wanted}")
+        resp = await self._transport(Request("GET", entry["resUrl"], {}, ""))
         if resp.status != 200:
-            raise CloudError(f"{path} -> HTTP {resp.status}: {resp.text[:200]}")
+            raise CloudError(f"device config download -> HTTP {resp.status}")
+        digest = entry.get("md5")
+        if digest and hashlib.md5(resp.text.encode()).hexdigest() != digest:
+            # the listing publishes the file's MD5, so a truncated or swapped download is caught
+            # here rather than surfacing later as a model that parses but is not this device's
+            raise CloudError("device config download does not match its published MD5")
         return strip_signed_config(resp.text)
-
 
     # -- account/token layer — verified  --
     @classmethod

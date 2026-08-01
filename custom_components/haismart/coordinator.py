@@ -161,9 +161,11 @@ _EPP_FROM_MODEL_VALUE: dict[str, Callable[[str], int]] = {
     "windDirectionVertical": lambda v: VANE_V_MODEL_TO_EPP.get(int(float(v)), int(float(v))),
 }
 
-# The model calls the multi-level economy setting `generatorMode` and numbers its levels 1..3; on
-# the wire this unit packs them as 5/6/7 in the field the encoder knows as `ecoMode`. Only "off"
-# appears in the rules, but map the levels too so a condition on them still matches.
+# The model calls the multi-level economy setting `generatorMode` and numbers its levels 1..3. The
+# encoder knows it as `ecoMode` and takes the classic family's codes, 5/6/7, whatever the unit
+# packs on the wire — a family that numbers them differently translates in its own map, so
+# everything here stays in one representation. Only "off" appears in the rules, but map the levels
+# too so a condition on them still matches.
 _ECO_MODEL_NAME = "generatorMode"
 _ECO_EPP_BY_MODEL = {"0": 0, "1": 5, "2": 6, "3": 7}
 _ECO_MODEL_BY_EPP = {epp: model for model, epp in _ECO_EPP_BY_MODEL.items()}
@@ -955,6 +957,27 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if (wm := self._wire_model) is not None:
             return name in wm.write_fields
         return name in GRSETDAC_FIELDS
+
+    @property
+    def supports_eco(self) -> bool:
+        """Whether to offer the multi-level economy control on this unit.
+
+        Two families place the setting, and they stand on different evidence. The classic family's
+        was established from its own captures, in a field no shared map describes, so it needs
+        nothing further. Every other family reaches it through the published map -- and there the
+        upper of its two bits is one the map assigns to a neighbouring attribute, so a unit that
+        does not have the economy setting would have something else written over instead.
+
+        So off the classic family it is offered only where the device's own model declares the
+        setting. A unit onboarded by hand has no model and gets no economy control there, which is
+        the safe direction: the control it loses is one nothing was able to confirm it has.
+        """
+        if not self.supports_field("ecoMode"):
+            return False
+        if self._wire_model is None:
+            return True
+        return bool(self.digital_model
+                    and model_enum_codes(self.digital_model, _ECO_MODEL_NAME))
 
     @property
     def locked_fields(self) -> frozenset[str]:

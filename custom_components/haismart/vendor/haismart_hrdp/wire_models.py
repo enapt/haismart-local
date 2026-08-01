@@ -579,6 +579,16 @@ _EXT36_WRITE = {
     "silentSleepStatus": WriteField(3, 5, 1, "passthrough"),
     "screenDisplayStatus": WriteField(3, 9, 1, "passthrough"),
     "windDirectionHorizontal": WriteField(4, 0, 3, "passthrough", max_epp=0x07),
+    # The multi-level economy setting, in the same word as the left-right vane and just above it.
+    # This family spends two bits on it and counts them 0..3; the classic family puts it at the same
+    # bit of the same word but spends three, with an enable bit above two level bits (0/5/6/7). The
+    # caller keeps handing the classic codes -- that is what `std_enum` is for -- so nothing above
+    # this line has to know which family it is talking to.
+    #
+    # Its upper bit is one the published map assigns to a neighbouring attribute, so this placement
+    # rests on the device's own declaration rather than on the shared map; see the guard on offering
+    # the control at all.
+    "ecoMode": WriteField(4, 3, 2, "std_enum", std_to_epp={0: 0, 5: 1, 6: 2, 7: 3}),
 }
 
 # The "extended-36" family: a 36-word report (165 B) carrying the **classic** climate block displaced

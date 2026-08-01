@@ -1,9 +1,14 @@
 """Select entities: the multi-level ECO control, and where each vane points.
 
-ECO is a 3-bit field (word4 b3-5) with values {0=off, 5, 6, 7} = off / L1 / L2 / L3, matching the
-remote's "ECO L1/L2/L3". It is NOT the digital model's energySavingStatus bool. The library refuses
-any code outside {0,5,6,7}. The levels are a compressor current limit — a higher level caps harder,
-so the unit draws less and cools more slowly (confirmed by measurement).
+ECO is off / L1 / L2 / L3, matching the remote's "ECO L1/L2/L3". It is NOT the digital model's
+energySavingStatus bool. The levels are a compressor current limit — a higher level caps harder, so
+the unit draws less and cools more slowly, which has been measured on two unrelated families: one
+steps 1350 → 1130 → 800 W across the three levels, the other 1951 → 1798 → 1205 W.
+
+This entity speaks one representation, {0=off, 5, 6, 7}, whatever the unit packs on the wire; the
+family's own map translates, and refuses any code outside the four. Which is worth knowing before
+reading a capture: the classic family really does use 5/6/7, while another spends two bits on the
+same setting and counts them 1/2/3.
 
 Both vanes are position codes rather than flags, so where a unit's model publishes the stops between
 "fixed" and "auto" they can be selected. The climate entity's swing controls stay as they are and
@@ -66,9 +71,9 @@ async def async_setup_entry(
 ) -> None:
     coordinator = entry.runtime_data
     entities: list[SelectEntity] = []
-    # This unit's multi-level eco is a repurposed 3-bit field that no other wire family maps, so on
-    # those the select could only ever raise — leave it out rather than offer it.
-    if coordinator.supports_field("ecoMode"):
+    # Not every family places the economy setting, and on the ones that reach it through the
+    # published map it is offered only where the device itself declares it — see `supports_eco`.
+    if coordinator.supports_eco:
         entities.append(HaismartEcoSelect(coordinator))
     for vane in _VANES:
         # Only worth an entity where the model publishes stops the swing control cannot already

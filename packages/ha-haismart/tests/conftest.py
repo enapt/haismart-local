@@ -119,6 +119,7 @@ def make_extended36_frame(
     swing_v: bool = False,
     swing_h: bool = True,
     lamp: bool = True,
+    eco: int = 0,          # wire code: 0 = off, 1..3 = the three levels
     length: int = 165,
     power_w: int = 0,
     energy_wh: int = 0,
@@ -142,7 +143,8 @@ def make_extended36_frame(
     setword(20, ((target_temp - 16) << 8) | (0x08 if swing_v else 0))
     setword(21, (mode_code << 13) | (fan_code << 8))
     setword(22, (1 if power else 0) | (0x200 if lamp else 0))
-    setword(23, 0x07 if swing_h else 0x00)                         # windDirectionHorizontal
+    # windDirectionHorizontal in the low three bits, the economy level in the two above them
+    setword(23, (0x07 if swing_h else 0x00) | ((eco & 0x03) << 3))
     setword(25, int(indoor_temp * 2) << 8)                         # indoorTemperature (k=0.5)
     if length >= 175:
         setword(41, power_w)                                       # live input power, watts

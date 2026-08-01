@@ -171,8 +171,8 @@ carry `generatorMode` at all** — it is one of the attributes that exists in a 
 not in the shared map, so the trick that placed two dozen others (item 8) cannot place this one.
 Nothing short of captures will do it: Eco off, then each level in turn, one download per state.
 
-**★ The captures arrived (issue #8) and the position is now known — what is left is to build the
-control.** Four reports, one per state, taken minutes apart on a unit held in cool:
+**★ The captures arrived (issue #8), and the 165/175-byte family now has the control.** Four
+reports, one per state, taken minutes apart on a unit held in cool:
 
 | | w23 bits 3–4 | live input power (w41) |
 |---|---|---|
@@ -184,12 +184,19 @@ control.** Four reports, one per state, taken minutes apart on a unit held in co
 Nothing else in the report moved but the outdoor temperature and the energy counters. The ladder
 descends with the level, as it does on the classic family, so higher is more restrictive here too.
 
-Two differences from the classic family are worth carrying into the implementation. The field is
-**word 23 bits 3–4 counting 0/1/2/3** — the classic family puts it in the same word at bit 3 but
-spends three bits on it, with an enable bit above two level bits (0/5/6/7). And **bit 4 is one the
-shared map assigns to `freshWindSpeed`**, so this is a model-specific attribute overlapping a shared
-one; it must be driven from the device's own declaration (this unit declares `generatorMode`), not
-from the shared map, which carries no `generatorMode` at all.
+The field is **word 23 bits 3–4 counting 0/1/2/3**, where the classic family puts it at the same bit
+of the same word but spends three bits on it, with an enable bit above two level bits (0/5/6/7).
+Both are written and read in the classic representation, so nothing above the family's own map has
+to know which it is talking to; the encoder seeded from the report taken with economy off reproduces
+each of the other three control words byte for byte.
+
+**Bit 4 is one the shared map assigns to `freshWindSpeed`.** So this is a model-specific attribute
+overlapping a shared one, and the control is offered only where the device's own model declares the
+setting — a unit without it would otherwise have something else written over. The classic family is
+exempt: its field was established from its own captures, in a place no shared map describes.
+
+**Still open on other families.** The published map carries no `generatorMode` at all, so nothing
+places it on the 209- or 117-byte families; they need the same four captures this one got.
 
 ⚠️ **Off and L1 are only 18 W apart**, which is not the separation the other steps show. Either L1
 caps above what the unit was drawing, or it had not finished ramping. Worth one more reading before

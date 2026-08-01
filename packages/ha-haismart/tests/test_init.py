@@ -2429,3 +2429,30 @@ async def test_recorded_rules_do_not_suppress_fetching_the_published_ones(
     assert called
     stored = json.loads(entry.data["digital_model"])
     assert stored["constraints"] == [{"x": 1}]       # written back to the entry
+
+
+_ECO_MODEL = {"attributes": [
+    {"name": "operationMode", "writable": True, "valueRange": {
+        "type": "LIST", "dataList": [{"data": c} for c in ("0", "1", "2", "6")]}},
+    {"name": "generatorMode", "writable": True, "valueRange": {
+        "type": "LIST", "dataList": [{"data": c} for c in ("0", "1", "2", "3")]}},
+]}
+
+
+async def test_economy_control_needs_the_device_to_declare_it(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Off the classic family the economy setting is reached through the published map, where the
+    upper of its two bits belongs to a neighbouring attribute. So it is offered only where the
+    device's own model declares the setting -- otherwise a unit without it would have something
+    else written over instead."""
+    mock_uss.read.return_value = [make_extended36_frame(length=175, eco=2)]
+
+    entry = await _setup_with_model(hass, _ECO_MODEL)
+    assert entry.runtime_data.supports_eco is True
+    eco = hass.states.get("select.downstairs_ac_eco")
+    assert eco is not None and eco.state == "level2"
+
+    # the same unit whose model says nothing about it gets no control at all
+    entry2 = await _setup_with_model(hass, _REAL_SHAPE_MODEL)
+    assert entry2.runtime_data.supports_eco is False

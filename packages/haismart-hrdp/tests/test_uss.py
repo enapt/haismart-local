@@ -606,6 +606,24 @@ STATUS_175_BOOST = bytes.fromhex(
     "0000080225000209160500003500658000030000000000000000000000000000"
     "be6b0000000000000000be6b06e908"
 )
+# The same unit again, stepped through its economy levels one report at a time. Between these two
+# the unit's measured input power fell from 1969 W to 1798 W.
+STATUS_175_ECO_OFF = bytes.fromhex(
+    "00002715000000004e5601000003020000040100000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000005fffff5c000000000000066d0120640000"
+    "0000000000000000000000000000000000000000000000000000000000000100"
+    "0000080222000201160500003700678000030000000000000000000000000000"
+    "b8e50000000000000000b8e507b1b2"
+)
+STATUS_175_ECO_L2 = bytes.fromhex(
+    "00002715000000004e5601000003020000040100000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "0000000000000000000000000000005fffff5c000000000000066d0120640000"
+    "0000000000000000000000000000000000000000000000000000000000000100"
+    "0000080222000201161500003700668000030000000000000000000000000000"
+    "b8e50000000000000000b8e5070616"
+)
 STATUS_175_SLEEP = bytes.fromhex(
     "00002715000000004e5601000003020000040100000000000000000000000000"
     "0000000000000000000000000000000000000000000000000000000000000000"
@@ -751,6 +769,31 @@ def test_extended36_decodes_the_real_reports():
     assert STATUS_165_OFF[92] + 16 == 48
 
 
+def test_extended36_economy_levels_round_trip_against_real_reports():
+    """The multi-level economy setting, on the family that reaches it through the published map.
+
+    It sits in the same word as the left-right vane, two bits above it, counting 0..3 -- where the
+    classic family spends three bits on the same setting in the same place and counts 0/5/6/7.
+    Callers keep handing the classic codes; the family translates.
+
+    Four reports off one unit, one per level, settle it: the encoder seeded from the report taken
+    with economy off reproduces each of the other three control words byte for byte, and nothing
+    else in the word moves -- the vane sits at position 5 throughout."""
+    wm = uss.select_wire_model(175)
+    baseline = wm.baseline_words(STATUS_175_ECO_OFF)
+
+    assert wm.current_write_value(STATUS_175_ECO_OFF, "ecoMode") == 0
+    assert wm.current_write_value(STATUS_175_ECO_L2, "ecoMode") == 6      # classic code for level 2
+    for report in (STATUS_175_ECO_OFF, STATUS_175_ECO_L2):
+        assert wm.current_write_value(report, "windDirectionHorizontal") == 5
+
+    # writing level 2 onto the "off" baseline reproduces the report the unit itself sent at level 2
+    assert wm.encode_control(bytes(baseline), {"ecoMode": 6}) == wm.baseline_words(STATUS_175_ECO_L2)
+    # and the encoder still refuses a code the setting does not have
+    with pytest.raises(ValueError, match="not a supported code"):
+        wm.encode_control(bytes(baseline), {"ecoMode": 4})
+
+
 def test_extended36_reads_back_the_comfort_settings_it_offers():
     """This family offers boost, quiet, health, sleep and the display light as switches, and for a
     while read none of them: every switch sat at off however the unit was set.
@@ -831,7 +874,8 @@ def test_extended36_reads_the_secondary_toggles_through_its_write_map():
     # a std_enum reads back as the STD code the caller passes in, not the raw wire value
     assert wm.current_write_value(STATUS_165_ON, "operationMode") == 1     # cool
     assert wm.current_write_value(STATUS_165_ON, "windSpeed") == 1         # high
-    assert wm.current_write_value(STATUS_165_ON, "ecoMode") is None        # not mapped on this family
+    # the economy setting reads back in the classic representation too: this unit had it off
+    assert wm.current_write_value(STATUS_165_ON, "ecoMode") == 0
 
 
 def test_a_32_bit_register_runs_back_into_the_word_before_it():
@@ -899,7 +943,7 @@ def test_extended36_control_encodes_a_6001_group_set_from_word_20():
     # the encoder refuses what it cannot map: an unknown field, an unnamed enum code, and a setpoint
     # outside 16..30 that would otherwise fit the 8-bit field
     with pytest.raises(KeyError):
-        wm.encode_control(base, {"ecoMode": 5})
+        wm.encode_control(base, {"selfCleaningStatus": 1})
     with pytest.raises(ValueError, match="not a supported code"):
         wm.encode_control(base, {"operationMode": 3})
     with pytest.raises(ValueError, match="outside the 0..14"):

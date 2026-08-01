@@ -229,6 +229,28 @@ A proposal is a starting point, not a decision. Before a family ships it is chec
 reporter's stated states, against the value ranges the device's own profile declares, and — where the
 device publishes them — against its own reported values.
 
+## These families are one map
+
+They were each worked out separately, from captured reports, and they turn out to be the same
+published attribute map at different displacements. `haismart_hrdp.canonical_map` carries it: 84
+attributes with their word, bit, width and scaling, agreed on by every published air-conditioner
+model — same widths, same bits, same order, one whole-word displacement each.
+
+| family | is |
+|---|---|
+| classic | the canonical map 19 words earlier |
+| extended-36 | the canonical map exactly (its "media block" is the part classic units do not carry) |
+| extended-46 | the canonical map with a ten-word block inserted at word 25 |
+| compact-12 | genuinely different — one attribute per whole word, not this lineage |
+
+A test asserts that correspondence field by field, so a change that drifts from it fails rather than
+diverging quietly. The practical consequence is for **new** models: a layout is the canonical map at
+some displacement, so what has to be discovered is one integer rather than a whole field table.
+
+The map also carries more than the decoder currently reads — 84 attributes against about a dozen —
+and it independently confirmed the up-down vane translation that was settled on hardware, including
+an entry no unit here has ever exercised.
+
 ## Why the registry still exists
 
 It is a fair question whether the search could simply replace the hand-written families. Three of the

@@ -1381,3 +1381,61 @@ def test_self_clean_is_absent_where_the_flag_word_is_unconfirmed():
     """Offered only where the position is supported by evidence -- absent beats wrong."""
     for report in (STATUS_209_OFF, STATUS_117_OFF):
         assert "self_cleaning" not in uss.parse_full_status(report)
+
+
+# --- the canonical map ------------------------------------------------------------------------
+def test_canonical_map_reproduces_every_family_we_ship():
+    """One map, displaced, is what all these layouts are.
+
+    Each family here was worked out separately, field by field, from captured reports. They are all
+    the same published map at a different displacement — so this asserts the correspondence rather
+    than trusting it, and a future edit that drifts from it fails here.
+    """
+    from haismart_hrdp.canonical_map import CANONICAL, DISPLACEMENTS
+
+    assert set(DISPLACEMENTS) == {0, -19}
+
+    # the classic family: the canonical map 19 words earlier
+    for name, (word, bit, length) in uss.GRSETDAC_FIELDS.items():
+        if name == "ecoMode":
+            continue          # this unit repurposes a 3-bit field the map does not describe
+        c = CANONICAL[name]
+        assert (c.word - 19, c.bit, c.length) == (word, bit, length), name
+
+    # the classic sensor block, from the 125-byte layout's byte offsets
+    classic = uss.STATUS_LAYOUTS[125]
+    for name, offset in (("indoorTemperature", classic.indoor_temp),
+                         ("outdoorTemperature", classic.outdoor_temp)):
+        word = (offset - 92) // 2 + 1
+        assert CANONICAL[name].word - 19 == word, name
+    # our own units carry ONE extra word before the sensors, which is the 127-byte layout
+    assert uss.STATUS_LAYOUTS[127].indoor_temp == classic.indoor_temp + 2
+
+    # extended-36: the same map at displacement 0, no shifting at all
+    ext36 = uss.select_wire_model(165)
+    for name, field in ext36.fields.items():
+        canonical_name = {
+            "current_temperature": "indoorTemperature", "outdoor_temperature": "outdoorTemperature",
+            "target_temperature": "targetTemperature", "operation_mode": "operationMode",
+            "wind_speed": "windSpeed", "power": "onOffStatus",
+            "swing_vertical": "windDirectionVertical", "swing_horizontal": "windDirectionHorizontal",
+            "error_code": "errCode",
+        }.get(name)
+        if canonical_name is None:
+            continue
+        c = CANONICAL[canonical_name]
+        assert (c.word, c.bit) == (field.word, field.bit), name
+        assert (c.k, c.c) == (field.k, field.c) or field.kind in ("enum", "vane_v", "vane_h"), name
+
+    # the up-down vane's translation was settled by stepping a unit through every stop; the
+    # published map agrees with it exactly, including the one entry no unit here ever exercised
+    from haismart_hrdp import VANE_V_MODEL_TO_EPP
+
+    published = {std: epp for epp, std in CANONICAL["windDirectionVertical"].enum.items()}
+    assert all(published[std] == epp for std, epp in VANE_V_MODEL_TO_EPP.items())
+
+    # extended-46: the same map again, with its ten-word block inserted at word 25
+    ext46 = uss.select_wire_model(209)
+    assert ext46.fields["current_temperature"].word == CANONICAL["indoorTemperature"].word + 10
+    assert ext46.fields["outdoor_temperature"].word == CANONICAL["outdoorTemperature"].word + 10
+    assert ext46.fields["power"].word == CANONICAL["onOffStatus"].word      # before the insert

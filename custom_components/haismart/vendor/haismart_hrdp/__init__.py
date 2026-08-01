@@ -15,6 +15,7 @@ Home-Assistant-agnostic. The local protocol lives in ``uss.py``:
 """
 from __future__ import annotations
 
+from .canonical_map import CANONICAL, DISPLACEMENTS, CanonicalField
 from .device_rules import DEVICE_RULES, rules_for, with_rules
 from .models import AttributeProfile
 from .profiles import (
@@ -127,6 +128,9 @@ __all__ = [
     "probe_layout",
     "StatedState",
     "VANE_V_MODEL_TO_EPP",
+    "CANONICAL",
+    "CanonicalField",
+    "DISPLACEMENTS",
     "VANE_V_EPP_TO_MODEL",
     "StatusContainer",
     "parse_hello_resp",

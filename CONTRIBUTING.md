@@ -99,9 +99,18 @@ you, that is the fastest path to a correct layout.
 You rarely have to find the layout by hand. When a report is unrecognised, diagnostics runs a search
 over the known families — see [`docs/report-layouts.md`](docs/report-layouts.md) — and attaches
 ranked candidates, because every layout met so far has been a known map displaced from some word
-onward. `probe_layout()` is callable directly if you want to try variations. Treat its output as a
-shortlist to verify, never as a result: the ranking is a heuristic, close scores are common, and the
-same page explains why the registry, not the search, remains the authority on what ships.
+onward. That search runs unaided, though — it cannot know which capture was which — so re-run it over
+the attachments with the states the reporter gave:
+
+```bash
+scripts/probe-diagnostics.py off.json cool.json fan.json \
+    --state off --state 'on,mode=cool,temp=22,fan=low,swing=off,room=27' \
+    --state 'on,mode=fan_only,fan=high,swing=on'
+```
+
+`probe_layout()` is callable directly if you want to try variations. Treat the output as a shortlist
+to verify, never as a result: the ranking is a heuristic, close scores are common, and the same page
+explains why the registry, not the search, remains the authority on what ships.
 
 Two rules make this safe:
 

@@ -158,21 +158,33 @@ async def _async_layout_candidates(
             reports.append(blob)
     if not reports:
         return []
-    model = coordinator.digital_model or {}
-    shadow = {
+    shadow = _shadow_values(coordinator.digital_model)
+    return await hass.async_add_executor_job(partial(probe_layout, reports, shadow=shadow))
+
+
+def _shadow_values(model: dict[str, Any] | None) -> dict[str, Any]:
+    """The values the device itself publishes for its attributes, keyed by attribute name.
+
+    This is the tie-breaker for a layout proposal: a candidate that reproduces values the device
+    reported through a different channel is almost certainly right. It is dumped into diagnostics
+    as well as passed to the prober, so that re-running the search over the attached files reaches
+    the same ranking the file already carries -- otherwise the candidates in the file can only be
+    taken on trust, and any variation tried by hand is scored on plausibility alone.
+    """
+    return {
         attr["name"]: attr["value"]
-        for attr in model.get("attributes") or []
+        for attr in (model or {}).get("attributes") or []
         if isinstance(attr, dict) and attr.get("name") and attr.get("value") is not None
     }
-    return await hass.async_add_executor_job(partial(probe_layout, reports, shadow=shadow))
 
 
 def _model_summary(model: dict[str, Any] | None) -> dict[str, Any] | None:
     """The parts of the digital model that describe CAPABILITIES.
 
-    The full model is large and contains device-identifying ids, so only the attribute value ranges
-    and the grSetDAC attribute order are included -- which is all that is needed to work out a
-    layout, and carries no credential.
+    The full model is large and contains device-identifying ids, so only the attribute value ranges,
+    the values the device currently reports for them, and the grSetDAC attribute order are included
+    -- which is all that is needed to work out a layout, and carries no credential. The reported
+    values are the same settings the remote shows, alongside raw bytes that already say the same.
     """
     if not model:
         return None
@@ -186,4 +198,8 @@ def _model_summary(model: dict[str, Any] | None) -> dict[str, Any] | None:
         for g in model.get("groupCommands", [])
         if g.get("name")
     }
-    return {"attributes": attributes, "groupCommands": group_commands}
+    return {
+        "attributes": attributes,
+        "groupCommands": group_commands,
+        "reported_values": _shadow_values(model),
+    }

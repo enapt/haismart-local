@@ -1504,6 +1504,37 @@ async def test_diagnostics_carry_what_a_new_model_report_needs(
     assert diag["last_raw_status"] == mock_uss.frame.hex()
 
 
+async def test_diagnostics_carry_the_values_the_device_reports(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The values the device publishes must be in the file, not just the ranges they fall in.
+
+    They are the tie-breaker the layout search uses, so without them a maintainer re-running the
+    search over the attachments — which is how a reporter's stated states get scored at all — ranks
+    on plausibility alone and cannot reproduce the candidates the file itself carries.
+    """
+    from custom_components.haismart.diagnostics import (
+        async_get_config_entry_diagnostics,
+    )
+
+    entry = await _setup_with_model(hass, {
+        "attributes": [
+            {"name": "targetTemperature", "value": "24",
+             "valueRange": {"type": "STEP", "dataStep": {"minValue": "16", "maxValue": "30"}}},
+            {"name": "onOffStatus", "value": "true", "valueRange": {"type": "LIST"}},
+            # no value reported -- must not appear as a null
+            {"name": "windSpeed", "valueRange": {"type": "LIST"}},
+        ],
+    })
+    diag = await async_get_config_entry_diagnostics(hass, entry)
+
+    assert diag["digital_model"]["reported_values"] == {
+        "targetTemperature": "24", "onOffStatus": "true"
+    }
+    # and the ranges are still there beside them
+    assert "windSpeed" in diag["digital_model"]["attributes"]
+
+
 async def test_diagnostics_propose_layouts_for_an_unrecognised_report(
     hass: HomeAssistant, mock_uss
 ) -> None:

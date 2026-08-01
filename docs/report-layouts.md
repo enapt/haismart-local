@@ -260,6 +260,24 @@ A proposal is a starting point, not a decision. Before a family ships it is chec
 reporter's stated states, against the value ranges the device's own profile declares, and — where the
 device publishes them — against its own reported values.
 
+### Scoring a report's attachments
+
+The search that runs inside diagnostics runs unaided: the states live in the issue as prose, so
+nothing in Home Assistant can know that capture two was cool at 22 °C. `scripts/probe-diagnostics.py`
+is where they are supplied. Give it the attached files in capture order and say what each one was:
+
+```console
+$ scripts/probe-diagnostics.py off.json cool.json fan.json \
+    --state off \
+    --state 'on,mode=cool,temp=22,fan=low,swing=off,room=27' \
+    --state 'on,mode=fan_only,fan=high,swing=on'
+```
+
+The state syntax is the `StatedState` fields under reporter-friendly names — `on`/`off`, `temp=`,
+`room=`, `swing=`, and the opaque `mode=`/`fan=` labels — and `-` stands for a capture nobody
+described. It reads the reports and the device's reported values straight out of the files, so the
+ranking it prints is the one the diagnostics file already carries, plus the states.
+
 ## These families are one map
 
 They were each worked out separately, from captured reports, and they turn out to be the same

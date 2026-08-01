@@ -90,21 +90,7 @@ The published map cannot answer this one either way, and its silence is not evid
 timer attribute, but it is built from the single richest model and keeps only that model's
 attributes, so anything another model declares alone never appears in it.
 
-## 6. The layout prober's ground truth is not collected automatically
-
-`probe_layout` now scores against `stated=[StatedState(...)]` — what each capture was known to be in
-— as heavily as it scores the cloud shadow, and a contradiction costs more than a match earns. That
-takes the cloud off the critical path: on two real reports, 77 of 83 candidates tie at the top score
-on plausibility alone, and the stated states separate them. `mode_group`/`fan_group` carry the
-relational half, so a reporter's "cool" and "fan-only" work without anyone knowing the model's codes.
-
-What is left is plumbing rather than method. The states live in the issue form as prose, so a
-maintainer types them into the call; nothing associates capture two with "cool, 22 °C, fan low". The
-diagnostics prober therefore still runs unaided, on plausibility plus whatever shadow is stored. A
-structured field in the issue form — or naming the three downloads — would let the proposal arrive
-already scored against them.
-
-## 7. The energy total, on the family whose map already has exceptions
+## 6. The energy total, on the family whose map already has exceptions
 
 The cumulative register counts **watt-hours**, settled on the 165/175-byte family against an owner's
 own app: one 15-minute accumulation interval spent cooling added 347 against ~1390 Wh of measured
@@ -123,7 +109,7 @@ One reading off that owner's app, taken beside a diagnostics download, settles i
 settled on the other family. The same goes for any new family whose register turns out to be
 populated.
 
-## 8. The fault decode has not met a real fault
+## 7. The fault decode has not met a real fault
 
 The bitmap decode follows the vendor's own parser and the labels match the published fault list, but
 no unit here has reported a fault. `errCode` gives a free cross-check when one occurs: it names a
@@ -136,6 +122,26 @@ Nothing to do but keep the diagnostic in place and check the first report that a
 
 Not open items. They are here because each looks like something to "fix" until you know why it is
 the way it is.
+
+## The layout prober is told what the captures were
+
+`probe_layout` scores against `stated=[StatedState(...)]` — what each capture was known to be in — as
+heavily as it scores the device's published values, and a contradiction costs more than a match
+earns. That takes the cloud off the critical path: on two real reports, 77 of 83 candidates tie at
+the top score on plausibility alone, and the stated states separate them. `mode_group`/`fan_group`
+carry the relational half, so a reporter's "cool" and "fan-only" work without anyone knowing the
+model's codes.
+
+The plumbing that was missing is now there. The report form has **one box per capture**, so a file
+arrives paired with the state it was taken in instead of three files landing beside a paragraph, and
+`scripts/probe-diagnostics.py` takes those files with `--state` arguments and prints the ranking.
+Diagnostics also dumps the device's reported values now (`digital_model.reported_values`), so a
+search re-run over the attachments scores on exactly what the in-file candidates were scored on
+rather than on plausibility alone.
+
+What is *not* solved, and cannot be from this direction: the search inside diagnostics still runs
+unaided, because Home Assistant has no way to know what state a unit was put in. The states have to
+enter from the issue, which is why they are collected there.
 
 ## The one rule we decline to honour
 

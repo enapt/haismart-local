@@ -37,21 +37,60 @@ body:
       description: |
         If you can find them. Firmware matters - the same model with a newer module can behave
         differently.
+  - type: markdown
+    attributes:
+      value: |
+        ## The three captures
+
+        Set each state **on the AC's own remote or in the Haier app** (not from Home Assistant),
+        wait about 30 seconds, then download diagnostics - **Settings -> Devices & Services ->
+        Haismart -> the three-dot menu -> Download diagnostics** - and attach that file in its own
+        box below.
+
+        **One file per box, and each box says which state it was taken in.** That pairing is what
+        makes the captures worth three times one: a layout has to explain all three, and knowing
+        which file is which is what tells a real match from a coincidence.
+
+        **If your unit cannot be put in one of these states, that is fine** - put it in the nearest
+        state it can manage and write down what you actually set. A state that is written down is
+        useful whatever it was; the one thing that does not help is a file nobody can place.
+  - type: textarea
+    id: capture1
+    attributes:
+      label: "Capture 1: the unit switched off"
+      description: Attach the diagnostics file taken with the AC off. If it was not fully off, say so.
+      placeholder: Drag the file in here.
+    validations:
+      required: true
+  - type: textarea
+    id: capture2
+    attributes:
+      label: "Capture 2: cool, 22 C, fan low, swing off"
+      description: |
+        Attach the diagnostics file taken in that state. If your unit does not offer cool, 22 C, a
+        low fan speed or a swing control, set what it does offer and write down what you set.
+      placeholder: Drag the file in here, and note any part of the state you had to change.
+    validations:
+      required: true
   - type: input
     id: roomtemp
     attributes:
       label: Room temperature shown on the remote during capture 2
       description: Confirms the indoor-temperature byte immediately.
   - type: textarea
-    id: captures
+    id: capture3
     attributes:
-      label: The three diagnostics captures
+      label: "Capture 3: fan-only, fan high, swing on"
       description: |
-        Set each state **on the remote or in the Haier app**, wait ~30 seconds, then download
-        diagnostics and attach all three files here.
-
-        1. Off
-        2. Cool, 22 C, fan low, swing off
-        3. Fan-only, fan high, swing on
+        Attach the diagnostics file taken in that state. If your unit has no fan-only mode, any
+        second mode with a different fan speed does the same job - write down which you used.
+      placeholder: Drag the file in here, and note any part of the state you had to change.
     validations:
       required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: |
+        Optional. Controls your unit has that Home Assistant is not showing, values that look wrong,
+        or anything that behaved oddly while you were taking the captures.

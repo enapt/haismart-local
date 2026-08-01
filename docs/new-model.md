@@ -24,13 +24,22 @@ Assistant), wait about 30 seconds so Home Assistant polls at least once, then do
 | 2 | **Cool, 22 °C, fan low, swing off** | the room temperature the remote displays |
 | 3 | **Fan-only, fan high, swing on** | — |
 
+The report form has a **separate box for each capture**, so attach each file in the box naming the
+state it was taken in. That pairing is what makes three captures worth more than three times one: a
+candidate layout has to explain all three, and knowing which file is which is what separates a real
+match from a coincidence.
+
+**If your unit cannot manage one of these states, set the nearest thing it can and say what you
+actually set.** A state that is written down is useful whatever it was — some units have no fan-only
+mode, some no swing control, some no 22 °C. The one file nobody can use is the one nobody can place.
+
 It also helps to quote your unit's **Model ID** — the diagnostic sensor of that name on the device page.
 That identifier is what selects the report layout, so it tells us immediately whether your unit is a family
 we already know or a genuinely new one. The sensor shows a shortened form; the exact 64-character value is
 its `uplus_id` attribute (and it is in the diagnostics file too, so attaching that covers it).
 
 Then open a [new model report](https://github.com/enapt/haismart-local/issues/new?template=new_model.yml)
-and attach all three, plus:
+and attach each file in its own box, plus:
 
 - the **model number** from the sticker on the indoor unit
 - the **Wi-Fi module** model, if it is printed on the unit or shown in the app

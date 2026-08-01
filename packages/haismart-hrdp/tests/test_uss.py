@@ -531,7 +531,7 @@ STATUS_125 = bytes.fromhex(
 # --- 117-byte "compact-12" family (haismart-local issue #4, HSU-12HFMF) --------
 # A DIFFERENT wire family: 12 words where the sensors live INSIDE the word array (indoor@w1,
 # outdoor@w2), not in a separate trailing block like the classic family. Three real decrypted status
-# reports supplied in the reporter's diagnostics, decoded via the APK preset wire model and each
+# reports supplied in the reporter's diagnostics, decoded via this family's wire model and each
 # matching the state they reported. No secret: the all-zero CAE report prefix, no deviceId in a report.
 #   OFF: power off, last setpoint 27, room 29, mode fan_only, fan high, swings off
 STATUS_117_OFF = bytes.fromhex(
@@ -674,7 +674,7 @@ def test_compact12_maps_heat_via_the_profile():
 
 def test_compact12_control_encodes_a_4d5f_group_set():
     """The 117 family's control path: read-modify-write over its 12-word array with group command
-    4d5f (spec from the APK, std->EPP maps applied), packing only the requested field and preserving
+    4d5f (spec from its model, std->EPP maps applied), packing only the requested field and preserving
     the rest. Round-trips: encode a change, wrap in the FF FF frame, and decode the words back."""
     wm = uss.select_wire_model(117)
     assert wm is not None and wm.group_cmd == b"\x4d\x5f"

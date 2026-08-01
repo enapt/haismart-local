@@ -5,28 +5,28 @@ Background
 ----------
 Every Haier AC packs its status attributes into a bit-field array of 16-bit big-endian words that
 begins at byte 92 of the decrypted report (right after the ``6d 01`` getAllProperty response code).
-*Where* each attribute sits in that array is the **wire model**. Haier ships one wire model per
-device as a preset under the app's ``assets/com.haier.uhome.usdk/<uPlusId>`` (174 of them), and the
-app resolves a device to its model by uPlusId. There is **no** cloud endpoint that serves the wire
-model to us and the device *digital* model (valueRange/enums, which we do fetch) carries no
-positional data — so these maps are transcribed from the APK presets and validated against real
-captured reports.
+*Where* each attribute sits in that array is the **wire model**, and it is a property of the model a
+device reports itself as (its uPlusId) rather than of the device. The *digital* model we fetch per
+device carries an attribute's valueRange and enums but no position, so these maps are transcribed
+from the published per-model descriptions and validated field by field against real captured
+reports. :mod:`haismart_hrdp.canonical_map` covers where those descriptions agree with each other,
+which is nearly everywhere; this module covers the families and the exceptions.
 
 What a "family" is
 ------------------
 A family is a **distinct field map**, and one map can span several report lengths (the classic
-split-AC family appears at report lengths 109/121/125 in the presets and on our own hardware at
-127 — only its trailing word count differs). So report length alone is a *good but imperfect* key:
-among AC split units each length maps to a single field map, but the presets do contain a genuine
-collision at 149 B (a floor/heat-pump class we don't target). Selection therefore prefers an exact
-uPlusId match and otherwise keys on report length **with a decode sanity-check** (see
-:meth:`WireModel.decode`), degrading to the caller's unknown-layout path rather than mis-decoding.
+split-AC family is described at report lengths 109/121/125 and appears on real hardware at 127 —
+only its trailing word count differs). So report length alone is a *good but imperfect* key: among
+AC split units each length maps to a single field map, but there is a genuine collision at 149 B (a
+floor/heat-pump class we don't target). Selection therefore prefers an exact uPlusId match and
+otherwise keys on report length **with a decode sanity-check** (see :meth:`WireModel.decode`),
+degrading to the caller's unknown-layout path rather than mis-decoding.
 
 The classic family stays in ``uss.py``
 --------------------------------------
 The classic 125/127-byte family keeps its existing hardware-verified decode + the grSetDAC **write**
 path in ``uss.py`` untouched. This module adds decoding for other families, plus — for a family whose
-group-set command is fully specified by the APK preset (``group_cmd`` + :attr:`WireModel.write_fields`)
+group-set command its model fully specifies (``group_cmd`` + :attr:`WireModel.write_fields`)
 — a **control encoder** built on that spec. That spec basis is the same one heat mode shipped on
 (model-derived, method hardware-confirmed on other units); a family without a ``group_cmd`` stays
 monitoring-only.
@@ -351,12 +351,12 @@ class WireModel:
 # --- registry ---------------------------------------------------------------------------------
 
 # operationMode / windSpeed enums map the raw EPP index -> the Haier STD code string the digital
-# model uses, so the AttributeProfile names them (STD 4 = heat, 2 = dry, 6 = fan, etc.). Provenance:
-# the APK preset's own stdCode:eppValue table (`[模式]^20200D…302004:02…`), i.e. epp 2 == STD "4".
+# model uses, so the AttributeProfile names them (STD 4 = heat, 2 = dry, 6 = fan, etc.). The mapping
+# is the one this model publishes in its own stdCode:eppValue table, i.e. epp 2 == STD "4".
 _COMPACT12_MODE = {0: "0", 1: "1", 2: "4", 3: "6", 4: "2"}   # auto / cool / heat / fan_only / dry
 _COMPACT12_FAN = {0: "1", 1: "2", 2: "3", 3: "5"}            # high / medium / low / auto
 
-# Control (group-set): the APK preset's `[组命令]` line fully specifies the group command — eppCmd
+# Control (group-set): this model fully specifies its group command — eppCmd
 # `4d5f`, a 12-word array (words 1..12, the same span as the report), and each settable field's
 # stdCode->eppValue map. This is the SAME spec basis as heat mode (issue #1): derived from the model,
 # not captured on this exact family, but the group-set method is hardware-confirmed on other units.
@@ -370,24 +370,24 @@ _COMPACT12_WRITE = {
     "windSpeed": WriteField(7, 0, 16, "std_enum", std_to_epp={1: 0, 2: 1, 3: 2, 5: 3}),
     "windDirectionVertical": WriteField(8, 0, 1, "onoff", on_value=1),
     "windDirectionHorizontal": WriteField(8, 1, 1, "onoff", on_value=1),
-    # 16..30 C (the preset's own minValue/maxValue), i.e. EPP 0..14 — same range as the classic
+    # 16..30 C (the model's own minValue/maxValue), i.e. EPP 0..14 — same range as the classic
     # family, and far narrower than the 16 bits the field occupies.
     "targetTemperature": WriteField(12, 0, 16, "passthrough", min_epp=0, max_epp=14),
     "onOffStatus": WriteField(9, 0, 1, "passthrough"),
 }
 
 # The "compact-12" family: a 12-word report (117 B) where every attribute — sensors included — lives
-# in the word array (unlike the classic family's separate sensor block). Transcribed from APK presets
-# `00000000000000008080000000041410` / `01c12002400081034080000000100000` and validated field-for-
-# field against three real captured reports (haismart-local issue #4, HSU-12HFMF): power/setpoint/
-# indoor/mode/fan/both swings all matched the reporter's stated state.
+# in the word array (unlike the classic family's separate sensor block). Transcribed from the two
+# published models that describe it, and validated field-for-field against three real reports from a
+# HSU-12HFMF (haismart-local issue #4): power/setpoint/indoor/mode/fan/both swings all matched the
+# state the reporter said the unit was in.
 #
 # Deliberately omitted from the READ: outdoorTemperature (word 2) — the device's own digital model
 # does not declare it and the raw value reads like a condenser probe (~59 C), so publishing it would
 # poison long-term statistics; and the secondary toggles — every capture had them OFF, giving no
 # positive confirmation of their bit positions, so they stay off the read until a capture exercises
 # them. Both can be added once evidence exists. Control covers the core climate fields (power / mode /
-# fan / setpoint / both swings) via the APK-specified group command.
+# fan / setpoint / both swings) via the group command its model specifies.
 COMPACT12 = WireModel(
     family="compact12",
     report_lengths=frozenset({117}),
@@ -408,7 +408,7 @@ COMPACT12 = WireModel(
 
 # --- extended-36 (165-byte report) --------------------------------------------------------------
 
-# operationMode / windSpeed are plain STD enums here: the preset maps stdValue -> eppValue 1:1 for
+# operationMode / windSpeed are plain STD enums here: the model maps stdValue -> eppValue 1:1 for
 # both, so the raw wire value IS the STD code the digital model and the profile already speak.
 _EXT36_MODE = {0: "0", 1: "1", 2: "2", 4: "4", 6: "6"}   # auto / cool / dry / heat / fan_only
 _EXT36_FAN = {1: "1", 2: "2", 3: "3", 5: "5"}            # high / medium / low / auto
@@ -453,7 +453,7 @@ def canonical_fields(
 
 
 
-# Control: the preset's own `grSetDAC` Operation gives the group command (`6001`) and a five-word
+# Control: the model's own `grSetDAC` operation gives the group command (`6001`) and a five-word
 # array whose bit map is **byte-for-byte the classic family's** — targetTemperature w1.b8,
 # windDirectionVertical w1.b0, operationMode w2.b13, windSpeed w2.b8, then the w3 boolean block
 # (onOff b0, health b1, rapid b3, mute b4, sleep b5, screenDisplay b9) and windDirectionHorizontal
@@ -462,7 +462,7 @@ def canonical_fields(
 # that block* (see `write_base_word` below), not how the op is packed.
 #
 # Enum values are restricted to the app's own mode table {auto, cool, dry, heat, fan_only} and the
-# four fan speeds rather than the full 0..6 the preset declares — codes 3 and 5 have no known
+# four fan speeds rather than the full 0..6 the model declares — codes 3 and 5 have no known
 # meaning, and the encoder's job is to refuse what we cannot name.
 _EXT36_WRITE = {
     "targetTemperature": WriteField(1, 8, 8, "passthrough", min_epp=0, max_epp=14),  # 16..30 C
@@ -484,14 +484,14 @@ _EXT36_WRITE = {
 
 # The "extended-36" family: a 36-word report (165 B) carrying the **classic** climate block displaced
 # by 19 words. Those leading 19 words are a voice/media module (volume, playback, dialect, …) that the
-# generic preset describes but a plain split AC leaves inert — which is exactly why the classic
+# generic model describes but a plain split AC leaves inert — which is exactly why the classic
 # partial decode misfires on this model: byte 92 is the module's `volume`, not the setpoint, so the
 # setpoint reads as 48 C and power reads as off (haismart-local issue #5).
 #
-# Transcribed from APK presets `2008…691590000…40` (deviceType `02012036`, 挂机通用_V2D18S_0D05, wall
-# mounted) and `2008…112410000…40` (`0301200n`, 柜机通用_V2D18S_0D05, the floor-standing sibling) —
-# the only two presets implying a 165-byte report, and their field maps are identical, so keying this
-# family on report length is unambiguous. Validated against the two distinct reports captured on a
+# Transcribed from the published models for `02012036` (挂机通用_V2D18S_0D05, wall mounted) and its
+# floor-standing sibling `0301200n` (柜机通用_V2D18S_0D05) — the only two that imply a 165-byte
+# report, and their field maps are identical, so keying this family on report length is unambiguous.
+# Validated against the two distinct reports captured on a
 # real HSU-12KCROC(IN)-R32 (issue #5): power off/on matched the stated states, the setpoint decoded to
 # the 22 C the reporter had set, indoor read 30.0/27.5 C, and vertical swing matched fixed/swinging.
 #

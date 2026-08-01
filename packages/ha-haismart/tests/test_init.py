@@ -263,7 +263,7 @@ async def test_compact12_family_decodes_and_controls_via_4d5f(
 ) -> None:
     """A non-classic wire family (117-byte compact-12, issue #4) decodes fully — climate + sensor
     populate — WITHOUT the unknown-layout repair, and control goes out as the family's own 4d5f
-    group-set (setpoint packed at word 12, per the APK group-command spec)."""
+    group-set (setpoint packed at word 12, per its model's group-command spec)."""
     frame = make_compact12_frame(power=True, target_temp=22, indoor_temp=27, mode_epp=1, fan_epp=3)
     mock_uss.read.return_value = [frame]
     mock_uss.send.baseline = frame   # the AC's in-session push that seeds the group-set

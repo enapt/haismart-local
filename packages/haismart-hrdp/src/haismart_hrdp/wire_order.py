@@ -24,13 +24,17 @@ is ``targetRentTime`` at w6. The published order predicts it without being told.
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import dataclass
 
 __all__ = [
+    "Ambiguity",
+    "Placement",
     "Position",
     "order_key",
     "order_violations",
     "bracket_unplaced",
     "nearest_bundled_profile",
+    "solve_positions",
 ]
 
 Position = tuple[int, int]
@@ -110,3 +114,108 @@ def nearest_bundled_profile(uplus_id: str, candidates: Iterable[str]) -> list[tu
         ranked.append((shared, candidate))
     ranked.sort(key=lambda item: (-item[0], item[1]))
     return ranked
+
+
+@dataclass(frozen=True)
+class Placement:
+    """A field's derived position: ``word``/``bit``/``length``, matching the published maps."""
+
+    word: int
+    bit: int
+    length: int
+
+
+@dataclass(frozen=True)
+class Ambiguity:
+    """A field the order brackets but does not pin down, and by how much it falls short.
+
+    ``spare_bits`` is the room left over once every field in the run has taken its stated width.
+    Zero means the run packs exactly and would have been solved; anything above zero means the
+    frame reserves bits somewhere inside the run, and where they sit is not recoverable from the
+    order alone. Resolving one is a matter of one more anchor, not more inference.
+    """
+
+    name: str
+    after: Placement | None
+    before: Placement | None
+    spare_bits: int | None
+
+
+def _to_index(word: int, bit: int, length: int, word_bits: int) -> int:
+    """Position as a most-significant-first scan index, which is the order fields are published in."""
+    return word * word_bits + word_bits - bit - length
+
+
+def _from_index(index: int, length: int, word_bits: int) -> Placement:
+    word, offset = divmod(index, word_bits)
+    return Placement(word, word_bits - offset - length, length)
+
+
+def solve_positions(
+    attr_names: Sequence[str],
+    anchors: Mapping[str, tuple[int, int, int]],
+    widths: Mapping[str, int],
+    *,
+    word_bits: int = 16,
+) -> tuple[dict[str, Placement], list[Ambiguity]]:
+    """Place the fields a map does not cover, from the order the device publishes them in.
+
+    The published order is the wire order, so between two fields whose positions are known, every
+    field listed between them lies between them -- in that order, with no gaps of its own choosing.
+    That turns a run of unknowns into arithmetic: their widths must fit the bits the two anchors
+    leave, and where the fit is exact there is precisely one way to lay them out.
+
+    Where the fit is *not* exact the run is reported as ambiguous instead of placed. The frame
+    reserves bits -- our own units leave one spare above ``selfCleaning56Status`` and four in the
+    rental block -- and a reserved bit is invisible to this arithmetic: the run could be packed
+    against either anchor or split anywhere between. A guess would not fail loudly, it would decode,
+    which is the worst way to be wrong about a byte map. One further anchor collapses a run
+    completely, and anchors are cheap: a read of a unit in a known state produces them.
+
+    ``anchors`` and ``widths`` are ``{name: (word, bit, length)}`` and ``{name: length}``; a name in
+    neither is bracketed with ``spare_bits`` unknown. Returns the placements derived here -- anchors
+    are not echoed back -- and every ambiguity, in wire order.
+    """
+    placed: dict[str, Placement] = {}
+    ambiguous: list[Ambiguity] = []
+    run: list[str] = []
+    cursor: int | None = None          # first free index after the last anchor
+    previous: Placement | None = None
+
+    def flush(next_anchor: Placement | None, next_index: int | None) -> None:
+        if not run:
+            return
+        sized = [(n, widths.get(n)) for n in run]
+        room = None if (cursor is None or next_index is None) else next_index - cursor
+        needed = sum(w for _, w in sized if w is not None)
+        # An exact fit is the only case with one answer: every field in the run takes its width,
+        # in order, leaving nothing over to hide a reserved bit in.
+        if room is not None and all(w is not None for _, w in sized) and needed == room:
+            at = cursor or 0
+            for name, width in sized:
+                assert width is not None
+                if at % word_bits + width > word_bits:      # would straddle a word; not a layout
+                    break
+                placed[name] = _from_index(at, width, word_bits)
+                at += width
+            else:
+                return
+            for name, _ in sized:                            # straddled: nothing in the run stands
+                placed.pop(name, None)
+        spare = None if room is None else room - needed
+        for name, _ in sized:
+            ambiguous.append(Ambiguity(name, previous, next_anchor, spare))
+
+    for name in attr_names:
+        if name in anchors:
+            word, bit, length = anchors[name]
+            index = _to_index(word, bit, length, word_bits)
+            here = Placement(word, bit, length)
+            flush(here, index)
+            run = []
+            cursor = index + length
+            previous = here
+        else:
+            run.append(name)
+    flush(None, None)
+    return placed, ambiguous

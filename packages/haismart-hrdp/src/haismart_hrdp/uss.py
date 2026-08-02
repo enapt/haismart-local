@@ -335,7 +335,14 @@ EPP_CMD_GRSETDAC = b"\x60\x01"        # group set (words 1-5)
 EPP_CMD_EXTENDED_STATUS = b"\x4d\xfe"
 # Report kinds the unit sends back, identified by the command word inside the returned frame. A single
 # session can carry all three, so `parse_full_status` uses these to tell them apart.
-_EPP_RPT_STATUS = b"\x6d\x01"    # the ordinary full-status report
+#
+# The status constant names the report a *query* draws. A unit also answers a group-set with `6d5f`,
+# which carries the identical payload, and both arrive on the same connection during a control op.
+# `parse_full_status` therefore identifies a status report by *exclusion* -- anything that is not an
+# alarm or an extended report -- and that is deliberate. Tightening it to an equality test against
+# `_EPP_RPT_STATUS` would drop every control confirmation while still passing the tests, since those
+# are built from query responses.
+_EPP_RPT_STATUS = b"\x6d\x01"    # the ordinary full-status report (a group-set is answered `6d5f`)
 _EPP_RPT_ALARM = b"\x0f\x5a"     # fault bitmap
 _EPP_RPT_EXTENDED = b"\x7d\x01"  # extended status (running power / compressor figures)
 

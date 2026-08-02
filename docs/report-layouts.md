@@ -357,9 +357,14 @@ not go away:
 - **The ranking is a heuristic, and ties are common.** Candidates that score identically can read
   mode and fan from different words. Publishing the winner of a close call as fact is precisely the
   failure this page exists to prevent.
-- **Control needs more than a read map.** A proposal says nothing about the group-set command or the
-  word array it writes. Writing to a guessed layout is not a risk worth taking, so a probe could only
-  ever replace the reading half.
+- **Control needs more than a read map.** A proposal says nothing about *which* settings a unit will
+  honour, and writing to a guessed layout is not a risk worth taking, so a probe could only ever
+  replace the reading half. The window itself is no longer a mystery, though: the group-set frame is
+  the report's own words 20 to 24 in shared-map terms — identical bit for bit through the first four,
+  differing only in word five's filter flags, and stopping there because word 25 is where the
+  unwritable sensor readings begin. So a family's write window follows from its displacement. What
+  does *not* follow is permission: a unit can accept a group set and silently discard one bit of it,
+  which is why every control is confirmed on hardware before it ships.
 - **Determinism.** A registry entry behaves identically for everyone with that model, forever. A
   runtime search could resolve differently depending on which states a unit happened to be in, so two
   users with the same air conditioner could see different readings and a bug would not reproduce.

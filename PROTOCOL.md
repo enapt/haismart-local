@@ -98,8 +98,10 @@ block's `volume`, which reads as a 48 °C setpoint.
 
 Its control path is the classic `6001` group-set with the classic five-word bit map — the op is
 unchanged; only the *baseline* is sliced from report word 20 instead of word 1. That displacement is
-what `WireModel.write_base_word` expresses: where a family keeps its control block in the report is
-independent of where that block sits in the op.
+what `WireModel.write_base_word` expresses, and it is not a free parameter: the op's words **are**
+the report's control block, so a family's base word is simply where that block starts in its report.
+Expressed against the shared map, the op is report words 20 to 24 and `write_base_word` is
+`20 + displacement` — 1 for the classic family, 20 for this one.
 
 > **Future consolidation.** The classic family is currently a bespoke decoder/encoder while the newer
 > families are data-driven wire models — two paradigms for the same idea. The plan, once the wire-model
@@ -289,6 +291,13 @@ catalogued and cannot disagree with itself.
 Writes are a **group-set**: the whole word block is sent at once, so it must be seeded from the AC's
 own current status or unrelated settings get clobbered. The library seeds from the status the AC
 pushes on the op's own connection, so the baseline is always live.
+
+The op's five words are the report's own control block — word for word and bit for bit, ending where
+the sensor readings begin, since a thermometer cannot be written to. A device model publishes the
+same layout and names **39** fields in it, far more than the table below; the table is deliberately
+the shorter list, because a field belongs here only once a write of it is confirmed on hardware. A
+model describing a field is not evidence a unit honours a write to it — one flag in this very word
+block is published, marked writable, and silently discarded by real hardware.
 
 | Field | Word | Shift | Width |
 |---|---|---|---|

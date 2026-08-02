@@ -70,6 +70,13 @@ equally well, and only a change of state tells them apart. A candidate has to ex
 The candidates are a starting point, not the answer — they are checked against the states you
 describe and against your unit's own published settings before anything ships.
 
+The file also now says **which device it came from** — the identifier your unit reports, the product
+class that identifier encodes, and the product code. That last one is worth a glance before you
+attach the file: if it is flagged as a fallback, it is a built-in default rather than your unit's own,
+and saying so in the report saves a round-trip. With a real product code the rest of your model's
+published description — its rules, its fault list, and which of its features your particular unit
+actually has — can be looked up directly.
+
 The file carries one more thing that saves a round-trip. Once your unit's layout **is** recognised,
 diagnostics reads **every attribute your air conditioner declares** — the settings with no entity as
 well as the ones with — and prints them beside the values your unit publishes through its cloud

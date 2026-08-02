@@ -27,7 +27,7 @@ import os
 import secrets
 import time
 import weakref
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass, field, replace
 from typing import Any
 from urllib.parse import urlsplit
@@ -260,6 +260,88 @@ DEVICE_CONFIG_PATH = "/download/resource/selfService/hardware/constraintfile/{na
 # for the caller's own devices whatever is asked for, so the response has to be selected from.
 DEVICE_CONFIG_LIST_PATH = "/uplussea/resources/v1/conf/list"
 DEVICE_CONFIG_RES_TYPE = "DeviceConfig"
+
+# The same model, published a second way: a catalogue keyed on product code that needs no account.
+# `get_device_config` above can only ever answer for the caller's OWN devices; this one answers for
+# any product code, which is what an install with no cloud credentials needs, and what makes a bug
+# report from a device nobody here owns usable.
+PUBLIC_CONFIG_URL = "https://standardcfm.haigeek.com/hardwareconfig/app/resource/logicLimit"
+
+# The catalogue publishes an older, parallel spelling of the same sections. Same data, different
+# names, so it is renamed on the way in and every consumer downstream sees one shape.
+PUBLIC_CONFIG_SECTIONS = {
+    "property": "attributes",
+    "logicLimit": "modifiers",
+    "logicPatch": "constraints",
+    "alarm": "alarms",
+    "basicInfo": "baseInfo",
+    "operation": "groupCommands",
+}
+
+
+def normalize_public_config(doc: Mapping[str, Any]) -> dict:
+    """Rename the catalogue's sections to the ones every consumer here already speaks.
+
+    The publicly catalogued model and the account-scoped one are the same model in two spellings:
+    ``property``/``logicLimit``/``logicPatch``/``alarm`` against
+    ``attributes``/``modifiers``/``constraints``/``alarms``. Renaming here means
+    :func:`haismart_hrdp.device_rules.merge_rules` and everything after it stays unaware there are
+    two sources. A section already carrying the modern name is left alone, and anything unrecognised
+    is passed through untouched rather than dropped.
+    """
+    out: dict[str, Any] = {}
+    for key, value in doc.items():
+        out[PUBLIC_CONFIG_SECTIONS.get(key, key)] = value
+    return out
+
+
+async def get_public_device_config(
+    product_code: str, *, transport: Transport | None = None
+) -> dict:
+    """A device's published model, by product code, **with no account and no token**.
+
+    Two steps, like the account-scoped fetch: the catalogue is asked for the product code and
+    answers with a download URL, a version and an MD5; the file is then fetched and its signature
+    prefix stripped. Sections are renamed to the modern spelling on the way out
+    (:func:`normalize_public_config`).
+
+    This is a genuine catalogue rather than a listing of the caller's own devices, so it answers for
+    hardware nobody here owns -- which is what makes it useful for a bug report, and for an install
+    that was set up by hand and has no cloud credentials at all. It carries the attributes and their
+    ranges, the conditional ``modifiers``, the ``alarms``, the co-command ``constraints``, and the
+    ``invisible`` flags that say which of a generic model's attributes a given unit actually has.
+
+    ⚠️ It carries **no wire positions** -- there is no ``startWord``/``startBit`` anywhere in it. It
+    is the semantic model, never the byte map.
+
+    An unknown product code is reported as success with an empty URL rather than as an error, so
+    that case raises here. Raises :class:`CloudError` on anything else that goes wrong.
+    """
+    send = transport or _httpx_transport
+    body = json.dumps({"productCode": product_code}, separators=(",", ":"))
+    resp = await send(
+        Request("POST", PUBLIC_CONFIG_URL, {"Content-Type": "application/json"}, body)
+    )
+    if resp.status != 200:
+        raise CloudError(f"public device config -> HTTP {resp.status}")
+    payload = json.loads(resp.text or "{}")
+    if str(payload.get("retCode")) != "00000":
+        raise CloudError(
+            f"public device config -> retCode {payload.get('retCode')}: {payload.get('retInfo')}"
+        )
+    data = payload.get("data") or {}
+    url = data.get("url")
+    if not url:
+        # The catalogue answers 00000 with an empty url for a product code it has never heard of,
+        # so success is not enough to go on.
+        raise CloudError(f"no published model for product code {product_code!r}")
+    got = await send(Request("GET", url, {}, ""))
+    if got.status != 200:
+        raise CloudError(f"public device config download -> HTTP {got.status}")
+    digest = data.get("md5")
+    if digest and hashlib.md5(got.text.encode()).hexdigest() != digest:
+        raise CloudError("public device config download does not match its published MD5")
+    return normalize_public_config(strip_signed_config(got.text))
 
 
 def strip_signed_config(text: str) -> dict:

@@ -7,6 +7,7 @@ from haismart_extractor.cloud import (
     DEVICE_LIST_PATH,
     DEVICE_MODEL_PATH,
     LOGIN_PATH,
+    PUBLIC_CONFIG_URL,
     AppCredentials,
     CloudError,
     Domains,
@@ -17,6 +18,8 @@ from haismart_extractor.cloud import (
     device_center_sign,
     device_center_sign_payload,
     encrypt_login_password,
+    get_public_device_config,
+    normalize_public_config,
 )
 
 
@@ -451,3 +454,77 @@ async def test_default_client_is_built_off_the_event_loop_and_reused() -> None:
     assert len(built_on) == 1
     assert built_on[0] != threading.current_thread().name   # i.e. a worker thread, not the loop
     cloud_mod._CLIENTS.clear()
+
+
+async def test_public_device_config_needs_no_account_and_renames_its_sections() -> None:
+    """The same model, published a second way: a catalogue keyed on product code and open to anyone.
+
+    `get_device_config` can only answer for the caller's own devices, so an install with no cloud
+    credentials -- and a bug report about hardware nobody here owns -- gets nothing from it. This
+    route answers for any product code with no token at all. It publishes an older spelling of the
+    same sections, which is renamed on the way in so nothing downstream has to know there are two.
+    """
+    signed = "b" * 64 + json.dumps({
+        "basicInfo": {"uPlusId": "2008610800820324"},
+        "property": [{"name": "operationMode", "invisible": False}],
+        "logicLimit": [{"trigger": {}, "actions": []}],
+        "logicPatch": [{"name": "co-command"}],
+        "alarm": [{"name": "F1", "pos": 0}],
+    })
+    listing = json.dumps({"retCode": "00000", "retInfo": "ok", "data": {
+        "version": "3.0.1",
+        "url": "https://resource/constraintfile/AAD180E00_20250217172728982.json",
+        "md5": hashlib.md5(signed.encode()).hexdigest(),
+    }})
+    seen: list[Request] = []
+
+    async def transport(request: Request) -> Response:
+        seen.append(request)
+        return Response(200, listing if request.method == "POST" else signed)
+
+    cfg = await get_public_device_config("AAD180E00", transport=transport)
+
+    # the whole request is the product code -- no token, no appId, nothing account-shaped
+    assert seen[0].method == "POST" and seen[0].url == PUBLIC_CONFIG_URL
+    assert json.loads(seen[0].body) == {"productCode": "AAD180E00"}
+    assert "accessToken" not in seen[0].headers and "sign" not in seen[0].headers
+    assert seen[1].method == "GET"
+    # sections arrive under the names every consumer here already speaks
+    assert cfg["attributes"][0]["name"] == "operationMode"
+    assert cfg["modifiers"] and cfg["constraints"] and cfg["alarms"]
+    assert cfg["baseInfo"]["uPlusId"] == "2008610800820324"
+    # ...and the old spellings are gone, so nothing reads both
+    for old in ("property", "logicLimit", "logicPatch", "alarm", "basicInfo"):
+        assert old not in cfg
+
+
+async def test_public_device_config_refuses_an_unknown_product_code() -> None:
+    """The catalogue reports success with an empty URL for a code it has never heard of, so a
+    successful call is not enough to go on."""
+    async def transport(request: Request) -> Response:
+        return Response(200, json.dumps({"retCode": "00000", "data": {"url": ""}}))
+
+    with pytest.raises(CloudError, match="no published model"):
+        await get_public_device_config("NOSUCHCODE", transport=transport)
+
+
+async def test_public_device_config_checks_the_published_md5() -> None:
+    """The catalogue publishes the file's MD5, so a truncated or swapped download is caught here."""
+    listing = json.dumps({"retCode": "00000", "data": {"url": "https://x/f.json", "md5": "0" * 32}})
+
+    async def transport(request: Request) -> Response:
+        return Response(200, listing if request.method == "POST" else "c" * 64 + "{}")
+
+    with pytest.raises(CloudError, match="MD5"):
+        await get_public_device_config("AAD180E00", transport=transport)
+
+
+def test_public_config_carries_no_wire_positions() -> None:
+    """It is the semantic model, never the byte map -- worth asserting, because the two are easy to
+    conflate and a position taken from the wrong place decodes plausibly and wrongly."""
+    cfg = normalize_public_config({
+        "property": [{"name": "operationMode", "valueRange": {}}],
+        "alarm": [], "logicLimit": [], "logicPatch": [],
+    })
+    for attr in cfg["attributes"]:
+        assert not {"startWord", "startBit", "length"} & set(attr)

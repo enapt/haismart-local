@@ -1106,3 +1106,28 @@ def select_wire_model(length: int, uplus_id: str | None = None) -> WireModel | N
                 return wm
     candidates = [wm for wm in WIRE_MODELS if length in wm.report_lengths]
     return candidates[0] if len(candidates) == 1 else None
+
+
+def device_type_class(uplus_id: str | None) -> str | None:
+    """The five-character device-type class a uPlusId belongs to, or ``None``.
+
+    A device type is written either as five characters (a whole product class -- split air
+    conditioners, cabinet air conditioners, and so on) or as eight (one particular product). The
+    class half is carried in the uPlusId and can be read straight out of it:
+
+        class = uplus_id[16:18] + "0" + uplus_id[18:20]
+
+    e.g. ``…0324` `0212` `0011801…`` -> ``02012``. This holds for every published model that states
+    a device type, bar one that declares a placeholder.
+
+    ⚠️ The remaining three characters of an eight-character device type are **not** in the uPlusId,
+    so a device's specific identity cannot be computed from it -- only looked up. And a class is
+    **not** a layout: devices sharing one class are known to report in different wire families, so
+    this must never be used to choose a decoder. It is an identifier, for reporting and lookup.
+    """
+    if not uplus_id or len(uplus_id) < 20:
+        return None
+    head = uplus_id[16:20]
+    if not head.isalnum():
+        return None
+    return f"{head[:2]}0{head[2:]}".lower()

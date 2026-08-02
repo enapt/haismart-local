@@ -110,6 +110,7 @@ from .wire_models import (
     WireModel,
     WriteField,
     declared_fields,
+    device_type_class,
     probe_layout,
     select_wire_model,
 )
@@ -144,6 +145,7 @@ __all__ = [
     "WIRE_MODELS",
     "select_wire_model",
     "declared_fields",
+    "device_type_class",
     "OPTIONAL_BOOL_FEATURES",
     "declared_bool_features",
     "read_bool_features",

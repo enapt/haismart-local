@@ -1934,3 +1934,23 @@ def test_encoder_membership_is_not_widened_by_the_published_map():
     # ecoMode is the one field the shared map cannot supply, so it stays stated locally
     assert "ecoMode" not in CANONICAL_WRITE
     assert uss.GRSETDAC_FIELDS["ecoMode"] == (4, 3, 3)
+
+
+def test_device_type_class_reads_the_class_out_of_a_uplus_id():
+    """A uPlusId carries the five-character product class its device belongs to."""
+    from haismart_hrdp import device_type_class
+
+    # split air conditioners -> 02012, cabinet air conditioners -> 03012
+    assert device_type_class("2008610800820324021200118012560000" + "0" * 30) == "02012"
+    assert device_type_class("2008610800820324031200118006114500" + "0" * 30) == "03012"
+    # the three reference families all sit in one class yet report in three different wire
+    # families -- which is exactly why this is an identifier and never a decoder choice
+    classes = {
+        device_type_class("200861080082032402120011801" + tail + "0" * 30)
+        for tail in ("2560000", "7740000", "8900000")
+    }
+    assert classes == {"02012"}
+    # absent or truncated input is not guessed at
+    assert device_type_class(None) is None
+    assert device_type_class("") is None
+    assert device_type_class("2008610800820324") is None

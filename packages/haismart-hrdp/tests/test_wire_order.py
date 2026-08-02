@@ -90,8 +90,8 @@ def test_prefix_resolution_finds_our_relatives_and_admits_the_tie() -> None:
 
 # The published write frame, as `canonical_map` records it, plus the two fields no profile
 # publishes but hardware settled: the eco ladder (measured by cycling a unit through its levels)
-# and localCtrValid (bit 11 is the only high bit ever set in 80 captured reports, and the cloud
-# shadow reports that attribute true while its neighbours are false).
+# and localCtrValid (bit 11 is the only high bit ever seen set on hardware, and the device's own
+# published values report that attribute true while its neighbours are false).
 _WRITE_ANCHORS = {
     n: (f.word, f.bit, f.length) for n, f in CANONICAL_WRITE.items()
 } | {"generatorMode": (4, 3, 3), "localCtrValid": (5, 11, 1)}

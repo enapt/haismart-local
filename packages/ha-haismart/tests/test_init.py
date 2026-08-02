@@ -2453,3 +2453,102 @@ async def test_economy_control_needs_the_device_to_declare_it(
     # the same unit whose model says nothing about it gets no control at all
     entry2 = await _setup_with_model(hass, _REAL_SHAPE_MODEL)
     assert entry2.runtime_data.supports_eco is False
+
+
+async def test_model_rules_fall_back_to_the_public_catalogue(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """An entry with no cloud credentials still gets its rules.
+
+    The account's resource service can only answer for devices the signed-in account owns, so an
+    install set up by hand would never receive the conditional rules or the invisible flags -- and
+    so would never get conditional availability or the optional-feature entities that depend on
+    knowing a unit's real feature set. A catalogue keyed on product code needs no account, and is
+    what such an entry falls back to.
+    """
+    import json as _json
+    from unittest.mock import AsyncMock, patch
+
+    from custom_components.haismart.const import CONF_DIGITAL_MODEL
+
+    shadow = {"attributes": [{"name": "operationMode"}]}
+    published = {
+        "attributes": [{"name": "operationMode"}, {"name": "freshAirStatus", "invisible": True}],
+        "modifiers": [{"trigger": {}, "actions": []}],
+        "alarms": [{"name": "F1"}],
+    }
+    entry = _entry(**{CONF_DIGITAL_MODEL: _json.dumps(shadow)})
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    with patch(
+        "custom_components.haismart.coordinator.get_public_device_config",
+        new=AsyncMock(return_value=published),
+    ) as fetch:
+        assert await entry.runtime_data.async_fetch_model_rules() is True
+
+    # asked the catalogue for THIS entry's product code, with no token of any kind
+    assert fetch.await_args.args[0] == "AAC1UKZ01"
+    merged = _json.loads(entry.data[CONF_DIGITAL_MODEL])
+    assert merged["modifiers"] and merged["alarms"]
+    # the invisible set is recorded, which is what the optional-feature entities gate on
+    assert merged["invisible_attributes"] == ["freshAirStatus"]
+
+
+async def test_model_rules_refuse_to_guess_a_product_code(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A product code the entry never learned must not be used to look rules up.
+
+    `product_code` falls back to a built-in default, and a default reads exactly like a device
+    genuinely carrying that code. Fetching on one would hand this device another model's rulebook --
+    the wrong entities unavailable, the wrong faults named -- which is worse than having none.
+    """
+    import json as _json
+    from unittest.mock import AsyncMock, patch
+
+    from custom_components.haismart.const import CONF_DIGITAL_MODEL, CONF_PRODUCT_CODE
+
+    entry = _entry(**{CONF_DIGITAL_MODEL: _json.dumps({"attributes": [{"name": "operationMode"}]})})
+    entry.add_to_hass(hass)
+    # an entry that never stored one at all
+    hass.config_entries.async_update_entry(
+        entry, data={k: v for k, v in entry.data.items() if k != CONF_PRODUCT_CODE}
+    )
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    with patch(
+        "custom_components.haismart.coordinator.get_public_device_config", new=AsyncMock()
+    ) as fetch:
+        assert await entry.runtime_data.async_fetch_model_rules() is False
+    assert fetch.await_count == 0
+
+
+async def test_diagnostics_say_which_device_a_report_came_from(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A report is only useful for adding a model if it identifies its device -- and says when the
+    product code is a built-in default rather than one the device actually carries."""
+    from custom_components.haismart.const import CONF_PRODUCT_CODE
+    from custom_components.haismart.diagnostics import (
+        async_get_config_entry_diagnostics,
+    )
+
+    entry = await _setup(hass)
+    diag = await async_get_config_entry_diagnostics(hass, entry)
+    ident = diag["device_identity"]
+    assert ident["product_code"] == "AAC1UKZ01"
+    assert ident["product_code_is_fallback"] is False
+
+    # an entry that never learned one reports the default, and says so
+    entry2 = _entry(unique_id="B1B2C3D4E5F6")
+    entry2.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        entry2, data={k: v for k, v in entry2.data.items() if k != CONF_PRODUCT_CODE}
+    )
+    await hass.config_entries.async_setup(entry2.entry_id)
+    await hass.async_block_till_done()
+    ident2 = (await async_get_config_entry_diagnostics(hass, entry2))["device_identity"]
+    assert ident2["product_code_is_fallback"] is True

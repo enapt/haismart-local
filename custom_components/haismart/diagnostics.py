@@ -8,6 +8,7 @@ from haismart_hrdp import (
     STATUS_LAYOUTS,
     declared_order,
     derive_status_layout,
+    device_type_class,
     probe_layout,
     select_wire_model,
 )
@@ -22,7 +23,9 @@ from .const import (
     CONF_GATEWAY_PASSWORD,
     CONF_GATEWAY_USERNAME,
     CONF_LOCAL_KEY,
+    CONF_PRODUCT_CODE,
     CONF_REFRESH_TOKEN,
+    DEFAULT_PRODUCT_CODE,
 )
 from .coordinator import HaismartConfigEntry
 
@@ -104,6 +107,22 @@ async def async_get_config_entry_diagnostics(
         # any hand-written map holds, so this is most of what a report actually says -- surfaced
         # here first, where a wrong value costs nothing, rather than straight into entities.
         "model_declared_fields": _declared_readings(coordinator),
+        # What this particular device IS, kept apart from the profile chosen for it. A report is
+        # only useful for adding a new model if it says which device it came from, and
+        # `product_code` alone does not: an entry that never learned one falls back to a built-in
+        # default, which then reads exactly like a device genuinely carrying that code. Saying
+        # which it is separates a usable report from a misleading one.
+        "device_identity": {
+            "uplus_id": coordinator.uplus_id,
+            "product_code": coordinator.product_code,
+            "product_code_is_fallback": (
+                not entry.data.get(CONF_PRODUCT_CODE)
+                and coordinator.product_code == DEFAULT_PRODUCT_CODE
+            ),
+            # The product class the uPlusId encodes -- an identifier for lookup only. Devices in one
+            # class are known to report in different wire families, so it never picks a decoder.
+            "device_type_class": device_type_class(coordinator.uplus_id),
+        },
         "profile": {
             "product_code": coordinator.product_code,
             "modes": dict(profile.mode_values),

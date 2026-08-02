@@ -30,7 +30,11 @@ from haismart_extractor import (
     HaierCloud,
     get_localkey_via_gateway,
 )
-from haismart_extractor.cloud import SEA_APP_CREDENTIALS, CloudError
+from haismart_extractor.cloud import (
+    SEA_APP_CREDENTIALS,
+    CloudError,
+    get_public_device_config,
+)
 from haismart_hrdp import (
     GRSETDAC_FIELDS,
     GRSETDAC_MODEL_AUTHORIZED,
@@ -1214,7 +1218,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """
         data = self.config_entry.data
         stored = _stored_digital_model(self.config_entry)
-        if not stored or not data.get(CONF_REFRESH_TOKEN):
+        if not stored:
             return False
         # Re-fetch if the rules are missing OR the model predates carrying `invisible_attributes`
         # (which the optional-feature entities need to tell a real feature from one the generic
@@ -1222,9 +1226,62 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if stored.get("modifiers") and "invisible_attributes" in stored:
             return False
         model = stored
+        published = await self._async_published_model()
+        if published is None:
+            return False
+        merged = merge_rules(model, published)
+        if merged == model:
+            return False
+        self.digital_model = merged
+        self.hass.config_entries.async_update_entry(
+            self.config_entry,
+            data={**data, CONF_DIGITAL_MODEL: json.dumps(merged)},
+        )
+        _LOGGER.info(
+            "model rules for %s: %d rule(s), %d co-command constraint(s)", self.device_id,
+            len(merged.get("modifiers") or ()), len(merged.get("constraints") or ()),
+        )
+        return True
+
+    async def _async_published_model(self) -> dict[str, Any] | None:
+        """A device's published model, from whichever source can answer for it.
+
+        There are two, and an install may have access to only one. The account's resource service
+        answers for the devices the signed-in account owns, and is preferred because it is what
+        onboarding already uses. The other is a catalogue keyed on product code that needs no
+        account at all -- the only one available to an entry set up by hand, which would otherwise
+        never get rules, and so would never get conditional availability or the optional-feature
+        entities that depend on knowing a unit's real feature set.
+
+        Returns ``None`` when neither can answer, and the caller then leaves the stored model alone.
+        No rules locks nothing, which is the safe direction.
+        """
+        data = self.config_entry.data
+        if data.get(CONF_REFRESH_TOKEN) and data.get(CONF_CLOUD_CLIENT_ID):
+            published = await self._async_account_published_model()
+            if published is not None:
+                return published
+        # only a product code the entry actually stores will do. `self.product_code` falls back to
+        # a built-in default, and a default is indistinguishable from a real code -- handing this
+        # device another model's rules would make the wrong entities unavailable and name the wrong
+        # faults, which is worse than having none at all.
+        product_code = data.get(CONF_PRODUCT_CODE)
+        if not product_code:
+            return None
+        try:
+            return await get_public_device_config(
+                product_code, transport=async_cloud_transport(self.hass)
+            )
+        except (CloudError, OSError, RuntimeError, TimeoutError, ValueError) as err:
+            _LOGGER.debug("no published model for product code %s: %s", product_code, err)
+            return None
+
+    async def _async_account_published_model(self) -> dict[str, Any] | None:
+        """The published model via the signed-in account's resource service, or ``None``."""
+        data = self.config_entry.data
         usdk_client_id = data.get(CONF_CLOUD_CLIENT_ID)
         if not usdk_client_id:
-            return False
+            return None
         try:
             cloud = HaierCloud(
                 replace(SEA_APP_CREDENTIALS, client_id=usdk_client_id),
@@ -1240,27 +1297,14 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                  if d.device_id.upper() == self.device_id.upper()), None
             )
             if device is None or not (device.model and device.uplus_id):
-                return False
-            published = await cloud.get_device_config(
+                return None
+            return await cloud.get_device_config(
                 device.model, device.uplus_id,
                 prod_no=device.prod_no or "", device_type=device.device_type or "",
             )
         except (CloudError, OSError, RuntimeError, TimeoutError, ValueError) as err:
             _LOGGER.debug("could not fetch the model rules for %s: %s", self.device_id, err)
-            return False
-        merged = merge_rules(model, published)
-        if merged == model:
-            return False
-        self.digital_model = merged
-        self.hass.config_entries.async_update_entry(
-            self.config_entry,
-            data={**data, CONF_DIGITAL_MODEL: json.dumps(merged)},
-        )
-        _LOGGER.info(
-            "model rules for %s: %d rule(s), %d co-command constraint(s)", self.device_id,
-            len(merged.get("modifiers") or ()), len(merged.get("constraints") or ()),
-        )
-        return True
+            return None
 
     async def _async_gateway_refresh(self) -> bool:
         """Fetch the current localKey from the cloud MQTT gateway and update it in place.

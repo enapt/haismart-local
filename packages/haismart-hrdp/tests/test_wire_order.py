@@ -1,5 +1,6 @@
 """The published group-set order, checked against hardware-measured positions."""
 
+from haismart_hrdp.canonical_map import CANONICAL_WRITE
 from haismart_hrdp.wire_order import (
     Placement,
     bracket_unplaced,
@@ -85,6 +86,54 @@ def test_prefix_resolution_finds_our_relatives_and_admits_the_tie() -> None:
     assert [shared for shared, _ in ranked[:2]] == [26, 26]
     assert ranked[2][0] == 17                       # the cabinet family falls away
     assert ranked[3][0] == 0                        # and an unrelated family shares nothing
+
+
+# The published write frame, as `canonical_map` records it, plus the two fields no profile
+# publishes but hardware settled: the eco ladder (measured by cycling a unit through its levels)
+# and localCtrValid (bit 11 is the only high bit ever set in 80 captured reports, and the cloud
+# shadow reports that attribute true while its neighbours are false).
+_WRITE_ANCHORS = {
+    n: (f.word, f.bit, f.length) for n, f in CANONICAL_WRITE.items()
+} | {"generatorMode": (4, 3, 3), "localCtrValid": (5, 11, 1)}
+
+# Widths for what remains: the shared/rental SKU's own fields, absent from every published profile.
+_WIDTHS = {"useMode": 1, "rentTimingStatus": 1, "targetRentTime": 8}
+
+
+def test_the_published_write_frame_covers_all_but_the_rental_fields() -> None:
+    """Against the real anchor set, 35 of 38 fields are already placed and 3 remain.
+
+    Worth stating because the gap looks larger than it is when the wrong map is used as anchors: the
+    *report* layout and the *write* layout are different frames, and only one of them answers here.
+    What is left is the shared-rental SKU's own vocabulary, which no published profile carries.
+    """
+    solved, ambiguous = solve_positions(ATTR_ORDER, _WRITE_ANCHORS, _WIDTHS)
+
+    assert len(_WRITE_ANCHORS.keys() & set(ATTR_ORDER)) == 35
+    assert {a.name for a in ambiguous} == {"useMode", "rentTimingStatus", "targetRentTime"}
+    assert not solved            # nothing left over fits exactly; see the containment test below
+
+
+def test_the_open_fields_cannot_disturb_anything_else() -> None:
+    """Each unresolved field is fenced between known anchors, so the doubt goes no further.
+
+    This is what makes the residue tolerable rather than a hole in the map. ``useMode`` sits in four
+    bits between two placed fields and ``rentTimingStatus`` in two; wherever inside those windows
+    they really are, every other field keeps the position the profile publishes. Only
+    ``targetRentTime`` is open-ended, and it has its word to itself.
+
+    They cannot be narrowed further from anything held here: all three read zero in every captured
+    report, so a reserved bit and a false flag look identical. Settling them needs a unit in rental
+    service, which these are not -- and nothing surfaces them, so it buys nothing.
+    """
+    _, ambiguous = solve_positions(ATTR_ORDER, _WRITE_ANCHORS, _WIDTHS)
+    by_name = {a.name: a for a in ambiguous}
+
+    assert by_name["useMode"].after == Placement(4, 0, 3)        # windDirectionHorizontal
+    assert by_name["useMode"].before == Placement(5, 11, 1)      # localCtrValid
+    assert by_name["rentTimingStatus"].after == Placement(5, 11, 1)
+    assert by_name["rentTimingStatus"].before == Placement(5, 8, 1)   # cloudFilterChangeFlag
+    assert by_name["targetRentTime"].before is None              # alone past the last anchor
 
 
 # Widths from the universal map plus the value ranges the device publishes. The map covers 30 of

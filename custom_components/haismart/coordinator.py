@@ -51,6 +51,7 @@ from haismart_hrdp import (
     extended_status_epp_frame,
     grsetdac_baseline_from_status,
     grsetdac_op_frame,
+    lock_reasons,
     locked_attributes,
     merge_rules,
     model_enum_codes,
@@ -1065,9 +1066,19 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """
         return self._locked_fields(self.data or {}, ignore=ignore)
 
+    @property
+    def locked_reasons(self) -> dict[str, str]:
+        """The same locked fields, each with the reason its model gives — ``{field: reason}``.
+
+        For display only: a control that has gone unavailable can say whether it is the unit's mode,
+        a fault, or a cleaning cycle holding it. Availability is decided by :attr:`locked_fields`,
+        which is the same computation, so a reason can never add or remove a lock.
+        """
+        return self._locked_fields(self.data or {}, reasons=True)  # type: ignore[return-value]
+
     def _locked_fields(
-        self, state: dict[str, Any], ignore: Collection[str] = ()
-    ) -> frozenset[str]:
+        self, state: dict[str, Any], ignore: Collection[str] = (), *, reasons: bool = False
+    ) -> frozenset[str] | dict[str, str]:
         """Control fields this unit will discard right now, per its own model's rules.
 
         A model states these conditionally — a unit in fan-only ignores a setpoint, one in dry
@@ -1084,7 +1095,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """
         model = self.digital_model
         if not model:
-            return frozenset()
+            return {} if reasons else frozenset()
         pending: dict[str, str] = {}
         for name, to_model in _MODEL_VALUE_FROM_EPP.items():
             if name == "onOffStatus" or name in ignore:
@@ -1095,14 +1106,15 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             pending[_ECO_MODEL_NAME] = _ECO_MODEL_BY_EPP.get(eco, str(eco))
         if state.get("self_cleaning"):
             pending["selfCleaningStatus"] = "true"
-        locked = locked_attributes(
-            model, pending, alarm_names(model, state.get("alarm_codes") or ())
-        )
+        alarms = alarm_names(model, state.get("alarm_codes") or ())
         # back to the names control uses: the model calls the multi-level economy setting
         # `generatorMode`, everything else shares its name
-        return frozenset(
-            "ecoMode" if name == _ECO_MODEL_NAME else name for name in locked
-        )
+        def as_control(name: str) -> str:
+            return "ecoMode" if name == _ECO_MODEL_NAME else name
+
+        if reasons:
+            return {as_control(n): why for n, why in lock_reasons(model, pending, alarms).items()}
+        return frozenset(as_control(n) for n in locked_attributes(model, pending, alarms))
 
     def field_codes(self, name: str) -> frozenset[int]:
         """The wire values this unit's own digital model authorizes for ``name``, or empty.

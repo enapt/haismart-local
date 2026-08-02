@@ -228,3 +228,86 @@ def test_recorded_rules_fill_in_a_model_that_arrived_without_them():
     assert with_rules(own, uplus) is own                                   # its own rules win
     assert with_rules(bare, "no-such-model").get("modifiers") is None
     assert with_rules(None, uplus) is None
+
+
+def test_lock_reasons_says_why_each_control_is_unavailable():
+    """A locked control carries the reason its own model gives for locking it."""
+    from haismart_hrdp import device_rules, lock_reasons
+
+    model = dict(device_rules.rules_for(
+        "2008610800820324021200118012560000000000000000000000000000000040"
+    ))
+    # fan-only: the setpoint and the comfort settings go, and the model says why
+    reasons = lock_reasons(model, {"operationMode": "6"})
+    assert reasons["targetTemperature"] == "not available in fan-only mode"
+    assert reasons["rapidMode"] == "not available in fan-only mode"
+    # dry names a different reason for the same control
+    assert lock_reasons(model, {"operationMode": "2"})["rapidMode"] == "not available in dry mode"
+    # a model lists its rules in descending priority and the first match wins, so a unit that is
+    # both faulted and in fan-only reports the MODE -- the fault rule does not sit at the top.
+    # Pinned because it is the sort of thing someone would otherwise "fix" on an assumption.
+    faulted = lock_reasons(model, {"operationMode": "6"}, active_alarms=["indoorFanErr"])
+    assert faulted["targetTemperature"] == "not available in fan-only mode"
+    # and with no mode rule firing, the fault reason is the one reported
+    assert lock_reasons(model, {}, active_alarms=["indoorFanErr"])["targetTemperature"] == (
+        "not available while the unit reports a fault"
+    )
+
+
+def test_lock_reasons_and_locked_attributes_never_disagree():
+    """Reasons are for display; they can neither add nor remove a lock."""
+    from haismart_hrdp import device_rules, lock_reasons, locked_attributes
+
+    model = dict(device_rules.rules_for(
+        "2008610800820324021200118012560000000000000000000000000000000040"
+    ))
+    for state, alarms in (
+        ({}, ()), ({"operationMode": "6"}, ()), ({"operationMode": "2"}, ()),
+        ({"operationMode": "0"}, ()), ({"silentSleepStatus": "true"}, ()),
+        ({"selfCleaningStatus": "true"}, ()), ({}, ("indoorFanErr",)),
+    ):
+        assert set(lock_reasons(model, state, alarms)) == set(
+            locked_attributes(model, state, alarms)
+        ), (state, alarms)
+
+
+def test_a_missing_explanation_still_locks():
+    """An unexplained rule must not become an unlocked one."""
+    from haismart_hrdp import lock_reasons, locked_attributes
+
+    model = {
+        "modifiers": [{
+            "trigger": {"operator": "AND", "conditions": {"operationMode": ["6"]}},
+            "invalid_code": "59999",              # a code the model does not explain
+            "actions": [{"name": "targetTemperature", "writable": False}],
+        }],
+        "invalid_reasons": {"50009": "not available in fan-only mode"},
+    }
+    state = {"operationMode": "6"}
+    assert locked_attributes(model, state) == frozenset({"targetTemperature"})
+    assert lock_reasons(model, state) == {"targetTemperature": ""}
+
+
+def test_the_recorded_fallback_carries_the_co_commands_too():
+    """A device with no cloud credentials gets the settings that must travel together, not just
+    the locks -- otherwise a write silently drops half of what it asked for."""
+    from haismart_hrdp import constraint_commands, device_rules
+
+    model = dict(device_rules.rules_for(
+        "2008610800820324021200118012560000000000000000000000000000000040"
+    ))
+    assert len(model["constraints"]) == 10
+    # selecting fan-only carries the concrete fan speed the unit demands, and clears the comfort
+    # settings it would otherwise discard
+    extra = constraint_commands(model, {"operationMode": "6"})
+    assert extra["windSpeed"] == "3"
+    assert extra["rapidMode"] == "false" and extra["muteStatus"] == "false"
+    # boost clears quiet and economy
+    assert constraint_commands(model, {"rapidMode": "true"}) == {
+        "muteStatus": "false", "generatorMode": "0"
+    }
+    # an explicit request outranks a rule's default: the rule stops contributing that field, so
+    # the caller's own value is what travels
+    assert "windSpeed" not in constraint_commands(
+        model, {"operationMode": "6", "windSpeed": "1"}
+    )

@@ -284,6 +284,11 @@ PUBLIC_CONFIG_SECTIONS = {
     "basicInfo": "baseInfo",
 }
 
+# The catalogue carries one section the account-scoped model leaves empty: what each lock rule's
+# reason code means. It is a flat code -> sentence list, so it needs no adaptation beyond becoming a
+# mapping, and it is the only place either source states why a control has gone unavailable.
+PUBLIC_CONFIG_REASONS_SECTION = "invalidInfo"
+
 # Sections whose inner schema has not been adapted. Dropped, not renamed.
 PUBLIC_CONFIG_UNADAPTED = ("logicLimit", "logicPatch", "operation")
 
@@ -304,6 +309,15 @@ def normalize_public_config(doc: Mapping[str, Any]) -> dict:
     out: dict[str, Any] = {}
     for key, value in doc.items():
         if key in PUBLIC_CONFIG_UNADAPTED:
+            continue
+        if key == PUBLIC_CONFIG_REASONS_SECTION:
+            # code -> sentence. Entries without both are skipped rather than half-carried: a reason
+            # is for display, so a malformed one must never reach a user, and never affects a lock.
+            out["invalid_reasons"] = {
+                str(item["code"]): str(item["description"])
+                for item in value or ()
+                if isinstance(item, Mapping) and item.get("code") and item.get("description")
+            }
             continue
         name = PUBLIC_CONFIG_SECTIONS.get(key, key)
         renames = PUBLIC_CONFIG_FIELD_RENAMES.get(name)

@@ -339,9 +339,34 @@ def locked_attributes(
     hardware demonstrably accepts. These rules are conditional and match observed behaviour: a unit
     in fan-only really does ignore a setpoint, and one reporting a fault ignores most of the rest.
     """
+    return frozenset(lock_reasons(model, state, active_alarms))
+
+
+def lock_reasons(
+    model: Mapping[str, Any] | None,
+    state: Mapping[str, str],
+    active_alarms: Collection[str] = (),
+) -> dict[str, str]:
+    """Which attributes are locked right now, and **why** — ``{attribute: reason}``.
+
+    Every rule names the reason it fires as a code, and the model states what those codes mean, so a
+    control that has gone unavailable can say whether it is the unit's mode, a fault, or its being
+    switched off. Reasons are for display only; :func:`locked_attributes` is the same computation and
+    is what decides availability.
+
+    An attribute locked by more than one rule keeps the **first** reason, and a model lists its rules
+    in descending priority, so that is the highest-priority rule's. Note what that means in practice
+    rather than assuming: the fault rule does not sit at the top, so a unit that is both faulted and
+    in fan-only reports the mode as the reason. Both are true and neither is more correct -- do not
+    "fix" this into a fault-first ordering without a reason to prefer one.
+
+    An attribute whose rule names no reason, or names one the model does not explain, is still
+    locked but reported without one; a missing explanation must never turn into a missing lock.
+    """
     if not model:
-        return frozenset()
-    locked: set[str] = set()
+        return {}
+    meanings = {str(k): str(v) for k, v in (model.get("invalid_reasons") or {}).items()}
+    reasons: dict[str, str] = {}
     for rule in model.get("modifiers") or ():
         trigger = rule.get("trigger") or {}
         conditions = trigger.get("conditions") or {}
@@ -355,7 +380,8 @@ def locked_attributes(
         fired = any(matched) if str(trigger.get("operator")).upper() == "OR" else all(matched)
         if not fired:
             continue
+        reason = meanings.get(str(rule.get("invalid_code") or ""), "")
         for action in rule.get("actions") or ():
             if action.get("writable") is False and action.get("name"):
-                locked.add(action["name"])
-    return frozenset(locked)
+                reasons.setdefault(action["name"], reason)
+    return reasons

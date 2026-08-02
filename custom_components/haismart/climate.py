@@ -147,6 +147,20 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
             self._attr_supported_features |= ClimateEntityFeature.SWING_HORIZONTAL_MODE
 
     @property
+    def extra_state_attributes(self) -> dict[str, str] | None:
+        """Why any control is missing right now, as ``{setting: reason}``.
+
+        A control that vanishes from the card is otherwise indistinguishable from one this
+        integration never supported. The unit's own model states the reason each of its rules fires
+        with — its mode, a fault, a cleaning cycle — so say it. This entity is the right place
+        because it is the one that keeps its features hidden while staying available itself; an
+        unavailable switch cannot report anything.
+
+        Omitted entirely when nothing is locked, rather than shown empty.
+        """
+        return self.coordinator.locked_reasons or None
+
+    @property
     def supported_features(self) -> ClimateEntityFeature:
         """The features minus whatever this unit is currently ignoring.
 

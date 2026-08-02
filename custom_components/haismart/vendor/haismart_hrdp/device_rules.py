@@ -25,6 +25,26 @@ def _lock(name: str) -> dict[str, Any]:
     return {"name": name, "writable": False}
 
 
+# Every lock rule names the reason it fires, as a code. A model publishes the codes and their
+# meanings separately, so a locked control can say *why* rather than only going unavailable.
+#
+# Only one of the two forms a published model arrives in carries these: the openly fetchable one
+# states a code on each condition and lists the meanings, while the account-fetched form states
+# neither. So the meanings are recorded here as well, and a model that does carry its own always
+# wins -- same rule as the lock rules themselves.
+INVALID_REASONS: Mapping[str, str] = {
+    "50001": "not available while the unit reports a fault",
+    "50002": "not available in the unit's current state",
+    "50003": "the temperature cannot be adjusted in the unit's current state",
+    "50004": "the fan speed cannot be adjusted in the unit's current state",
+    "50005": "not available in intelligent mode",
+    "50006": "not available in cooling mode",
+    "50007": "not available in heating mode",
+    "50008": "not available in dry mode",
+    "50009": "not available in fan-only mode",
+}
+
+
 _ALARM_NAMES = (
     "alarmCancel",
     "outdoorModuleErr",
@@ -137,10 +157,12 @@ _FAULTS = [
 _MODIFIERS = [
     {
         "trigger": {"operator": "AND", "conditions": {"silentSleepStatus": ['true']}},
+        "invalid_code": "50002",
         "actions": [_lock("rapidMode"), _lock("selfCleaningStatus")],
     },
     {
         "trigger": {"operator": "AND", "conditions": {"operationMode": ['6']}},
+        "invalid_code": "50009",
         "actions": [
             _lock("targetTemperature"), _lock("silentSleepStatus"), _lock("muteStatus"),
             _lock("rapidMode"), _lock("generatorMode")
@@ -148,16 +170,19 @@ _MODIFIERS = [
     },
     {
         "trigger": {"operator": "AND", "conditions": {"operationMode": ['2']}},
+        "invalid_code": "50008",
         "actions": [_lock("muteStatus"), _lock("rapidMode")],
     },
     {
         "trigger": {"operator": "AND", "conditions": {"operationMode": ['0']}},
+        "invalid_code": "50005",
         "actions": [
             _lock("muteStatus"), _lock("rapidMode"), _lock("selfCleaningStatus"), _lock("generatorMode")
         ],
     },
     {
         "trigger": {"operator": "OR", "alarms": _FAULTS},
+        "invalid_code": "50001",
         "actions": [
             _lock("targetTemperature"), _lock("windDirectionVertical"), _lock("operationMode"),
             _lock("windSpeed"), _lock("screenDisplayStatus"), _lock("echoStatus"),
@@ -169,6 +194,7 @@ _MODIFIERS = [
         "trigger": {"operator": "OR", "conditions": {
             "onOffStatus": ["false"], "selfCleaningStatus": ["true"],
         }},
+        "invalid_code": "50002",
         "actions": [
             _lock("targetTemperature"), _lock("windDirectionVertical"), _lock("operationMode"),
             _lock("windSpeed"), _lock("screenDisplayStatus"), _lock("echoStatus"),
@@ -178,6 +204,60 @@ _MODIFIERS = [
     },
 ]
 
+# The settings that must travel together. A write that changes one of these also has to carry the
+# others, or the unit applies the change and silently drops the rest: selecting fan-only while the
+# fan is on auto is the case this project first met on real hardware, and the rule below is the
+# device's own statement of it -- down to which concrete speed to substitute.
+#
+# ``mergeType`` says whether the extra settings go before or after the requested one.
+_CONSTRAINTS = [{'pendingCondition': {'operator': 'AND', 'commands': {'operationMode': ['2']}},
+  'additionalCommands': {'mergeType': 'APPEND',
+                         'commands': [{'name': 'muteStatus', 'value': 'false'},
+                                      {'name': 'rapidMode', 'value': 'false'},
+                                      {'name': 'generatorMode', 'value': '0'}]}},
+ {'pendingCondition': {'operator': 'AND', 'commands': {'operationMode': ['6']}},
+  'additionalCommands': {'mergeType': 'PREPEND',
+                         'commands': [{'name': 'windSpeed', 'value': '3'},
+                                      {'name': 'silentSleepStatus', 'value': 'false'},
+                                      {'name': 'muteStatus', 'value': 'false'},
+                                      {'name': 'rapidMode', 'value': 'false'},
+                                      {'name': 'generatorMode', 'value': '0'}]}},
+ {'pendingCondition': {'operator': 'AND', 'commands': {'operationMode': ['0']}},
+  'additionalCommands': {'mergeType': 'APPEND',
+                         'commands': [{'name': 'targetTemperature', 'value': '24.00'},
+                                      {'name': 'windSpeed', 'value': '5'},
+                                      {'name': 'muteStatus', 'value': 'false'},
+                                      {'name': 'rapidMode', 'value': 'false'},
+                                      {'name': 'generatorMode', 'value': '0'}]}},
+ {'pendingCondition': {'operator': 'AND', 'commands': {'onOffStatus': ['false']}},
+  'additionalCommands': {'mergeType': 'PREPEND',
+                         'commands': [{'name': 'selfCleaningStatus', 'value': 'false'},
+                                      {'name': 'silentSleepStatus', 'value': 'false'}]}},
+ {'pendingCondition': {'operator': 'AND', 'commands': {'onOffStatus': ['true']}},
+  'additionalCommands': {'mergeType': 'APPEND',
+                         'commands': [{'name': 'selfCleaningStatus', 'value': 'false'}]}},
+ {'pendingCondition': {'operator': 'OR',
+                       'commands': {'silentSleepStatus': ['true'], 'muteStatus': ['true']}},
+  'additionalCommands': {'mergeType': 'APPEND',
+                         'commands': [{'name': 'rapidMode', 'value': 'false'}]}},
+ {'pendingCondition': {'operator': 'AND', 'commands': {'rapidMode': ['true']}},
+  'additionalCommands': {'mergeType': 'APPEND',
+                         'commands': [{'name': 'muteStatus', 'value': 'false'},
+                                      {'name': 'generatorMode', 'value': '0'}]}},
+ {'pendingCondition': {'operator': 'AND', 'commands': {'windSpeed': ['1', '2', '3']}},
+  'additionalCommands': {'mergeType': 'PREPEND',
+                         'commands': [{'name': 'rapidMode', 'value': 'false'},
+                                      {'name': 'muteStatus', 'value': 'false'}]}},
+ {'pendingCondition': {'operator': 'AND', 'commands': {'operationMode': ['6']}},
+  'additionalCommands': {'mergeType': 'APPEND',
+                         'commands': [{'name': 'silentSleepStatus', 'value': 'false'},
+                                      {'name': 'muteStatus', 'value': 'false'},
+                                      {'name': 'rapidMode', 'value': 'false'},
+                                      {'name': 'generatorMode', 'value': '0'}]}},
+ {'pendingCondition': {'operator': 'AND', 'commands': {'generatorMode': ['1', '2', '3']}},
+  'additionalCommands': {'mergeType': 'PREPEND',
+                         'commands': [{'name': 'rapidMode', 'value': 'false'}]}}]
+
 
 # Keyed by the model identifier a unit reports for itself (the same one that selects its report
 # layout). One family so far: the cooling-only shared-AC model these rules were read from.
@@ -185,13 +265,15 @@ DEVICE_RULES: Mapping[str, Mapping[str, Any]] = {
     "2008610800820324021200118012560000000000000000000000000000000040": {
         "modifiers": _MODIFIERS,
         "alarms": [{"name": name} for name in _ALARM_NAMES],
+        "constraints": _CONSTRAINTS,
+        "invalid_reasons": dict(INVALID_REASONS),
     },
 }
 
 
 # The sections a published model carries that a device's shadow does not: which settings it ignores
 # in which state, the faults those rules name, and which settings must travel together.
-RULE_SECTIONS = ("modifiers", "alarms", "constraints")
+RULE_SECTIONS = ("modifiers", "alarms", "constraints", "invalid_reasons")
 
 # Not a rule, but it arrives in the same place and a shadow leaves it empty: the group commands, one
 # of which lists the settings it carries IN WIRE ORDER. See :func:`declared_order`.

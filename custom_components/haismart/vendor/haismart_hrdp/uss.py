@@ -983,21 +983,28 @@ _EXT_OFF_CURRENT = 134        # BE16, amps x 10
 _EXT_OFF_ACTUATORS = 136      # BE16 of six 2-bit actuator states, see _EXT_ACTUATORS
 _EXT_OFF_EXPANSION_VALVE = 138   # BE16, electronic expansion valve opening
 
-# The actuator word packs six two-bit states. The published map gives each one's position and says
-# its value is 0, 1 or 2 -- but not what those mean, so only the two whose behaviour has been watched
-# against a running unit are reported as booleans. The rest are reported as the codes they are: an
-# idle unit sends a non-zero value for several of them, so reading "not zero" as "running" would say
-# the outdoor fan and the reversing valve were active on a unit drawing no power.
-_EXT_ACTUATOR_FLAGS: tuple[tuple[str, int], ...] = (
+# The actuator word packs six two-bit states, each **0 = off, 1 = on, 2 = not reported**. That third
+# value is the important one: a unit says "I do not have this reading" in-band rather than by leaving
+# the field out, so a state has to be read as three-valued and not as a flag.
+#
+# Reading it as a flag is wrong in the direction that matters. `bool(value)` turns "not reported" into
+# "running" and pins the sensor on for as long as the unit keeps saying it cannot tell you -- the same
+# shape of defect as testing a byte that packs eight attributes for truthiness. The reference units
+# here report 2 for their reversing valve and outdoor fan whether cooling hard or idle at 0 W, which
+# is what first showed the value could not be a flag.
+#
+# So: 1 is on, 0 is off, and anything else omits the key entirely, leaving it unknown rather than
+# inventing a state. Same rule as a temperature probe the unit does not carry.
+_EXT_ACTUATOR_STATES: tuple[tuple[str, int], ...] = (
     ("compressor_running", 0),
     ("fan_running", 2),                  # indoor fan
-)
-_EXT_ACTUATOR_CODES: tuple[tuple[str, int], ...] = (
     ("four_way_valve_status", 4),
     ("indoor_electric_heating_status", 6),
     ("outdoor_fan_status", 8),
     ("defrost_status", 10),
 )
+_ACTUATOR_ON = 1
+_ACTUATOR_OFF = 0
 # A unit that is not reporting simply sends 0. Anything above these is not a real domestic reading and
 # is treated as "no data" rather than published into long-term statistics.
 _MAX_PLAUSIBLE_W = 20_000
@@ -1058,10 +1065,10 @@ def parse_extended_status(data: bytes) -> dict[str, Any]:
         if value is not None:
             out[key] = value
     actuators = int.from_bytes(data[_EXT_OFF_ACTUATORS:_EXT_OFF_ACTUATORS + 2], "big")
-    for key, bit in _EXT_ACTUATOR_FLAGS:
-        out[key] = bool((actuators >> bit) & 0x03)
-    for key, bit in _EXT_ACTUATOR_CODES:
-        out[key] = (actuators >> bit) & 0x03
+    for key, bit in _EXT_ACTUATOR_STATES:
+        state = (actuators >> bit) & 0x03
+        if state in (_ACTUATOR_ON, _ACTUATOR_OFF):
+            out[key] = state == _ACTUATOR_ON
     out["expansion_valve_opening"] = int.from_bytes(
         data[_EXT_OFF_EXPANSION_VALVE:_EXT_OFF_EXPANSION_VALVE + 2], "big"
     )

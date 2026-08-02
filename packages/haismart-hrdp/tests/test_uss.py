@@ -1421,20 +1421,38 @@ def test_parse_extended_status_decodes_an_idle_unit():
     assert got["coil_temperature"] == 28.0      # coil sits at room temperature
 
 
-def test_extended_actuator_codes_are_reported_as_codes():
-    """The published map places six two-bit actuator states and says each is 0, 1 or 2 -- without
-    saying what those mean. Only the two watched against a running unit are reported as booleans.
+def test_extended_actuator_states_omit_the_ones_a_unit_will_not_report():
+    """Each actuator state is 0 off, 1 on, 2 not reported -- three values, not a flag.
 
-    The rest are the codes they are, because "not zero" is not "on": this unit reports the same
-    value for its reversing valve and outdoor fan whether it is cooling hard or sitting idle at
-    0 W, so a boolean would claim both were running on a unit doing nothing."""
+    A unit that cannot tell you keeps saying so, so reading the field for truthiness would pin the
+    sensor on forever. The reference unit reports "not reported" for its reversing valve and outdoor
+    fan whether it is cooling hard or sitting idle at 0 W; those keys must be absent, so the entity
+    reads unknown rather than claiming both were running on a unit doing nothing.
+    """
     cooling = uss.parse_extended_status(EXT_COOLING)
     idle = uss.parse_extended_status(EXT_IDLE)
 
+    # the two this unit does report answer honestly, and differ between the two states
     assert cooling["compressor_running"] is True and idle["compressor_running"] is False
+    assert cooling["fan_running"] is True and idle["fan_running"] is False
+    # the ones it declines to report are absent in both, not False and certainly not True
     for key in ("four_way_valve_status", "outdoor_fan_status"):
-        assert isinstance(cooling[key], int) and not isinstance(cooling[key], bool)
-        assert cooling[key] == idle[key] == 2
+        assert key not in cooling and key not in idle
+
+
+def test_an_unreported_actuator_never_reads_as_running():
+    """The regression this guards: `bool(state)` turns "not reported" (2) into "running"."""
+    blob = bytearray(EXT_IDLE)
+    off = uss._EXT_OFF_ACTUATORS
+    # force every state to "not reported" -- 0b10 repeated across all six pairs
+    blob[off:off + 2] = (0xAAA).to_bytes(2, "big")
+    got = uss.parse_extended_status(bytes(blob))
+    for key, _ in uss._EXT_ACTUATOR_STATES:
+        assert key not in got, f"{key} was reported despite the unit declining to say"
+    # and a unit that does answer still comes through
+    blob[off:off + 2] = (0b01 | (0b01 << 2)).to_bytes(2, "big")
+    got = uss.parse_extended_status(bytes(blob))
+    assert got["compressor_running"] is True and got["fan_running"] is True
 
 
 def test_parse_extended_status_rejects_anything_else():

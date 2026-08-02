@@ -71,7 +71,10 @@ async def test_user_flow_creates_entry(hass: HomeAssistant, mock_uss) -> None:
     assert result2["data"][CONF_LOCAL_KEY] == LOCAL_KEY
     # the AC's current localKey version is stored for rotation detection
     assert result2["data"][CONF_LOCALKEY_VERSION] == 4
-    assert result2["data"][CONF_PRODUCT_CODE] == "AAC1UKZ01"
+    # No product code was supplied, so none is stored. It must not default to this project's own:
+    # it is the identifier a device's model, rules and real feature set are looked up by, and a
+    # wrong one is indistinguishable from a right one.
+    assert CONF_PRODUCT_CODE not in result2["data"]
 
 
 @pytest.mark.parametrize("bad_key", ["not-hex-not-hex-not-hex-not-hex-!", "abcd12"])
@@ -757,3 +760,21 @@ def test_dhcp_discovery_covers_haier_appliance_ouis_only() -> None:
         assert oui not in prefixes, f"{oui} is an MA-M block with a shared 24-bit prefix"
 
     assert all(len(p) == 6 and p.isalnum() for p in prefixes), prefixes
+
+
+async def test_manual_entry_keeps_a_supplied_product_code_verbatim(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A product code the user actually supplies is stored, trimmed, and not second-guessed.
+
+    The companion case -- that an unsupplied one stays absent rather than defaulting to this
+    project's own air conditioner -- is asserted in `test_user_flow_creates_entry`.
+    """
+    flow_id = await _start_manual(hass)
+    result = await hass.config_entries.flow.async_configure(
+        flow_id, {**USER_INPUT, CONF_PRODUCT_CODE: "  AAD180E00  "}
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_PRODUCT_CODE] == "AAD180E00"

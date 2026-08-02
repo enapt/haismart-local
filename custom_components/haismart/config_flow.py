@@ -75,7 +75,6 @@ from .const import (
     CONF_SCAN_INTERVAL,
     CONF_UPLUS_ID,
     CONF_ZONE_INFO,
-    DEFAULT_PRODUCT_CODE,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     MIN_SCAN_INTERVAL,
@@ -142,9 +141,11 @@ def _manual_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
         vol.Required(CONF_DEVICE_ID, default=d.get(CONF_DEVICE_ID, vol.UNDEFINED)): str,
         vol.Required(CONF_LOCAL_KEY): str,
         vol.Optional(CONF_NAME, **name): str,
-        vol.Optional(
-            CONF_PRODUCT_CODE, default=d.get(CONF_PRODUCT_CODE, DEFAULT_PRODUCT_CODE)
-        ): str,
+        # Left blank unless the device's own is known. Filling in a default here would store one
+        # air conditioner's product code against another's, and nothing downstream could tell the
+        # difference -- it is the identifier a model, its rules and its real feature set are all
+        # looked up by, so a wrong one is worse than none.
+        vol.Optional(CONF_PRODUCT_CODE, default=d.get(CONF_PRODUCT_CODE, "")): str,
     })
 
 
@@ -485,7 +486,6 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                 CONF_HOST: host,
                 CONF_DEVICE_ID: device_id,
                 CONF_LOCAL_KEY: self._local_key,
-                CONF_PRODUCT_CODE: DEFAULT_PRODUCT_CODE,
                 CONF_LOCALKEY_VERSION: self._localkey_version or version,
                 **self._cloud_data,
             },
@@ -576,8 +576,11 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                         CONF_HOST: host,
                         CONF_DEVICE_ID: device_id,
                         CONF_LOCAL_KEY: local_key,
-                        CONF_PRODUCT_CODE: user_input.get(CONF_PRODUCT_CODE)
-                        or DEFAULT_PRODUCT_CODE,
+                        **(
+                            {CONF_PRODUCT_CODE: product_code}
+                            if (product_code := (user_input.get(CONF_PRODUCT_CODE) or "").strip())
+                            else {}
+                        ),
                         CONF_LOCALKEY_VERSION: version,
                         **self._cloud_data,  # from the login discovery path, if any
                     },

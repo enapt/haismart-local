@@ -110,6 +110,20 @@ It has both halves of its *state transition* observed but no confirmed *write*, 
 of `echoStatus` the assumption that `writeType=G` implies a working write is not one to make. It also
 stays read-only.
 
+⚠️ **When it is tested, one bit will not be enough.** Other implementations of this protocol start a
+cleaning cycle by setting the flag **together with the machine state the cycle needs** — powered on,
+dry mode, a 22 °C set point, both vanes centred, the display off, and the other cleaning flag
+explicitly cleared. That is the same shape as the co-command rules a device's own model publishes, so
+a test that flips the flag alone and sees nothing happen would prove nothing. It is one group-set
+either way; it just has to carry the whole state.
+
+Worth separating from the above: the **56 °C sterilising** flag lives in a different word from the
+ordinary self-clean flag, and there is reason to think it behaves as a *trigger* rather than a stored
+setting — an implementation that re-sends a status-derived baseline has to clear that word explicitly
+or it re-starts the cycle it just read back. Our control path carries the baseline forward untouched,
+which is the safe default for a setting and the wrong one for a trigger. Neither has been observed
+here, and the two should not be tested as if they were the same field.
+
 The general rule this leaves: **the model gives the candidate list of controls; a live self-verifying
 write gives the verdict.** Any control added beyond the confirmed set must pass that live write on
 real hardware first.

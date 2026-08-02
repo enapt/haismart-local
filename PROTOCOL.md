@@ -157,9 +157,20 @@ Confirmed offsets (classic family, 141-byte reply):
 | compressor discharge temperature | byte 129 | `byte - 64` |
 | compressor frequency | byte 133 | Hz |
 | compressor current | bytes 134–135 | BE16, `/ 10` amps |
-| compressor running | byte 137 | bits 0–1 non-zero |
+| actuator states | bytes 136–137 | BE16 of six 2-bit states — see below |
 
-Two things to know before relying on these:
+The actuator word packs six two-bit states: compressor at bit 0, indoor fan at 2, reversing valve at
+4, indoor electric heating at 6, outdoor fan at 8, defrost at 10.
+
+**Each is three-valued — `0` off, `1` on, `2` the unit does not have this reading** — and the third
+value is the one that matters. A unit reports "I cannot tell you" in band rather than by omitting the
+field, and it keeps reporting it, so testing the state for truthiness pins the sensor on forever.
+This is not hypothetical: the reference units answer `2` for their reversing valve and outdoor fan
+whether cooling hard or idle at 0 W, which is a constant no on/off flag could produce. Read `1` as
+on, `0` as off, and anything else as **absent** — the same treatment as a temperature probe the unit
+does not carry, and for the same reason.
+
+Two more things to know before relying on these:
 
 - **Power is not an independent measurement.** Across every reading observed on one unit it tracked
   the reported current exactly, as `220 x amps + 30` — i.e. it is computed from the current sensor at

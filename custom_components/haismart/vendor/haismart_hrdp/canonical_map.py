@@ -151,10 +151,14 @@ class Command:
     epp_cmd: str | None
 
 
-# The group-set write frame. This is a **separate coordinate space from the report map above**: an
-# attribute's word and bit in a group-set command bear no relation to its position in a status
-# report, and the two must never be used interchangeably. Unlike the report map this needs no
-# displacement -- every model states the same place for every field, so one map serves all of them.
+# The group-set write frame -- which is the report's words 20 to 24, lifted out. Compared bit by bit,
+# write word N is report word 19+N: words 1 to 4 are identical, and word 5 differs only in the two
+# filter flags (this frame carries `cleaningTimeStatus`, and names b8 `cloudFilterChangeFlag` where a
+# report calls the same bit `localFilterChangeFlag`). There is no write word 6, because report word
+# 25 is where the sensor readings begin and a thermometer cannot be written to.
+#
+# Do not, however, use one map's word number as the other's. A report is displaced per family and
+# this frame is not, so a family converts between them through its own base word.
 #
 # A field appearing here means the model puts it in the write frame. It does **not** mean a given
 # unit will honour a write to it: a group-set can be accepted whole while an individual bit is

@@ -1866,18 +1866,31 @@ def test_published_write_map_reproduces_every_confirmed_field():
     assert checked >= 11, "expected every confirmed field to be checked"
 
 
-def test_published_write_map_is_a_superset_and_a_separate_space():
-    """The map offers far more than is confirmed in use, and it is not the report map."""
+def test_published_write_map_is_the_reports_writable_words():
+    """The map offers far more than is confirmed in use, and it is the report's own words 20-24.
+
+    Write word N is report word 19+N. Words 1-4 are identical bit for bit; word 5 differs only in
+    the two filter flags; and there is no write word 6, because report word 25 is where the sensor
+    readings begin and a thermometer cannot be written to. The offset is what a family's base word
+    exists to apply -- the report is displaced per family and this frame is not, so the two are
+    related exactly but must still never be used interchangeably.
+    """
     from haismart_hrdp.canonical_map import CANONICAL, CANONICAL_WRITE
 
     assert len(CANONICAL_WRITE) > 3 * len(uss.GRSETDAC_FIELDS)
-    # The write frame is its own coordinate space: a field's place in a group-set is unrelated to
-    # its place in a report, so the two maps must not be used interchangeably.
-    shared = set(CANONICAL_WRITE) & set(CANONICAL)
-    assert shared, "the two maps do name the same attributes"
-    assert any(
-        CANONICAL_WRITE[n].word != CANONICAL[n].word for n in shared
-    ), "the write frame should not sit at the report's own words"
+    for name, w in CANONICAL_WRITE.items():
+        c = CANONICAL.get(name)
+        if c is None or w.word == 5:
+            continue        # word 5 carries the two filter flags the report map names differently
+        assert (c.word, c.bit, c.length) == (w.word + 19, w.bit, w.length), name
+    # the two filter flags: one bit, a different name on each side, and one write-only
+    assert CANONICAL_WRITE["cloudFilterChangeFlag"].bit == CANONICAL["localFilterChangeFlag"].bit
+    assert "cleaningTimeStatus" not in CANONICAL
+    # nothing writable reaches word 25 -- that is where the readings start
+    assert max(w.word for w in CANONICAL_WRITE.values()) == 5
+    assert {"indoorTemperature", "indoorHumidity"} <= {
+        n for n, c in CANONICAL.items() if c.word == 25
+    }
 
 
 def test_published_commands_match_the_ones_we_speak():

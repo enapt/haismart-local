@@ -28,7 +28,12 @@ from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
 from haismart_extractor import GatewayCreds, GatewayError, get_localkey_via_gateway
-from haismart_extractor.cloud import SEA_APP_CREDENTIALS, CloudError, HaierCloud
+from haismart_extractor.cloud import (
+    SEA_APP_CREDENTIALS,
+    CloudError,
+    HaierCloud,
+    get_public_device_config,
+)
 from haismart_hrdp import async_read_status, merge_rules, probe_localkey_version
 from homeassistant.config_entries import (
     ConfigFlow,
@@ -550,6 +555,31 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
             },
         )
 
+    async def _async_public_model(self, product_code: str) -> dict[str, Any] | None:
+        """The device's published model, looked up by product code with no account. Supplemental.
+
+        A hand-configured entry has no cloud credentials, so nothing else can tell it which
+        attributes its air conditioner actually has -- and without that it gets no conditional
+        availability and none of the optional-feature entities, because those must be able to tell a
+        real feature from one a generic model merely lists. A catalogue keyed on product code
+        answers for any device without a token, so where a code is known this fills that gap.
+
+        Only ever additive. A code that is unknown, a catalogue that cannot be reached, or anything
+        else going wrong leaves the entry exactly as it would have been -- setting up an air
+        conditioner must not fail because a supplementary lookup did. And nothing is attempted
+        without a code the user actually supplied: guessing one would fetch another device's model,
+        which is worse than having none.
+        """
+        if not product_code:
+            return None
+        try:
+            return await get_public_device_config(
+                product_code, transport=async_cloud_transport(self.hass)
+            )
+        except (CloudError, OSError, RuntimeError, TimeoutError, ValueError) as err:
+            _LOGGER.debug("no published model for product code %s: %s", product_code, err)
+            return None
+
     async def async_step_manual(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -570,17 +600,16 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors["base"] = "cannot_connect"
             else:
                 title = user_input.get(CONF_NAME) or f"Haier {device_id}"
+                product_code = (user_input.get(CONF_PRODUCT_CODE) or "").strip()
+                model = await self._async_public_model(product_code)
                 return self.async_create_entry(
                     title=title,
                     data={
                         CONF_HOST: host,
                         CONF_DEVICE_ID: device_id,
                         CONF_LOCAL_KEY: local_key,
-                        **(
-                            {CONF_PRODUCT_CODE: product_code}
-                            if (product_code := (user_input.get(CONF_PRODUCT_CODE) or "").strip())
-                            else {}
-                        ),
+                        **({CONF_PRODUCT_CODE: product_code} if product_code else {}),
+                        **({CONF_DIGITAL_MODEL: json.dumps(model)} if model else {}),
                         CONF_LOCALKEY_VERSION: version,
                         **self._cloud_data,  # from the login discovery path, if any
                     },

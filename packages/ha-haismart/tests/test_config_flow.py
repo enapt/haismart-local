@@ -4,6 +4,7 @@ from __future__ import annotations
 from ipaddress import ip_address
 
 import pytest
+from haismart_extractor.cloud import CloudError
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
@@ -778,3 +779,76 @@ async def test_manual_entry_keeps_a_supplied_product_code_verbatim(
 
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_PRODUCT_CODE] == "AAD180E00"
+
+
+async def test_manual_onboarding_looks_up_the_published_model(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A hand-configured entry has no cloud credentials, so nothing else can tell it which
+    attributes its air conditioner actually has. Where a product code is supplied, the open
+    catalogue fills that gap at setup time."""
+    from unittest.mock import AsyncMock, patch
+
+    from custom_components.haismart.const import CONF_DIGITAL_MODEL
+
+    published = {
+        "attributes": [{"name": "operationMode"}, {"name": "freshAirStatus", "invisible": True}],
+        "alarms": [{"name": "F1", "desc": "a fault"}],
+    }
+    flow_id = await _start_manual(hass)
+    with patch(
+        "custom_components.haismart.config_flow.get_public_device_config",
+        new=AsyncMock(return_value=published),
+    ) as fetch:
+        result = await hass.config_entries.flow.async_configure(
+            flow_id, {**USER_INPUT, CONF_PRODUCT_CODE: "AAD180E00"}
+        )
+        await hass.async_block_till_done()
+
+    import json as _json
+
+    assert fetch.await_args.args[0] == "AAD180E00"
+    stored = _json.loads(result["data"][CONF_DIGITAL_MODEL])
+    assert stored["attributes"][0]["name"] == "operationMode"
+
+
+async def test_manual_onboarding_does_not_look_up_without_a_product_code(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """No code, no lookup -- guessing one would fetch another device's model."""
+    from unittest.mock import AsyncMock, patch
+
+    from custom_components.haismart.const import CONF_DIGITAL_MODEL
+
+    flow_id = await _start_manual(hass)
+    with patch(
+        "custom_components.haismart.config_flow.get_public_device_config", new=AsyncMock()
+    ) as fetch:
+        result = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
+        await hass.async_block_till_done()
+
+    assert fetch.await_count == 0
+    assert CONF_DIGITAL_MODEL not in result["data"]
+
+
+async def test_manual_onboarding_survives_a_failed_lookup(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Setting up an air conditioner must not fail because a supplementary lookup did."""
+    from unittest.mock import AsyncMock, patch
+
+    from custom_components.haismart.const import CONF_DIGITAL_MODEL
+
+    flow_id = await _start_manual(hass)
+    with patch(
+        "custom_components.haismart.config_flow.get_public_device_config",
+        new=AsyncMock(side_effect=CloudError("no such product code")),
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            flow_id, {**USER_INPUT, CONF_PRODUCT_CODE: "NOSUCHCODE"}
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] == FlowResultType.CREATE_ENTRY   # the entry is still created
+    assert result["data"][CONF_PRODUCT_CODE] == "NOSUCHCODE"
+    assert CONF_DIGITAL_MODEL not in result["data"]

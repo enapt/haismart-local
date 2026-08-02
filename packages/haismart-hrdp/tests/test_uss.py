@@ -1840,3 +1840,97 @@ def test_invisible_attributes_and_merge_records_them():
     assert merge_rules(shadow, {"attributes": [{"name": "healthMode"}]})["invisible_attributes"] == []
     # nothing published -> the key is not added at all (we do not claim to know the set)
     assert "invisible_attributes" not in merge_rules(shadow, {})
+
+
+# --- the write frame --------------------------------------------------------------------------
+def test_published_write_map_reproduces_every_confirmed_field():
+    """The group-set write frame is published, and it agrees with what is confirmed in use.
+
+    `GRSETDAC_FIELDS` was built one field at a time, each confirmed on hardware. Every one of those
+    positions appears in the published map at exactly the same word, bit and width. The two were
+    arrived at independently, so this pins them against each other: if either moves, this fails.
+    """
+    from haismart_hrdp.canonical_map import CANONICAL_WRITE
+
+    checked = 0
+    for name, (word, bit, width) in uss.GRSETDAC_FIELDS.items():
+        if name == "ecoMode":
+            # Device-specific: this unit repurposes word 4 bits 3-5, which the shared map assigns to
+            # other attributes. It is established from captures on the units that have it, and is
+            # deliberately not expected in a map that describes the shared frame.
+            continue
+        assert name in CANONICAL_WRITE, f"{name} is confirmed in use but absent from the map"
+        w = CANONICAL_WRITE[name]
+        assert (w.word, w.bit, w.length) == (word, bit, width), name
+        checked += 1
+    assert checked >= 11, "expected every confirmed field to be checked"
+
+
+def test_published_write_map_is_a_superset_and_a_separate_space():
+    """The map offers far more than is confirmed in use, and it is not the report map."""
+    from haismart_hrdp.canonical_map import CANONICAL, CANONICAL_WRITE
+
+    assert len(CANONICAL_WRITE) > 3 * len(uss.GRSETDAC_FIELDS)
+    # The write frame is its own coordinate space: a field's place in a group-set is unrelated to
+    # its place in a report, so the two maps must not be used interchangeably.
+    shared = set(CANONICAL_WRITE) & set(CANONICAL)
+    assert shared, "the two maps do name the same attributes"
+    assert any(
+        CANONICAL_WRITE[n].word != CANONICAL[n].word for n in shared
+    ), "the write frame should not sit at the report's own words"
+
+
+def test_published_commands_match_the_ones_we_speak():
+    """The commands the client sends are the ones the models publish."""
+    from haismart_hrdp.canonical_map import OPERATION_ALTERNATES, OPERATIONS
+
+    assert OPERATIONS["grSetDAC"].epp_cmd == "6001"
+    assert OPERATIONS["getAllProperty"].epp_cmd == "4D01"
+    assert OPERATIONS["getBigDataFrame"].epp_cmd == "4DFE"
+    # The telemetry request is published two ways; the form real hardware accepts is frame type 1,
+    # and the other is kept so a device that refuses it has somewhere to look.
+    assert OPERATIONS["getBigDataFrame"].frame_type == 1
+    assert OPERATION_ALTERNATES["getBigDataFrame"][0].frame_type == 0x60
+
+
+def test_grsetdac_fields_match_their_confirmed_positions():
+    """The encoder's field map, pinned to the exact positions confirmed on hardware.
+
+    Positions are now looked up in the published map rather than transcribed, which is safe only
+    because the two agree. This freezes the resulting values so that a change in the map -- a
+    regenerated file, a new model, a bad merge -- cannot quietly move the bit a live control writes.
+    Every pair below is confirmed on hardware.
+    """
+    assert uss.GRSETDAC_FIELDS == {
+        "targetTemperature": (1, 8, 8),
+        "windDirectionVertical": (1, 0, 4),
+        "operationMode": (2, 13, 3),
+        "windSpeed": (2, 8, 3),
+        "onOffStatus": (3, 0, 1),
+        "healthMode": (3, 1, 1),
+        "rapidMode": (3, 3, 1),
+        "muteStatus": (3, 4, 1),
+        "silentSleepStatus": (3, 5, 1),
+        "screenDisplayStatus": (3, 9, 1),
+        "windDirectionHorizontal": (4, 0, 3),
+        "ecoMode": (4, 3, 3),
+    }
+
+
+def test_encoder_membership_is_not_widened_by_the_published_map():
+    """The map describes far more fields than the encoder may write, and must never widen it.
+
+    This is the property the write path's safety rests on: a group-set applies the whole word block,
+    so a field reaches the unit only once a write of it is confirmed on hardware. `echoStatus` is the
+    standing counter-example -- published in the write frame, marked writable by the device model,
+    and silently discarded by real hardware.
+    """
+    from haismart_hrdp.canonical_map import CANONICAL_WRITE
+
+    assert len(CANONICAL_WRITE) > len(uss.GRSETDAC_FIELDS)
+    for withheld in ("echoStatus", "selfCleaningStatus", "lockStatus", "targetHumidity"):
+        assert withheld in CANONICAL_WRITE, "expected the map to describe it"
+        assert withheld not in uss.GRSETDAC_FIELDS, f"{withheld} must not be writable"
+    # ecoMode is the one field the shared map cannot supply, so it stays stated locally
+    assert "ecoMode" not in CANONICAL_WRITE
+    assert uss.GRSETDAC_FIELDS["ecoMode"] == (4, 3, 3)

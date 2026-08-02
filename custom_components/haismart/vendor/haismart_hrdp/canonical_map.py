@@ -131,3 +131,86 @@ CANONICAL: Mapping[str, CanonicalField] = {
     "co2ExceedRemind": CanonicalField(36, 0, 2, "int"),
     "pm2p5ExceedRemind": CanonicalField(36, 2, 2, "int"),
 }
+
+
+@dataclass(frozen=True)
+class WriteField:
+    """One attribute's place in the group-set write frame."""
+
+    word: int
+    bit: int
+    length: int
+
+
+@dataclass(frozen=True)
+class Command:
+    """One command a device accepts, as the model states it."""
+
+    cae_type: int
+    frame_type: int
+    epp_cmd: str | None
+
+
+# The group-set write frame. This is a **separate coordinate space from the report map above**: an
+# attribute's word and bit in a group-set command bear no relation to its position in a status
+# report, and the two must never be used interchangeably. Unlike the report map this needs no
+# displacement -- every model states the same place for every field, so one map serves all of them.
+#
+# A field appearing here means the model puts it in the write frame. It does **not** mean a given
+# unit will honour a write to it: a group-set can be accepted whole while an individual bit is
+# ignored. Treat this as the candidate list and confirm each field against real hardware.
+CANONICAL_WRITE: Mapping[str, WriteField] = {
+    "windDirectionVertical": WriteField(1, 0, 4),
+    "targetTemperature": WriteField(1, 8, 8),
+    "energySavePeriod": WriteField(2, 0, 8),
+    "windSpeed": WriteField(2, 8, 3),
+    "specialMode": WriteField(2, 11, 2),
+    "operationMode": WriteField(2, 13, 3),
+    "onOffStatus": WriteField(3, 0, 1),
+    "healthMode": WriteField(3, 1, 1),
+    "electricHeatingStatus": WriteField(3, 2, 1),
+    "rapidMode": WriteField(3, 3, 1),
+    "muteStatus": WriteField(3, 4, 1),
+    "silentSleepStatus": WriteField(3, 5, 1),
+    "lockStatus": WriteField(3, 6, 1),
+    "echoStatus": WriteField(3, 7, 1),
+    "10degreeHeatingStatus": WriteField(3, 8, 1),
+    "screenDisplayStatus": WriteField(3, 9, 1),
+    "halfDegreeSettingStatus": WriteField(3, 10, 1),
+    "intelligenceStatus": WriteField(3, 11, 1),
+    "pmvStatus": WriteField(3, 12, 1),
+    "tempUnit": WriteField(3, 13, 1),
+    "heatAccumulationStatus": WriteField(3, 14, 1),
+    "selfCleaning56Status": WriteField(3, 15, 1),
+    "windDirectionHorizontal": WriteField(4, 0, 3),
+    "freshWindSpeed": WriteField(4, 4, 2),
+    "humanSensingStatus": WriteField(4, 6, 2),
+    "targetHumidity": WriteField(4, 8, 8),
+    "freshAirStatus": WriteField(5, 0, 1),
+    "humidificationStatus": WriteField(5, 1, 1),
+    "pm2p5CleaningStatus": WriteField(5, 2, 1),
+    "ch2oCleaningStatus": WriteField(5, 3, 1),
+    "selfCleaningStatus": WriteField(5, 4, 1),
+    "lightStatus": WriteField(5, 5, 1),
+    "energySavingStatus": WriteField(5, 6, 1),
+    "cleaningTimeStatus": WriteField(5, 7, 1),
+    "cloudFilterChangeFlag": WriteField(5, 8, 1),
+    "voiceStatus": WriteField(5, 9, 1),
+    "voiceSignStatus": WriteField(5, 10, 1),
+    "windSensingStatus": WriteField(5, 11, 1),
+    "humidityCtrlStatus": WriteField(5, 12, 1),
+}
+
+OPERATIONS: Mapping[str, Command] = {
+    "getAllAlarm": Command(12, 115, None),
+    "getAllProperty": Command(11, 1, "4D01"),
+    "getBigDataFrame": Command(11, 1, "4DFE"),
+    "grSetDAC": Command(10, 1, "6001"),
+    "stopCurrentAlarm": Command(12, 9, None),
+}
+
+# Commands a minority of models state differently. Where a device rejects the form in `OPERATIONS`,
+# these are the other published forms.
+OPERATION_ALTERNATES: Mapping[str, tuple[Command, ...]] = {
+    "getBigDataFrame": (Command(11, 96, "4DFE"),),
+}

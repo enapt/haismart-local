@@ -33,6 +33,7 @@ from typing import Any
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
+from .canonical_map import CANONICAL_WRITE
 from .wire_models import (
     OPERATION_SOURCE,
     select_wire_model,
@@ -457,33 +458,63 @@ def build_op_request_message(sn: int, epp_frame: bytes, local_key: str, session:
 # eppCmd word; word N (1-based) = grSetDAC data bytes[2*(N-1) : +2], 16-bit big-endian, bit0 = LSB.
 # Each entry is (word_index, bit_shift, bit_width). The `targetTemperature` value is absolute
 # (epp = degC - 16).
-GRSETDAC_FIELDS = {
-    # Every field maps 1:1 to the app's own control list.
-    # word index is 1-based; each value is (word, bit_shift, bit_width). App label noted.
-    "targetTemperature": (1, 8, 8),    # epp = degC - 16 ; range 16..30
-    "operationMode":     (2, 13, 3),   # 0=auto/comfort 1=cool 2=dry 6=fanOnly
-    "windSpeed":         (2, 8, 3),    # 1=high 2=med 3=low 5=auto
-    "onOffStatus":       (3, 0, 1),    # power 0=off 1=on
-    "healthMode":          (3, 1, 1),  # app: "health"
-    "rapidMode":           (3, 3, 1),  # app: "strong"
-    "muteStatus":          (3, 4, 1),  # app: "quiet"
-    "silentSleepStatus":   (3, 5, 1),  # app: "sleep"
-    "screenDisplayStatus": (3, 9, 1),  # app: "lamp" (the unit's front light/display)
-    "windDirectionVertical": (1, 0, 4),  # app: "up and down" — a TOGGLE on this unit: 0=off, 0x0c=on
-    "windDirectionHorizontal": (4, 0, 3),  # app: "left and right" — 0=fixed, 7=auto
-    # ^ confirmed by a single-attribute app sweep: toggling ONLY left-right swing moved word4 bits
+# The fields the encoder may write. **Membership is deliberate and hand-held; positions are not.**
+#
+# A name appears below only once a real write of it has been observed, and that rule is the whole
+# reason this encoder can be trusted: a group-set applies the entire word block, so a field added on
+# inference would ride along with every command. The published map describes far more fields than
+# these, and listing a field there is emphatically NOT grounds to add it here.
+#
+# Where a field sits, on the other hand, is taken from the published map rather than transcribed by
+# hand. The two were arrived at independently and agree field for field, so taking positions from one
+# place removes the only thing a second copy could contribute: a typo in the table that decides which
+# bit a command lands on. `test_grsetdac_fields_match_their_confirmed_positions` pins the
+# resulting values, so a change in the map cannot quietly move a live control.
+#
+# App labels: health / strong / quiet / sleep / lamp (front display) / up-and-down / left-and-right.
+_CONFIRMED_WRITE_FIELDS = (
+    "targetTemperature",        # epp = degC - 16 ; range 16..30
+    "operationMode",            # 0=auto/comfort 1=cool 2=dry 6=fanOnly
+    "windSpeed",                # 1=high 2=med 3=low 5=auto
+    "onOffStatus",              # power 0=off 1=on
+    "healthMode",
+    "rapidMode",
+    "muteStatus",
+    "silentSleepStatus",
+    "screenDisplayStatus",
+    "windDirectionVertical",    # a TOGGLE on this unit: 0=off, 0x0c=on
+    "windDirectionHorizontal",  # 0=fixed, 7=auto
+    # ^ confirmed one attribute at a time: setting ONLY left-right swing moves word4 bits
     #   0-2 between 7 and 0 and nothing else — ecoMode (same word, bits 3-5) stayed 0 and the
     #   vertical nibble stayed put. Unlike windDirectionVertical the raw EPP value equals the STD
     #   code the digital model lists (0 = 左右摆位置一(固定), 7 = 左右摆位置八(自动)).
-    "ecoMode":               (4, 3, 3),  # app: "eco" — device-specific MULTI-LEVEL: 0=off, 5/6/7 = 3 levels
-    # TODO: `echoStatus` (word 3, bit 7 — the command-confirmation beeper, where set = silent) and
-    # `selfCleaningStatus` (the flag word, bit 4) are both marked user-facing by the device model and
-    # decode cleanly, but neither has been seen written in observed traffic. They are deliberately
-    # absent here rather than added on inference: the point of this table is that a field reaches the
-    # unit only once a real write of it has been seen, and a wrong bit in a group-set is applied to
-    # the whole word. Add each with the observed value the moment one is captured.
-    # ^ ecoMode is NOT the digital model's energySavingStatus bool (word5 b6, which never moves here); this
-    #   unit repurposes word4 b3-5 into a 3-bit eco level. Confirmed by an eco-only sweep (values 0/5/6/7).
+)
+
+# Fields the shared map does not describe, so they cannot be looked up and are stated here.
+# `ecoMode` is NOT the digital model's energySavingStatus bool (word5 b6, which never moves here):
+# this unit repurposes word4 b3-5 into a 3-bit eco level, 0=off and 5/6/7 the three levels. Confirmed
+# by setting economy alone. The shared map assigns those bits to other attributes, which is why
+# it cannot supply this one.
+_DEVICE_SPECIFIC_WRITES = {
+    "ecoMode": (4, 3, 3),
+}
+
+# NB `echoStatus` (word 3, bit 7 — the command-confirmation beeper, where set = silent) and
+# `selfCleaningStatus` (the flag word, bit 4) both decode cleanly and are marked user-facing by the
+# device model, and both appear in the published write frame. They are still deliberately absent: no
+# write of either has been observed, a live write of `echoStatus` was accepted while the bit never
+# landed, and the manufacturer's own control panel offers neither. Presence in the map is not
+# grounds to add a field here — an observed write is.
+GRSETDAC_FIELDS = {
+    **{
+        name: (
+            CANONICAL_WRITE[name].word,
+            CANONICAL_WRITE[name].bit,
+            CANONICAL_WRITE[name].length,
+        )
+        for name in _CONFIRMED_WRITE_FIELDS
+    },
+    **_DEVICE_SPECIFIC_WRITES,
 }
 
 # Allowed raw EPP values per field — the encoder REFUSES anything else, so we never fire a code the app

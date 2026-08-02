@@ -2404,8 +2404,9 @@ async def test_recorded_rules_do_not_suppress_fetching_the_published_ones(
         CONF_UPLUS_ID: uplus, "refresh_token": "r", "cloud_client_id": "c" * 32,
     })
     entry.add_to_hass(hass)
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
+    with patch("custom_components.haismart.coordinator.rules_for_product", return_value=None):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
 
     coord = entry.runtime_data
     assert coord.digital_model["modifiers"]          # the fallback filled the in-memory model
@@ -2479,8 +2480,11 @@ async def test_model_rules_fall_back_to_the_public_catalogue(
     }
     entry = _entry(**{CONF_DIGITAL_MODEL: _json.dumps(shadow)})
     entry.add_to_hass(hass)
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
+    # the shipped rules would satisfy the top-up during setup and leave this scenario with nothing
+    # to do, so they are withheld while the entry starts: what is under test here is the fetch.
+    with patch("custom_components.haismart.coordinator.rules_for_product", return_value=None):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
 
     with patch(
         "custom_components.haismart.coordinator.get_public_device_config",
@@ -2584,3 +2588,62 @@ async def test_model_rules_stop_after_a_catalogue_top_up(
     ) as fetch:
         assert await entry.runtime_data.async_fetch_model_rules() is False
     assert fetch.await_count == 0, "re-fetched a model that was already topped up"
+
+
+async def test_shipped_rules_answer_when_the_catalogue_is_unreachable(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """With no internet at all, the rules still arrive -- they travel with the integration.
+
+    This is the configuration the integration exists for: a unit firewalled off the cloud, on a
+    network that may have no route out either. Everything else works offline once the key is stored,
+    and until now the rule layer was the exception -- locks, fault names and co-commands all quietly
+    absent because the only source was a fetch. The shipped bundle is consulted last, so a reachable
+    catalogue still wins and stays authoritative.
+
+    The top-up runs during setup, so the failure has to be in place before it, not after.
+    """
+    import json as _json
+    from unittest.mock import AsyncMock, patch
+
+    from custom_components.haismart.const import CONF_DIGITAL_MODEL
+
+    entry = _entry(**{CONF_DIGITAL_MODEL: _json.dumps({"attributes": [{"name": "operationMode"}]})})
+    entry.add_to_hass(hass)
+    with patch(
+        "custom_components.haismart.coordinator.get_public_device_config",
+        new=AsyncMock(side_effect=OSError("no route to host")),
+    ):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    merged = _json.loads(entry.data[CONF_DIGITAL_MODEL])
+    # the real published figures for this model, not a placeholder
+    assert len(merged["modifiers"]) == 6
+    assert len(merged["constraints"]) == 10
+    assert len(merged["alarms"]) == 52
+    # and the flag only the published model carries, which the optional features gate on
+    assert merged["invisible_attributes"]
+
+
+async def test_shipped_rules_are_not_reached_when_the_catalogue_answers(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A reachable catalogue wins: the bundle is a snapshot and the service is current."""
+    import json as _json
+    from unittest.mock import AsyncMock, patch
+
+    from custom_components.haismart.const import CONF_DIGITAL_MODEL
+
+    entry = _entry(**{CONF_DIGITAL_MODEL: _json.dumps({"attributes": [{"name": "operationMode"}]})})
+    entry.add_to_hass(hass)
+    live = {"attributes": [{"name": "operationMode"}], "alarms": [{"name": "F1"}], "modifiers": []}
+    with patch(
+        "custom_components.haismart.coordinator.get_public_device_config",
+        new=AsyncMock(return_value=live),
+    ):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    merged = _json.loads(entry.data[CONF_DIGITAL_MODEL])
+    assert [a["name"] for a in merged["alarms"]] == ["F1"]   # the live answer, not the 52 shipped

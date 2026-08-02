@@ -601,3 +601,32 @@ def test_adapted_rules_drop_anything_that_would_match_nothing() -> None:
     assert _adapt_logic_limit([{"trigger": {"condition": [{"name": "x", "value": ["1"]}]},
                                 "action": []}]) == []
     assert _adapt_logic_patch([{"actionType": "APPEND", "action": [], "trigger": {}}]) == []
+
+
+async def test_search_products_pages_the_catalogue_and_yields_product_codes() -> None:
+    """The only route from a model number to a product code.
+
+    A bug report names a model (``HSU-24VRRA03TF``); the open rules catalogue is keyed on product
+    code (``AAC1UKZ01``). Nothing local joins the two, so without this call an unfamiliar unit's
+    published model stays out of reach. ``count`` is clamped because the server caps a page at 20,
+    and blank filters are dropped rather than sent empty.
+    """
+    seen: list[dict] = []
+
+    async def transport(req: Request) -> Response:
+        seen.append(json.loads(req.body))
+        return Response(200, json.dumps({"retCode": "00000", "data": {
+            "brands": [{"brand": "Haier", "brandCode": "B011"}],
+            "prodInfos": [{"prodNo": "AAC1UKZ01", "model": "HSU-24VRRA03TF",
+                           "appTypeCode": "A177", "appTypeName": "Wall Mounted"}],
+        }}))
+
+    cloud = HaierCloud(
+        AppCredentials(app_id="a", app_key="k", client_id="C" * 32),
+        "token",
+        transport=transport,
+    )
+    data = (await cloud.search_products(index=40, count=999, app_type_code="A177"))["data"]
+
+    assert data["prodInfos"][0]["prodNo"] == "AAC1UKZ01"
+    assert seen[0] == {"index": 40, "count": 20, "appTypeCode": "A177"}   # capped, and no blanks

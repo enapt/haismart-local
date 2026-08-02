@@ -247,6 +247,8 @@ DEVICE_LIST_PATH_V2 = "/uplussea/devices/v2/user/devices"
 DEVICE_LIST_PATH = "/dcs/device-service-2c/get/user/device-list"
 DEVICE_LIST_PATH_ALT = "/dcs/device-info/device/aggregate-query"
 DEVICE_MODEL_PATH = "/dcs/device-service-2c/get/device/model-info/find/info"
+# The model-picker's catalogue: model number + product code for everything the region publishes.
+PRODUCT_SEARCH_PATH = "/uplussea/devices/v3/prods/global/search"
 
 # Device digital model ("constraintfile") — the queryable per-model attribute spec (valueRanges/enums)
 # the app downloads at bind time. Verified on-device (up_http_plugin.db / uplus-resource-database2.db).
@@ -744,6 +746,42 @@ class HaierCloud:
         """Alt device list — the aggregate-query endpoint (also present)."""
         return self._checked(
             await self.post(self.domains.uhome, DEVICE_LIST_PATH_ALT, {}), "device list (alt)"
+        )
+
+    async def search_products(
+        self,
+        *,
+        index: int = 0,
+        count: int = 20,
+        keys: str = "",
+        app_type_code: str = "",
+        brand_code: str = "",
+    ) -> dict:
+        """Page the product catalogue — every model the region publishes, with its **product code**.
+
+        This is the model-picker's own backing call. Each row carries ``prodNo``, ``model``,
+        ``appTypeCode``/``appTypeName`` and ``brandCode``, which is the only route we have from
+        "a model number" to "a product code" — and the product code is what
+        :func:`get_public_device_config` needs, so this is how an unfamiliar unit's published
+        rules become reachable without its owner's account.
+
+        ``count`` is capped at 20 by the server, so a full sweep pages on ``index``. Air
+        conditioners are app types ``A120`` (central), ``A177`` (wall mounted) and ``A178``
+        (floor standing).
+
+        ⚠️ Needs the **per-install** ``client_id`` like every other account call; the app-level
+        one gives retCode 21016.
+        """
+        payload: dict[str, object] = {"index": index, "count": min(count, 20)}
+        for key, value in (
+            ("keys", keys),
+            ("appTypeCode", app_type_code),
+            ("brandCode", brand_code),
+        ):
+            if value:
+                payload[key] = value
+        return self._checked(
+            await self.post(self.domains.uhome, PRODUCT_SEARCH_PATH, payload), "product search"
         )
 
     async def get_device_model(self, device_id: str) -> dict:

@@ -65,6 +65,7 @@ from haismart_hrdp import (
     read_enum_features,
     read_grsetdac_field,
     reply_refused,
+    rules_for_product,
     select_wire_model,
     set_grsetdac_field,
     udiscovery,
@@ -1304,7 +1305,15 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
         except (CloudError, OSError, RuntimeError, TimeoutError, ValueError) as err:
             _LOGGER.debug("no published model for product code %s: %s", product_code, err)
-            return None
+        # last resort: the rules we ship. Reached when the catalogue is unreachable -- no internet,
+        # or the unit is firewalled off along with everything else on its way out -- which is the
+        # configuration this integration is meant to make workable, so the rule layer should not be
+        # the one part of it that needs the cloud. Same product code, so the same caveat holds; a
+        # code the bundle has never heard of returns None and the stored model is left alone.
+        bundled = rules_for_product(product_code)
+        if bundled is not None:
+            _LOGGER.debug("using shipped rules for product code %s", product_code)
+        return bundled
 
     async def _async_account_published_model(self) -> dict[str, Any] | None:
         """The published model via the signed-in account's resource service, or ``None``."""

@@ -34,6 +34,7 @@ from .features import (
     read_bool_features,
     read_enum_features,
 )
+from .model_rules import known_products, products_for_uplus_id, rules_for_product
 from .models import AttributeProfile
 from .profiles import (
     AAC1UKZ01,
@@ -207,7 +208,10 @@ __all__ = [
     "alarm_names",
     "DEVICE_RULES",
     "rules_for",
+    "known_products",
     "merge_rules",
+    "products_for_uplus_id",
+    "rules_for_product",
     "invisible_attributes",
     "RULE_SECTIONS",
     "MERGED_SECTIONS",

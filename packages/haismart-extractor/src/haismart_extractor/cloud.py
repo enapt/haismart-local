@@ -267,17 +267,13 @@ DEVICE_CONFIG_RES_TYPE = "DeviceConfig"
 # report from a device nobody here owns usable.
 PUBLIC_CONFIG_URL = "https://standardcfm.haigeek.com/hardwareconfig/app/resource/logicLimit"
 
-# The catalogue publishes an older, parallel schema. Only the sections whose INNER shape matches what
-# consumers here expect are carried over; the rest are dropped rather than renamed.
+# The catalogue publishes an older, parallel schema. Sections whose INNER shape already matches are
+# renamed; the two rule sections are ADAPTED, because renaming alone silently produces rules that
+# match nothing.
 #
-# ⚠️ Renaming a section is not enough, and assuming it was is a mistake worth not repeating. The
-# catalogue's rule sections share their purpose with the account-scoped model's but not their
-# structure: its `logicLimit` entries key their effects on `action` where a modifier here wants
-# `actions`, and its `logicPatch` entries are built from `action`/`actionType` where a constraint
-# here wants `additionalCommands`/`pendingCondition`/`reportValue`. Renamed but unadapted, they
-# parse to nothing: conditional availability silently stops locking anything. Since no rules locks
-# nothing -- the safe direction -- they are left out until someone adapts them properly, rather than
-# carried across looking like they work.
+# The catalogue is the only source of these rules for a device nobody here owns -- the account-scoped
+# fetch answers with the caller's own devices whatever it is asked -- so dropping them meant every
+# reporter's family got its attribute list and no conditional availability at all.
 PUBLIC_CONFIG_SECTIONS = {
     "property": "attributes",
     "alarm": "alarms",
@@ -290,7 +286,104 @@ PUBLIC_CONFIG_SECTIONS = {
 PUBLIC_CONFIG_REASONS_SECTION = "invalidInfo"
 
 # Sections whose inner schema has not been adapted. Dropped, not renamed.
-PUBLIC_CONFIG_UNADAPTED = ("logicLimit", "logicPatch", "operation")
+PUBLIC_CONFIG_UNADAPTED = ("operation",)
+
+
+def _adapt_logic_limit(entries: Any) -> list[dict]:
+    """The catalogue's conditional-writability rules, in the shape the rules engine reads.
+
+    Catalogue: ``{priority, trigger:{relation, condition:[{name, value[], invalidCode}] |
+    alarm:[{name, invalidCode}]}, action:[{name, writable}]}``. The engine wants
+    ``{priority, trigger:{operator, conditions:{name: [values]}, alarms:[names]}, actions:[...]}``
+    plus the reason code the rule fires with.
+    """
+    out: list[dict] = []
+    for e in entries or ():
+        if not isinstance(e, Mapping):
+            continue
+        trigger = e.get("trigger") or {}
+        conditions = {
+            str(c["name"]): [str(v) for v in (c.get("value") or [])]
+            for c in (trigger.get("condition") or ()) if isinstance(c, Mapping) and c.get("name")
+        }
+        alarms = [str(a["name"]) for a in (trigger.get("alarm") or ())
+                  if isinstance(a, Mapping) and a.get("name")]
+        # The reason code appears in EITHER place depending on the rule: on the trigger itself, or
+        # on each of its conditions. Reading only one of the two silently produced rules that lock
+        # correctly and explain nothing.
+        code = str(trigger.get("invalidCode") or "")
+        if not code:
+            for item in list(trigger.get("condition") or ()) + list(trigger.get("alarm") or ()):
+                if isinstance(item, Mapping) and item.get("invalidCode"):
+                    code = str(item["invalidCode"])
+                    break
+        actions = [{"name": str(a["name"]), "writable": a.get("writable", False)}
+                   for a in (e.get("action") or ()) if isinstance(a, Mapping) and a.get("name")]
+        if not actions or not (conditions or alarms):
+            continue
+        rule: dict[str, Any] = {
+            "priority": e.get("priority"),
+            "trigger": {"operator": str(trigger.get("relation") or "AND").upper()},
+            "actions": actions,
+        }
+        if conditions:
+            rule["trigger"]["conditions"] = conditions
+        if alarms:
+            rule["trigger"]["alarms"] = alarms
+        if code:
+            rule["invalid_code"] = code
+        out.append(rule)
+    return out
+
+
+def _adapt_logic_patch(entries: Any) -> list[dict]:
+    """The catalogue's co-command rules, in the shape the co-command engine reads.
+
+    Catalogue: ``{actionType, trigger:{relation, requestParam:{property:[{name, variants:
+    {enumList:[{stdValue}]}}]}}, action:[{param:[{name, value}]}]}``. The engine wants
+    ``{pendingCondition:{operator, commands:{name: [values]}}, additionalCommands:{mergeType,
+    commands:[{name, value}]}}``.
+    """
+    out: list[dict] = []
+    for e in entries or ():
+        if not isinstance(e, Mapping):
+            continue
+        trigger = e.get("trigger") or {}
+        req = (trigger.get("requestParam") or {}).get("property") or ()
+        commands: dict[str, list[str]] = {}
+        for prop in req:
+            if not isinstance(prop, Mapping) or not prop.get("name"):
+                continue
+            values = [str(v["stdValue"]) for v in
+                      ((prop.get("variants") or {}).get("enumList") or ())
+                      if isinstance(v, Mapping) and v.get("stdValue") is not None]
+            commands[str(prop["name"])] = values
+        params: list[dict] = []
+        for act in (e.get("action") or ()):
+            if isinstance(act, Mapping):
+                params += [{"name": str(p["name"]), "value": str(p.get("value"))}
+                           for p in (act.get("param") or ())
+                           if isinstance(p, Mapping) and p.get("name")]
+        if not commands or not params:
+            continue
+        out.append({
+            "pendingCondition": {
+                "operator": str(trigger.get("relation") or "AND").upper(),
+                "commands": commands,
+            },
+            "additionalCommands": {
+                "mergeType": str(e.get("actionType") or "APPEND").upper(),
+                "commands": params,
+            },
+        })
+    return out
+
+
+# Rule sections that need their inner shape translated, not merely renamed.
+PUBLIC_CONFIG_ADAPTERS = {
+    "logicLimit": ("modifiers", _adapt_logic_limit),
+    "logicPatch": ("constraints", _adapt_logic_patch),
+}
 
 # Field renames INSIDE a carried section, where the two schemas differ only by name.
 PUBLIC_CONFIG_FIELD_RENAMES = {"alarms": {"description": "desc"}}
@@ -318,6 +411,10 @@ def normalize_public_config(doc: Mapping[str, Any]) -> dict:
                 for item in value or ()
                 if isinstance(item, Mapping) and item.get("code") and item.get("description")
             }
+            continue
+        if key in PUBLIC_CONFIG_ADAPTERS:
+            target, adapt = PUBLIC_CONFIG_ADAPTERS[key]
+            out[target] = adapt(value)
             continue
         name = PUBLIC_CONFIG_SECTIONS.get(key, key)
         renames = PUBLIC_CONFIG_FIELD_RENAMES.get(name)

@@ -467,8 +467,16 @@ async def test_public_device_config_needs_no_account_and_renames_its_sections() 
     signed = "b" * 64 + json.dumps({
         "basicInfo": {"uPlusId": "2008610800820324"},
         "property": [{"name": "operationMode", "invisible": False}],
-        "logicLimit": [{"trigger": {}, "actions": []}],
-        "logicPatch": [{"name": "co-command"}],
+        "logicLimit": [{"priority": 4, "action": [{"name": "targetTemperature", "writable": False}],
+                        "trigger": {"relation": "AND", "invalidCode": "50009",
+                                    "condition": [{"name": "operationMode", "value": ["6"]}]}}],
+        "logicPatch": [{"actionType": "APPEND",
+                        "action": [{"operation": "grSetDAC",
+                                    "param": [{"name": "muteStatus", "value": "false"}]}],
+                        "trigger": {"relation": "AND", "requestParam": {"property": [
+                            {"name": "operationMode",
+                             "variants": {"enumList": [{"stdValue": "2"}]}}]}}}],
+        "invalidInfo": [{"code": "50009", "description": "fan-only"}],
         "alarm": [{"name": "F1", "description": "a fault"}],
     })
     listing = json.dumps({"retCode": "00000", "retInfo": "ok", "data": {
@@ -497,11 +505,24 @@ async def test_public_device_config_needs_no_account_and_renames_its_sections() 
     for gone in ("property", "alarm", "basicInfo"):
         assert gone not in cfg
 
-    # ⚠️ The rule sections are DROPPED, not renamed. Their inner schema differs from the
-    # account-scoped model's, so carrying them across would yield rules that parse to nothing and
-    # silently stop locking anything. No rules locks nothing, which is the safe direction.
-    for unadapted in ("modifiers", "constraints", "logicLimit", "logicPatch"):
-        assert unadapted not in cfg
+    # ★ The rule sections are ADAPTED, not merely renamed: their inner shape differs from the
+    # account-scoped model's, and carrying them across unchanged would yield rules that match
+    # nothing. The catalogue is the ONLY source of these for a device nobody here owns.
+    assert cfg["modifiers"] == [{
+        "priority": 4,
+        "trigger": {"operator": "AND", "conditions": {"operationMode": ["6"]}},
+        "actions": [{"name": "targetTemperature", "writable": False}],
+        "invalid_code": "50009",
+    }]
+    assert cfg["constraints"] == [{
+        "pendingCondition": {"operator": "AND", "commands": {"operationMode": ["2"]}},
+        "additionalCommands": {"mergeType": "APPEND",
+                               "commands": [{"name": "muteStatus", "value": "false"}]},
+    }]
+    assert cfg["invalid_reasons"] == {"50009": "fan-only"}
+    # the catalogue spellings do not survive, so nothing reads both
+    for gone in ("logicLimit", "logicPatch", "invalidInfo"):
+        assert gone not in cfg
 
 
 async def test_public_device_config_refuses_an_unknown_product_code() -> None:
@@ -534,3 +555,49 @@ def test_public_config_carries_no_wire_positions() -> None:
     })
     for attr in cfg["attributes"]:
         assert not {"startWord", "startBit", "length"} & set(attr)
+
+
+def test_adapted_rules_read_the_reason_code_from_either_place() -> None:
+    """A catalogue rule states its reason code on the trigger OR on each condition, not one or the
+    other. Reading only one place produced rules that locked correctly and explained nothing."""
+    from haismart_extractor.cloud import _adapt_logic_limit
+
+    on_trigger = _adapt_logic_limit([{
+        "priority": 4, "action": [{"name": "targetTemperature", "writable": False}],
+        "trigger": {"relation": "AND", "invalidCode": "50009",
+                    "condition": [{"name": "operationMode", "value": ["6"]}]},
+    }])
+    on_condition = _adapt_logic_limit([{
+        "priority": 0, "action": [{"name": "rapidMode", "writable": False}],
+        "trigger": {"relation": "OR",
+                    "condition": [{"name": "onOffStatus", "value": ["false"],
+                                   "invalidCode": "50002"}]},
+    }])
+    assert on_trigger[0]["invalid_code"] == "50009"
+    assert on_condition[0]["invalid_code"] == "50002"
+    # the OR relation survives -- it decides whether one condition or all of them must hold
+    assert on_condition[0]["trigger"]["operator"] == "OR"
+
+
+def test_adapted_rules_carry_the_alarm_lockout() -> None:
+    """The highest-value rule is keyed on faults, not on a state, and it is shaped differently."""
+    from haismart_extractor.cloud import _adapt_logic_limit
+
+    out = _adapt_logic_limit([{
+        "priority": 1, "action": [{"name": "operationMode", "writable": False}],
+        "trigger": {"relation": "OR", "alarm": [{"name": "indoorFanErr", "invalidCode": "50001"},
+                                                {"name": "outdoorFanErr", "invalidCode": "50001"}]},
+    }])
+    assert out[0]["trigger"]["alarms"] == ["indoorFanErr", "outdoorFanErr"]
+    assert out[0]["invalid_code"] == "50001"
+
+
+def test_adapted_rules_drop_anything_that_would_match_nothing() -> None:
+    """A rule with no effects, or no trigger, is not carried -- a half-adapted rule that silently
+    never fires is worse than an absent one."""
+    from haismart_extractor.cloud import _adapt_logic_limit, _adapt_logic_patch
+
+    assert _adapt_logic_limit([{"trigger": {}, "action": []}]) == []
+    assert _adapt_logic_limit([{"trigger": {"condition": [{"name": "x", "value": ["1"]}]},
+                                "action": []}]) == []
+    assert _adapt_logic_patch([{"actionType": "APPEND", "action": [], "trigger": {}}]) == []

@@ -16,6 +16,7 @@ import logging
 from collections.abc import Collection, Mapping
 from typing import Any
 
+from .device_rules import INVALID_REASONS
 from .models import STD_OPERATION_MODE, STD_WIND_SPEED, AttributeProfile
 
 _LOGGER = logging.getLogger(__name__)
@@ -365,7 +366,12 @@ def lock_reasons(
     """
     if not model:
         return {}
+    # A model states its reasons in its own language -- the openly fetched ones come back in
+    # Chinese. The CODE is the fact and the sentence is presentation, so for codes we recognise the
+    # English wording wins; anything we do not know falls back to whatever the model said, which is
+    # better than nothing.
     meanings = {str(k): str(v) for k, v in (model.get("invalid_reasons") or {}).items()}
+    meanings.update({k: v for k, v in INVALID_REASONS.items() if k in meanings})
     reasons: dict[str, str] = {}
     for rule in model.get("modifiers") or ():
         trigger = rule.get("trigger") or {}

@@ -85,6 +85,25 @@ sufficient; the unit is the only authority on whether a group-set write takes. A
 silently do nothing, which is worse than absent — so it stays a **read-only sensor**, which is
 exactly how it now ships.
 
+⚠️ **Corrected 2026-08-02 — an earlier revision said the manufacturer's own app offers this control.
+It does not.** That claim came from the device model marking the attribute visible and writable, which
+is not the same thing. The app's air-conditioner control panel — the bundle the app actually renders,
+fetched for this exact unit — **never mentions `echoStatus` anywhere**, while every other control it
+offers appears 7 to 88 times. There is no beeper control in the app, and none on the handset either.
+
+That makes the panel a **free predictor of what a unit will honour, and on the evidence a perfect
+one.** Of this unit's fourteen attributes that the model marks visible, thirteen are referenced by
+the panel and one is not — and the one that is not is exactly the one the hardware discards. So the
+sequence to follow before offering any new control is four steps, not two:
+
+1. the device's model **declares** the attribute (it exists on this product line),
+2. the model does **not** mark it `invisible` (this particular unit has it),
+3. the **panel references it** (the manufacturer renders a control for it), and only then
+4. a **live self-verifying write** confirms the unit honours it.
+
+Step 3 costs nothing and would have predicted the `echoStatus` result without touching hardware.
+Step 4 is still required — it is the only one that observes the unit itself.
+
 `selfCleaningStatus` was not tested the same way because writing it starts a self-clean cycle that
 runs to completion and cannot be called back — not a thing to trigger on a whim on someone's unit.
 It has both halves of its *state transition* observed but no confirmed *write*, and on the evidence

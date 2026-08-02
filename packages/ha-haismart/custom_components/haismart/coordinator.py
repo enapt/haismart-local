@@ -1220,10 +1220,14 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         stored = _stored_digital_model(self.config_entry)
         if not stored:
             return False
-        # Re-fetch if the rules are missing OR the model predates carrying `invisible_attributes`
-        # (which the optional-feature entities need to tell a real feature from one the generic
-        # model over-declares). An entry with modifiers but no invisible list is one of those.
-        if stored.get("modifiers") and "invisible_attributes" in stored:
+        # Re-fetch only while the model has never been topped up from a published one. The presence
+        # of `invisible_attributes` is that signal: `merge_rules` records it -- even empty --
+        # whenever a real published model is merged, and the optional-feature entities gate on it.
+        #
+        # ⚠️ Do not also require `modifiers` here. A model fetched from the open catalogue carries
+        # the feature set but not the conditional rules, so an entry topped up from that source
+        # would never satisfy a both-of test and would re-fetch on every single startup, forever.
+        if "invisible_attributes" in stored:
             return False
         model = stored
         published = await self._async_published_model()

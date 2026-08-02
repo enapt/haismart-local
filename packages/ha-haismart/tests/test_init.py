@@ -2552,3 +2552,35 @@ async def test_diagnostics_say_which_device_a_report_came_from(
     await hass.async_block_till_done()
     ident2 = (await async_get_config_entry_diagnostics(hass, entry2))["device_identity"]
     assert ident2["product_code_is_fallback"] is True
+
+
+async def test_model_rules_stop_after_a_catalogue_top_up(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A model topped up from the open catalogue must not be re-fetched on every startup.
+
+    The catalogue carries a device's feature set but not its conditional rules, so a check that
+    required both would never be satisfied for such an entry and would go back to the network on
+    every single restart, forever. The signal that a top-up happened is the recorded invisible set,
+    which is present even when it is empty.
+    """
+    import json as _json
+    from unittest.mock import AsyncMock, patch
+
+    from custom_components.haismart.const import CONF_DIGITAL_MODEL
+
+    topped_up = {
+        "attributes": [{"name": "operationMode"}],
+        "alarms": [{"name": "F1"}],
+        "invisible_attributes": [],   # recorded, empty -- the "we know the feature set" signal
+    }
+    entry = _entry(**{CONF_DIGITAL_MODEL: _json.dumps(topped_up)})
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    with patch(
+        "custom_components.haismart.coordinator.get_public_device_config", new=AsyncMock()
+    ) as fetch:
+        assert await entry.runtime_data.async_fetch_model_rules() is False
+    assert fetch.await_count == 0, "re-fetched a model that was already topped up"

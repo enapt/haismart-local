@@ -469,7 +469,7 @@ async def test_public_device_config_needs_no_account_and_renames_its_sections() 
         "property": [{"name": "operationMode", "invisible": False}],
         "logicLimit": [{"trigger": {}, "actions": []}],
         "logicPatch": [{"name": "co-command"}],
-        "alarm": [{"name": "F1", "pos": 0}],
+        "alarm": [{"name": "F1", "description": "a fault"}],
     })
     listing = json.dumps({"retCode": "00000", "retInfo": "ok", "data": {
         "version": "3.0.1",
@@ -489,13 +489,19 @@ async def test_public_device_config_needs_no_account_and_renames_its_sections() 
     assert json.loads(seen[0].body) == {"productCode": "AAD180E00"}
     assert "accessToken" not in seen[0].headers and "sign" not in seen[0].headers
     assert seen[1].method == "GET"
-    # sections arrive under the names every consumer here already speaks
+    # the sections that ARE carried arrive under the names every consumer here already speaks
     assert cfg["attributes"][0]["name"] == "operationMode"
-    assert cfg["modifiers"] and cfg["constraints"] and cfg["alarms"]
     assert cfg["baseInfo"]["uPlusId"] == "2008610800820324"
+    assert cfg["alarms"][0]["desc"] == "a fault"      # description -> desc, renamed in place
     # ...and the old spellings are gone, so nothing reads both
-    for old in ("property", "logicLimit", "logicPatch", "alarm", "basicInfo"):
-        assert old not in cfg
+    for gone in ("property", "alarm", "basicInfo"):
+        assert gone not in cfg
+
+    # ⚠️ The rule sections are DROPPED, not renamed. Their inner schema differs from the
+    # account-scoped model's, so carrying them across would yield rules that parse to nothing and
+    # silently stop locking anything. No rules locks nothing, which is the safe direction.
+    for unadapted in ("modifiers", "constraints", "logicLimit", "logicPatch"):
+        assert unadapted not in cfg
 
 
 async def test_public_device_config_refuses_an_unknown_product_code() -> None:

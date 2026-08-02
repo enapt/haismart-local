@@ -267,16 +267,28 @@ DEVICE_CONFIG_RES_TYPE = "DeviceConfig"
 # report from a device nobody here owns usable.
 PUBLIC_CONFIG_URL = "https://standardcfm.haigeek.com/hardwareconfig/app/resource/logicLimit"
 
-# The catalogue publishes an older, parallel spelling of the same sections. Same data, different
-# names, so it is renamed on the way in and every consumer downstream sees one shape.
+# The catalogue publishes an older, parallel schema. Only the sections whose INNER shape matches what
+# consumers here expect are carried over; the rest are dropped rather than renamed.
+#
+# ⚠️ Renaming a section is not enough, and assuming it was is a mistake worth not repeating. The
+# catalogue's rule sections share their purpose with the account-scoped model's but not their
+# structure: its `logicLimit` entries key their effects on `action` where a modifier here wants
+# `actions`, and its `logicPatch` entries are built from `action`/`actionType` where a constraint
+# here wants `additionalCommands`/`pendingCondition`/`reportValue`. Renamed but unadapted, they
+# parse to nothing: conditional availability silently stops locking anything. Since no rules locks
+# nothing -- the safe direction -- they are left out until someone adapts them properly, rather than
+# carried across looking like they work.
 PUBLIC_CONFIG_SECTIONS = {
     "property": "attributes",
-    "logicLimit": "modifiers",
-    "logicPatch": "constraints",
     "alarm": "alarms",
     "basicInfo": "baseInfo",
-    "operation": "groupCommands",
 }
+
+# Sections whose inner schema has not been adapted. Dropped, not renamed.
+PUBLIC_CONFIG_UNADAPTED = ("logicLimit", "logicPatch", "operation")
+
+# Field renames INSIDE a carried section, where the two schemas differ only by name.
+PUBLIC_CONFIG_FIELD_RENAMES = {"alarms": {"description": "desc"}}
 
 
 def normalize_public_config(doc: Mapping[str, Any]) -> dict:
@@ -291,7 +303,17 @@ def normalize_public_config(doc: Mapping[str, Any]) -> dict:
     """
     out: dict[str, Any] = {}
     for key, value in doc.items():
-        out[PUBLIC_CONFIG_SECTIONS.get(key, key)] = value
+        if key in PUBLIC_CONFIG_UNADAPTED:
+            continue
+        name = PUBLIC_CONFIG_SECTIONS.get(key, key)
+        renames = PUBLIC_CONFIG_FIELD_RENAMES.get(name)
+        if renames and isinstance(value, list):
+            value = [
+                {renames.get(k, k): v for k, v in item.items()}
+                if isinstance(item, Mapping) else item
+                for item in value
+            ]
+        out[name] = value
     return out
 
 
@@ -308,8 +330,14 @@ async def get_public_device_config(
     This is a genuine catalogue rather than a listing of the caller's own devices, so it answers for
     hardware nobody here owns -- which is what makes it useful for a bug report, and for an install
     that was set up by hand and has no cloud credentials at all. It carries the attributes and their
-    ranges, the conditional ``modifiers``, the ``alarms``, the co-command ``constraints``, and the
-    ``invisible`` flags that say which of a generic model's attributes a given unit actually has.
+    ranges, the ``alarms``, and -- the part that matters most -- the ``invisible`` flags that say
+    which of a generic model's attributes a given unit actually has.
+
+    ⚠️ It does **not** carry the conditional rules. Its rule sections use a different inner schema
+    from the account-scoped model's, and renaming them without adapting them yields rules that parse
+    to nothing, so they are dropped instead (see :data:`PUBLIC_CONFIG_UNADAPTED`). A device fetched
+    this way therefore gets its feature set but no conditional availability, which locks nothing --
+    the safe direction.
 
     ⚠️ It carries **no wire positions** -- there is no ``startWord``/``startBit`` anywhere in it. It
     is the semantic model, never the byte map.

@@ -1972,3 +1972,65 @@ def test_device_type_class_reads_the_class_out_of_a_uplus_id():
     assert device_type_class(None) is None
     assert device_type_class("") is None
     assert device_type_class("2008610800820324") is None
+
+
+# --- transport escaping, against independently published frames ---------------------------------
+# 0xFF is the frame separator, so an 0xFF inside a frame travels as `FF 55`, and the checksum counts
+# the inserted 0x55. Our own captures cannot reach that path: no frame this project has ever recorded
+# carries an 0xFF body byte, so every checksum we have checked has a compensation term of zero. These
+# four frames come from a separate implementation of the same framing, published as its own transport
+# test suite, and two of them make the term load-bearing -- without it their checksums do not verify.
+#
+# They also use the framing's optional CRC (flag 0x40), which our units do not; that is deliberate.
+# The escaping and checksum rules are what is being pinned, and those are shared.
+_ESCAPED_FRAMES = {
+    # every escapable position exercised at once: the frame type, the data, and the checksum itself
+    "type_data_and_checksum": (
+        "FF FF 0E 40 00 00 00 00 00 FF 55 FF 55 FF 55 05 FF 55 FF 55 08 FF 55 D0 8E", 5),
+    # a 4D01 query carrying escapes in its data and in its checksum
+    "query_with_escapes": (
+        "FF FF 0D 40 00 00 00 00 00 01 4D 01 FF 55 BB FF 55 FF 55 D1 3C", 2),
+    # an escape that falls inside the CRC, after the checksummed region ends
+    "escape_inside_crc": (
+        "FF FF 2A 40 00 00 00 00 00 02 6D 01 02 06 25 00 02 00 00 00 00 00 26 00 46 00 00 03 "
+        "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 78 FF 55 D2", 0),
+    # the same report with no escapes anywhere -- the ordinary case
+    "no_escapes": (
+        "FF FF 2A 40 00 00 00 00 00 02 6D 01 02 06 25 00 02 00 00 00 00 00 27 00 44 00 00 03 "
+        "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 77 D1 7B", 0),
+}
+
+
+@pytest.mark.parametrize("name", sorted(_ESCAPED_FRAMES))
+def test_escaping_and_checksum_match_an_independent_implementation(name):
+    """Unescape, verify the checksum, and re-escape back to the exact bytes."""
+    wire_hex, expected_escapes = _ESCAPED_FRAMES[name]
+    wire = bytes.fromhex(wire_hex.replace(" ", ""))
+
+    logical = uss.destuff_epp(wire)
+    length = logical[2]
+    body, sent_checksum = logical[2:2 + length], logical[2 + length]
+    assert body.count(0xFF) == expected_escapes, "escaping did not resolve as expected"
+
+    # the rule build_epp_frame uses, applied to somebody else's frames
+    assert (sum(body) + 0x55 * body.count(0xFF)) & 0xFF == sent_checksum
+
+    # and escaping is exactly invertible -- a re-encode reproduces the wire bytes
+    assert uss.stuff_epp(logical) == wire
+
+
+def test_checksum_compensation_is_load_bearing_not_decorative():
+    """Two of those frames verify only when the inserted escape bytes are counted.
+
+    Guards against the compensation term being 'simplified away' by someone who checks it against
+    our own captures, where it is always zero and therefore always looks redundant.
+    """
+    needed = 0
+    for wire_hex, _ in _ESCAPED_FRAMES.values():
+        logical = uss.destuff_epp(bytes.fromhex(wire_hex.replace(" ", "")))
+        length = logical[2]
+        body, sent = logical[2:2 + length], logical[2 + length]
+        if (sum(body) & 0xFF) != sent:
+            needed += 1
+            assert (sum(body) + 0x55 * body.count(0xFF)) & 0xFF == sent
+    assert needed == 2

@@ -97,6 +97,7 @@ from .uss import (
     parse_hello_resp,
     parse_status_container,
     probe_localkey_version,
+    reply_refused,
     read_grsetdac_field,
     read_status,
     set_grsetdac_field,
@@ -165,6 +166,7 @@ __all__ = [
     "check_hello_resp",
     "HelloResp",
     "probe_localkey_version",
+    "reply_refused",
     # CONTROL / write
     "build_epp_frame",
     "extended_status_epp_frame",

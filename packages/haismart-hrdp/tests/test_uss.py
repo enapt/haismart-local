@@ -2052,3 +2052,38 @@ def test_checksum_compensation_is_load_bearing_not_decorative():
             needed += 1
             assert (sum(body) + 0x55 * body.count(0xFF)) & 0xFF == sent
     assert needed == 2
+
+
+def test_a_refusal_is_told_apart_from_a_status_report():
+    """The byte before the command word says whether the unit answered or declined.
+
+    A refusal carries no command word we recognise, so every check that keys on the command word
+    reads it as silence -- which is the wrong answer for a caller deciding whether to retry.
+    """
+    # a real status report: frame type 06 (report), command word 6d01
+    assert uss.epp_frame_type(REAL_STATUS) == 0x06
+    assert uss.reply_refused([REAL_STATUS]) is False
+
+    # the same blob with the frame type changed to a refusal
+    at = REAL_STATUS.find(uss.EPP_FRAME_HEAD)
+    refusal = bytearray(REAL_STATUS)
+    refusal[at + 9] = uss.EPP_FRAME_TYPE_REFUSED
+    assert uss.epp_frame_type(bytes(refusal)) == uss.EPP_FRAME_TYPE_REFUSED
+    assert uss.reply_refused([bytes(refusal)]) is True
+
+    # a blob carrying no frame at all is neither -- absence is not refusal
+    assert uss.epp_frame_type(b"\x00" * 40) is None
+    assert uss.reply_refused([b"", b"\x00" * 40]) is False
+    # and a truncated frame does not read past its end
+    assert uss.epp_frame_type(uss.EPP_FRAME_HEAD + b"\x0a\x00") is None
+
+
+def test_a_refusal_alongside_a_status_report_does_not_mask_it():
+    """A unit that answers with its updated state has accepted the write, whatever else arrived."""
+    at = REAL_STATUS.find(uss.EPP_FRAME_HEAD)
+    refusal = bytearray(REAL_STATUS)
+    refusal[at + 9] = uss.EPP_FRAME_TYPE_REFUSED
+    # `reply_refused` reports what it sees; the caller consults it only when no status decoded,
+    # which this pins by showing the status blob still parses on its own
+    assert uss.parse_full_status(REAL_STATUS) is not None
+    assert uss.reply_refused([REAL_STATUS, bytes(refusal)]) is True

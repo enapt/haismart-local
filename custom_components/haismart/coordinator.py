@@ -59,6 +59,7 @@ from haismart_hrdp import (
     parse_extended_status,
     parse_full_status,
     probe_localkey_version,
+    reply_refused,
     profile_for,
     profile_from_device_config,
     read_bool_features,
@@ -826,6 +827,19 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # if the reply carried no decodable full-status report.
         if (state := self._state_from_reply(reply)) is not None:
             self.async_set_updated_data(state)
+        elif reply_refused(reply):
+            # The unit answered, and what it answered was a refusal. Distinct from the silence
+            # below on purpose: silence is a connection that missed and is worth retrying, a
+            # refusal is the unit declining this setting in its current state and will keep
+            # declining it. Saying so beats a poll that reports the value never changed.
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="control_rejected",
+                translation_placeholders={
+                    "name": self.config_entry.title,
+                    "error": "the air conditioner refused the command",
+                },
+            )
         else:
             await self.async_request_refresh()
 

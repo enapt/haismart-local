@@ -27,7 +27,7 @@ import random
 import socket
 import struct
 import time
-from collections.abc import Callable, Collection
+from collections.abc import Callable, Collection, Iterable
 from dataclasses import dataclass
 from typing import Any
 
@@ -345,6 +345,35 @@ EPP_CMD_EXTENDED_STATUS = b"\x4d\xfe"
 _EPP_RPT_STATUS = b"\x6d\x01"    # the ordinary full-status report (a group-set is answered `6d5f`)
 _EPP_RPT_ALARM = b"\x0f\x5a"     # fault bitmap
 _EPP_RPT_EXTENDED = b"\x7d\x01"  # extended status (running power / compressor figures)
+
+# The byte before the command word says what KIND of frame this is, and one value means the unit is
+# refusing rather than answering: it will not carry a command word we recognise, so every check that
+# keys on the command word reads a refusal as silence.
+#
+# That distinction is worth making. A control op that draws a refusal and a control op that draws
+# nothing are the same event to a caller who only asks "did a status report come back?", and the
+# difference is exactly the one a user needs: a setting the unit declined, versus a connection that
+# missed. A refusal is also the only direct evidence that a unit rejects a particular write -- every
+# such verdict here otherwise rests on writing a bit and observing it did not change.
+_EPP_FRAME_TYPE_OFFSET = 9       # FF FF | len | flags | 5 reserved | frameType | cmd(2) | ...
+EPP_FRAME_TYPE_REFUSED = 0x03
+
+
+def epp_frame_type(blob: bytes) -> int | None:
+    """The frame-type byte of the EPP frame inside ``blob``, or ``None`` if it carries no frame."""
+    at = blob.find(EPP_FRAME_HEAD)
+    if at < 0 or len(blob) <= at + _EPP_FRAME_TYPE_OFFSET:
+        return None
+    return blob[at + _EPP_FRAME_TYPE_OFFSET]
+
+
+def reply_refused(blobs: Iterable[bytes]) -> bool:
+    """Whether any reply in ``blobs`` is the unit refusing the command it was sent.
+
+    Only ever consulted when a control op produced no usable status report — a unit that answers
+    with its updated state has accepted the write, whatever else arrived alongside.
+    """
+    return any(epp_frame_type(blob) == EPP_FRAME_TYPE_REFUSED for blob in blobs)
 
 
 def build_epp_frame(frame_type: int, epp_cmd: bytes, data: bytes = b"") -> bytes:

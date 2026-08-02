@@ -342,3 +342,63 @@ that is meant to undo it.
 
 Writes are **not** gated on any of this — only availability is. Turning a unit on means writing its
 mode while it is off.
+
+---
+
+## 11. Reads for the central-air-conditioner family — one report unlocks 79 products
+
+**Status: open, and the cheapest high-value item on this list.**
+
+Seventy-nine of the published air conditioners are central/ducted units. Between them they declare
+fourteen attributes, and **ten already have positions** in the shared map — `onOffStatus`,
+`operationMode`, `targetTemperature`, `windSpeed`, both vane fields, `muteStatus`, `rapidMode`,
+`indoorTemperature`, `tempUnit`. Nothing about their layout is unknown except **which displacement
+applies**, and that is what the layout prober scores from a report length plus a few stated states.
+
+So the ask is small and specific: **one report from any central-AC owner, with the unit's state
+written down**. That is not a capture session; it is the diagnostics download the integration
+already produces.
+
+## 12. Control for the central family — a parameter at a time, not a group
+
+**Status: open. Depends on 11 for reads, but is independent work.**
+
+Those models publish **no group-set command** at all — their operations are `getAllProperty`,
+`getAllAlarm`, `stopCurrentAlarm`, `getBigDataFrame`. They are written one parameter at a time, a
+method the vendor ships and prior art documents.
+
+⚠️ **Do not reuse the group-set safety argument here.** The encoder refuses any field it has not
+seen written because a group-set applies a whole word block, so a mistake changes a neighbour rather
+than failing. A single-parameter write cannot do that. The family deserves a safety property argued
+from its own mechanics — probably narrower than the current allowlist, and certainly not the same
+rule copied across without examination.
+
+## 13. The four-sided cassette vanes — one capture, and it must be the right one
+
+**Status: open, reduced as far as data allows.**
+
+Seventeen central models expose four independent vanes instead of one left-right field. Established
+without any hardware: they **replace** `windDirectionHorizontal` (the only difference between the
+nine- and twelve-attribute variants of the same family), they are **three bits each** on the same
+0–7 code space, and since that family declares none of the neighbouring attributes the four fit the
+twelve bits from b0 — forcing the offsets to **b0, b3, b6, b9**.
+
+What no amount of arithmetic gives is **which vane is which**. Four identical fields with identical
+encodings are symmetric, and the twelve-attribute model's attribute list is alphabetised rather than
+in wire order, so it carries no hint either.
+
+**When asking for this capture, ask for each vane in a *different* position.** A capture with all
+four set the same way proves nothing, and it is the natural thing for someone to send.
+
+## 14. Deploy and verify the shipped rules
+
+**Status: built, tested, not yet run on hardware.**
+
+The rules for all 171 published air conditioners now travel with the integration, and the coordinator
+consults them when the catalogue cannot be reached. On a firewalled installation — which is the
+configuration this integration is for — that is now the ordinary path rather than the fallback.
+
+It changes startup behaviour, and this project has twice shipped decode work that passed every test
+and was only caught by deploying. Before calling it good: deploy, then diff `model_declared_fields`
+against `digital_model.reported_values`, and confirm entity availability is unchanged on a unit whose
+rules previously came from the cloud.

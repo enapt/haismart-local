@@ -14,6 +14,12 @@ Positions are relative to the un-displaced map, so a classic-layout unit reads `
 ``k``/``c`` scale a raw value (``value = raw * k + c``); ``enum`` maps a raw wire value to the
 standard code a model names it by, and is present only where the two differ.
 
+A few attributes reach the map a second way. A model may place an attribute in the group-set frame
+and nowhere in its report layout, even though the group-set frame *is* the report's own writable
+words — so the report position follows from the write position and is filled in from it. Those
+entries are as published as the rest; they are simply stated in the other of the two places a model
+describes the same words.
+
 Transcribed from the published device models, not written by hand — so do not edit it by
 hand either; correct the models it came from and regenerate.
 """
@@ -105,6 +111,7 @@ CANONICAL: Mapping[str, CanonicalField] = {
     "selfCleaningStatus": CanonicalField(24, 4, 1, "bool"),
     "lightStatus": CanonicalField(24, 5, 1, "bool"),
     "energySavingStatus": CanonicalField(24, 6, 1, "bool"),
+    "cleaningTimeStatus": CanonicalField(24, 7, 1, "bool"),
     "localFilterChangeFlag": CanonicalField(24, 8, 1, "bool"),
     "voiceStatus": CanonicalField(24, 9, 1, "bool"),
     "voiceSignStatus": CanonicalField(24, 10, 1, "bool"),

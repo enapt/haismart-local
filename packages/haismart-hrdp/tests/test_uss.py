@@ -1880,12 +1880,17 @@ def test_published_write_map_is_the_reports_writable_words():
     assert len(CANONICAL_WRITE) > 3 * len(uss.GRSETDAC_FIELDS)
     for name, w in CANONICAL_WRITE.items():
         c = CANONICAL.get(name)
-        if c is None or w.word == 5:
-            continue        # word 5 carries the two filter flags the report map names differently
+        if c is None:
+            continue
         assert (c.word, c.bit, c.length) == (w.word + 19, w.bit, w.length), name
-    # the two filter flags: one bit, a different name on each side, and one write-only
+    # The one field the two sides name differently: the filter flag is asserted by the cloud on the
+    # write side and reported by the unit on the read side, at one and the same bit.
+    assert CANONICAL_WRITE["cloudFilterChangeFlag"].word + 19 == CANONICAL["localFilterChangeFlag"].word
     assert CANONICAL_WRITE["cloudFilterChangeFlag"].bit == CANONICAL["localFilterChangeFlag"].bit
-    assert "cleaningTimeStatus" not in CANONICAL
+    # ...and the cleaning-time flag now has its report position too, derived from this very
+    # correspondence rather than hand-added: no model states it in `Property`, every model states it
+    # in the write frame, and write word 5 bit 7 is report word 24 bit 7.
+    assert (CANONICAL["cleaningTimeStatus"].word, CANONICAL["cleaningTimeStatus"].bit) == (24, 7)
     # nothing writable reaches word 25 -- that is where the readings start
     assert max(w.word for w in CANONICAL_WRITE.values()) == 5
     assert {"indoorTemperature", "indoorHumidity"} <= {

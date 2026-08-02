@@ -97,9 +97,9 @@ from .uss import (
     parse_hello_resp,
     parse_status_container,
     probe_localkey_version,
-    reply_refused,
     read_grsetdac_field,
     read_status,
+    reply_refused,
     set_grsetdac_field,
     status_layout,
 )

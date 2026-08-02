@@ -10,6 +10,21 @@ agrees on it: same widths, same bits, same order, one whole-word displacement ea
 that agreement, transcribed rather than hand-derived, and it reproduces every report layout this
 project supports — including the two it never had a published model for.
 
+Two things follow that are worth stating plainly, because both look like coincidences and are not.
+
+**The displacement is the media block, counted.** The voice/media attributes occupy words 1 to 18
+and the climate block begins at word 20; a model without that hardware starts its report at word 1,
+so it reads exactly 19 words earlier. ``-19`` is that subtraction, not a constant anyone fitted to
+observations. A test pins the two together so a regenerated map cannot leave them disagreeing.
+
+**Every published air-conditioner model is a subset of this map — there are no variants.** Taking
+the richest published model as the reference, all the others are contained in it exactly: same bits,
+same widths, one displacement each, and not one attribute anywhere that the reference lacks. The
+pairs of models that differ only in form factor (wall-mounted against cabinet) are identical down to
+the bit. So a device does not bring its own layout; it declares which of these attributes it has,
+and the position never moves. That is what makes it safe to decode hardware whose own model was
+never published — the question is only which attributes, never where.
+
 Positions are relative to the un-displaced map, so a classic-layout unit reads ``word - 19``.
 ``k``/``c`` scale a raw value (``value = raw * k + c``); ``enum`` maps a raw wire value to the
 standard code a model names it by, and is present only where the two differ.

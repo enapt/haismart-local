@@ -307,7 +307,7 @@ including an entry no unit here has ever exercised.
 
 ### Reading what a device declares, not just what a family maps
 
-The map carries 84 attributes where a family map carries a dozen, and a *device* routinely declares
+The map carries 85 attributes where a family map carries a dozen, and a *device* routinely declares
 three or four times what its family map holds — 42 against 14 on the reference units. Those extra
 attributes are read now, from the map at the family's displacement. It needs no capture per
 attribute, because membership comes from the device's own model and position from the map, and the

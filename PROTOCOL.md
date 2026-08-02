@@ -340,7 +340,7 @@ Every air conditioner packs the same attributes into the same words, at the same
 widths and scaling. What differs is only **where the block starts**. The published device models
 agree on it completely — same widths, same bits, same order, one whole-word displacement each — and
 [`canonical_map.py`](packages/haismart-hrdp/src/haismart_hrdp/canonical_map.py) carries that map,
-84 attributes of it.
+85 attributes of it.
 
 | family | is |
 |---|---|
@@ -364,6 +364,15 @@ One consequence worth stating outright, because it is easy to look for in the wr
 32-bit cumulative counter extends backwards from its word, so on a classic report it occupies the
 **final two words** — 15 and 16 on a 16-word report, 16 and 17 on a 17-word one. The word above it
 in the map carries nothing at all, which is what a 32-bit field's high half looks like.
+
+A device model describes those same words **twice**: once as the report layout, and once as the
+group-set frame the unit accepts. They are not two layouts — the group-set frame *is* the report's
+own writable words, so a write at word *N* is a read at word *19 + N*. A model may state an
+attribute in one and not bother to repeat it in the other, and the position still follows. One
+attribute reaches the map only that way, so the two descriptions correspond bit for bit with no
+gaps; the map is built to fill any such position in rather than leave the attribute write-only.
+**A family that writes a field must also read it** — a control that cannot be read back is worse
+than a missing one, since nothing can show whether the setting took.
 
 ### Reading the attributes a device declares
 

@@ -1,4 +1,8 @@
 {
   "name": "Haismart (Haier local)",
-  "render_readme": true
+  "filename": "haismart.zip",
+  "hide_default_branch": true,
+  "homeassistant": "2024.12.0",
+  "render_readme": true,
+  "zip_release": true
 }

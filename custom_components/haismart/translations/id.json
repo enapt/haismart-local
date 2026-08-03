@@ -4,10 +4,10 @@
     "step": {
       "user": {
         "title": "Tambahkan AC Haier",
-        "description": "Masuk dengan email/kata sandi Haismart Anda, atau masukkan detail perangkat secara manual. Akun Google/Facebook: buat akun Haier terpisah dengan email dan kata sandi, bagikan AC Anda ke akun tersebut di aplikasi, lalu masuk dengan akun itu.",
+        "description": "Masuk adalah cara yang disarankan: Home Assistant mengambil kunci lokal, menemukan unit di jaringan Anda, dan membaca modelnya, jadi tidak ada yang perlu ditempel. Setelah itu ia berbicara langsung dengan AC — dan begitu selesai disiapkan, Anda dapat memblokir akses internet unit sepenuhnya; lihat README tentang menjadi sepenuhnya mandiri dari cloud.\n\nAkun Google/Facebook: buat akun Haier terpisah dengan email dan kata sandi, bagikan AC Anda ke akun itu di aplikasi, lalu masuk dengan akun tersebut.",
         "menu_options": {
-          "login": "Masuk dengan akun Haier Anda (email atau nomor telepon + kata sandi)",
-          "manual": "Saya akan memasukkan detail perangkat sendiri"
+          "login": "Masuk dengan akun Haier Anda (disarankan)",
+          "manual": "Saya sudah punya kunci lokal unit ini"
         }
       },
       "login": {
@@ -33,20 +33,18 @@
       },
       "manual": {
         "title": "Detail perangkat",
-        "description": "Siapkan AC tanpa masuk ke akun. Anda memerlukan tiga hal, yang semuanya bisa didapat dari sensor Kunci lokal pada instalasi sebelumnya atau dari cadangan.",
+        "description": "Satu-satunya yang Anda perlukan adalah kunci lokal unit ini — dari sensor “Kunci lokal” pemasangan sebelumnya, atau dari cadangan. Home Assistant mencari AC di jaringan Anda dan menanyakan sisanya langsung kepada perangkat.\n\nKunci tidak dapat dibaca dari unit itu sendiri. Jika Anda tidak menyimpannya, kembali dan masuk — dengan begitu kunci diambilkan untuk Anda.",
         "data": {
           "host": "Alamat IP",
           "device_id": "ID perangkat",
           "local_key": "Kunci lokal (32 karakter heksadesimal)",
-          "name": "Nama",
-          "product_code": "Kode produk (typeId)"
+          "name": "Nama"
         },
         "data_description": {
           "host": "Alamat IP AC di jaringan Anda, misalnya 192.168.1.50. Reservasi DHCP mencegahnya berubah.",
-          "device_id": "Alamat MAC modul Wi-Fi tanpa pemisah, misalnya A1B2C3D4E5F6.",
+          "device_id": "Biasanya dibiarkan kosong — hal ini ditanyakan langsung kepada AC. Ini adalah alamat MAC Wi-Fi modul, jika suatu saat Anda perlu memasukkannya.",
           "local_key": "Kunci 32 karakter yang digunakan AC untuk mengenkripsi statusnya. Kunci ini diterbitkan oleh cloud Haier per perangkat — jalur Masuk akan mengambilnya untuk Anda.",
-          "name": "Opsional. Nama untuk AC ini di Home Assistant.",
-          "product_code": "Opsional. Kode produk model Anda, ditampilkan di detail perangkat pada aplikasi Haier, misalnya AACRL2E00. Biarkan apa adanya kecuali Anda tahu pasti — kode ini hanya memilih cadangan yang digunakan bila tidak ada deskripsi model yang tersimpan."
+          "name": "Opsional. Nama untuk AC ini di Home Assistant."
         }
       },
       "reauth_confirm": {
@@ -71,7 +69,7 @@
       },
       "key_failed": {
         "title": "Tidak dapat mengambil kunci secara otomatis",
-        "description": "Home Assistant berhasil masuk, tetapi tidak dapat mengambil kunci lokal AC ini dari server Haier — atau kunci yang didapat tidak dapat mendekripsi status unit.\n\nIni sering kali bersifat sementara, jadi mencoba lagi biasanya sepadan. Jika terus gagal, Anda dapat memasukkan detailnya secara manual, meskipun kunci tersebut tidak bisa dibaca langsung dari unit — Anda memerlukannya dari sensor Kunci lokal pada instalasi sebelumnya atau dari cadangan.",
+        "description": "Home Assistant berhasil masuk, tetapi tidak dapat mengambil kunci lokal AC ini dari server Haier — atau kunci yang didapat tidak dapat mendekripsi status unit.{note}\n\nIni sering bersifat sementara, jadi mencoba lagi biasanya sepadan. Jika terus gagal, Anda dapat memasukkan detailnya secara manual, meski kunci tidak dapat dibaca dari unit — Anda memerlukannya dari sensor “Kunci lokal” pemasangan sebelumnya atau dari cadangan.",
         "menu_options": {
           "key_retry": "Coba ambil kunci lagi",
           "manual": "Masukkan detailnya secara manual saja"
@@ -122,6 +120,23 @@
           "password": "Kata sandi",
           "zone_info": "Negara tempat akun Haier Anda terdaftar"
         }
+      },
+      "model": {
+        "title": "Ini model yang mana?",
+        "description": "AC melaporkan termasuk keluarga produk mana dirinya, sehingga pilihan menyempit ke model-model di bawah ini. Pilih yang tertera pada unit atau label-nya.\n\nMemilih akan membuka nama-nama kerusakan, aturan ketersediaan, dan daftar fitur sebenarnya dari unit ini. Melewatinya tidak masalah — AC tetap terbaca dan terkendali sepenuhnya.",
+        "data": {
+          "product_code": "Model"
+        },
+        "data_description": {
+          "product_code": "Pilih “skip” jika model Anda tidak tercantum atau Anda ragu — pilihan yang salah menerapkan aturan model lain, yang lebih buruk daripada tanpa aturan."
+        }
+      },
+      "pick_local": {
+        "title": "AC yang ditemukan di jaringan Anda",
+        "description": "Perangkat ini menjawab di jaringan Anda, jadi alamat dan ID-nya sudah diketahui — Anda hanya perlu kunci lokalnya.\n\nMilik Anda tidak tercantum? Kembali, dan Anda akan diminta alamat IP sebagai gantinya. Unit yang sudah ditambahkan tidak ditampilkan.",
+        "data": {
+          "host": "AC"
+        }
       }
     },
     "error": {
@@ -131,7 +146,8 @@
       "cannot_connect_cloud": "Berhasil masuk, tetapi server Haier tidak dapat dihubungi untuk menampilkan daftar perangkat Anda. Biasanya ini bersifat sementara — coba lagi sebentar lagi.",
       "invalid_key": "Kunci lokal harus berupa string heksadesimal 32 karakter.",
       "invalid_auth": "AC merespons, tetapi kunci lokal ini tidak dapat mendekripsi statusnya — kuncinya salah, atau sudah diganti.",
-      "cannot_connect": "Tidak dapat menjangkau AC di port 56800. Periksa alamat IP-nya, dan pastikan Home Assistant berada di jaringan yang sama."
+      "cannot_connect": "Tidak dapat menjangkau AC di port 56800. Periksa alamat IP-nya, dan pastikan Home Assistant berada di jaringan yang sama.",
+      "device_id_required": "AC tidak menjawab kueri identifikasi, sehingga ID perangkatnya tidak dapat dibaca otomatis. Masukkan secara manual — ini adalah alamat MAC Wi-Fi modul, 12 karakter heksadesimal tanpa pemisah."
     },
     "abort": {
       "already_configured": "Perangkat ini sudah dikonfigurasi.",

@@ -4,10 +4,10 @@
     "step": {
       "user": {
         "title": "Lisää Haier-ilmastointilaite",
-        "description": "Kirjaudu sisään Haismart-sähköpostillasi ja -salasanallasi tai syötä laitteen tiedot itse. Google-/Facebook-tilit: luo erillinen Haier-tili sähköpostilla ja salasanalla, jaa laitteesi sille sovelluksessa ja kirjaudu sitten sisään kyseisellä tilillä.",
+        "description": "Sisäänkirjautuminen on suositeltu tapa: Home Assistant hakee paikallisen avaimen, löytää laitteen verkostasi ja lukee sen mallin, joten mitään ei tarvitse liittää. Sen jälkeen se keskustelee suoraan ilmastointilaitteen kanssa — ja kun kaikki on määritetty, voit estää laitteen internetyhteyden kokonaan; katso README täydestä pilviriippumattomuudesta.\n\nGoogle-/Facebook-tilit: luo erillinen Haier-tili sähköpostilla ja salasanalla, jaa ilmastointilaitteesi sille sovelluksessa ja kirjaudu sitten sisään sillä tilillä.",
         "menu_options": {
-          "login": "Kirjaudu Haier-tililläni (sähköposti tai puhelinnumero + salasana)",
-          "manual": "Syötän laitteen tiedot itse"
+          "login": "Kirjaudu Haier-tililläsi (suositeltu)",
+          "manual": "Minulla on jo tämän laitteen paikallinen avain"
         }
       },
       "login": {
@@ -33,20 +33,18 @@
       },
       "manual": {
         "title": "Laitteen tiedot",
-        "description": "Ota laite käyttöön ilman kirjautumista. Tarvitset kolme tietoa, jotka kaikki saa aiemman asennuksen ”Paikallinen avain” -anturista tai varmuuskopiosta.",
+        "description": "Ainoa tarvitsemasi asia on tämän laitteen paikallinen avain — aiemman asennuksen ”Paikallinen avain” -anturista tai varmuuskopiosta. Home Assistant etsii ilmastointilaitteen verkostasi ja kysyy siltä kaiken muun.\n\nAvainta ei voi lukea itse laitteesta. Jos sinulla ei ole tallennettua avainta, palaa takaisin ja kirjaudu sisään — silloin se haetaan puolestasi.",
         "data": {
           "host": "IP-osoite",
           "device_id": "Laitetunnus",
           "local_key": "Paikallinen avain (32 heksamerkkiä)",
-          "name": "Nimi",
-          "product_code": "Tuotekoodi (typeId)"
+          "name": "Nimi"
         },
         "data_description": {
           "host": "Ilmastointilaitteen IP-osoite verkossasi, esim. 192.168.1.50. DHCP-varaus estää sitä muuttumasta.",
-          "device_id": "Wi-Fi-moduulin MAC-osoite ilman erottimia, esim. A1B2C3D4E5F6.",
+          "device_id": "Jätetään yleensä tyhjäksi — tämä kysytään suoraan ilmastointilaitteelta. Se on moduulin Wi-Fi-MAC-osoite, jos joudut kuitenkin syöttämään sen.",
           "local_key": "32-merkkinen avain, jolla laite salaa tilatietonsa. Haierin pilvi myöntää sen laitekohtaisesti – kirjautumispolku hakee sen puolestasi.",
-          "name": "Valinnainen. Tämän ilmastointilaitteen nimi Home Assistantissa.",
-          "product_code": "Valinnainen. Mallisi tuotekoodi, joka näkyy Haier-sovelluksen laitetiedoissa, esim. AACRL2E00. Jätä ennalleen, ellet tunne sitä – se vain valitsee varavaihtoehdon, jota käytetään, kun mallikuvausta ei ole tallennettu."
+          "name": "Valinnainen. Tämän ilmastointilaitteen nimi Home Assistantissa."
         }
       },
       "reauth_confirm": {
@@ -71,7 +69,7 @@
       },
       "key_failed": {
         "title": "Avainta ei voitu hakea automaattisesti",
-        "description": "Home Assistant kirjautui sisään, mutta ei saanut tämän ilmastointilaitteen paikallista avainta Haierin palvelimilta – tai saatu avain ei pura laitteen tilatietoja.\n\nTämä on usein tilapäistä, joten uudelleenyritys kannattaa yleensä. Jos virhe jatkuu, voit syöttää tiedot käsin, mutta avainta ei voi lukea itse laitteesta – tarvitsisit sen aiemman asennuksen ”Paikallinen avain” -anturista tai varmuuskopiosta.",
+        "description": "Home Assistant kirjautui sisään, mutta ei saanut haettua tämän ilmastointilaitteen paikallista avainta Haierin palvelimilta — tai saatu avain ei pura laitteen tilaa.{note}\n\nTämä on usein tilapäistä, joten uudelleenyritys kannattaa yleensä. Jos virhe toistuu, voit syöttää tiedot käsin, mutta avainta ei voi lukea laitteesta — tarvitsisit sen aiemman asennuksen ”Paikallinen avain” -anturista tai varmuuskopiosta.",
         "menu_options": {
           "key_retry": "Yritä hakea avain uudelleen",
           "manual": "Syötä tiedot sen sijaan käsin"
@@ -122,6 +120,23 @@
           "password": "Salasana",
           "zone_info": "Maa, jossa Haier-tilisi on rekisteröity"
         }
+      },
+      "model": {
+        "title": "Mikä malli tämä on?",
+        "description": "Ilmastointilaite ilmoitti, mihin tuoteperheeseen se kuuluu, mikä rajaa vaihtoehdot alla oleviin malleihin. Valitse se, joka on merkitty laitteeseen tai sen tyyppikilpeen.\n\nValinta avaa vikojen nimet, käytettävyyssäännöt ja tämän laitteen todellisen ominaisuusluettelon. Ohittaminen on aivan hyväksyttävää — ilmastointilaitetta luetaan ja ohjataan täysin ilman sitäkin.",
+        "data": {
+          "product_code": "Malli"
+        },
+        "data_description": {
+          "product_code": "Valitse ”skip”, jos mallisi ei ole luettelossa tai olet epävarma — väärä valinta soveltaa toisen mallin sääntöjä, mikä on huonompi kuin ei sääntöjä lainkaan."
+        }
+      },
+      "pick_local": {
+        "title": "Verkostasi löytyneet ilmastointilaitteet",
+        "description": "Nämä vastasivat verkossasi, joten niiden osoitteet ja tunnukset ovat jo tiedossa — tarvitset vain paikallisen avaimen.\n\nEikö omaasi näy? Palaa takaisin, niin kysytään sen sijaan IP-osoitetta. Jo lisättyjä laitteita ei näytetä.",
+        "data": {
+          "host": "Ilmastointilaite"
+        }
       }
     },
     "error": {
@@ -131,7 +146,8 @@
       "cannot_connect_cloud": "Kirjautuminen onnistui, mutta Haierin palvelimiin ei saatu yhteyttä laiteluettelon hakemiseksi. Tämä on yleensä tilapäistä – yritä hetken kuluttua uudelleen.",
       "invalid_key": "Paikallisen avaimen on oltava 32 merkin heksadesimaalimerkkijono.",
       "invalid_auth": "Ilmastointilaite vastasi, mutta tämä paikallinen avain ei pura sen tilatietoja – avain on väärä tai se on vaihdettu.",
-      "cannot_connect": "Ilmastointilaitteeseen ei saatu yhteyttä portissa 56800. Tarkista IP-osoite ja se, että Home Assistant on samassa verkossa."
+      "cannot_connect": "Ilmastointilaitteeseen ei saatu yhteyttä portissa 56800. Tarkista IP-osoite ja se, että Home Assistant on samassa verkossa.",
+      "device_id_required": "Ilmastointilaite ei vastannut tunnistuskyselyyn, joten sen laitetunnusta ei voitu lukea automaattisesti. Syötä se käsin — se on moduulin Wi-Fi-MAC-osoite, 12 heksadesimaalimerkkiä ilman erottimia."
     },
     "abort": {
       "already_configured": "Tämä laite on jo määritetty.",

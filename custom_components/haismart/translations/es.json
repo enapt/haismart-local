@@ -4,10 +4,10 @@
     "step": {
       "user": {
         "title": "Añadir un aire acondicionado Haier",
-        "description": "Inicia sesión con tu correo y contraseña de Haismart, o introduce los datos del dispositivo manualmente. Cuentas de Google/Facebook: crea una cuenta Haier aparte con correo y contraseña, comparte tus equipos con ella en la aplicación y luego inicia sesión con esa cuenta.",
+        "description": "Iniciar sesión es la vía recomendada: Home Assistant obtiene la clave local, encuentra la unidad en su red y lee su modelo, así que no hay nada que pegar. A partir de ahí se comunica directamente con el aire acondicionado y, una vez configurado, puede bloquear por completo el acceso a Internet de la unidad; consulte el README sobre independencia total de la nube.\n\nCuentas de Google/Facebook: cree una cuenta Haier aparte con correo y contraseña, comparta sus aires acondicionados con ella en la aplicación y luego inicie sesión con esa cuenta.",
         "menu_options": {
-          "login": "Iniciar sesión con mi cuenta Haier (correo o teléfono + contraseña)",
-          "manual": "Introducir yo mismo los datos del dispositivo"
+          "login": "Iniciar sesión con su cuenta Haier (recomendado)",
+          "manual": "Ya tengo la clave local de esta unidad"
         }
       },
       "login": {
@@ -33,20 +33,18 @@
       },
       "manual": {
         "title": "Datos del dispositivo",
-        "description": "Configura el equipo sin iniciar sesión. Necesitas tres datos, todos obtenibles del sensor «Clave local» de una instalación anterior o de una copia de seguridad.",
+        "description": "Lo único que necesita es la clave local de esta unidad, del sensor «Clave local» de una instalación anterior o de una copia de seguridad. Home Assistant busca el aire acondicionado en su red y le pide todo lo demás.\n\nNo hay forma de leer la clave en la propia unidad. Si no tiene ninguna guardada, vuelva atrás e inicie sesión: así se obtiene por usted.",
         "data": {
           "host": "Dirección IP",
           "device_id": "ID del dispositivo",
           "local_key": "Clave local (32 caracteres hexadecimales)",
-          "name": "Nombre",
-          "product_code": "Código de producto (typeId)"
+          "name": "Nombre"
         },
         "data_description": {
           "host": "La dirección IP del aire acondicionado en tu red, p. ej. 192.168.1.50. Una reserva DHCP evita que cambie.",
-          "device_id": "La dirección MAC del módulo Wi-Fi sin separadores, p. ej. A1B2C3D4E5F6.",
+          "device_id": "Normalmente se deja en blanco: se le pregunta directamente al aire acondicionado. Es la dirección MAC Wi-Fi del módulo, por si alguna vez necesita introducirla.",
           "local_key": "La clave de 32 caracteres con la que el equipo cifra su estado. La emite la nube de Haier para cada dispositivo: la vía de inicio de sesión la obtiene por ti.",
-          "name": "Opcional. Cómo llamar a este aire acondicionado en Home Assistant.",
-          "product_code": "Opcional. El código de producto de tu modelo, visible en los detalles del dispositivo de la aplicación Haier, p. ej. AACRL2E00. Déjalo como está salvo que lo conozcas: solo selecciona una configuración de reserva que se usa cuando no hay descripción de modelo guardada."
+          "name": "Opcional. Cómo llamar a este aire acondicionado en Home Assistant."
         }
       },
       "reauth_confirm": {
@@ -71,7 +69,7 @@
       },
       "key_failed": {
         "title": "No se ha podido obtener la clave automáticamente",
-        "description": "Home Assistant inició sesión, pero no pudo recuperar la clave local de este aire acondicionado de los servidores de Haier, o la clave obtenida no descifra el estado del equipo.\n\nSuele ser algo temporal, así que normalmente merece la pena volver a intentarlo. Si sigue fallando puedes introducir los datos a mano, aunque la clave no es algo que se pueda leer en el equipo: la necesitarías del sensor «Clave local» de una instalación anterior o de una copia de seguridad.",
+        "description": "Home Assistant inició sesión, pero no pudo obtener la clave local de este aire acondicionado de los servidores de Haier, o la clave obtenida no descifra el estado de la unidad.{note}\n\nSuele ser algo temporal, así que normalmente merece la pena volver a intentarlo. Si sigue fallando puede introducir los datos a mano, aunque la clave no es algo que pueda leerse en la unidad: la necesitaría del sensor «Clave local» de una instalación anterior o de una copia de seguridad.",
         "menu_options": {
           "key_retry": "Intentar obtener la clave de nuevo",
           "manual": "Introducir los datos a mano"
@@ -122,6 +120,23 @@
           "password": "Contraseña",
           "zone_info": "País en el que está registrada tu cuenta Haier"
         }
+      },
+      "model": {
+        "title": "¿Qué modelo es este?",
+        "description": "El aire acondicionado ha indicado a qué familia de productos pertenece, lo que lo reduce a los modelos siguientes. Elija el que aparece impreso en la unidad o en su etiqueta.\n\nElegirlo habilita los nombres de las averías, las reglas de disponibilidad y la lista real de funciones de esta unidad. Omitirlo no supone ningún problema: el aire acondicionado se lee y se controla por completo sin ello.",
+        "data": {
+          "product_code": "Modelo"
+        },
+        "data_description": {
+          "product_code": "Elija «skip» si su modelo no aparece o no está seguro: una elección equivocada aplica las reglas de otro modelo, lo cual es peor que no aplicar ninguna."
+        }
+      },
+      "pick_local": {
+        "title": "Aires acondicionados encontrados en su red",
+        "description": "Estos han respondido en su red, así que sus direcciones e identificadores ya se conocen: solo necesita la clave local.\n\n¿No aparece el suyo? Vuelva atrás y se le pedirá una dirección IP en su lugar. Las unidades ya añadidas no se muestran.",
+        "data": {
+          "host": "Aire acondicionado"
+        }
       }
     },
     "error": {
@@ -131,7 +146,8 @@
       "cannot_connect_cloud": "Sesión iniciada correctamente, pero no se pudo contactar con los servidores de Haier para listar tus dispositivos. Suele ser temporal: inténtalo de nuevo en un momento.",
       "invalid_key": "La clave local debe ser una cadena hexadecimal de 32 caracteres.",
       "invalid_auth": "El aire acondicionado respondió, pero esta clave local no descifra su estado: la clave es incorrecta o ha cambiado.",
-      "cannot_connect": "No se pudo contactar con el aire acondicionado en el puerto 56800. Comprueba la dirección IP y que Home Assistant esté en la misma red."
+      "cannot_connect": "No se pudo contactar con el aire acondicionado en el puerto 56800. Comprueba la dirección IP y que Home Assistant esté en la misma red.",
+      "device_id_required": "El aire acondicionado no respondió a la consulta de identificación, por lo que no se pudo leer automáticamente su ID de dispositivo. Introdúzcalo manualmente: es la dirección MAC Wi-Fi del módulo, 12 caracteres hexadecimales sin separadores."
     },
     "abort": {
       "already_configured": "Este dispositivo ya está configurado.",

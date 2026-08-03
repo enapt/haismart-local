@@ -4,10 +4,10 @@
     "step": {
       "user": {
         "title": "Aggiungi un climatizzatore Haier",
-        "description": "Accedi con e-mail e password Haismart, oppure inserisci manualmente i dati del dispositivo. Account Google/Facebook: crea un account Haier separato con e-mail e password, condividi i tuoi climatizzatori con quell'account nell'app, quindi accedi con esso.",
+        "description": "L'accesso è la strada consigliata: Home Assistant recupera la chiave locale, trova l'unità sulla tua rete e ne legge il modello, quindi non c'è nulla da incollare. Da quel momento comunica direttamente con il condizionatore e, una volta completata la configurazione, puoi bloccare del tutto l'accesso a Internet dell'unità; vedi il README sull'indipendenza totale dal cloud.\n\nAccount Google/Facebook: crea un account Haier dedicato con e-mail e password, condividi con esso i tuoi condizionatori nell'app, poi accedi con quell'account.",
         "menu_options": {
-          "login": "Accedi con il tuo account Haier (e-mail o numero di telefono + password)",
-          "manual": "Inserisco io i dati del dispositivo"
+          "login": "Accedi con il tuo account Haier (consigliato)",
+          "manual": "Ho già la chiave locale di questa unità"
         }
       },
       "login": {
@@ -33,20 +33,18 @@
       },
       "manual": {
         "title": "Dati del dispositivo",
-        "description": "Configura il climatizzatore senza accedere. Ti servono tre informazioni, tutte ricavabili dal sensore «Chiave locale» di un'installazione precedente o da un backup.",
+        "description": "L'unica cosa che ti serve è la chiave locale di questa unità, dal sensore «Chiave locale» di un'installazione precedente o da un backup. Home Assistant cerca il condizionatore sulla tua rete e chiede a lui tutto il resto.\n\nNon c'è modo di leggere la chiave dall'unità stessa. Se non ne hai una salvata, torna indietro e accedi: così viene recuperata per te.",
         "data": {
           "host": "Indirizzo IP",
           "device_id": "ID dispositivo",
           "local_key": "Chiave locale (32 caratteri esadecimali)",
-          "name": "Nome",
-          "product_code": "Codice prodotto (typeId)"
+          "name": "Nome"
         },
         "data_description": {
           "host": "L'indirizzo IP del climatizzatore sulla tua rete, ad es. 192.168.1.50. Una prenotazione DHCP evita che cambi.",
-          "device_id": "L'indirizzo MAC del modulo Wi-Fi senza separatori, ad es. A1B2C3D4E5F6.",
+          "device_id": "Di solito si lascia vuoto: la richiesta viene fatta direttamente al condizionatore. È l'indirizzo MAC Wi-Fi del modulo, se mai dovessi inserirlo.",
           "local_key": "La chiave di 32 caratteri con cui il climatizzatore cifra il proprio stato. Viene emessa dal cloud Haier per ogni dispositivo: il percorso con accesso la recupera per te.",
-          "name": "Facoltativo. Come chiamare questo climatizzatore in Home Assistant.",
-          "product_code": "Facoltativo. Il codice prodotto del tuo modello, visibile nei dettagli dispositivo dell'app Haier, ad es. AACRL2E00. Lascialo com'è se non lo conosci: serve solo a scegliere una configurazione di riserva usata quando non è memorizzata alcuna descrizione del modello."
+          "name": "Facoltativo. Come chiamare questo climatizzatore in Home Assistant."
         }
       },
       "reauth_confirm": {
@@ -71,7 +69,7 @@
       },
       "key_failed": {
         "title": "Impossibile recuperare la chiave automaticamente",
-        "description": "Home Assistant ha effettuato l'accesso, ma non è riuscito a ottenere la chiave locale di questo climatizzatore dai server Haier, oppure la chiave ottenuta non decifra lo stato dell'unità.\n\nSpesso è un problema temporaneo, quindi di solito vale la pena riprovare. Se continua a fallire puoi inserire i dati a mano, anche se la chiave non è leggibile dall'unità: ti servirebbe dal sensore «Chiave locale» di un'installazione precedente o da un backup.",
+        "description": "Home Assistant ha effettuato l'accesso, ma non è riuscito a recuperare la chiave locale di questo condizionatore dai server Haier, oppure la chiave ottenuta non decifra lo stato dell'unità.{note}\n\nSpesso è temporaneo, quindi di solito vale la pena riprovare. Se continua a fallire puoi inserire i dati a mano, anche se la chiave non è leggibile dall'unità: ti servirebbe dal sensore «Chiave locale» di un'installazione precedente o da un backup.",
         "menu_options": {
           "key_retry": "Riprova a recuperare la chiave",
           "manual": "Inserisci invece i dati a mano"
@@ -122,6 +120,23 @@
           "password": "Password",
           "zone_info": "Paese in cui è registrato il tuo account Haier"
         }
+      },
+      "model": {
+        "title": "Di quale modello si tratta?",
+        "description": "Il condizionatore ha indicato a quale famiglia di prodotti appartiene, il che lo restringe ai modelli qui sotto. Scegli quello stampato sull'unità o sulla sua etichetta.\n\nSceglierlo sblocca i nomi dei guasti, le regole di disponibilità e l'elenco reale delle funzioni di questa unità. Saltare va benissimo: il condizionatore si legge e si comanda comunque per intero.",
+        "data": {
+          "product_code": "Modello"
+        },
+        "data_description": {
+          "product_code": "Scegli «skip» se il tuo modello non è elencato o se non sei sicuro: una scelta sbagliata applica le regole di un altro modello, il che è peggio di nessuna regola."
+        }
+      },
+      "pick_local": {
+        "title": "Condizionatori trovati sulla tua rete",
+        "description": "Questi hanno risposto sulla tua rete, quindi i loro indirizzi e ID sono già noti: ti serve solo la chiave locale.\n\nNon è elencato? Torna indietro e ti verrà chiesto un indirizzo IP. Le unità già aggiunte non vengono mostrate.",
+        "data": {
+          "host": "Condizionatore"
+        }
       }
     },
     "error": {
@@ -131,7 +146,8 @@
       "cannot_connect_cloud": "Accesso riuscito, ma non è stato possibile contattare i server Haier per elencare i tuoi dispositivi. Di solito è temporaneo: riprova tra poco.",
       "invalid_key": "La chiave locale deve essere una stringa esadecimale di 32 caratteri.",
       "invalid_auth": "Il climatizzatore ha risposto, ma questa chiave locale non ne decifra lo stato: la chiave è errata oppure è stata cambiata.",
-      "cannot_connect": "Impossibile raggiungere il climatizzatore sulla porta 56800. Controlla l'indirizzo IP e che Home Assistant sia sulla stessa rete."
+      "cannot_connect": "Impossibile raggiungere il climatizzatore sulla porta 56800. Controlla l'indirizzo IP e che Home Assistant sia sulla stessa rete.",
+      "device_id_required": "Il condizionatore non ha risposto alla richiesta di identificazione, quindi non è stato possibile leggerne automaticamente l'ID dispositivo. Inseriscilo manualmente: è l'indirizzo MAC Wi-Fi del modulo, 12 caratteri esadecimali senza separatori."
     },
     "abort": {
       "already_configured": "Questo dispositivo è già configurato.",

@@ -4,10 +4,10 @@
     "step": {
       "user": {
         "title": "Haier klima ekle",
-        "description": "Haismart e-postanız ve parolanızla oturum açın veya cihaz bilgilerini elle girin. Google/Facebook hesapları: e-posta ve parolayla ayrı bir Haier hesabı oluşturun, uygulamada klimalarınızı bu hesapla paylaşın ve ardından o hesapla oturum açın.",
+        "description": "Oturum açmak önerilen yoldur: Home Assistant yerel anahtarı alır, cihazı ağınızda bulur ve modelini okur; yani yapıştırmanız gereken hiçbir şey yoktur. Bundan sonra doğrudan klimayla konuşur — kurulum tamamlandığında ise cihazın internet erişimini tamamen engelleyebilirsiniz; tam bulut bağımsızlığı için README dosyasına bakın.\n\nGoogle/Facebook hesapları: e-posta ve parolayla ayrı bir Haier hesabı oluşturun, uygulamada klimalarınızı bu hesapla paylaşın ve ardından o hesapla oturum açın.",
         "menu_options": {
-          "login": "Haier hesabımla oturum aç (e-posta veya telefon + parola)",
-          "manual": "Cihaz bilgilerini kendim gireyim"
+          "login": "Haier hesabınızla oturum açın (önerilir)",
+          "manual": "Bu cihazın yerel anahtarı bende var"
         }
       },
       "login": {
@@ -33,20 +33,18 @@
       },
       "manual": {
         "title": "Cihaz bilgileri",
-        "description": "Klimayı oturum açmadan kurun. Üç bilgiye ihtiyacınız var; hepsini önceki bir kurulumun «Yerel anahtar» sensöründen veya bir yedekten alabilirsiniz.",
+        "description": "İhtiyacınız olan tek şey bu cihazın yerel anahtarı — önceki bir kurulumun “Yerel anahtar” sensöründen veya bir yedekten. Home Assistant klimayı ağınızda arar ve geri kalan her şeyi doğrudan ona sorar.\n\nAnahtar cihazın kendisinden okunamaz. Kayıtlı bir anahtarınız yoksa geri dönüp oturum açın — böylece sizin için alınır.",
         "data": {
           "host": "IP adresi",
           "device_id": "Cihaz kimliği",
           "local_key": "Yerel anahtar (32 karakterlik onaltılık)",
-          "name": "Ad",
-          "product_code": "Ürün kodu (typeId)"
+          "name": "Ad"
         },
         "data_description": {
           "host": "Klimanın ağınızdaki IP adresi, örn. 192.168.1.50. DHCP rezervasyonu adresin değişmesini önler.",
-          "device_id": "Wi-Fi modülünün ayırıcısız MAC adresi, örn. A1B2C3D4E5F6.",
+          "device_id": "Genellikle boş bırakılır — bu doğrudan klimaya sorulur. Yine de girmeniz gerekirse, modülün Wi-Fi MAC adresidir.",
           "local_key": "Klimanın durumunu şifrelediği 32 karakterlik anahtar. Haier'in bulutu tarafından cihaz başına verilir — oturum açma yolu bunu sizin için alır.",
-          "name": "İsteğe bağlı. Bu klimanın Home Assistant'taki adı.",
-          "product_code": "İsteğe bağlı. Modelinizin ürün kodu; Haier uygulamasının cihaz ayrıntılarında görünür, örn. AACRL2E00. Bilmiyorsanız olduğu gibi bırakın — yalnızca kayıtlı bir model tanımı bulunmadığında kullanılan yedek bir seçim yapar."
+          "name": "İsteğe bağlı. Bu klimanın Home Assistant'taki adı."
         }
       },
       "reauth_confirm": {
@@ -71,7 +69,7 @@
       },
       "key_failed": {
         "title": "Anahtar otomatik olarak alınamadı",
-        "description": "Home Assistant oturum açtı ancak bu klimanın yerel anahtarını Haier sunucularından alamadı — ya da aldığı anahtar cihazın durumunu çözmüyor.\n\nBu çoğu zaman geçicidir, bu yüzden yeniden denemek genellikle işe yarar. Sürekli başarısız oluyorsa bilgileri elle girebilirsiniz; ancak anahtar cihazın üzerinden okunabilecek bir şey değildir — önceki bir kurulumun «Yerel anahtar» sensöründen veya bir yedekten almanız gerekir.",
+        "description": "Home Assistant oturum açtı ancak bu klimanın yerel anahtarını Haier sunucularından alamadı — ya da aldığı anahtar cihazın durumunu çözemiyor.{note}\n\nBu çoğu zaman geçicidir, bu yüzden yeniden denemek genellikle işe yarar. Sorun devam ederse bilgileri elle girebilirsiniz; ancak anahtar cihaz üzerinden okunamaz — önceki bir kurulumun “Yerel anahtar” sensöründen veya bir yedekten almanız gerekir.",
         "menu_options": {
           "key_retry": "Anahtarı almayı yeniden dene",
           "manual": "Bunun yerine bilgileri elle gir"
@@ -122,6 +120,23 @@
           "password": "Parola",
           "zone_info": "Haier hesabınızın kayıtlı olduğu ülke"
         }
+      },
+      "model": {
+        "title": "Bu hangi model?",
+        "description": "Klima hangi ürün ailesine ait olduğunu bildirdi; bu da seçimi aşağıdaki modellere daraltıyor. Cihazın üzerinde veya etiketinde yazan modeli seçin.\n\nSeçim yapmak arıza adlarını, kullanılabilirlik kurallarını ve bu cihazın gerçek özellik listesini açar. Atlamak da sorun değil — klima yine de tam olarak okunur ve kumanda edilir.",
+        "data": {
+          "product_code": "Model"
+        },
+        "data_description": {
+          "product_code": "Modeliniz listede yoksa veya emin değilseniz “skip” seçeneğini seçin — yanlış seçim başka bir modelin kurallarını uygular ki bu hiç kural olmamasından kötüdür."
+        }
+      },
+      "pick_local": {
+        "title": "Ağınızda bulunan klimalar",
+        "description": "Bunlar ağınızda yanıt verdi, dolayısıyla adresleri ve kimlikleri zaten biliniyor — yalnızca yerel anahtara ihtiyacınız var.\n\nListede yok mu? Geri dönün, bunun yerine IP adresi istenecektir. Daha önce eklenmiş cihazlar gösterilmez.",
+        "data": {
+          "host": "Klima"
+        }
       }
     },
     "error": {
@@ -131,7 +146,8 @@
       "cannot_connect_cloud": "Oturum açma başarılı, ancak cihazlarınızı listelemek için Haier sunucularına ulaşılamadı. Bu genellikle geçicidir — birazdan yeniden deneyin.",
       "invalid_key": "Yerel anahtar 32 karakterlik onaltılık bir dize olmalıdır.",
       "invalid_auth": "Klima yanıt verdi, ancak bu yerel anahtar durumunu çözmüyor — anahtar yanlış ya da değiştirilmiş.",
-      "cannot_connect": "Klimaya 56800 numaralı bağlantı noktasından ulaşılamadı. IP adresini ve Home Assistant'ın aynı ağda olup olmadığını kontrol edin."
+      "cannot_connect": "Klimaya 56800 numaralı bağlantı noktasından ulaşılamadı. IP adresini ve Home Assistant'ın aynı ağda olup olmadığını kontrol edin.",
+      "device_id_required": "Klima, kimlik sorgusuna yanıt vermedi; bu nedenle cihaz kimliği otomatik olarak okunamadı. Elle girin — bu, modülün Wi-Fi MAC adresidir: ayırıcı içermeyen 12 onaltılık karakter."
     },
     "abort": {
       "already_configured": "Bu cihaz zaten yapılandırılmış.",

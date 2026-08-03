@@ -4,10 +4,10 @@
     "step": {
       "user": {
         "title": "Adaugă un aer condiționat Haier",
-        "description": "Autentifică-te cu e-mailul și parola Haismart sau introdu manual datele dispozitivului. Conturi Google/Facebook: creează un cont Haier separat, cu e-mail și parolă, partajează-i aparatele din aplicație, apoi autentifică-te cu acel cont.",
+        "description": "Autentificarea este calea recomandată: Home Assistant obține cheia locală, găsește aparatul în rețeaua dumneavoastră și îi citește modelul, deci nu aveți nimic de lipit. De atunci comunică direct cu aparatul — iar după configurare puteți bloca complet accesul acestuia la internet; consultați README despre independența totală față de cloud.\n\nConturi Google/Facebook: creați un cont Haier separat, cu e-mail și parolă, partajați-i aparatele în aplicație și autentificați-vă apoi cu acel cont.",
         "menu_options": {
-          "login": "Autentificare cu contul meu Haier (e-mail sau telefon + parolă)",
-          "manual": "Introduc eu datele dispozitivului"
+          "login": "Autentificare cu contul Haier (recomandat)",
+          "manual": "Am deja cheia locală a acestui aparat"
         }
       },
       "login": {
@@ -33,20 +33,18 @@
       },
       "manual": {
         "title": "Datele dispozitivului",
-        "description": "Configurează aparatul fără autentificare. Ai nevoie de trei lucruri, toate obținute din senzorul „Cheie locală” al unei instalări anterioare sau dintr-o copie de rezervă.",
+        "description": "Singurul lucru de care aveți nevoie este cheia locală a acestui aparat — din senzorul „Cheie locală” al unei instalări anterioare sau dintr-o copie de rezervă. Home Assistant caută aparatul în rețeaua dumneavoastră și îl întreabă direct restul.\n\nCheia nu poate fi citită de pe aparatul propriu-zis. Dacă nu aveți una salvată, reveniți și autentificați-vă — astfel este obținută pentru dumneavoastră.",
         "data": {
           "host": "Adresă IP",
           "device_id": "ID dispozitiv",
           "local_key": "Cheie locală (32 de caractere hexazecimale)",
-          "name": "Nume",
-          "product_code": "Cod de produs (typeId)"
+          "name": "Nume"
         },
         "data_description": {
           "host": "Adresa IP a aparatului în rețeaua ta, de ex. 192.168.1.50. O rezervare DHCP împiedică schimbarea ei.",
-          "device_id": "Adresa MAC a modulului Wi-Fi, fără separatori, de ex. A1B2C3D4E5F6.",
+          "device_id": "De obicei se lasă gol — întrebarea este adresată direct aparatului. Este adresa MAC Wi-Fi a modulului, dacă totuși trebuie să o introduceți.",
           "local_key": "Cheia de 32 de caractere cu care aparatul își criptează starea. Este emisă de cloudul Haier pentru fiecare dispozitiv — calea cu autentificare o preia în locul tău.",
-          "name": "Opțional. Cum se va numi acest aparat în Home Assistant.",
-          "product_code": "Opțional. Codul de produs al modelului tău, afișat în detaliile dispozitivului din aplicația Haier, de ex. AACRL2E00. Lasă-l așa dacă nu îl cunoști — doar selectează o variantă de rezervă folosită când nu există o descriere de model salvată."
+          "name": "Opțional. Cum se va numi acest aparat în Home Assistant."
         }
       },
       "reauth_confirm": {
@@ -71,7 +69,7 @@
       },
       "key_failed": {
         "title": "Cheia nu a putut fi preluată automat",
-        "description": "Home Assistant s-a autentificat, dar nu a reușit să obțină cheia locală a acestui aparat de la serverele Haier — sau cheia primită nu decriptează starea unității.\n\nDe obicei este ceva temporar, așa că merită să încerci din nou. Dacă eșecul persistă, poți introduce datele manual, deși cheia nu este ceva ce poți citi de pe aparat — ți-ar trebui din senzorul „Cheie locală” al unei instalări anterioare sau dintr-o copie de rezervă.",
+        "description": "Home Assistant s-a autentificat, dar nu a putut obține cheia locală a acestui aparat de pe serverele Haier — sau cheia obținută nu decriptează starea aparatului.{note}\n\nDe obicei este temporar, așa că merită să încercați din nou. Dacă eșuează în continuare, puteți introduce datele manual, însă cheia nu poate fi citită de pe aparat — v-ar trebui din senzorul „Cheie locală” al unei instalări anterioare sau dintr-o copie de rezervă.",
         "menu_options": {
           "key_retry": "Încearcă din nou să preiei cheia",
           "manual": "Introdu în schimb datele manual"
@@ -122,6 +120,23 @@
           "password": "Parolă",
           "zone_info": "Țara în care este înregistrat contul tău Haier"
         }
+      },
+      "model": {
+        "title": "Ce model este acesta?",
+        "description": "Aparatul a raportat cărei familii de produse îi aparține, ceea ce restrânge alegerea la modelele de mai jos. Alegeți-l pe cel înscris pe aparat sau pe eticheta sa.\n\nAlegerea deblochează denumirile defecțiunilor, regulile de disponibilitate și lista reală de funcții a acestui aparat. Puteți sări peste — aparatul se citește și se comandă complet și fără asta.",
+        "data": {
+          "product_code": "Model"
+        },
+        "data_description": {
+          "product_code": "Alegeți „skip” dacă modelul dumneavoastră nu este în listă sau nu sunteți sigur — o alegere greșită aplică regulile altui model, ceea ce este mai rău decât nicio regulă."
+        }
+      },
+      "pick_local": {
+        "title": "Aparate de aer condiționat găsite în rețeaua dumneavoastră",
+        "description": "Acestea au răspuns în rețeaua dumneavoastră, deci adresele și identificatorii lor sunt deja cunoscuți — vă trebuie doar cheia locală.\n\nAl dumneavoastră nu apare? Reveniți și vi se va cere în schimb o adresă IP. Aparatele deja adăugate nu sunt afișate.",
+        "data": {
+          "host": "Aparat de aer condiționat"
+        }
       }
     },
     "error": {
@@ -131,7 +146,8 @@
       "cannot_connect_cloud": "Autentificarea a reușit, dar serverele Haier nu au putut fi contactate pentru a-ți lista dispozitivele. De obicei este temporar — încearcă din nou peste puțin timp.",
       "invalid_key": "Cheia locală trebuie să fie un șir hexazecimal de 32 de caractere.",
       "invalid_auth": "Aparatul a răspuns, dar această cheie locală nu îi decriptează starea — cheia este greșită sau a fost schimbată.",
-      "cannot_connect": "Aparatul nu a putut fi contactat pe portul 56800. Verifică adresa IP și dacă Home Assistant se află în aceeași rețea."
+      "cannot_connect": "Aparatul nu a putut fi contactat pe portul 56800. Verifică adresa IP și dacă Home Assistant se află în aceeași rețea.",
+      "device_id_required": "Aparatul de aer condiționat nu a răspuns la interogarea de identificare, așa că ID-ul dispozitivului nu a putut fi citit automat. Introduceți-l manual — este adresa MAC Wi-Fi a modulului, 12 caractere hexazecimale fără separatori."
     },
     "abort": {
       "already_configured": "Acest dispozitiv este deja configurat.",

@@ -4,10 +4,10 @@
     "step": {
       "user": {
         "title": "Haier-airco toevoegen",
-        "description": "Meld je aan met je Haismart-e-mailadres en wachtwoord, of voer de apparaatgegevens handmatig in. Google-/Facebook-accounts: maak een apart Haier-account aan met e-mailadres en wachtwoord, deel je airco's daarmee in de app en meld je vervolgens met dat account aan.",
+        "description": "Inloggen is de aanbevolen route: Home Assistant haalt de lokale sleutel op, vindt het apparaat op uw netwerk en leest het model uit, dus er valt niets te plakken. Daarna communiceert het rechtstreeks met de airconditioner — en zodra alles is ingesteld kunt u het apparaat volledig van internet afsluiten; zie de README over volledig cloudonafhankelijk werken.\n\nGoogle-/Facebook-accounts: maak een apart Haier-account met e-mail en wachtwoord, deel uw airco's daarmee in de app en log daarna in met dat account.",
         "menu_options": {
-          "login": "Aanmelden met mijn Haier-account (e-mail of telefoonnummer + wachtwoord)",
-          "manual": "Ik voer de apparaatgegevens zelf in"
+          "login": "Inloggen met uw Haier-account (aanbevolen)",
+          "manual": "Ik heb de lokale sleutel van dit apparaat al"
         }
       },
       "login": {
@@ -33,20 +33,18 @@
       },
       "manual": {
         "title": "Apparaatgegevens",
-        "description": "Stel de airco in zonder je aan te melden. Je hebt drie dingen nodig, die je allemaal uit de sensor 'Lokale sleutel' van een eerdere installatie of uit een back-up kunt halen.",
+        "description": "Het enige dat u nodig heeft is de lokale sleutel van dit apparaat — uit de sensor “Lokale sleutel” van een eerdere installatie, of uit een back-up. Home Assistant zoekt de airconditioner op uw netwerk en vraagt de rest rechtstreeks aan het apparaat.\n\nDe sleutel is niet van het apparaat zelf af te lezen. Heeft u er geen bewaard, ga dan terug en log in — dan wordt hij voor u opgehaald.",
         "data": {
           "host": "IP-adres",
           "device_id": "Apparaat-ID",
           "local_key": "Lokale sleutel (32 hex-tekens)",
-          "name": "Naam",
-          "product_code": "Productcode (typeId)"
+          "name": "Naam"
         },
         "data_description": {
           "host": "Het IP-adres van de airco in je netwerk, bijv. 192.168.1.50. Een DHCP-reservering voorkomt dat het verandert.",
-          "device_id": "Het MAC-adres van de wifi-module zonder scheidingstekens, bijv. A1B2C3D4E5F6.",
+          "device_id": "Meestal leeg laten — dit wordt rechtstreeks aan de airconditioner gevraagd. Het is het wifi-MAC-adres van de module, mocht u het toch moeten invoeren.",
           "local_key": "De sleutel van 32 tekens waarmee de airco zijn status versleutelt. Hij wordt per apparaat uitgegeven door de cloud van Haier — de aanmeldroute haalt hem voor je op.",
-          "name": "Optioneel. Hoe deze airco in Home Assistant moet heten.",
-          "product_code": "Optioneel. De productcode van je model, te zien bij de apparaatgegevens in de Haier-app, bijv. AACRL2E00. Laat dit staan tenzij je hem kent — hij kiest alleen een terugvaloptie die wordt gebruikt als er geen modelbeschrijving is opgeslagen."
+          "name": "Optioneel. Hoe deze airco in Home Assistant moet heten."
         }
       },
       "reauth_confirm": {
@@ -71,7 +69,7 @@
       },
       "key_failed": {
         "title": "Kon de sleutel niet automatisch ophalen",
-        "description": "Home Assistant is aangemeld, maar kon de lokale sleutel van deze airco niet bij de servers van Haier ophalen — of de opgehaalde sleutel ontsleutelt de status van het apparaat niet.\n\nDit is vaak tijdelijk, dus opnieuw proberen is meestal de moeite waard. Blijft het misgaan, dan kun je de gegevens met de hand invoeren, al is de sleutel niets wat je van het apparaat kunt aflezen — je zou hem nodig hebben uit de sensor 'Lokale sleutel' van een eerdere installatie of uit een back-up.",
+        "description": "Home Assistant is ingelogd, maar kon de lokale sleutel van deze airconditioner niet ophalen bij de servers van Haier — of de opgehaalde sleutel ontsleutelt de status van het apparaat niet.{note}\n\nDit is vaak tijdelijk, dus opnieuw proberen is meestal de moeite waard. Als het blijft mislukken kunt u de gegevens handmatig invoeren, al is de sleutel niet van het apparaat af te lezen — u zou hem nodig hebben uit de sensor “Lokale sleutel” van een eerdere installatie of uit een back-up.",
         "menu_options": {
           "key_retry": "Opnieuw proberen de sleutel op te halen",
           "manual": "In plaats daarvan de gegevens met de hand invoeren"
@@ -122,6 +120,23 @@
           "password": "Wachtwoord",
           "zone_info": "Land waarin je Haier-account is geregistreerd"
         }
+      },
+      "model": {
+        "title": "Welk model is dit?",
+        "description": "De airconditioner heeft gemeld tot welke productfamilie hij behoort, wat het beperkt tot de modellen hieronder. Kies het model dat op het apparaat of het typeplaatje staat.\n\nKiezen ontgrendelt de storingsnamen, de beschikbaarheidsregels en de werkelijke functielijst van dit apparaat. Overslaan is prima — de airconditioner is ook zonder volledig uit te lezen en te bedienen.",
+        "data": {
+          "product_code": "Model"
+        },
+        "data_description": {
+          "product_code": "Kies “skip” als uw model er niet bij staat of u het niet zeker weet — een verkeerde keuze past de regels van een ander model toe, wat erger is dan helemaal geen regels."
+        }
+      },
+      "pick_local": {
+        "title": "Airconditioners gevonden op uw netwerk",
+        "description": "Deze hebben op uw netwerk geantwoord, dus hun adressen en ID's zijn al bekend — u heeft alleen nog de lokale sleutel nodig.\n\nStaat de uwe er niet bij? Ga terug, dan wordt in plaats daarvan om een IP-adres gevraagd. Al toegevoegde apparaten worden niet getoond.",
+        "data": {
+          "host": "Airconditioner"
+        }
       }
     },
     "error": {
@@ -131,7 +146,8 @@
       "cannot_connect_cloud": "Aanmelden gelukt, maar de servers van Haier waren niet bereikbaar om je apparaten op te halen. Dit is meestal tijdelijk — probeer het zo meteen opnieuw.",
       "invalid_key": "De lokale sleutel moet een hex-string van 32 tekens zijn.",
       "invalid_auth": "De airco antwoordde, maar deze lokale sleutel ontsleutelt de status niet — de sleutel is onjuist of is gewisseld.",
-      "cannot_connect": "Kon de airco niet bereiken op poort 56800. Controleer het IP-adres en of Home Assistant in hetzelfde netwerk zit."
+      "cannot_connect": "Kon de airco niet bereiken op poort 56800. Controleer het IP-adres en of Home Assistant in hetzelfde netwerk zit.",
+      "device_id_required": "De airconditioner reageerde niet op de identificatievraag, waardoor het apparaat-ID niet automatisch kon worden gelezen. Voer het handmatig in — het is het wifi-MAC-adres van de module, 12 hexadecimale tekens zonder scheidingstekens."
     },
     "abort": {
       "already_configured": "Dit apparaat is al geconfigureerd.",

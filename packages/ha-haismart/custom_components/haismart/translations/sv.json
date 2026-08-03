@@ -4,10 +4,10 @@
     "step": {
       "user": {
         "title": "Lägg till en Haier-luftkonditionering",
-        "description": "Logga in med din e-postadress och ditt lösenord för Haismart, eller ange enhetsuppgifterna manuellt. Google-/Facebook-konton: skapa ett separat Haier-konto med e-postadress och lösenord, dela dina enheter med det i appen och logga sedan in med det kontot.",
+        "description": "Att logga in är den rekommenderade vägen: Home Assistant hämtar den lokala nyckeln, hittar enheten i ditt nätverk och läser av dess modell, så det finns inget att klistra in. Därefter talar den direkt med luftkonditioneringen — och när allt är uppsatt kan du blockera enhetens internetåtkomst helt; se README om att bli helt molnoberoende.\n\nGoogle-/Facebook-konton: skapa ett separat Haier-konto med e-post och lösenord, dela dina luftkonditioneringar med det i appen och logga sedan in med det kontot.",
         "menu_options": {
-          "login": "Logga in med mitt Haier-konto (e-post eller telefonnummer + lösenord)",
-          "manual": "Jag anger enhetsuppgifterna själv"
+          "login": "Logga in med ditt Haier-konto (rekommenderas)",
+          "manual": "Jag har redan enhetens lokala nyckel"
         }
       },
       "login": {
@@ -33,20 +33,18 @@
       },
       "manual": {
         "title": "Enhetsuppgifter",
-        "description": "Ställ in enheten utan att logga in. Du behöver tre saker, som alla går att få från sensorn ”Lokal nyckel” från en tidigare installation eller från en säkerhetskopia.",
+        "description": "Det enda du behöver är den här enhetens lokala nyckel — från sensorn ”Lokal nyckel” i en tidigare installation, eller från en säkerhetskopia. Home Assistant letar upp luftkonditioneringen i ditt nätverk och frågar den om allt annat.\n\nNyckeln går inte att läsa av på själva enheten. Har du ingen sparad, gå tillbaka och logga in — då hämtas den åt dig.",
         "data": {
           "host": "IP-adress",
           "device_id": "Enhets-ID",
           "local_key": "Lokal nyckel (32 hex-tecken)",
-          "name": "Namn",
-          "product_code": "Produktkod (typeId)"
+          "name": "Namn"
         },
         "data_description": {
           "host": "Luftkonditioneringens IP-adress i ditt nätverk, t.ex. 192.168.1.50. En DHCP-reservation hindrar den från att ändras.",
-          "device_id": "Wi-Fi-modulens MAC-adress utan avgränsare, t.ex. A1B2C3D4E5F6.",
+          "device_id": "Lämnas oftast tomt — luftkonditioneringen tillfrågas direkt. Det är modulens Wi-Fi-MAC-adress, om du någon gång behöver ange den.",
           "local_key": "Den 32 tecken långa nyckel som enheten krypterar sin status med. Den utfärdas av Haiers moln per enhet – inloggningsvägen hämtar den åt dig.",
-          "name": "Valfritt. Vad den här luftkonditioneringen ska heta i Home Assistant.",
-          "product_code": "Valfritt. Produktkoden för din modell, som visas i enhetsdetaljerna i Haier-appen, t.ex. AACRL2E00. Låt den vara om du inte känner till den – den väljer bara ett reservalternativ som används när ingen modellbeskrivning finns sparad."
+          "name": "Valfritt. Vad den här luftkonditioneringen ska heta i Home Assistant."
         }
       },
       "reauth_confirm": {
@@ -71,7 +69,7 @@
       },
       "key_failed": {
         "title": "Det gick inte att hämta nyckeln automatiskt",
-        "description": "Home Assistant loggade in, men kunde inte hämta den här luftkonditioneringens lokala nyckel från Haiers servrar – eller så avkodar nyckeln som hämtades inte enhetens status.\n\nDet här är ofta tillfälligt, så det brukar vara värt att försöka igen. Om det fortsätter att misslyckas kan du ange uppgifterna för hand, men nyckeln är inget du kan läsa av på enheten – du skulle behöva den från sensorn ”Lokal nyckel” i en tidigare installation eller från en säkerhetskopia.",
+        "description": "Home Assistant loggade in men kunde inte hämta den här luftkonditioneringens lokala nyckel från Haiers servrar — eller så avkrypterar den hämtade nyckeln inte enhetens status.{note}\n\nDetta är ofta tillfälligt, så det är oftast värt att försöka igen. Om det fortsätter misslyckas kan du ange uppgifterna för hand, men nyckeln går inte att läsa av på enheten — du skulle behöva den från sensorn ”Lokal nyckel” i en tidigare installation eller från en säkerhetskopia.",
         "menu_options": {
           "key_retry": "Försök hämta nyckeln igen",
           "manual": "Ange uppgifterna för hand i stället"
@@ -122,6 +120,23 @@
           "password": "Lösenord",
           "zone_info": "Land där ditt Haier-konto är registrerat"
         }
+      },
+      "model": {
+        "title": "Vilken modell är detta?",
+        "description": "Luftkonditioneringen har rapporterat vilken produktfamilj den tillhör, vilket begränsar den till modellerna nedan. Välj den som står på enheten eller dess etikett.\n\nAtt välja låser upp felnamnen, tillgänglighetsreglerna och enhetens verkliga funktionslista. Att hoppa över går bra — luftkonditioneringen läses av och styrs ändå fullt ut.",
+        "data": {
+          "product_code": "Modell"
+        },
+        "data_description": {
+          "product_code": "Välj ”skip” om din modell inte finns med eller om du är osäker — ett felaktigt val tillämpar en annan modells regler, vilket är sämre än inga alls."
+        }
+      },
+      "pick_local": {
+        "title": "Luftkonditioneringar som hittats i ditt nätverk",
+        "description": "Dessa svarade i ditt nätverk, så deras adresser och ID:n är redan kända — du behöver bara den lokala nyckeln.\n\nFinns din inte med? Gå tillbaka så efterfrågas en IP-adress i stället. Redan tillagda enheter visas inte.",
+        "data": {
+          "host": "Luftkonditionering"
+        }
       }
     },
     "error": {
@@ -131,7 +146,8 @@
       "cannot_connect_cloud": "Inloggningen lyckades, men Haiers servrar gick inte att nå för att lista dina enheter. Det är oftast tillfälligt – försök igen om en stund.",
       "invalid_key": "Den lokala nyckeln måste vara en hex-sträng på 32 tecken.",
       "invalid_auth": "Luftkonditioneringen svarade, men den här lokala nyckeln avkodar inte dess status – nyckeln är fel eller har bytts.",
-      "cannot_connect": "Det gick inte att nå luftkonditioneringen på port 56800. Kontrollera IP-adressen och att Home Assistant är i samma nätverk."
+      "cannot_connect": "Det gick inte att nå luftkonditioneringen på port 56800. Kontrollera IP-adressen och att Home Assistant är i samma nätverk.",
+      "device_id_required": "Luftkonditioneringen svarade inte på identifieringsförfrågan, så dess enhets-ID kunde inte läsas automatiskt. Ange det manuellt — det är modulens Wi-Fi-MAC-adress, 12 hexadecimala tecken utan avgränsare."
     },
     "abort": {
       "already_configured": "Den här enheten är redan konfigurerad.",

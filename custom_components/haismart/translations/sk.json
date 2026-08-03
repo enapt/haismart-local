@@ -4,10 +4,10 @@
     "step": {
       "user": {
         "title": "Pridať klimatizáciu Haier",
-        "description": "Prihláste sa e-mailom a heslom Haismart, alebo zadajte údaje o zariadení ručne. Účty Google/Facebook: vytvorte si samostatný účet Haier s e-mailom a heslom, zdieľajte s ním v aplikácii svoje klimatizácie a potom sa prihláste týmto účtom.",
+        "description": "Prihlásenie je odporúčaná cesta: Home Assistant získa lokálny kľúč, nájde jednotku vo vašej sieti a načíta jej model, takže nie je čo vkladať. Odvtedy komunikuje s klimatizáciou priamo — a keď je všetko nastavené, môžete jednotke úplne zablokovať prístup na internet; pozrite README o plnej nezávislosti od cloudu.\n\nÚčty Google/Facebook: vytvorte si samostatný účet Haier s e-mailom a heslom, zdieľajte s ním v aplikácii svoje klimatizácie a potom sa prihláste týmto účtom.",
         "menu_options": {
-          "login": "Prihlásiť sa účtom Haier (e-mail alebo telefón + heslo)",
-          "manual": "Údaje o zariadení zadám sám"
+          "login": "Prihlásiť sa účtom Haier (odporúčané)",
+          "manual": "Lokálny kľúč tejto jednotky už mám"
         }
       },
       "login": {
@@ -33,20 +33,18 @@
       },
       "manual": {
         "title": "Údaje o zariadení",
-        "description": "Nastavte klimatizáciu bez prihlásenia. Potrebujete tri údaje, všetky sa dajú získať zo senzora „Lokálny kľúč“ z predchádzajúcej inštalácie alebo zo zálohy.",
+        "description": "Jediné, čo potrebujete, je lokálny kľúč tejto jednotky — zo senzora „Lokálny kľúč“ predchádzajúcej inštalácie alebo zo zálohy. Home Assistant klimatizáciu vo vašej sieti vyhľadá sám a na všetko ostatné sa spýta priamo jej.\n\nKľúč sa z jednotky prečítať nedá. Ak žiadny uložený nemáte, vráťte sa a prihláste sa — tým sa získa za vás.",
         "data": {
           "host": "IP adresa",
           "device_id": "ID zariadenia",
           "local_key": "Lokálny kľúč (32 hexadecimálnych znakov)",
-          "name": "Názov",
-          "product_code": "Kód produktu (typeId)"
+          "name": "Názov"
         },
         "data_description": {
           "host": "IP adresa klimatizácie vo vašej sieti, napr. 192.168.1.50. Rezervácia DHCP zabráni jej zmene.",
-          "device_id": "MAC adresa Wi-Fi modulu bez oddeľovačov, napr. A1B2C3D4E5F6.",
+          "device_id": "Zvyčajne sa necháva prázdne — dotaz ide priamo na klimatizáciu. Je to MAC adresa Wi-Fi modulu, ak by ste ju predsa len potrebovali zadať.",
           "local_key": "32-znakový kľúč, ktorým klimatizácia šifruje svoj stav. Vydáva ho cloud Haier pre každé zariadenie zvlášť – cesta s prihlásením ho získa za vás.",
-          "name": "Voliteľné. Ako sa má táto klimatizácia volať v Home Assistantovi.",
-          "product_code": "Voliteľné. Kód produktu vášho modelu, zobrazený v detaile zariadenia v aplikácii Haier, napr. AACRL2E00. Ak ho nepoznáte, nechajte ho tak – iba vyberá záložné nastavenie použité, keď nie je uložený žiadny opis modelu."
+          "name": "Voliteľné. Ako sa má táto klimatizácia volať v Home Assistantovi."
         }
       },
       "reauth_confirm": {
@@ -71,7 +69,7 @@
       },
       "key_failed": {
         "title": "Kľúč sa nepodarilo získať automaticky",
-        "description": "Home Assistant sa prihlásil, ale nepodarilo sa mu zo serverov Haier získať lokálny kľúč tejto klimatizácie – alebo získaný kľúč nedešifruje stav jednotky.\n\nČasto ide len o dočasný problém, takže zopakovať pokus sa zvyčajne oplatí. Ak zlyháva aj naďalej, môžete údaje zadať ručne, kľúč sa však z jednotky odčítať nedá – potrebovali by ste ho zo senzora „Lokálny kľúč“ z predchádzajúcej inštalácie alebo zo zálohy.",
+        "description": "Home Assistant sa prihlásil, ale nepodarilo sa mu získať lokálny kľúč tejto klimatizácie zo serverov Haier — alebo získaný kľúč nedešifruje stav jednotky.{note}\n\nBýva to často dočasné, takže sa zvyčajne oplatí skúsiť to znova. Ak to zlyháva opakovane, môžete údaje zadať ručne, kľúč sa však z jednotky prečítať nedá — potrebovali by ste ho zo senzora „Lokálny kľúč“ predchádzajúcej inštalácie alebo zo zálohy.",
         "menu_options": {
           "key_retry": "Skúsiť získať kľúč znova",
           "manual": "Zadať údaje ručne"
@@ -122,6 +120,23 @@
           "password": "Heslo",
           "zone_info": "Krajina, v ktorej je váš účet Haier zaregistrovaný"
         }
+      },
+      "model": {
+        "title": "O aký model ide?",
+        "description": "Klimatizácia oznámila, do ktorej produktovej rodiny patrí, čo výber zužuje na modely nižšie. Vyberte ten, ktorý je uvedený na jednotke alebo jej štítku.\n\nVýber odomkne názvy porúch, pravidlá dostupnosti a skutočný zoznam funkcií tejto jednotky. Preskočenie nevadí — klimatizácia sa aj tak plne načítava a ovláda.",
+        "data": {
+          "product_code": "Model"
+        },
+        "data_description": {
+          "product_code": "Zvoľte „skip“, ak váš model nie je v zozname alebo si nie ste istí — nesprávna voľba použije pravidlá iného modelu, čo je horšie než žiadne."
+        }
+      },
+      "pick_local": {
+        "title": "Klimatizácie nájdené vo vašej sieti",
+        "description": "Tieto odpovedali vo vašej sieti, takže ich adresy a ID sú už známe — potrebujete len lokálny kľúč.\n\nTá vaša tu nie je? Vráťte sa späť a budete namiesto toho požiadaní o IP adresu. Už pridané jednotky sa nezobrazujú.",
+        "data": {
+          "host": "Klimatizácia"
+        }
       }
     },
     "error": {
@@ -131,7 +146,8 @@
       "cannot_connect_cloud": "Prihlásenie prebehlo úspešne, ale servery Haier neboli dostupné na načítanie zoznamu vašich zariadení. Býva to dočasné – skúste to o chvíľu znova.",
       "invalid_key": "Lokálny kľúč musí byť hexadecimálny reťazec s 32 znakmi.",
       "invalid_auth": "Klimatizácia odpovedala, ale tento lokálny kľúč jej stav nedešifruje – kľúč je nesprávny, alebo bol zmenený.",
-      "cannot_connect": "Klimatizáciu sa nepodarilo kontaktovať na porte 56800. Skontrolujte IP adresu a to, že je Home Assistant v rovnakej sieti."
+      "cannot_connect": "Klimatizáciu sa nepodarilo kontaktovať na porte 56800. Skontrolujte IP adresu a to, že je Home Assistant v rovnakej sieti.",
+      "device_id_required": "Klimatizácia neodpovedala na identifikačný dotaz, takže jej ID zariadenia sa nepodarilo načítať automaticky. Zadajte ho ručne — je to MAC adresa Wi-Fi modulu, 12 hexadecimálnych znakov bez oddeľovačov."
     },
     "abort": {
       "already_configured": "Toto zariadenie je už nakonfigurované.",

@@ -4,10 +4,10 @@
     "step": {
       "user": {
         "title": "Thêm điều hòa Haier",
-        "description": "Đăng nhập bằng email/mật khẩu Haismart của bạn, hoặc tự nhập thông tin thiết bị. Tài khoản Google/Facebook: hãy tạo một tài khoản Haier riêng bằng email và mật khẩu, chia sẻ điều hòa sang tài khoản đó trong ứng dụng, rồi đăng nhập bằng tài khoản đó.",
+        "description": "Đăng nhập là cách được khuyến nghị: Home Assistant lấy khóa cục bộ, tìm máy trong mạng của bạn và đọc model của nó, nên bạn không phải dán gì cả. Từ đó nó giao tiếp trực tiếp với điều hòa — và sau khi cài đặt xong, bạn có thể chặn hoàn toàn máy truy cập internet; xem README về việc hoàn toàn độc lập với đám mây.\n\nTài khoản Google/Facebook: hãy tạo một tài khoản Haier riêng bằng email và mật khẩu, chia sẻ điều hòa của bạn cho tài khoản đó trong ứng dụng, rồi đăng nhập bằng tài khoản ấy.",
         "menu_options": {
-          "login": "Đăng nhập bằng tài khoản Haier của bạn (email hoặc số điện thoại + mật khẩu)",
-          "manual": "Tôi sẽ tự nhập thông tin thiết bị"
+          "login": "Đăng nhập bằng tài khoản Haier (khuyến nghị)",
+          "manual": "Tôi đã có khóa cục bộ của máy này"
         }
       },
       "login": {
@@ -33,20 +33,18 @@
       },
       "manual": {
         "title": "Thông tin thiết bị",
-        "description": "Thiết lập điều hòa mà không cần đăng nhập. Bạn cần ba thứ, tất cả đều có thể lấy từ cảm biến Khóa cục bộ của lần cài đặt trước hoặc từ bản sao lưu.",
+        "description": "Thứ duy nhất bạn cần là khóa cục bộ của máy này — từ cảm biến “Khóa cục bộ” của lần cài đặt trước, hoặc từ bản sao lưu. Home Assistant sẽ tìm điều hòa trong mạng của bạn và hỏi chính nó mọi thứ còn lại.\n\nKhông có cách nào đọc khóa từ chính chiếc máy. Nếu bạn không lưu khóa nào, hãy quay lại và đăng nhập — cách đó sẽ lấy khóa giúp bạn.",
         "data": {
           "host": "Địa chỉ IP",
           "device_id": "ID thiết bị",
           "local_key": "Khóa cục bộ (32 ký tự hex)",
-          "name": "Tên",
-          "product_code": "Mã sản phẩm (typeId)"
+          "name": "Tên"
         },
         "data_description": {
           "host": "Địa chỉ IP của điều hòa trong mạng của bạn, ví dụ 192.168.1.50. Đặt trước DHCP sẽ giữ cho địa chỉ không thay đổi.",
-          "device_id": "Địa chỉ MAC của mô-đun Wi-Fi, không có dấu phân cách, ví dụ A1B2C3D4E5F6.",
+          "device_id": "Thường để trống — thông tin này được hỏi trực tiếp từ điều hòa. Đó là địa chỉ MAC Wi-Fi của mô-đun, nếu có lúc bạn cần nhập.",
           "local_key": "Khóa 32 ký tự mà điều hòa dùng để mã hóa trạng thái của nó. Khóa do đám mây của Haier cấp riêng cho từng thiết bị — luồng Đăng nhập sẽ lấy giúp bạn.",
-          "name": "Tùy chọn. Tên gọi của điều hòa này trong Home Assistant.",
-          "product_code": "Tùy chọn. Mã sản phẩm của model, hiển thị trong phần thông tin thiết bị của ứng dụng Haier, ví dụ AACRL2E00. Đừng thay đổi nếu bạn không chắc — mã này chỉ chọn một phương án dự phòng dùng khi không có mô tả model nào được lưu."
+          "name": "Tùy chọn. Tên gọi của điều hòa này trong Home Assistant."
         }
       },
       "reauth_confirm": {
@@ -71,7 +69,7 @@
       },
       "key_failed": {
         "title": "Không thể lấy khóa tự động",
-        "description": "Home Assistant đã đăng nhập được, nhưng không lấy được khóa cục bộ của điều hòa này từ máy chủ Haier — hoặc khóa lấy được không giải mã được trạng thái của máy.\n\nTình trạng này thường chỉ là tạm thời, nên thử lại thường là đáng. Nếu vẫn thất bại, bạn có thể tự nhập thông tin, tuy nhiên khóa không phải thứ đọc được từ chính chiếc máy — bạn sẽ cần lấy nó từ cảm biến Khóa cục bộ của lần cài đặt trước hoặc từ bản sao lưu.",
+        "description": "Home Assistant đã đăng nhập, nhưng không lấy được khóa cục bộ của điều hòa này từ máy chủ Haier — hoặc khóa nhận được không giải mã được trạng thái của máy.{note}\n\nĐiều này thường chỉ là tạm thời, nên thử lại thường có ích. Nếu vẫn lỗi, bạn có thể nhập thông tin thủ công, tuy nhiên khóa không thể đọc được từ máy — bạn sẽ cần lấy từ cảm biến “Khóa cục bộ” của lần cài đặt trước hoặc từ bản sao lưu.",
         "menu_options": {
           "key_retry": "Thử lấy khóa lại",
           "manual": "Tự nhập thông tin thay thế"
@@ -122,6 +120,23 @@
           "password": "Mật khẩu",
           "zone_info": "Quốc gia nơi tài khoản Haier của bạn được đăng ký"
         }
+      },
+      "model": {
+        "title": "Đây là model nào?",
+        "description": "Điều hòa đã cho biết nó thuộc dòng sản phẩm nào, thu hẹp lại còn các model dưới đây. Hãy chọn model được in trên máy hoặc trên nhãn của máy.\n\nViệc chọn sẽ mở khóa tên các lỗi, quy tắc khả dụng và danh sách tính năng thực tế của máy này. Bỏ qua cũng không sao — điều hòa vẫn đọc và điều khiển được đầy đủ.",
+        "data": {
+          "product_code": "Model"
+        },
+        "data_description": {
+          "product_code": "Chọn “skip” nếu model của bạn không có trong danh sách hoặc bạn không chắc — chọn sai sẽ áp dụng quy tắc của model khác, điều đó còn tệ hơn là không có quy tắc nào."
+        }
+      },
+      "pick_local": {
+        "title": "Điều hòa tìm thấy trong mạng của bạn",
+        "description": "Những máy này đã phản hồi trong mạng của bạn, nên địa chỉ và ID của chúng đã được biết — bạn chỉ cần khóa cục bộ.\n\nKhông thấy máy của bạn? Hãy quay lại, khi đó hệ thống sẽ hỏi địa chỉ IP. Các máy đã thêm sẽ không hiển thị.",
+        "data": {
+          "host": "Điều hòa"
+        }
       }
     },
     "error": {
@@ -131,7 +146,8 @@
       "cannot_connect_cloud": "Đăng nhập thành công, nhưng không kết nối được tới máy chủ Haier để liệt kê thiết bị của bạn. Việc này thường chỉ là tạm thời — hãy thử lại sau ít phút.",
       "invalid_key": "Khóa cục bộ phải là một chuỗi hex gồm 32 ký tự.",
       "invalid_auth": "Điều hòa có phản hồi, nhưng khóa cục bộ này không giải mã được trạng thái của nó — khóa sai, hoặc đã bị thay đổi.",
-      "cannot_connect": "Không kết nối được tới điều hòa ở cổng 56800. Hãy kiểm tra địa chỉ IP, và bảo đảm Home Assistant ở cùng mạng."
+      "cannot_connect": "Không kết nối được tới điều hòa ở cổng 56800. Hãy kiểm tra địa chỉ IP, và bảo đảm Home Assistant ở cùng mạng.",
+      "device_id_required": "Điều hòa không phản hồi truy vấn nhận dạng, nên không thể đọc tự động ID thiết bị. Hãy nhập thủ công — đó là địa chỉ MAC Wi-Fi của mô-đun, 12 ký tự thập lục phân không có dấu phân cách."
     },
     "abort": {
       "already_configured": "Thiết bị này đã được cấu hình.",

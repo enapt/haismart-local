@@ -1143,8 +1143,8 @@ async def test_the_offline_path_offers_what_it_finds_instead_of_asking_for_an_ad
 
     uplus = "2008610800820324021200118012560000000000000000000000000000000040"
     found = [
-        DeviceInfo(device_id="A1B2C3D4E5F6", host="192.168.1.58", uplus_id=uplus),
-        DeviceInfo(device_id="A1B2C3D4E5F7", host="192.168.1.57", uplus_id=uplus),
+        DeviceInfo(device_id="A1B2C3D4E5F6", host="192.168.1.50", uplus_id=uplus),
+        DeviceInfo(device_id="A1B2C3D4E5F7", host="192.168.1.51", uplus_id=uplus),
     ]
     with patch(
         "custom_components.haismart.config_flow.async_scan_for_appliances",
@@ -1158,18 +1158,18 @@ async def test_the_offline_path_offers_what_it_finds_instead_of_asking_for_an_ad
         )
         assert result["step_id"] == "pick_local"
         assert set(result["data_schema"].schema[CONF_HOST].container) == {
-            "192.168.1.58",
-            "192.168.1.57",
+            "192.168.1.50",
+            "192.168.1.51",
         }
         # picking settles address + identity; the form that follows only wants the key
         result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {CONF_HOST: "192.168.1.58"}
+            result["flow_id"], {CONF_HOST: "192.168.1.50"}
         )
         assert result["step_id"] == "manual"
         assert CONF_LOCAL_KEY in result["data_schema"].schema
 
         result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {CONF_HOST: "192.168.1.58", CONF_LOCAL_KEY: LOCAL_KEY}
+            result["flow_id"], {CONF_HOST: "192.168.1.50", CONF_LOCAL_KEY: LOCAL_KEY}
         )
         result = await _past_model_step(hass, result)
 
@@ -1192,8 +1192,8 @@ async def test_a_known_appliance_is_located_rather_than_re_offered(
     from haismart_hrdp.udiscovery import DeviceInfo
 
     found = [
-        DeviceInfo(device_id="AABBCCDDEEFF", host="192.168.1.57"),
-        DeviceInfo(device_id="A1B2C3D4E5F6", host="192.168.1.58"),  # the one already chosen
+        DeviceInfo(device_id="AABBCCDDEEFF", host="192.168.1.51"),
+        DeviceInfo(device_id="A1B2C3D4E5F6", host="192.168.1.50"),  # the one already chosen
     ]
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "zeroconf"}, data=_zeroconf_info()

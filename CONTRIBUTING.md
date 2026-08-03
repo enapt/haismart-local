@@ -52,7 +52,8 @@ deviceIds/keys — never a real device `localKey`, MAC, or LAN address (see [SEC
   Energy dashboard, which is worse than no sensor — so a counter decodes to *unavailable* until the
   unit actually fills it in (`WireField` kind `"counter"`). The same goes for a counter whose
   **unit** is unestablished: a total with the wrong unit settles permanently into a user's history.
-- **Never commit secrets.** `*.local.json` and `*.apk` are git-ignored; keep them that way.
+- **Never commit secrets.** Local keys, account tokens and anything matching `*.local.json` are
+  git-ignored; keep them that way. A local key grants ongoing control of someone's appliance.
 - **`custom_components/` at the repo root is generated** — the HACS-installable build with the two
   libraries vendored in. Don't edit it directly: change the source under `packages/`, then run
   `scripts/build-hacs.sh` and commit the regenerated component.

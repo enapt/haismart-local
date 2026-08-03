@@ -4,10 +4,10 @@
     "step": {
       "user": {
         "title": "Dodaj klimatyzator Haier",
-        "description": "Zaloguj się adresem e-mail i hasłem Haismart albo wprowadź dane urządzenia ręcznie. Konta Google/Facebook: załóż osobne konto Haier z adresem e-mail i hasłem, udostępnij mu swoje klimatyzatory w aplikacji, a następnie zaloguj się tym kontem.",
+        "description": "Logowanie to zalecana droga: Home Assistant pobiera klucz lokalny, znajduje urządzenie w Twojej sieci i odczytuje jego model, więc nie trzeba niczego wklejać. Od tej chwili komunikuje się bezpośrednio z klimatyzatorem — a po zakończeniu konfiguracji możesz całkowicie odciąć urządzenie od internetu; zobacz README o pełnej niezależności od chmury.\n\nKonta Google/Facebook: załóż osobne konto Haier z adresem e-mail i hasłem, udostępnij mu swoje klimatyzatory w aplikacji, a następnie zaloguj się na to konto.",
         "menu_options": {
-          "login": "Zaloguj się kontem Haier (e-mail lub numer telefonu + hasło)",
-          "manual": "Sam wprowadzę dane urządzenia"
+          "login": "Zaloguj się kontem Haier (zalecane)",
+          "manual": "Mam już klucz lokalny tego urządzenia"
         }
       },
       "login": {
@@ -33,20 +33,18 @@
       },
       "manual": {
         "title": "Dane urządzenia",
-        "description": "Skonfiguruj klimatyzator bez logowania. Potrzebne są trzy rzeczy, wszystkie do zdobycia z sensora „Klucz lokalny” z poprzedniej instalacji lub z kopii zapasowej.",
+        "description": "Potrzebujesz tylko klucza lokalnego tego urządzenia — z sensora „Klucz lokalny” poprzedniej instalacji lub z kopii zapasowej. Home Assistant sam wyszuka klimatyzator w Twojej sieci i o resztę zapyta samo urządzenie.\n\nKlucza nie można odczytać z samego urządzenia. Jeśli nie masz zapisanego, wróć i zaloguj się — wtedy zostanie pobrany za Ciebie.",
         "data": {
           "host": "Adres IP",
           "device_id": "Identyfikator urządzenia",
           "local_key": "Klucz lokalny (32 znaki szesnastkowe)",
-          "name": "Nazwa",
-          "product_code": "Kod produktu (typeId)"
+          "name": "Nazwa"
         },
         "data_description": {
           "host": "Adres IP klimatyzatora w Twojej sieci, np. 192.168.1.50. Rezerwacja DHCP zapobiega jego zmianie.",
-          "device_id": "Adres MAC modułu Wi-Fi bez separatorów, np. A1B2C3D4E5F6.",
+          "device_id": "Zwykle pozostaje puste — pytanie trafia bezpośrednio do klimatyzatora. To adres MAC Wi-Fi modułu, gdybyś jednak musiał go wpisać.",
           "local_key": "32-znakowy klucz, którym klimatyzator szyfruje swój stan. Wydaje go chmura Haiera osobno dla każdego urządzenia — ścieżka z logowaniem pobierze go za Ciebie.",
-          "name": "Opcjonalnie. Nazwa tego klimatyzatora w Home Assistancie.",
-          "product_code": "Opcjonalnie. Kod produktu Twojego modelu, widoczny w szczegółach urządzenia w aplikacji Haier, np. AACRL2E00. Zostaw bez zmian, jeśli go nie znasz — wybiera on jedynie ustawienie zapasowe używane, gdy nie zapisano opisu modelu."
+          "name": "Opcjonalnie. Nazwa tego klimatyzatora w Home Assistancie."
         }
       },
       "reauth_confirm": {
@@ -71,7 +69,7 @@
       },
       "key_failed": {
         "title": "Nie udało się pobrać klucza automatycznie",
-        "description": "Home Assistant zalogował się, ale nie zdołał pobrać klucza lokalnego tego klimatyzatora z serwerów Haiera — albo pobrany klucz nie odszyfrowuje stanu urządzenia.\n\nZwykle jest to przejściowe, więc ponowna próba zazwyczaj się opłaca. Jeśli błąd się powtarza, możesz wpisać dane ręcznie, choć klucza nie da się odczytać z samego urządzenia — potrzebowałbyś go z sensora „Klucz lokalny” z poprzedniej instalacji lub z kopii zapasowej.",
+        "description": "Home Assistant zalogował się, ale nie mógł pobrać klucza lokalnego tego klimatyzatora z serwerów Haier — albo pobrany klucz nie odszyfrowuje stanu urządzenia.{note}\n\nZwykle jest to chwilowe, więc zazwyczaj warto spróbować ponownie. Jeśli błąd się powtarza, możesz wprowadzić dane ręcznie, choć klucza nie da się odczytać z urządzenia — potrzebujesz go z sensora „Klucz lokalny” poprzedniej instalacji lub z kopii zapasowej.",
         "menu_options": {
           "key_retry": "Spróbuj pobrać klucz ponownie",
           "manual": "Zamiast tego wpisz dane ręcznie"
@@ -122,6 +120,23 @@
           "password": "Hasło",
           "zone_info": "Kraj, w którym zarejestrowano Twoje konto Haier"
         }
+      },
+      "model": {
+        "title": "Który to model?",
+        "description": "Klimatyzator zgłosił, do której rodziny produktów należy, co zawęża wybór do poniższych modeli. Wybierz ten, który jest podany na urządzeniu lub jego tabliczce.\n\nWybór odblokowuje nazwy usterek, reguły dostępności i rzeczywistą listę funkcji tego urządzenia. Pominięcie jest w porządku — klimatyzator nadal w pełni się odczytuje i steruje.",
+        "data": {
+          "product_code": "Model"
+        },
+        "data_description": {
+          "product_code": "Wybierz „skip”, jeśli Twojego modelu nie ma na liście lub nie masz pewności — błędny wybór zastosuje reguły innego modelu, co jest gorsze niż ich brak."
+        }
+      },
+      "pick_local": {
+        "title": "Klimatyzatory znalezione w Twojej sieci",
+        "description": "Te odpowiedziały w Twojej sieci, więc ich adresy i identyfikatory są już znane — potrzebujesz tylko klucza lokalnego.\n\nNie ma Twojego? Wróć, a zamiast tego pojawi się pytanie o adres IP. Już dodane urządzenia nie są pokazywane.",
+        "data": {
+          "host": "Klimatyzator"
+        }
       }
     },
     "error": {
@@ -131,7 +146,8 @@
       "cannot_connect_cloud": "Zalogowano pomyślnie, ale nie udało się połączyć z serwerami Haiera, aby pobrać listę urządzeń. Zwykle jest to przejściowe — spróbuj ponownie za chwilę.",
       "invalid_key": "Klucz lokalny musi być 32-znakowym ciągiem szesnastkowym.",
       "invalid_auth": "Klimatyzator odpowiedział, ale ten klucz lokalny nie odszyfrowuje jego stanu — klucz jest nieprawidłowy albo został zmieniony.",
-      "cannot_connect": "Nie udało się połączyć z klimatyzatorem na porcie 56800. Sprawdź adres IP oraz to, czy Home Assistant jest w tej samej sieci."
+      "cannot_connect": "Nie udało się połączyć z klimatyzatorem na porcie 56800. Sprawdź adres IP oraz to, czy Home Assistant jest w tej samej sieci.",
+      "device_id_required": "Klimatyzator nie odpowiedział na zapytanie identyfikacyjne, więc nie udało się automatycznie odczytać jego identyfikatora. Wprowadź go ręcznie — to adres MAC Wi-Fi modułu, 12 znaków szesnastkowych bez separatorów."
     },
     "abort": {
       "already_configured": "To urządzenie jest już skonfigurowane.",

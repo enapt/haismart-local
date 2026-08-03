@@ -4,10 +4,10 @@
     "step": {
       "user": {
         "title": "Legg til et Haier-klimaanlegg",
-        "description": "Logg inn med Haismart-e-posten og passordet ditt, eller skriv inn enhetsopplysningene manuelt. Google-/Facebook-kontoer: opprett en egen Haier-konto med e-post og passord, del anleggene dine med den i appen, og logg deretter inn med den kontoen.",
+        "description": "Å logge inn er den anbefalte veien: Home Assistant henter den lokale nøkkelen, finner enheten på nettverket ditt og leser av modellen, så det er ingenting å lime inn. Deretter snakker den direkte med klimaanlegget — og når alt er satt opp, kan du blokkere enhetens internettilgang helt; se README om å bli helt skyuavhengig.\n\nGoogle-/Facebook-kontoer: opprett en egen Haier-konto med e-post og passord, del klimaanleggene dine med den i appen, og logg deretter inn med den kontoen.",
         "menu_options": {
-          "login": "Logg inn med Haier-kontoen min (e-post eller telefonnummer + passord)",
-          "manual": "Jeg skriver inn enhetsopplysningene selv"
+          "login": "Logg inn med Haier-kontoen din (anbefales)",
+          "manual": "Jeg har allerede enhetens lokale nøkkel"
         }
       },
       "login": {
@@ -33,20 +33,18 @@
       },
       "manual": {
         "title": "Enhetsopplysninger",
-        "description": "Sett opp anlegget uten å logge inn. Du trenger tre ting, og alle kan hentes fra sensoren «Lokal nøkkel» fra en tidligere installasjon eller fra en sikkerhetskopi.",
+        "description": "Det eneste du trenger, er denne enhetens lokale nøkkel — fra sensoren «Lokal nøkkel» i en tidligere installasjon, eller fra en sikkerhetskopi. Home Assistant leter etter klimaanlegget på nettverket ditt og spør det om alt annet.\n\nNøkkelen kan ikke leses av på selve enheten. Har du ingen lagret, gå tilbake og logg inn — da hentes den for deg.",
         "data": {
           "host": "IP-adresse",
           "device_id": "Enhets-ID",
           "local_key": "Lokal nøkkel (32 hex-tegn)",
-          "name": "Navn",
-          "product_code": "Produktkode (typeId)"
+          "name": "Navn"
         },
         "data_description": {
           "host": "Klimaanleggets IP-adresse på nettverket ditt, f.eks. 192.168.1.50. En DHCP-reservasjon hindrer at den endrer seg.",
-          "device_id": "MAC-adressen til Wi-Fi-modulen uten skilletegn, f.eks. A1B2C3D4E5F6.",
+          "device_id": "Står vanligvis tomt — klimaanlegget blir spurt direkte. Det er modulens Wi-Fi-MAC-adresse, hvis du likevel må skrive den inn.",
           "local_key": "Nøkkelen på 32 tegn som anlegget krypterer statusen sin med. Den utstedes av Haiers sky per enhet – innloggingsveien henter den for deg.",
-          "name": "Valgfritt. Hva dette klimaanlegget skal hete i Home Assistant.",
-          "product_code": "Valgfritt. Produktkoden til modellen din, som vises under enhetsdetaljer i Haier-appen, f.eks. AACRL2E00. La den stå med mindre du kjenner den – den velger bare et reservealternativ som brukes når ingen modellbeskrivelse er lagret."
+          "name": "Valgfritt. Hva dette klimaanlegget skal hete i Home Assistant."
         }
       },
       "reauth_confirm": {
@@ -71,7 +69,7 @@
       },
       "key_failed": {
         "title": "Kunne ikke hente nøkkelen automatisk",
-        "description": "Home Assistant logget inn, men klarte ikke å hente den lokale nøkkelen til dette klimaanlegget fra Haiers servere – eller nøkkelen som ble hentet, dekrypterer ikke statusen til enheten.\n\nDette er ofte forbigående, så det pleier å lønne seg å prøve igjen. Hvis det fortsetter å feile, kan du skrive inn opplysningene for hånd, men nøkkelen er ikke noe du kan lese av på anlegget – du ville trenge den fra sensoren «Lokal nøkkel» i en tidligere installasjon eller fra en sikkerhetskopi.",
+        "description": "Home Assistant logget inn, men klarte ikke å hente dette klimaanleggets lokale nøkkel fra Haiers servere — eller nøkkelen den fikk dekrypterer ikke enhetens status.{note}\n\nDette er ofte midlertidig, så det er som regel verdt å prøve igjen. Hvis det fortsetter å feile, kan du legge inn opplysningene manuelt, men nøkkelen kan ikke leses av på enheten — du trenger den fra sensoren «Lokal nøkkel» i en tidligere installasjon eller fra en sikkerhetskopi.",
         "menu_options": {
           "key_retry": "Prøv å hente nøkkelen på nytt",
           "manual": "Skriv heller inn opplysningene for hånd"
@@ -122,6 +120,23 @@
           "password": "Passord",
           "zone_info": "Landet Haier-kontoen din er registrert i"
         }
+      },
+      "model": {
+        "title": "Hvilken modell er dette?",
+        "description": "Klimaanlegget har oppgitt hvilken produktfamilie det tilhører, noe som avgrenser det til modellene nedenfor. Velg den som står på enheten eller merkeskiltet.\n\nÅ velge låser opp feilnavnene, tilgjengelighetsreglene og enhetens faktiske funksjonsliste. Å hoppe over går fint — klimaanlegget leses av og styres fullt ut likevel.",
+        "data": {
+          "product_code": "Modell"
+        },
+        "data_description": {
+          "product_code": "Velg «skip» hvis modellen din ikke står på listen, eller du er usikker — et feil valg bruker en annen modells regler, noe som er verre enn ingen."
+        }
+      },
+      "pick_local": {
+        "title": "Klimaanlegg funnet på nettverket ditt",
+        "description": "Disse svarte på nettverket ditt, så adressene og ID-ene deres er allerede kjent — du trenger bare den lokale nøkkelen.\n\nStår ikke ditt der? Gå tilbake, så blir du i stedet bedt om en IP-adresse. Enheter som allerede er lagt til, vises ikke.",
+        "data": {
+          "host": "Klimaanlegg"
+        }
       }
     },
     "error": {
@@ -131,7 +146,8 @@
       "cannot_connect_cloud": "Innloggingen gikk bra, men Haiers servere kunne ikke nås for å hente listen over enhetene dine. Dette er som regel forbigående – prøv igjen om et øyeblikk.",
       "invalid_key": "Den lokale nøkkelen må være en hex-streng på 32 tegn.",
       "invalid_auth": "Klimaanlegget svarte, men denne lokale nøkkelen dekrypterer ikke statusen – nøkkelen er feil, eller den er byttet.",
-      "cannot_connect": "Fikk ikke kontakt med klimaanlegget på port 56800. Kontroller IP-adressen, og at Home Assistant er på samme nettverk."
+      "cannot_connect": "Fikk ikke kontakt med klimaanlegget på port 56800. Kontroller IP-adressen, og at Home Assistant er på samme nettverk.",
+      "device_id_required": "Klimaanlegget svarte ikke på identifikasjonsforespørselen, så enhets-ID-en kunne ikke leses automatisk. Skriv den inn manuelt — det er modulens Wi-Fi-MAC-adresse, 12 heksadesimale tegn uten skilletegn."
     },
     "abort": {
       "already_configured": "Denne enheten er allerede konfigurert.",

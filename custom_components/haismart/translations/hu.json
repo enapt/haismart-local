@@ -4,10 +4,10 @@
     "step": {
       "user": {
         "title": "Haier klíma hozzáadása",
-        "description": "Jelentkezz be a Haismart e-mail-címeddel és jelszavaddal, vagy add meg az eszköz adatait kézzel. Google-/Facebook-fiókok: hozz létre egy külön Haier-fiókot e-mail-címmel és jelszóval, oszd meg vele a klímáidat az alkalmazásban, majd azzal a fiókkal jelentkezz be.",
+        "description": "A bejelentkezés az ajánlott út: a Home Assistant lekéri a helyi kulcsot, megtalálja a készüléket a hálózatán és beolvassa a modelljét, így nincs mit beilleszteni. Ezután közvetlenül a klímaberendezéssel kommunikál — a beállítás után pedig teljesen letilthatja a készülék internet-hozzáférését; lásd a README teljes felhőfüggetlenségről szóló részét.\n\nGoogle-/Facebook-fiókok: hozzon létre egy külön Haier-fiókot e-mail-címmel és jelszóval, ossza meg vele a klímaberendezéseit az alkalmazásban, majd jelentkezzen be azzal a fiókkal.",
         "menu_options": {
-          "login": "Bejelentkezés a Haier-fiókommal (e-mail vagy telefonszám + jelszó)",
-          "manual": "Magam adom meg az eszköz adatait"
+          "login": "Bejelentkezés Haier-fiókkal (ajánlott)",
+          "manual": "Már megvan a készülék helyi kulcsa"
         }
       },
       "login": {
@@ -33,20 +33,18 @@
       },
       "manual": {
         "title": "Eszközadatok",
-        "description": "Állítsd be a klímát bejelentkezés nélkül. Három adatra van szükséged, amelyek mindegyike megszerezhető egy korábbi telepítés „Helyi kulcs” érzékelőjéből vagy egy biztonsági mentésből.",
+        "description": "Csak a készülék helyi kulcsára van szüksége — egy korábbi telepítés „Helyi kulcs” érzékelőjéből vagy biztonsági mentésből. A Home Assistant megkeresi a klímaberendezést a hálózatán, és minden mást magától a készüléktől kérdez meg.\n\nA kulcs magáról a készülékről nem olvasható le. Ha nincs elmentve, lépjen vissza és jelentkezzen be — így a rendszer lekéri Ön helyett.",
         "data": {
           "host": "IP-cím",
           "device_id": "Eszközazonosító",
           "local_key": "Helyi kulcs (32 hexadecimális karakter)",
-          "name": "Név",
-          "product_code": "Termékkód (typeId)"
+          "name": "Név"
         },
         "data_description": {
           "host": "A klíma IP-címe a hálózatodon, pl. 192.168.1.50. A DHCP-foglalás megakadályozza, hogy megváltozzon.",
-          "device_id": "A Wi-Fi-modul MAC-címe elválasztók nélkül, pl. A1B2C3D4E5F6.",
+          "device_id": "Általában üresen marad — ezt közvetlenül a klímaberendezéstől kérdezi meg a rendszer. Ez a modul Wi-Fi MAC-címe, ha mégis meg kellene adnia.",
           "local_key": "A 32 karakteres kulcs, amellyel a klíma titkosítja az állapotát. A Haier felhője adja ki eszközönként – a bejelentkezéses út lekéri helyetted.",
-          "name": "Nem kötelező. Hogyan hívják ezt a klímát a Home Assistantban.",
-          "product_code": "Nem kötelező. A modelled termékkódja, amely a Haier alkalmazás eszközadatainál látható, pl. AACRL2E00. Hagyd úgy, ahogy van, hacsak nem ismered – csupán egy tartalék beállítást választ ki, amelyet akkor használ, ha nincs eltárolt modellleírás."
+          "name": "Nem kötelező. Hogyan hívják ezt a klímát a Home Assistantban."
         }
       },
       "reauth_confirm": {
@@ -71,7 +69,7 @@
       },
       "key_failed": {
         "title": "A kulcs automatikus letöltése nem sikerült",
-        "description": "A Home Assistant bejelentkezett, de nem tudta lekérni ennek a klímának a helyi kulcsát a Haier szervereiről – vagy a kapott kulcs nem fejti vissza az egység állapotát.\n\nEz gyakran csak átmeneti, ezért általában megéri újra próbálkozni. Ha továbbra sem sikerül, megadhatod az adatokat kézzel, a kulcs azonban nem olvasható le magáról az egységről – egy korábbi telepítés „Helyi kulcs” érzékelőjéből vagy egy biztonsági mentésből lenne rá szükséged.",
+        "description": "A Home Assistant bejelentkezett, de nem tudta lekérni ennek a klímaberendezésnek a helyi kulcsát a Haier kiszolgálóiról — vagy a kapott kulcs nem fejti vissza a készülék állapotát.{note}\n\nEz gyakran átmeneti, ezért általában érdemes újrapróbálni. Ha továbbra is sikertelen, kézzel is megadhatja az adatokat, a kulcs azonban a készülékről nem olvasható le — egy korábbi telepítés „Helyi kulcs” érzékelőjéből vagy biztonsági mentésből lenne rá szüksége.",
         "menu_options": {
           "key_retry": "A kulcs letöltésének újbóli megkísérlése",
           "manual": "Inkább kézzel adom meg az adatokat"
@@ -122,6 +120,23 @@
           "password": "Jelszó",
           "zone_info": "Az az ország, ahol a Haier-fiókod regisztrálva van"
         }
+      },
+      "model": {
+        "title": "Melyik modell ez?",
+        "description": "A klímaberendezés jelezte, melyik termékcsaládba tartozik, ami az alábbi modellekre szűkíti a kört. Válassza ki azt, amely a készüléken vagy az adattábláján szerepel.\n\nA választás feloldja a hibanevek, az elérhetőségi szabályok és a készülék tényleges funkciólistájának használatát. A kihagyás sem gond — a klímaberendezés enélkül is teljesen kiolvasható és vezérelhető.",
+        "data": {
+          "product_code": "Modell"
+        },
+        "data_description": {
+          "product_code": "Válassza a „skip” lehetőséget, ha a modellje nincs a listán, vagy bizonytalan — a rossz választás egy másik modell szabályait alkalmazza, ami rosszabb, mintha egyáltalán nem lennének szabályok."
+        }
+      },
+      "pick_local": {
+        "title": "A hálózatán talált klímaberendezések",
+        "description": "Ezek válaszoltak a hálózatán, így a címük és az azonosítójuk már ismert — csak a helyi kulcsra van szüksége.\n\nNincs a listán? Lépjen vissza, és a rendszer helyette IP-címet fog kérni. A már hozzáadott készülékek nem jelennek meg.",
+        "data": {
+          "host": "Klímaberendezés"
+        }
       }
     },
     "error": {
@@ -131,7 +146,8 @@
       "cannot_connect_cloud": "A bejelentkezés sikerült, de a Haier szerverei nem voltak elérhetők az eszközeid listázásához. Ez általában átmeneti – próbáld újra egy pillanat múlva.",
       "invalid_key": "A helyi kulcsnak 32 karakteres hexadecimális karakterláncnak kell lennie.",
       "invalid_auth": "A klíma válaszolt, de ez a helyi kulcs nem fejti vissza az állapotát – a kulcs hibás, vagy lecserélték.",
-      "cannot_connect": "Nem sikerült elérni a klímát az 56800-as porton. Ellenőrizd az IP-címet, és hogy a Home Assistant ugyanazon a hálózaton van-e."
+      "cannot_connect": "Nem sikerült elérni a klímát az 56800-as porton. Ellenőrizd az IP-címet, és hogy a Home Assistant ugyanazon a hálózaton van-e.",
+      "device_id_required": "A klímaberendezés nem válaszolt az azonosítási lekérdezésre, ezért az eszközazonosítója nem volt automatikusan beolvasható. Adja meg kézzel — ez a modul Wi-Fi MAC-címe, 12 hexadecimális karakter elválasztók nélkül."
     },
     "abort": {
       "already_configured": "Ez az eszköz már konfigurálva van.",

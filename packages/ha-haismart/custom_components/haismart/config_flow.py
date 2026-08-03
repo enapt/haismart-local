@@ -35,7 +35,11 @@ from haismart_extractor.cloud import (
     get_public_device_config,
 )
 from haismart_hrdp import async_read_status, merge_rules, probe_localkey_version, udiscovery
-from haismart_hrdp.model_rules import known_products, product_for_model
+from haismart_hrdp.model_rules import (
+    known_products,
+    models_for_uplus_id,
+    product_for_model,
+)
 from homeassistant.config_entries import (
     ConfigFlow,
     ConfigFlowResult,
@@ -137,6 +141,11 @@ async def _async_login_cloud(
         # prefer the zone the server echoes back; fall back to what we sent
         CONF_ZONE_INFO: str(result.raw.get("zoneInfo") or zone),
     }
+
+
+# Offered as the first dropdown entry so "I do not know" is a visible choice rather than a blank
+# field. Without a model the unit still reads and controls; only the rule layer is missing.
+_MODEL_SKIP = "skip"
 
 
 def _manual_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
@@ -276,6 +285,9 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
 
     def __init__(self) -> None:
         self._discovered: dict[str, str] = {}
+        # carried between the manual form and the model-confirmation step that follows it
+        self._pending_manual: dict[str, Any] = {}
+        self._model_choices: dict[str, str] = {}
         self._cloud_data: dict[str, str] = {}
         self._devices: list[Any] = []
         self._picked: Any = None
@@ -396,6 +408,13 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                 # variant, so an unfamiliar unit reports what it actually is.
                 if getattr(picked, "device_type", ""):
                     self._cloud_data[CONF_DEVICE_TYPE] = picked.device_type
+                # The product code, which the device list hands over and this step already passes
+                # on when asking for the model's rules -- and then dropped, leaving the entry to
+                # fall back to a built-in default indistinguishable from a real one. It is the
+                # identifier the rules, the fault names and the unit's real feature set are all
+                # keyed by, so an account that knows it should never leave the entry guessing.
+                if getattr(picked, "prod_no", ""):
+                    self._cloud_data[CONF_PRODUCT_CODE] = picked.prod_no
                 self._picked = picked
                 return await self._async_setup_cloud_device(picked.device_id, picked.name)
         choices = {d.device_id: f"{d.name or d.device_id} ({d.device_id})" for d in available}
@@ -638,24 +657,80 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                 # does; an entry that is neither is left exactly as typed rather than guessed at.
                 if product_code and product_code not in known_products():
                     product_code = product_for_model(product_code) or product_code
-                model = await self._async_public_model(product_code)
-                return self.async_create_entry(
-                    title=title,
-                    data={
-                        CONF_HOST: host,
-                        CONF_DEVICE_ID: device_id,
-                        CONF_LOCAL_KEY: local_key,
-                        **({CONF_PRODUCT_CODE: product_code} if product_code else {}),
-                        **({CONF_DIGITAL_MODEL: json.dumps(model)} if model else {}),
-                        CONF_LOCALKEY_VERSION: version,
-                        **self._cloud_data,  # from the login discovery path, if any
-                    },
-                )
+                self._pending_manual = {
+                    CONF_HOST: host,
+                    CONF_DEVICE_ID: device_id,
+                    CONF_LOCAL_KEY: local_key,
+                    CONF_LOCALKEY_VERSION: version,
+                    CONF_NAME: title,
+                    **({CONF_PRODUCT_CODE: product_code} if product_code else {}),
+                }
+                # The unit's own identifier narrows 171 published models to a couple of dozen, which
+                # is short enough to choose from -- so offer that list rather than leave the rules,
+                # fault names and feature set unavailable for want of one answer.
+                if not product_code:
+                    self._model_choices = models_for_uplus_id(
+                        self._cloud_data.get(CONF_UPLUS_ID)
+                    )
+                    if self._model_choices:
+                        return await self.async_step_model()
+                return await self._async_finish_manual()
 
         return self.async_show_form(
             step_id="manual",
             data_schema=_manual_schema({**self._discovered, **(user_input or {})}),
             errors=errors,
+        )
+
+    async def _async_finish_manual(self) -> ConfigFlowResult:
+        """Create the entry from what the manual path gathered, model answered or skipped."""
+        pending = self._pending_manual
+        product_code = pending.get(CONF_PRODUCT_CODE) or ""
+        model = await self._async_public_model(product_code)
+        return self.async_create_entry(
+            title=pending[CONF_NAME],
+            data={
+                CONF_HOST: pending[CONF_HOST],
+                CONF_DEVICE_ID: pending[CONF_DEVICE_ID],
+                CONF_LOCAL_KEY: pending[CONF_LOCAL_KEY],
+                **({CONF_PRODUCT_CODE: product_code} if product_code else {}),
+                **({CONF_DIGITAL_MODEL: json.dumps(model)} if model else {}),
+                CONF_LOCALKEY_VERSION: pending[CONF_LOCALKEY_VERSION],
+                **self._cloud_data,  # from the login discovery path, if any
+            },
+        )
+
+    async def async_step_model(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Confirm which model this is, from the shortlist the appliance's own identifier implies.
+
+        The identifier a unit announces names its *family*, not its model -- ours is shared by 23
+        products -- and rules are published per product, so something has to choose between them.
+        Asking is the honest way, but only if the question is answerable: a shortlist of model
+        numbers as printed on the label is, and a free-text product code is not.
+
+        Skipping is a first-class answer. Without a model the unit still reads and controls
+        completely; what is lost is fault names, conditional availability and the optional-feature
+        list. Guessing on the owner's behalf would trade that for a real risk of applying another
+        model's rules, and no rules locks nothing, which is the safe direction.
+        """
+        if user_input is not None:
+            picked = user_input.get(CONF_PRODUCT_CODE) or ""
+            if picked and picked != _MODEL_SKIP:
+                self._pending_manual[CONF_PRODUCT_CODE] = self._model_choices.get(picked, "")
+            return await self._async_finish_manual()
+        return self.async_show_form(
+            step_id="model",
+            data_schema=vol.Schema({
+                vol.Optional(CONF_PRODUCT_CODE, default=_MODEL_SKIP): SelectSelector(
+                    SelectSelectorConfig(
+                        options=[_MODEL_SKIP, *sorted(self._model_choices)],
+                        mode=SelectSelectorMode.DROPDOWN,
+                        custom_value=True,
+                    )
+                ),
+            }),
         )
 
     async def _async_query_device(self, host: str):

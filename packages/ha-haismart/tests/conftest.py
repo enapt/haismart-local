@@ -416,6 +416,11 @@ if _HA_AVAILABLE:
             patch(
                 "custom_components.haismart.coordinator.udiscovery.async_query", cloud
             ),
+            # The config flow asks the appliance who it is before asking the person, so it makes
+            # the same query -- patched here too or the manual step opens a real UDP socket.
+            patch(
+                "custom_components.haismart.config_flow.udiscovery.async_query", cloud
+            ),
             patch(
                 "custom_components.haismart.coordinator.async_find_host", rediscover
             ),

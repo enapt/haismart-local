@@ -296,8 +296,11 @@ async def _drive_login_to_pick(hass, mock_uss, extra_patches):
     }
     client = HaierCloud(SEA_APP_CREDENTIALS, "2_FRESH")
     devices = [
-        CloudDevice("A1B2C3D4E5F6", "Downstairs", "0201203a", "UPLUS", True),
-        CloudDevice("A1B2C3D4E5F7", "Upstairs", "0201203a", "UPLUS", False),
+        # prod_no is what a real device list carries and is the identifier the rules are keyed by
+        CloudDevice("A1B2C3D4E5F6", "Downstairs", "0201203a", "UPLUS", True,
+                    prod_no="AAC1UKZ01"),
+        CloudDevice("A1B2C3D4E5F7", "Upstairs", "0201203a", "UPLUS", False,
+                    prod_no="AAC1UKZ01"),
     ]
 
     async def fake_login(username, password, zone_info, *, transport=None):
@@ -408,7 +411,8 @@ async def test_login_flow_email_password_hands_off(hass: HomeAssistant, mock_uss
         CONF_REFRESH_TOKEN: "2_RT", CONF_ACCESS_TOKEN: "2_UHOME",
         CONF_CLOUD_CLIENT_ID: "ABCDEF0123456789ABCDEF0123456789", CONF_ZONE_INFO: "0",
     }
-    devices = [CloudDevice("A1B2C3D4E5F6", "Downstairs", "0201203a", "UPLUS", True)]
+    devices = [CloudDevice("A1B2C3D4E5F6", "Downstairs", "0201203a", "UPLUS", True,
+                           prod_no="AAC1UKZ01")]
 
     async def fake_login(username, password, zone_info, *, transport=None):
         assert username == "me@example.com" and password == "hunter2" and zone_info == "66"
@@ -915,3 +919,100 @@ async def test_a_backed_up_local_key_is_all_an_offline_install_needs(
     # `invisible_attributes` is what gates the optional-feature entities; without it a unit is
     # offered controls for hardware it does not have.
     assert len(merged["invisible_attributes"]) == 25
+
+
+def _reports_uplus_id(uplus: str | None = None):
+    """The appliance answering the identification query with a real family identifier.
+
+    The shared fixture reports none, which is the right default (plenty of modules do not), but the
+    model shortlist only exists when one is known -- so the tests about it have to say so.
+    """
+    from unittest.mock import patch
+
+    from haismart_hrdp.udiscovery import DeviceInfo
+
+    return patch(
+        "custom_components.haismart.config_flow.udiscovery.async_query",
+        return_value=DeviceInfo(
+            device_id="A1B2C3D4E5F6",
+            host="192.168.1.50",
+            uplus_id=uplus
+            or "2008610800820324021200118012560000000000000000000000000000000040",
+        ),
+    )
+
+
+async def test_the_unit_narrows_the_model_list_and_skipping_is_allowed(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The identifier a unit announces names its family, so offer that family's models to choose.
+
+    171 published models is not a question anyone can answer; the couple of dozen sharing this
+    unit's own identifier is. And "skip" has to be a real option — without a model the appliance
+    still reads and controls, whereas a wrong pick applies another model's rules.
+    """
+    from custom_components.haismart.const import CONF_PRODUCT_CODE
+
+    flow_id = await _start_manual(hass)
+    with _reports_uplus_id():
+        result = await hass.config_entries.flow.async_configure(
+            flow_id, {CONF_HOST: "192.168.1.50", CONF_LOCAL_KEY: LOCAL_KEY}
+        )
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "model"
+
+    options = result["data_schema"].schema[CONF_PRODUCT_CODE].config["options"]
+    assert "skip" == options[0], "skipping must be offered first, not buried"
+    assert "HSU-24VRRA03TF" in options, "the shortlist should hold this family's models"
+    assert 2 <= len(options) <= 40, f"a choosable shortlist, got {len(options)}"
+
+    done = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_PRODUCT_CODE: "HSU-24VRRA03TF"}
+    )
+    await hass.async_block_till_done()
+    assert done["type"] == FlowResultType.CREATE_ENTRY
+    assert done["data"][CONF_PRODUCT_CODE] == "AAC1UKZ01"
+
+
+async def test_skipping_the_model_still_creates_a_working_entry(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """No model stored, and deliberately none guessed — no rules locks nothing, which is safe."""
+    from custom_components.haismart.const import CONF_PRODUCT_CODE
+
+    flow_id = await _start_manual(hass)
+    with _reports_uplus_id():
+        result = await hass.config_entries.flow.async_configure(
+            flow_id, {CONF_HOST: "192.168.1.50", CONF_LOCAL_KEY: LOCAL_KEY}
+        )
+    done = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_PRODUCT_CODE: "skip"}
+    )
+    await hass.async_block_till_done()
+    assert done["type"] == FlowResultType.CREATE_ENTRY
+    assert not done["data"].get(CONF_PRODUCT_CODE)
+
+
+async def test_the_account_path_stores_the_product_code_it_was_given(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Signing in should mean never having to be asked which model this is.
+
+    The device list names the product outright, and this flow already forwards that name when it
+    asks for the model's rules -- it just never kept it, so the entry fell back to a built-in
+    default that reads exactly like a real code. Nothing downstream can tell those apart, and it is
+    the identifier the rules, the fault names and the real feature set are all keyed by.
+    """
+    from unittest.mock import AsyncMock, patch
+
+    from custom_components.haismart.const import CONF_PRODUCT_CODE
+
+    result = await _drive_login_to_pick(hass, mock_uss, [
+        patch("custom_components.haismart.config_flow._async_fetch_localkey",
+              new=AsyncMock(return_value=(LOCAL_KEY, 13))),
+        patch("custom_components.haismart.config_flow._async_resolve_host",
+              new=AsyncMock(return_value="192.168.1.50")),
+    ])
+    await hass.async_block_till_done()
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_PRODUCT_CODE] == "AAC1UKZ01"

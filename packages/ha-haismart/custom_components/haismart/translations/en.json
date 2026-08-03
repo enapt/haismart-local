@@ -122,6 +122,16 @@
           "password": "Password",
           "zone_info": "Country your Haier account is registered in"
         }
+      },
+      "model": {
+        "title": "Which model is this?",
+        "description": "The air conditioner reported which product family it belongs to, which narrows it to the models below. Pick the one printed on the unit or its label.\n\nChoosing unlocks the fault names, the availability rules and this unit's real feature list. Skipping is fine — the air conditioner still reads and controls completely without it.",
+        "data": {
+          "product_code": "Model"
+        },
+        "data_description": {
+          "product_code": "Choose \"skip\" if your model is not listed or you are unsure — a wrong choice applies another model's rules, which is worse than none."
+        }
       }
     },
     "error": {

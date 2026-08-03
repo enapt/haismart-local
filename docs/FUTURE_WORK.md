@@ -383,9 +383,17 @@ nine- and twelve-attribute variants of the same family), they are **three bits e
 0–7 code space, and since that family declares none of the neighbouring attributes the four fit the
 twelve bits from b0 — forcing the offsets to **b0, b3, b6, b9**.
 
-What no amount of arithmetic gives is **which vane is which**. Four identical fields with identical
-encodings are symmetric, and the twelve-attribute model's attribute list is alphabetised rather than
-in wire order, so it carries no hint either.
+What no amount of arithmetic gives is **which vane is which** — four identical fields with identical
+encodings are symmetric. Nor, it turns out, is their **position** settled: the models that list them
+in a meaningful order put them after everything else they describe, and that trailing region is known
+not to follow the wire, since a sibling model appends two fields there that belong much earlier. So
+the earlier reading here — that the four are forced into the bits the single left-right field would
+have used — claimed more than the evidence carries.
+
+One thing is consistent. Every model that lists them meaningfully lists them in the same scrambled
+order, **second, first, fourth, third**, without exception. An order repeated exactly across every
+model is a convention rather than an accident, and it is probably the order they sit in; but which
+word they sit in is open.
 
 **When asking for this capture, ask for each vane in a *different* position.** A capture with all
 four set the same way proves nothing, and it is the natural thing for someone to send.

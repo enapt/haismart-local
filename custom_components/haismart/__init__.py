@@ -11,9 +11,12 @@ _vendor = _os.path.join(_os.path.dirname(__file__), "vendor")
 if _vendor not in _sys.path:
     _sys.path.insert(0, _vendor)
 
+import asyncio
+import contextlib
+
 from homeassistant.core import HomeAssistant
 
-from .const import PLATFORMS
+from .const import IDENTITY_TOPUP_TIMEOUT, PLATFORMS
 from .coordinator import HaismartConfigEntry, HaismartCoordinator
 
 
@@ -41,7 +44,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> 
     # entry rather than ask anyone to re-add a working appliance. Awaited because what it learns
     # decides which rules are read immediately below.
     if coordinator.needs_identity_topup:
-        await coordinator.async_topup_identity()
+        # Bounded: an unreachable network teaches it nothing, so without a limit every restart
+        # would pay the full HTTP timeout for a lookup that is only ever an improvement.
+        with contextlib.suppress(TimeoutError):
+            async with asyncio.timeout(IDENTITY_TOPUP_TIMEOUT):
+                await coordinator.async_topup_identity()
 
     if coordinator.needs_invisible_topup:
         await coordinator.async_fetch_model_rules()

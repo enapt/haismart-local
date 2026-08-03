@@ -342,6 +342,10 @@
     "key_will_rotate": {
       "title": "{name}: la sua chiave cambierà e questa configurazione non può seguirla",
       "description": "Questo condizionatore raggiunge ancora i server Haier, quindi riceve una nuova chiave locale più volte al giorno. È stato aggiunto senza un account Haier, perciò Home Assistant non può recuperare quella nuova: al prossimo riavvio dopo un cambio di chiave l'apparecchio smetterà di funzionare e sembrerà aver perso la configurazione.\n\nDue soluzioni definitive, entrambe da fare finché tutto funziona:\n\n- **Aggiungi il tuo account Haier**: Impostazioni → Dispositivi e servizi → Haismart → il dispositivo → Riconfigura → *Aggiungi il tuo account Haier*. I cambi di chiave vengono così recuperati automaticamente.\n- **Oppure blocca l'accesso a Internet dell'apparecchio** sul router. La chiave smette di cambiare e quella che hai resta valida. Il controllo locale non è influenzato in nessuno dei due casi.\n\nQuesto messaggio scompare da solo non appena una delle due è vera."
+    },
+    "key_refresh_failed": {
+      "title": "{name}: la chiave è cambiata e il recupero automatico non ha funzionato",
+      "description": "Al condizionatore è stata assegnata una nuova chiave locale (v{old} → v{new}). Il tuo account Haier è memorizzato per questo dispositivo, quindi Home Assistant ha provato a recuperare la nuova da solo — senza riuscirci, ed è per questo che l'ha chiesta a te.\n\n**Le credenziali sono già memorizzate, non c'è nulla da aggiungere.** Accedere di nuovo dal messaggio risolve ora. Se il problema torna, la via automatica è bloccata e non configurata male; le cause abituali:\n\n- Il router o il provider blocca il servizio chiavi di Haier, mentre l'accesso normale continua a funzionare.\n- L'accesso memorizzato non è più accettato: entrare nell'app Haier può chiudere le altre sessioni. Accedere di nuovo qui lo ripristina.\n\n**La soluzione definitiva:** blocca l'accesso a Internet del condizionatore sul router. La chiave smette di cambiare e quella che hai resta valida a tempo indeterminato — vedi il README. Il controllo locale non è influenzato."
     }
   },
   "exceptions": {

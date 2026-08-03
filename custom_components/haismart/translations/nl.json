@@ -342,6 +342,10 @@
     "key_will_rotate": {
       "title": "{name}: de sleutel gaat veranderen en deze installatie kan dat niet volgen",
       "description": "Deze airconditioner bereikt de servers van Haier nog steeds en krijgt dus meerdere keren per dag een nieuwe lokale sleutel. Hij is toegevoegd zonder Haier-account, dus Home Assistant kan de nieuwe niet ophalen — bij de eerstvolgende herstart na een sleutelwijziging stopt het apparaat en lijkt het alsof de configuratie verloren is.\n\nTwee blijvende oplossingen, beide nu te doen nu alles nog werkt:\n\n- **Voeg uw Haier-account toe**: Instellingen → Apparaten en diensten → Haismart → het apparaat → Herconfigureren → *Haier-account toevoegen*. Sleutelwijzigingen worden dan automatisch opgehaald.\n- **Of blokkeer de internettoegang van het apparaat** op uw router. De sleutel verandert dan niet meer en de uwe blijft geldig. Lokale bediening blijft in beide gevallen werken.\n\nDeze melding verdwijnt vanzelf zodra een van beide waar is."
+    },
+    "key_refresh_failed": {
+      "title": "{name}: de sleutel is veranderd en automatisch ophalen lukte niet",
+      "description": "De airconditioner heeft een nieuwe lokale sleutel gekregen (v{old} → v{new}). Uw Haier-account is bij dit apparaat opgeslagen, dus Home Assistant heeft geprobeerd de nieuwe zelf op te halen — en dat lukte niet, daarom is het aan u gevraagd.\n\n**Uw accountgegevens zijn al opgeslagen, er valt niets toe te voegen.** Opnieuw inloggen via de melding lost het nu op. Blijft het terugkomen, dan wordt de automatische weg geblokkeerd en is hij niet verkeerd ingesteld; de gebruikelijke oorzaken:\n\n- Uw router of provider blokkeert Haiers sleuteldienst, terwijl gewoon inloggen nog werkt.\n- De opgeslagen aanmelding wordt niet meer geaccepteerd — inloggen in de Haier-app kan andere sessies beëindigen. Hier opnieuw inloggen herstelt dat.\n\n**De blijvende oplossing:** blokkeer de internettoegang van de airconditioner op uw router. De sleutel verandert dan niet meer en de uwe blijft onbeperkt geldig — zie de README. Lokale bediening blijft werken."
     }
   },
   "exceptions": {

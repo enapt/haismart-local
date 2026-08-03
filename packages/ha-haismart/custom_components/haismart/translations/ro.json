@@ -342,6 +342,10 @@
     "key_will_rotate": {
       "title": "{name}: cheia se va schimba, iar această configurare nu o poate urma",
       "description": "Acest aparat de aer condiționat încă ajunge la serverele Haier, deci primește o cheie locală nouă de mai multe ori pe zi. A fost adăugat fără un cont Haier, așa că Home Assistant nu o poate obține pe cea nouă — la următoarea repornire de după o schimbare de cheie aparatul se va opri și va părea că și-a pierdut configurarea.\n\nDouă soluții durabile, ambele de făcut cât timp totul funcționează:\n\n- **Adăugați contul Haier**: Setări → Dispozitive și servicii → Haismart → dispozitiv → Reconfigurare → *Adăugați contul Haier*. Schimbările de cheie sunt apoi obținute automat.\n- **Sau blocați accesul la internet al aparatului** din router. Cheia nu se mai schimbă, iar cea pe care o aveți rămâne valabilă. Comanda locală nu este afectată în niciunul dintre cazuri.\n\nAcest mesaj dispare singur de îndată ce una dintre ele este adevărată."
+    },
+    "key_refresh_failed": {
+      "title": "{name}: cheia s-a schimbat, iar obținerea automată nu a funcționat",
+      "description": "Aparatului i s-a atribuit o cheie locală nouă (v{old} → v{new}). Contul dumneavoastră Haier este salvat pentru acest dispozitiv, deci Home Assistant a încercat să o obțină singur — și nu a reușit, de aceea v-a cerut-o.\n\n**Datele contului sunt deja salvate, nu aveți nimic de adăugat.** Autentificarea din nou din mesaj rezolvă acum. Dacă revine, calea automată este blocată, nu configurată greșit; cauzele obișnuite:\n\n- Routerul sau furnizorul blochează serviciul de chei al Haier, în timp ce autentificarea obișnuită încă funcționează.\n- Autentificarea salvată nu mai este acceptată — conectarea în aplicația Haier poate încheia celelalte sesiuni. Autentificarea din nou aici o restabilește.\n\n**Soluția permanentă:** blocați accesul aparatului la internet din router. Cheia nu se mai schimbă, iar cea pe care o aveți rămâne valabilă nelimitat — consultați README. Comanda locală nu este afectată."
     }
   },
   "exceptions": {

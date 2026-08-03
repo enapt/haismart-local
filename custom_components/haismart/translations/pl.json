@@ -342,6 +342,10 @@
     "key_will_rotate": {
       "title": "{name}: klucz się zmieni, a ta konfiguracja nie zdoła za nim nadążyć",
       "description": "Ten klimatyzator wciąż łączy się z serwerami Haier, więc kilka razy dziennie otrzymuje nowy klucz lokalny. Został dodany bez konta Haier, więc Home Assistant nie może pobrać nowego — po najbliższym restarcie następującym po zmianie klucza urządzenie przestanie działać i będzie wyglądać, jakby straciło konfigurację.\n\nDwa trwałe rozwiązania, oba do wykonania póki wszystko działa:\n\n- **Dodaj konto Haier**: Ustawienia → Urządzenia i usługi → Haismart → urządzenie → Rekonfiguruj → *Dodaj konto Haier*. Zmiany klucza będą wtedy pobierane automatycznie.\n- **Albo zablokuj urządzeniu dostęp do internetu** na routerze. Klucz przestanie się zmieniać, a ten, który masz, pozostanie ważny. Sterowanie lokalne działa w obu przypadkach.\n\nTa wiadomość zniknie sama, gdy tylko jedno z powyższych będzie prawdą."
+    },
+    "key_refresh_failed": {
+      "title": "{name}: klucz się zmienił, a automatyczne pobranie nie zadziałało",
+      "description": "Klimatyzator otrzymał nowy klucz lokalny (v{old} → v{new}). Twoje konto Haier jest zapisane przy tym urządzeniu, więc Home Assistant spróbował pobrać nowy samodzielnie — i nie zdołał, dlatego poprosił Ciebie.\n\n**Dane konta są już zapisane, nie ma czego dodawać.** Ponowne zalogowanie z monitu rozwiązuje sprawę teraz. Jeśli problem wraca, droga automatyczna jest blokowana, a nie źle skonfigurowana; zwykłe przyczyny:\n\n- Router lub dostawca blokuje usługę kluczy Haier, podczas gdy zwykłe logowanie nadal działa.\n- Zapisane logowanie nie jest już akceptowane — zalogowanie w aplikacji Haier może zakończyć inne sesje. Ponowne zalogowanie tutaj je przywraca.\n\n**Trwałe rozwiązanie:** zablokuj klimatyzatorowi dostęp do internetu na routerze. Klucz przestanie się zmieniać, a ten, który masz, pozostanie ważny bezterminowo — zobacz README. Sterowanie lokalne działa bez zmian."
     }
   },
   "exceptions": {

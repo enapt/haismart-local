@@ -342,6 +342,10 @@
     "key_will_rotate": {
       "title": "{name}: a chave vai mudar e esta configuração não consegue acompanhar",
       "description": "Este ar-condicionado ainda alcança os servidores da Haier, então recebe uma nova chave local várias vezes ao dia. Ele foi adicionado sem uma conta Haier, então o Home Assistant não consegue obter a nova — na próxima reinicialização após uma troca de chave o aparelho deixará de funcionar e parecerá ter perdido a configuração.\n\nDuas soluções definitivas, ambas para fazer enquanto tudo funciona:\n\n- **Adicione sua conta Haier**: Configurações → Dispositivos e serviços → Haismart → o dispositivo → Reconfigurar → *Adicionar sua conta Haier*. As trocas de chave passam a ser obtidas automaticamente.\n- **Ou bloqueie o acesso do aparelho à internet** no seu roteador. A chave deixa de mudar e a que você tem continua válida. O controle local não é afetado em nenhum dos casos.\n\nEsta mensagem desaparece sozinha assim que uma das duas for verdadeira."
+    },
+    "key_refresh_failed": {
+      "title": "{name}: a chave mudou e a obtenção automática não funcionou",
+      "description": "O ar-condicionado recebeu uma nova chave local (v{old} → v{new}). Sua conta Haier está guardada neste dispositivo, então o Home Assistant tentou obter a nova sozinho — e não conseguiu, por isso pediu a você.\n\n**Seus dados de conta já estão guardados, não há nada a adicionar.** Entrar novamente pelo aviso resolve agora. Se voltar a acontecer, o caminho automático está bloqueado e não mal configurado; as causas usuais:\n\n- Seu roteador ou provedor bloqueia o serviço de chaves da Haier, enquanto o login comum ainda funciona.\n- O login guardado não é mais aceito — entrar no aplicativo Haier pode encerrar outras sessões. Entrar de novo aqui restaura.\n\n**A solução definitiva:** bloqueie o acesso do ar-condicionado à internet no roteador. A chave para de mudar e a que você tem continua válida indefinidamente — veja o README. O controle local não é afetado."
     }
   },
   "exceptions": {

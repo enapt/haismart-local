@@ -342,6 +342,10 @@
     "key_will_rotate": {
       "title": "{name}: khóa sẽ thay đổi và thiết lập này không theo kịp",
       "description": "Điều hòa này vẫn kết nối được tới máy chủ Haier, nên được cấp khóa cục bộ mới vài lần mỗi ngày. Máy được thêm mà không có tài khoản Haier, nên Home Assistant không thể lấy khóa mới — lần khởi động lại kế tiếp sau khi khóa đổi, máy sẽ ngừng hoạt động và trông như đã mất cấu hình.\n\nHai cách khắc phục lâu dài, nên làm ngay khi mọi thứ còn hoạt động:\n\n- **Thêm tài khoản Haier của bạn**: Cài đặt → Thiết bị và dịch vụ → Haismart → thiết bị → Cấu hình lại → *Thêm tài khoản Haier*. Khóa đổi sẽ được lấy tự động.\n- **Hoặc chặn máy truy cập internet** trên bộ định tuyến. Khóa sẽ ngừng thay đổi và khóa bạn đang có vẫn hợp lệ. Điều khiển cục bộ không bị ảnh hưởng trong cả hai trường hợp.\n\nThông báo này tự biến mất ngay khi một trong hai điều trên thành hiện thực."
+    },
+    "key_refresh_failed": {
+      "title": "{name}: khóa đã đổi và việc tự động lấy khóa không thành công",
+      "description": "Điều hòa được cấp khóa cục bộ mới (v{old} → v{new}). Tài khoản Haier của bạn đã lưu cho thiết bị này, nên Home Assistant đã thử tự lấy khóa mới — nhưng không được, vì vậy nó hỏi bạn.\n\n**Thông tin tài khoản đã được lưu, không cần thêm gì cả.** Đăng nhập lại từ lời nhắc sẽ khắc phục ngay. Nếu vẫn lặp lại, đường tự động đang bị chặn chứ không phải cấu hình sai; các nguyên nhân thường gặp:\n\n- Bộ định tuyến hoặc nhà mạng chặn dịch vụ khóa của Haier, trong khi đăng nhập thông thường vẫn hoạt động.\n- Phiên đăng nhập đã lưu không còn được chấp nhận — đăng nhập vào ứng dụng Haier có thể kết thúc các phiên khác. Đăng nhập lại ở đây sẽ khôi phục.\n\n**Cách khắc phục lâu dài:** chặn điều hòa truy cập internet trên bộ định tuyến. Khóa sẽ ngừng thay đổi và khóa bạn đang có vẫn hợp lệ vô thời hạn — xem README. Điều khiển cục bộ không bị ảnh hưởng."
     }
   },
   "exceptions": {

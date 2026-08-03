@@ -342,6 +342,10 @@
     "key_will_rotate": {
       "title": "{name}: kuncinya akan berubah dan penyiapan ini tidak bisa mengikutinya",
       "description": "AC ini masih dapat menghubungi server Haier, sehingga menerima kunci lokal baru beberapa kali sehari. Perangkat ditambahkan tanpa akun Haier, jadi Home Assistant tidak dapat mengambil yang baru — pada mulai ulang berikutnya setelah kunci berubah, perangkat akan berhenti bekerja dan tampak seperti kehilangan konfigurasinya.\n\nDua solusi permanen, keduanya sebaiknya dilakukan selagi semuanya masih berfungsi:\n\n- **Tambahkan akun Haier Anda**: Pengaturan → Perangkat & layanan → Haismart → perangkat → Konfigurasi ulang → *Tambahkan akun Haier Anda*. Perubahan kunci akan diambil otomatis.\n- **Atau blokir akses internet perangkat** di router Anda. Kuncinya berhenti berubah dan yang Anda miliki tetap berlaku. Kendali lokal tidak terpengaruh dalam kedua kasus.\n\nPesan ini hilang dengan sendirinya begitu salah satunya terpenuhi."
+    },
+    "key_refresh_failed": {
+      "title": "{name}: kuncinya berubah dan pengambilan otomatis tidak berhasil",
+      "description": "AC menerima kunci lokal baru (v{old} → v{new}). Akun Haier Anda tersimpan untuk perangkat ini, jadi Home Assistant mencoba mengambil yang baru sendiri — dan gagal, karena itu ia bertanya kepada Anda.\n\n**Detail akun Anda sudah tersimpan, tidak ada yang perlu ditambahkan.** Masuk kembali dari permintaan tersebut menyelesaikannya sekarang. Jika terus berulang, jalur otomatis sedang diblokir, bukan salah dikonfigurasi; penyebab yang biasa:\n\n- Router atau ISP Anda memblokir layanan kunci Haier, sementara masuk biasa masih berfungsi.\n- Sesi masuk yang tersimpan tidak lagi diterima — masuk ke aplikasi Haier dapat mengakhiri sesi lain. Masuk kembali di sini memulihkannya.\n\n**Solusi permanen:** blokir akses internet AC di router Anda. Kuncinya berhenti berubah dan yang Anda miliki tetap berlaku tanpa batas — lihat README. Kendali lokal tidak terpengaruh."
     }
   },
   "exceptions": {

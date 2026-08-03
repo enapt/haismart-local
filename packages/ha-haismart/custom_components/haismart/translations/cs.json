@@ -342,6 +342,10 @@
     "key_will_rotate": {
       "title": "{name}: klíč se změní a toto nastavení ho nedokáže následovat",
       "description": "Tato klimatizace stále dosáhne na servery Haier, takže dostává nový lokální klíč několikrát denně. Byla přidána bez účtu Haier, takže Home Assistant nemůže nový klíč získat — při nejbližším restartu po změně klíče zařízení přestane fungovat a bude to vypadat, že přišlo o konfiguraci.\n\nDvě trvalá řešení, obě proveďte, dokud vše funguje:\n\n- **Přidejte účet Haier**: Nastavení → Zařízení a služby → Haismart → zařízení → Znovu nastavit → *Přidat účet Haier*. Změny klíče se pak stahují automaticky.\n- **Nebo zařízení na routeru odpojte od internetu**. Klíč se pak přestane měnit a ten, který máte, zůstane platný. Místní ovládání v obou případech funguje dál.\n\nTato zpráva zmizí sama, jakmile bude platit jedno z toho."
+    },
+    "key_refresh_failed": {
+      "title": "{name}: klíč se změnil a automatické načtení nefungovalo",
+      "description": "Klimatizace dostala nový lokální klíč (v{old} → v{new}). Váš účet Haier je u tohoto zařízení uložen, takže Home Assistant se pokusil nový klíč získat sám — a nepodařilo se mu to, proto se obrátil na vás.\n\n**Údaje k účtu už jsou uložené, není co přidávat.** Opětovné přihlášení z výzvy to nyní vyřeší. Pokud se problém vrací, automatická cesta je blokována, nikoli špatně nastavena; obvyklé příčiny:\n\n- Router nebo poskytovatel blokuje službu klíčů Haier, zatímco běžné přihlášení stále funguje.\n- Uložené přihlášení už není přijímáno — přihlášení v aplikaci Haier může ukončit ostatní relace. Opětovné přihlášení zde je obnoví.\n\n**Trvalé řešení:** zablokujte klimatizaci přístup k internetu na routeru. Klíč se přestane měnit a ten, který máte, zůstane platný natrvalo — viz README. Místní ovládání zůstává beze změny."
     }
   },
   "exceptions": {

@@ -342,6 +342,10 @@
     "key_will_rotate": {
       "title": "{name}: avain vaihtuu, eikä tämä asennus pysy perässä",
       "description": "Tämä ilmastointilaite tavoittaa yhä Haierin palvelimet, joten se saa uuden paikallisen avaimen useita kertoja päivässä. Se lisättiin ilman Haier-tiliä, joten Home Assistant ei voi hakea uutta — seuraavan avaimenvaihdon jälkeisellä uudelleenkäynnistyksellä laite lakkaa toimimasta ja näyttää menettäneen asetuksensa.\n\nKaksi pysyvää ratkaisua, molemmat kannattaa tehdä nyt kun kaikki toimii:\n\n- **Lisää Haier-tilisi**: Asetukset → Laitteet ja palvelut → Haismart → laite → Määritä uudelleen → *Lisää Haier-tilisi*. Avaimenvaihdot haetaan tämän jälkeen automaattisesti.\n- **Tai estä laitteen internetyhteys** reitittimessäsi. Avain lakkaa vaihtumasta ja nykyinen pysyy voimassa. Paikallinen ohjaus toimii kummassakin tapauksessa.\n\nTämä viesti katoaa itsestään heti kun jompikumpi toteutuu."
+    },
+    "key_refresh_failed": {
+      "title": "{name}: avain vaihtui, eikä automaattinen haku onnistunut",
+      "description": "Ilmastointilaite sai uuden paikallisen avaimen (v{old} → v{new}). Haier-tilisi on tallennettu tälle laitteelle, joten Home Assistant yritti hakea uuden itse — eikä onnistunut, siksi se kysyi sinulta.\n\n**Tilitietosi on jo tallennettu, mitään ei tarvitse lisätä.** Uudelleenkirjautuminen kehotteesta korjaa asian nyt. Jos ongelma toistuu, automaattinen reitti on estetty eikä väärin määritetty; tavalliset syyt:\n\n- Reitittimesi tai operaattorisi estää Haierin avainpalvelun, vaikka tavallinen kirjautuminen toimii yhä.\n- Tallennettua kirjautumista ei enää hyväksytä — Haier-sovellukseen kirjautuminen voi päättää muut istunnot. Kirjautuminen täällä uudelleen palauttaa sen.\n\n**Pysyvä ratkaisu:** estä ilmastointilaitteen internetyhteys reitittimessä. Avain lakkaa vaihtumasta ja nykyinen pysyy voimassa toistaiseksi — katso README. Paikallinen ohjaus ei muutu."
     }
   },
   "exceptions": {

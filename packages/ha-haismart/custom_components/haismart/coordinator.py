@@ -102,6 +102,7 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     EXTENDED_MISSES,
+    ISSUE_KEY_REFRESH_FAILED,
     ISSUE_KEY_WILL_ROTATE,
     ISSUE_STALE_LOCALKEY,
     ISSUE_UNKNOWN_LAYOUT,
@@ -1322,14 +1323,22 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
     def _raise_stale_localkey_issue(self, old: int | None, current: int) -> None:
-        """Create the actionable repair for a manual re-key (no cloud auto-refresh configured)."""
+        """Explain a re-key that had to be done by hand — and say which of the two reasons it was.
+
+        There is no account to fetch with, or there is one and fetching failed anyway. The advice is
+        opposite in each case, so one message cannot serve both: telling someone to add an account
+        they already added reads as the integration being broken, and that is how a recurring key
+        problem turns into repeatedly deleting and re-adding the appliance.
+        """
+        has_account = bool(self.config_entry.data.get(CONF_REFRESH_TOKEN))
+        key = ISSUE_KEY_REFRESH_FAILED if has_account else ISSUE_STALE_LOCALKEY
         ir.async_create_issue(
             self.hass,
             DOMAIN,
-            f"{ISSUE_STALE_LOCALKEY}_{self.device_id}",
+            f"{key}_{self.device_id}",
             is_fixable=False,
             severity=ir.IssueSeverity.WARNING,
-            translation_key=ISSUE_STALE_LOCALKEY,
+            translation_key=key,
             translation_placeholders={
                 "name": self.config_entry.title,
                 "old": str(old),
@@ -1370,9 +1379,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     def clear_stale_localkey_issue(self) -> None:
         """Delete the manual-re-key repair once rotation self-heals via the cloud gateway."""
-        ir.async_delete_issue(
-            self.hass, DOMAIN, f"{ISSUE_STALE_LOCALKEY}_{self.device_id}"
-        )
+        for key in (ISSUE_STALE_LOCALKEY, ISSUE_KEY_REFRESH_FAILED):
+            ir.async_delete_issue(self.hass, DOMAIN, f"{key}_{self.device_id}")
 
     async def async_fetch_model_rules(self) -> bool:
         """Top up a stored model that arrived without its rules, for an entry set up before those

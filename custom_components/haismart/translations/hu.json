@@ -342,6 +342,10 @@
     "key_will_rotate": {
       "title": "{name}: a kulcs meg fog változni, és ez a beállítás nem tudja követni",
       "description": "Ez a klímaberendezés még eléri a Haier kiszolgálóit, ezért naponta többször új helyi kulcsot kap. Haier-fiók nélkül lett hozzáadva, így a Home Assistant nem tudja lekérni az újat — a kulcscsere utáni első újraindításkor a készülék leáll, és úgy tűnik majd, mintha elvesztette volna a beállításait.\n\nKét tartós megoldás, mindkettőt érdemes most elvégezni, amíg minden működik:\n\n- **Adja hozzá Haier-fiókját**: Beállítások → Eszközök és szolgáltatások → Haismart → az eszköz → Újrakonfigurálás → *Haier-fiók hozzáadása*. A kulcscserék ezután automatikusan lekérésre kerülnek.\n- **Vagy tiltsa le a készülék internet-hozzáférését** az útválasztón. A kulcs ekkor nem változik többé, és a meglévő érvényes marad. A helyi vezérlést egyik eset sem érinti.\n\nEz az üzenet magától eltűnik, amint bármelyik teljesül."
+    },
+    "key_refresh_failed": {
+      "title": "{name}: a kulcs megváltozott, és az automatikus lekérés nem működött",
+      "description": "A klímaberendezés új helyi kulcsot kapott (v{old} → v{new}). A Haier-fiókja el van mentve ehhez az eszközhöz, ezért a Home Assistant megpróbálta magától lekérni az újat — és nem sikerült, ezért kérdezte meg Önt.\n\n**A fiókadatai már el vannak mentve, nincs mit hozzáadni.** Az üzenetből történő újbóli bejelentkezés most megoldja. Ha visszatér, az automatikus út blokkolva van, nem pedig rosszul beállítva; a szokásos okok:\n\n- Az útválasztója vagy a szolgáltatója blokkolja a Haier kulcsszolgáltatását, miközben a rendes bejelentkezés még működik.\n- A tárolt bejelentkezést már nem fogadják el — a Haier alkalmazásba való belépés megszüntetheti a többi munkamenetet. Az itteni újbóli bejelentkezés helyreállítja.\n\n**A végleges megoldás:** tiltsa le a klímaberendezés internet-hozzáférését az útválasztón. A kulcs ekkor nem változik többé, a meglévő pedig határozatlan ideig érvényes marad — lásd a README-t. A helyi vezérlést ez nem érinti."
     }
   },
   "exceptions": {

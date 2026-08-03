@@ -342,6 +342,10 @@
     "key_will_rotate": {
       "title": "{name}: nøkkelen kommer til å endres, og dette oppsettet kan ikke følge med",
       "description": "Dette klimaanlegget når fortsatt Haiers servere og får derfor en ny lokal nøkkel flere ganger om dagen. Det ble lagt til uten en Haier-konto, så Home Assistant kan ikke hente den nye — ved neste omstart etter et nøkkelbytte slutter enheten å virke og ser ut til å ha mistet oppsettet sitt.\n\nTo varige løsninger, begge bør gjøres mens alt fungerer:\n\n- **Legg til Haier-kontoen din**: Innstillinger → Enheter og tjenester → Haismart → enheten → Konfigurer på nytt → *Legg til Haier-kontoen din*. Nøkkelbytter hentes da automatisk.\n- **Eller blokker enhetens internettilgang** i ruteren. Nøkkelen slutter da å endre seg, og den du har forblir gyldig. Lokal styring påvirkes ikke i noen av tilfellene.\n\nDenne meldingen forsvinner av seg selv så snart ett av dem stemmer."
+    },
+    "key_refresh_failed": {
+      "title": "{name}: nøkkelen ble endret, og den automatiske hentingen virket ikke",
+      "description": "Klimaanlegget fikk en ny lokal nøkkel (v{old} → v{new}). Haier-kontoen din er lagret for denne enheten, så Home Assistant prøvde å hente den nye selv — og klarte det ikke, derfor ble du spurt.\n\n**Kontoopplysningene dine er allerede lagret, det er ingenting å legge til.** Å logge inn igjen fra meldingen løser det nå. Kommer det stadig tilbake, blir den automatiske veien blokkert snarere enn feil satt opp; de vanlige årsakene:\n\n- Ruteren eller leverandøren din blokkerer Haiers nøkkeltjeneste, mens vanlig innlogging fortsatt virker.\n- Den lagrede innloggingen godtas ikke lenger — å logge inn i Haier-appen kan avslutte andre økter. Logg inn igjen her, så gjenopprettes den.\n\n**Den varige løsningen:** blokker klimaanleggets internettilgang i ruteren. Nøkkelen slutter da å endre seg, og den du har forblir gyldig på ubestemt tid — se README. Lokal styring påvirkes ikke."
     }
   },
   "exceptions": {

@@ -342,6 +342,10 @@
     "key_will_rotate": {
       "title": "{name}: anahtarı değişecek ve bu kurulum bunu takip edemez",
       "description": "Bu klima hâlâ Haier sunucularına ulaşabiliyor, dolayısıyla günde birkaç kez yeni bir yerel anahtar alıyor. Haier hesabı olmadan eklendiği için Home Assistant yenisini alamaz — anahtar değişiminden sonraki ilk yeniden başlatmada cihaz çalışmayı bırakacak ve yapılandırmasını kaybetmiş gibi görünecektir.\n\nKalıcı iki çözüm, ikisi de her şey çalışırken yapılmalı:\n\n- **Haier hesabınızı ekleyin**: Ayarlar → Cihazlar ve servisler → Haismart → cihaz → Yeniden yapılandır → *Haier hesabınızı ekleyin*. Anahtar değişiklikleri bundan sonra otomatik alınır.\n- **Ya da yönlendiricinizde cihazın internet erişimini engelleyin**. Anahtar artık değişmez ve elinizdeki geçerli kalır. Yerel kontrol her iki durumda da etkilenmez.\n\nBu ileti, ikisinden biri sağlandığı anda kendiliğinden kaybolur."
+    },
+    "key_refresh_failed": {
+      "title": "{name}: anahtarı değişti ve otomatik alma çalışmadı",
+      "description": "Klimaya yeni bir yerel anahtar verildi (v{old} → v{new}). Haier hesabınız bu cihaz için kayıtlı, bu yüzden Home Assistant yenisini kendisi almayı denedi — başaramadı ve bu nedenle size sordu.\n\n**Hesap bilgileriniz zaten kayıtlı, eklenecek bir şey yok.** İstemden yeniden oturum açmak sorunu şimdi çözer. Tekrar tekrar oluyorsa otomatik yol yanlış yapılandırılmış değil, engelleniyordur; olağan nedenler:\n\n- Yönlendiriciniz veya operatörünüz Haier'in anahtar servisini engelliyor, sıradan oturum açma ise çalışmaya devam ediyor.\n- Kayıtlı oturum artık kabul edilmiyor — Haier uygulamasında oturum açmak diğer oturumları sonlandırabilir. Burada yeniden oturum açmak bunu geri getirir.\n\n**Kalıcı çözüm:** yönlendiricinizde klimanın internet erişimini engelleyin. Anahtarı artık değişmez ve elinizdeki süresiz geçerli kalır — README'ye bakın. Yerel kontrol etkilenmez."
     }
   },
   "exceptions": {

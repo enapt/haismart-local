@@ -2895,3 +2895,90 @@ async def test_no_rotation_warning_once_either_remedy_is_in_place(
     assert not ir.async_get(hass).async_get_issue(
         DOMAIN, f"{ISSUE_KEY_WILL_ROTATE}_B1B2C3D4E5F6"
     )
+
+
+async def test_a_failed_key_refresh_does_not_tell_you_to_add_an_account_you_have(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Two reasons a key had to be re-entered by hand, and opposite advice for each.
+
+    Either there is no account to fetch with, or there is one and fetching failed anyway. One
+    message cannot serve both: telling someone to add an account they already added reads as the
+    integration being broken, and that is how a recurring key problem becomes a habit of deleting
+    and re-adding the appliance instead of reporting it.
+    """
+    from unittest.mock import AsyncMock, patch
+
+    from homeassistant.helpers import issue_registry as ir
+
+    from custom_components.haismart.const import (
+        CONF_REFRESH_TOKEN,
+        ISSUE_KEY_REFRESH_FAILED,
+        ISSUE_STALE_LOCALKEY,
+    )
+
+    async def _rotated(entry_kwargs, device_id):
+        entry = _entry(**entry_kwargs)
+        entry.add_to_hass(hass)
+        with patch(
+            "custom_components.haismart.coordinator.HaismartCoordinator"
+            "._async_gateway_refresh",
+            new=AsyncMock(return_value=False),          # the fetch was tried and failed
+        ):
+            coordinator = HaismartCoordinator(hass, entry)
+            coordinator._raise_stale_localkey_issue(45, 46)
+        return ir.async_get(hass)
+
+    from custom_components.haismart.coordinator import HaismartCoordinator
+
+    # no account stored: the advice is to add one
+    issues = await _rotated({}, "A1B2C3D4E5F6")
+    assert issues.async_get_issue(DOMAIN, f"{ISSUE_STALE_LOCALKEY}_A1B2C3D4E5F6")
+    assert not issues.async_get_issue(DOMAIN, f"{ISSUE_KEY_REFRESH_FAILED}_A1B2C3D4E5F6")
+
+    # account already stored: the advice must NOT be to add one
+    issues = await _rotated({CONF_REFRESH_TOKEN: "2_RT"}, "A1B2C3D4E5F6")
+    assert issues.async_get_issue(DOMAIN, f"{ISSUE_KEY_REFRESH_FAILED}_A1B2C3D4E5F6")
+
+
+async def test_a_slow_identity_lookup_does_not_hold_up_startup(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """An improvement must never become a tax on every restart.
+
+    The lookup is awaited because what it learns decides which rules are read moments later. But a
+    lookup that cannot reach the network learns nothing, so the entry still needs it next time —
+    without a bound, every single start would pay the full HTTP timeout for it, and the installs
+    most likely to be offline are exactly the ones this integration is for.
+    """
+    import asyncio
+    from unittest.mock import patch
+
+    from custom_components.haismart.const import (
+        CONF_CLOUD_CLIENT_ID,
+        CONF_PRODUCT_CODE,
+        CONF_REFRESH_TOKEN,
+    )
+
+    entry = _entry(**{
+        CONF_REFRESH_TOKEN: "2_RT",
+        CONF_CLOUD_CLIENT_ID: "A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4",
+        CONF_PRODUCT_CODE: None,
+    })
+    entry.add_to_hass(hass)
+
+    async def _never_answers(*_a, **_k):
+        await asyncio.sleep(3600)
+
+    with patch(
+        "custom_components.haismart.coordinator.HaismartCoordinator.async_topup_identity",
+        new=_never_answers,
+    ), patch("custom_components.haismart.IDENTITY_TOPUP_TIMEOUT", 0.05):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    # setup completed anyway, and the appliance works without what the lookup would have added
+    assert entry.state is ConfigEntryState.LOADED
+    assert [s for s in hass.states.async_all() if s.entity_id.startswith("climate.")], (
+        "the appliance must still be usable when the lookup times out"
+    )

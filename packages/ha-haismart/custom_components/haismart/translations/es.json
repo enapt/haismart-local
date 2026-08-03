@@ -342,6 +342,10 @@
     "key_will_rotate": {
       "title": "{name}: su clave va a cambiar y esta configuración no puede seguirla",
       "description": "Este aire acondicionado todavía llega a los servidores de Haier, por lo que recibe una clave local nueva varias veces al día. Se añadió sin una cuenta Haier, así que Home Assistant no puede obtener la nueva: en el próximo reinicio tras un cambio de clave, el aparato dejará de funcionar y parecerá que ha perdido su configuración.\n\nDos soluciones definitivas, ambas para hacer mientras todo funciona:\n\n- **Añada su cuenta Haier**: Ajustes → Dispositivos y servicios → Haismart → el dispositivo → Reconfigurar → *Añadir su cuenta Haier*. Los cambios de clave se obtendrán automáticamente.\n- **O bloquee el acceso a Internet del aparato** en su router. Entonces su clave deja de cambiar y la que tiene sigue siendo válida. El control local no se ve afectado en ninguno de los dos casos.\n\nEste mensaje desaparece solo en cuanto una de las dos sea cierta."
+    },
+    "key_refresh_failed": {
+      "title": "{name}: su clave cambió y la obtención automática no funcionó",
+      "description": "Al aire acondicionado se le asignó una clave local nueva (v{old} → v{new}). Su cuenta Haier está guardada en este dispositivo, así que Home Assistant intentó obtener la nueva por sí mismo y no pudo, por eso se la pidió a usted.\n\n**Sus datos de cuenta ya están guardados, no hay nada que añadir.** Volver a iniciar sesión desde el aviso lo soluciona ahora. Si se repite, la vía automática está bloqueada y no mal configurada; las causas habituales:\n\n- Su router o su operador bloquea el servicio de claves de Haier, mientras el inicio de sesión normal sigue funcionando.\n- El inicio de sesión guardado ya no se acepta: entrar en la app de Haier puede cerrar otras sesiones. Volver a iniciar sesión aquí lo restablece.\n\n**La solución permanente:** bloquee el acceso a Internet del aire acondicionado en su router. Su clave dejará de cambiar y la que tiene seguirá siendo válida indefinidamente; consulte el README. El control local no se ve afectado."
     }
   },
   "exceptions": {

@@ -109,6 +109,20 @@ AC_DEVICE_CLASSES: dict[str, str] = {
 # the user must reauth by hand. Advises adding account creds so rotation auto-refreshes in future.
 ISSUE_STALE_LOCALKEY = "stale_localkey_manual_reauth"
 
+# How long startup will wait on the one-off identity lookup before giving up for this run. It is
+# awaited rather than backgrounded because what it learns decides which rules are read moments
+# later -- but a lookup that cannot reach the network learns nothing, so the entry still needs it
+# next time and would pay the full HTTP timeout on every single start. Bounded well under the ten
+# seconds at which Home Assistant starts warning about slow setup; the entry simply tries again on
+# the next restart, and nothing else depends on it having succeeded.
+IDENTITY_TOPUP_TIMEOUT = 6.0
+
+# Repairs: the key rotated and the automatic re-fetch was TRIED and failed, on an entry that does
+# have account credentials. Kept apart from the no-credentials case because the advice is opposite:
+# telling someone to add an account they already have reads as the integration being broken, which
+# is how a recurring key problem turns into repeated deleting and re-adding.
+ISSUE_KEY_REFRESH_FAILED = "key_refresh_failed"
+
 # Repairs: raised on an entry with no account credentials whose appliance is still talking to the
 # manufacturer. Such an appliance re-keys several times a day, and an entry that cannot re-fetch
 # will lose its connection at the next rotation -- which presents as the integration "losing its

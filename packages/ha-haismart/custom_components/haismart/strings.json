@@ -38,15 +38,13 @@
           "host": "IP address",
           "device_id": "Device ID",
           "local_key": "Local key (32-char hex)",
-          "name": "Name",
-          "product_code": "Product code (typeId)"
+          "name": "Name"
         },
         "data_description": {
           "host": "The air conditioner's IP address on your network, e.g. 192.168.1.50. A DHCP reservation keeps it from changing.",
-          "device_id": "Usually left blank — the air conditioner is asked for this directly. It is the module's Wi-Fi MAC address if you need to enter it.",
+          "device_id": "Usually left blank — the air conditioner is asked for this directly. It is the module's Wi-Fi MAC address if you ever need to enter it.",
           "local_key": "The 32-character key the AC encrypts its status with. It is issued by Haier's cloud per device — the Sign in path fetches it for you.",
-          "name": "Optional. What to call this air conditioner in Home Assistant.",
-          "product_code": "Optional. The model number printed on the appliance (for example HSU-24VRRA03TF) is enough; it unlocks the fault names, the availability rules and this unit's real feature list."
+          "name": "Optional. What to call this air conditioner in Home Assistant."
         }
       },
       "reauth_confirm": {

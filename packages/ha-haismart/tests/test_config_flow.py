@@ -36,6 +36,21 @@ USER_INPUT = {
 }
 
 
+async def _past_model_step(hass: HomeAssistant, result):
+    """Answer the "which model is this?" step with "skip" if the flow reached it.
+
+    The manual path always asks, because it is the one place the question can be put as a
+    shortlist rather than a free-text code. Tests that are not about the model itself say "skip",
+    which is a first-class answer: the appliance reads and controls either way.
+    """
+    if result.get("type") == FlowResultType.FORM and result.get("step_id") == "model":
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"product_code": "skip"}
+        )
+    await hass.async_block_till_done()
+    return result
+
+
 async def _start_manual(hass: HomeAssistant) -> str:
     """Init the flow and pick the 'manual' menu option; return the manual form's flow_id."""
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
@@ -64,7 +79,7 @@ def _entry(**overrides) -> MockConfigEntry:
 async def test_user_flow_creates_entry(hass: HomeAssistant, mock_uss) -> None:
     flow_id = await _start_manual(hass)
     result2 = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
-    await hass.async_block_till_done()
+    result2 = await _past_model_step(hass, result2)
 
     assert result2["type"] == FlowResultType.CREATE_ENTRY
     assert result2["title"] == "Downstairs AC"
@@ -140,7 +155,7 @@ async def test_zeroconf_flow_prefills_and_creates(hass: HomeAssistant, mock_uss)
             CONF_LOCAL_KEY: LOCAL_KEY,
         },
     )
-    await hass.async_block_till_done()
+    result2 = await _past_model_step(hass, result2)
     assert result2["type"] == FlowResultType.CREATE_ENTRY
     assert result2["data"][CONF_HOST] == "192.168.1.50"
     assert result2["data"][CONF_DEVICE_ID] == "A1B2C3D4E5F6"
@@ -175,7 +190,7 @@ async def test_dhcp_flow_prefills_host_and_device(hass: HomeAssistant, mock_uss)
         result["flow_id"],
         {CONF_HOST: "192.168.1.50", CONF_DEVICE_ID: "ACB722AABBCC", CONF_LOCAL_KEY: LOCAL_KEY},
     )
-    await hass.async_block_till_done()
+    result2 = await _past_model_step(hass, result2)
     assert result2["type"] == FlowResultType.CREATE_ENTRY
     assert result2["data"][CONF_HOST] == "192.168.1.50"
     assert result2["data"][CONF_DEVICE_ID] == "ACB722AABBCC"
@@ -259,7 +274,7 @@ async def test_manual_flow_is_local_only(hass: HomeAssistant, mock_uss) -> None:
 
     flow_id = await _start_manual(hass)
     result2 = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
-    await hass.async_block_till_done()
+    result2 = await _past_model_step(hass, result2)
     assert result2["type"] == FlowResultType.CREATE_ENTRY
     assert CONF_REFRESH_TOKEN not in result2["data"]
     assert result2["data"][CONF_LOCAL_KEY] == LOCAL_KEY
@@ -777,7 +792,10 @@ async def test_manual_entry_keeps_a_supplied_product_code_verbatim(
     """
     flow_id = await _start_manual(hass)
     result = await hass.config_entries.flow.async_configure(
-        flow_id, {**USER_INPUT, CONF_PRODUCT_CODE: "  AAD180E00  "}
+        flow_id, USER_INPUT
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_PRODUCT_CODE: "  AAD180E00  "}
     )
     await hass.async_block_till_done()
 
@@ -805,7 +823,10 @@ async def test_manual_onboarding_looks_up_the_published_model(
         new=AsyncMock(return_value=published),
     ) as fetch:
         result = await hass.config_entries.flow.async_configure(
-            flow_id, {**USER_INPUT, CONF_PRODUCT_CODE: "AAD180E00"}
+            flow_id, USER_INPUT
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_PRODUCT_CODE: "AAD180E00"}
         )
         await hass.async_block_till_done()
 
@@ -829,7 +850,7 @@ async def test_manual_onboarding_does_not_look_up_without_a_product_code(
         "custom_components.haismart.config_flow.get_public_device_config", new=AsyncMock()
     ) as fetch:
         result = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
-        await hass.async_block_till_done()
+        result = await _past_model_step(hass, result)
 
     assert fetch.await_count == 0
     assert CONF_DIGITAL_MODEL not in result["data"]
@@ -849,7 +870,10 @@ async def test_manual_onboarding_survives_a_failed_lookup(
         new=AsyncMock(side_effect=CloudError("no such product code")),
     ):
         result = await hass.config_entries.flow.async_configure(
-            flow_id, {**USER_INPUT, CONF_PRODUCT_CODE: "NOSUCHCODE"}
+            flow_id, USER_INPUT
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_PRODUCT_CODE: "NOSUCHCODE"}
         )
         await hass.async_block_till_done()
 
@@ -894,11 +918,13 @@ async def test_a_backed_up_local_key_is_all_an_offline_install_needs(
             {
                 CONF_HOST: "192.168.1.50",
                 CONF_LOCAL_KEY: LOCAL_KEY,  # the one thing that had to come from the cloud, once
-                # the model number off the appliance's label -- not the opaque product code
-                CONF_PRODUCT_CODE: "HSU-24VRRA03TF",
             },
         )
-        await hass.async_block_till_done()
+    # the model number off the appliance's label -- not the opaque product code
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_PRODUCT_CODE: "HSU-24VRRA03TF"}
+    )
+    await hass.async_block_till_done()
 
     assert result["type"] == FlowResultType.CREATE_ENTRY
     data = result["data"]

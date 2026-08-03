@@ -149,27 +149,27 @@ _MODEL_SKIP = "skip"
 
 
 def _manual_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
-    """The manual (fully-offline) form: host + deviceId + localKey (+ optional name / product)."""
+    """The manual (fully-offline) form: where the appliance is, and the key to talk to it.
+
+    Deliberately two questions. The device ID is not one of them, because the appliance answers
+    that itself -- one key-free query to the host returns it, along with the identifier that
+    selects the wire map -- so it is optional, and filled in only when a module stays silent.
+
+    The model is not asked here either. It is a real question with a real answer, but a free-text
+    product code is not how to ask it: the follow-up step offers the shortlist the appliance's own
+    family implies, in model numbers off the label.
+    """
     d = defaults or {}
     # localKey is intentionally never prefilled; everything else is retained across an error re-show
     name = {"default": d[CONF_NAME]} if d.get(CONF_NAME) else {}
     return vol.Schema({
         vol.Required(CONF_HOST, default=d.get(CONF_HOST, vol.UNDEFINED)): str,
-        # Optional because the unit will tell us: one key-free UDP query to the host above returns
-        # the deviceId (it is the module's MAC) along with the uPlusId. Left fillable for the case
-        # where a module does not answer that query.
+        # Optional, and usually left alone: the appliance answers this itself. Kept in the schema
+        # rather than shown conditionally because a conditional field is not merely hidden -- the
+        # form then *rejects* anyone who supplies it, including the discovery paths that prefill it.
         vol.Optional(CONF_DEVICE_ID, default=d.get(CONF_DEVICE_ID, "")): str,
         vol.Required(CONF_LOCAL_KEY): str,
         vol.Optional(CONF_NAME, **name): str,
-        # Left blank unless the device's own is known. Filling in a default here would store one
-        # air conditioner's product code against another's, and nothing downstream could tell the
-        # difference -- it is the identifier a model, its rules and its real feature set are all
-        # looked up by, so a wrong one is worse than none.
-        #
-        # Accepts the model number printed on the appliance as well as a product code, because one
-        # of those is legible and the other is not. All 171 published model numbers are distinct, so
-        # the translation needs nothing else to disambiguate it.
-        vol.Optional(CONF_PRODUCT_CODE, default=d.get(CONF_PRODUCT_CODE, "")): str,
     })
 
 
@@ -631,6 +631,8 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                 if reported.uplus_id.strip("0"):
                     self._cloud_data.setdefault(CONF_UPLUS_ID, reported.uplus_id)
             if not device_id:
+                # The appliance did not answer, so the field appears now -- with the reason -- and
+                # not before, when it would only have looked like a required unknown.
                 errors["base"] = "device_id_required"
                 return self.async_show_form(
                     step_id="manual",
@@ -649,32 +651,27 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
             except CannotConnect:
                 errors["base"] = "cannot_connect"
             else:
-                title = user_input.get(CONF_NAME) or f"Haier {device_id}"
-                product_code = (user_input.get(CONF_PRODUCT_CODE) or "").strip()
-                # A model number off the appliance's label resolves to its product code offline,
-                # which is the identifier the rules, the fault names and the real feature set are
-                # keyed by. Accepting both means the legible answer works and the expert one still
-                # does; an entry that is neither is left exactly as typed rather than guessed at.
-                if product_code and product_code not in known_products():
-                    product_code = product_for_model(product_code) or product_code
                 self._pending_manual = {
                     CONF_HOST: host,
                     CONF_DEVICE_ID: device_id,
                     CONF_LOCAL_KEY: local_key,
                     CONF_LOCALKEY_VERSION: version,
-                    CONF_NAME: title,
-                    **({CONF_PRODUCT_CODE: product_code} if product_code else {}),
+                    CONF_NAME: user_input.get(CONF_NAME) or f"Haier {device_id}",
                 }
-                # The unit's own identifier narrows 171 published models to a couple of dozen, which
-                # is short enough to choose from -- so offer that list rather than leave the rules,
-                # fault names and feature set unavailable for want of one answer.
-                if not product_code:
-                    self._model_choices = models_for_uplus_id(
-                        self._cloud_data.get(CONF_UPLUS_ID)
-                    )
-                    if self._model_choices:
-                        return await self.async_step_model()
-                return await self._async_finish_manual()
+                # Which model this is gets its own step -- asked once, where the answer can be
+                # offered as a shortlist rather than typed blind. Except when it is already known:
+                # a signed-in install has been told outright by the device list, and this path is
+                # also where that flow lands when it needs a key or an address from the user. Never
+                # ask for something already answered better.
+                if self._cloud_data.get(CONF_PRODUCT_CODE):
+                    self._pending_manual[CONF_PRODUCT_CODE] = self._cloud_data[
+                        CONF_PRODUCT_CODE
+                    ]
+                    return await self._async_finish_manual()
+                self._model_choices = models_for_uplus_id(
+                    self._cloud_data.get(CONF_UPLUS_ID)
+                )
+                return await self.async_step_model()
 
         return self.async_show_form(
             step_id="manual",
@@ -716,9 +713,19 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         model's rules, and no rules locks nothing, which is the safe direction.
         """
         if user_input is not None:
-            picked = user_input.get(CONF_PRODUCT_CODE) or ""
+            picked = (user_input.get(CONF_PRODUCT_CODE) or "").strip()
             if picked and picked != _MODEL_SKIP:
-                self._pending_manual[CONF_PRODUCT_CODE] = self._model_choices.get(picked, "")
+                # The dropdown accepts typing as well as choosing, so an answer can arrive three
+                # ways: a model number from the shortlist, a model number that is not on it (the
+                # family identifier was missing or the appliance is newer than the shipped list),
+                # or a product code from someone who knows it. Resolve all three, and keep an
+                # unrecognised answer verbatim rather than discarding it -- it is still the best
+                # information anyone has about this unit, and a wrong lookup is not improved by
+                # forgetting the input.
+                resolved = self._model_choices.get(picked) or product_for_model(picked)
+                if not resolved and picked in known_products():
+                    resolved = picked
+                self._pending_manual[CONF_PRODUCT_CODE] = resolved or picked
             return await self._async_finish_manual()
         return self.async_show_form(
             step_id="model",

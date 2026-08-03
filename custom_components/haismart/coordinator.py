@@ -1540,6 +1540,15 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.hass.config_entries.async_update_entry(
             self.config_entry, data={**data, **learned}
         )
+        # Also apply it in memory. Writing to `entry.data` deliberately does not reload -- the
+        # coordinator writes there routinely and reloading on its own changes would drop every
+        # entity each time -- so without this the values just written would not be visible until
+        # the next restart, and diagnostics would report them missing while the entry held them.
+        # Whatever is *derived* from them still settles on that restart; this keeps the report
+        # honest in the meantime.
+        self.product_code = learned.get(CONF_PRODUCT_CODE, self.product_code)
+        self.uplus_id = learned.get(CONF_UPLUS_ID, self.uplus_id)
+        self.device_type = learned.get(CONF_DEVICE_TYPE, self.device_type)
         return True
 
     async def _async_account_published_model(self) -> dict[str, Any] | None:

@@ -1,6 +1,6 @@
 # Haismart Local — Penghawa dingin Haier dalam Home Assistant, tanpa awan
 
-**🌐 [English](../../README.md) · [Bahasa Indonesia](README.id.md) · [ไทย](README.th.md) · [Tiếng Việt](README.vi.md) · Bahasa Melayu**
+**🌐 [English](../../README.md) · [Bahasa Indonesia](README.id.md) · [ไทย](README.th.md) · [Tiếng Việt](README.vi.md) · Bahasa Melayu · [Filipino](README.fil.md)**
 
 Kawal penghawa dingin Haier anda daripada Home Assistant sepenuhnya melalui rangkaian anda sendiri.
 Anda log masuk **sekali sahaja** supaya integrasi ini dapat mengambil kunci penyulitan unit anda —
@@ -72,6 +72,39 @@ anda, mengambil kuncinya secara automatik, dan mencarinya dalam rangkaian anda.
 **Log masuk dengan Google atau Facebook?** Akaun tersebut tiada kata laluan. Cipta akaun Haier dengan
 e-mel dan kata laluan, **kongsi penghawa dingin kepada akaun itu** dalam aplikasi, kemudian guna
 akaun tersebut di sini.
+
+### Sudah ada kunci setempat unit ini?
+
+Laluan luar talian, dan kini ia hampir tidak bertanya apa-apa. Home Assistant mencari peranti Haier
+pada rangkaian anda, meminta setiap satu memperkenalkan diri, lalu menyenaraikan yang menjawab —
+anda cuma memilih milik anda dan menampal kuncinya. Alamat dan ID peranti datang daripada penghawa
+dingin itu sendiri.
+
+Selepas itu ia bertanya **model apa** yang anda miliki, sebagai senarai pendek model dalam keluarga
+produk unit anda, mengikut nombor yang tercetak pada labelnya. Menjawabnya berbaloi: ia membuka nama
+kerosakan, peraturan ketersediaan, dan senarai ciri sebenar unit anda. **Melangkaunya tidak
+mengapa** — peraturan yang dipersetujui oleh semua model dalam keluarga itu akan digunakan, dan itu
+tetap merangkumi kesemua nama kerosakan.
+
+> Kunci ialah satu-satunya perkara yang tidak akan diberikan oleh penghawa dingin. Jika anda tiada
+> simpanan — daripada penderia *Local key* pemasangan terdahulu, atau daripada sandaran — gunakan
+> **Log masuk** sahaja; cara itu mengambilkannya untuk anda.
+
+### Jika ia terus meminta kunci baharu
+
+Penghawa dingin yang masih berhubung dengan pelayan Haier diberi **kunci setempat baharu beberapa
+kali sehari**. Jika entri ditambah tanpa akaun Haier, Home Assistant tidak dapat mengambil yang
+baharu — selepas kunci bertukar, permulaan semula berikutnya menyebabkan peranti berhenti berfungsi
+dan kelihatan seperti kehilangan tetapannya. Menambahnya semula secara manual hanya bertahan sehingga
+pertukaran seterusnya.
+
+Dua cara menyelesaikannya buat selamanya, kedua-duanya elok dilakukan sementara semuanya masih
+berfungsi:
+
+- **Tambah akaun Haier anda** pada unit itu: Settings → Devices & Services → Haismart → peranti →
+  Reconfigure → *Add your Haier account*. Pertukaran kunci kemudian diambil secara automatik.
+- **Atau sekat capaian internet penghawa dingin** pada penghala anda. Kuncinya berhenti bertukar dan
+  yang anda miliki kekal sah. Kawalan setempat tidak terjejas dalam kedua-dua keadaan.
 
 ## Sebelum memasang
 

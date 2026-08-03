@@ -13,7 +13,7 @@ ships with it: keep a copy of that key and setup works with no internet at all._
 
 **🌐 Getting started in your language:** [Bahasa Indonesia](docs/i18n/README.id.md) ·
 [ไทย](docs/i18n/README.th.md) · [Tiếng Việt](docs/i18n/README.vi.md) ·
-[Bahasa Melayu](docs/i18n/README.ms.md)\
+[Bahasa Melayu](docs/i18n/README.ms.md) · [Filipino](docs/i18n/README.fil.md)\
 _The integration's own screens are translated into 30 languages — including Urdu, Hindi, Bengali,
 Tamil, Arabic and Persian — and follow whatever language you've set in Home Assistant. These docs are
 English-only; the pages above cover install and setup._

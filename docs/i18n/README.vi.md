@@ -1,6 +1,6 @@
 # Haismart Local — Điều hòa Haier trong Home Assistant, không cần đám mây
 
-**🌐 [English](../../README.md) · [Bahasa Indonesia](README.id.md) · [ไทย](README.th.md) · Tiếng Việt · [Bahasa Melayu](README.ms.md)**
+**🌐 [English](../../README.md) · [Bahasa Indonesia](README.id.md) · [ไทย](README.th.md) · Tiếng Việt · [Bahasa Melayu](README.ms.md) · [Filipino](README.fil.md)**
 
 Điều khiển điều hòa Haier của bạn từ Home Assistant hoàn toàn qua mạng nội bộ. Bạn chỉ đăng nhập
 **một lần** để tích hợp lấy được khóa mã hóa của máy — sau đó Home Assistant chỉ giao tiếp với điều
@@ -64,6 +64,35 @@ lấy khóa và tìm thấy máy trong mạng.
 **Đăng nhập bằng Google hoặc Facebook?** Những tài khoản đó không có mật khẩu. Hãy tạo một tài khoản
 Haier bằng email và mật khẩu, **chia sẻ điều hòa sang tài khoản đó** trong ứng dụng, rồi dùng tài
 khoản ấy ở đây.
+
+### Đã có khóa cục bộ của máy này?
+
+Đây là hướng ngoại tuyến, và giờ gần như không hỏi gì cả. Home Assistant tìm các thiết bị Haier
+trong mạng của bạn, yêu cầu từng máy tự giới thiệu, rồi liệt kê những máy đã trả lời — bạn chỉ việc
+chọn máy của mình và dán khóa vào. Địa chỉ và mã thiết bị đều lấy từ chính chiếc điều hòa.
+
+Sau đó nó hỏi bạn dùng **model nào**, dưới dạng một danh sách ngắn các model cùng dòng sản phẩm với
+máy của bạn, theo số in trên nhãn. Trả lời câu này rất đáng: nó mở khóa tên các lỗi, quy tắc khả
+dụng và danh sách tính năng thực tế của máy bạn. **Bỏ qua cũng không sao** — hệ thống sẽ dùng những
+quy tắc mà mọi model trong dòng đó đều thống nhất, và vẫn bao gồm đầy đủ tên các lỗi.
+
+> Khóa là thứ duy nhất điều hòa sẽ không đưa cho bạn. Nếu bạn không lưu khóa nào — từ cảm biến
+> *Local key* của lần cài trước, hoặc từ bản sao lưu — hãy dùng **Đăng nhập**; cách đó sẽ lấy khóa
+> giúp bạn.
+
+### Nếu máy cứ đòi khóa mới
+
+Điều hòa còn kết nối được tới máy chủ Haier sẽ được cấp **khóa cục bộ mới vài lần mỗi ngày**. Nếu
+thiết bị được thêm mà không có tài khoản Haier, Home Assistant không thể lấy khóa mới — sau khi khóa
+đổi, lần khởi động lại kế tiếp sẽ khiến máy ngừng hoạt động và trông như đã mất cấu hình. Thêm lại
+thủ công chỉ dùng được đến lần đổi khóa tiếp theo.
+
+Hai cách xử lý dứt điểm, nên làm ngay khi mọi thứ còn chạy tốt:
+
+- **Thêm tài khoản Haier của bạn** vào máy đó: Settings → Devices & Services → Haismart → thiết bị →
+  Reconfigure → *Add your Haier account*. Khóa đổi sẽ được lấy tự động.
+- **Hoặc chặn điều hòa truy cập internet** trên bộ định tuyến. Khóa sẽ ngừng thay đổi và khóa bạn
+  đang có vẫn hợp lệ. Điều khiển cục bộ không bị ảnh hưởng trong cả hai trường hợp.
 
 ## Trước khi cài
 

@@ -1,6 +1,6 @@
 # Haismart Local — AC Haier di Home Assistant, tanpa cloud
 
-**🌐 [English](../../README.md) · Bahasa Indonesia · [ไทย](README.th.md) · [Tiếng Việt](README.vi.md) · [Bahasa Melayu](README.ms.md)**
+**🌐 [English](../../README.md) · Bahasa Indonesia · [ไทย](README.th.md) · [Tiếng Việt](README.vi.md) · [Bahasa Melayu](README.ms.md) · [Filipino](README.fil.md)**
 
 Kendalikan AC Haier Anda dari Home Assistant sepenuhnya melalui jaringan Anda sendiri. Anda cukup
 masuk **satu kali** agar integrasi ini dapat mengambil kunci enkripsi unit Anda — setelah itu Home
@@ -64,6 +64,38 @@ secara otomatis, dan menemukannya di jaringan Anda.
 
 **Masuk dengan Google atau Facebook?** Akun tersebut tidak punya kata sandi. Buat akun Haier dengan
 email dan kata sandi, **bagikan AC ke akun itu** di aplikasi, lalu gunakan akun tersebut di sini.
+
+### Sudah punya kunci lokal unit ini?
+
+Jalur luring, dan kini hampir tidak menanyakan apa pun. Home Assistant mencari perangkat Haier di
+jaringan Anda, meminta masing-masing memperkenalkan diri, lalu menampilkan yang menjawab — Anda
+tinggal memilih milik Anda dan menempelkan kuncinya. Alamat dan ID perangkat diambil dari AC itu
+sendiri.
+
+Setelah itu akan ditanyakan **model apa** yang Anda miliki, berupa daftar pendek model-model dalam
+keluarga produk unit Anda, menurut nomor yang tercetak pada labelnya. Menjawabnya berguna: itu
+membuka nama-nama kerusakan, aturan ketersediaan, dan daftar fitur asli unit Anda. **Melewatinya
+tidak masalah** — aturan yang disepakati semua model dalam keluarga tersebut akan dipakai, dan itu
+tetap mencakup seluruh nama kerusakan.
+
+> Kunci adalah satu-satunya hal yang tidak akan diberikan oleh AC. Jika Anda tidak menyimpannya —
+> dari sensor *Local key* pemasangan sebelumnya, atau dari cadangan — gunakan **Masuk** saja; cara
+> itu mengambilkannya untuk Anda.
+
+### Kalau AC terus meminta kunci baru
+
+AC yang masih terhubung ke server Haier menerima **kunci lokal baru beberapa kali sehari**. Bila
+entri ditambahkan tanpa akun Haier, Home Assistant tidak dapat mengambil yang baru — sesudah kunci
+berganti, mulai ulang berikutnya membuat perangkat berhenti bekerja dan tampak seperti kehilangan
+konfigurasi. Menambahkannya ulang secara manual hanya bertahan sampai pergantian berikutnya.
+
+Dua cara menyelesaikannya untuk selamanya, keduanya sebaiknya dilakukan selagi semuanya masih
+berfungsi:
+
+- **Tambahkan akun Haier Anda** ke unit tersebut: Settings → Devices & Services → Haismart →
+  perangkat → Reconfigure → *Add your Haier account*. Pergantian kunci lalu diambil otomatis.
+- **Atau blokir akses internet AC** di router Anda. Kuncinya berhenti berubah dan yang Anda miliki
+  tetap berlaku. Kendali lokal tidak terpengaruh dalam kedua kasus.
 
 ## Sebelum memasang
 

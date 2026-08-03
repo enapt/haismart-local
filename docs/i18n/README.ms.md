@@ -30,8 +30,11 @@ berada di tempat yang betul.
 mendengar.
 
 Unit yang disahkan berfungsi disenaraikan dalam [`DEVICES.md`](../../DEVICES.md). Model anda tiada di
-situ? Besar kemungkinan ia tetap berfungsi — integrasi ini membina dirinya daripada perihalan model
-yang diberikan oleh profil awan penghawa dingin anda sendiri, bukan daripada jadual tetap setiap model.
+situ? Besar kemungkinan ia tetap berfungsi, dan bukan secara kebetulan: integrasi ini sudah membawa
+perihalan rasmi **kesemua 171 penghawa dingin** dalam rangkaian ini — tetapan yang ada pada setiap
+model, nama bagi setiap kerosakan, dan kawalan mana yang diabaikan dalam keadaan tertentu — jadi ia
+menyediakan dirinya sendiri untuk unit yang belum pernah kami lihat. Jika akaun anda turut boleh
+memerihalkan unit itu, kedua-duanya digabungkan, bukan salah satu dipilih.
 
 ## Apa yang anda dapat
 

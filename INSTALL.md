@@ -75,8 +75,11 @@ via zeroconf, since it listens for `_cae._udp`). Pick one path:
   network yet (then find it in your router's client list).
   **Google/Facebook owners** (no password): create a throwaway email/password Haier account, **share your
   AC(s) to it** in the app, and log in with that account here.
-- **Manual:** host + device ID + `localKey` directly (no cloud; fully offline, but a key rotation then needs a
-  manual re-enter instead of self-healing).
+- **Offline ("I already have this unit's local key"):** Home Assistant scans the network for Haier
+  appliances and asks each to identify itself, so the address and device ID are not typed — you pick
+  your unit and paste the key, then confirm which model it is from a shortlist of its product family
+  (skippable). No cloud at all; a key rotation then needs a manual re-enter instead of self-healing,
+  which is moot once the unit is firewalled since the key stops rotating.
 
 The flow validates by doing a live read, then creates the entities.
 
@@ -110,7 +113,8 @@ can't rotate and your stored key stays valid indefinitely. This is **optional** 
 
 > **Before blocking:** note each AC's current key/version — from HA go **Settings → Devices & Services →
 > Haismart → the device → Diagnostics** (redacted), or run `probe_localkey_version(ip, deviceId)`. Keep a
-> copy as your escape hatch; you can always re-add via the **manual** path (host + deviceId + key), no cloud.
+> copy as your escape hatch; you can always re-add via the **offline** path — Home Assistant finds the
+> unit on the network itself, so only the key is needed — with no cloud involved.
 
 ### Option A — block the gateway address (recommended)
 
@@ -195,9 +199,10 @@ locally forever. To be fully immune:
    those safe — the key grants ongoing local control. (The **Model ID** sensor shows the same identifier
    without exposing the key, and is on by default; both are in your backups either way, since the values
    are stored with the integration's settings.)
-2. **Onboard each AC via the config-flow `manual` path** (host + deviceId + key from the backup). Manual needs
+2. **Onboard each AC via the config-flow offline path** (pick the unit from the network scan, paste the
+   key from the backup). It needs
    **zero cloud** — no login, no gateway — so nothing depends on Haier being up. The model ID it needs to
-   decode your unit correctly is read from the air conditioner itself, so a manual setup is now as accurate
+   decode your unit correctly is read from the air conditioner itself, so an offline setup is now as accurate
    as one done through an account.
 3. **Firewall the ACs** (§4) so the key never rotates.
 
@@ -216,7 +221,7 @@ as the guaranteed floor, flash **ESPHome** onto the module.
   missing and a repair notification has appeared, the AC's **report layout is not one we know yet**
   — the key is fine; please report the model (see [`docs/new-model.md`](docs/new-model.md)).
   Otherwise it is a **stale `localKey`** — it
-  rotates server-side. The login/cloud paths auto-refetch it; the manual path will prompt a reauth (and raise
+  rotates server-side. The login/cloud paths auto-refetch it; the offline path will prompt a reauth (and raise
   a repair suggesting you add account creds so it self-heals next time).
 
   If it persists, turn on debug logging for the integration:

@@ -28,8 +28,11 @@ yang tepat.
 **Pemeriksaan cepat:** jika `nc -z <ip-ac-anda> 56800` berhasil, protokol lokalnya aktif.
 
 Unit yang sudah dipastikan bekerja ada di [`DEVICES.md`](../../DEVICES.md). Model Anda tidak
-tercantum? Kemungkinan besar tetap berfungsi — integrasi ini menyusun dirinya dari deskripsi model
-yang disediakan profil cloud AC Anda sendiri, bukan dari tabel per-model yang ditulis manual.
+tercantum? Kemungkinan besar tetap berfungsi, dan bukan karena kebetulan: integrasi ini sudah
+membawa deskripsi resmi **seluruh 171 AC** dalam rangkaian ini — setelan apa yang dimiliki tiap
+model, nama tiap kerusakan, dan kontrol mana yang diabaikan dalam kondisi tertentu — sehingga ia
+menyiapkan dirinya sendiri untuk unit yang belum pernah kami lihat. Jika akun Anda juga bisa
+menjelaskan unit tersebut, keduanya digabungkan, bukan dipilih salah satu.
 
 ## Apa yang Anda dapatkan
 

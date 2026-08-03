@@ -7,7 +7,9 @@
 [![Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/EFfknne8Bm)
 
 _Control your Haier air conditioner from Home Assistant entirely over your own network. You sign in
-once so the integration can fetch your unit's key — after that it talks only to the AC, on your LAN._
+once so the integration can fetch your unit's key — after that it talks only to the AC, on your LAN.
+Everything else it needs, including the published details of **every air conditioner in the range**,
+ships with it: keep a copy of that key and setup works with no internet at all._
 
 **🌐 Getting started in your language:** [Bahasa Indonesia](docs/i18n/README.id.md) ·
 [ไทย](docs/i18n/README.th.md) · [Tiếng Việt](docs/i18n/README.vi.md) ·
@@ -57,8 +59,11 @@ work fine — this is used daily on an account registered outside South-East Asi
 | SmartAir2 / Smart Clima (older units) | ❌ No — same port, older unencrypted protocol | [oxystin/homebridge-haier-air-conditioner](https://github.com/oxystin/homebridge-haier-air-conditioner) |
 
 **Confirmed working units** are listed in [`DEVICES.md`](DEVICES.md). Yours not there? It will very
-likely still work — the integration builds itself from the model description your AC's own cloud
-profile provides, rather than from hard-coded per-model tables. If something decodes oddly, that's a
+likely still work, and not by luck: the integration carries the published description of **all 171
+air conditioners in this range** — which settings each model has, what its faults are called, and
+which controls it ignores in which state — so it configures itself for a unit nobody here has ever
+seen. Where your own account can describe your appliance, that is used too, and the two are combined
+rather than one being preferred. If something decodes oddly, that's a
 [great issue to open](#before-you-open-an-issue), and usually a quick fix.
 
 **Quick check:** if `nc -z <your-ac-ip> 56800` succeeds, the local protocol is listening.
@@ -250,15 +255,27 @@ Then pick one of two paths:
 
 **Sign in (recommended).** Enter your Haier account email (or phone) and password, and the country
 your **account** was registered in. The integration lists your air conditioners, fetches the chosen
-one's key automatically, and finds it on your network — you won't paste anything.
+one's key automatically, finds it on your network, and reads which model it is — you won't paste or
+choose anything.
 
 > The country field is the **phone dialling code of the country your Haier account was created in**
 > — not where the AC is installed, and not necessarily where you live now. Getting it wrong is the
 > single most common setup failure, because Haier's server reports it as "account not registered",
 > which reads like a wrong password.
 
-**Manual.** Host + device ID + local key, entered directly. Completely offline — no account needed.
-Use this if you already have a key (from the *Local key* diagnostic sensor, or a backup).
+**I already have this unit's local key.** The offline route, and it now asks for almost nothing.
+Home Assistant looks for Haier appliances on your network, asks each one to identify itself, and
+lists what answered — you pick yours and paste the key. The address and the device ID come from the
+appliance.
+
+It then asks **which model** you have, as a short list of the models sharing your unit's product
+family, by the number printed on its label. That is worth answering: it unlocks the fault names, the
+availability rules and your unit's real feature list. **Skipping is fine** — the rules every model in
+that family agrees on are used instead, which still covers every fault name.
+
+> The key is the one thing an appliance will never hand over. If you do not have one saved — from
+> the *Local key* diagnostic sensor of a previous install, or a backup — sign in instead; that
+> fetches it for you.
 
 ## Automation examples
 
@@ -291,8 +308,22 @@ automation:
 
 ## Going fully cloud-independent
 
-Everything already runs locally after setup. The one remaining cloud dependency is that Haier's
-server can **rotate** your unit's local key, which the integration then re-fetches.
+**The local key is the only thing that has to come from Haier — everything else ships with the
+integration or comes from the appliance.** That is worth stating plainly, because it is what makes
+the rest of this section work rather than being a compromise:
+
+| what setting up an appliance needs | where it comes from |
+|---|---|
+| its address on your network | your network |
+| its device ID | the appliance |
+| how to read its reports | ships with the integration |
+| its faults, rules and real feature list | ships with the integration — all 171 published models |
+| which model it is | the number on its label, matched offline |
+| its temperatures, modes and telemetry | read from the appliance |
+| **its local key** | **Haier — once** |
+
+So the one remaining cloud dependency is that Haier's server can **rotate** the key, which the
+integration then re-fetches.
 
 If you'd rather your AC never phoned home at all:
 
@@ -305,7 +336,8 @@ If you'd rather your AC never phoned home at all:
    features called "MAC filtering" or "IP filtering" — they often cut the device off your LAN entirely
    rather than just from the internet.
 3. The key can no longer rotate, so your stored key stays valid indefinitely. You can always re-add
-   the unit later through the **Manual** path, with no cloud involved at all.
+   the unit later through the offline path with no cloud involved at all — and because the key is
+   frozen, the copy you archived in step 1 is still the right one however long has passed.
 4. **Check that it worked.** Each AC has a **Cloud connection** diagnostic sensor. It asks the AC
    itself — over a local, unauthenticated query that never contacts Haier — whether it can still
    reach the cloud. Once your block is in place the sensor turns **off**, and off is the state you

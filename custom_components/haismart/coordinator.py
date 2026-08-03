@@ -36,6 +36,7 @@ from haismart_extractor.cloud import (
     get_public_device_config,
 )
 from haismart_hrdp import (
+    EXTENDED_STATUS_FRAME_TYPES,
     GRSETDAC_FIELDS,
     GRSETDAC_MODEL_AUTHORIZED,
     STATUS_LAYOUTS,
@@ -48,6 +49,7 @@ from haismart_hrdp import (
     async_send_op,
     build_epp_frame,
     constraint_commands,
+    describe_epp_frame,
     extended_status_epp_frame,
     grsetdac_baseline_from_status,
     grsetdac_op_frame,
@@ -307,6 +309,11 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # None = not yet known; settled on the first cycle that produces a status report.
         self.supports_extended: bool | None = None
         self._ask_extended = True
+        # Which published form of the extended query to send. A unit that stays silent
+        # may not lack telemetry -- it may only be of the generation that asks for it
+        # under a different frame type -- so the forms are tried in turn before the
+        # capability is written off. See EXTENDED_STATUS_FRAME_TYPES.
+        self._extended_form = 0
         # consecutive cycles that carried status but no extended report (see EXTENDED_MISSES)
         self._extended_misses = 0
         # The last extended reading actually reported, with when it arrived and the on/off state it
@@ -433,13 +440,26 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     # Same reasoning (and the same threshold) as UDISCOVERY_MISSES.
                     self._extended_misses += 1
                     if self._extended_misses >= EXTENDED_MISSES:
-                        self.supports_extended = False
-                        self._ask_extended = False
-                        _LOGGER.debug(
-                            "%s did not answer the extended-status query in %d cycles; the power "
-                            "and compressor sensors will stay unavailable for this unit",
-                            self.host, EXTENDED_MISSES,
-                        )
+                        if self._extended_form + 1 < len(EXTENDED_STATUS_FRAME_TYPES):
+                            # Silence may mean the query was asked in the form this generation does
+                            # not publish. Try the next one from a clean count before deciding.
+                            self._extended_form += 1
+                            self._extended_misses = 0
+                            _LOGGER.debug(
+                                "%s did not answer the extended-status query in %d cycles; "
+                                "retrying with frame type %#04x",
+                                self.host, EXTENDED_MISSES,
+                                EXTENDED_STATUS_FRAME_TYPES[self._extended_form],
+                            )
+                        else:
+                            self.supports_extended = False
+                            self._ask_extended = False
+                            _LOGGER.debug(
+                                "%s answered none of the %d published forms of the extended-status "
+                                "query; the power and compressor sensors will stay unavailable for "
+                                "this unit",
+                                self.host, len(EXTENDED_STATUS_FRAME_TYPES),
+                            )
                 self._apply_telemetry(state, telemetry)
                 state.update(alarms)
                 state["features"] = self._feature_states(blob)
@@ -485,7 +505,10 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         async with self._session:
             return await async_read_status(
                 self.host, self.device_id, self._local_key, timeout=READ_TIMEOUT,
-                extra_request=extended_status_epp_frame() if self._ask_extended else None,
+                extra_request=(
+                    extended_status_epp_frame(EXTENDED_STATUS_FRAME_TYPES[self._extended_form])
+                    if self._ask_extended else None
+                ),
             )
 
     async def _async_rediscover_host(self) -> bool:
@@ -709,12 +732,17 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 self.localkey_version,
             )
             return
+        # Some of what arrives is a kind we know and deliberately do not read. Naming those keeps
+        # the log about the frames nobody has identified, which is what an unfamiliar model looks
+        # like and the only reason this message exists.
+        known = [d for b in blobs if (d := describe_epp_frame(b))]
         _LOGGER.debug(
             "%s: localKey is good (%d payload(s) decrypted) but no full-status report decoded — "
-            "unrecognised frame (no 2715 signature, or shorter than the attribute vector). "
+            "unrecognised frame (no 2715 signature, or shorter than the attribute vector).%s "
             "Frames: %s",
             self.device_id,
             len(blobs),
+            f" Recognised but not read: {', '.join(sorted(set(known)))}." if known else "",
             "; ".join(
                 f"len={len(b)} {b[:_LOG_FRAME_BYTES].hex()}"
                 f"{'…' if len(b) > _LOG_FRAME_BYTES else ''}"

@@ -359,6 +359,39 @@ _EPP_FRAME_TYPE_OFFSET = 9       # FF FF | len | flags | 5 reserved | frameType 
 EPP_FRAME_TYPE_REFUSED = 0x03
 
 
+def epp_command(blob: bytes) -> bytes | None:
+    """The two-byte EPP command a frame carries, or ``None`` if it holds no EPP frame.
+
+    Frame types that take no command -- the alarm query and the alarm stop -- have no meaningful
+    two bytes here, so read this together with :func:`epp_frame_type` rather than on its own.
+    """
+    at = blob.find(EPP_FRAME_HEAD)
+    if at < 0 or len(blob) < at + 12:
+        return None
+    return bytes(blob[at + 10:at + 12])
+
+
+def describe_epp_frame(blob: bytes) -> str | None:
+    """A short name for a frame we recognise but do not decode, or ``None`` if it is unfamiliar.
+
+    Used when nothing decoded, to separate "the unit sent something we know about and ignore" from
+    "the unit sent something nobody here has seen". The first is not a fault and should not read
+    like one in a log; the second is the interesting case and is what an unfamiliar model looks
+    like.
+    """
+    frame_type = epp_frame_type(blob)
+    if frame_type is None:
+        return None
+    if frame_type == EPP_FRAME_TYPE_REFUSED:
+        return "a refusal"
+    if frame_type == EPP_FRAME_TYPE_STOP_ALARM:
+        return "an alarm-stop frame"
+    command = epp_command(blob)
+    if command == EPP_CMD_CHANGED_PARAMS:
+        return "a changed-parameters report (6c01), which this integration does not read"
+    return None
+
+
 def epp_frame_type(blob: bytes) -> int | None:
     """The frame-type byte of the EPP frame inside ``blob``, or ``None`` if it carries no frame."""
     at = blob.find(EPP_FRAME_HEAD)
@@ -403,15 +436,39 @@ def getallproperty_epp_frame() -> bytes:
     return build_epp_frame(0x01, EPP_CMD_GETALLPROPERTY)
 
 
-def extended_status_epp_frame() -> bytes:
-    """The read-only extended-status query ``ff ff 0a 00*6 01 4d fe 56``.
+# The frame types under which the extended-status query is published, in the order to try them.
+# Most models ask for it the way every other command is sent, under the control frame type. One
+# generation -- the metering inverters -- publishes the same command under 0x60 instead, and a unit
+# of that generation simply says nothing to the usual form. Nothing distinguishes "not supported"
+# from "asked the wrong way" on the wire, so both are tried before a unit is written off as having
+# no telemetry.
+EXTENDED_STATUS_FRAME_TYPES: tuple[int, ...] = (0x01, 0x60)
 
-    Also changes nothing. Units that support it answer with an extra report carrying the live
+# Declared by every published model and deliberately not sent: it clears the unit's current fault
+# rather than reading anything, and nothing here has a reason to.
+EPP_FRAME_TYPE_STOP_ALARM = 0x09
+
+# A changed-parameters report. Models that publish it list, per attribute, which of its fields the
+# frame carries; a device sends one when something changes instead of a whole status report. No unit
+# met so far sends it, and it is named here so that a frame arriving under it is recognised as a
+# known kind rather than logged as undecodable.
+EPP_CMD_CHANGED_PARAMS = b"\x6c\x01"
+
+
+def extended_status_epp_frame(frame_type: int = EXTENDED_STATUS_FRAME_TYPES[0]) -> bytes:
+    """The read-only extended-status query ``ff ff 0a 00*6 <frameType> 4d fe <sum>``.
+
+    Changes nothing. Units that support it answer with an extra report carrying the live
     power/current/compressor figures (:func:`parse_extended_status`) *in addition to* the ordinary
-    status report, so one request returns both. Units that don't support it answer this frame with a
-    short refusal and still send normal status — hence it is safe to ask unconditionally.
+    status report, so one request returns both. Units that don't support it answer with a short
+    refusal and still send normal status — hence it is safe to ask unconditionally.
+
+    ``frame_type`` selects between the forms in :data:`EXTENDED_STATUS_FRAME_TYPES`. A caller that
+    gets no extended report should try the next one before concluding the unit has no telemetry:
+    the difference is between generations of the same product line, not between capable and
+    incapable units, and asking the wrong way looks exactly like asking a unit that cannot answer.
     """
-    return build_epp_frame(0x01, EPP_CMD_EXTENDED_STATUS)
+    return build_epp_frame(frame_type, EPP_CMD_EXTENDED_STATUS)
 
 
 # CONFIRMED inbound report-envelope prefix: bytes [0:78] of the decrypted status blob, byte-identical

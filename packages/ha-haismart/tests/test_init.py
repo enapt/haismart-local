@@ -151,10 +151,12 @@ async def test_extended_status_creates_power_sensors(hass: HomeAssistant, mock_u
 async def test_unit_without_extended_status_stops_asking(
     hass: HomeAssistant, mock_uss, freezer
 ) -> None:
-    """A unit that ignores the extended query keeps working, and we stop appending the frame.
+    """A unit that ignores every form of the extended query keeps working, and we stop asking.
 
-    It takes EXTENDED_MISSES cycles rather than one, because a single dropped reply must not be
-    mistaken for a unit that has no extended report at all.
+    It takes EXTENDED_MISSES cycles per published form rather than one cycle in total: a single
+    dropped reply must not be mistaken for a unit with no extended report, and silence to one form
+    must not be mistaken for silence to the command, since one generation publishes it under a
+    different frame type.
 
     The sensors are still created (so they appear if a firmware update ever answers) but report
     unknown rather than a made-up zero.
@@ -168,7 +170,9 @@ async def test_unit_without_extended_status_stops_asking(
     power = hass.states.get("sensor.downstairs_ac_power")
     assert power is not None and power.state == "unknown"
 
-    for _ in range(EXTENDED_MISSES - 1):
+    from custom_components.haismart.coordinator import EXTENDED_STATUS_FRAME_TYPES
+
+    for _ in range(EXTENDED_MISSES * len(EXTENDED_STATUS_FRAME_TYPES) - 1):
         await _tick(hass, freezer)
     assert coordinator.supports_extended is False
 
@@ -2647,3 +2651,35 @@ async def test_shipped_rules_are_not_reached_when_the_catalogue_answers(
 
     merged = _json.loads(entry.data[CONF_DIGITAL_MODEL])
     assert [a["name"] for a in merged["alarms"]] == ["F1"]   # the live answer, not the 52 shipped
+
+
+async def test_a_silent_unit_is_asked_the_other_published_way_first(
+    hass: HomeAssistant, mock_uss, freezer
+) -> None:
+    """Before giving up on telemetry, the query is re-sent under the other published frame type.
+
+    Two generations of the same product line publish this command differently, and on the wire a
+    unit of the second generation looks exactly like a unit that has none: it simply says nothing.
+    Concluding "no telemetry" from silence to one form would take the power and compressor sensors
+    away from a unit that would have answered the other.
+    """
+    from custom_components.haismart.coordinator import EXTENDED_STATUS_FRAME_TYPES
+
+    mock_uss.read.return_value = [make_status_frame()]        # never answers the extended query
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data
+
+    def forms_asked():
+        return [
+            call.kwargs["extra_request"][9]
+            for call in mock_uss.read.await_args_list
+            if call.kwargs.get("extra_request")
+        ]
+
+    assert set(forms_asked()) == {EXTENDED_STATUS_FRAME_TYPES[0]}
+
+    for _ in range(EXTENDED_MISSES):
+        await _tick(hass, freezer)
+
+    assert coordinator.supports_extended is None             # not written off yet
+    assert EXTENDED_STATUS_FRAME_TYPES[1] in forms_asked()   # the other form was tried

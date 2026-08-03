@@ -62,6 +62,7 @@ from .udiscovery import (
 )
 from .uss import (
     EPP_CMD_GRSETDAC,
+    EXTENDED_STATUS_FRAME_TYPES,
     GRSETDAC_ALLOWED_VALUES,
     GRSETDAC_ENUMS,
     GRSETDAC_FIELDS,
@@ -84,6 +85,7 @@ from .uss import (
     check_hello_resp,
     decode_message,
     derive_status_layout,
+    describe_epp_frame,
     encode_message,
     extended_status_epp_frame,
     getallproperty_epp_frame,
@@ -170,6 +172,8 @@ __all__ = [
     "reply_refused",
     # CONTROL / write
     "build_epp_frame",
+    "EXTENDED_STATUS_FRAME_TYPES",
+    "describe_epp_frame",
     "extended_status_epp_frame",
     "getallproperty_epp_frame",
     "build_cae_op_request",         # outbound CAE op envelope

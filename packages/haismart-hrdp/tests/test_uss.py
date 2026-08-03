@@ -2087,3 +2087,45 @@ def test_a_refusal_alongside_a_status_report_does_not_mask_it():
     # which this pins by showing the status blob still parses on its own
     assert uss.parse_full_status(REAL_STATUS) is not None
     assert uss.reply_refused([REAL_STATUS, bytes(refusal)]) is True
+
+
+def test_the_extended_query_has_two_published_forms() -> None:
+    """The same command, sent under two frame types, because two generations publish it differently.
+
+    Only the frame-type byte and the checksum differ -- the command itself is identical -- so a unit
+    that answers neither really has no telemetry, while a unit asked only the first way may simply
+    be of the generation that publishes the second.
+    """
+    first, second = (uss.extended_status_epp_frame(ft) for ft in uss.EXTENDED_STATUS_FRAME_TYPES)
+
+    assert uss.EXTENDED_STATUS_FRAME_TYPES == (0x01, 0x60)
+    assert first == bytes.fromhex("ffff0a000000000000014dfe56")
+    assert second == bytes.fromhex("ffff0a000000000000604dfeb5")
+    assert first[10:12] == second[10:12] == uss.EPP_CMD_EXTENDED_STATUS
+    assert uss.epp_frame_type(first) == 0x01
+    assert uss.epp_frame_type(second) == 0x60
+    assert first[:9] == second[:9]              # everything before the frame type is the same
+
+
+def test_the_default_form_is_the_one_our_hardware_answers() -> None:
+    """Called with no argument it must still produce the frame the confirmed units reply to."""
+    assert uss.extended_status_epp_frame() == uss.extended_status_epp_frame(0x01)
+
+
+def test_frames_we_know_of_but_do_not_read_are_named() -> None:
+    """A frame we recognise and ignore should not be logged as if nobody had ever seen it.
+
+    The undecodable log exists to identify unfamiliar models. Three kinds are known and deliberately
+    unread -- a refusal, an alarm-stop, and the changed-parameters report some models publish -- and
+    naming them keeps that log about the frames that are actually a mystery.
+    """
+    assert "refusal" in uss.describe_epp_frame(uss.build_epp_frame(0x03, b"\x4d\x01"))
+    assert "alarm-stop" in uss.describe_epp_frame(
+        uss.build_epp_frame(uss.EPP_FRAME_TYPE_STOP_ALARM, b"\x00\x00")
+    )
+    assert "6c01" in uss.describe_epp_frame(
+        uss.build_epp_frame(0x06, uss.EPP_CMD_CHANGED_PARAMS)
+    )
+    # an ordinary status report is not "recognised but unread" -- it is read
+    assert uss.describe_epp_frame(uss.build_epp_frame(0x06, b"\x6d\x01")) is None
+    assert uss.describe_epp_frame(b"not a frame at all") is None

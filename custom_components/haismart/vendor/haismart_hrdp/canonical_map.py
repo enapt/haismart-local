@@ -12,10 +12,12 @@ project supports — including the two it never had a published model for.
 
 Two things follow that are worth stating plainly, because both look like coincidences and are not.
 
-**The displacement is the media block, counted.** The voice/media attributes occupy words 1 to 18
-and the climate block begins at word 20; a model without that hardware starts its report at word 1,
-so it reads exactly 19 words earlier. ``-19`` is that subtraction, not a constant anyone fitted to
-observations. A test pins the two together so a regenerated map cannot leave them disagreeing.
+**The displacement is the length of the span a climate-only model omits.** The climate block begins
+at word 20, so a model that starts its report at word 1 reads exactly 19 words earlier; ``-19`` is
+that subtraction, not a constant anyone fitted to observations. The omitted span is the voice/media
+section -- 26 attributes -- but it is not 19 words *of* attributes: they occupy words 1 to 18, word 6
+is unused inside the run, and word 19 is empty. Counting media words would give 18 and be wrong. A
+test pins the constant to the boundary so a regenerated map cannot leave the two disagreeing.
 
 **Every published air-conditioner model is a subset of this map — there are no variants.** Taking
 the richest published model as the reference, all the others are contained in it exactly: same bits,

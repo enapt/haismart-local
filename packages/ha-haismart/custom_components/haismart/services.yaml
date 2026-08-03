@@ -1,0 +1,48 @@
+set_cloud_attribute:
+  name: Set cloud attribute
+  description: >-
+    Write a device attribute over the Haier cloud MQTT channel, by its digital-model name
+    (e.g. onOffStatus, targetTemperature). Works even when the unit is unreachable on the LAN
+    but online through the cloud.
+  fields:
+    device_id:
+      name: Device ID
+      description: The haismart device id (e.g. the AC's module MAC).
+      required: true
+      example: "A1B2C3D4E5F6"
+      selector:
+        text:
+    attribute:
+      name: Attribute
+      description: The digital-model attribute name to write.
+      required: true
+      example: "onOffStatus"
+      selector:
+        text:
+    value:
+      name: Value
+      description: The value to write (numbers, strings, booleans).
+      required: true
+      selector:
+        text:
+
+get_cloud_attribute:
+  name: Get cloud attribute
+  description: >-
+    Read a device attribute over the Haier cloud MQTT channel. Returns the gateway response,
+    which carries errNo (0 = success) and the attribute value on success.
+  fields:
+    device_id:
+      name: Device ID
+      description: The haismart device id (e.g. the AC's module MAC).
+      required: true
+      example: "A1B2C3D4E5F6"
+      selector:
+        text:
+    attribute:
+      name: Attribute
+      description: The digital-model attribute name to read.
+      required: true
+      example: "onOffStatus"
+      selector:
+        text:

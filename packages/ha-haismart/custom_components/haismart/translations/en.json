@@ -328,6 +328,9 @@
     "control_failed": {
       "message": "Could not send the command to {name}: {error}"
     },
+    "cloud_not_configured": {
+      "message": "{name} has no Haier account credentials stored, so cloud control is unavailable. Open the device and choose **Reconfigure → Add Haier account**."
+    },
     "control_rejected": {
       "message": "{name} does not accept that setting: {error}"
     },

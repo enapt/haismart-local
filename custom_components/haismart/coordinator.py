@@ -25,6 +25,9 @@ from functools import partial
 from typing import Any
 
 from haismart_extractor import (
+    CloudControlClient,
+    CloudControlCreds,
+    CloudControlError,
     GatewayCreds,
     GatewayError,
     HaierCloud,
@@ -86,6 +89,7 @@ from .const import (
     CONF_REFRESH_TOKEN,
     CONF_SCAN_INTERVAL,
     CONF_UPLUS_ID,
+    CONF_USER_ID,
     CONF_ZONE_INFO,
     DEFAULT_PRODUCT_CODE,
     DEFAULT_SCAN_INTERVAL,
@@ -106,6 +110,9 @@ from .discovery import async_find_host
 
 # Socket timeout for the cloud MQTT-gateway localKey fetch (TLS connect + one round-trip).
 GATEWAY_TIMEOUT = 8.0
+
+# Per-request timeout for the cloud control channel (one TLS connect + one round-trip).
+CLOUD_CONTROL_TIMEOUT = 8.0
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -662,7 +669,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "product_code": self.product_code or "unknown",
             },
             learn_more_url=(
-                "https://github.com/enapt/haismart-local/blob/main/docs/new-model.md"
+                "https://github.com/cantruchd/haismart/blob/main/docs/new-model.md"
             ),
         )
 
@@ -811,6 +818,11 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 translation_placeholders={"name": self.config_entry.title, "error": str(err)},
             ) from err
         except (OSError, RuntimeError, TimeoutError) as err:
+            # The unit stopped answering on the LAN (moved network, off-site but still on the
+            # cloud). Try the cloud control channel before giving up — a change the user asked for
+            # is worth a cloud round trip when the LAN op failed.
+            if await self._async_try_cloud_fallback(changes, err):
+                return
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="control_failed",
@@ -1330,3 +1342,162 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.config_entry, data={**data, **updates}
         )
         return True
+
+    async def _async_cloud_creds(self) -> CloudControlCreds | None:
+        """Fully-derived cloud-control CONNECT credentials from the entry, or None if the entry
+        has no account credentials (manual onboarding) to mint them from.
+
+        Mirrors ``_async_gateway_refresh``: the clientId comes from the stored uSDK CLIENTID, a
+        fresh accessToken is minted from the durable refreshToken, and the uHome userId + token
+        build the CONNECT username/password pair (`haismart_extractor.cloud_control`).
+        """
+        data = self.config_entry.data
+        usdk_client_id = data.get(CONF_CLOUD_CLIENT_ID)
+        user_id = data.get(CONF_USER_ID)
+        if not (usdk_client_id and user_id):
+            return None
+        access_token = data.get(CONF_ACCESS_TOKEN) or ""
+        refresh_token = data.get(CONF_REFRESH_TOKEN)
+        if refresh_token:
+            try:
+                cloud = HaierCloud(
+                    replace(SEA_APP_CREDENTIALS, client_id=usdk_client_id),
+                    access_token,
+                    zone_info=data.get(CONF_ZONE_INFO, "0"),
+                    transport=async_cloud_transport(self.hass),
+                )
+                access_token = (await cloud.refresh_token(refresh_token)).access_token
+            except (CloudError, OSError, RuntimeError) as err:
+                _LOGGER.warning("token refresh failed (%s); trying the stored access token", err)
+        if not access_token:
+            return None
+        return CloudControlCreds.derive(
+            usdk_client_id=usdk_client_id,
+            user_id=user_id,
+            access_token=access_token,
+        )
+
+    async def async_cloud_set_attribute(self, name: str, value: object) -> None:
+        """Write one attribute over the cloud MQTT user channel (set by name, STD value).
+
+        Used directly for attributes the LAN protocol does not control and as the automatic
+        fallback when a LAN op fails. Raises :class:`HomeAssistantError` when the entry has no
+        account credentials, the request times out, or the gateway rejects it.
+        """
+        creds = await self._async_cloud_creds()
+        if creds is None:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="cloud_not_configured",
+                translation_placeholders={"name": self.config_entry.title},
+            )
+        try:
+            res = await self.hass.async_add_executor_job(
+                partial(
+                    CloudControlClient(creds).set_attribute,
+                    self.device_id, name, value, timeout=CLOUD_CONTROL_TIMEOUT,
+                )
+            )
+        except (CloudControlError, OSError, RuntimeError) as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="control_failed",
+                translation_placeholders={
+                    "name": self.config_entry.title, "error": f"cloud: {err}",
+                },
+            ) from err
+        _LOGGER.info("%s: cloud set %s=%r (sn=%s)", self.device_id, name, value, res.sn)
+
+    async def async_cloud_get_attribute(self, name: str) -> dict:
+        """Read one attribute over the cloud MQTT user channel; returns the gateway's response.
+
+        The response carries ``errNo`` (0 on success) and the attribute value on success; callers
+        should inspect it. Raises :class:`HomeAssistantError` like :meth:`async_cloud_set_attribute`
+        on transport failures, and on a non-zero ``errNo``.
+        """
+        creds = await self._async_cloud_creds()
+        if creds is None:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="cloud_not_configured",
+                translation_placeholders={"name": self.config_entry.title},
+            )
+        try:
+            res = await self.hass.async_add_executor_job(
+                partial(
+                    CloudControlClient(creds).get_attribute,
+                    self.device_id, name, timeout=CLOUD_CONTROL_TIMEOUT,
+                )
+            )
+        except (CloudControlError, OSError, RuntimeError) as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="control_failed",
+                translation_placeholders={
+                    "name": self.config_entry.title, "error": f"cloud: {err}",
+                },
+            ) from err
+        return dict(res.raw)
+
+    async def _async_try_cloud_fallback(
+        self, changes: dict[str, int], local_err: BaseException
+    ) -> bool:
+        """Apply a LAN-op failure's changes through the cloud channel.
+
+        Returns True when the change could be delivered; False when the entry has no account
+        credentials, nothing maps 1:1 to a model attribute (eco/device-specific fields have no STD
+        name), or the cloud round trip also failed — the caller then surfaces the original LAN
+        error. A successful delivery is confirmed by the next read cycle.
+        """
+        mapped = [
+            (name, fn(epp))
+            for name, epp in changes.items()
+            if (fn := _MODEL_VALUE_FROM_EPP.get(name)) is not None
+        ]
+        if not mapped:
+            return False
+        try:
+            await self.async_cloud_set_attribute_many(mapped)
+        except HomeAssistantError as err:
+            _LOGGER.warning(
+                "%s: LAN control failed (%s); cloud fallback failed: %s",
+                self.device_id, local_err, err,
+            )
+            return False
+        _LOGGER.info(
+            "%s: LAN control failed (%s); applied %d change(s) via cloud",
+            self.device_id, local_err, len(mapped),
+        )
+        await self.async_request_refresh()
+        return True
+
+    async def async_cloud_set_attribute_many(
+        self, name_values: list[tuple[str, object]]
+    ) -> None:
+        """Write several ``(name, value)`` pairs over the cloud channel, sequentially."""
+        creds = await self._async_cloud_creds()
+        if creds is None:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="cloud_not_configured",
+                translation_placeholders={"name": self.config_entry.title},
+            )
+        client = CloudControlClient(creds)
+        for name, value in name_values:
+            try:
+                res = await self.hass.async_add_executor_job(
+                    partial(
+                        client.set_attribute, self.device_id, name, value,
+                        timeout=CLOUD_CONTROL_TIMEOUT,
+                    )
+                )
+            except (CloudControlError, OSError, RuntimeError) as err:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="control_failed",
+                    translation_placeholders={
+                        "name": self.config_entry.title,
+                        "error": f"cloud {name}: {err}",
+                    },
+                ) from err
+            _LOGGER.info("%s: cloud set %s=%r (sn=%s)", self.device_id, name, value, res.sn)

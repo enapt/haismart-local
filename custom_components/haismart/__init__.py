@@ -11,10 +11,71 @@ _vendor = _os.path.join(_os.path.dirname(__file__), "vendor")
 if _vendor not in _sys.path:
     _sys.path.insert(0, _vendor)
 
-from homeassistant.core import HomeAssistant
+import voluptuous as vol
 
-from .const import PLATFORMS
+from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
+from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import config_validation as cv
+
+from .const import DOMAIN, PLATFORMS
 from .coordinator import HaismartConfigEntry, HaismartCoordinator
+
+# Services are registered once per HA run, not per entry (a second entry would otherwise
+# overwrite the first's registrations and leave a dangling handler after it unloads).
+_SERVICES_REGISTERED = f"{DOMAIN}_services_registered"
+
+SET_CLOUD_ATTRIBUTE = "set_cloud_attribute"
+GET_CLOUD_ATTRIBUTE = "get_cloud_attribute"
+
+_SERVICE_FIELDS = {
+    cv.Required("device_id"): cv.string,
+    cv.Required("attribute"): cv.string,
+}
+
+
+def _coordinator_for_device(
+    hass: HomeAssistant, device_id: str
+) -> HaismartCoordinator | None:
+    """The coordinator whose device matches ``device_id`` (case-insensitive)."""
+    device_id = device_id.upper()
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        coordinator = entry.runtime_data
+        if coordinator is not None and coordinator.device_id.upper() == device_id:
+            return coordinator
+    return None
+
+
+def _find_coordinator(hass: HomeAssistant, call: ServiceCall) -> HaismartCoordinator:
+    coordinator = _coordinator_for_device(hass, call.data["device_id"])
+    if coordinator is None:
+        raise HomeAssistantError(f"No haismart device with id {call.data['device_id']!r}")
+    return coordinator
+
+
+async def _async_register_services(hass: HomeAssistant) -> None:
+    """Register the cloud-control services (idempotent)."""
+    if hass.data.get(_SERVICES_REGISTERED):
+        return
+    hass.data[_SERVICES_REGISTERED] = True
+
+    async def _set_cloud_attribute(hass: HomeAssistant, call: ServiceCall) -> None:
+        coordinator = _find_coordinator(hass, call)
+        await coordinator.async_cloud_set_attribute(
+            call.data["attribute"], call.data["value"]
+        )
+
+    async def _get_cloud_attribute(hass: HomeAssistant, call: ServiceCall) -> None:
+        coordinator = _find_coordinator(hass, call)
+        call.response = await coordinator.async_cloud_get_attribute(call.data["attribute"])
+
+    hass.services.async_register(
+        DOMAIN, SET_CLOUD_ATTRIBUTE, _set_cloud_attribute,
+        vol.Schema({**_SERVICE_FIELDS, cv.Required("value"): cv.match_all}),
+    )
+    hass.services.async_register(
+        DOMAIN, GET_CLOUD_ATTRIBUTE, _get_cloud_attribute,
+        vol.Schema(_SERVICE_FIELDS), supports_response=SupportsResponse.ONLY,
+    )
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> bool:
@@ -42,6 +103,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> 
     entry.runtime_data = coordinator
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    await _async_register_services(hass)
     return True
 
 

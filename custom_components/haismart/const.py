@@ -23,6 +23,7 @@ CONF_NAME = "name"
 CONF_REFRESH_TOKEN = "refresh_token"
 CONF_ACCESS_TOKEN = "access_token"
 CONF_CLOUD_CLIENT_ID = "cloud_client_id"  # per-install uSDK CLIENTID (32-hex), the token's terminal
+CONF_USER_ID = "user_id"  # uHome user id (uhomeUserId) — the CONNECT username's userId/topic owner
 CONF_ZONE_INFO = "zone_info"
 # Optional MQTT-gateway CONNECT credentials. No longer required: the coordinator derives every
 # gateway credential (`_async_gateway_refresh` + `haismart_extractor.gateway.derive_gateway_auth`) —

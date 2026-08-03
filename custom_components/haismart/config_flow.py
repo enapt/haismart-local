@@ -74,6 +74,7 @@ from .const import (
     CONF_REFRESH_TOKEN,
     CONF_SCAN_INTERVAL,
     CONF_UPLUS_ID,
+    CONF_USER_ID,
     CONF_ZONE_INFO,
     DEFAULT_PRODUCT_CODE,
     DEFAULT_SCAN_INTERVAL,
@@ -127,6 +128,7 @@ async def _async_login_cloud(
         CONF_REFRESH_TOKEN: result.refresh_token,
         CONF_ACCESS_TOKEN: result.access_token,
         CONF_CLOUD_CLIENT_ID: result.client_id,
+        CONF_USER_ID: result.uhome_user_id,
         # prefer the zone the server echoes back; fall back to what we sent
         CONF_ZONE_INFO: str(result.raw.get("zoneInfo") or zone),
     }

@@ -429,18 +429,20 @@ heat, health, fresh air, boost, quiet and display.
 **None of it is shipped, for a reason worth keeping.** Held against the three reports we have from
 that family, every one of those switches reads off in all three. That is what a plain unit with
 nothing switched on looks like, and it is also what a wrong position looks like; an off bit confirms
-nothing. The outdoor reading is worse than unconfirmed: it comes out at roughly twice a believable
-figure, and halving it lands exactly where a reference unit sits in the same climate — so the
-sensible reading is that the byte counts half degrees, which is a guess that fits rather than a
-fact.
+nothing. One byte is worse than unconfirmed: two independent descriptions of that family disagree
+about what it even is. One calls it an outdoor temperature, the other calls it room humidity, at the
+same place, with the offset between the two descriptions confirmed on the indoor temperature and the
+set point they do agree on. It reads fifty-nine to sixty — an unremarkable room humidity needing no
+interpretation, or a temperature that is impossible unless the byte counts half degrees, which
+neither description claims it does.
 
 Its layout is not in doubt — two separately published descriptions of that family agree on every
 position and identifier, and the fields we already read match both. What is missing is confirmation
 of what the unread ones *mean*.
 
 What unblocks it is small and specific: **one report from that family with several switches turned
-on**, one outdoor reading taken somewhere cold or beside a thermometer, and one power reading beside
-a plug monitor — the power field is a byte, extended to two on richer models, and fifteen is not
+on**, one reading of that disputed byte taken by someone who can see both the room humidity and the
+outdoor temperature, and one power reading beside a plug monitor — the power field is a byte, extended to two on richer models, and fifteen is not
 watts for a running air conditioner. Ask for the switches to
 be set to *different* states rather than all on, for the same reason the vane request asks for
 different positions — a uniform capture cannot separate the fields from each other.

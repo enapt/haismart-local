@@ -241,3 +241,51 @@ def test_the_trailing_field_is_bracketed_open_ended_not_invented() -> None:
     assert trailing.before is None
     assert trailing.spare_bits is None
     assert trailing.after == Placement(word=5, bit=0, length=1)   # the last mapped field
+
+
+def test_the_solver_recovers_a_layout_it_was_not_shown() -> None:
+    """Round-trip: build a layout, hide some of it, and check what comes back is what was hidden.
+
+    Every other test here checks the solver against positions this project already believed. That
+    risks agreeing with itself -- the anchors, the widths and the expected answers all come from the
+    same map. Here the layout is invented, so the only thing under test is the arithmetic: fields are
+    packed into words, every other one is withheld, and the solver must reproduce the withheld ones
+    exactly from its neighbours.
+
+    Only the exactly-filled runs come back, which is the point. A run with room to spare stays open
+    however the layout was built, because reserved bits are not recoverable from an ordering.
+    """
+    layout = {                       # invented, contiguous, no reserved bits
+        "a": (1, 12, 4), "b": (1, 8, 4), "c": (1, 4, 4), "d": (1, 0, 4),
+        "e": (2, 13, 3), "f": (2, 10, 3), "g": (2, 8, 2), "h": (2, 0, 8),
+        "i": (3, 15, 1), "j": (3, 14, 1), "k": (3, 6, 8), "l": (3, 0, 6),
+    }
+    order = sorted(layout, key=lambda n: (layout[n][0], -layout[n][1]))
+    hidden = {"b", "f", "j", "k"}
+    anchors = {n: p for n, p in layout.items() if n not in hidden}
+    widths = {n: layout[n][2] for n in hidden}
+
+    solved, ambiguous = solve_positions(order, anchors, widths)
+
+    assert order_violations(order, {n: p[:2] for n, p in layout.items()}) == []
+    for name in hidden:
+        word, bit, length = layout[name]
+        assert solved[name] == Placement(word, bit, length), name
+    assert not ambiguous            # a contiguous layout leaves nothing open
+    assert set(solved) == hidden    # and it never re-places what it was given
+
+
+def test_a_reserved_bit_stops_the_solver_recovering_the_run() -> None:
+    """The same layout with one bit left spare: the run it touches must come back open, not wrong.
+
+    This is the property that makes the solver safe to use on hardware nobody owns. It cannot see a
+    reserved bit, so where one exists it must decline rather than shift everything along by one and
+    produce a layout that decodes.
+    """
+    layout = {"a": (1, 12, 4), "b": (1, 8, 4), "c": (1, 0, 4)}    # bits 4-7 of word 1 unused
+    order = ["a", "b", "c"]
+    solved, ambiguous = solve_positions(order, {"a": layout["a"], "c": layout["c"]}, {"b": 4})
+
+    assert "b" not in solved
+    assert [a.name for a in ambiguous] == ["b"]
+    assert ambiguous[0].spare_bits == 4

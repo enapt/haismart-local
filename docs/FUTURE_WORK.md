@@ -520,3 +520,42 @@ One ordering detail that already behaves correctly and should stay that way: the
 learned from the discovery query **before** the first report is decoded, in the same first poll. A
 device is therefore never decoded by report length before its own identifier is known, and moving
 the discovery call later would silently reintroduce that window.
+
+## 18. How this compares to the vendor app — and the one thing it deliberately will not do
+
+**Status: settled. Recorded because "does it do everything the app does?" keeps being asked, and the
+honest answer is neither yes nor no.**
+
+**On which units are supported, it is exact parity.** Of the 171 published air conditioners, this
+integration reaches a byte map for 92 — and those 92 are precisely the ones the manufacturer
+publishes a phone-app interface for. The 79 it cannot map are the central/ducted family, for which
+the app carries no interface either. The same product-lineage split drives both, which is why the
+two sets coincide rather than merely being the same size.
+
+**Three things the app does that this does not:**
+
+* **It can display an attribute it cannot decode.** Where the app has no usable layout for a unit it
+  falls back to values reported by the manufacturer's servers. That is how it can show settings this
+  integration cannot place — including the handful still unpositioned. This integration reads only
+  what it can decode from the unit itself, so an attribute it cannot place is simply absent rather
+  than filled in from elsewhere. **That is a deliberate choice, not a defect**: a value that did not
+  come from the appliance is a value that can be stale, wrong, or unavailable exactly when the
+  network is.
+* **Timers and scheduling are server-side.** A reporter's app timer turned out not to be a local
+  setting at all. No timer entity ships here because there is nothing local to drive one — use Home
+  Assistant's own automations, which do not depend on anyone's cloud.
+* Pairing, firmware updates, sharing and push notifications are all server functions and out of
+  scope.
+
+**Two things this does that the app cannot:**
+
+* **Control an appliance with no internet access.** These modules do not announce themselves over
+  mDNS, so the app's local discovery never finds them, and its session depends on the manufacturer's
+  servers regardless. An appliance firewalled off the internet is fully controllable here and not
+  from the app. That is the entire purpose of this integration, and why "fetch the key once, then
+  firewall the unit" is the recommended configuration rather than a workaround.
+* **Report the refrigeration circuit** — live input power, compressor current and frequency, coil
+  temperatures, and faults as named service codes — none of which the app surfaces as such.
+
+So the accurate claim is **parity with what the app can do locally, on every model it supports**, and
+a deliberate decline of what it does through the cloud.

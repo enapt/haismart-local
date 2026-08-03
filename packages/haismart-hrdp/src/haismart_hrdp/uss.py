@@ -1001,9 +1001,16 @@ def _sensor_temp(raw: int, *, scale: float, offset: float) -> float | None:
 # offsets are byte positions inside the decrypted blob, confirmed on a 24 000-BTU-class wall-mounted
 # split (the "classic" family, whose extended report is 141 bytes).
 _EXT_STATUS_LEN = 141
+# Audited in full against the published telemetry layout of the nearest relative model: all ten
+# offsets below are stated there, nine agree by name, and the actuator word agrees on all six of its
+# two-bit fields. The exception is noted at _EXT_OFF_DISCHARGE.
 _EXT_OFF_POWER = 126          # BE16, watts -- a register the unit keeps, not a figure we compute
 _EXT_OFF_COIL = 128           # indoor coil temp, x0.5 - 20
 _EXT_OFF_DISCHARGE = 129      # compressor discharge line, -64. See the note above the parser.
+                              # The published layout names this position for outdoor outlet air. It
+                              # reads ~69 C while the unit's own outdoor sensor reads ~28 C, which is
+                              # ordinary for a compressor discharge line and impossible for outdoor
+                              # air. Position agreed, name not: the reading decides.
 _EXT_OFF_OUTDOOR_COIL = 130      # outdoor coil temp, -64
 _EXT_OFF_OUTDOOR_IN_AIR = 131    # outdoor unit air-inlet temp, -64
 _EXT_OFF_OUTDOOR_DEFROST = 132   # outdoor defrost sensor, -64

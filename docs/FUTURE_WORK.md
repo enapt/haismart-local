@@ -541,6 +541,15 @@ two sets coincide rather than merely being the same size.
   than filled in from elsewhere. **That is a deliberate choice, not a defect**: a value that did not
   come from the appliance is a value that can be stale, wrong, or unavailable exactly when the
   network is.
+
+  ⚠️ **This is not the app having a better description of these appliances — it reads the same
+  published descriptions this does.** Wherever a setting is unplaced here it is unplaced for the app
+  too. Of the models declaring one of the still-unpositioned settings, **six have an exact published
+  description for their own model and the setting is still not in it**; the rest reach one only
+  through a close relative, or not at all. A description that fits a model exactly and still omits a
+  setting means the setting was **added after that description was published** — these are recent
+  features on recent hardware, not omissions. So the difference is not the map; it is that the app
+  has a server to ask when the map runs out, and this integration deliberately does not.
 * **Timers and scheduling are server-side.** A reporter's app timer turned out not to be a local
   setting at all. No timer entity ships here because there is nothing local to drive one — use Home
   Assistant's own automations, which do not depend on anyone's cloud.

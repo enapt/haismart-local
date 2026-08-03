@@ -28,8 +28,8 @@ SET_CLOUD_ATTRIBUTE = "set_cloud_attribute"
 GET_CLOUD_ATTRIBUTE = "get_cloud_attribute"
 
 _SERVICE_FIELDS = {
-    cv.Required("device_id"): cv.string,
-    cv.Required("attribute"): cv.string,
+    vol.Required("device_id"): cv.string,
+    vol.Required("attribute"): cv.string,
 }
 
 
@@ -70,7 +70,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
 
     hass.services.async_register(
         DOMAIN, SET_CLOUD_ATTRIBUTE, _set_cloud_attribute,
-        vol.Schema({**_SERVICE_FIELDS, cv.Required("value"): cv.match_all}),
+        vol.Schema({**_SERVICE_FIELDS, vol.Required("value"): cv.match_all}),
     )
     hass.services.async_register(
         DOMAIN, GET_CLOUD_ATTRIBUTE, _get_cloud_attribute,

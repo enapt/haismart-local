@@ -29,6 +29,7 @@ from pytest_homeassistant_custom_component.common import (
 
 from custom_components.haismart.const import (
     CONF_DEVICE_ID,
+    CONF_DEVICE_TYPE,
     CONF_HOST,
     CONF_LOCAL_KEY,
     CONF_LOCALKEY_VERSION,
@@ -1849,6 +1850,38 @@ async def test_diagnostics_flags_an_ac_that_moved_on_dhcp(
 
     assert diag["cloud"]["reported_host"] == "192.168.1.77"
     assert diag["cloud"]["host_matches"] is False
+
+
+async def test_diagnostics_report_the_stated_device_type_not_just_a_derived_class(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A uPlusId yields the device's *class*; the variant digits cannot be derived from it. Cloud
+    onboarding is handed the full deviceType, so a report from unfamiliar hardware should name the
+    variant exactly rather than leaving a maintainer to guess which sibling it is.
+
+    Absent for manual installs — the LAN discovery payload carries a uPlusId but no deviceType — so
+    the field reports None rather than a class dressed up as one."""
+    from custom_components.haismart.diagnostics import (
+        async_get_config_entry_diagnostics,
+    )
+
+    entry = _entry(**{CONF_DEVICE_TYPE: "0201203a"})
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.runtime_data.device_type == "0201203a"
+    diag = await async_get_config_entry_diagnostics(hass, entry)
+    assert diag["device_identity"]["device_type"] == "0201203a"
+    # Independent identifiers, from different sources: this entry stored no uPlusId, so the derived
+    # class is unavailable while the stated deviceType answers anyway.
+    assert diag["device_identity"]["device_type_class"] is None
+
+    bare = await _setup(hass)
+    assert bare.runtime_data.device_type is None
+    assert (await async_get_config_entry_diagnostics(hass, bare))["device_identity"][
+        "device_type"
+    ] is None
 
 
 async def test_uplus_id_is_learned_from_the_device_and_persisted(

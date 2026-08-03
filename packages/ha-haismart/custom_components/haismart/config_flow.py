@@ -70,6 +70,7 @@ from .const import (
     CONF_ACCESS_TOKEN,
     CONF_CLOUD_CLIENT_ID,
     CONF_DEVICE_ID,
+    CONF_DEVICE_TYPE,
     CONF_DIGITAL_MODEL,
     CONF_HOST,
     CONF_LOCAL_KEY,
@@ -381,6 +382,11 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                 # responses, which is fine (length keying still works).
                 if getattr(picked, "uplus_id", ""):
                     self._cloud_data[CONF_UPLUS_ID] = picked.uplus_id
+                # The exact deviceType, which onboarding already reads twice and used to discard.
+                # Diagnostics can only derive a device's *class* from the uPlusId; this names the
+                # variant, so an unfamiliar unit reports what it actually is.
+                if getattr(picked, "device_type", ""):
+                    self._cloud_data[CONF_DEVICE_TYPE] = picked.device_type
                 self._picked = picked
                 return await self._async_setup_cloud_device(picked.device_id, picked.name)
         choices = {d.device_id: f"{d.name or d.device_id} ({d.device_id})" for d in available}

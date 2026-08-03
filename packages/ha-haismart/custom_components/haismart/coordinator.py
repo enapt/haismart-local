@@ -86,6 +86,7 @@ from .const import (
     CONF_ACCESS_TOKEN,
     CONF_CLOUD_CLIENT_ID,
     CONF_DEVICE_ID,
+    CONF_DEVICE_TYPE,
     CONF_DIGITAL_MODEL,
     CONF_GATEWAY_USERNAME,
     CONF_HOST,
@@ -298,6 +299,9 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # uPlusId (device-list wifiType) — the precise wire-model key when the cloud onboarding
         # stored it; None for manual onboarding, where the decoder keys on report length instead.
         self.uplus_id: str | None = entry.data.get(CONF_UPLUS_ID) or None
+        # The device's stated deviceType, when cloud onboarding captured it. Diagnostics only; a
+        # class can be derived from the uPlusId but the variant cannot, and neither picks a decoder.
+        self.device_type: str | None = entry.data.get(CONF_DEVICE_TYPE) or None
         self.digital_model: dict[str, Any] | None = _load_digital_model(entry)
         self.profile: AttributeProfile = _build_profile(
             entry, self.product_code, self.digital_model

@@ -42,6 +42,12 @@ CONF_PRODUCT_CODE = "product_code"
 # known. Stored by the cloud onboarding paths; absent for manual onboarding (report length is the
 # fallback key there).
 CONF_UPLUS_ID = "uplus_id"
+# The device's own deviceType from the cloud device list (e.g. "0201203a"): two class digits, a
+# separator, then the variant. It is NOT a layout key — siblings that share a class can carry
+# different attribute sets — but it names the exact variant, which the uPlusId only half answers
+# (a class can be derived from the uPlusId, the variant cannot). Kept for diagnostics, so a report
+# from unfamiliar hardware identifies itself precisely instead of by a derived class.
+CONF_DEVICE_TYPE = "device_type"
 # Human-readable identity from the cloud device list's `extendedInfo` (prodNo/model/brand). Shown on
 # the HA device page instead of the raw product code.
 CONF_MODEL_NAME = "model_name"

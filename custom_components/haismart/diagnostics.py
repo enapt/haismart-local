@@ -125,6 +125,10 @@ async def async_get_config_entry_diagnostics(
             # The product class the uPlusId encodes -- an identifier for lookup only. Devices in one
             # class are known to report in different wire families, so it never picks a decoder.
             "device_type_class": device_type_class(coordinator.uplus_id),
+            # The device's own deviceType, when onboarding captured it: the same class plus the
+            # variant digits, which cannot be derived from the uPlusId. Names unfamiliar hardware
+            # exactly in a bug report. Also lookup only, for the same reason as the class above.
+            "device_type": coordinator.device_type,
         },
         "profile": {
             "product_code": coordinator.product_code,

@@ -34,7 +34,8 @@ from haismart_extractor.cloud import (
     HaierCloud,
     get_public_device_config,
 )
-from haismart_hrdp import async_read_status, merge_rules, probe_localkey_version
+from haismart_hrdp import async_read_status, merge_rules, probe_localkey_version, udiscovery
+from haismart_hrdp.model_rules import known_products, product_for_model
 from homeassistant.config_entries import (
     ConfigFlow,
     ConfigFlowResult,
@@ -85,6 +86,7 @@ from .const import (
     DOMAIN,
     MIN_SCAN_INTERVAL,
     READ_TIMEOUT,
+    UDISCOVERY_TIMEOUT,
 )
 from .countries import country_options, default_dial_code
 from .discovery import async_resolve_host_arp
@@ -144,13 +146,20 @@ def _manual_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
     name = {"default": d[CONF_NAME]} if d.get(CONF_NAME) else {}
     return vol.Schema({
         vol.Required(CONF_HOST, default=d.get(CONF_HOST, vol.UNDEFINED)): str,
-        vol.Required(CONF_DEVICE_ID, default=d.get(CONF_DEVICE_ID, vol.UNDEFINED)): str,
+        # Optional because the unit will tell us: one key-free UDP query to the host above returns
+        # the deviceId (it is the module's MAC) along with the uPlusId. Left fillable for the case
+        # where a module does not answer that query.
+        vol.Optional(CONF_DEVICE_ID, default=d.get(CONF_DEVICE_ID, "")): str,
         vol.Required(CONF_LOCAL_KEY): str,
         vol.Optional(CONF_NAME, **name): str,
         # Left blank unless the device's own is known. Filling in a default here would store one
         # air conditioner's product code against another's, and nothing downstream could tell the
         # difference -- it is the identifier a model, its rules and its real feature set are all
         # looked up by, so a wrong one is worse than none.
+        #
+        # Accepts the model number printed on the appliance as well as a product code, because one
+        # of those is legible and the other is not. All 171 published model numbers are distinct, so
+        # the translation needs nothing else to disambiguate it.
         vol.Optional(CONF_PRODUCT_CODE, default=d.get(CONF_PRODUCT_CODE, "")): str,
     })
 
@@ -592,7 +601,23 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         if user_input is not None:
             host = user_input[CONF_HOST].strip()
-            device_id = user_input[CONF_DEVICE_ID].strip()
+            device_id = (user_input.get(CONF_DEVICE_ID) or "").strip()
+            # Ask the unit who it is before asking the person. One key-free UDP query returns the
+            # deviceId and the uPlusId -- the identifier that selects the wire map -- so a manual
+            # install ends up as precisely keyed as one set up through an account, and the owner
+            # types neither. Only the localKey is genuinely secret and genuinely unavailable here.
+            reported = await self._async_query_device(host)
+            if reported is not None:
+                device_id = device_id or reported.device_id
+                if reported.uplus_id.strip("0"):
+                    self._cloud_data.setdefault(CONF_UPLUS_ID, reported.uplus_id)
+            if not device_id:
+                errors["base"] = "device_id_required"
+                return self.async_show_form(
+                    step_id="manual",
+                    data_schema=_manual_schema({**self._discovered, **user_input}),
+                    errors=errors,
+                )
             await self.async_set_unique_id(device_id.upper())
             self._abort_if_unique_id_configured(updates={CONF_HOST: host})
             try:
@@ -607,6 +632,12 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
             else:
                 title = user_input.get(CONF_NAME) or f"Haier {device_id}"
                 product_code = (user_input.get(CONF_PRODUCT_CODE) or "").strip()
+                # A model number off the appliance's label resolves to its product code offline,
+                # which is the identifier the rules, the fault names and the real feature set are
+                # keyed by. Accepting both means the legible answer works and the expert one still
+                # does; an entry that is neither is left exactly as typed rather than guessed at.
+                if product_code and product_code not in known_products():
+                    product_code = product_for_model(product_code) or product_code
                 model = await self._async_public_model(product_code)
                 return self.async_create_entry(
                     title=title,
@@ -626,6 +657,22 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=_manual_schema({**self._discovered, **(user_input or {})}),
             errors=errors,
         )
+
+    async def _async_query_device(self, host: str):
+        """Ask a host who it is, key-free, or ``None`` if it does not answer.
+
+        Never raises and never blocks the form: a module that stays silent, or a host that is not
+        one of these appliances at all, simply leaves the person to fill the field in. The query
+        needs no localKey and no account, which is the whole reason it belongs here -- it is the one
+        piece of identity available before anything has been authenticated.
+        """
+        if not host:
+            return None
+        try:
+            return await udiscovery.async_query(host, timeout=UDISCOVERY_TIMEOUT)
+        except (OSError, RuntimeError, TimeoutError, ValueError) as err:
+            _LOGGER.debug("no discovery answer from %s: %s", host, err)
+            return None
 
     async def async_step_zeroconf(
         self, discovery_info: ZeroconfServiceInfo

@@ -852,3 +852,66 @@ async def test_manual_onboarding_survives_a_failed_lookup(
     assert result["type"] == FlowResultType.CREATE_ENTRY   # the entry is still created
     assert result["data"][CONF_PRODUCT_CODE] == "NOSUCHCODE"
     assert CONF_DIGITAL_MODEL not in result["data"]
+
+
+async def test_a_backed_up_local_key_is_all_an_offline_install_needs(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The whole point of the offline path: with the key saved, nothing else needs the network.
+
+    Someone who has their localKey written down should be able to add the appliance with no account,
+    no internet, and nothing typed that they cannot read off the unit or its label. That means the
+    identity comes from the appliance itself and the rules come from what ships with the
+    integration, so this asserts the entire chain in one place -- if any link starts needing the
+    cloud again, this fails.
+    """
+    from unittest.mock import patch
+
+    from haismart_hrdp.udiscovery import DeviceInfo
+
+    from custom_components.haismart.const import (
+        CONF_PRODUCT_CODE,
+        CONF_REFRESH_TOKEN,
+        CONF_UPLUS_ID,
+    )
+
+    uplus = "2008610800820324021200118012560000000000000000000000000000000040"
+    reported = DeviceInfo(
+        device_id="A1B2C3D4E5F6", host="192.168.1.50", uplus_id=uplus, cloud_state=1006
+    )
+
+    flow_id = await _start_manual(hass)
+    with patch(
+        "custom_components.haismart.config_flow.udiscovery.async_query",
+        return_value=reported,
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            flow_id,
+            {
+                CONF_HOST: "192.168.1.50",
+                CONF_LOCAL_KEY: LOCAL_KEY,  # the one thing that had to come from the cloud, once
+                # the model number off the appliance's label -- not the opaque product code
+                CONF_PRODUCT_CODE: "HSU-24VRRA03TF",
+            },
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    data = result["data"]
+    assert CONF_REFRESH_TOKEN not in data, "no account credential should be stored"
+    # the appliance answered for its own identity: neither of these was typed
+    assert data[CONF_DEVICE_ID] == "A1B2C3D4E5F6"
+    assert data[CONF_UPLUS_ID] == uplus, "the wire-model key came from the unit, not an account"
+    # the label's model number resolved to the code the rules are keyed by
+    assert data[CONF_PRODUCT_CODE] == "AAC1UKZ01"
+
+    # and the rules that code unlocks are present without anything having been fetched
+    from haismart_hrdp import merge_rules
+    from haismart_hrdp.model_rules import rules_for_product
+
+    merged = merge_rules({"attributes": []}, rules_for_product(data[CONF_PRODUCT_CODE]))
+    assert len(merged["modifiers"]) == 6
+    assert len(merged["alarms"]) == 52
+    # `invisible_attributes` is what gates the optional-feature entities; without it a unit is
+    # offered controls for hardware it does not have.
+    assert len(merged["invisible_attributes"]) == 25

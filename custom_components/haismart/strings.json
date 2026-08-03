@@ -43,10 +43,10 @@
         },
         "data_description": {
           "host": "The air conditioner's IP address on your network, e.g. 192.168.1.50. A DHCP reservation keeps it from changing.",
-          "device_id": "The Wi-Fi module's MAC address without separators, e.g. A1B2C3D4E5F6.",
+          "device_id": "Usually left blank — the air conditioner is asked for this directly. It is the module's Wi-Fi MAC address if you need to enter it.",
           "local_key": "The 32-character key the AC encrypts its status with. It is issued by Haier's cloud per device — the Sign in path fetches it for you.",
           "name": "Optional. What to call this air conditioner in Home Assistant.",
-          "product_code": "Optional. Your model's product code, shown in the Haier app's device details, e.g. AACRL2E00. Leave it alone unless you know it — it only selects a fallback used when no model description is stored."
+          "product_code": "Optional. The model number printed on the appliance (for example HSU-24VRRA03TF) is enough; it unlocks the fault names, the availability rules and this unit's real feature list."
         }
       },
       "reauth_confirm": {
@@ -131,7 +131,8 @@
       "cannot_connect_cloud": "Signed in successfully, but Haier's servers could not be reached to list your devices. This is usually temporary — try again in a moment.",
       "invalid_key": "The local key must be a 32-character hex string.",
       "invalid_auth": "The air conditioner answered, but this local key does not decrypt its status — the key is wrong, or it has been rotated.",
-      "cannot_connect": "Could not reach the air conditioner on port 56800. Check the IP address, and that Home Assistant is on the same network."
+      "cannot_connect": "Could not reach the air conditioner on port 56800. Check the IP address, and that Home Assistant is on the same network.",
+      "device_id_required": "The air conditioner did not answer the identification query, so its device ID could not be read automatically. Enter it manually — it is the module's Wi-Fi MAC address, 12 hex characters with no separators."
     },
     "abort": {
       "already_configured": "This device is already configured.",

@@ -129,6 +129,9 @@ async def async_get_config_entry_diagnostics(
             # variant digits, which cannot be derived from the uPlusId. Names unfamiliar hardware
             # exactly in a bug report. Also lookup only, for the same reason as the class above.
             "device_type": coordinator.device_type,
+            # Whether the shipped rules and any fetched ones describe the same product.
+            # "identity-mismatch" means the stored product code and uPlusId disagree.
+            "model_rules_agreement": coordinator.model_rules_agreement,
         },
         "profile": {
             "product_code": coordinator.product_code,

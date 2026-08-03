@@ -302,6 +302,9 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # The device's stated deviceType, when cloud onboarding captured it. Diagnostics only; a
         # class can be derived from the uPlusId but the variant cannot, and neither picks a decoder.
         self.device_type: str | None = entry.data.get(CONF_DEVICE_TYPE) or None
+        # Cross-check verdict between the shipped rules and any fetched ones: None when only one
+        # source answered, else 'agree' / 'differ' / 'identity-mismatch'. Diagnostics only.
+        self.model_rules_agreement: str | None = None
         self.digital_model: dict[str, Any] | None = _load_digital_model(entry)
         self.profile: AttributeProfile = _build_profile(
             entry, self.product_code, self.digital_model
@@ -1320,9 +1323,16 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         No rules locks nothing, which is the safe direction.
         """
         data = self.config_entry.data
+        # Offline first, deliberately. Everything below the localKey is now shipped, so a network
+        # request is the fallback rather than the default -- an installation whose appliance is
+        # firewalled (the configuration this integration exists for) should not have its rule layer
+        # quietly depend on reaching the internet. The remote copy is still consulted, but to check
+        # this one rather than to replace it.
+        bundled = rules_for_product(data.get(CONF_PRODUCT_CODE))
         if data.get(CONF_REFRESH_TOKEN) and data.get(CONF_CLOUD_CLIENT_ID):
             published = await self._async_account_published_model()
             if published is not None:
+                self._note_rule_agreement(bundled, published)
                 return published
         # only a product code the entry actually stores will do. `self.product_code` falls back to
         # a built-in default, and a default is indistinguishable from a real code -- handing this
@@ -1346,6 +1356,53 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if bundled is not None:
             _LOGGER.debug("using shipped rules for product code %s", product_code)
         return bundled
+
+    def _note_rule_agreement(
+        self, bundled: dict[str, Any] | None, fetched: dict[str, Any] | None
+    ) -> None:
+        """Cross-check the shipped rules against the ones just fetched, and record the verdict.
+
+        Two independent descriptions of the same product, so a disagreement means one of them is
+        about a different device -- and that is a failure mode this project has already shipped
+        once, when a resource listing that ignores its request body handed a two-model account one
+        appliance's rulebook for the other. The stored identifier is what the fetch is matched on,
+        so it cannot catch the case where the *identifier itself* is wrong; the bundle can, because
+        it is keyed by product code and knows which identifier that product should carry.
+
+        Nothing is overridden on a mismatch. The fetched copy is current where the bundle is a
+        snapshot, so it still wins -- but a mismatch means the entry's product code is describing a
+        different appliance than its uPlusId does, which makes every rule suspect and is worth
+        saying out loud rather than resolving silently.
+        """
+        if bundled is None or fetched is None:
+            self.model_rules_agreement = None
+            return
+        want, got = bundled.get("uplus_id"), fetched.get("uplus_id")
+        if want and got and want != got:
+            self.model_rules_agreement = "identity-mismatch"
+            _LOGGER.warning(
+                "%s: the fetched rules are for uPlusId %s but product code %s publishes %s. The "
+                "stored product code probably belongs to a different model; fault names and "
+                "availability rules may be wrong. Re-add the device to correct it.",
+                self.device_id, got, self.product_code, want,
+            )
+            return
+        counts = tuple(
+            len(bundled.get(k) or ()) == len(fetched.get(k) or ())
+            for k in ("modifiers", "constraints", "alarms")
+        )
+        self.model_rules_agreement = "agree" if all(counts) else "differ"
+        if not all(counts):
+            # Not an error: the bundle is a snapshot and a model can be revised. Worth seeing,
+            # because it is also what a stale bundle looks like.
+            _LOGGER.debug(
+                "%s: shipped rules differ from the published ones for %s "
+                "(modifiers %d/%d, constraints %d/%d, alarms %d/%d)",
+                self.device_id, self.product_code,
+                len(bundled.get("modifiers") or ()), len(fetched.get("modifiers") or ()),
+                len(bundled.get("constraints") or ()), len(fetched.get("constraints") or ()),
+                len(bundled.get("alarms") or ()), len(fetched.get("alarms") or ()),
+            )
 
     async def _async_account_published_model(self) -> dict[str, Any] | None:
         """The published model via the signed-in account's resource service, or ``None``."""

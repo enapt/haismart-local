@@ -402,3 +402,31 @@ It changes startup behaviour, and this project has twice shipped decode work tha
 and was only caught by deploying. Before calling it good: deploy, then diff `model_declared_fields`
 against `digital_model.reported_values`, and confirm entity availability is unchanged on a unit whose
 rules previously came from the cloud.
+
+## 15. The compact family publishes far more than we read
+
+**Status: open. The positions are in hand; the confirmation is not.**
+
+The twelve-word family — the small one whose report is a hundred and seventeen bytes — is described
+by a published map we can read, and every position we already decode agrees with it exactly: power,
+setpoint, indoor temperature, mode, fan and both vane fields. That is a fourth independent agreement
+for that family, after captures, a public implementation of the same protocol, and the model
+catalogue.
+
+The same map states twenty-three fields we do not read, most of them nameable from the catalogue:
+outdoor temperature, an air-quality reading, a particulate value, a power figure, target and actual
+humidity, and the usual switches — lock, sleep, human sensing, energy saving, self-clean, electric
+heat, health, fresh air, boost, quiet and display.
+
+**None of it is shipped, for a reason worth keeping.** Held against the three reports we have from
+that family, every one of those switches reads off in all three. That is what a plain unit with
+nothing switched on looks like, and it is also what a wrong position looks like; an off bit confirms
+nothing. The outdoor reading is worse than unconfirmed: it comes out at roughly twice a believable
+figure, and halving it lands exactly where a reference unit sits in the same climate — so the
+sensible reading is that the byte counts half degrees, which is a guess that fits rather than a
+fact.
+
+What unblocks it is small and specific: **one report from that family with several switches turned
+on**, and one outdoor reading taken somewhere cold or beside a thermometer. Ask for the switches to
+be set to *different* states rather than all on, for the same reason the vane request asks for
+different positions — a uniform capture cannot separate the fields from each other.

@@ -1,6 +1,6 @@
 {
   "domain": "haismart",
-  "name": "Haismart (Haier local)",
+  "name": "Haismart",
   "codeowners": [
     "@enapt",
     "@darkdiamond"

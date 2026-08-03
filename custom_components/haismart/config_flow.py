@@ -1,4 +1,4 @@
-"""Config flow for Haismart local.
+"""Config flow for Haismart.
 
 Two ways to add an AC (menu): **login** (email/phone + password) or **manual** (host + deviceId +
 localKey). After sign-in, the login path **auto-fetches the localKey — no key paste**: it lists the

@@ -1,76 +1,76 @@
-# Haismart Local — Điều hòa Haier trong Home Assistant, không cần đám mây
+# Haismart â€” Äiá»u hÃ²a Haier trong Home Assistant, khÃ´ng cáº§n Ä‘Ã¡m mÃ¢y
 
-**🌐 [English](../../README.md) · [Bahasa Indonesia](README.id.md) · [ไทย](README.th.md) · Tiếng Việt · [Bahasa Melayu](README.ms.md)**
+**ðŸŒ [English](../../README.md) Â· [Bahasa Indonesia](README.id.md) Â· [à¹„à¸—à¸¢](README.th.md) Â· Tiáº¿ng Viá»‡t Â· [Bahasa Melayu](README.ms.md)**
 
-Điều khiển điều hòa Haier của bạn từ Home Assistant hoàn toàn qua mạng nội bộ. Bạn chỉ đăng nhập
-**một lần** để tích hợp lấy được khóa mã hóa của máy — sau đó Home Assistant chỉ giao tiếp với điều
-hòa qua TCP cổng 56800 trong mạng LAN của bạn. Việc đọc trạng thái và gửi lệnh không bao giờ ra khỏi
-mạng của bạn, và vẫn hoạt động ngay cả khi mất Internet.
+Äiá»u khiá»ƒn Ä‘iá»u hÃ²a Haier cá»§a báº¡n tá»« Home Assistant hoÃ n toÃ n qua máº¡ng ná»™i bá»™. Báº¡n chá»‰ Ä‘Äƒng nháº­p
+**má»™t láº§n** Ä‘á»ƒ tÃ­ch há»£p láº¥y Ä‘Æ°á»£c khÃ³a mÃ£ hÃ³a cá»§a mÃ¡y â€” sau Ä‘Ã³ Home Assistant chá»‰ giao tiáº¿p vá»›i Ä‘iá»u
+hÃ²a qua TCP cá»•ng 56800 trong máº¡ng LAN cá»§a báº¡n. Viá»‡c Ä‘á»c tráº¡ng thÃ¡i vÃ  gá»­i lá»‡nh khÃ´ng bao giá» ra khá»i
+máº¡ng cá»§a báº¡n, vÃ  váº«n hoáº¡t Ä‘á»™ng ngay cáº£ khi máº¥t Internet.
 
-> ⚠️ Trang này chỉ là bản tóm tắt. **Tài liệu đầy đủ chỉ có bằng tiếng Anh** — xem
-> [README chính](../../README.md) để biết cách cài đặt nâng cao, xử lý sự cố, ví dụ tự động hóa và
-> cách tách hoàn toàn khỏi đám mây.
+> âš ï¸ Trang nÃ y chá»‰ lÃ  báº£n tÃ³m táº¯t. **TÃ i liá»‡u Ä‘áº§y Ä‘á»§ chá»‰ cÃ³ báº±ng tiáº¿ng Anh** â€” xem
+> [README chÃ­nh](../../README.md) Ä‘á»ƒ biáº¿t cÃ¡ch cÃ i Ä‘áº·t nÃ¢ng cao, xá»­ lÃ½ sá»± cá»‘, vÃ­ dá»¥ tá»± Ä‘á»™ng hÃ³a vÃ 
+> cÃ¡ch tÃ¡ch hoÃ n toÃ n khá»i Ä‘Ã¡m mÃ¢y.
 
-## Điều hòa của tôi có được hỗ trợ không?
+## Äiá»u hÃ²a cá»§a tÃ´i cÃ³ Ä‘Æ°á»£c há»— trá»£ khÃ´ng?
 
-**Điều quan trọng là ứng dụng bạn dùng, không phải quốc gia bạn ở.** Nếu điều hòa của bạn ghép nối
-với ứng dụng **Haier / Haismart** (còn có tên *Haier U+* hoặc *uHome*), bạn đã đến đúng chỗ.
+**Äiá»u quan trá»ng lÃ  á»©ng dá»¥ng báº¡n dÃ¹ng, khÃ´ng pháº£i quá»‘c gia báº¡n á»Ÿ.** Náº¿u Ä‘iá»u hÃ²a cá»§a báº¡n ghÃ©p ná»‘i
+vá»›i á»©ng dá»¥ng **Haier / Haismart** (cÃ²n cÃ³ tÃªn *Haier U+* hoáº·c *uHome*), báº¡n Ä‘Ã£ Ä‘áº¿n Ä‘Ãºng chá»—.
 
-| Ứng dụng của bạn | Được hỗ trợ ở đây? | Dùng thay thế |
+| á»¨ng dá»¥ng cá»§a báº¡n | ÄÆ°á»£c há»— trá»£ á»Ÿ Ä‘Ã¢y? | DÃ¹ng thay tháº¿ |
 |---|---|---|
-| **Haier / Haismart / Haier U+ / uHome** | ✅ **Có** | — |
-| hOn (chủ yếu ở châu Âu) | ❌ Không — các mô-đun này không mở cổng 56800 | [Andre0512/hon](https://github.com/Andre0512/hon) |
-| Haier 智家 (Trung Quốc đại lục) | ❌ Không — đám mây khác | [banto6/haier](https://github.com/banto6/haier) |
-| SmartHQ (Mỹ / GE Appliances) | ❌ Không — nền tảng hoàn toàn khác | — |
-| SmartAir2 / Smart Clima (máy đời cũ) | ❌ Không — cùng cổng, giao thức cũ không mã hóa | [oxystin/homebridge-haier-air-conditioner](https://github.com/oxystin/homebridge-haier-air-conditioner) |
+| **Haier / Haismart / Haier U+ / uHome** | âœ… **CÃ³** | â€” |
+| hOn (chá»§ yáº¿u á»Ÿ chÃ¢u Ã‚u) | âŒ KhÃ´ng â€” cÃ¡c mÃ´-Ä‘un nÃ y khÃ´ng má»Ÿ cá»•ng 56800 | [Andre0512/hon](https://github.com/Andre0512/hon) |
+| Haier æ™ºå®¶ (Trung Quá»‘c Ä‘áº¡i lá»¥c) | âŒ KhÃ´ng â€” Ä‘Ã¡m mÃ¢y khÃ¡c | [banto6/haier](https://github.com/banto6/haier) |
+| SmartHQ (Má»¹ / GE Appliances) | âŒ KhÃ´ng â€” ná»n táº£ng hoÃ n toÃ n khÃ¡c | â€” |
+| SmartAir2 / Smart Clima (mÃ¡y Ä‘á»i cÅ©) | âŒ KhÃ´ng â€” cÃ¹ng cá»•ng, giao thá»©c cÅ© khÃ´ng mÃ£ hÃ³a | [oxystin/homebridge-haier-air-conditioner](https://github.com/oxystin/homebridge-haier-air-conditioner) |
 
-**Kiểm tra nhanh:** nếu `nc -z <ip-điều-hòa> 56800` thành công thì giao thức nội bộ đang lắng nghe.
+**Kiá»ƒm tra nhanh:** náº¿u `nc -z <ip-Ä‘iá»u-hÃ²a> 56800` thÃ nh cÃ´ng thÃ¬ giao thá»©c ná»™i bá»™ Ä‘ang láº¯ng nghe.
 
-Các máy đã xác nhận hoạt động được liệt kê trong [`DEVICES.md`](../../DEVICES.md). Không thấy model
-của bạn? Rất có thể nó vẫn chạy được — tích hợp tự dựng nên từ mô tả model do chính hồ sơ đám mây của
-điều hòa cung cấp, chứ không dựa vào bảng viết cứng cho từng model.
+CÃ¡c mÃ¡y Ä‘Ã£ xÃ¡c nháº­n hoáº¡t Ä‘á»™ng Ä‘Æ°á»£c liá»‡t kÃª trong [`DEVICES.md`](../../DEVICES.md). KhÃ´ng tháº¥y model
+cá»§a báº¡n? Ráº¥t cÃ³ thá»ƒ nÃ³ váº«n cháº¡y Ä‘Æ°á»£c â€” tÃ­ch há»£p tá»± dá»±ng nÃªn tá»« mÃ´ táº£ model do chÃ­nh há»“ sÆ¡ Ä‘Ã¡m mÃ¢y cá»§a
+Ä‘iá»u hÃ²a cung cáº¥p, chá»© khÃ´ng dá»±a vÃ o báº£ng viáº¿t cá»©ng cho tá»«ng model.
 
-## Bạn nhận được gì
+## Báº¡n nháº­n Ä‘Æ°á»£c gÃ¬
 
-Mỗi điều hòa là một thiết bị: **Climate** (nhiệt độ đặt, chế độ, tốc độ quạt, đảo gió, bật/tắt), cảm
-biến **nhiệt độ trong nhà** và **ngoài trời**, các **công tắc** (Mạnh, Yên tĩnh, Sức khỏe, Ngủ, Đèn
-hiển thị), lựa chọn **Eco**, cảm biến **Mã model**, cảm biến **Kết nối đám mây** (điều hòa còn liên
-lạc được với máy chủ Haier hay không — hữu ích nếu bạn chặn nó), và cảm biến chẩn đoán **Khóa cục
-bộ**. Giao diện có sẵn tiếng Việt.
+Má»—i Ä‘iá»u hÃ²a lÃ  má»™t thiáº¿t bá»‹: **Climate** (nhiá»‡t Ä‘á»™ Ä‘áº·t, cháº¿ Ä‘á»™, tá»‘c Ä‘á»™ quáº¡t, Ä‘áº£o giÃ³, báº­t/táº¯t), cáº£m
+biáº¿n **nhiá»‡t Ä‘á»™ trong nhÃ ** vÃ  **ngoÃ i trá»i**, cÃ¡c **cÃ´ng táº¯c** (Máº¡nh, YÃªn tÄ©nh, Sá»©c khá»e, Ngá»§, ÄÃ¨n
+hiá»ƒn thá»‹), lá»±a chá»n **Eco**, cáº£m biáº¿n **MÃ£ model**, cáº£m biáº¿n **Káº¿t ná»‘i Ä‘Ã¡m mÃ¢y** (Ä‘iá»u hÃ²a cÃ²n liÃªn
+láº¡c Ä‘Æ°á»£c vá»›i mÃ¡y chá»§ Haier hay khÃ´ng â€” há»¯u Ã­ch náº¿u báº¡n cháº·n nÃ³), vÃ  cáº£m biáº¿n cháº©n Ä‘oÃ¡n **KhÃ³a cá»¥c
+bá»™**. Giao diá»‡n cÃ³ sáºµn tiáº¿ng Viá»‡t.
 
-## Cài đặt
+## CÃ i Ä‘áº·t
 
-1. Bảo đảm đã cài [HACS](https://hacs.xyz/).
-1. HACS → menu ba chấm → **Custom repositories** → `https://github.com/cantruchd/haismart`,
-   loại **Integration** → **Add**.
-1. Tìm **Haismart** → **Download**.
-1. **Khởi động lại Home Assistant.** Mã của tích hợp tùy chỉnh chỉ được nạp lúc khởi động.
+1. Báº£o Ä‘áº£m Ä‘Ã£ cÃ i [HACS](https://hacs.xyz/).
+1. HACS â†’ menu ba cháº¥m â†’ **Custom repositories** â†’ `https://github.com/cantruchd/haismart`,
+   loáº¡i **Integration** â†’ **Add**.
+1. TÃ¬m **Haismart** â†’ **Download**.
+1. **Khá»Ÿi Ä‘á»™ng láº¡i Home Assistant.** MÃ£ cá»§a tÃ­ch há»£p tÃ¹y chá»‰nh chá»‰ Ä‘Æ°á»£c náº¡p lÃºc khá»Ÿi Ä‘á»™ng.
 
-Sau đó: **Settings → Devices & Services → + Add Integration → Haismart**.
+Sau Ä‘Ã³: **Settings â†’ Devices & Services â†’ + Add Integration â†’ Haismart**.
 
-## Thiết lập
+## Thiáº¿t láº­p
 
-Chọn **Đăng nhập** (khuyến nghị): nhập email (hoặc số điện thoại) và mật khẩu tài khoản Haier của
-bạn, cùng quốc gia nơi **tài khoản** được đăng ký. Tích hợp sẽ liệt kê các điều hòa của bạn, tự động
-lấy khóa và tìm thấy máy trong mạng.
+Chá»n **ÄÄƒng nháº­p** (khuyáº¿n nghá»‹): nháº­p email (hoáº·c sá»‘ Ä‘iá»‡n thoáº¡i) vÃ  máº­t kháº©u tÃ i khoáº£n Haier cá»§a
+báº¡n, cÃ¹ng quá»‘c gia nÆ¡i **tÃ i khoáº£n** Ä‘Æ°á»£c Ä‘Äƒng kÃ½. TÃ­ch há»£p sáº½ liá»‡t kÃª cÃ¡c Ä‘iá»u hÃ²a cá»§a báº¡n, tá»± Ä‘á»™ng
+láº¥y khÃ³a vÃ  tÃ¬m tháº¥y mÃ¡y trong máº¡ng.
 
-> ⚠️ **Lỗi thiết lập phổ biến nhất:** trường quốc gia là **mã điện thoại của quốc gia nơi tài khoản
-> Haier được tạo** — không phải nơi lắp điều hòa, và không nhất thiết là nơi bạn đang sống. Nếu chọn
-> sai, máy chủ Haier báo "tài khoản chưa đăng ký", nghe như thể sai mật khẩu.
+> âš ï¸ **Lá»—i thiáº¿t láº­p phá»• biáº¿n nháº¥t:** trÆ°á»ng quá»‘c gia lÃ  **mÃ£ Ä‘iá»‡n thoáº¡i cá»§a quá»‘c gia nÆ¡i tÃ i khoáº£n
+> Haier Ä‘Æ°á»£c táº¡o** â€” khÃ´ng pháº£i nÆ¡i láº¯p Ä‘iá»u hÃ²a, vÃ  khÃ´ng nháº¥t thiáº¿t lÃ  nÆ¡i báº¡n Ä‘ang sá»‘ng. Náº¿u chá»n
+> sai, mÃ¡y chá»§ Haier bÃ¡o "tÃ i khoáº£n chÆ°a Ä‘Äƒng kÃ½", nghe nhÆ° thá»ƒ sai máº­t kháº©u.
 
-**Đăng nhập bằng Google hoặc Facebook?** Những tài khoản đó không có mật khẩu. Hãy tạo một tài khoản
-Haier bằng email và mật khẩu, **chia sẻ điều hòa sang tài khoản đó** trong ứng dụng, rồi dùng tài
-khoản ấy ở đây.
+**ÄÄƒng nháº­p báº±ng Google hoáº·c Facebook?** Nhá»¯ng tÃ i khoáº£n Ä‘Ã³ khÃ´ng cÃ³ máº­t kháº©u. HÃ£y táº¡o má»™t tÃ i khoáº£n
+Haier báº±ng email vÃ  máº­t kháº©u, **chia sáº» Ä‘iá»u hÃ²a sang tÃ i khoáº£n Ä‘Ã³** trong á»©ng dá»¥ng, rá»“i dÃ¹ng tÃ i
+khoáº£n áº¥y á»Ÿ Ä‘Ã¢y.
 
-## Trước khi cài
+## TrÆ°á»›c khi cÃ i
 
-- Home Assistant và điều hòa phải ở **cùng một subnet**. Không có máy chủ trung chuyển đám mây dự phòng.
-- Điều hòa chỉ chấp nhận **một phiên cục bộ tại một thời điểm** (khoảng 17 giây mỗi phiên).
-- Cài tích hợp này **không ngăn điều hòa liên lạc với Haier**, trừ khi bạn chặn bằng tường lửa.
-- Hãy đặt **DHCP reservation** cho điều hòa để địa chỉ IP không thay đổi.
+- Home Assistant vÃ  Ä‘iá»u hÃ²a pháº£i á»Ÿ **cÃ¹ng má»™t subnet**. KhÃ´ng cÃ³ mÃ¡y chá»§ trung chuyá»ƒn Ä‘Ã¡m mÃ¢y dá»± phÃ²ng.
+- Äiá»u hÃ²a chá»‰ cháº¥p nháº­n **má»™t phiÃªn cá»¥c bá»™ táº¡i má»™t thá»i Ä‘iá»ƒm** (khoáº£ng 17 giÃ¢y má»—i phiÃªn).
+- CÃ i tÃ­ch há»£p nÃ y **khÃ´ng ngÄƒn Ä‘iá»u hÃ²a liÃªn láº¡c vá»›i Haier**, trá»« khi báº¡n cháº·n báº±ng tÆ°á»ng lá»­a.
+- HÃ£y Ä‘áº·t **DHCP reservation** cho Ä‘iá»u hÃ²a Ä‘á»ƒ Ä‘á»‹a chá»‰ IP khÃ´ng thay Ä‘á»•i.
 
-## Cần trợ giúp?
+## Cáº§n trá»£ giÃºp?
 
-Báo lỗi tại [GitHub Issues](https://github.com/cantruchd/haismart/issues) — **bằng tiếng Anh nếu
-có thể**. Vui lòng đọc [mục "Before you open an issue"](../../README.md#before-you-open-an-issue)
-trong README chính trước.
+BÃ¡o lá»—i táº¡i [GitHub Issues](https://github.com/cantruchd/haismart/issues) â€” **báº±ng tiáº¿ng Anh náº¿u
+cÃ³ thá»ƒ**. Vui lÃ²ng Ä‘á»c [má»¥c "Before you open an issue"](../../README.md#before-you-open-an-issue)
+trong README chÃ­nh trÆ°á»›c.

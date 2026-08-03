@@ -1,4 +1,4 @@
-"""Constants for the Haismart local integration."""
+"""Constants for the Haismart integration."""
 from __future__ import annotations
 
 from homeassistant.const import Platform

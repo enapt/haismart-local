@@ -1,4 +1,4 @@
-"""The Haismart local integration — fully-local uSS control of Haier ACs (no cloud, no MQTT)."""
+"""The Haismart integration — fully-local uSS control of Haier ACs (no cloud, no MQTT)."""
 from __future__ import annotations
 
 # HACS/vendored build: bundled helper libs live in ./vendor (no pip step needed). This runs

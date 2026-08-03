@@ -3,7 +3,7 @@
 #
 # It does the two things a manual copy misses:
 #   1. pip-installs the two helper libs (haismart-hrdp, haismart-extractor) INTO HA's Python env,
-#      because they are not on PyPI — so HA sees the manifest requirements already satisfied instead
+#      because they are not on PyPI â€” so HA sees the manifest requirements already satisfied instead
 #      of trying (and failing) to fetch them at startup.
 #   2. copies (or symlinks) custom_components/haismart into <config>/custom_components/.
 #
@@ -78,10 +78,10 @@ cat <<EOF
 
 Done. Next:
   1. Restart Home Assistant.
-  2. Settings -> Devices & Services -> Add Integration -> "Haismart (Haier local)".
+  2. Settings -> Devices & Services -> Add Integration -> "Haismart".
   3. Pick an onboarding path (see INSTALL.md): 'login' (email/password + region) is easiest.
 
-If HA logs "Requirements for haismart not found", the libs landed in a DIFFERENT Python than HA's —
+If HA logs "Requirements for haismart not found", the libs landed in a DIFFERENT Python than HA's â€”
 re-run with --python pointing at HA's interpreter (venv: <venv>/bin/python; Docker: run inside the
 container). See INSTALL.md "Troubleshooting".
 EOF

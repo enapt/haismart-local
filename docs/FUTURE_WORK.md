@@ -426,8 +426,14 @@ figure, and halving it lands exactly where a reference unit sits in the same cli
 sensible reading is that the byte counts half degrees, which is a guess that fits rather than a
 fact.
 
+Its layout is not in doubt — two separately published descriptions of that family agree on every
+position and identifier, and the fields we already read match both. What is missing is confirmation
+of what the unread ones *mean*.
+
 What unblocks it is small and specific: **one report from that family with several switches turned
-on**, and one outdoor reading taken somewhere cold or beside a thermometer. Ask for the switches to
+on**, one outdoor reading taken somewhere cold or beside a thermometer, and one power reading beside
+a plug monitor — the power field is a byte, extended to two on richer models, and fifteen is not
+watts for a running air conditioner. Ask for the switches to
 be set to *different* states rather than all on, for the same reason the vane request asks for
 different positions — a uniform capture cannot separate the fields from each other.
 

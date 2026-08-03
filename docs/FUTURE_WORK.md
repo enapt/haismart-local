@@ -429,20 +429,26 @@ heat, health, fresh air, boost, quiet and display.
 **None of it is shipped, for a reason worth keeping.** Held against the three reports we have from
 that family, every one of those switches reads off in all three. That is what a plain unit with
 nothing switched on looks like, and it is also what a wrong position looks like; an off bit confirms
-nothing. One byte is worse than unconfirmed: two independent descriptions of that family disagree
-about what it even is. One calls it an outdoor temperature, the other calls it room humidity, at the
-same place, with the offset between the two descriptions confirmed on the indoor temperature and the
-set point they do agree on. It reads fifty-nine to sixty — an unremarkable room humidity needing no
-interpretation, or a temperature that is impossible unless the byte counts half degrees, which
-neither description claims it does.
+nothing. One byte is nearly settled and worth stating precisely. Two descriptions of that family
+disagreed about it — one calling it an outdoor temperature, the other room humidity — and the model
+catalogue decides between them: these products declare an outdoor temperature they really have, and
+declare no room humidity sensor at all. So it is a temperature.
+
+What it is *not* is the temperature its own description implies. Read as stated it gives about sixty
+degrees outdoors while the room sits at twenty-seven with the cooling running. Two encodings survive
+that, one taken from the range nine other models declare for the same reading and one that counts
+half degrees, and they agree to within half a degree: about thirty, which is what a reference unit
+reports in comparable weather. The value is known; which of the two encodings produces it is not, and
+that only matters once the weather changes.
 
 Its layout is not in doubt — two separately published descriptions of that family agree on every
 position and identifier, and the fields we already read match both. What is missing is confirmation
 of what the unread ones *mean*.
 
 What unblocks it is small and specific: **one report from that family with several switches turned
-on**, one reading of that disputed byte taken by someone who can see both the room humidity and the
-outdoor temperature, and one power reading beside a plug monitor — the power field is a byte, extended to two on richer models, and fifteen is not
+on**, one outdoor reading taken when it is not warm — the two candidate encodings agree in mild
+weather and diverge sharply in cold, so a single reading below about ten degrees separates them —
+and one power reading beside a plug monitor — the power field is a byte, extended to two on richer models, and fifteen is not
 watts for a running air conditioner. Ask for the switches to
 be set to *different* states rather than all on, for the same reason the vane request asks for
 different positions — a uniform capture cannot separate the fields from each other.

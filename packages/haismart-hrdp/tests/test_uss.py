@@ -2129,3 +2129,28 @@ def test_frames_we_know_of_but_do_not_read_are_named() -> None:
     # an ordinary status report is not "recognised but unread" -- it is read
     assert uss.describe_epp_frame(uss.build_epp_frame(0x06, b"\x6d\x01")) is None
     assert uss.describe_epp_frame(b"not a frame at all") is None
+
+
+def test_a_confirmed_field_is_bounded_only_by_physics() -> None:
+    """A narrow band on a confirmed offset hides bugs; it does not prevent them.
+
+    The band began doing two jobs: vetoing a candidate offset while a layout was being derived, and
+    rejecting an absent sensor's zero. The first now lives in `wire_models`, where the question
+    really is "does this offset look right". The second is the sentinels. What was left did neither
+    and discarded a compressor discharge line at 80 C -- a correct reading from a unit pulling
+    78 Hz -- for exceeding a range chosen for room air.
+
+    The shape of that failure is the point: a masked decode looks exactly like absent hardware, so
+    it gets ignored, whereas an implausible number gets reported and fixed.
+    """
+    from haismart_hrdp.uss import _PLAUSIBLE_TEMP_C, _sensor_temp
+
+    # the live reading that used to vanish
+    assert _sensor_temp(144, scale=1.0, offset=-64.0) == 80.0
+    # ordinary air and coil readings are unaffected
+    assert _sensor_temp(60, scale=0.5, offset=-20.0) == 10.0
+    # the sentinels remain -- those are a real encoding, not a guess at what is reasonable
+    for sentinel in (0x00, 0xFF):
+        assert _sensor_temp(sentinel, scale=1.0, offset=-64.0) is None
+    # and the bound is physical rather than comfortable
+    assert _PLAUSIBLE_TEMP_C[1] >= 140.0

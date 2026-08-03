@@ -374,9 +374,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # added without a LAN IP (cloud-only entry): skip local polling entirely -- the cloud
         # control channel (set/get attribute services) still works without a host.
         if not self.host:
-            raise UpdateFailed(
-                "no LAN host configured: local polling is disabled, cloud control only"
-            )
+            _LOGGER.debug("no LAN host configured: local polling is disabled, cloud control only")
+            return {}
         try:
             blobs = await self._async_read()
         except (TimeoutError, OSError, RuntimeError) as err:

@@ -374,8 +374,12 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # added without a LAN IP (cloud-only entry): skip local polling entirely -- the cloud
         # control channel (set/get attribute services) still works without a host.
         if not self.host:
-            _LOGGER.debug("no LAN host configured: local polling is disabled, cloud control only")
-            return {}
+            _LOGGER.debug("no LAN host configured: attempting cloud polling")
+            try:
+                return await self.async_fetch_cloud_status()
+            except Exception as err:
+                _LOGGER.debug("cloud polling failed: %s", err)
+                return {}
         try:
             blobs = await self._async_read()
         except (TimeoutError, OSError, RuntimeError) as err:
@@ -484,6 +488,23 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         raise UpdateFailed(
             f"no decodable status from {self.host} ({misses} consecutive misses)"
         )
+
+    async def async_fetch_cloud_status(self) -> dict[str, Any]:
+        """Fetch status from cloud if LAN polling is unavailable."""
+        from haismart_extractor import HaierCloud
+        from haismart_extractor.cloud import SEA_APP_CREDENTIALS
+        
+        async with async_cloud_transport(self.hass) as transport:
+            client, _ = await HaierCloud.login(
+                SEA_APP_CREDENTIALS,
+                self.config_entry.data.get(CONF_GATEWAY_USERNAME, ""), # Need to ensure this is available
+                self.config_entry.data.get(CONF_GATEWAY_PASSWORD, ""),
+                zone_info=self.config_entry.data.get(CONF_ZONE_INFO, "0"),
+                transport=transport,
+            )
+            # Fetch device status using the device ID
+            status = await client.get_device_status(self.device_id)
+            return status
 
     async def _async_read(self) -> list[bytes]:
         """One read cycle against the current host, holding the single-session lock."""

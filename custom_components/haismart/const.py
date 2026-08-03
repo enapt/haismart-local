@@ -109,6 +109,14 @@ AC_DEVICE_CLASSES: dict[str, str] = {
 # the user must reauth by hand. Advises adding account creds so rotation auto-refreshes in future.
 ISSUE_STALE_LOCALKEY = "stale_localkey_manual_reauth"
 
+# Repairs: raised on an entry with no account credentials whose appliance is still talking to the
+# manufacturer. Such an appliance re-keys several times a day, and an entry that cannot re-fetch
+# will lose its connection at the next rotation -- which presents as the integration "losing its
+# configuration" on restart, since setup is abandoned when the stored key no longer decrypts.
+# Raised BEFORE that happens, because both remedies (attach an account, or block the appliance from
+# the internet so its key stops changing) are things to do while everything still works.
+ISSUE_KEY_WILL_ROTATE = "key_will_rotate"
+
 # Repairs: the AC's status report is a length we have no confirmed layout for. Reads fall back
 # to the layout-independent fields, so the thermostat still works, but temperatures are absent
 # and control is refused rather than risking a sensor byte being written back as a control word.

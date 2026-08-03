@@ -338,6 +338,10 @@
     "unknown_report_layout": {
       "title": "{name}: this air conditioner's status format is not recognised yet",
       "description": "{name} sends a {length}-byte status report, which this integration has no confirmed layout for (product code: {product_code}).\n\nTemperature, mode, fan speed and on/off still work. Indoor and outdoor temperature are unavailable, and sending commands is disabled — guessing where the settings sit in an unknown format risks writing a sensor reading back to the unit as a setting.\n\nAdding support needs no code, just three short captures from you. Follow the linked guide and open a report; it is usually a one-line fix."
+    },
+    "key_will_rotate": {
+      "title": "{name}: its key will change and this setup cannot follow",
+      "description": "This air conditioner can still reach Haier's servers, which means it is issued a new local key several times a day. It was added without a Haier account, so Home Assistant has no way to fetch the new one — the next time you restart after a key change, the air conditioner will stop working and look as though its configuration was lost. Re-adding it by hand fixes it only until the next change.\n\nTwo ways to settle it for good, both worth doing while everything still works:\n\n- **Add your Haier account** to this air conditioner: Settings → Devices & Services → Haismart → the device → Reconfigure → *Add your Haier account*. Key changes are then fetched automatically and you are never asked again.\n- **Or block the air conditioner from the internet** at your router. Its key then stops changing altogether and the one you have stays valid — see the README on going fully cloud-independent. Local control is unaffected either way.\n\nThis message disappears on its own once either is true."
     }
   },
   "exceptions": {

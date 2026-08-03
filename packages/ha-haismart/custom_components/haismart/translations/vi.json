@@ -338,6 +338,10 @@
     "unknown_report_layout": {
       "title": "{name}: định dạng trạng thái của điều hòa này chưa được nhận diện",
       "description": "{name} gửi báo cáo trạng thái dài {length} byte, mà tích hợp này chưa có bố cục đã xác nhận cho nó (mã sản phẩm: {product_code}).\n\nNhiệt độ, chế độ, tốc độ quạt và bật/tắt vẫn hoạt động. Nhiệt độ trong nhà và ngoài trời không khả dụng, và việc gửi lệnh bị vô hiệu hóa — đoán vị trí các thiết lập trong một định dạng chưa biết có nguy cơ ghi ngược giá trị đọc từ cảm biến vào máy như một thiết lập.\n\nViệc bổ sung hỗ trợ không cần viết mã, chỉ cần ba bản ghi ngắn từ bạn. Hãy làm theo hướng dẫn được liên kết và mở một báo cáo; thường chỉ cần sửa một dòng."
+    },
+    "key_will_rotate": {
+      "title": "{name}: khóa sẽ thay đổi và thiết lập này không theo kịp",
+      "description": "Điều hòa này vẫn kết nối được tới máy chủ Haier, nên được cấp khóa cục bộ mới vài lần mỗi ngày. Máy được thêm mà không có tài khoản Haier, nên Home Assistant không thể lấy khóa mới — lần khởi động lại kế tiếp sau khi khóa đổi, máy sẽ ngừng hoạt động và trông như đã mất cấu hình.\n\nHai cách khắc phục lâu dài, nên làm ngay khi mọi thứ còn hoạt động:\n\n- **Thêm tài khoản Haier của bạn**: Cài đặt → Thiết bị và dịch vụ → Haismart → thiết bị → Cấu hình lại → *Thêm tài khoản Haier*. Khóa đổi sẽ được lấy tự động.\n- **Hoặc chặn máy truy cập internet** trên bộ định tuyến. Khóa sẽ ngừng thay đổi và khóa bạn đang có vẫn hợp lệ. Điều khiển cục bộ không bị ảnh hưởng trong cả hai trường hợp.\n\nThông báo này tự biến mất ngay khi một trong hai điều trên thành hiện thực."
     }
   },
   "exceptions": {

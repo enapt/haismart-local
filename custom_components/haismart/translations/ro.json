@@ -338,6 +338,10 @@
     "unknown_report_layout": {
       "title": "{name}: formatul de stare al acestui aparat nu este încă recunoscut",
       "description": "{name} trimite un raport de stare de {length} octeți, pentru care această integrare nu are nicio dispunere confirmată (cod de produs: {product_code}).\n\nTemperatura, modul, viteza ventilatorului și pornirea/oprirea funcționează în continuare. Temperaturile interioară și exterioară nu sunt disponibile, iar trimiterea comenzilor este dezactivată — a ghici unde se află setările într-un format necunoscut riscă să scrie înapoi în aparat o valoare citită de la un senzor, ca și cum ar fi o setare.\n\nAdăugarea suportului nu necesită cod, ci doar trei capturi scurte din partea ta. Urmează ghidul din link și deschide o sesizare; de obicei este o corecție de un singur rând."
+    },
+    "key_will_rotate": {
+      "title": "{name}: cheia se va schimba, iar această configurare nu o poate urma",
+      "description": "Acest aparat de aer condiționat încă ajunge la serverele Haier, deci primește o cheie locală nouă de mai multe ori pe zi. A fost adăugat fără un cont Haier, așa că Home Assistant nu o poate obține pe cea nouă — la următoarea repornire de după o schimbare de cheie aparatul se va opri și va părea că și-a pierdut configurarea.\n\nDouă soluții durabile, ambele de făcut cât timp totul funcționează:\n\n- **Adăugați contul Haier**: Setări → Dispozitive și servicii → Haismart → dispozitiv → Reconfigurare → *Adăugați contul Haier*. Schimbările de cheie sunt apoi obținute automat.\n- **Sau blocați accesul la internet al aparatului** din router. Cheia nu se mai schimbă, iar cea pe care o aveți rămâne valabilă. Comanda locală nu este afectată în niciunul dintre cazuri.\n\nAcest mesaj dispare singur de îndată ce una dintre ele este adevărată."
     }
   },
   "exceptions": {

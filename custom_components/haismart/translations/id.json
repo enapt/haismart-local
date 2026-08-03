@@ -338,6 +338,10 @@
     "unknown_report_layout": {
       "title": "{name}: format status AC ini belum dikenali",
       "description": "{name} mengirim laporan status sebesar {length} byte, yang belum memiliki tata letak terkonfirmasi pada integrasi ini (kode produk: {product_code}).\n\nSuhu, mode, kecepatan kipas, dan nyala/mati tetap berfungsi. Suhu dalam dan luar ruangan tidak tersedia, dan pengiriman perintah dinonaktifkan — menebak letak pengaturan pada format yang tidak dikenal berisiko menuliskan pembacaan sensor kembali ke unit sebagai pengaturan.\n\nMenambahkan dukungan tidak memerlukan kode, hanya tiga rekaman singkat dari Anda. Ikuti panduan yang ditautkan lalu buat laporan; biasanya cukup diperbaiki dengan satu baris."
+    },
+    "key_will_rotate": {
+      "title": "{name}: kuncinya akan berubah dan penyiapan ini tidak bisa mengikutinya",
+      "description": "AC ini masih dapat menghubungi server Haier, sehingga menerima kunci lokal baru beberapa kali sehari. Perangkat ditambahkan tanpa akun Haier, jadi Home Assistant tidak dapat mengambil yang baru — pada mulai ulang berikutnya setelah kunci berubah, perangkat akan berhenti bekerja dan tampak seperti kehilangan konfigurasinya.\n\nDua solusi permanen, keduanya sebaiknya dilakukan selagi semuanya masih berfungsi:\n\n- **Tambahkan akun Haier Anda**: Pengaturan → Perangkat & layanan → Haismart → perangkat → Konfigurasi ulang → *Tambahkan akun Haier Anda*. Perubahan kunci akan diambil otomatis.\n- **Atau blokir akses internet perangkat** di router Anda. Kuncinya berhenti berubah dan yang Anda miliki tetap berlaku. Kendali lokal tidak terpengaruh dalam kedua kasus.\n\nPesan ini hilang dengan sendirinya begitu salah satunya terpenuhi."
     }
   },
   "exceptions": {

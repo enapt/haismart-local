@@ -102,6 +102,7 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     EXTENDED_MISSES,
+    ISSUE_KEY_WILL_ROTATE,
     ISSUE_STALE_LOCALKEY,
     ISSUE_UNKNOWN_LAYOUT,
     READ_TIMEOUT,
@@ -689,6 +690,9 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
         self.cloud_state = info.cloud_state
         self.cloud_connected = info.cloud_connected
+        # The appliance has just told us whether it can still re-key; that plus whether this entry
+        # can fetch a new key is the whole condition, so decide it here rather than on a timer.
+        self._sync_rotation_warning()
 
     def _learn_identity(self, info: udiscovery.DeviceInfo) -> None:
         """Record what the AC says about itself: firmware, and the uPlusId if we lack it.
@@ -1331,6 +1335,37 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "old": str(old),
                 "new": str(current),
             },
+        )
+
+    def _sync_rotation_warning(self) -> None:
+        """Warn an offline entry whose appliance is still online, before its key moves.
+
+        These two facts together are a countdown: the appliance re-keys server-side several times a
+        day while it can reach the manufacturer, and an entry with no account credentials has no way
+        to fetch the new key. The next restart after a rotation abandons setup, so the entities
+        disappear and the entry shows an error -- which reads as the integration losing its
+        configuration rather than as a key problem, and re-adding by hand only lasts until the next
+        rotation.
+
+        Both remedies are things to do while everything still works, which is why this is raised
+        early rather than after the failure: attach an account so rotations are re-fetched, or block
+        the appliance from the internet so its key stops changing at all. Clears itself as soon as
+        either is true.
+        """
+        offline_entry = not self.config_entry.data.get(CONF_REFRESH_TOKEN)
+        will_rotate = offline_entry and self.cloud_connected is True
+        issue_id = f"{ISSUE_KEY_WILL_ROTATE}_{self.device_id}"
+        if not will_rotate:
+            ir.async_delete_issue(self.hass, DOMAIN, issue_id)
+            return
+        ir.async_create_issue(
+            self.hass,
+            DOMAIN,
+            issue_id,
+            is_fixable=False,
+            severity=ir.IssueSeverity.WARNING,
+            translation_key=ISSUE_KEY_WILL_ROTATE,
+            translation_placeholders={"name": self.config_entry.title},
         )
 
     def clear_stale_localkey_issue(self) -> None:

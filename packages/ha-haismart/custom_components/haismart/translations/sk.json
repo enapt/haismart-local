@@ -338,6 +338,10 @@
     "unknown_report_layout": {
       "title": "{name}: formát stavu tejto klimatizácie zatiaľ nie je rozpoznaný",
       "description": "{name} posiela hlásenie o stave s dĺžkou {length} bajtov, pre ktoré táto integrácia nemá potvrdené rozloženie (kód produktu: {product_code}).\n\nTeplota, režim, rýchlosť ventilátora a zapnutie/vypnutie naďalej fungujú. Vnútorná a vonkajšia teplota nie sú dostupné a odosielanie príkazov je vypnuté – hádať, kde v neznámom formáte ležia nastavenia, hrozí zápisom nameranej hodnoty späť do jednotky ako nastavenia.\n\nPridanie podpory nevyžaduje kód, stačia tri krátke záznamy od vás. Postupujte podľa odkazovaného návodu a založte hlásenie; zvyčajne ide o opravu na jednom riadku."
+    },
+    "key_will_rotate": {
+      "title": "{name}: kľúč sa zmení a toto nastavenie ho nedokáže nasledovať",
+      "description": "Táto klimatizácia stále dosiahne na servery Haier, takže dostáva nový lokálny kľúč niekoľkokrát denne. Bola pridaná bez účtu Haier, takže Home Assistant nový kľúč nezíska — pri najbližšom reštarte po zmene kľúča zariadenie prestane fungovať a bude to vyzerať, že prišlo o konfiguráciu.\n\nDve trvalé riešenia, obe vykonajte, kým všetko funguje:\n\n- **Pridajte účet Haier**: Nastavenia → Zariadenia a služby → Haismart → zariadenie → Znovu nastaviť → *Pridať účet Haier*. Zmeny kľúča sa potom sťahujú automaticky.\n- **Alebo zariadeniu na smerovači zablokujte prístup na internet**. Kľúč sa potom prestane meniť a ten, ktorý máte, zostane platný. Miestne ovládanie v oboch prípadoch funguje ďalej.\n\nTáto správa zmizne sama, len čo bude platiť jedno z toho."
     }
   },
   "exceptions": {

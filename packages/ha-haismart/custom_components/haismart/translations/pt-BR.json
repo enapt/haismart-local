@@ -338,6 +338,10 @@
     "unknown_report_layout": {
       "title": "{name}: o formato de estado deste ar-condicionado ainda não é reconhecido",
       "description": "{name} envia um relatório de estado de {length} bytes, para o qual esta integração não tem nenhum layout confirmado (código do produto: {product_code}).\n\nTemperatura, modo, velocidade do ventilador e liga/desliga continuam funcionando. As temperaturas interna e externa ficam indisponíveis e o envio de comandos está desativado — adivinhar onde ficam os ajustes em um formato desconhecido corre o risco de gravar de volta no aparelho a leitura de um sensor como se fosse um ajuste.\n\nAdicionar suporte não exige código, apenas três capturas curtas da sua parte. Siga o guia vinculado e abra um relato; normalmente é uma correção de uma linha."
+    },
+    "key_will_rotate": {
+      "title": "{name}: a chave vai mudar e esta configuração não consegue acompanhar",
+      "description": "Este ar-condicionado ainda alcança os servidores da Haier, então recebe uma nova chave local várias vezes ao dia. Ele foi adicionado sem uma conta Haier, então o Home Assistant não consegue obter a nova — na próxima reinicialização após uma troca de chave o aparelho deixará de funcionar e parecerá ter perdido a configuração.\n\nDuas soluções definitivas, ambas para fazer enquanto tudo funciona:\n\n- **Adicione sua conta Haier**: Configurações → Dispositivos e serviços → Haismart → o dispositivo → Reconfigurar → *Adicionar sua conta Haier*. As trocas de chave passam a ser obtidas automaticamente.\n- **Ou bloqueie o acesso do aparelho à internet** no seu roteador. A chave deixa de mudar e a que você tem continua válida. O controle local não é afetado em nenhum dos casos.\n\nEsta mensagem desaparece sozinha assim que uma das duas for verdadeira."
     }
   },
   "exceptions": {

@@ -338,6 +338,10 @@
     "unknown_report_layout": {
       "title": "{name}: el formato de estado de este aire acondicionado aún no se reconoce",
       "description": "{name} envía un informe de estado de {length} bytes, para el que esta integración no tiene ninguna disposición confirmada (código de producto: {product_code}).\n\nLa temperatura, el modo, la velocidad del ventilador y el encendido/apagado siguen funcionando. Las temperaturas interior y exterior no están disponibles y el envío de comandos está desactivado: adivinar dónde están los ajustes en un formato desconocido podría escribir en el equipo la lectura de un sensor como si fuera un ajuste.\n\nAñadir compatibilidad no requiere código, solo tres capturas breves por tu parte. Sigue la guía enlazada y abre un informe; suele ser una corrección de una línea."
+    },
+    "key_will_rotate": {
+      "title": "{name}: su clave va a cambiar y esta configuración no puede seguirla",
+      "description": "Este aire acondicionado todavía llega a los servidores de Haier, por lo que recibe una clave local nueva varias veces al día. Se añadió sin una cuenta Haier, así que Home Assistant no puede obtener la nueva: en el próximo reinicio tras un cambio de clave, el aparato dejará de funcionar y parecerá que ha perdido su configuración.\n\nDos soluciones definitivas, ambas para hacer mientras todo funciona:\n\n- **Añada su cuenta Haier**: Ajustes → Dispositivos y servicios → Haismart → el dispositivo → Reconfigurar → *Añadir su cuenta Haier*. Los cambios de clave se obtendrán automáticamente.\n- **O bloquee el acceso a Internet del aparato** en su router. Entonces su clave deja de cambiar y la que tiene sigue siendo válida. El control local no se ve afectado en ninguno de los dos casos.\n\nEste mensaje desaparece solo en cuanto una de las dos sea cierta."
     }
   },
   "exceptions": {

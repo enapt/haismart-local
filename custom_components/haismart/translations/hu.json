@@ -338,6 +338,10 @@
     "unknown_report_layout": {
       "title": "{name}: ennek a klímának az állapotformátuma még nem ismert",
       "description": "A(z) {name} {length} bájtos állapotjelentést küld, amelyhez ennek az integrációnak nincs megerősített elrendezése (termékkód: {product_code}).\n\nA hőmérséklet, az üzemmód, a ventilátorfokozat és a be-/kikapcsolás továbbra is működik. A beltéri és kültéri hőmérséklet nem érhető el, a parancsküldés pedig le van tiltva – ismeretlen formátumban megtippelni a beállítások helyét azzal a kockázattal jár, hogy egy érzékelő mért értéke beállításként íródik vissza az egységbe.\n\nA támogatás hozzáadásához nem kell kód, csak három rövid felvétel tőled. Kövesd a hivatkozott útmutatót, és nyiss egy bejelentést; általában egysoros javításról van szó."
+    },
+    "key_will_rotate": {
+      "title": "{name}: a kulcs meg fog változni, és ez a beállítás nem tudja követni",
+      "description": "Ez a klímaberendezés még eléri a Haier kiszolgálóit, ezért naponta többször új helyi kulcsot kap. Haier-fiók nélkül lett hozzáadva, így a Home Assistant nem tudja lekérni az újat — a kulcscsere utáni első újraindításkor a készülék leáll, és úgy tűnik majd, mintha elvesztette volna a beállításait.\n\nKét tartós megoldás, mindkettőt érdemes most elvégezni, amíg minden működik:\n\n- **Adja hozzá Haier-fiókját**: Beállítások → Eszközök és szolgáltatások → Haismart → az eszköz → Újrakonfigurálás → *Haier-fiók hozzáadása*. A kulcscserék ezután automatikusan lekérésre kerülnek.\n- **Vagy tiltsa le a készülék internet-hozzáférését** az útválasztón. A kulcs ekkor nem változik többé, és a meglévő érvényes marad. A helyi vezérlést egyik eset sem érinti.\n\nEz az üzenet magától eltűnik, amint bármelyik teljesül."
     }
   },
   "exceptions": {

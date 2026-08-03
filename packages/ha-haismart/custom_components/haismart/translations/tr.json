@@ -338,6 +338,10 @@
     "unknown_report_layout": {
       "title": "{name}: bu klimanın durum biçimi henüz tanınmıyor",
       "description": "{name} {length} baytlık bir durum raporu gönderiyor; bu entegrasyonun bu rapor için doğrulanmış bir yerleşimi yok (ürün kodu: {product_code}).\n\nSıcaklık, mod, fan hızı ve açma/kapama çalışmaya devam ediyor. İç ve dış ortam sıcaklığı kullanılamıyor ve komut gönderme devre dışı — bilinmeyen bir biçimde ayarların nerede olduğunu tahmin etmek, bir sensör okumasını ayar olarak cihaza geri yazma riski taşır.\n\nDestek eklemek kod gerektirmez, sizden yalnızca üç kısa kayıt yeterlidir. Bağlantıdaki kılavuzu izleyip bir rapor açın; genellikle tek satırlık bir düzeltmedir."
+    },
+    "key_will_rotate": {
+      "title": "{name}: anahtarı değişecek ve bu kurulum bunu takip edemez",
+      "description": "Bu klima hâlâ Haier sunucularına ulaşabiliyor, dolayısıyla günde birkaç kez yeni bir yerel anahtar alıyor. Haier hesabı olmadan eklendiği için Home Assistant yenisini alamaz — anahtar değişiminden sonraki ilk yeniden başlatmada cihaz çalışmayı bırakacak ve yapılandırmasını kaybetmiş gibi görünecektir.\n\nKalıcı iki çözüm, ikisi de her şey çalışırken yapılmalı:\n\n- **Haier hesabınızı ekleyin**: Ayarlar → Cihazlar ve servisler → Haismart → cihaz → Yeniden yapılandır → *Haier hesabınızı ekleyin*. Anahtar değişiklikleri bundan sonra otomatik alınır.\n- **Ya da yönlendiricinizde cihazın internet erişimini engelleyin**. Anahtar artık değişmez ve elinizdeki geçerli kalır. Yerel kontrol her iki durumda da etkilenmez.\n\nBu ileti, ikisinden biri sağlandığı anda kendiliğinden kaybolur."
     }
   },
   "exceptions": {

@@ -338,6 +338,10 @@
     "unknown_report_layout": {
       "title": "{name}: den här luftkonditioneringens statusformat känns inte igen ännu",
       "description": "{name} skickar en statusrapport på {length} byte, som den här integrationen inte har någon bekräftad layout för (produktkod: {product_code}).\n\nTemperatur, läge, fläkthastighet och på/av fungerar fortfarande. Inomhus- och utomhustemperatur är inte tillgängliga och det går inte att skicka kommandon – att gissa var inställningarna ligger i ett okänt format riskerar att skriva tillbaka ett sensorvärde till enheten som om det vore en inställning.\n\nAtt lägga till stöd kräver ingen kod, bara tre korta inspelningar från dig. Följ den länkade guiden och öppna en rapport; det brukar vara en enradsfix."
+    },
+    "key_will_rotate": {
+      "title": "{name}: nyckeln kommer att ändras och den här installationen kan inte följa med",
+      "description": "Den här luftkonditioneringen når fortfarande Haiers servrar och tilldelas därför en ny lokal nyckel flera gånger om dagen. Den lades till utan ett Haier-konto, så Home Assistant kan inte hämta den nya — vid nästa omstart efter ett nyckelbyte slutar enheten fungera och ser ut att ha tappat sin konfiguration.\n\nTvå varaktiga lösningar, båda att göra medan allt fungerar:\n\n- **Lägg till ditt Haier-konto**: Inställningar → Enheter och tjänster → Haismart → enheten → Konfigurera om → *Lägg till ditt Haier-konto*. Nyckelbyten hämtas då automatiskt.\n- **Eller blockera enhetens internetåtkomst** i routern. Nyckeln slutar då ändras och den du har förblir giltig. Lokal styrning påverkas inte i något av fallen.\n\nDetta meddelande försvinner av sig självt så snart något av det stämmer."
     }
   },
   "exceptions": {

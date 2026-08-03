@@ -338,6 +338,10 @@
     "unknown_report_layout": {
       "title": "{name}: het statusformaat van deze airco wordt nog niet herkend",
       "description": "{name} stuurt een statusrapport van {length} bytes, waarvoor deze integratie geen bevestigde indeling heeft (productcode: {product_code}).\n\nTemperatuur, modus, ventilatorsnelheid en aan/uit blijven werken. Binnen- en buitentemperatuur zijn niet beschikbaar en het versturen van opdrachten is uitgeschakeld — gokken waar de instellingen in een onbekend formaat staan, riskeert dat een sensormeting als instelling terug naar het apparaat wordt geschreven.\n\nOndersteuning toevoegen vraagt geen code, alleen drie korte opnames van jou. Volg de gelinkte handleiding en open een melding; meestal is het een oplossing van één regel."
+    },
+    "key_will_rotate": {
+      "title": "{name}: de sleutel gaat veranderen en deze installatie kan dat niet volgen",
+      "description": "Deze airconditioner bereikt de servers van Haier nog steeds en krijgt dus meerdere keren per dag een nieuwe lokale sleutel. Hij is toegevoegd zonder Haier-account, dus Home Assistant kan de nieuwe niet ophalen — bij de eerstvolgende herstart na een sleutelwijziging stopt het apparaat en lijkt het alsof de configuratie verloren is.\n\nTwee blijvende oplossingen, beide nu te doen nu alles nog werkt:\n\n- **Voeg uw Haier-account toe**: Instellingen → Apparaten en diensten → Haismart → het apparaat → Herconfigureren → *Haier-account toevoegen*. Sleutelwijzigingen worden dan automatisch opgehaald.\n- **Of blokkeer de internettoegang van het apparaat** op uw router. De sleutel verandert dan niet meer en de uwe blijft geldig. Lokale bediening blijft in beide gevallen werken.\n\nDeze melding verdwijnt vanzelf zodra een van beide waar is."
     }
   },
   "exceptions": {

@@ -338,6 +338,10 @@
     "unknown_report_layout": {
       "title": "{name}: Das Statusformat dieses Klimageräts ist noch nicht bekannt",
       "description": "{name} sendet einen {length} Byte langen Statusbericht, für den diese Integration kein bestätigtes Layout hat (Produktcode: {product_code}).\n\nTemperatur, Modus, Lüfterstufe und Ein/Aus funktionieren weiterhin. Innen- und Außentemperatur sind nicht verfügbar und das Senden von Befehlen ist deaktiviert – zu raten, wo die Einstellungen in einem unbekannten Format liegen, birgt das Risiko, einen Sensorwert als Einstellung an das Gerät zurückzuschreiben.\n\nFür die Unterstützung ist kein Code nötig, nur drei kurze Mitschnitte von dir. Folge der verlinkten Anleitung und erstelle einen Bericht; meist genügt eine einzige Zeile."
+    },
+    "key_will_rotate": {
+      "title": "{name}: Der Schlüssel wird sich ändern und diese Einrichtung kann nicht folgen",
+      "description": "Dieses Klimagerät erreicht noch Haiers Server, erhält also mehrmals täglich einen neuen lokalen Schlüssel. Es wurde ohne Haier-Konto hinzugefügt, daher kann Home Assistant den neuen nicht abrufen — beim nächsten Neustart nach einem Schlüsselwechsel hört das Gerät auf zu funktionieren und wirkt, als sei seine Konfiguration verloren.\n\nZwei dauerhafte Lösungen, beide jetzt durchzuführen, solange alles funktioniert:\n\n- **Haier-Konto hinzufügen**: Einstellungen → Geräte & Dienste → Haismart → Gerät → Neu konfigurieren → *Haier-Konto hinzufügen*. Schlüsselwechsel werden dann automatisch abgerufen.\n- **Oder das Gerät im Router vom Internet trennen**. Der Schlüssel ändert sich dann nicht mehr und der vorhandene bleibt gültig. Die lokale Steuerung bleibt in beiden Fällen unberührt.\n\nDiese Meldung verschwindet von selbst, sobald eines von beidem zutrifft."
     }
   },
   "exceptions": {

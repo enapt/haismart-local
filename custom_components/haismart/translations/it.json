@@ -338,6 +338,10 @@
     "unknown_report_layout": {
       "title": "{name}: il formato di stato di questo climatizzatore non è ancora riconosciuto",
       "description": "{name} invia un report di stato di {length} byte, per il quale questa integrazione non ha una disposizione confermata (codice prodotto: {product_code}).\n\nTemperatura, modalità, velocità della ventola e accensione/spegnimento continuano a funzionare. Le temperature interna ed esterna non sono disponibili e l'invio di comandi è disattivato: indovinare dove si trovano le impostazioni in un formato sconosciuto rischia di riscrivere sull'unità la lettura di un sensore come se fosse un'impostazione.\n\nAggiungere il supporto non richiede codice, servono solo tre brevi catture da parte tua. Segui la guida collegata e apri una segnalazione; di solito è una correzione di una riga."
+    },
+    "key_will_rotate": {
+      "title": "{name}: la sua chiave cambierà e questa configurazione non può seguirla",
+      "description": "Questo condizionatore raggiunge ancora i server Haier, quindi riceve una nuova chiave locale più volte al giorno. È stato aggiunto senza un account Haier, perciò Home Assistant non può recuperare quella nuova: al prossimo riavvio dopo un cambio di chiave l'apparecchio smetterà di funzionare e sembrerà aver perso la configurazione.\n\nDue soluzioni definitive, entrambe da fare finché tutto funziona:\n\n- **Aggiungi il tuo account Haier**: Impostazioni → Dispositivi e servizi → Haismart → il dispositivo → Riconfigura → *Aggiungi il tuo account Haier*. I cambi di chiave vengono così recuperati automaticamente.\n- **Oppure blocca l'accesso a Internet dell'apparecchio** sul router. La chiave smette di cambiare e quella che hai resta valida. Il controllo locale non è influenzato in nessuno dei due casi.\n\nQuesto messaggio scompare da solo non appena una delle due è vera."
     }
   },
   "exceptions": {

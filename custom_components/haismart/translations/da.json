@@ -338,6 +338,10 @@
     "unknown_report_layout": {
       "title": "{name}: dette klimaanlægs statusformat genkendes ikke endnu",
       "description": "{name} sender en statusrapport på {length} byte, som denne integration ikke har noget bekræftet layout for (produktkode: {product_code}).\n\nTemperatur, tilstand, ventilatorhastighed og tænd/sluk virker fortsat. Indendørs- og udendørstemperatur er utilgængelige, og afsendelse af kommandoer er slået fra – at gætte, hvor indstillingerne ligger i et ukendt format, risikerer at skrive en sensoraflæsning tilbage til anlægget som var det en indstilling.\n\nAt tilføje understøttelse kræver ingen kode, kun tre korte optagelser fra dig. Følg den linkede vejledning, og opret en rapport; det er som regel en rettelse på én linje."
+    },
+    "key_will_rotate": {
+      "title": "{name}: nøglen vil ændre sig, og denne opsætning kan ikke følge med",
+      "description": "Dette klimaanlæg når stadig Haiers servere og får derfor en ny lokal nøgle flere gange om dagen. Det blev tilføjet uden en Haier-konto, så Home Assistant kan ikke hente den nye — ved næste genstart efter et nøgleskift holder enheden op med at virke og ser ud til at have mistet sin konfiguration.\n\nTo varige løsninger, begge bør gøres, mens alt virker:\n\n- **Tilføj din Haier-konto**: Indstillinger → Enheder og tjenester → Haismart → enheden → Omkonfigurer → *Tilføj din Haier-konto*. Nøgleskift hentes derefter automatisk.\n- **Eller blokér enhedens internetadgang** i din router. Nøglen ændrer sig så ikke længere, og den, du har, forbliver gyldig. Lokal styring påvirkes ikke i nogen af tilfældene.\n\nDenne besked forsvinder af sig selv, så snart et af dem er opfyldt."
     }
   },
   "exceptions": {

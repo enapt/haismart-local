@@ -2832,3 +2832,66 @@ async def test_identity_already_known_is_never_overwritten(
     assert entry.data[CONF_PRODUCT_CODE] == "AAC1UKZ01"
     assert entry.data[CONF_UPLUS_ID] == "MINE"
     assert listed.await_count == 0, "nothing was missing, so nothing should have been fetched"
+
+
+async def test_an_offline_entry_on_a_still_connected_appliance_is_warned_early(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Two facts together are a countdown, so say so before the clock runs out.
+
+    An appliance that can still reach the manufacturer is issued a new key several times a day. An
+    entry added without an account cannot fetch the new one, so the next restart after a change
+    abandons setup — the entities vanish and it reads as the integration losing its configuration,
+    not as a key problem. Re-adding by hand lasts until the next change.
+
+    Both remedies are things to do while everything still works, which is the whole reason for
+    raising this before the failure rather than after it.
+    """
+    from homeassistant.helpers import issue_registry as ir
+
+    from custom_components.haismart.const import ISSUE_KEY_WILL_ROTATE
+
+    entry = _entry()                       # no account credentials
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    issues = ir.async_get(hass)
+    assert issues.async_get_issue(
+        DOMAIN, f"{ISSUE_KEY_WILL_ROTATE}_A1B2C3D4E5F6"
+    ), "an appliance still on the internet with no way to re-key must be flagged"
+
+
+async def test_no_rotation_warning_once_either_remedy_is_in_place(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Blocking it freezes the key; an account lets us follow it. Either one ends this."""
+    from haismart_hrdp.udiscovery import DeviceInfo
+    from homeassistant.helpers import issue_registry as ir
+
+    from custom_components.haismart.const import CONF_REFRESH_TOKEN, ISSUE_KEY_WILL_ROTATE
+
+    # 1) blocked from the internet: the key can no longer change
+    mock_uss.cloud.return_value = DeviceInfo(
+        device_id="A1B2C3D4E5F6", host="192.168.1.50", cloud_state=1006
+    )
+    blocked = _entry()
+    blocked.add_to_hass(hass)
+    await hass.config_entries.async_setup(blocked.entry_id)
+    await hass.async_block_till_done()
+    assert not ir.async_get(hass).async_get_issue(
+        DOMAIN, f"{ISSUE_KEY_WILL_ROTATE}_A1B2C3D4E5F6"
+    ), "a blocked appliance's key is frozen, so there is nothing to warn about"
+
+    # 2) still online, but an account is attached: rotations are fetched
+    await hass.config_entries.async_unload(blocked.entry_id)
+    mock_uss.cloud.return_value = DeviceInfo(
+        device_id="B1B2C3D4E5F6", host="192.168.1.51", cloud_state=1000
+    )
+    signed_in = _entry(**{CONF_REFRESH_TOKEN: "2_RT"})
+    signed_in.add_to_hass(hass)
+    await hass.config_entries.async_setup(signed_in.entry_id)
+    await hass.async_block_till_done()
+    assert not ir.async_get(hass).async_get_issue(
+        DOMAIN, f"{ISSUE_KEY_WILL_ROTATE}_B1B2C3D4E5F6"
+    )

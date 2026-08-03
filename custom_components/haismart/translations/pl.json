@@ -338,6 +338,10 @@
     "unknown_report_layout": {
       "title": "{name}: format stanu tego klimatyzatora nie jest jeszcze rozpoznawany",
       "description": "{name} wysyła raport stanu o długości {length} bajtów, dla którego ta integracja nie ma potwierdzonego układu (kod produktu: {product_code}).\n\nTemperatura, tryb, prędkość wentylatora oraz włączanie/wyłączanie nadal działają. Temperatura wewnętrzna i zewnętrzna są niedostępne, a wysyłanie poleceń jest wyłączone — zgadywanie, gdzie w nieznanym formacie leżą ustawienia, grozi zapisaniem odczytu z czujnika z powrotem do urządzenia jako ustawienia.\n\nDodanie obsługi nie wymaga kodu, wystarczą trzy krótkie zrzuty od Ciebie. Postępuj zgodnie z podlinkowanym przewodnikiem i zgłoś sprawę; zwykle jest to poprawka jednej linii."
+    },
+    "key_will_rotate": {
+      "title": "{name}: klucz się zmieni, a ta konfiguracja nie zdoła za nim nadążyć",
+      "description": "Ten klimatyzator wciąż łączy się z serwerami Haier, więc kilka razy dziennie otrzymuje nowy klucz lokalny. Został dodany bez konta Haier, więc Home Assistant nie może pobrać nowego — po najbliższym restarcie następującym po zmianie klucza urządzenie przestanie działać i będzie wyglądać, jakby straciło konfigurację.\n\nDwa trwałe rozwiązania, oba do wykonania póki wszystko działa:\n\n- **Dodaj konto Haier**: Ustawienia → Urządzenia i usługi → Haismart → urządzenie → Rekonfiguruj → *Dodaj konto Haier*. Zmiany klucza będą wtedy pobierane automatycznie.\n- **Albo zablokuj urządzeniu dostęp do internetu** na routerze. Klucz przestanie się zmieniać, a ten, który masz, pozostanie ważny. Sterowanie lokalne działa w obu przypadkach.\n\nTa wiadomość zniknie sama, gdy tylko jedno z powyższych będzie prawdą."
     }
   },
   "exceptions": {

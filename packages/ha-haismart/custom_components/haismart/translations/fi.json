@@ -338,6 +338,10 @@
     "unknown_report_layout": {
       "title": "{name}: tämän ilmastointilaitteen tilamuotoa ei vielä tunnisteta",
       "description": "{name} lähettää {length} tavun tilaraportin, jolle tällä integraatiolla ei ole vahvistettua asettelua (tuotekoodi: {product_code}).\n\nLämpötila, tila, puhaltimen nopeus sekä päälle/pois toimivat edelleen. Sisä- ja ulkolämpötila eivät ole käytettävissä, ja komentojen lähetys on poistettu käytöstä – asetusten paikan arvaaminen tuntemattomasta muodosta voisi kirjoittaa anturilukeman takaisin laitteeseen asetuksena.\n\nTuen lisääminen ei vaadi koodia, vain kolme lyhyttä tallennetta sinulta. Seuraa linkitettyä ohjetta ja avaa ilmoitus; kyse on yleensä yhden rivin korjauksesta."
+    },
+    "key_will_rotate": {
+      "title": "{name}: avain vaihtuu, eikä tämä asennus pysy perässä",
+      "description": "Tämä ilmastointilaite tavoittaa yhä Haierin palvelimet, joten se saa uuden paikallisen avaimen useita kertoja päivässä. Se lisättiin ilman Haier-tiliä, joten Home Assistant ei voi hakea uutta — seuraavan avaimenvaihdon jälkeisellä uudelleenkäynnistyksellä laite lakkaa toimimasta ja näyttää menettäneen asetuksensa.\n\nKaksi pysyvää ratkaisua, molemmat kannattaa tehdä nyt kun kaikki toimii:\n\n- **Lisää Haier-tilisi**: Asetukset → Laitteet ja palvelut → Haismart → laite → Määritä uudelleen → *Lisää Haier-tilisi*. Avaimenvaihdot haetaan tämän jälkeen automaattisesti.\n- **Tai estä laitteen internetyhteys** reitittimessäsi. Avain lakkaa vaihtumasta ja nykyinen pysyy voimassa. Paikallinen ohjaus toimii kummassakin tapauksessa.\n\nTämä viesti katoaa itsestään heti kun jompikumpi toteutuu."
     }
   },
   "exceptions": {

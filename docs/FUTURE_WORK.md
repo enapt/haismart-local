@@ -594,3 +594,42 @@ feature, taken with the feature in a known state**. Until then:
 
 Treat the map as complete for everything locally derivable. This item exists so that a capture, if
 one ever turns up, is recognised for what it settles rather than re-investigated from scratch.
+
+## 20. Which model this is — why it is asked, and what happens if you skip
+
+**Status: settled. Recorded because "why does it ask?" is a fair question with a non-obvious answer.**
+
+An appliance announces which product **family** it belongs to, and that is as far as the wire goes.
+It does not announce which model it is, and — this is the part worth knowing — **neither does
+anything else about it**. Of the twenty-three products sharing our reference units' family, nineteen
+are indistinguishable from the appliance itself: identical declared settings, identical real feature
+sets. Those nineteen still carry **four different rule sets** between them. Two units can be
+byte-for-byte the same to every observation available and still be governed by different rules, so
+no amount of probing can recover the difference. The information is not in the appliance.
+
+**The manufacturer does not derive it either — it asks.** Adding an appliance to the vendor app
+requires choosing the product from a list, and what the account reports afterwards is the stored
+record of that answer. Signing in here reads that same answer back, which is why the account path
+never asks. Only a hand-made entry, set up from a saved key with no account, has nobody to ask —
+so it asks you, from the shortlist that appliance's own family implies, in model numbers off the
+label rather than internal codes.
+
+**Skipping costs less than it sounds.** Where the model is unknown, the rules every member of the
+family agrees on are applied instead, which is safe whichever model it turns out to be. The
+agreement is lopsided in the useful direction — across every published family:
+
+| what | how much survives without knowing the model |
+|---|---|
+| fault names | **all of them** |
+| explanations for why a control is unavailable | **all of them** |
+| settings that must be written together | about half |
+| rules for when a control is unavailable | about a quarter |
+
+So the part anyone actually sees — a fault reported as a named service code rather than a number —
+arrives complete with nothing chosen. What thins out is conditional availability, and it thins out
+safely: a rule nobody disagrees about cannot make the wrong control unavailable, and a missing rule
+makes nothing unavailable at all.
+
+One deliberate asymmetry: a setting that **any** member of the family lacks is treated as absent for
+all of them. Offering a control for hardware a unit does not have is the failure this layer exists
+to prevent, so where the family disagrees, the conservative reading wins.

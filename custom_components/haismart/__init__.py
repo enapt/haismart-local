@@ -32,6 +32,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> 
     # entities are created next, and without that flag they would be built for features the generic
     # model over-declares (which read a permanent, meaningless off) rather than the ones the unit
     # actually has. A fresh onboarding already has the flag, so it never waits.
+    # An entry added through an account before its product code was kept does not store one. The
+    # places where that could pick the wrong model already guard against it -- the profile comes
+    # from the device's own model, and the rules lookup refuses a defaulted code -- so this is not
+    # a correctness fix. It is that nothing can be looked up by a code that is missing: the shipped
+    # rules cannot complete what the fetched copy leaves empty, and a report names a model the unit
+    # may not be. The account is signed in and its device list has always carried this, so tell the
+    # entry rather than ask anyone to re-add a working appliance. Awaited because what it learns
+    # decides which rules are read immediately below.
+    if coordinator.needs_identity_topup:
+        await coordinator.async_topup_identity()
+
     if coordinator.needs_invisible_topup:
         await coordinator.async_fetch_model_rules()
     else:

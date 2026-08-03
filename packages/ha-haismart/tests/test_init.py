@@ -2755,3 +2755,80 @@ async def test_the_two_published_copies_are_combined_not_chosen_between(
 
     # and with nothing shipped for this product, the fetched copy passes through untouched
     assert _fill_gaps(fetched, None) == fetched
+
+
+async def test_identity_missing_from_an_older_entry_is_learned_not_asked_for(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """An entry can be told what its own account already knows, instead of being re-added.
+
+    Entries added through an account before the product code and device type were kept do not store
+    them. The credentials are still there, and the device list has always carried both, so the gap
+    closes on the next start with nothing asked of anyone.
+    """
+    from unittest.mock import AsyncMock, patch
+
+    from haismart_extractor.cloud import CloudDevice
+
+    from custom_components.haismart.const import (
+        CONF_CLOUD_CLIENT_ID,
+        CONF_REFRESH_TOKEN,
+    )
+
+    entry = _entry(**{
+        CONF_REFRESH_TOKEN: "2_RT",
+        CONF_CLOUD_CLIENT_ID: "A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4",
+        CONF_PRODUCT_CODE: None,        # the older shape: neither was stored
+    })
+    entry.add_to_hass(hass)
+    device = CloudDevice("A1B2C3D4E5F6", "Downstairs", "0201203a", "UPLUS", True,
+                         prod_no="AAD180E00")
+    with (
+        patch("custom_components.haismart.coordinator.HaierCloud.refresh_token",
+              new=AsyncMock(return_value=type("R", (), {"access_token": "2_F"})())),
+        patch("custom_components.haismart.coordinator.HaierCloud.list_devices_v2",
+              new=AsyncMock(return_value=[device])),
+    ):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert entry.data[CONF_PRODUCT_CODE] == "AAD180E00", "learned, not defaulted"
+    assert entry.data[CONF_DEVICE_TYPE] == "0201203a"
+    assert entry.data[CONF_UPLUS_ID] == "UPLUS"
+
+
+async def test_identity_already_known_is_never_overwritten(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """What is stored may have come from somewhere this lookup cannot see, so it wins."""
+    from unittest.mock import AsyncMock, patch
+
+    from haismart_extractor.cloud import CloudDevice
+
+    from custom_components.haismart.const import (
+        CONF_CLOUD_CLIENT_ID,
+        CONF_REFRESH_TOKEN,
+    )
+
+    entry = _entry(**{
+        CONF_REFRESH_TOKEN: "2_RT",
+        CONF_CLOUD_CLIENT_ID: "A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4",
+        CONF_PRODUCT_CODE: "AAC1UKZ01",
+        CONF_UPLUS_ID: "MINE",
+        CONF_DEVICE_TYPE: "0201203a",
+    })
+    entry.add_to_hass(hass)
+    listed = AsyncMock(return_value=[
+        CloudDevice("A1B2C3D4E5F6", "x", "9999", "THEIRS", True, prod_no="WRONG")
+    ])
+    with (
+        patch("custom_components.haismart.coordinator.HaierCloud.refresh_token",
+              new=AsyncMock(return_value=type("R", (), {"access_token": "2_F"})())),
+        patch("custom_components.haismart.coordinator.HaierCloud.list_devices_v2", new=listed),
+    ):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert entry.data[CONF_PRODUCT_CODE] == "AAC1UKZ01"
+    assert entry.data[CONF_UPLUS_ID] == "MINE"
+    assert listed.await_count == 0, "nothing was missing, so nothing should have been fetched"

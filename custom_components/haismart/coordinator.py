@@ -1474,6 +1474,74 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 len(bundled.get("alarms") or ()), len(fetched.get("alarms") or ()),
             )
 
+    @property
+    def needs_identity_topup(self) -> bool:
+        """Whether this entry is missing identity the account it is signed into already knows."""
+        data = self.config_entry.data
+        if not (data.get(CONF_REFRESH_TOKEN) and data.get(CONF_CLOUD_CLIENT_ID)):
+            return False
+        return not all(
+            data.get(k) for k in (CONF_PRODUCT_CODE, CONF_UPLUS_ID, CONF_DEVICE_TYPE)
+        )
+
+    async def async_topup_identity(self) -> bool:
+        """Fill in identity the device list has always carried but this entry never kept.
+
+        Not a correctness fix -- the paths where a wrong code would do damage already refuse to use
+        a defaulted one. The profile comes from the device's own model whenever there is one, the
+        rules lookup takes only a code the entry actually stores, and diagnostics says outright when
+        the code is a fallback. What a missing code does cost is quieter: nothing can be looked up
+        by it, so the sections the shipped copy would have completed stay empty, and a report names
+        a model the unit may not be.
+
+        Nobody is asked to do anything about it. The account is already signed in and its device
+        list has always carried this, so an entry added before it was kept can simply be told.
+        Runs once per start, only where something is actually missing, and never overwrites a value
+        the entry already holds -- what is stored may have come from a source this one cannot see.
+        """
+        data = self.config_entry.data
+        usdk_client_id = data.get(CONF_CLOUD_CLIENT_ID)
+        if not usdk_client_id:
+            return False
+        try:
+            cloud = HaierCloud(
+                replace(SEA_APP_CREDENTIALS, client_id=usdk_client_id),
+                data.get(CONF_ACCESS_TOKEN) or "",
+                zone_info=data.get(CONF_ZONE_INFO, "0"),
+                transport=async_cloud_transport(self.hass),
+            )
+            cloud.access_token = (
+                await cloud.refresh_token(data[CONF_REFRESH_TOKEN])
+            ).access_token
+            device = next(
+                (d for d in await cloud.list_devices_v2()
+                 if d.device_id.upper() == self.device_id.upper()), None
+            )
+        except (CloudError, KeyError, OSError, RuntimeError, TimeoutError, ValueError) as err:
+            _LOGGER.debug("could not top up identity for %s: %s", self.device_id, err)
+            return False
+        if device is None:
+            return False
+        learned = {
+            key: value
+            for key, value in (
+                (CONF_PRODUCT_CODE, device.prod_no),
+                (CONF_UPLUS_ID, device.uplus_id),
+                (CONF_DEVICE_TYPE, device.device_type),
+            )
+            if value and not data.get(key)
+        }
+        if not learned:
+            return False
+        _LOGGER.info(
+            "learned %s for %s from the account's device list",
+            ", ".join(sorted(learned)), self.device_id,
+        )
+        self.hass.config_entries.async_update_entry(
+            self.config_entry, data={**data, **learned}
+        )
+        return True
+
     async def _async_account_published_model(self) -> dict[str, Any] | None:
         """The published model via the signed-in account's resource service, or ``None``."""
         data = self.config_entry.data

@@ -1262,3 +1262,63 @@ async def test_a_connected_appliance_gets_no_such_explanation(
     ])
     assert result["step_id"] == "key_failed"
     assert result["description_placeholders"]["note"] == ""
+
+
+async def test_attaching_an_account_to_a_hand_added_entry_stops_the_key_going_stale(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The remedy for "it loses its configuration every restart", and it was untested.
+
+    An appliance still talking to the manufacturer rotates its key several times a day. An entry
+    added by hand holds no account credentials, so it cannot re-fetch — the first read after a
+    rotation detects the version mismatch, setup is abandoned, and the entities disappear. That
+    reads to an owner as losing the configuration, and re-adding by hand only works until the next
+    rotation.
+
+    Attaching an account fixes it for good, and must do so **without disturbing what already
+    works**: the same appliance, the same key, the same entry — only credentials added.
+    """
+    from unittest.mock import AsyncMock, patch
+
+    from haismart_extractor.cloud import SEA_APP_CREDENTIALS, HaierCloud
+    from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+
+    from custom_components.haismart.const import (
+        CONF_ACCESS_TOKEN,
+        CONF_CLOUD_CLIENT_ID,
+        CONF_REFRESH_TOKEN,
+        CONF_ZONE_INFO,
+    )
+
+    entry = _entry()          # a hand-added entry: host + deviceId + key, no account
+    entry.add_to_hass(hass)
+    assert CONF_REFRESH_TOKEN not in entry.data
+
+    creds = {
+        CONF_REFRESH_TOKEN: "2_RT", CONF_ACCESS_TOKEN: "2_FRESH",
+        CONF_CLOUD_CLIENT_ID: "A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4", CONF_ZONE_INFO: "92",
+    }
+    with patch(
+        "custom_components.haismart.config_flow._async_login_cloud",
+        new=AsyncMock(return_value=(HaierCloud(SEA_APP_CREDENTIALS, "2_FRESH"), creds)),
+    ):
+        result = await entry.start_reconfigure_flow(hass)
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"next_step_id": "reconfigure_cloud"}
+        )
+        assert result["step_id"] == "reconfigure_cloud"
+        done = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_USERNAME: "me@example.com", CONF_PASSWORD: "pw", CONF_ZONE_INFO: "92"},
+        )
+        await hass.async_block_till_done()
+
+    assert done["type"] == FlowResultType.ABORT
+    assert done["reason"] == "reconfigure_successful"
+    # the account is now attached, so a rotation can be re-fetched instead of prompting
+    assert entry.data[CONF_REFRESH_TOKEN] == "2_RT"
+    assert entry.data[CONF_CLOUD_CLIENT_ID] == creds[CONF_CLOUD_CLIENT_ID]
+    # and nothing about the working local setup was disturbed
+    assert entry.data[CONF_HOST] == "192.168.1.50"
+    assert entry.data[CONF_DEVICE_ID] == "A1B2C3D4E5F6"
+    assert entry.data[CONF_LOCAL_KEY] == LOCAL_KEY

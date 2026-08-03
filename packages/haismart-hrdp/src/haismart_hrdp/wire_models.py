@@ -649,7 +649,7 @@ EXTENDED36 = WireModel(
     writable=True,
     group_cmd=b"\x60\x01",
     word_count=5,
-    write_base_word=20,     # report word 20 == group-set word 1 (the 19-word media block precedes it)
+    write_base_word=20,     # report word 20 == group-set word 1 (19 words precede it: media, then a gap)
     write_fields=_EXT36_WRITE,
     position_fields=frozenset({"windDirectionVertical", "windDirectionHorizontal"}),
     fields={

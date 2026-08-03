@@ -402,7 +402,7 @@ _COMPACT12_WRITE = {
 # The "compact-12" family: a 12-word report (117 B) where every attribute — sensors included — lives
 # in the word array (unlike the classic family's separate sensor block). Transcribed from the two
 # published models that describe it, and validated field-for-field against three real reports from a
-# HSU-12HFMF (haismart-local issue #4): power/setpoint/indoor/mode/fan/both swings all matched the
+# HSU-12HFMF (haismart issue #4): power/setpoint/indoor/mode/fan/both swings all matched the
 # state the reporter said the unit was in.
 #
 # Deliberately omitted from the READ: outdoorTemperature (word 2) — the device's own digital model
@@ -595,7 +595,7 @@ _EXT36_WRITE = {
 # by 19 words. Those leading 19 words are a voice/media module (volume, playback, dialect, …) that the
 # generic model describes but a plain split AC leaves inert — which is exactly why the classic
 # partial decode misfires on this model: byte 92 is the module's `volume`, not the setpoint, so the
-# setpoint reads as 48 C and power reads as off (haismart-local issue #5).
+# setpoint reads as 48 C and power reads as off (haismart issue #5).
 #
 # Transcribed from the published models for `02012036` (挂机通用_V2D18S_0D05, wall mounted) and its
 # floor-standing sibling `0301200n` (柜机通用_V2D18S_0D05) — the only two that imply a 165-byte
@@ -609,7 +609,7 @@ _EXT36_WRITE = {
 # but as a ``"temp"`` field — both captures report the 0 sentinel, which surfaces as "no reading"
 # rather than a fabricated −64 C.
 #
-# **175 B is the same map with five words on the end** (haismart-local issue #8, a Malaysian
+# **175 B is the same map with five words on the end** (haismart issue #8, a Malaysian
 # HS-25VRB03). Every field above sits at the same word, and the unit's own published attribute values
 # agree with what this map decodes out of its report on ten of them — setpoint, mode, fan speed,
 # power, screen light, self-clean, both vane POSITIONS (vertical 2, horizontal 5) and indoor

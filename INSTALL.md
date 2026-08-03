@@ -20,7 +20,7 @@ runtime after setup. This guide gets the integration onto a running Home Assista
 
 ### HACS (recommended)
 
-In **HACS → ⋮ → Custom repositories**, add `https://github.com/enapt/haismart-local` with category
+In **HACS → ⋮ → Custom repositories**, add `https://github.com/cantruchd/haismart` with category
 **Integration**. Install **Haismart (Haier local)**, then **restart Home Assistant**. The component is
 self-contained (the two helper libraries are vendored into it), so there is **no pip step**.
 
@@ -45,9 +45,9 @@ imports from). `--config` is the directory holding `configuration.yaml`.
 ### Home Assistant Container (Docker)
 Run it **inside** the container so the libs go into the container's Python:
 ```bash
-docker cp . homeassistant:/tmp/haismart-local          # or bind-mount the repo
+docker cp . homeassistant:/tmp/haismart          # or bind-mount the repo
 docker exec -it homeassistant bash -lc \
-  'cd /tmp/haismart-local && scripts/install-dev.sh --config /config --python python3'
+  'cd /tmp/haismart && scripts/install-dev.sh --config /config --python python3'
 ```
 
 ### Home Assistant OS / Supervised

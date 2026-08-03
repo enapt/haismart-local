@@ -81,5 +81,5 @@ Worth noting from that project: module `KZW-W002` firmware `e_2.3.12` works whil
 ## Report yours
 
 Whether it works or not, please tell us — use the
-[new model report](https://github.com/enapt/haismart-local/issues/new?template=new_model.yml)
+[new model report](https://github.com/cantruchd/haismart/issues/new?template=new_model.yml)
 issue template, or follow [`docs/new-model.md`](docs/new-model.md).

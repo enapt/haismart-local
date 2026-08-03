@@ -1,9 +1,9 @@
 # Haismart Local — Haier air conditioners in Home Assistant, with no cloud
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
-[![Release](https://img.shields.io/github/v/release/enapt/haismart-local?color=green)](https://github.com/enapt/haismart-local/releases/latest)
-[![Validate](https://img.shields.io/github/actions/workflow/status/enapt/haismart-local/validate.yml?branch=main&label=validate)](https://github.com/enapt/haismart-local/actions/workflows/validate.yml)
-[![License](https://img.shields.io/github/license/enapt/haismart-local)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/cantruchd/haismart?color=green)](https://github.com/cantruchd/haismart/releases/latest)
+[![Validate](https://img.shields.io/github/actions/workflow/status/cantruchd/haismart/validate.yml?branch=main&label=validate)](https://github.com/cantruchd/haismart/actions/workflows/validate.yml)
+[![License](https://img.shields.io/github/license/cantruchd/haismart)](LICENSE)
 [![Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/EFfknne8Bm)
 
 _Control your Haier air conditioner from Home Assistant entirely over your own network. You sign in
@@ -212,7 +212,7 @@ Worth knowing up front, so nothing surprises you:
 
 1. Make sure [HACS](https://hacs.xyz/) is installed.
 1. Open this repository in HACS:\
-   [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=enapt&repository=haismart-local&category=integration)
+   [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=cantruchd&repository=haismart&category=integration)
 1. Click **Download**, then **Download** again in the version dialog.
 1. **Restart Home Assistant.** A custom integration's code is only loaded at startup — reloading the
    entry is not enough.
@@ -222,7 +222,7 @@ Worth knowing up front, so nothing surprises you:
 
 1. Open **HACS** from the sidebar.
 1. Three-dot menu, top right → **Custom repositories**.
-1. Repository: `https://github.com/enapt/haismart-local`, type **Integration** → **Add**.
+1. Repository: `https://github.com/cantruchd/haismart`, type **Integration** → **Add**.
 1. Search HACS for **Haismart** → **Download**.
 1. Restart Home Assistant.
 
@@ -231,7 +231,7 @@ Worth knowing up front, so nothing surprises you:
 <details>
 <summary>Option 2 — manual installation</summary>
 
-1. Download the source of the [latest release](https://github.com/enapt/haismart-local/releases/latest).
+1. Download the source of the [latest release](https://github.com/cantruchd/haismart/releases/latest).
 1. Copy the `custom_components/haismart/` folder into your Home Assistant `config/custom_components/`.
 1. Restart Home Assistant.
 
@@ -405,7 +405,7 @@ worth a great deal:
 
 1. Check the [Logs page](https://my.home-assistant.io/redirect/logs/) for warnings from `haismart`.
 1. Enable debug logging (above) and reproduce the problem.
-1. Search [existing issues](https://github.com/enapt/haismart-local/issues?q=is%3Aissue),
+1. Search [existing issues](https://github.com/cantruchd/haismart/issues?q=is%3Aissue),
    including closed ones.
 1. Download diagnostics: **Settings → [Devices & Services](https://my.home-assistant.io/redirect/integrations/)
    → Haismart → ⋮ → Download diagnostics**. Secrets are redacted; the raw status bytes it contains

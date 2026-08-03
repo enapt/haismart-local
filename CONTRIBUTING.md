@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve haismart-local. This is a three-package monorepo (`haismart-hrdp`,
+Thanks for helping improve haismart. This is a three-package monorepo (`haismart-hrdp`,
 `haismart-extractor`, `ha-haismart`). `packages/haismart-hrdp/src/haismart_hrdp/uss.py` holds the local
 protocol (transport, crypto, framing) — read it before changing transport, crypto, or framing code.
 `udiscovery.py` alongside it is the second, key-free protocol on UDP `:7083` (discovery, model ID and

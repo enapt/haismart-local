@@ -1,7 +1,7 @@
 blank_issues_enabled: true
 contact_links:
   - name: Question or general discussion
-    url: https://github.com/enapt/haismart-local/issues
+    url: https://github.com/cantruchd/haismart/issues
     about: Ask a question or share how you are using the integration.
   - name: My AC uses the hOn app
     url: https://github.com/Andre0512/hon

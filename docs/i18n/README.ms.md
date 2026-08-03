@@ -48,7 +48,7 @@ setempat**.
 ## Pemasangan
 
 1. Pastikan [HACS](https://hacs.xyz/) sudah dipasang.
-1. HACS → menu tiga titik → **Custom repositories** → `https://github.com/enapt/haismart-local`,
+1. HACS → menu tiga titik → **Custom repositories** → `https://github.com/cantruchd/haismart`,
    jenis **Integration** → **Add**.
 1. Cari **Haismart** → **Download**.
 1. **Mulakan semula Home Assistant.** Kod integrasi tersuai hanya dimuatkan semasa permulaan.
@@ -81,6 +81,6 @@ akaun tersebut di sini.
 
 ## Perlukan bantuan?
 
-Laporkan masalah di [GitHub Issues](https://github.com/enapt/haismart-local/issues) — **dalam bahasa
+Laporkan masalah di [GitHub Issues](https://github.com/cantruchd/haismart/issues) — **dalam bahasa
 Inggeris jika boleh**. Sila baca [bahagian "Before you open an issue"](../../README.md#before-you-open-an-issue)
 dalam README utama dahulu.

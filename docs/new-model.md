@@ -38,7 +38,7 @@ That identifier is what selects the report layout, so it tells us immediately wh
 we already know or a genuinely new one. The sensor shows a shortened form; the exact 64-character value is
 its `uplus_id` attribute (and it is in the diagnostics file too, so attaching that covers it).
 
-Then open a [new model report](https://github.com/enapt/haismart-local/issues/new?template=new_model.yml)
+Then open a [new model report](https://github.com/cantruchd/haismart/issues/new?template=new_model.yml)
 and attach each file in its own box, plus:
 
 - the **model number** from the sticker on the indoor unit

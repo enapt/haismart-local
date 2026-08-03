@@ -42,7 +42,7 @@ tersedia dalam bahasa Indonesia.
 ## Pemasangan
 
 1. Pastikan [HACS](https://hacs.xyz/) sudah terpasang.
-1. HACS → menu tiga titik → **Custom repositories** → `https://github.com/enapt/haismart-local`,
+1. HACS → menu tiga titik → **Custom repositories** → `https://github.com/cantruchd/haismart`,
    tipe **Integration** → **Add**.
 1. Cari **Haismart** → **Download**.
 1. **Mulai ulang Home Assistant.** Kode integrasi khusus hanya dimuat saat startup.
@@ -72,6 +72,6 @@ email dan kata sandi, **bagikan AC ke akun itu** di aplikasi, lalu gunakan akun 
 
 ## Butuh bantuan?
 
-Laporkan masalah di [GitHub Issues](https://github.com/enapt/haismart-local/issues) — **dalam bahasa
+Laporkan masalah di [GitHub Issues](https://github.com/cantruchd/haismart/issues) — **dalam bahasa
 Inggris jika memungkinkan**. Baca dulu [bagian "Before you open an issue"](../../README.md#before-you-open-an-issue)
 di README utama.

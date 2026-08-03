@@ -6,7 +6,7 @@ body:
     attributes:
       value: |
         This is the most valuable contribution to the project, and it needs no code.
-        Please read [docs/new-model.md](https://github.com/enapt/haismart-local/blob/main/docs/new-model.md)
+        Please read [docs/new-model.md](https://github.com/cantruchd/haismart/blob/main/docs/new-model.md)
         first - it explains the three captures below and why they are enough.
   - type: dropdown
     id: outcome

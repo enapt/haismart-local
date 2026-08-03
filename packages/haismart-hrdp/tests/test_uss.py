@@ -528,7 +528,7 @@ STATUS_125 = bytes.fromhex(
     "020000070000323760100003000000000000000000000000002fe4c19f"
 )
 
-# --- 117-byte "compact-12" family (haismart-local issue #4, HSU-12HFMF) --------
+# --- 117-byte "compact-12" family (haismart issue #4, HSU-12HFMF) --------
 # A DIFFERENT wire family: 12 words where the sensors live INSIDE the word array (indoor@w1,
 # outdoor@w2), not in a separate trailing block like the classic family. Three real decrypted status
 # reports supplied in the reporter's diagnostics, decoded via this family's wire model and each
@@ -555,7 +555,7 @@ STATUS_117_FANHI_SWING = bytes.fromhex(
     "0000000000000003000000030001000000000006fa"
 )
 
-# --- 165-byte "extended-36" family (haismart-local issue #5, HSU-12KCROC(IN)-R32) --------
+# --- 165-byte "extended-36" family (haismart issue #5, HSU-12KCROC(IN)-R32) --------
 # The CLASSIC climate block displaced by 19 words: a voice/media module occupies report words 1..19
 # (inert on a plain split AC, but it is why the classic partial decode reads byte 92 as a 48 C
 # setpoint — that byte is the module's `volume`), then targetTemperature@w20.b8, mode@w21.b13,
@@ -950,7 +950,7 @@ def test_extended36_control_encodes_a_6001_group_set_from_word_20():
         wm.encode_control(base, {"targetTemperature": 99})
 
 
-# --- 209-byte "extended-46" family (haismart-local issue #6, HSU-24HFAB) ------------------
+# --- 209-byte "extended-46" family (haismart issue #6, HSU-24HFAB) ------------------
 # The extended-36 layout with a TEN-word block inserted at word 25: words 1..24 sit exactly where
 # extended-36 puts them (the same media module in 1..19, then targetTemperature@w20.b8,
 # mode@w21.b13, the boolean word@w22), and everything from extended-36's word 25 upward moves ten

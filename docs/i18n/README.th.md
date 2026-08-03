@@ -40,7 +40,7 @@
 ## การติดตั้ง
 
 1. ตรวจสอบว่าติดตั้ง [HACS](https://hacs.xyz/) แล้ว
-1. HACS → เมนูสามจุด → **Custom repositories** → `https://github.com/enapt/haismart-local`
+1. HACS → เมนูสามจุด → **Custom repositories** → `https://github.com/cantruchd/haismart`
    ประเภท **Integration** → **Add**
 1. ค้นหา **Haismart** → **Download**
 1. **รีสตาร์ท Home Assistant** โค้ดของอินทิเกรชันแบบกำหนดเองจะโหลดตอนเริ่มระบบเท่านั้น
@@ -69,6 +69,6 @@
 
 ## ต้องการความช่วยเหลือ
 
-แจ้งปัญหาได้ที่ [GitHub Issues](https://github.com/enapt/haismart-local/issues) — **เป็นภาษาอังกฤษ
+แจ้งปัญหาได้ที่ [GitHub Issues](https://github.com/cantruchd/haismart/issues) — **เป็นภาษาอังกฤษ
 หากทำได้** กรุณาอ่าน [หัวข้อ "Before you open an issue"](../../README.md#before-you-open-an-issue)
 ใน README หลักก่อน

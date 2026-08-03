@@ -41,7 +41,7 @@ bộ**. Giao diện có sẵn tiếng Việt.
 ## Cài đặt
 
 1. Bảo đảm đã cài [HACS](https://hacs.xyz/).
-1. HACS → menu ba chấm → **Custom repositories** → `https://github.com/enapt/haismart-local`,
+1. HACS → menu ba chấm → **Custom repositories** → `https://github.com/cantruchd/haismart`,
    loại **Integration** → **Add**.
 1. Tìm **Haismart** → **Download**.
 1. **Khởi động lại Home Assistant.** Mã của tích hợp tùy chỉnh chỉ được nạp lúc khởi động.
@@ -71,6 +71,6 @@ khoản ấy ở đây.
 
 ## Cần trợ giúp?
 
-Báo lỗi tại [GitHub Issues](https://github.com/enapt/haismart-local/issues) — **bằng tiếng Anh nếu
+Báo lỗi tại [GitHub Issues](https://github.com/cantruchd/haismart/issues) — **bằng tiếng Anh nếu
 có thể**. Vui lòng đọc [mục "Before you open an issue"](../../README.md#before-you-open-an-issue)
 trong README chính trước.

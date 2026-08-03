@@ -633,3 +633,38 @@ makes nothing unavailable at all.
 One deliberate asymmetry: a setting that **any** member of the family lacks is treated as absent for
 all of them. Offering a control for hardware a unit does not have is the failure this layer exists
 to prevent, so where the family disagrees, the conservative reading wins.
+
+## 21. A reading that looked intermittent, and the rule that came out of it — settled
+
+**Status: fixed and verified on hardware. Recorded because the mistake is easy to repeat.**
+
+The compressor discharge reading appeared once and was absent afterwards, which looked like a
+failing probe and kept an argument about what that byte means alive for weeks. The appliance had
+been reporting it correctly the whole time.
+
+With the unit cooling hard — 78 Hz, 8 A, 1790 W — the discharge line reads **80 °C**, which is
+ordinary for a discharge line and impossible for room air. The decoder discarded it, because every
+temperature was checked against one range chosen for air temperatures, topping out at 70. The single
+earlier sighting was the same reading at lighter load, one degree inside that range.
+
+**The lesson generalises past this reading.** A range check on a position that is already confirmed
+cannot prevent a wrong decode — it can only hide one, and it hides it in the worst possible form:
+
+* an implausible **number** is visible, gets reported, and gets fixed;
+* **nothing at all** is indistinguishable from an appliance that has no such sensor, so it is never
+  reported by anyone.
+
+That second case is exactly what happened, and it is self-reinforcing, because "a zero means the
+hardware is absent" is a sound rule here — so a filter that manufactures absence produces a
+conclusion that looks correct.
+
+Temperatures are now bounded by what is physically possible rather than by what was expected. The
+absent-sensor markers stay, because those are values the appliance actually sends rather than an
+opinion about what is reasonable.
+
+Two related changes came out of the same investigation:
+
+* the telemetry frame is now included in diagnostics alongside the status frame, so a question about
+  a compressor or coil reading can be answered from a bug report rather than needing the appliance;
+* when a guard is moved or duplicated, the original must go. This one had been written to do two
+  jobs, both of which moved elsewhere, and it kept running with neither reason still attached.

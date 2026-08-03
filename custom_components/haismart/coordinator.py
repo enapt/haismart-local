@@ -302,13 +302,21 @@ def _alarms_from(blobs: list[bytes]) -> dict[str, Any]:
     return {}
 
 
-def _telemetry_from(blobs: list[bytes]) -> dict[str, Any]:
-    """The running-power/compressor figures out of a session's blobs, or ``{}`` if it carried no
-    extended report (the usual case for a control session, which does not query for one)."""
+def _telemetry_from(blobs: list[bytes]) -> tuple[dict[str, Any], bytes | None]:
+    """The running-power/compressor figures out of a session's blobs, and the frame they came from.
+
+    ``({}, None)`` when the session carried no extended report, which is usual for a control
+    session since that does not query for one.
+
+    The frame itself is returned so it can be kept for diagnostics. Only the status report was ever
+    retained, which means every question about a *telemetry* offset has had to be answered from the
+    decode rather than from the bytes -- and this frame carries the readings whose meaning is least
+    settled, one of which has now been argued over twice.
+    """
     for blob in blobs:
         if ext := parse_extended_status(blob):
-            return ext
-    return {}
+            return ext, blob
+    return {}, None
 
 
 def _build_profile(
@@ -374,6 +382,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.model_codes: dict[str, set[int]] = _model_authorized_codes(self.digital_model)
         self.localkey_version: int | None = entry.data.get(CONF_LOCALKEY_VERSION)
         self.last_raw_status: bytes | None = None
+        # the most recent extended (telemetry) frame, kept for the same reason
+        self.last_raw_extended: bytes | None = None
         # Whether this unit answers the extended-status query (running power / compressor figures).
         # None = not yet known; settled on the first cycle that produces a status report.
         self.supports_extended: bool | None = None
@@ -467,7 +477,9 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # sits here rather than at the top of the cycle.
         await self._async_poll_cloud_state()
 
-        telemetry = _telemetry_from(blobs)
+        telemetry, extended_blob = _telemetry_from(blobs)
+        if extended_blob is not None:
+            self.last_raw_extended = extended_blob
         alarms = _alarms_from(blobs)
 
         for blob in blobs:
@@ -945,7 +957,9 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """The newest decodable full-status report in a control op's reply blobs, or None if none
         decoded. The AC echoes updated state on the op connection (the protocol). Also updates
         the seed baseline + miss counter so the next op/poll starts from the confirmed state."""
-        telemetry = _telemetry_from(reply)
+        telemetry, extended_blob = _telemetry_from(reply)
+        if extended_blob is not None:
+            self.last_raw_extended = extended_blob
         for blob in reversed(reply):
             if state := parse_full_status(
                 blob, self.profile, self.digital_model, uplus_id=self.uplus_id

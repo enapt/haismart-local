@@ -64,6 +64,12 @@ async def async_get_config_entry_diagnostics(
         "last_raw_status": (
             coordinator.last_raw_status.hex() if coordinator.last_raw_status else None
         ),
+        # The telemetry frame, for the same reason as the status one above: the compressor and
+        # refrigeration readings are the least settled part of the map, and without the bytes a
+        # disagreement about one of them cannot be checked from a report.
+        "last_raw_extended": (
+            coordinator.last_raw_extended.hex() if coordinator.last_raw_extended else None
+        ),
         # enum codes the device's OWN digital model authorizes for the write path — this is what
         # decides whether e.g. heat is usable on this unit (coordinator._model_authorized_codes)
         "model_authorized_codes": {

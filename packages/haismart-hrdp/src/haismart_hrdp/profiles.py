@@ -7,8 +7,11 @@ downloads at bind time; see :func:`profile_from_device_config`) — operationMod
 independently cross-checked against a live ``getAttributeMap`` dump + a one-attribute-at-a-time app sweep
 on real units, all consistent.
 
-No prior open-source project maps this uSDK-EPP local path (haier-esphome/smartair2 is the unrelated
-``FF FF`` UART protocol); this profile is original to this project.
+No prior open-source project maps this **encrypted uSS/CAE transport** — that part is original here.
+⚠️ The *inner* frame is not original and must not be described as unrelated: it is the same
+documented ``FF FF`` frame the public Haier implementations speak, and one of the families decoded
+here is that protocol exactly, agreeing position for position with a public implementation of it.
+What differs is the outer envelope and its encryption, not the frame inside.
 """
 from __future__ import annotations
 

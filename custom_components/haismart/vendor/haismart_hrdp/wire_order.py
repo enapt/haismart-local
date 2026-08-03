@@ -5,10 +5,11 @@ command writes. That list is not arbitrary: it is ordered by **word ascending, t
 which is to say it *is* the wire layout, enumerated. Checked against every position we have measured
 on real hardware (16 anchors spanning four words): the order matches exactly, with no violations.
 
-Why that matters. A byte map is published only for the models bundled in the vendor app, and a unit
-whose model is not bundled has no map to look up -- our own units are such a case. But the
-constraintfile is fetched *per device*, by uPlusId, and every device has one. So the ordering is
-available for hardware no map covers, which is precisely where it is needed.
+Why that matters. A byte map is published only for some models, and a unit whose own identifier is
+not among them has no map to look up -- our own units are such a case, and the manufacturer's own
+software simply does without a local decode for them. But the constraintfile is fetched *per
+device*, and every device has one. So the ordering is available for hardware no map covers, which is
+precisely where it is needed.
 
 The order alone does not give positions; widths do that, and a width cannot be read off an
 attribute's value range (``targetTemperature`` spans 15 values and occupies 8 wire bits). What the
@@ -92,10 +93,17 @@ def bracket_unplaced(
 def nearest_bundled_profile(uplus_id: str, candidates: Iterable[str]) -> list[tuple[int, str]]:
     """Rank published profile ids by how much of their uPlusId they share with ``uplus_id``.
 
-    The vendor app resolves a device to a profile by **prefix**, not by exact match, which is how a
-    unit whose full uPlusId appears nowhere still gets a working panel: the leading characters
-    identify the family and only the trailing per-model serial differs. Ours shares 26 characters
-    with two published profiles and matches neither exactly.
+    Identifiers that share a long prefix belong to the same product family, differing only in a
+    trailing per-model serial, and a family shares one layout -- so a device whose own identifier is
+    published nowhere can still be decoded from a relative's map. Ours shares 26 characters with two
+    published profiles and matches neither exactly.
+
+    ⚠️ **This is our heuristic, not the manufacturer's.** Their own lookup opens the identifier as a
+    filename, once, and gives up: no retry, no alternate name, no nearest match. A device it cannot
+    find that way simply gets no local decode and is rendered from cloud-reported values instead.
+    What licenses reading a relative's map is not that anyone else does it -- it is that every
+    published model for this appliance class is the same map at a whole-word offset, so a family
+    member's layout is the family's layout.
 
     Returns ``(shared_prefix_length, id)`` best first. A tie is normal and is not resolved here --
     our own unit ties at 26 between a 16-word and a 36-word profile, and only the report length

@@ -69,9 +69,13 @@ def test_brackets_constrain_the_rental_attributes_without_guessing() -> None:
 def test_prefix_resolution_finds_our_relatives_and_admits_the_tie() -> None:
     """Our uPlusId matches no published profile exactly, and two share 26 characters.
 
-    That is how the vendor app renders a full panel for a unit whose model it does not bundle -- and
-    why exact-match comparison wrongly concludes the unit is unknown. The tie is real: only the
-    report length separates the two candidates, so this function must not pretend to break it.
+    Which is why an exact-match comparison wrongly concludes the unit is unknown -- the shared
+    leading characters identify the family, and a family shares one layout. Note this is a
+    convenience we take and not a behaviour anyone else has: the manufacturer's lookup opens the
+    identifier as a filename and gives up, leaving such a device with no local decode at all.
+
+    The tie is real: only the report length separates the two candidates, so this function must not
+    pretend to break it.
     """
     ours = "2008610800820324021200118012560000000000000000000000000000000040"
     published = [

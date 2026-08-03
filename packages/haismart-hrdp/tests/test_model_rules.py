@@ -69,3 +69,61 @@ def test_uplus_id_narrows_to_a_family_but_cannot_choose_within_it() -> None:
 def test_unknown_uplus_id_yields_no_family() -> None:
     assert products_for_uplus_id("deadbeef") == []
     assert products_for_uplus_id(None) == []
+
+
+def test_family_rules_are_correct_whichever_model_it_turns_out_to_be() -> None:
+    """Where the model cannot be known, apply what every candidate agrees on.
+
+    A unit announces its family, not its model, and 19 of our family's 23 products are locally
+    indistinguishable -- same declared attributes, same visible set -- while still carrying
+    different rules. So no observation can pick one, and the honest floor is the agreed subset.
+
+    It is a high floor: alarms and lock explanations are common across every published family, so
+    fault names arrive complete without anyone choosing anything.
+    """
+    from haismart_hrdp.model_rules import (
+        family_rules,
+        products_for_uplus_id,
+        rules_for_product,
+    )
+
+    uplus = "2008610800820324021200118012560000000000000000000000000000000040"
+    agreed = family_rules(uplus)
+    members = [rules_for_product(p) for p in products_for_uplus_id(uplus)]
+    assert len(members) == 23
+
+    # every rule kept must appear in every member -- that is what makes it safe to apply blind
+    for section in ("alarms", "invalid_reasons", "constraints", "modifiers"):
+        for rule in agreed[section]:
+            for member in members:
+                assert rule in (member.get(section) or []), (
+                    f"{section} rule kept that member {member.get('model')} does not have"
+                )
+
+    # the part users actually see survives in full
+    assert len(agreed["alarms"]) == 52
+    assert len(agreed["invalid_reasons"]) == 9
+    # and the conservative direction on features: invisible if ANY member says so, so a control is
+    # never offered for hardware some member of the family lacks
+    invisible = {a["name"] for a in agreed["attributes"] if a.get("invisible")}
+    for member in members:
+        for attr in member["attributes"]:
+            if attr.get("invisible"):
+                assert attr["name"] in invisible
+
+
+def test_family_rules_gives_a_single_model_family_its_own_rules() -> None:
+    """No intersection to take when there is nothing to intersect with."""
+    from haismart_hrdp.model_rules import (
+        _bundle,
+        family_rules,
+        products_for_uplus_id,
+        rules_for_product,
+    )
+
+    solo = next(
+        (u for u in _bundle()["by_uplus_id"] if len(products_for_uplus_id(u)) == 1), None
+    )
+    assert solo, "expected at least one single-model family"
+    assert family_rules(solo) == rules_for_product(products_for_uplus_id(solo)[0])
+    assert family_rules("nonexistent") is None

@@ -51,6 +51,7 @@ from haismart_hrdp import (
     constraint_commands,
     describe_epp_frame,
     extended_status_epp_frame,
+    family_rules,
     grsetdac_baseline_from_status,
     grsetdac_op_frame,
     lock_reasons,
@@ -1329,6 +1330,14 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # quietly depend on reaching the internet. The remote copy is still consulted, but to check
         # this one rather than to replace it.
         bundled = rules_for_product(data.get(CONF_PRODUCT_CODE))
+        if bundled is None:
+            # No model known -- a hand-made entry whose owner skipped the question, or one added
+            # before it was asked. The unit still announced its family, and the rules its family
+            # agrees on hold whichever member it turns out to be. That is not a consolation prize:
+            # every alarm and every lock explanation is common across a family, so fault names --
+            # the part anyone actually sees -- arrive in full. Only the conditional-availability
+            # rules thin out, and those fail safe, since a missing rule locks nothing.
+            bundled = family_rules(self.uplus_id)
         if data.get(CONF_REFRESH_TOKEN) and data.get(CONF_CLOUD_CLIENT_ID):
             published = await self._async_account_published_model()
             if published is not None:

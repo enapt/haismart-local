@@ -32,6 +32,7 @@ __all__ = [
     "products_for_uplus_id",
     "models_for_uplus_id",
     "product_for_model",
+    "family_rules",
     "known_products",
     "RULES_PATH",
 ]
@@ -121,3 +122,59 @@ def product_for_model(model: str | None) -> str | None:
     if not model:
         return None
     return _by_model().get(model.strip().upper())
+
+
+def family_rules(uplus_id: str | None) -> dict[str, Any] | None:
+    """Only the rules every model in a family agrees on -- correct without knowing which model.
+
+    A unit announces its family and not its model, and where an account can be asked that gap is
+    closed for free. Where it cannot -- a hand-made entry from a saved key -- something has to give,
+    and the choice is not between "the right rules" and "no rules": it is between *asking someone to
+    guess* and *applying only what holds whichever model it turns out to be*.
+
+    That second option is worth far more than it sounds, because the disagreement is concentrated:
+    across every multi-model family published, **every alarm and every lock explanation is common to
+    all members** (698/698 and 54/54). So fault names -- the part a user actually sees, and the part
+    that turns an unexplained failure into a service code -- need no model at all. Only the
+    conditional-availability rules genuinely vary (26% common), and those degrade safely: a rule
+    nobody disagrees about cannot lock the wrong control, and a missing rule locks nothing.
+
+    Attributes are merged the conservative way round: an attribute any member marks ``invisible``
+    is marked invisible here. Optional-feature entities are built from that flag, and offering a
+    control for hardware a unit does not have is the one failure mode this layer exists to prevent.
+
+    Returns ``None`` when the family is unknown, and the single model's rules when it has only one.
+    """
+    products = products_for_uplus_id(uplus_id)
+    if not products:
+        return None
+    if len(products) == 1:
+        return rules_for_product(products[0])
+    rules = [r for r in (rules_for_product(p) for p in products) if r is not None]
+    if not rules:
+        return None
+
+    def agreed(section: str) -> list[Any]:
+        sets = [
+            {json.dumps(item, sort_keys=True) for item in (r.get(section) or ())} for r in rules
+        ]
+        return [json.loads(item) for item in sorted(set.intersection(*sets))] if sets else []
+
+    invisible = {
+        a["name"]
+        for r in rules
+        for a in (r.get("attributes") or ())
+        if a.get("name") and a.get("invisible")
+    }
+    attributes = [
+        {**a, **({"invisible": True} if a.get("name") in invisible else {})}
+        for a in (rules[0].get("attributes") or ())
+    ]
+    return {
+        "uplus_id": uplus_id,
+        "attributes": attributes,
+        "alarms": agreed("alarms"),
+        "invalid_reasons": agreed("invalid_reasons"),
+        "constraints": agreed("constraints"),
+        "modifiers": agreed("modifiers"),
+    }

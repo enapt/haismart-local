@@ -355,9 +355,14 @@ fourteen attributes, and **ten already have positions** in the shared map — `o
 `indoorTemperature`, `tempUnit`. Nothing about their layout is unknown except **which displacement
 applies**, and that is what the layout prober scores from a report length plus a few stated states.
 
-So the ask is small and specific: **one report from any central-AC owner, with the unit's state
-written down**. That is not a capture session; it is the diagnostics download the integration
-already produces.
+**The displacement is derived, not awaited.** A model omits the leading media block or it does not,
+and the offset is exactly the span it omits. These seventy-nine declare no media attribute at all —
+checked against every attribute the shared map places below the climate block — which is the same
+thing the classic family does, and the classic family reads nineteen words earlier. Their attributes
+occupy the shared map's words twenty through twenty-five, so they occupy their own report's first six.
+
+Nothing further is needed to read them. What has not happened is a unit of that shape being seen,
+which would confirm the derivation rather than produce it.
 
 ## 12. Control for the central family — a parameter at a time, not a group
 
@@ -373,30 +378,26 @@ than failing. A single-parameter write cannot do that. The family deserves a saf
 from its own mechanics — probably narrower than the current allowlist, and certainly not the same
 rule copied across without examination.
 
-## 13. The four-sided cassette vanes — one capture, and it must be the right one
+## 13. The four-sided cassette vanes — what is known, and why it stops there
 
-**Status: open, reduced as far as data allows.**
+**Status: as far as published material goes. Not a request.**
 
 Seventeen central models expose four independent vanes instead of one left-right field. Established
-without any hardware: they **replace** `windDirectionHorizontal` (the only difference between the
-nine- and twelve-attribute variants of the same family), they are **three bits each** on the same
-0–7 code space, and since that family declares none of the neighbouring attributes the four fit the
-twelve bits from b0 — forcing the offsets to **b0, b3, b6, b9**.
+without hardware: they **replace** the left-right field, being the only difference between the nine-
+and twelve-attribute variants of one family; they are **three bits each** on the same code range as
+the field they replace; and no model anywhere declares both, so the two never coexist.
 
-What no amount of arithmetic gives is **which vane is which** — four identical fields with identical
-encodings are symmetric. Nor, it turns out, is their **position** settled: the models that list them
-in a meaningful order put them after everything else they describe, and that trailing region is known
-not to follow the wire, since a sibling model appends two fields there that belong much earlier. So
-the earlier reading here — that the four are forced into the bits the single left-right field would
-have used — claimed more than the evidence carries.
+Two things do not follow and were once written here as though they did. Their **position** is not
+determined — the models that list them meaningfully put them after everything else they describe, in
+a region that provably does not follow the wire, and replacing a field in an attribute set is not
+occupying its bits. Their **order among themselves** is consistent — every one of the eleven
+meaningful listings gives second, first, fourth, third, never numerically — which is a convention
+rather than an accident, but says nothing about which word they live in.
 
-One thing is consistent. Every model that lists them meaningfully lists them in the same scrambled
-order, **second, first, fourth, third**, without exception. An order repeated exactly across every
-model is a convention rather than an accident, and it is probably the order they sit in; but which
-word they sit in is open.
-
-**When asking for this capture, ask for each vane in a *different* position.** A capture with all
-four set the same way proves nothing, and it is the natural thing for someone to send.
+Four identical fields with identical encodings are symmetric, and no amount of published description
+separates them: it would take a reading in which they differ. Nothing published contains one. This is
+therefore a closed item rather than an open one, and it costs nothing, because no model of this shape
+is served by this integration.
 
 ## 14. Deploy and verify the shipped rules
 
@@ -411,48 +412,39 @@ and was only caught by deploying. Before calling it good: deploy, then diff `mod
 against `digital_model.reported_values`, and confirm entity availability is unchanged on a unit whose
 rules previously came from the cloud.
 
-## 15. The compact family publishes far more than we read
+## 15. The compact family, resolved as far as it can be
 
-**Status: open. The positions are in hand; the confirmation is not.**
+**Status: closed on layout and naming. What remains is not obtainable from anything published.**
 
-The twelve-word family — the small one whose report is a hundred and seventeen bytes — is described
-by a published map we can read, and every position we already decode agrees with it exactly: power,
-setpoint, indoor temperature, mode, fan and both vane fields. That is a fourth independent agreement
-for that family, after captures, a public implementation of the same protocol, and the model
-catalogue.
+Its twelve-word report is fully described. Every position this project already decoded agrees with
+that description, and two separate published descriptions of the family agree with each other on
+every position and identifier they share. Of the thirty positions stated, twenty-five now carry a
+standard attribute name: eighteen joined through the identifiers the catalogue publishes, seven more
+read directly from their labels onto names the family declares.
 
-The same map states twenty-three fields we do not read, most of them nameable from the catalogue:
-outdoor temperature, an air-quality reading, a particulate value, a power figure, target and actual
-humidity, and the usual switches — lock, sleep, human sensing, energy saving, self-clean, electric
-heat, health, fresh air, boost, quiet and display.
+The five that stay unnamed are the interesting part, because they are not a gap. They describe an air
+quality figure, a two-byte power reading, a particulate value and a room humidity — and **the family
+declares none of those attributes**. These products do not have that hardware, which is exactly why
+every one of them reads zero in every report available. A position stated for a sensor a product
+lacks is not a mystery; it is the shared description of a product line being wider than any one
+member of it.
 
-**None of it is shipped, for a reason worth keeping.** Held against the three reports we have from
-that family, every one of those switches reads off in all three. That is what a plain unit with
-nothing switched on looks like, and it is also what a wrong position looks like; an off bit confirms
-nothing. One byte is nearly settled and worth stating precisely. Two descriptions of that family
-disagreed about it — one calling it an outdoor temperature, the other room humidity — and the model
-catalogue decides between them: these products declare an outdoor temperature they really have, and
-declare no room humidity sensor at all. So it is a temperature.
+One attribute the family does declare, `cloudControlStatus`, has no stated position anywhere. That is
+the whole remaining gap for this family: one flag.
 
-What it is *not* is the temperature its own description implies. Read as stated it gives about sixty
-degrees outdoors while the room sits at twenty-seven with the cooling running. Two encodings survive
-that, one taken from the range nine other models declare for the same reading and one that counts
-half degrees, and they agree to within half a degree: about thirty, which is what a reference unit
-reports in comparable weather. The value is known; which of the two encodings produces it is not, and
-that only matters once the weather changes.
+What is still unresolved is not the layout but two readings within it, and neither can be settled from
+published material:
 
-Its layout is not in doubt — two separately published descriptions of that family agree on every
-position and identifier, and the fields we already read match both. What is missing is confirmation
-of what the unread ones *mean*.
+* one byte is an outdoor temperature — the catalogue decides that, since these products declare an
+  outdoor sensor and declare no room humidity sensor at all — but read as its own description states
+  it puts the outdoors near sixty degrees while the room is at twenty-seven with cooling running. Two
+  encodings survive, and they agree to within half a degree in mild weather and diverge sharply in
+  cold. Nothing published distinguishes them.
+* the power reading is a byte, extended to two on richer models, and shows fifteen while cooling. No
+  published material states its unit.
 
-What unblocks it is small and specific: **one report from that family with several switches turned
-on**, one outdoor reading taken when it is not warm — the two candidate encodings agree in mild
-weather and diverge sharply in cold, so a single reading below about ten degrees separates them —
-and one power reading beside a plug monitor — the power field is a byte, extended to two on richer models, and fifteen is not
-watts for a running air conditioner. Ask for the switches to
-be set to *different* states rather than all on, for the same reason the vane request asks for
-different positions — a uniform capture cannot separate the fields from each other.
-
+Neither prevents anything shipping, because neither field is surfaced. They are recorded so that a
+future reading is recognised for what it settles rather than re-derived.
 
 ## 16. A layout that is not a displacement
 

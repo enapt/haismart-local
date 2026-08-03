@@ -60,6 +60,14 @@
         }
       },
       "host": {
+        "title": "Home Assistant couldn't find the device on your network",
+        "description": "Signed in and the key was fetched automatically — Home Assistant just couldn't find {device} on the network by itself. Enter its local IP address, or add it without one: local status polling needs the IP, but the cloud control channel works without it whenever the device is online through the cloud (you can add the IP later via reconfigure).",
+        "menu_options": {
+          "host_ip": "Enter the device's IP address",
+          "skip_host": "Add it without an IP address (cloud control only)"
+        }
+      },
+      "host_ip": {
         "title": "Enter the AC's IP address",
         "description": "Signed in and the key was fetched automatically — Home Assistant just couldn't find {device} on the network by itself. Enter its local IP address (e.g. 192.168.1.50). Tip: a DHCP reservation keeps it stable.",
         "data": {
@@ -68,6 +76,10 @@
         "data_description": {
           "host": "A DHCP reservation on your router keeps this from changing."
         }
+      },
+      "skip_host": {
+        "title": "Add it without an IP address",
+        "description": "Local status polling is disabled without an IP, but the cloud control channel (set/get attribute services) works whenever the device is online through the cloud. You can add the IP address later via reconfigure → Change the IP address."
       },
       "key_failed": {
         "title": "Could not fetch the key automatically",

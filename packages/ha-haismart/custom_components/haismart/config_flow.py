@@ -525,6 +525,14 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_host(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
+        """mDNS couldn't find the unit. Either type its LAN IP, or skip it and add the unit
+        cloud-only — local polling needs the IP, but the cloud control channel (set/get
+        attribute services) works without it whenever the unit is online through the cloud."""
+        return self.async_show_menu(step_id="host", menu_options=["host_ip", "skip_host"])
+
+    async def async_step_host_ip(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Ask only for the AC's LAN IP (when mDNS couldn't find it). The key is already fetched."""
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -537,7 +545,7 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
             except CannotConnect:
                 errors["base"] = "cannot_connect"
         return self.async_show_form(
-            step_id="host",
+            step_id="host_ip",
             data_schema=vol.Schema(
                 {
                     vol.Required(
@@ -549,6 +557,27 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
             description_placeholders={
                 "device": self._discovered.get(CONF_NAME)
                 or self._discovered.get(CONF_DEVICE_ID, "")
+            },
+        )
+
+    async def async_step_skip_host(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Add the unit without a LAN IP: local polling is disabled, but the cloud control
+        channel (set/get attribute services) works whenever the unit is online through the
+        cloud. The IP can be filled in later via reconfigure -> Change the IP address."""
+        device_id = self._discovered[CONF_DEVICE_ID]
+        assert self._local_key is not None
+        self._abort_if_unique_id_configured()
+        return self.async_create_entry(
+            title=self._discovered.get(CONF_NAME) or f"Haier {device_id}",
+            data={
+                CONF_HOST: "",
+                CONF_DEVICE_ID: device_id,
+                CONF_LOCAL_KEY: self._local_key,
+                CONF_PRODUCT_CODE: DEFAULT_PRODUCT_CODE,
+                CONF_LOCALKEY_VERSION: self._localkey_version or 0,
+                **self._cloud_data,
             },
         )
 

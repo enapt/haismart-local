@@ -289,7 +289,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     config_entry: HaismartConfigEntry
 
     def __init__(self, hass: HomeAssistant, entry: HaismartConfigEntry) -> None:
-        self.host: str = entry.data[CONF_HOST]
+        self.host: str = entry.data.get(CONF_HOST) or ""
         self.device_id: str = entry.data[CONF_DEVICE_ID]
         self._local_key: str = entry.data[CONF_LOCAL_KEY]
         self.product_code: str = entry.data.get(CONF_PRODUCT_CODE) or DEFAULT_PRODUCT_CODE
@@ -371,6 +371,12 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # extended-status query rides along inside the ordinary read rather than costing a second
         # connection or its own poll interval. `_ask_extended` latches off if a unit turns out not
         # to cope with it, so an unfamiliar model degrades to plain status instead of failing.
+        # added without a LAN IP (cloud-only entry): skip local polling entirely -- the cloud
+        # control channel (set/get attribute services) still works without a host.
+        if not self.host:
+            raise UpdateFailed(
+                "no LAN host configured: local polling is disabled, cloud control only"
+            )
         try:
             blobs = await self._async_read()
         except (TimeoutError, OSError, RuntimeError) as err:

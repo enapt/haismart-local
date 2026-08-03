@@ -228,7 +228,14 @@ def _load_digital_model(entry: HaismartConfigEntry) -> dict[str, Any] | None:
         if entry.data.get(CONF_DIGITAL_MODEL):
             _LOGGER.warning("stored digital model is unusable; model write-validation disabled")
         return None
-    return with_rules(stored, entry.data.get(CONF_UPLUS_ID))
+    # Complete it from what ships here, at load, with no network involved. The copy a device's own
+    # account returns leaves `invalid_reasons` null while the published catalogue carries all nine,
+    # so an entry set up by signing in had controls greying out correctly and nothing to say why.
+    # Doing this on load rather than during a rules refresh matters: an entry that already knows its
+    # feature set never asks for a refresh, so it would otherwise never gain the missing sections.
+    # Gaps only -- whatever the stored copy answers stands, being the device's own and current.
+    filled = _fill_gaps(stored, rules_for_product(entry.data.get(CONF_PRODUCT_CODE)))
+    return with_rules(filled, entry.data.get(CONF_UPLUS_ID))
 
 
 def _model_authorized_codes(model: dict[str, Any] | None) -> dict[str, set[int]]:

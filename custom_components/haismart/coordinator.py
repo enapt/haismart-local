@@ -238,6 +238,36 @@ def _load_digital_model(entry: HaismartConfigEntry) -> dict[str, Any] | None:
     return with_rules(filled, entry.data.get(CONF_UPLUS_ID))
 
 
+def _rule_agreement(entry: HaismartConfigEntry) -> str | None:
+    """Whether the stored model and the shipped one describe the same product.
+
+    Computed on load, beside the gap-filling, because that is the only moment both copies are in
+    hand for every entry. Doing it during a rules refresh -- where it started -- meant it never ran
+    for an install that already knows its feature set, which is to say for the installs that have
+    been running longest.
+
+    ``None`` when only one copy exists and there is nothing to compare.
+    """
+    stored = _stored_digital_model(entry)
+    bundled = rules_for_product(entry.data.get(CONF_PRODUCT_CODE))
+    if stored is None or bundled is None:
+        return None
+    want, got = bundled.get("uplus_id"), entry.data.get(CONF_UPLUS_ID)
+    if want and got and want != got:
+        _LOGGER.warning(
+            "product code %s publishes uPlusId %s but this entry reports %s; the stored product "
+            "code probably belongs to a different model, so fault names and availability rules may "
+            "be wrong. Re-add the device to correct it.",
+            entry.data.get(CONF_PRODUCT_CODE), want, got,
+        )
+        return "identity-mismatch"
+    same = all(
+        len(stored.get(k) or ()) == len(bundled.get(k) or ())
+        for k in ("modifiers", "constraints", "alarms")
+    )
+    return "agree" if same else "differ"
+
+
 def _model_authorized_codes(model: dict[str, Any] | None) -> dict[str, set[int]]:
     """Per-field raw codes this device's own digital model declares, for the enum fields the encoder
     lets the model authorize (``operationMode``/``windSpeed``).
@@ -336,7 +366,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.device_type: str | None = entry.data.get(CONF_DEVICE_TYPE) or None
         # Cross-check verdict between the shipped rules and any fetched ones: None when only one
         # source answered, else 'agree' / 'differ' / 'identity-mismatch'. Diagnostics only.
-        self.model_rules_agreement: str | None = None
+        self.model_rules_agreement: str | None = _rule_agreement(entry)
         self.digital_model: dict[str, Any] | None = _load_digital_model(entry)
         self.profile: AttributeProfile = _build_profile(
             entry, self.product_code, self.digital_model

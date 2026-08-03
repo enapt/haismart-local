@@ -100,16 +100,24 @@ _WRITE_ANCHORS = {
 _WIDTHS = {"useMode": 1, "rentTimingStatus": 1, "targetRentTime": 8}
 
 
-def test_the_published_write_frame_covers_all_but_the_rental_fields() -> None:
-    """Against the real anchor set, 35 of 38 fields are already placed and 3 remain.
+def test_the_write_frame_and_hardware_between_them_leave_only_the_rental_fields() -> None:
+    """33 of 38 fields come from the published write frame; two more from hardware; 3 remain.
 
-    Worth stating because the gap looks larger than it is when the wrong map is used as anchors: the
+    Worth separating, because "the published frame places 35" would be false and is the easy thing
+    to say. ``generatorMode`` was placed by cycling a unit through its eco levels and ``localCtrValid``
+    by reading a bit that is set while its neighbours are clear -- neither is published anywhere.
+
+    Worth stating at all because the gap looks far larger when the wrong map is used as anchors: the
     *report* layout and the *write* layout are different frames, and only one of them answers here.
-    What is left is the shared-rental SKU's own vocabulary, which no published profile carries.
+    What is left over is the shared-rental SKU's own vocabulary, which no published profile carries.
     """
     solved, ambiguous = solve_positions(ATTR_ORDER, _WRITE_ANCHORS, _WIDTHS)
+    published = set(CANONICAL_WRITE) & set(ATTR_ORDER)
 
-    assert len(_WRITE_ANCHORS.keys() & set(ATTR_ORDER)) == 35
+    assert len(published) == 33                                   # what the models actually state
+    ordered = set(_WRITE_ANCHORS) & set(ATTR_ORDER)
+    assert sorted(ordered - published) == ["generatorMode", "localCtrValid"]
+    assert len(_WRITE_ANCHORS.keys() & set(ATTR_ORDER)) == 35     # published + measured
     assert {a.name for a in ambiguous} == {"useMode", "rentTimingStatus", "targetRentTime"}
     assert not solved            # nothing left over fits exactly; see the containment test below
 
@@ -159,13 +167,18 @@ _WIDTHS = {
 }
 
 
-def test_solver_derives_the_eco_field_nobody_told_it_about() -> None:
-    """``generatorMode`` falls out of the order and the neighbours, position and width both.
+def test_solver_places_the_eco_field_from_its_neighbours() -> None:
+    """Given its width, ``generatorMode``'s position falls out of the order and the neighbours.
 
     It sits between two mapped fields with exactly three bits between them and is three bits wide,
     so there is one way to lay it out. That it lands on w4.b3 is the check: the eco ladder was
     placed by cycling a real unit through its levels and watching the power draw, and the arithmetic
     reaches the same answer from the published order without seeing any of that.
+
+    The width is supplied, not derived, and deliberately so. A sole unknown in a bounded run *looks*
+    like it must be exactly as wide as the run, but that reasoning assumes the run reserves no bits
+    -- the very assumption this module refuses to make everywhere else. So the position is derived
+    and the width is an input.
     """
     solved, _ = solve_positions(ATTR_ORDER, _UNIVERSAL, _WIDTHS)
 

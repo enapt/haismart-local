@@ -668,3 +668,32 @@ Two related changes came out of the same investigation:
   a compressor or coil reading can be answered from a bug report rather than needing the appliance;
 * when a guard is moved or duplicated, the original must go. This one had been written to do two
   jobs, both of which moved elsewhere, and it kept running with neither reason still attached.
+
+## 22. Whatever a poll reports, a command's reply must report too — settled
+
+**Status: fixed, and written down as a rule because it has now happened three times.**
+
+The reply an appliance sends after a command is a status report and nothing else. It carries no
+fault frame, and for a while it carried no compressor telemetry either. Publishing that reply
+unchanged therefore blanked every reading that was not in it — and a command also pushes the next
+poll a full interval away, so those readings stayed blank for a while rather than flickering.
+
+On a **problem** sensor that is worse than it sounds: "unknown" reads as the check having stopped
+working, not as "nothing to report".
+
+It has been fixed three times now, once per reading that hit it — the compressor figures, then the
+fault sensor, then the optional-feature sensors. So the test no longer guards those three; it
+guards the rule:
+
+> Whatever a poll publishes beyond the plain status, a command's reply has to publish too — either
+> by re-reading it from the reply, or by holding the last value for a bounded time.
+
+Which of the two depends on where the reading comes from. The optional-feature states are in the
+status words, so they are re-read from the reply itself. The fault frame is not in it at all, so the
+last reading stands in — for the same span as the telemetry, and for the same reason: past that it
+no longer speaks for the appliance, and honest silence beats a stale answer.
+
+⚠️ **The first attempt at this fix did nothing**, and passed its tests. It was placed on the polling
+path, while a command's reply is handled somewhere else entirely. A correct function on a path that
+never runs looks exactly like no fix at all from the outside — worth remembering for anything in
+this area, since reads and commands take genuinely different routes through the code.

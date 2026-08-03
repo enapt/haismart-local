@@ -603,13 +603,16 @@ def test_adapted_rules_drop_anything_that_would_match_nothing() -> None:
     assert _adapt_logic_patch([{"actionType": "APPEND", "action": [], "trigger": {}}]) == []
 
 
-async def test_search_products_pages_the_catalogue_and_yields_product_codes() -> None:
+async def test_search_products_sends_the_paging_parameters_and_reads_the_rows() -> None:
     """The only route from a model number to a product code.
 
     A bug report names a model (``HSU-24VRRA03TF``); the open rules catalogue is keyed on product
     code (``AAC1UKZ01``). Nothing local joins the two, so without this call an unfamiliar unit's
-    published model stays out of reach. ``count`` is clamped because the server caps a page at 20,
-    and blank filters are dropped rather than sent empty.
+    published model stays out of reach.
+
+    One request, not a sweep: what is checked is that ``count`` is clamped to the server's page
+    limit, that blank filters are dropped rather than sent empty, and that a row is read back.
+    Walking every page is the caller's job and is not exercised here.
     """
     seen: list[dict] = []
 

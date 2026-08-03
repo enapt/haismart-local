@@ -11,11 +11,14 @@ from haismart_hrdp.model_rules import (
 OUR_UPLUS_ID = "2008610800820324021200118012560000000000000000000000000000000040"
 
 
-def test_our_own_model_matches_what_the_cloud_returns() -> None:
-    """The offline rules for our units are the ones the account path fetches, section for section.
+def test_our_own_model_carries_the_counts_the_published_model_states() -> None:
+    """Every section is present at the size the published model gives -- 6, 10, 52, 39, 25.
 
-    These counts are the live-verified figures for this model -- 6 modifiers, 10 constraints, 52
-    alarms -- so a change here means the bundle drifted from the published model, not that the
+    Sizes, not contents. The bundle is deliberately **not** section-for-section identical to what
+    the cloud returns: the manufacturer's fault descriptions and lock explanations are stripped and
+    the reason wording is this project's own, because none of that prose was ever read. What has to
+    survive is the structure the decode and the availability logic index into, which is what these
+    counts stand for. A change here means the bundle drifted from the published model, not that the
     numbers need updating.
     """
     rules = rules_for_product("AAC1UKZ01")

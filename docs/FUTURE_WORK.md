@@ -430,3 +430,20 @@ What unblocks it is small and specific: **one report from that family with sever
 on**, and one outdoor reading taken somewhere cold or beside a thermometer. Ask for the switches to
 be set to *different* states rather than all on, for the same reason the vane request asks for
 different positions — a uniform capture cannot separate the fields from each other.
+
+
+## 16. A layout that is not a displacement
+
+**Status: recorded, not urgent — no model of this shape is sold in the region this integration
+serves.**
+
+Every layout supported here is the shared map read at a whole-word offset, and everything published
+for this region is exactly that. One published model elsewhere is not: from its second word on it is
+the shared map, matching on word, bit and width for every attribute compared — but its **first word
+merges what the map spends two words on**, and squeezes the setpoint into four bits instead of eight.
+
+Nothing needs doing. It is written down because the shape of the claim matters: "every layout is the
+shared map at an offset" is true of what this integration meets and false of the wider published set,
+and a decoder that assumed the stronger version would mis-read such a unit's setpoint, mode and fan
+in a way that still produces plausible numbers. If a report arrives that decodes sensibly from the
+second word and nonsensically in the first, this is the shape to suspect.

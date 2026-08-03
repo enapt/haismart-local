@@ -130,6 +130,13 @@
         "data_description": {
           "product_code": "Choose \"skip\" if your model is not listed or you are unsure — a wrong choice applies another model's rules, which is worse than none."
         }
+      },
+      "pick_local": {
+        "title": "Air conditioners found on your network",
+        "description": "These answered on your network, so their addresses and IDs are already known — you only need the local key.\n\nNot listed? Go back and it will ask for an IP address instead. Units already added are not shown.",
+        "data": {
+          "host": "Air conditioner"
+        }
       }
     },
     "error": {

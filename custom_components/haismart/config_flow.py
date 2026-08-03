@@ -93,7 +93,7 @@ from .const import (
     UDISCOVERY_TIMEOUT,
 )
 from .countries import country_options, default_dial_code
-from .discovery import async_resolve_host_arp
+from .discovery import async_resolve_host_arp, async_scan_for_appliances
 
 
 class CannotConnect(HomeAssistantError):
@@ -299,6 +299,8 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         # carried between the manual form and the model-confirmation step that follows it
         self._pending_manual: dict[str, Any] = {}
         self._model_choices: dict[str, str] = {}
+        # appliances found on the LAN; None until the scan has run, [] if it found none
+        self._found: list[Any] | None = None
         self._cloud_data: dict[str, str] = {}
         self._devices: list[Any] = []
         self._picked: Any = None
@@ -630,6 +632,19 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_manual(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
+        # Before asking for an address, look for one. Home Assistant already knows every MAC on the
+        # subnet, the appliance's device ID *is* its MAC, and the appliances answer a key-free query
+        # -- so on the ordinary network the address, the device ID and the wire-model identifier can
+        # all be had without anyone typing anything. Only ever runs once per flow, and only when
+        # nothing has been prefilled by a discovery path that already knew.
+        if (
+            user_input is None
+            and not self._discovered.get(CONF_HOST)
+            and self._found is None
+        ):
+            self._found = await async_scan_for_appliances(self.hass)
+            if self._found:
+                return await self.async_step_pick_local()
         errors: dict[str, str] = {}
         if user_input is not None:
             host = user_input[CONF_HOST].strip()
@@ -749,6 +764,47 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                         mode=SelectSelectorMode.DROPDOWN,
                         custom_value=True,
                     )
+                ),
+            }),
+        )
+
+    async def async_step_pick_local(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Choose from the appliances found on this network, so no address need be typed.
+
+        Each entry here has already identified itself, so picking one settles the address, the
+        device ID and the wire-model identifier at once -- everything the offline path needs except
+        the key, which is the one thing no appliance will hand over.
+
+        Units already configured are left out. If that empties the list the flow goes to the form
+        rather than aborting: someone may be adding a unit this scan could not see.
+        """
+        configured = self._async_current_ids()
+        available = [
+            d
+            for d in (self._found or [])
+            if _clean_device_id(d.device_id) not in configured
+        ]
+        if not available:
+            return await self.async_step_manual(None)
+        if user_input is not None:
+            picked = next(
+                (d for d in available if d.host == user_input[CONF_HOST]), None
+            )
+            if picked is not None:
+                self._discovered = {
+                    CONF_HOST: picked.host,
+                    CONF_DEVICE_ID: _clean_device_id(picked.device_id),
+                }
+                if picked.uplus_id.strip("0"):
+                    self._cloud_data.setdefault(CONF_UPLUS_ID, picked.uplus_id)
+            return await self.async_step_manual(None)
+        return self.async_show_form(
+            step_id="pick_local",
+            data_schema=vol.Schema({
+                vol.Required(CONF_HOST): vol.In(
+                    {d.host: f"{d.device_id} ({d.host})" for d in available}
                 ),
             }),
         )

@@ -116,3 +116,35 @@ ISSUE_UNKNOWN_LAYOUT = "unknown_report_layout"
 
 # mDNS service the AC's wifi module announces (instance name = deviceId, e.g. A1B2C3D4E5F6).
 ZEROCONF_TYPE = "_cae._udp.local."
+
+# The appliance-maker's registered MAC prefixes, the same set the manifest's DHCP matchers
+# use. Kept here as well so the offline path can find appliances on the network by itself:
+# a device ID *is* one of these MACs, so a host whose MAC starts with one of them is worth
+# asking whether it is an air conditioner. A test asserts the two lists stay identical.
+HAIER_OUIS: tuple[str, ...] = (
+    "0007A8",
+    "00258D",
+    "0439CB",
+    "04C9DE",
+    "04E229",
+    "04FA83",
+    "145790",
+    "18A7F1",
+    "24E8CE",
+    "2C37C5",
+    "3412DC",
+    "3429EF",
+    "3C1640",
+    "4448FF",
+    "540853",
+    "5C241F",
+    "60B02B",
+    "68E478",
+    "94224C",
+    "A08222",
+    "AC8226",
+    "ACB722",
+    "D8E23F",
+    "DC330E",
+    "E8EAFA",
+)

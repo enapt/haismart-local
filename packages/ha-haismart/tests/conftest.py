@@ -421,6 +421,13 @@ if _HA_AVAILABLE:
             patch(
                 "custom_components.haismart.config_flow.udiscovery.async_query", cloud
             ),
+            # The offline path scans the network before asking for an address. Default it to
+            # finding nothing: an ARP sweep plus a datagram per candidate is real I/O, and tests
+            # about the picker say so explicitly rather than every other test paying for it.
+            patch(
+                "custom_components.haismart.config_flow.async_scan_for_appliances",
+                new=AsyncMock(return_value=[]),
+            ),
             patch(
                 "custom_components.haismart.coordinator.async_find_host", rediscover
             ),

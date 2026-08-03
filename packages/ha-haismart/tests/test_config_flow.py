@@ -1105,3 +1105,74 @@ async def test_an_appliance_added_by_hand_is_not_offered_again_after_signing_in(
 
     # the hand-added one is gone from the list; only the other AC on the account remains
     assert _picker_device_ids(picker) == {"A1B2C3D4E5F7"}
+
+
+def test_the_scan_prefixes_match_the_manifest_matchers() -> None:
+    """One list of MAC prefixes, used twice: to be discovered, and to go looking.
+
+    Home Assistant matches these to surface an appliance on its own; the offline path matches the
+    same set to find one before asking for an address. If they drift, the offline scan quietly stops
+    seeing a whole product line while discovery still works, which is close to undebuggable.
+    """
+    import json
+    from pathlib import Path
+
+    from custom_components.haismart.const import HAIER_OUIS
+
+    root = Path(__file__).resolve().parents[1] / "custom_components" / "haismart"
+    manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+    assert sorted(HAIER_OUIS) == sorted(
+        m["macaddress"].rstrip("*").upper() for m in manifest["dhcp"]
+    )
+
+
+async def test_the_offline_path_offers_what_it_finds_instead_of_asking_for_an_address(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Nobody should type an IP address for a device sitting on the same network.
+
+    Home Assistant already knows every MAC on the subnet and the appliances answer a key-free
+    query, so the address, the device ID and the wire-model identifier are all obtainable before
+    anyone is asked anything. All that is left is the key.
+    """
+    from unittest.mock import AsyncMock, patch
+
+    from haismart_hrdp.udiscovery import DeviceInfo
+
+    from custom_components.haismart.const import CONF_UPLUS_ID
+
+    uplus = "2008610800820324021200118012560000000000000000000000000000000040"
+    found = [
+        DeviceInfo(device_id="A1B2C3D4E5F6", host="192.168.1.58", uplus_id=uplus),
+        DeviceInfo(device_id="A1B2C3D4E5F7", host="192.168.1.57", uplus_id=uplus),
+    ]
+    with patch(
+        "custom_components.haismart.config_flow.async_scan_for_appliances",
+        new=AsyncMock(return_value=found),
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": "user"}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"next_step_id": "manual"}
+        )
+        assert result["step_id"] == "pick_local"
+        assert set(result["data_schema"].schema[CONF_HOST].container) == {
+            "192.168.1.58",
+            "192.168.1.57",
+        }
+        # picking settles address + identity; the form that follows only wants the key
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_HOST: "192.168.1.58"}
+        )
+        assert result["step_id"] == "manual"
+        assert CONF_LOCAL_KEY in result["data_schema"].schema
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_HOST: "192.168.1.58", CONF_LOCAL_KEY: LOCAL_KEY}
+        )
+        result = await _past_model_step(hass, result)
+
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_DEVICE_ID] == "A1B2C3D4E5F6"   # never typed
+    assert result["data"][CONF_UPLUS_ID] == uplus             # never typed

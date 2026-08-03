@@ -287,6 +287,30 @@ def _build_profile(
     return profile_for(product_code)
 
 
+def _fill_gaps(
+    fetched: dict[str, Any], bundled: dict[str, Any] | None
+) -> dict[str, Any]:
+    """The fetched model, with any section it leaves empty taken from the shipped one.
+
+    These are two publications of the same product and neither is a superset. What a device's own
+    account returns carries the group command -- the write-frame ordering -- and three command
+    pseudo-attributes; what the open catalogue publishes carries ``invalid_reasons``, the sentences
+    that say *why* a control is unavailable, which the account copy leaves null. Preferring one
+    wholesale therefore throws away whatever only the other has, and for a signed-in install that
+    meant losing every lock explanation: the controls greyed out correctly and could not say why.
+
+    Only genuinely empty sections are filled. The fetched copy is current where the shipped one is a
+    snapshot, so anything it actually answers stands -- this adds, and never overrides.
+    """
+    if not bundled:
+        return fetched
+    merged = dict(fetched)
+    for section, value in bundled.items():
+        if not merged.get(section) and value:
+            merged[section] = value
+    return merged
+
+
 class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Polls one AC over uSS and exposes the parsed full-status report."""
 
@@ -1342,7 +1366,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             published = await self._async_account_published_model()
             if published is not None:
                 self._note_rule_agreement(bundled, published)
-                return published
+                return _fill_gaps(published, bundled)
         # only a product code the entry actually stores will do. `self.product_code` falls back to
         # a built-in default, and a default is indistinguishable from a real code -- handing this
         # device another model's rules would make the wrong entities unavailable and name the wrong

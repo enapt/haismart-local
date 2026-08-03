@@ -2716,3 +2716,42 @@ async def test_a_silent_unit_is_asked_the_other_published_way_first(
 
     assert coordinator.supports_extended is None             # not written off yet
     assert EXTENDED_STATUS_FRAME_TYPES[1] in forms_asked()   # the other form was tried
+
+
+async def test_the_two_published_copies_are_combined_not_chosen_between(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Neither publication of a model is a superset of the other, so take the union of them.
+
+    A device's own account returns the group command and the command pseudo-attributes; the open
+    catalogue returns `invalid_reasons` -- the sentences explaining why a control is unavailable --
+    which the account copy leaves null. Preferring one wholesale loses whatever only the other has,
+    and for a signed-in install that meant controls greying out correctly with nothing to say why.
+
+    Filling gaps only: anything the fetched copy actually answers must stand, because it is current
+    where the shipped one is a snapshot.
+    """
+    from custom_components.haismart.coordinator import _fill_gaps
+
+    fetched = {
+        "attributes": [{"name": "operationMode"}],
+        "modifiers": [{"a": 1}],
+        "invalid_reasons": None,          # the account copy leaves this out
+        "groupCommands": [{"name": "grSetDAC"}],
+    }
+    bundled = {
+        "attributes": [{"name": "stale"}],
+        "modifiers": [{"b": 2}],          # older; must NOT win
+        "invalid_reasons": {"50001": "not available while the unit reports a fault"},
+        "alarms": [{"name": "E1"}],       # absent upstream entirely
+    }
+
+    merged = _fill_gaps(fetched, bundled)
+    assert merged["attributes"] == fetched["attributes"], "current data must not be overridden"
+    assert merged["modifiers"] == fetched["modifiers"], "current data must not be overridden"
+    assert merged["groupCommands"] == fetched["groupCommands"]
+    assert merged["invalid_reasons"] == bundled["invalid_reasons"], "the gap must be filled"
+    assert merged["alarms"] == bundled["alarms"], "a section absent upstream must be filled"
+
+    # and with nothing shipped for this product, the fetched copy passes through untouched
+    assert _fill_gaps(fetched, None) == fetched

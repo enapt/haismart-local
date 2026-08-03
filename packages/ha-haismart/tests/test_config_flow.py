@@ -1176,3 +1176,35 @@ async def test_the_offline_path_offers_what_it_finds_instead_of_asking_for_an_ad
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_DEVICE_ID] == "A1B2C3D4E5F6"   # never typed
     assert result["data"][CONF_UPLUS_ID] == uplus             # never typed
+
+
+async def test_a_known_appliance_is_located_rather_than_re_offered(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Do not ask someone to choose an appliance they have already chosen.
+
+    The account path lands on the manual form when it could not fetch a key, and it arrives knowing
+    exactly which unit was picked. The network scan should then be used to find that unit's address
+    — not to present the whole list again.
+    """
+    from unittest.mock import AsyncMock, patch
+
+    from haismart_hrdp.udiscovery import DeviceInfo
+
+    found = [
+        DeviceInfo(device_id="AABBCCDDEEFF", host="192.168.1.57"),
+        DeviceInfo(device_id="A1B2C3D4E5F6", host="192.168.1.58"),  # the one already chosen
+    ]
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "zeroconf"}, data=_zeroconf_info()
+    )
+    assert result["step_id"] == "manual"  # arrives named, from discovery
+
+    with patch(
+        "custom_components.haismart.config_flow.async_scan_for_appliances",
+        new=AsyncMock(return_value=found),
+    ):
+        again = await hass.config_entries.flow.async_configure(result["flow_id"], None)
+
+    assert again["step_id"] == "manual", "should not bounce to a picker"
+    assert again["data_schema"]({CONF_LOCAL_KEY: LOCAL_KEY})[CONF_HOST] == "192.168.1.50"

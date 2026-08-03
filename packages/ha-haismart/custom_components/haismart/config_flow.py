@@ -643,7 +643,25 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
             and self._found is None
         ):
             self._found = await async_scan_for_appliances(self.hass)
-            if self._found:
+            wanted = self._discovered.get(CONF_DEVICE_ID)
+            if wanted:
+                # We already know which appliance this is -- the account path lands here when it
+                # could not fetch a key, and the discovery paths arrive named. Use the scan to find
+                # *that* one's address rather than asking someone to choose all over again from a
+                # list they have already chosen from.
+                match = next(
+                    (
+                        d
+                        for d in self._found
+                        if _clean_device_id(d.device_id) == _clean_device_id(wanted)
+                    ),
+                    None,
+                )
+                if match is not None:
+                    self._discovered[CONF_HOST] = match.host
+                    if match.uplus_id.strip("0"):
+                        self._cloud_data.setdefault(CONF_UPLUS_ID, match.uplus_id)
+            elif self._found:
                 return await self.async_step_pick_local()
         errors: dict[str, str] = {}
         if user_input is not None:

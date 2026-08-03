@@ -568,3 +568,29 @@ two sets coincide rather than merely being the same size.
 
 So the accurate claim is **parity with what the app can do locally, on every model it supports**, and
 a deliberate decline of what it does through the cloud.
+
+## 19. The settings nobody's hardware has reported yet — parked
+
+**Status: parked, not open. Nothing is waiting on it and nothing can go wrong because of it.**
+
+Nine settings across the published air conditioners have no position in any description this project
+can reach: the four vane fields on four-sided cassettes, mains and solar input metering, a cleaning
+mode, a language list, and a sleep-curve flag.
+
+They are parked rather than open because **they cannot be derived**. Every one of them postdates the
+published descriptions that carry positions — for six of the affected models the description matches
+their model exactly and still omits the setting — so no amount of reading published material will
+place them. The vendor app is in the same position and covers it by asking a server, which this
+integration deliberately does not do.
+
+What would settle any of them is one thing only: **a report from a unit that actually has the
+feature, taken with the feature in a known state**. Until then:
+
+* None is surfaced, so none can be mis-read. There is no wrong value to show, only an absent one.
+* Everything else about those models decodes normally — a unit missing one of these is otherwise
+  fully supported.
+* If a capture does arrive, the layout prober already scores against written-down states, so a
+  single report with the feature on and off is enough to place it.
+
+Treat the map as complete for everything locally derivable. This item exists so that a capture, if
+one ever turns up, is recognised for what it settles rather than re-investigated from scratch.

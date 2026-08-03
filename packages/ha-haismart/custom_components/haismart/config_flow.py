@@ -555,8 +555,26 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         which they have no way to obtain by hand. That is a dead end. Offer a retry first: the
         fetch is attempted exactly once against an 8s timeout, and transient failures are common.
         """
+        # Ask the appliance whether it can still reach the manufacturer, because that answers
+        # "why did this fail" outright. Keys are issued by those servers *to the appliance*, so a
+        # unit that is cut off cannot be given one -- and the most common reason for it to be cut
+        # off is that its owner arranged it. Saying so turns an unexplained failure into a
+        # confirmation that the deliberate thing worked.
+        note = ""
+        host = self._discovered.get(CONF_HOST)
+        if host and (info := await self._async_query_device(host)) is not None:
+            if info.cloud_connected is False:
+                note = (
+                    "\n\nThis air conditioner reports that it cannot reach Haier's servers. Keys "
+                    "are issued to the unit by those servers, so one cannot be fetched while it is "
+                    "cut off — your sign-in worked, and nothing else is wrong. If you blocked the "
+                    "unit from the internet on purpose, that is expected: use a key you saved "
+                    "earlier. A blocked unit's key stops changing, so an old one keeps working."
+                )
         return self.async_show_menu(
-            step_id="key_failed", menu_options=["key_retry", "manual"]
+            step_id="key_failed",
+            menu_options=["key_retry", "manual"],
+            description_placeholders={"note": note},
         )
 
     async def async_step_key_retry(

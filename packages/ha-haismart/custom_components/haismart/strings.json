@@ -69,7 +69,7 @@
       },
       "key_failed": {
         "title": "Could not fetch the key automatically",
-        "description": "Home Assistant signed in, but could not retrieve this air conditioner's local key from Haier's servers — or the key it got does not decrypt the unit's status.\n\nThis is often temporary, so trying again is usually worth it. If it keeps failing you can enter the details by hand, though the key is not something you can read off the unit — you would need it from a previous install's Local key sensor or a backup.",
+        "description": "Home Assistant signed in, but could not retrieve this air conditioner's local key from Haier's servers — or the key it got does not decrypt the unit's status.{note}\n\nThis is often temporary, so trying again is usually worth it. If it keeps failing you can enter the details by hand, though the key is not something you can read off the unit — you would need it from a previous install's Local key sensor or a backup.",
         "menu_options": {
           "key_retry": "Try fetching the key again",
           "manual": "Enter the details by hand instead"

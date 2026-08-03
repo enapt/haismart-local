@@ -1208,3 +1208,57 @@ async def test_a_known_appliance_is_located_rather_than_re_offered(
 
     assert again["step_id"] == "manual", "should not bounce to a picker"
     assert again["data_schema"]({CONF_LOCAL_KEY: LOCAL_KEY})[CONF_HOST] == "192.168.1.50"
+
+
+async def test_a_cut_off_appliance_explains_why_its_key_could_not_be_fetched(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A deliberate block should read as confirmation, not as an unexplained failure.
+
+    Keys are issued to the appliance by the manufacturer's servers, so a unit blocked from the
+    internet cannot be given one — and blocking it is the recommended end state here. The unit
+    reports its own connectivity for free, so the failure can say which of the two it is.
+
+    Note what this does *not* claim: the sign-in itself succeeded. Blocking the key gateway leaves
+    the account endpoints reachable, so telling someone their internet is broken would be wrong.
+    """
+    from unittest.mock import AsyncMock, patch
+
+    from haismart_extractor import GatewayError
+    from haismart_hrdp.udiscovery import DeviceInfo
+
+    cut_off = DeviceInfo(
+        device_id="A1B2C3D4E5F6", host="192.168.1.50", cloud_state=1006
+    )
+    result = await _drive_login_to_pick(hass, mock_uss, [
+        patch("custom_components.haismart.config_flow._async_fetch_localkey",
+              new=AsyncMock(side_effect=GatewayError("CONNACK rc=5"))),
+        patch("custom_components.haismart.config_flow._async_resolve_host",
+              new=AsyncMock(return_value="192.168.1.50")),
+        patch("custom_components.haismart.config_flow.udiscovery.async_query",
+              new=AsyncMock(return_value=cut_off)),
+    ])
+
+    assert result["step_id"] == "key_failed"
+    note = result["description_placeholders"]["note"]
+    assert "cannot reach Haier's servers" in note
+    assert "your sign-in worked" in note, "must not blame the account or the network"
+    assert "keeps working" in note, "a blocked unit's key is frozen, so an old one is still good"
+
+
+async def test_a_connected_appliance_gets_no_such_explanation(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The unit is online, so its connectivity is not the reason — say nothing rather than guess."""
+    from unittest.mock import AsyncMock, patch
+
+    from haismart_extractor import GatewayError
+
+    result = await _drive_login_to_pick(hass, mock_uss, [
+        patch("custom_components.haismart.config_flow._async_fetch_localkey",
+              new=AsyncMock(side_effect=GatewayError("CONNACK rc=5"))),
+        patch("custom_components.haismart.config_flow._async_resolve_host",
+              new=AsyncMock(return_value="192.168.1.50")),
+    ])
+    assert result["step_id"] == "key_failed"
+    assert result["description_placeholders"]["note"] == ""

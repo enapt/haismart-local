@@ -364,6 +364,21 @@ occupy the shared map's words twenty through twenty-five, so they occupy their o
 Nothing further is needed to read them. What has not happened is a unit of that shape being seen,
 which would confirm the derivation rather than produce it.
 
+**⚠️ Re-scoped 2026-08-03 — expect no reporter, and do not treat this as a coverage gap.** The
+manufacturer ships **no phone-app interface for this device class in this region**: the app carries
+panels for refrigeration, air conditioning (wall and cabinet) and laundry, and none for the class
+these seventy-nine belong to. So an owner here has no vendor app to pair or control them with, and
+is correspondingly unlikely to arrive with a report. Two consequences worth stating plainly:
+
+* These products should **not** sit in a coverage denominator for this integration. Quoting "79
+  products unsupported" overstates the gap — they are outside what the vendor supports here too.
+* The derivation above still stands and costs nothing to keep. If a unit ever does appear, it is
+  one report away. **Also useful:** of the seventy-nine, **thirty-six publish their attribute list
+  in wire order** (word ascending, bit descending — verified against the shared map's anchors with
+  zero violations), so their positions can be solved without a capture at all. The other
+  forty-three show one consistent disagreement, which means either their list is not ordered or
+  their layout genuinely differs — untestable without hardware.
+
 ## 12. Control for the central family — a parameter at a time, not a group
 
 **Status: open. Depends on 11 for reads, but is independent work.**
@@ -429,8 +444,21 @@ every one of them reads zero in every report available. A position stated for a 
 lacks is not a mystery; it is the shared description of a product line being wider than any one
 member of it.
 
-One attribute the family does declare, `cloudControlStatus`, has no stated position anywhere. That is
-the whole remaining gap for this family: one flag.
+One attribute the family does declare, `cloudControlStatus`, has no stated position anywhere.
+
+⚠️ **Corrected 2026-08-03 — that is not the whole remaining gap; there are two.** A second declared
+attribute, **`sleepCurveStatus`**, is likewise stated nowhere: it is real (not marked absent) on six
+of this family's models, is a writable boolean, and appears in no published position — neither in
+the shared map nor in this family's own description, whose unnamed slots were enumerated one by one
+and contain nothing resembling it.
+
+★ **Why it was missed is the more useful part.** Every coverage figure this project has quoted was
+computed against the shared map, and that map is generated from **one of the two published formats
+only** — so this family's description contributes nothing to it, and this family's attributes were
+never counted against anything at all. **Coverage must be counted per family, never against the
+shared map alone.** A companion false positive to expect in the other direction: an attribute can
+read as "unplaced" merely because it is published nowhere while being perfectly well known from
+hardware, which is the case for the eco setting.
 
 What is still unresolved is not the layout but two readings within it, and neither can be settled from
 published material:
@@ -461,3 +489,34 @@ shared map at an offset" is true of what this integration meets and false of the
 and a decoder that assumed the stronger version would mis-read such a unit's setpoint, mode and fan
 in a way that still produces plausible numbers. If a report arrives that decodes sensibly from the
 second word and nonsensically in the first, this is the shape to suspect.
+
+## 17. What still needs the cloud — settled, and it is one thing
+
+**Status: closed. Recorded so it is not re-opened.**
+
+Checked row by row against shipped code rather than estimated. Everything a device needs to be
+discovered, decoded, gated and controlled now resolves without any per-model cloud request:
+
+| needed | where it comes from | cloud? |
+|---|---|---|
+| address | DHCP, ARP, or the key-free LAN discovery query | no |
+| device id | it is the MAC | no |
+| the wire-model key | the LAN discovery reply, no key and no account | no |
+| the byte map | ships with the integration | no |
+| rules — locks, faults, co-commands | ship with the integration, all 171 published models | no |
+| which features a unit actually has | derived from those same shipped rules | no |
+| the product code that keys them | the model number printed on the unit — 171/171 are unique | no |
+| live readings | read from the unit | no |
+| **the local key** | the manufacturer's gateway | **yes — the only one** |
+
+Two caveats worth keeping visible rather than buried:
+
+* Fetching the key still needs an **account sign-in**. "No cloud" here means no per-model cloud
+  data, not no account has ever been used.
+* The key **rotates several times a day** — unless the unit is firewalled, which freezes it. That is
+  precisely why "fetch once, then firewall" is the working configuration rather than a workaround.
+
+One ordering detail that already behaves correctly and should stay that way: the wire-model key is
+learned from the discovery query **before** the first report is decoded, in the same first poll. A
+device is therefore never decoded by report length before its own identifier is known, and moving
+the discovery call later would silently reintroduce that window.

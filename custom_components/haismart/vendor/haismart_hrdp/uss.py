@@ -837,6 +837,12 @@ _MAX_WORDS = 12   # sanity bound: no observed grSetDAC block exceeds this
 # Plausibility band used to veto a DERIVED layout and to reject sentinel sensor readings. A unit that
 # lacks a sensor reports 0 for it, which would otherwise decode to a confident -64.0 C outdoor value.
 _PLAUSIBLE_TEMP_C = (-40.0, 70.0)
+# A compressor discharge line is not an air temperature and does not share their range: it runs
+# 70-110 C in normal cooling and is the hottest thing the machine measures. Judging it by the band
+# that suits ambient and coil probes discards exactly the readings that say the compressor is
+# working hardest -- seen live at 80 C on a unit pulling 78 Hz, dropped as implausible, while the
+# same field showed at 69 C under lighter load. That reads as an intermittent sensor and is not.
+_PLAUSIBLE_DISCHARGE_C = (-40.0, 140.0)
 
 
 def status_layout(data: bytes) -> StatusLayout | None:
@@ -1037,7 +1043,13 @@ def parse_full_status(
     return out
 
 
-def _sensor_temp(raw: int, *, scale: float, offset: float) -> float | None:
+def _sensor_temp(
+    raw: int,
+    *,
+    scale: float,
+    offset: float,
+    band: tuple[float, float] | None = None,
+) -> float | None:
     """Decode a temperature byte, or ``None`` when the unit clearly has no such sensor.
 
     A model without (say) an outdoor probe reports 0 for it, which the raw formula turns into a
@@ -1048,7 +1060,7 @@ def _sensor_temp(raw: int, *, scale: float, offset: float) -> float | None:
     if raw in (0x00, 0xFF):
         return None
     value = raw * scale + offset
-    lo, hi = _PLAUSIBLE_TEMP_C
+    lo, hi = band or _PLAUSIBLE_TEMP_C
     return value if lo <= value <= hi else None
 
 
@@ -1147,14 +1159,14 @@ def parse_extended_status(data: bytes) -> dict[str, Any]:
     out["compressor_frequency_hz"] = data[_EXT_OFF_FREQ]
     # Same absent-sensor policy as the status report's temperatures: 0 must not become a confident
     # -20/-64 C reading in a user's statistics. Most units carry only some of these probes.
-    for key, off, scale, offset in (
-        ("coil_temperature", _EXT_OFF_COIL, 0.5, -20.0),
-        ("discharge_temperature", _EXT_OFF_DISCHARGE, 1.0, -64.0),
-        ("outdoor_coil_temperature", _EXT_OFF_OUTDOOR_COIL, 1.0, -64.0),
-        ("outdoor_in_air_temperature", _EXT_OFF_OUTDOOR_IN_AIR, 1.0, -64.0),
-        ("outdoor_defrost_temperature", _EXT_OFF_OUTDOOR_DEFROST, 1.0, -64.0),
+    for key, off, scale, offset, band in (
+        ("coil_temperature", _EXT_OFF_COIL, 0.5, -20.0, None),
+        ("discharge_temperature", _EXT_OFF_DISCHARGE, 1.0, -64.0, _PLAUSIBLE_DISCHARGE_C),
+        ("outdoor_coil_temperature", _EXT_OFF_OUTDOOR_COIL, 1.0, -64.0, None),
+        ("outdoor_in_air_temperature", _EXT_OFF_OUTDOOR_IN_AIR, 1.0, -64.0, None),
+        ("outdoor_defrost_temperature", _EXT_OFF_OUTDOOR_DEFROST, 1.0, -64.0, None),
     ):
-        value = _sensor_temp(data[off], scale=scale, offset=offset)
+        value = _sensor_temp(data[off], scale=scale, offset=offset, band=band)
         if value is not None:
             out[key] = value
     actuators = int.from_bytes(data[_EXT_OFF_ACTUATORS:_EXT_OFF_ACTUATORS + 2], "big")

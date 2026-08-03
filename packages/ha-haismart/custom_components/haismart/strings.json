@@ -7,7 +7,7 @@
         "description": "Signing in is the recommended route: Home Assistant fetches the local key, finds the unit on your network and reads its model, so there is nothing to paste. It talks to the air conditioner directly from then on — and once it is set up you can block the unit from the internet entirely; see the README on going fully cloud-independent.\n\nGoogle/Facebook accounts: create a throwaway email/password Haier account, share your AC(s) to it in the app, then sign in with that account.",
         "menu_options": {
           "login": "Sign in with your Haier account (recommended)",
-          "manual": "Enter the details myself (no account needed)"
+          "manual": "I already have this unit's local key"
         }
       },
       "login": {
@@ -33,7 +33,7 @@
       },
       "manual": {
         "title": "Device details",
-        "description": "Set the AC up without signing in. You need two things: its IP address, and its local key — from a previous install's Local key sensor or a backup. The air conditioner supplies the rest itself when asked.",
+        "description": "The only thing you need is this unit's local key — from a previous install's Local key sensor, or a backup. Home Assistant looks for the air conditioner on your network and asks it for everything else.\n\nThere is no way to read the key off the unit itself. If you do not have one saved, go back and sign in — that fetches it for you.",
         "data": {
           "host": "IP address",
           "device_id": "Device ID",

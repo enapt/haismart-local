@@ -128,6 +128,14 @@ class WireField:
 
 # Who made the last change. The unit reports this in every status frame, which lets an automation
 # tell an owner reaching for the handset apart from a command it sent itself.
+#
+# ⚠️ Only two of the four are evidenced. **1 (handset) and 3 (module/app)** are confirmed against an
+# independent implementation of the same protocol. **0 and 2 are not**: the device models declare the
+# attribute as a plain two-bit integer with no descriptions for its values, so nothing states what
+# they mean. `other` is a catch-all and asserts nothing; `panel` names a wired wall controller, which
+# is the obvious remaining source on this hardware and is still an inference. Do not cite it as
+# evidence that a unit accepts wired control -- that would be this project's own guess coming back as
+# a fact. A reading taken while a wired controller is used would settle it.
 OPERATION_SOURCE: Mapping[int, str] = {0: "other", 1: "remote", 2: "panel", 3: "network"}
 
 

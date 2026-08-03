@@ -29,6 +29,7 @@ English-only; the pages above cover install and setup._
 - [Automation examples](#automation-examples)
 - [Going fully cloud-independent](#going-fully-cloud-independent)
 - [Troubleshooting](#troubleshooting)
+- [Why it keeps asking for a key](#why-it-keeps-asking-for-a-key)
 - [Before you open an issue](#before-you-open-an-issue)
 - [Contributing](#contributing)
 - [Credits](#credits)
@@ -373,7 +374,9 @@ live on entirely different servers and no country code will work.
 The AC answered and the connection is fine, but Home Assistant couldn't read the reply. Two causes:
 
 - **Stale local key** — keys rotate server-side. If you signed in with your account, it re-fetches
-  automatically; otherwise you'll be prompted to re-authenticate.
+  automatically; otherwise you'll be prompted to re-authenticate. The integration tells you which
+  situation you are in rather than making you guess — see
+  [Why it keeps asking for a key](#why-it-keeps-asking-for-a-key).
 - **A report layout we don't know yet** — your model packs its status differently. The integration
   recognises several layouts automatically and, for anything else, decodes what it can and says so
   explicitly instead of failing outright. Please [open an issue](#before-you-open-an-issue) with
@@ -425,6 +428,33 @@ logger:
 ```
 
 </details>
+
+## Why it keeps asking for a key
+
+An air conditioner that can still reach Haier is issued a **new local key several times a day**.
+That is the single most common cause of an installation that seems to lose its configuration: the
+key changes, the stored one no longer works, and the next restart shows an error and no entities.
+Re-adding the unit fixes it only until the next change.
+
+**Signing in makes it invisible.** With your account stored, a key change is fetched automatically
+and you are never asked. This is the main reason sign-in is the recommended route.
+
+The integration will tell you, in Settings → Repairs, which of three situations you are in:
+
+| What you see | What it means | What to do |
+|---|---|---|
+| *"its key will change and this setup cannot follow"* | The unit is still online and this entry has no account, so it cannot follow. Raised **before** anything breaks. | Add your account, or block the unit from the internet — either one ends it |
+| *"localKey rotated — manual re-key needed"* | The key changed and there is no account to fetch a new one with | Reconfigure → *Add your Haier account*, then it never asks again |
+| *"its key changed and the automatic re-fetch did not work"* | Your account **is** stored and the automatic fetch failed | Sign in again from the prompt. If it recurs, something is blocking Haier's key service — or blocking the unit permanently is the cleaner fix |
+
+**Adding your account to an existing unit** takes a minute and does not disturb anything: Settings →
+Devices & Services → Haismart → the device → **Reconfigure** → *Add your Haier account*. Same
+appliance, same key, same history — credentials added.
+
+**Or stop the key changing at all.** A unit blocked from the internet is never issued a new one, so
+the key you have stays valid indefinitely — see
+[going fully cloud-independent](#going-fully-cloud-independent). Local control is unaffected either
+way, and this is the configuration the integration is built for.
 
 ## Before you open an issue
 

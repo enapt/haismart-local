@@ -2982,3 +2982,30 @@ async def test_a_slow_identity_lookup_does_not_hold_up_startup(
     assert [s for s in hass.states.async_all() if s.entity_id.startswith("climate.")], (
         "the appliance must still be usable when the lookup times out"
     )
+
+
+async def test_a_command_does_not_blank_the_fault_sensor(
+    hass: HomeAssistant, mock_uss, freezer
+) -> None:
+    """Only a read cycle asks for the fault frame, so a command must not read as "unknown".
+
+    A control session does not request it, and a command also pushes the next poll a full interval
+    away — so every command blanked the problem sensor for a while. On a *problem* entity that reads
+    as the check having stopped working, which is worse than briefly saying what it last saw.
+
+    The reading is held for the same span as the telemetry, and for the same reason: past that it no
+    longer speaks for the unit, and honest silence beats a stale answer.
+    """
+    from custom_components.haismart.const import TELEMETRY_MAX_AGE
+
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data
+
+    reading = {"alarm_codes": (), "fault": False}
+    assert coordinator._held_alarms(reading) == reading      # a read cycle records it
+    assert coordinator._held_alarms({}) == reading, (
+        "a control session carries no alarm frame; the last reading must stand in"
+    )
+
+    freezer.tick(timedelta(seconds=TELEMETRY_MAX_AGE + 1))
+    assert coordinator._held_alarms({}) == {}, "a stale fault reading must not persist"

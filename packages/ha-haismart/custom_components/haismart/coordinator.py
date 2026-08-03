@@ -403,6 +403,9 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._telemetry: dict[str, Any] = {}
         self._telemetry_at = 0.0
         self._telemetry_power: bool | None = None
+        # last fault reading, held across control sessions that never request the alarm frame
+        self._alarms: dict[str, Any] = {}
+        self._alarms_at = 0.0
         self._misses = 0
         # Cloud reachability, from the key-free UDISCOVERY query (see const.py). `None` = not known
         # (never answered, or the unit does not implement it) -- deliberately NOT False, so a device
@@ -482,7 +485,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         telemetry, extended_blob = _telemetry_from(blobs)
         if extended_blob is not None:
             self.last_raw_extended = extended_blob
-        alarms = _alarms_from(blobs)
+        alarms = self._held_alarms(_alarms_from(blobs))
 
         for blob in blobs:
             if state := parse_full_status(
@@ -1007,6 +1010,28 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._telemetry = {}
             return
         state.update(self._telemetry)
+
+    def _held_alarms(self, alarms: dict[str, Any]) -> dict[str, Any]:
+        """Carry the last fault reading across a cycle that did not ask for one.
+
+        Only a read cycle requests the alarm frame; a control session does not, so every command
+        blanked the fault sensor until the next poll -- and a command also pushes that poll a full
+        interval away. A fault is not a fast-moving reading, and "unknown" on a problem sensor is
+        worse than a stale "no fault": it reads as the check having stopped working.
+
+        Same bound as the telemetry hold-over, and the same reasoning for having one: past that
+        age the reading no longer speaks for the unit and honest silence is better.
+        """
+        if alarms:
+            self._alarms = alarms
+            self._alarms_at = self.hass.loop.time()
+            return alarms
+        if not self._alarms:
+            return alarms
+        if self.hass.loop.time() - self._alarms_at > TELEMETRY_MAX_AGE:
+            self._alarms = {}
+            return alarms
+        return self._alarms
 
     def _with_required_co_commands(self, changes: dict[str, int]) -> dict[str, int]:
         """Add the settings the model requires alongside ``changes``.

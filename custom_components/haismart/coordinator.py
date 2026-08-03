@@ -975,6 +975,14 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 self.last_raw_status = blob
                 self._misses = 0
                 self._apply_telemetry(state, telemetry)
+                # The echo is a status report and nothing else: it carries no alarm frame, so the
+                # last fault reading stands in exactly as the telemetry does. The optional-feature
+                # states DO come from the status words, so they are read from the echo itself
+                # rather than held -- publishing a state without them blanked those sensors after
+                # every command, which on a fault sensor reads as the check having stopped.
+                state.update(self._held_alarms({}))
+                state["features"] = self._feature_states(blob)
+                state["features_enum"] = self._feature_enum_states(blob)
                 return state
         return None
 

@@ -3009,3 +3009,27 @@ async def test_a_command_does_not_blank_the_fault_sensor(
 
     freezer.tick(timedelta(seconds=TELEMETRY_MAX_AGE + 1))
     assert coordinator._held_alarms({}) == {}, "a stale fault reading must not persist"
+
+
+async def test_a_command_leaves_every_sensor_reading_as_it_found_them(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Sending a command must not blank sensors that have nothing to do with it.
+
+    The reply to a command is a status report and nothing else — no alarm frame — so publishing it
+    unchanged dropped the fault sensor and the optional-feature sensors until the next poll, which
+    the command itself had just pushed a full interval away. On a problem entity that reads as the
+    check having stopped working.
+
+    Regression guard for the whole class: whatever a poll publishes beyond the plain status, a
+    command's echo has to publish too, either by re-reading it or by holding the last value.
+    """
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data
+
+    polled = set(coordinator.data)
+    await coordinator.async_send_control({"targetTemperature": 24 - 16})
+    await hass.async_block_till_done()
+
+    missing = polled - set(coordinator.data)
+    assert not missing, f"a command dropped these readings: {sorted(missing)}"

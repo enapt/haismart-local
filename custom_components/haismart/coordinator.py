@@ -222,7 +222,7 @@ def _load_digital_model(entry: HaismartConfigEntry) -> dict[str, Any] | None:
     stored = _stored_digital_model(entry)
     if stored is None:
         if entry.data.get(CONF_DIGITAL_MODEL):
-            _LOGGER.warning("stored digital model is unusable; model write-validation disabled")
+            _LOGGER.debug("stored digital model is corrupted or empty; skipping write-validation")
         return None
     return with_rules(stored, entry.data.get(CONF_UPLUS_ID))
 
@@ -278,8 +278,8 @@ def _build_profile(
     if model is not None:
         try:
             return profile_from_device_config(model)
-        except (ValueError, KeyError, TypeError):
-            _LOGGER.warning("stored digital model is unusable; using the hardcoded profile")
+        except (ValueError, KeyError, TypeError) as err:
+            _LOGGER.debug("stored digital model parsing failed: %s; falling back to hardcoded profile", err)
     return profile_for(product_code)
 
 

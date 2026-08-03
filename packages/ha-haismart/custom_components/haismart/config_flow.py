@@ -173,6 +173,17 @@ def _manual_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
     })
 
 
+def _clean_device_id(device_id: str) -> str:
+    """Normalise a device ID to the one form every path stores it in.
+
+    It is the module's MAC, and people write MACs with colons, dashes or nothing at all. Discovery
+    strips separators; a typed one used not to, so the same appliance added by hand and later found
+    through an account would not be recognised as already configured -- the picker would offer it
+    again and a second entry would appear for one unit, both polling it.
+    """
+    return "".join(c for c in device_id if c.isalnum()).upper()
+
+
 def _clean_key(local_key: str) -> str:
     """Validate the localKey shape (32-char hex used as ASCII — case is significant)."""
     key = local_key.strip()
@@ -390,7 +401,9 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         so a second run only shows the ACs you haven't added yet (and it stops cleanly once they are
         all in). Adding several = repeat: sign in, pick the next one."""
         configured = self._async_current_ids()
-        available = [d for d in self._devices if d.device_id.upper() not in configured]
+        available = [
+            d for d in self._devices if _clean_device_id(d.device_id) not in configured
+        ]
         if not available:
             return self.async_abort(reason="all_configured")
         if user_input is not None:
@@ -461,7 +474,7 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         """After sign-in, stand up a device hands-off: pull its digital model + localKey from the
         cloud and resolve its LAN IP via mDNS — so nothing is pasted. Falls back gracefully (to the
         manual key form / a host prompt) if the cloud fetch or mDNS resolve can't complete."""
-        await self.async_set_unique_id(device_id.upper())
+        await self.async_set_unique_id(_clean_device_id(device_id))
         self._abort_if_unique_id_configured()
         self._discovered[CONF_DEVICE_ID] = device_id
         if name:
@@ -620,14 +633,14 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         if user_input is not None:
             host = user_input[CONF_HOST].strip()
-            device_id = (user_input.get(CONF_DEVICE_ID) or "").strip()
+            device_id = _clean_device_id(user_input.get(CONF_DEVICE_ID) or "")
             # Ask the unit who it is before asking the person. One key-free UDP query returns the
             # deviceId and the uPlusId -- the identifier that selects the wire map -- so a manual
             # install ends up as precisely keyed as one set up through an account, and the owner
             # types neither. Only the localKey is genuinely secret and genuinely unavailable here.
             reported = await self._async_query_device(host)
             if reported is not None:
-                device_id = device_id or reported.device_id
+                device_id = device_id or _clean_device_id(reported.device_id)
                 if reported.uplus_id.strip("0"):
                     self._cloud_data.setdefault(CONF_UPLUS_ID, reported.uplus_id)
             if not device_id:
@@ -639,7 +652,7 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                     data_schema=_manual_schema({**self._discovered, **user_input}),
                     errors=errors,
                 )
-            await self.async_set_unique_id(device_id.upper())
+            await self.async_set_unique_id(device_id)
             self._abort_if_unique_id_configured(updates={CONF_HOST: host})
             try:
                 local_key = _clean_key(user_input[CONF_LOCAL_KEY])
@@ -760,7 +773,7 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         self, discovery_info: ZeroconfServiceInfo
     ) -> ConfigFlowResult:
         """The module announces `<deviceId>._cae._udp.local.` — prefill host + deviceId."""
-        device_id = discovery_info.name.split(".")[0].upper()
+        device_id = _clean_device_id(discovery_info.name.split(".")[0])
         host = str(discovery_info.host)
         if not device_id:
             return self.async_abort(reason="unknown")
@@ -777,7 +790,7 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         """DHCP-discovered on the LAN (the deviceId **is** the module's MAC): the sanctioned
         to find units that don't announce mDNS. Prefills host + deviceId (the manual step then
         just needs the key; or use the login menu path for the key too)."""
-        device_id = format_mac(discovery_info.macaddress).replace(":", "").upper()
+        device_id = _clean_device_id(format_mac(discovery_info.macaddress))
         host = discovery_info.ip
         if not device_id:
             return self.async_abort(reason="unknown")

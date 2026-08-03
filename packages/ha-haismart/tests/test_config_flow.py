@@ -1042,3 +1042,66 @@ async def test_the_account_path_stores_the_product_code_it_was_given(
     await hass.async_block_till_done()
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_PRODUCT_CODE] == "AAC1UKZ01"
+
+
+async def test_an_appliance_added_by_hand_is_not_offered_again_after_signing_in(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Adding by hand and signing in later must not produce two entries for one appliance.
+
+    A realistic order of events: someone sets a unit up from a saved key, then signs in later to get
+    automatic key rotation. The picker filters on what is already configured, so the two paths have
+    to agree on the identifier — and they only do if a typed MAC is normalised the way a discovered
+    one is. Written with separators precisely because that is the form people type them in.
+    """
+    from contextlib import ExitStack
+
+    flow_id = await _start_manual(hass)
+    result = await hass.config_entries.flow.async_configure(
+        flow_id,
+        {
+            CONF_HOST: "192.168.1.50",
+            CONF_DEVICE_ID: "a1:b2:c3:d4:e5:f6",  # same unit, typed the way a label prints it
+            CONF_LOCAL_KEY: LOCAL_KEY,
+        },
+    )
+    result = await _past_model_step(hass, result)
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_DEVICE_ID] == "A1B2C3D4E5F6"
+
+    from unittest.mock import AsyncMock, patch
+
+    from haismart_extractor.cloud import SEA_APP_CREDENTIALS, CloudDevice, HaierCloud
+    from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+
+    (CONF_ACCESS_TOKEN, CONF_CLOUD_CLIENT_ID, _,
+     CONF_REFRESH_TOKEN, CONF_ZONE_INFO) = _cloud_consts()
+    client = HaierCloud(SEA_APP_CREDENTIALS, "2_FRESH")
+    devices = [
+        CloudDevice("A1B2C3D4E5F6", "Downstairs", "0201203a", "UPLUS", True,
+                    prod_no="AAC1UKZ01"),
+        CloudDevice("A1B2C3D4E5F7", "Upstairs", "0201203a", "UPLUS", False,
+                    prod_no="AAC1UKZ01"),
+    ]
+    with ExitStack() as stack:
+        for ctx in (
+            patch("custom_components.haismart.config_flow._async_login_cloud",
+                  new=AsyncMock(return_value=(client, {
+                      CONF_REFRESH_TOKEN: "2_RT", CONF_ACCESS_TOKEN: "2_FRESH",
+                      CONF_CLOUD_CLIENT_ID: "A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4",
+                      CONF_ZONE_INFO: "66"}))),
+            patch("custom_components.haismart.config_flow.HaierCloud.list_devices_v2",
+                  return_value=devices),
+        ):
+            stack.enter_context(ctx)
+        r = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+        r = await hass.config_entries.flow.async_configure(
+            r["flow_id"], {"next_step_id": "login"}
+        )
+        picker = await hass.config_entries.flow.async_configure(
+            r["flow_id"],
+            {CONF_USERNAME: "me@example.com", CONF_PASSWORD: "pw", CONF_ZONE_INFO: "66"},
+        )
+
+    # the hand-added one is gone from the list; only the other AC on the account remains
+    assert _picker_device_ids(picker) == {"A1B2C3D4E5F7"}

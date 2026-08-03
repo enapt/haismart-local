@@ -4,10 +4,10 @@
     "step": {
       "user": {
         "title": "Add a Haier AC",
-        "description": "Sign in with your Haismart email/password, or enter the device details manually. Google/Facebook accounts: create a throwaway email/password Haier account, share your AC(s) to it in the app, then sign in with that account.",
+        "description": "Signing in is the recommended route: Home Assistant fetches the local key, finds the unit on your network and reads its model, so there is nothing to paste. It talks to the air conditioner directly from then on — and once it is set up you can block the unit from the internet entirely; see the README on going fully cloud-independent.\n\nGoogle/Facebook accounts: create a throwaway email/password Haier account, share your AC(s) to it in the app, then sign in with that account.",
         "menu_options": {
-          "login": "Sign in with your Haier account (email or phone + password)",
-          "manual": "Enter the device details myself"
+          "login": "Sign in with your Haier account (recommended)",
+          "manual": "Enter the details myself (no account needed)"
         }
       },
       "login": {
@@ -33,7 +33,7 @@
       },
       "manual": {
         "title": "Device details",
-        "description": "Set the AC up without signing in. You need three things, all of which you can get from a previous install's Local key sensor or a backup.",
+        "description": "Set the AC up without signing in. You need two things: its IP address, and its local key — from a previous install's Local key sensor or a backup. The air conditioner supplies the rest itself when asked.",
         "data": {
           "host": "IP address",
           "device_id": "Device ID",

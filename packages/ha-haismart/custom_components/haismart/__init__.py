@@ -15,7 +15,7 @@ if _vendor not in _sys.path:
 import voluptuous as vol
 
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
@@ -93,7 +93,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> 
         # device comes online; the first successful cloud read brings them alive.
         try:
             await coordinator.async_config_entry_first_refresh()
-        except UpdateFailed as err:
+        except (UpdateFailed, ConfigEntryNotReady) as err:
             _LOGGER.info(
                 "%s: added cloud-only and currently offline for the cloud (%s); "
                 "it will come online automatically",

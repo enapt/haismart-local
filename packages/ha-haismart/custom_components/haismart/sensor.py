@@ -35,7 +35,13 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_HOST, CONF_LOCALKEY_VERSION, CONF_PRODUCT_CODE, CONF_UPLUS_ID
+from .const import (
+    CONF_DEVICE_TYPE,
+    CONF_HOST,
+    CONF_LOCALKEY_VERSION,
+    CONF_PRODUCT_CODE,
+    CONF_UPLUS_ID,
+)
 from .coordinator import HaismartConfigEntry, HaismartCoordinator
 from .entity import HaismartEntity
 
@@ -187,6 +193,12 @@ async def async_setup_entry(
     # It's a secret, so it's diagnostic + DISABLED by default (enable it, back it up, done).
     entities.append(HaismartModelIdSensor(coordinator))
     entities.append(HaismartLocalKeySensor(coordinator))
+    # Cloud-sourced metadata: works while the device is offline (the device list + digital model
+    # are served by the cloud server, not the unit).
+    entities.append(HaismartCloudOnlineSensor(coordinator))
+    entities.append(HaismartMetaSensor(coordinator, "device_type", CONF_DEVICE_TYPE))
+    entities.append(HaismartMetaSensor(coordinator, "product_code", CONF_PRODUCT_CODE))
+    entities.append(HaismartSupportedAttributesSensor(coordinator))
     # Read-only enum state for the multi-state optional features a unit declares (presence-based
     # airflow and the like). Membership from the model, position from the map -- same safe basis as
     # the feature binary sensors, and read-only for the same reason.
@@ -229,6 +241,75 @@ class HaismartSensor(HaismartEntity, SensorEntity):
         if not self.coordinator.data:
             return None
         return self.entity_description.value_fn(self.coordinator.data)
+
+
+class HaismartCloudOnlineSensor(HaismartEntity, SensorEntity):
+    """Whether the unit is currently online for the Haier cloud, per the cloud device list.
+
+    Sourced from the cloud SERVER, not the unit, so it is meaningful even while the device is
+    offline -- and it is exactly what distinguishes 'offline for the cloud' from 'unreachable'.
+    """
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "cloud_online"
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = ["online", "offline"]
+    _attr_icon = "mdi:cloud-question"
+
+    def __init__(self, coordinator: HaismartCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.device_id}_cloud_online"
+
+    @property
+    def native_value(self) -> str | None:
+        if self.coordinator.cloud_online is None:
+            return None
+        return "online" if self.coordinator.cloud_online else "offline"
+
+
+class HaismartMetaSensor(HaismartEntity, SensorEntity):
+    """Static device metadata from the cloud device list (works while the unit is offline)."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: HaismartCoordinator, key: str, conf_key: str) -> None:
+        super().__init__(coordinator)
+        self._key = key
+        self._conf_key = conf_key
+        self._attr_translation_key = key
+        self._attr_unique_id = f"{coordinator.device_id}_{key}"
+
+    @property
+    def native_value(self) -> str | None:
+        return self.coordinator.config_entry.data.get(self._conf_key) or None
+
+
+class HaismartSupportedAttributesSensor(HaismartEntity, SensorEntity):
+    """The attributes this unit's digital model declares (names, not values).
+
+    The digital model is served by the cloud server, so the list is available even while the
+    device is offline. Values require the unit to be online.
+    """
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "supported_attributes"
+    _attr_icon = "mdi:format-list-checkbox"
+
+    def __init__(self, coordinator: HaismartCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.device_id}_supported_attributes"
+
+    @property
+    def native_value(self) -> int | None:
+        model = self.coordinator.digital_model or {}
+        names = [a.get("name") for a in model.get("attributes") or () if a.get("name")]
+        return len(names) or None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        model = self.coordinator.digital_model or {}
+        names = [a.get("name") for a in model.get("attributes") or () if a.get("name")]
+        return {"attributes": names}
 
 
 class HaismartModelIdSensor(HaismartEntity, SensorEntity):

@@ -82,6 +82,7 @@ from .const import (
     CONF_BRAND,
     CONF_CLOUD_CLIENT_ID,
     CONF_DEVICE_ID,
+    CONF_DEVICE_TYPE,
     CONF_DIGITAL_MODEL,
     CONF_GATEWAY_USERNAME,
     CONF_HOST,
@@ -118,6 +119,7 @@ GATEWAY_TIMEOUT = 8.0
 # Per-request timeout for the cloud control channel (one TLS connect + one round-trip).
 CLOUD_CONTROL_TIMEOUT = 8.0
 CLOUD_OFFLINE_RETRY_INTERVAL = 60.0
+CLOUD_META_INTERVAL = 300.0
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -363,6 +365,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.cloud_connected: bool | None = None
         self.cloud_state: int | None = None
         self._cloud_offline_until: float = 0.0
+        self.cloud_online: bool | None = None
+        self._cloud_meta_next: float = 0.0
         # Module firmware, reported by the same query. Surfaced as the HA device's software
         # version, so it lands on the device page and in a diagnostics report without an entity.
         self.firmware: str | None = None
@@ -440,6 +444,9 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             except (HomeAssistantError, OSError, RuntimeError) as err:
                 _LOGGER.debug("cloud polling failed for %s: %s", self.device_id, err)
                 raise UpdateFailed(f"cloud status read failed: {err}") from err
+        # Slow-cadence cloud meta (device list): online flag + static-info backfill. Self-throttled
+        # to CLOUD_META_INTERVAL; cheap and never raises.
+        await self.async_refresh_cloud_meta()
         try:
             blobs = await self._async_read()
         except (TimeoutError, OSError, RuntimeError) as err:
@@ -1422,66 +1429,87 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
         return True
 
-    async def async_enrich_identity(self) -> None:
-        """Backfill the static device info (brand/model/product code) from the cloud device list.
+    async def async_refresh_cloud_meta(self) -> None:
+        """Refresh static device info + the online flag from the cloud device list.
 
         Entries added before those fields were stored show nothing but a generic model on the
-        device page. The list comes from the cloud server, so this works while the device is
-        offline — no live read involved. Never raises: it runs as a background task and must not
-        be able to fail setup.
+        device page, and the online/offline status needs a source that works while the device is
+        offline -- the list is served by the cloud server, no live read involved. Never raises:
+        it runs as a background task and must not be able to fail setup.
         """
         data = self.config_entry.data
-        if data.get(CONF_BRAND) and data.get(CONF_MODEL_NAME) and data.get(CONF_PRODUCT_CODE):
+        has_meta = (
+            data.get(CONF_BRAND)
+            and data.get(CONF_MODEL_NAME)
+            and data.get(CONF_PRODUCT_CODE)
+        )
+        now = self.hass.loop.time()
+        if has_meta and now < self._cloud_meta_next:
+            # already backfilled and within the polling window: just keep the registry in step
+            self._sync_device_registry()
             return
+        self._cloud_meta_next = now + CLOUD_META_INTERVAL
         usdk_client_id = data.get(CONF_CLOUD_CLIENT_ID)
         if not usdk_client_id:
             return
-        zone = data.get(CONF_ZONE_INFO, "0")
-        access_token = data.get(CONF_ACCESS_TOKEN) or ""
-        refresh_token = data.get(CONF_REFRESH_TOKEN)
-        try:
-            cloud = HaierCloud(
-                replace(SEA_APP_CREDENTIALS, client_id=usdk_client_id),
-                access_token, zone_info=zone,
-                transport=async_cloud_transport(self.hass),
+            zone = data.get(CONF_ZONE_INFO, "0")
+            access_token = data.get(CONF_ACCESS_TOKEN) or ""
+            refresh_token = data.get(CONF_REFRESH_TOKEN)
+            try:
+                cloud = HaierCloud(
+                    replace(SEA_APP_CREDENTIALS, client_id=usdk_client_id),
+                    access_token, zone_info=zone,
+                    transport=async_cloud_transport(self.hass),
+                )
+                if refresh_token:
+                    try:
+                        access_token = (await cloud.refresh_token(refresh_token)).access_token
+                        cloud = HaierCloud(
+                            replace(SEA_APP_CREDENTIALS, client_id=usdk_client_id),
+                            access_token, zone_info=zone,
+                            transport=async_cloud_transport(self.hass),
+                        )
+                    except (CloudError, OSError, RuntimeError) as err:
+                        _LOGGER.debug(
+                            "cloud meta token refresh failed (%s); trying the stored token", err
+                        )
+                devices = await cloud.list_devices_v2()
+            except (CloudError, OSError, RuntimeError, TimeoutError) as err:
+                _LOGGER.debug("cloud meta refresh for %s failed: %s", self.device_id, err)
+                return
+            device = next(
+                (d for d in devices if str(d.device_id).upper() == self.device_id.upper()), None
             )
-            if refresh_token:
-                try:
-                    access_token = (await cloud.refresh_token(refresh_token)).access_token
-                    cloud = HaierCloud(
-                        replace(SEA_APP_CREDENTIALS, client_id=usdk_client_id),
-                        access_token, zone_info=zone,
-                        transport=async_cloud_transport(self.hass),
-                    )
-                except (CloudError, OSError, RuntimeError) as err:
-                    _LOGGER.debug(
-                        "identity backfill token refresh failed (%s); trying the stored token", err
-                    )
-            devices = await cloud.list_devices_v2()
-        except (CloudError, OSError, RuntimeError, TimeoutError) as err:
-            _LOGGER.debug("identity backfill for %s failed: %s", self.device_id, err)
-            return
-        device = next(
-            (d for d in devices if str(d.device_id).upper() == self.device_id.upper()), None
-        )
-        if device is None:
-            return
-        updates: dict[str, Any] = {}
-        if not data.get(CONF_BRAND) and getattr(device, "brand", ""):
-            updates[CONF_BRAND] = device.brand
-        if not data.get(CONF_MODEL_NAME) and getattr(device, "model", ""):
-            updates[CONF_MODEL_NAME] = device.model
-        if not data.get(CONF_PRODUCT_CODE) and getattr(device, "prod_no", ""):
-            updates[CONF_PRODUCT_CODE] = device.prod_no
-        if not updates:
-            return
-        _LOGGER.info("%s: backfilled device info from the cloud: %s", self.device_id, updates)
-        if CONF_PRODUCT_CODE in updates:
-            self.product_code = updates[CONF_PRODUCT_CODE]
-        self.hass.config_entries.async_update_entry(
-            self.config_entry, data={**data, **updates}
-        )
+            if device is None:
+                return
+            self._update_cloud_online(device.online)
+            updates: dict[str, Any] = {}
+            if not data.get(CONF_BRAND) and getattr(device, "brand", ""):
+                updates[CONF_BRAND] = device.brand
+            if not data.get(CONF_MODEL_NAME) and getattr(device, "model", ""):
+                updates[CONF_MODEL_NAME] = device.model
+            if not data.get(CONF_PRODUCT_CODE) and getattr(device, "prod_no", ""):
+                updates[CONF_PRODUCT_CODE] = device.prod_no
+            if not data.get(CONF_DEVICE_TYPE) and getattr(device, "device_type", ""):
+                updates[CONF_DEVICE_TYPE] = device.device_type
+            if updates:
+                _LOGGER.info("%s: backfilled device info from the cloud: %s", self.device_id, updates)
+                if CONF_PRODUCT_CODE in updates:
+                    self.product_code = updates[CONF_PRODUCT_CODE]
+                self.hass.config_entries.async_update_entry(
+                    self.config_entry, data={**data, **updates}
+                )
+        # The device page renders the device registry, which entities snapshotted at creation --
+        # sync the backfilled/possibly-already-stored values into it. No-op once they agree.
         self._sync_device_registry()
+
+    def _update_cloud_online(self, online: bool | None) -> None:
+        """Record the cloud device-list online flag and wake the sensors that show it."""
+        if online is self.cloud_online:
+            return
+        self.cloud_online = bool(online)
+        _LOGGER.info("%s: cloud status now %s", self.device_id, "online" if online else "offline")
+        self.async_update_listeners()
 
     async def _async_cloud_creds(self) -> CloudControlCreds | None:
         """Fully-derived cloud-control CONNECT credentials from the entry, or None if the entry

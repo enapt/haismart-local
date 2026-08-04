@@ -47,6 +47,7 @@ CONF_UPLUS_ID = "uplus_id"
 # the HA device page instead of the raw product code.
 CONF_MODEL_NAME = "model_name"
 CONF_BRAND = "brand"
+CONF_DEVICE_TYPE = "device_type"
 # The AC's localKey version at config time (HELLO_RESP payload). The key rotates server-side;
 # a version mismatch on a later probe means the cached key is stale -> reauth.
 CONF_LOCALKEY_VERSION = "localkey_version"

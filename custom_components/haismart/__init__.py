@@ -125,7 +125,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> 
     # Backfill brand/model/product code from the cloud device list (works while the device is
     # offline); the device page then shows them without needing a single live read.
     entry.async_create_background_task(
-        hass, coordinator.async_enrich_identity(), "haismart identity backfill"
+        hass, coordinator.async_refresh_cloud_meta(), "haismart cloud meta"
     )
     return True
 

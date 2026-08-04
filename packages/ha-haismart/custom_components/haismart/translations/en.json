@@ -172,6 +172,16 @@
       "coil_temperature": {
         "name": "Coil temperature"
       },
+      "cloud_online": {
+        "name": "Cloud status",
+        "state": {
+          "online": "Online",
+          "offline": "Offline"
+        }
+      },
+      "device_type": {
+        "name": "Device type"
+      },
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
@@ -193,6 +203,9 @@
       "laundry_procedure": {
         "name": "Laundry procedure"
       },
+      "product_code": {
+        "name": "Product code"
+      },
       "last_changed_by": {
         "name": "Last changed by",
         "state": {
@@ -201,6 +214,9 @@
           "panel": "Panel",
           "network": "App or Home Assistant"
         }
+      },
+      "supported_attributes": {
+        "name": "Supported attributes"
       },
       "local_key": {
         "name": "Local key"

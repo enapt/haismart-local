@@ -66,6 +66,7 @@ from .const import (
     CONF_BRAND,
     CONF_CLOUD_CLIENT_ID,
     CONF_DEVICE_ID,
+    CONF_DEVICE_TYPE,
     CONF_DIGITAL_MODEL,
     CONF_HOST,
     CONF_LOCAL_KEY,
@@ -388,6 +389,8 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                     self._cloud_data[CONF_MODEL_NAME] = picked.model
                 if getattr(picked, "prod_no", ""):
                     self._cloud_data[CONF_PRODUCT_CODE] = picked.prod_no
+                if getattr(picked, "device_type", ""):
+                    self._cloud_data[CONF_DEVICE_TYPE] = picked.device_type
                 self._picked = picked
                 return await self._async_setup_cloud_device(picked.device_id, picked.name)
         choices = {d.device_id: f"{d.name or d.device_id} ({d.device_id})" for d in available}

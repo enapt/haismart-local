@@ -108,6 +108,8 @@ from .const import (
     ISSUE_UNKNOWN_LAYOUT,
     READ_TIMEOUT,
     REDISCOVER_COOLDOWN,
+    STATUS_HOLD_MAX_AGE,
+    STATUS_MISSES_HELD,
     TELEMETRY_MAX_AGE,
     UDISCOVERY_INTERVAL,
     UDISCOVERY_MISSES,
@@ -488,6 +490,10 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._alarms: dict[str, Any] = {}
         self._alarms_at = 0.0
         self._misses = 0
+        # Consecutive failed cycles whose predecessor's reading is still being published, and when
+        # that run of failures began (see `_held_status`). Cleared by any successful read.
+        self._held_cycles = 0
+        self._held_since = 0.0
         # Cloud reachability, from the key-free UDISCOVERY query (see const.py). `None` = not known
         # (never answered, or the unit does not implement it) -- deliberately NOT False, so a device
         # that cannot tell us reads "unknown" rather than being reported as cut off.
@@ -542,6 +548,53 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
     async def _async_update_data(self) -> dict[str, Any]:
+        """One poll cycle, with the previous reading standing in for a few failed ones.
+
+        A failed cycle takes every entity of the appliance to `unavailable` together, which is the
+        right answer for an air conditioner that has been switched off at the wall and the wrong one
+        for a Wi-Fi network that dropped a packet. On a rough site the second is far commoner --
+        these modules accept one session at a time and close it after about 17 seconds whatever
+        happens -- and it presented as an integration that erred constantly (issue #6, where an
+        unrelated device on the same subnet went quiet in the same windows).
+
+        So a miss holds the last reading instead, for at most `STATUS_MISSES_HELD` cycles and
+        `STATUS_HOLD_MAX_AGE` seconds. The same trade the telemetry and fault readings already make,
+        for the same reason: a value from seconds ago beats a gap, and a unit that has genuinely
+        stopped answering still ends up honestly unavailable rather than frozen on an old number.
+
+        Nothing is suppressed. The miss counter, the localKey-rotation probe and the rediscovery
+        sweep all still run in the cycle below -- only the moment the entities go unavailable moves.
+        """
+        try:
+            state = await self._async_read_cycle()
+        except UpdateFailed as err:
+            if (held := self._held_status(err)) is not None:
+                return held
+            raise
+        self._held_cycles = 0
+        return state
+
+    def _held_status(self, err: UpdateFailed) -> dict[str, Any] | None:
+        """The previous reading, while a failed cycle is still within the hold. Else ``None``.
+
+        Two bounds, because either alone breaks at some poll interval: the count stops a fast poll
+        holding a stale reading for many minutes, the clock stops a slow one doing it in two cycles.
+        """
+        if self.data is None:
+            return None       # nothing to stand in for -- a first read has to fail honestly
+        now = self.hass.loop.time()
+        if not self._held_cycles:
+            self._held_since = now
+        self._held_cycles += 1
+        if self._held_cycles > STATUS_MISSES_HELD or now - self._held_since > STATUS_HOLD_MAX_AGE:
+            return None
+        _LOGGER.debug(
+            "%s: %s -- holding the previous reading (%d of %d, %.0fs)",
+            self.device_id, err, self._held_cycles, STATUS_MISSES_HELD, now - self._held_since,
+        )
+        return self.data
+
+    async def _async_read_cycle(self) -> dict[str, Any]:
         # One connection per cycle: these units accept a single session at a time, so the
         # extended-status query rides along inside the ordinary read rather than costing a second
         # connection or its own poll interval. `_ask_extended` latches off if a unit turns out not

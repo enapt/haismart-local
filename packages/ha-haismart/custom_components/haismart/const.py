@@ -86,6 +86,18 @@ TELEMETRY_MAX_AGE = 120.0    # seconds a previous extended reading may stand in 
 # discharge, compressor and fan entities for the rest of the run. Same reasoning as
 # UDISCOVERY_MISSES.
 EXTENDED_MISSES = 3
+# A failed read cycle takes every entity of a unit to `unavailable` at once, and on a site with
+# rough Wi-Fi that reads as an integration erroring constantly rather than as a dropped packet
+# (issue #6: an AC and an unrelated Tuya device going quiet in the same windows). One miss is not
+# news -- these modules hold a single session, drop it after ~17 s regardless, and a lost reply is
+# ordinary -- so the previous reading stands in for a few cycles, the way a missing telemetry frame
+# already does, before the unit is declared unavailable.
+#
+# Bounded twice, because either bound alone fails on some poll interval: a count keeps a fast poll
+# from holding a stale reading for many minutes, and a clock keeps a slow one from doing the same in
+# two cycles. Whichever comes first ends the hold, and it ends immediately on a successful read.
+STATUS_MISSES_HELD = 2       # consecutive failed cycles the last reading may stand in for
+STATUS_HOLD_MAX_AGE = 180.0  # ...and the longest it may stand in for, in seconds
 
 CONF_SCAN_INTERVAL = "scan_interval"
 DEFAULT_SCAN_INTERVAL = 30  # seconds between read cycles (each is handshake+collect+close)

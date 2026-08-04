@@ -1043,19 +1043,53 @@ async def test_setup_retries_when_unreachable(hass: HomeAssistant, mock_uss) -> 
     assert entry.state is ConfigEntryState.SETUP_RETRY
 
 
-async def test_transient_outage_marks_unavailable_then_recovers(
+async def test_a_brief_outage_holds_the_reading_and_a_longer_one_does_not(
     hass: HomeAssistant, mock_uss, freezer
 ) -> None:
+    """A dropped read is not news; a unit that has stopped answering is.
+
+    These modules take one session at a time and close it after ~17 s regardless, so a lost reply is
+    ordinary — and taking every entity to `unavailable` for one of them reads as an integration
+    erring constantly on a site whose Wi-Fi is rough (issue #6). The last reading stands in for
+    STATUS_MISSES_HELD cycles, then the failure surfaces as it always did.
+    """
+    from custom_components.haismart.const import STATUS_MISSES_HELD
+
     await _setup(hass)
     assert hass.states.get(CLIMATE).state == "cool"
 
     mock_uss.read.side_effect = OSError("host down")
+    for _ in range(STATUS_MISSES_HELD):
+        await _tick(hass, freezer)
+        assert hass.states.get(CLIMATE).state == "cool"    # held, not blanked
+
     await _tick(hass, freezer)
     assert hass.states.get(CLIMATE).state == "unavailable"
 
     mock_uss.read.side_effect = None
     await _tick(hass, freezer)
     assert hass.states.get(CLIMATE).state == "cool"
+
+
+async def test_the_hold_expires_on_the_clock_as_well_as_the_count(
+    hass: HomeAssistant, mock_uss, freezer
+) -> None:
+    """A slow poll must not hold a stale reading for as long as its interval makes two cycles.
+
+    The count alone would let a five-minute poll publish a reading a quarter of an hour old, so the
+    hold is bounded by time too and whichever bound comes first ends it.
+    """
+    from custom_components.haismart.const import STATUS_HOLD_MAX_AGE
+
+    await _setup(hass)
+    mock_uss.read.side_effect = OSError("host down")
+
+    await _tick(hass, freezer)
+    assert hass.states.get(CLIMATE).state == "cool"
+
+    freezer.tick(timedelta(seconds=STATUS_HOLD_MAX_AGE))
+    await _tick(hass, freezer)
+    assert hass.states.get(CLIMATE).state == "unavailable"
 
 
 async def test_localkey_rotation_triggers_reauth(
@@ -1283,6 +1317,7 @@ async def test_empty_reads_same_version_is_transient(
     mock_uss.read.return_value = []
     await _tick(hass, freezer)
     await _tick(hass, freezer)  # probe runs, versions match (both v4)
+    await _tick(hass, freezer)  # ...and past the cycles the last reading stands in for
     assert hass.states.get(CLIMATE).state == "unavailable"
     assert not hass.config_entries.flow.async_progress_by_handler(DOMAIN)
 
@@ -1311,6 +1346,7 @@ async def test_recovery_after_probe_reset(hass: HomeAssistant, mock_uss, freezer
     mock_uss.read.return_value = []
     await _tick(hass, freezer)
     await _tick(hass, freezer)  # probe + reset
+    await _tick(hass, freezer)  # ...and past the hold, so the entity really is unavailable
     assert hass.states.get(CLIMATE).state == "unavailable"
 
     mock_uss.read.return_value = [make_status_frame(target_temp=22)]
@@ -2080,7 +2116,8 @@ async def test_rediscovery_leaves_host_alone_when_nothing_matches(
     entry = await _setup(hass)
     mock_uss.read.side_effect = OSError("host down")
     mock_uss.rediscover.return_value = None
-    await _tick(hass, freezer)
+    for _ in range(3):   # past the cycles the previous reading stands in for
+        await _tick(hass, freezer)
 
     assert entry.data[CONF_HOST] == "192.168.1.50"
     assert hass.states.get(CLIMATE).state == "unavailable"

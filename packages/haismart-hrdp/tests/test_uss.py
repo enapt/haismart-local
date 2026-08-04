@@ -1006,6 +1006,8 @@ def test_extended46_decodes_the_real_reports():
         "outdoor_temperature": 37.0, "operation_mode": "1", "swing_vertical": False,
         "heat_capable": True, "error_code": 0, "last_changed_by": "network",
         "mode": "cool", "layout": "extended46", "writable": True,
+        # this family populates its cumulative register, unlike most (see the delta test below)
+        "energy_wh": 751936,
     }
     cool = uss.parse_full_status(STATUS_209_COOL, prof)
     assert cool["power"] is True and cool["target_temperature"] == 22.0 and cool["mode"] == "cool"
@@ -2163,3 +2165,26 @@ def test_a_confirmed_field_is_bounded_only_by_physics() -> None:
         assert _sensor_temp(sentinel, scale=1.0, offset=-64.0) is None
     # and the bound is physical rather than comfortable
     assert _PLAUSIBLE_TEMP_C[1] >= 140.0
+
+
+def test_the_209_byte_counter_is_in_watt_hours_by_its_own_two_readings():
+    """Two readings of the same appliance five days apart settle the unit, on physical grounds.
+
+    The register read 751,936 in the first report from this appliance and 777,385 in one taken five
+    days later: 25,449 units. As watt-hours that is 5.1 kWh a day, which at the ~1.1 kW its owner
+    measured at the breaker is about four and a half hours of running a day -- an ordinary duty cycle
+    for an office. As hundredths of a kilowatt-hour it would be 51 kWh a day, which at the same
+    power draw is **46 hours of running in every 24**, and there is no reading of the hardware that
+    makes that possible.
+
+    So this family's unit is established without waiting for anyone to read a figure off their app,
+    and independently of the family where that measurement was made.
+    """
+    from haismart_hrdp.wire_models import select_wire_model
+
+    later = 777385     # the same register, five days on
+    earlier = select_wire_model(209, None).decode(STATUS_209_OFF)["energy_wh"]
+    assert earlier == 751936
+    hours_per_day_if_wh = (later - earlier) / 1000 / 5 / 1.1
+    assert 2 < hours_per_day_if_wh < 12                      # an ordinary duty cycle
+    assert hours_per_day_if_wh * 10 > 24                     # ...and ten times that is impossible

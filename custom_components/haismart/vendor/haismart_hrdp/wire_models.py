@@ -783,6 +783,20 @@ EXTENDED46 = WireModel(
         # codes for low and high. Read only — the settable word array runs 20..24, so this word is
         # outside anything control can reach on this family.
         "wind_speed": WireField(26, 9, 3, kind="enum", enum=_EXT36_FAN),
+        # Cumulative energy in watt-hours, 32 bits whose low half sits at word 45 and high half at
+        # word 44 -- the published map states this register one word past the indoor temperature,
+        # and both anchors land ten words later on this family, which puts it exactly here.
+        #
+        # Confirmed against the appliance's own cloud record rather than inferred: a report reading
+        # 777,385 was taken minutes after that record showed 773,862 for the same register, the wire
+        # figure being the newer of the two. Nothing else in the report is within three orders of
+        # magnitude of either number. The unit is watt-hours, as measured on extended-36 against an
+        # owner's own energy page.
+        #
+        # Absent when it reads zero, like every counter here: most of these appliances carry the
+        # register and never populate it, and a permanent 0 kWh in someone's energy history is worse
+        # than no sensor at all.
+        "energy_wh": WireField(45, 0, 32, kind="counter"),
     },
 )
 

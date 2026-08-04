@@ -2310,6 +2310,83 @@ async def test_co_commands_never_override_an_explicit_choice(
     assert _sent_field(mock_uss.send, "windSpeed") == 5
 
 
+# The rules a 209-byte unit is really governed by: its own family asks for the economy setting and a
+# fan speed alongside dry, auto and fan-only -- and its group-set can write neither (the settable
+# array stops at word 24). Rules are published per product, the write map per report layout, so this
+# combination is not a mismatch to be corrected: it is normal, and every unit on the family hits it.
+_UNWRITABLE_CO_COMMAND_MODEL = {
+    "attributes": [
+        {"name": "operationMode", "writable": True, "valueRange": {"type": "LIST", "dataList": [
+            {"data": "1", "desc": "cool"}, {"data": "6", "desc": "fan"}]}},
+        {"name": "muteStatus", "writable": True, "valueRange": {"type": "LIST", "dataList": [
+            {"data": "false"}, {"data": "true"}]}},
+    ],
+    "constraints": [
+        {"pendingCondition": {"operator": "OR", "commands": {"operationMode": ["6"]}},
+         "additionalCommands": {"commands": [
+             {"name": "generatorMode", "value": "0"},      # ecoMode: absent from extended-46
+             {"name": "windSpeed", "value": "3"},          # also absent from extended-46
+             {"name": "muteStatus", "value": "false"}]}},   # this one it can write
+    ],
+}
+
+
+async def test_a_co_command_the_family_cannot_write_does_not_fail_the_command(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The mode change goes through, carrying the co-commands that fit and dropping the rest.
+
+    Handing the encoder a field its family has no room for raised, and raising took the *whole*
+    group-set with it: every mode change on a 209-byte unit failed with "'ecoMode' is not a writable
+    field on extended46", so the air conditioner could not be put into dry, auto or fan-only at all
+    (issue #6). A co-command is an addition made on the model's behalf; failing to place one must
+    cost that co-command and nothing else.
+    """
+    from conftest import make_extended46_frame
+    from haismart_hrdp.wire_models import select_wire_model
+
+    frame = make_extended46_frame(mode_code=1)
+    mock_uss.read.return_value = [frame]
+    mock_uss.send.baseline = frame
+    entry = await _setup_with_model(hass, _UNWRITABLE_CO_COMMAND_MODEL)
+
+    await entry.runtime_data.async_send_control({"operationMode": 6})
+
+    wm = select_wire_model(len(frame), None)
+    sent = mock_uss.send.last_frame[12:-1]
+
+    def field(name: str) -> int:
+        wf = wm.write_fields[name]
+        off = (wf.word - 1) * 2
+        return ((sent[off] << 8) | sent[off + 1]) >> wf.bit & ((1 << wf.length) - 1)
+
+    assert field("operationMode") == 6      # what was asked for, and it reached the unit
+    assert field("muteStatus") == 0         # the co-command that this family can place
+    assert "ecoMode" not in wm.write_fields and "windSpeed" not in wm.write_fields
+
+
+async def test_fan_only_reaches_a_family_that_cannot_set_its_fan_speed(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Selecting fan-only through the entity works where the fan speed is read-only.
+
+    Our own hardware silently drops fan-only combined with fan=auto, so the entity substitutes a
+    concrete speed. On a family whose group-set has no fan speed in it that substitution could only
+    ever raise -- and it would fail the very mode change it exists to make work.
+    """
+    from conftest import make_extended46_frame
+
+    frame = make_extended46_frame(mode_code=1)
+    mock_uss.read.return_value = [frame]
+    mock_uss.send.baseline = frame
+    await _setup_with_model(hass, _UNWRITABLE_CO_COMMAND_MODEL)
+
+    await hass.services.async_call(
+        "climate", "set_hvac_mode", {"entity_id": CLIMATE, "hvac_mode": "fan_only"}, blocking=True
+    )
+    assert mock_uss.send.await_count == 1
+
+
 async def test_controls_the_unit_ignores_stay_readable_and_refuse_the_command(
     hass: HomeAssistant, mock_uss
 ) -> None:

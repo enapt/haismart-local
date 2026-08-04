@@ -1098,6 +1098,16 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         An attribute the caller set explicitly is never overridden, and a co-command that cannot be
         expressed as a wire value is skipped rather than guessed.
+
+        Skipped too when the family cannot write the field at all -- not a detail. A rule is a
+        property of the product; the write map is a property of the report layout, and they are
+        published separately, so a rule can perfectly well ask for a setting its own family's
+        group-set has no room for. The 209-byte family's array stops at word 24 and has no economy
+        setting or fan speed in it, while its rules ask for both alongside dry, auto and fan-only.
+        Passing those on raised out of the encoder and took the *whole* command with it, so a unit
+        that would have accepted the mode change simply refused to change mode (issue #6). A
+        co-command is an addition made on the model's behalf, not something the user asked for, so
+        the failure to place one must cost nothing more than that co-command.
         """
         model = self.digital_model
         if not model:
@@ -1122,6 +1132,13 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             else:
                 continue
             if epp is None or field in merged:
+                continue
+            if not self.supports_field(field):
+                _LOGGER.debug(
+                    "model asks for %s=%s alongside %s, but this unit's report layout has no "
+                    "writable %s -- sending the rest",
+                    field, epp, sorted(changes), field,
+                )
                 continue
             _LOGGER.debug("model requires %s=%s alongside %s", field, epp, sorted(changes))
             merged[field] = epp

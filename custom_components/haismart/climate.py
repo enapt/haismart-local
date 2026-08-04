@@ -383,7 +383,15 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
         # whole group-set is dropped and the unit stays on the previous mode). Fan-only needs a
         # concrete speed, so substitute one when the current fan is auto/unknown. The digital model
         # doesn't express this cross-attribute rule — it's observed device behaviour.
-        if hvac_mode == HVACMode.FAN_ONLY and self.fan_mode in (None, "auto"):
+        # Only where the fan speed is settable at all: the 209-byte family reports one and has no
+        # room for it in its group-set, and adding a field its encoder cannot place would fail the
+        # mode change itself -- the substitution exists to make fan-only work, so it must never be
+        # what stops it.
+        if (
+            hvac_mode == HVACMode.FAN_ONLY
+            and self.fan_mode in (None, "auto")
+            and self.coordinator.supports_field("windSpeed")
+        ):
             fallback = self._fan_code(_FAN_ONLY_DEFAULT_SPEED)
             if fallback is not None:
                 changes["windSpeed"] = fallback

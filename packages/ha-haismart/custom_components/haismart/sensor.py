@@ -159,6 +159,12 @@ SENSORS: tuple[HaismartSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda s: s.get("discharge_temperature"),
     ),
+)
+
+
+# Readings specific to non-AC appliances (washers). These are the only status sensors created for a
+# unit whose digital model has no `operationMode` -- the AC-shape list above stays absent there.
+WASHER_SENSORS: tuple[HaismartSensorDescription, ...] = (
     HaismartSensorDescription(
         key="doorLockStatus",
         translation_key="door_lock_status",
@@ -187,7 +193,16 @@ async def async_setup_entry(
     # Gating creation on the FIRST poll's values meant a sensor missing at setup (a failed first
     # refresh, or a report whose layout we can only partially decode) never appeared until the entry
     # was reloaded.
-    entities: list[SensorEntity] = [HaismartSensor(coordinator, desc) for desc in SENSORS]
+    if coordinator.is_ac is False:
+        # A washer: only the washer-shape sensors (door lock, laundry procedure) plus the metadata
+        # below. The AC-shape temperature/power/compressor sensors do not exist for it.
+        entities: list[SensorEntity] = [
+            HaismartSensor(coordinator, desc) for desc in WASHER_SENSORS
+        ]
+    else:
+        entities: list[SensorEntity] = [
+            HaismartSensor(coordinator, desc) for desc in SENSORS + WASHER_SENSORS
+        ]
     # opt-in backup entity: exposes the localKey so it rides along in HA backups / can be copied.
     # It's a secret, so it's diagnostic + DISABLED by default (enable it, back it up, done).
     entities.append(HaismartModelIdSensor(coordinator))

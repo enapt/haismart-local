@@ -77,7 +77,11 @@ async def async_setup_entry(
     entry: HaismartConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    async_add_entities([HaismartClimate(entry.runtime_data)])
+    coordinator = entry.runtime_data
+    if coordinator.is_ac is False:
+        # A washer or other non-AC appliance has no thermostat: no climate entity.
+        return
+    async_add_entities([HaismartClimate(coordinator)])
 
 
 class HaismartClimate(HaismartEntity, ClimateEntity):

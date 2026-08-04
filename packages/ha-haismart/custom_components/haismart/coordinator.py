@@ -343,6 +343,16 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.profile: AttributeProfile = _build_profile(
             entry, self.product_code, self.digital_model
         )
+        # Whether this unit is an air conditioner. False = a non-AC appliance (a washer, say):
+        # its digital model has no `operationMode`, so the AC-shaped entities must not be created.
+        # None = no digital model stored (manual onboarding), where we cannot tell -- keep the
+        # historical behaviour and create the AC entities as before.
+        self.is_ac: bool | None = None
+        if self.digital_model is not None:
+            self.is_ac = any(
+                a.get("name") == "operationMode"
+                for a in self.digital_model.get("attributes") or ()
+            )
         self.model_codes: dict[str, set[int]] = _model_authorized_codes(self.digital_model)
         self.localkey_version: int | None = entry.data.get(CONF_LOCALKEY_VERSION)
         self.last_raw_status: bytes | None = None

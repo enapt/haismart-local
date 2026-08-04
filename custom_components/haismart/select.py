@@ -70,6 +70,9 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator = entry.runtime_data
+    if coordinator.is_ac is False:
+        # Non-AC appliances (washers) have no eco/vane controls.
+        return
     entities: list[SelectEntity] = []
     # Not every family places the economy setting, and on the ones that reach it through the
     # published map it is offered only where the device itself declares it — see `supports_eco`.

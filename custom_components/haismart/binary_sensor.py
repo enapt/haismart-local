@@ -71,6 +71,10 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator = entry.runtime_data
+    if coordinator.is_ac is False:
+        # Fault frames, optional features and the UDISCOVERY cloud link are AC concepts; a washer
+        # reports none of them.
+        return
     entities: list[BinarySensorEntity] = [
         HaismartBinarySensor(coordinator, desc) for desc in BINARY_SENSORS
     ]

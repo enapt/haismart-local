@@ -44,6 +44,9 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator = entry.runtime_data
+    if coordinator.is_ac is False:
+        # Non-AC appliances (washers) have none of the AC toggles.
+        return
     # Only the toggles this unit's report family can actually write. The classic family has all
     # five; compact-12 has none of them, and creating a switch there produced a control that read
     # `unknown` forever and raised the moment it was touched. Same rule the readings follow: expose

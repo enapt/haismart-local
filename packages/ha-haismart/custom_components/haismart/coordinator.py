@@ -28,6 +28,7 @@ from haismart_extractor import (
     CloudControlClient,
     CloudControlCreds,
     CloudControlError,
+    ERR_DEVICE_OFFLINE,
     GatewayCreds,
     GatewayError,
     HaierCloud,

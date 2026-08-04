@@ -208,6 +208,9 @@
           "off": "إيقاف",
           "on": "تشغيل"
         }
+      },
+      "last_self_clean": {
+        "name": "آخر تنظيف ذاتي"
       }
     },
     "switch": {
@@ -327,6 +330,11 @@
       },
       "wind_avoidance": {
         "name": "تجنب الهواء"
+      }
+    },
+    "button": {
+      "start_self_clean": {
+        "name": "بدء التنظيف الذاتي"
       }
     }
   },

@@ -208,6 +208,9 @@
           "off": "Mati",
           "on": "Nyala"
         }
+      },
+      "last_self_clean": {
+        "name": "Pembersihan otomatis terakhir"
       }
     },
     "switch": {
@@ -327,6 +330,11 @@
       },
       "wind_avoidance": {
         "name": "Hindari aliran udara"
+      }
+    },
+    "button": {
+      "start_self_clean": {
+        "name": "Mulai pembersihan otomatis"
       }
     }
   },

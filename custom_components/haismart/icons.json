@@ -31,6 +31,14 @@
     "sensor": {
       "local_key": {
         "default": "mdi:key-variant"
+      },
+      "last_self_clean": {
+        "default": "mdi:broom"
+      }
+    },
+    "button": {
+      "start_self_clean": {
+        "default": "mdi:spray-bottle"
       }
     }
   }

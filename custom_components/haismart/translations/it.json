@@ -208,6 +208,9 @@
           "off": "Spento",
           "on": "Acceso"
         }
+      },
+      "last_self_clean": {
+        "name": "Ultima autopulizia"
       }
     },
     "switch": {
@@ -327,6 +330,11 @@
       },
       "wind_avoidance": {
         "name": "Elusione del flusso d'aria"
+      }
+    },
+    "button": {
+      "start_self_clean": {
+        "name": "Avvia autopulizia"
       }
     }
   },

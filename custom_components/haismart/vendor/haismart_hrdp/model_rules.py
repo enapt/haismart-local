@@ -34,6 +34,7 @@ __all__ = [
     "product_for_model",
     "family_rules",
     "known_products",
+    "preload",
     "RULES_PATH",
 ]
 
@@ -44,6 +45,18 @@ RULES_PATH = Path(__file__).with_name("model_rules.json.gz")
 def _bundle() -> dict[str, Any]:
     with gzip.open(RULES_PATH, "rt", encoding="utf-8") as handle:
         return json.load(handle)
+
+
+def preload() -> None:
+    """Warm the bundled-rules caches so the first lookup does not read from disk.
+
+    The bundle is a gzip file opened once (every lookup here is ``lru_cache``d). A host that reads
+    the rules on its event loop — Home Assistant does, in the coordinator's constructor — should
+    call this from an executor first, so that one-off decompression happens off the loop rather than
+    blocking it. A no-op after the first call.
+    """
+    _bundle()
+    _by_model()
 
 
 @lru_cache(maxsize=1)

@@ -208,6 +208,9 @@
           "off": "关",
           "on": "开"
         }
+      },
+      "last_self_clean": {
+        "name": "上次自清洁"
       }
     },
     "switch": {
@@ -327,6 +330,11 @@
       },
       "wind_avoidance": {
         "name": "避风"
+      }
+    },
+    "button": {
+      "start_self_clean": {
+        "name": "启动自清洁"
       }
     }
   },

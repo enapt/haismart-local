@@ -208,6 +208,9 @@
           "off": "Désactivé",
           "on": "Activé"
         }
+      },
+      "last_self_clean": {
+        "name": "Dernier auto-nettoyage"
       }
     },
     "switch": {
@@ -327,6 +330,11 @@
       },
       "wind_avoidance": {
         "name": "Évitement du flux d'air"
+      }
+    },
+    "button": {
+      "start_self_clean": {
+        "name": "Démarrer l'auto-nettoyage"
       }
     }
   },

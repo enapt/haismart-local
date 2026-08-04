@@ -581,6 +581,12 @@ _CONFIRMED_WRITE_FIELDS = (
     #   0-2 between 7 and 0 and nothing else — ecoMode (same word, bits 3-5) stayed 0 and the
     #   vertical nibble stayed put. Unlike windDirectionVertical the raw EPP value equals the STD
     #   code the digital model lists (0 = 左右摆位置一(固定), 7 = 左右摆位置八(自动)).
+    "selfCleaningStatus",       # the flag word, bit 4 — START-only trigger; see the note below
+    # ^ live-confirmed 2026-08-04: with the unit on, in a non-auto mode and not sleeping, setting
+    #   ONLY this bit read back set on the next poll and the unit's panel showed "CL" — a cycle
+    #   started. It is a one-shot: there is no OFF command (the model declares it), so the value is
+    #   restricted to the start (1). Its writability is gated by the model's own modifiers — off,
+    #   auto mode, sleep, or a fault all lock it — which `locked_fields` already enforces.
 )
 
 # Fields the shared map does not describe, so they cannot be looked up and are stated here.
@@ -592,12 +598,14 @@ _DEVICE_SPECIFIC_WRITES = {
     "ecoMode": (4, 3, 3),
 }
 
-# NB `echoStatus` (word 3, bit 7 — the command-confirmation beeper, where set = silent) and
-# `selfCleaningStatus` (the flag word, bit 4) both decode cleanly and are marked user-facing by the
-# device model, and both appear in the published write frame. They are still deliberately absent: no
-# write of either has been observed, a live write of `echoStatus` was accepted while the bit never
-# landed, and the manufacturer's own control panel offers neither. Presence in the map is not
-# grounds to add a field here — an observed write is.
+# NB `echoStatus` (word 3, bit 7 — the command-confirmation beeper, where set = silent) is the one
+# field that decodes cleanly and is marked user-facing by the device model yet stays deliberately
+# absent: a live write of it was accepted while the bit never landed, and the manufacturer's own
+# control panel does not offer it. `selfCleaningStatus` looked identical on paper (both in the
+# published write frame, both model-writable, both "managed" by a writability modifier) but is NOT
+# the same case — the panel *does* offer self-clean, and a live write of it DID land (the panel
+# showed "CL"). So it is confirmed above. The lesson stands: presence in the map is not grounds to
+# add a field — an observed write is; the panel reference predicts the outcome but the write settles it.
 GRSETDAC_FIELDS = {
     **{
         name: (
@@ -622,6 +630,7 @@ GRSETDAC_ALLOWED_VALUES = {
                                              # positions between them come from the device's own
                                              # model — see GRSETDAC_MODEL_AUTHORIZED.
     "ecoMode":               {0, 5, 6, 7},   # off / three levels (5/6/7)
+    "selfCleaningStatus":    {1},            # START only — the cycle runs to completion, no OFF command
 }
 
 # Fields whose value space the DEVICE'S OWN digital model may extend beyond the observed set above

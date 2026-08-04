@@ -208,6 +208,9 @@
       },
       "uplus_id": {
         "name": "Model ID"
+      },
+      "last_self_clean": {
+        "name": "Last self-clean"
       }
     },
     "switch": {
@@ -327,6 +330,11 @@
       },
       "wind_avoidance": {
         "name": "Wind avoidance"
+      }
+    },
+    "button": {
+      "start_self_clean": {
+        "name": "Start self-clean"
       }
     }
   },

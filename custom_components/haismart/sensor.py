@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 from haismart_hrdp import OPTIONAL_ENUM_FEATURES
@@ -25,6 +26,8 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import (
+    STATE_UNAVAILABLE,
+    STATE_UNKNOWN,
     EntityCategory,
     UnitOfElectricCurrent,
     UnitOfEnergy,
@@ -32,8 +35,10 @@ from homeassistant.const import (
     UnitOfPower,
     UnitOfTemperature,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.util import dt as dt_util
 
 from .const import CONF_HOST, CONF_LOCALKEY_VERSION, CONF_PRODUCT_CODE, CONF_UPLUS_ID
 from .coordinator import HaismartConfigEntry, HaismartCoordinator
@@ -177,7 +182,56 @@ async def async_setup_entry(
     # the feature binary sensors, and read-only for the same reason.
     for name in sorted(coordinator.declared_enum_features):
         entities.append(HaismartFeatureEnumSensor(coordinator, name))
+    # "Last self-clean" — only where self-clean is a real control (same gate as the button).
+    if coordinator.supports_field("selfCleaningStatus"):
+        entities.append(HaismartLastSelfCleanSensor(coordinator))
     async_add_entities(entities)
+
+
+class HaismartLastSelfCleanSensor(HaismartEntity, RestoreEntity, SensorEntity):
+    """When the most recent self-clean cycle finished — the app's "days since last clean".
+
+    A timestamp sensor renders as relative time ("3 days ago") on the dashboard, which *is* the
+    days-since display, and an automation can compare it to ``now()`` to remind when a clean is
+    overdue. It updates when the self-clean status goes from on to off — a cycle *completing* —
+    whether it was started from this button, the handset, or a schedule, and is restored across
+    restarts so a reminder survives one. Anchoring on completion rather than the start also catches
+    a cycle that was already running when the sensor came up (it records when that one ends).
+    """
+
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "last_self_clean"
+
+    def __init__(self, coordinator: HaismartCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.device_id}_last_self_clean"
+        self._last_clean: datetime | None = None
+        self._was_cleaning: bool | None = None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_state()) is not None and last.state not in (
+            STATE_UNKNOWN,
+            STATE_UNAVAILABLE,
+        ):
+            self._last_clean = dt_util.parse_datetime(last.state)
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        running = (self.coordinator.data or {}).get("self_cleaning")
+        if running is not None:
+            # Record the moment a cycle *finishes* (on -> off). Anchoring on completion means a
+            # cycle already running when this sensor came up is still dated (when it ends), which
+            # anchoring on the start would miss.
+            if not running and self._was_cleaning:
+                self._last_clean = dt_util.utcnow()
+            self._was_cleaning = bool(running)
+        super()._handle_coordinator_update()
+
+    @property
+    def native_value(self) -> datetime | None:
+        return self._last_clean
 
 
 class HaismartFeatureEnumSensor(HaismartEntity, SensorEntity):

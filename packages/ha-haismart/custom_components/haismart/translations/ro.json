@@ -208,6 +208,9 @@
           "off": "Oprit",
           "on": "Pornit"
         }
+      },
+      "last_self_clean": {
+        "name": "Ultima autocurățare"
       }
     },
     "switch": {
@@ -327,6 +330,11 @@
       },
       "wind_avoidance": {
         "name": "Evitarea fluxului de aer"
+      }
+    },
+    "button": {
+      "start_self_clean": {
+        "name": "Pornește autocurățarea"
       }
     }
   },

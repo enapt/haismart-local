@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 
+from haismart_hrdp import preload as _preload_model_rules
 from homeassistant.core import HomeAssistant
 
 from .const import IDENTITY_TOPUP_TIMEOUT, PLATFORMS
@@ -11,6 +12,10 @@ from .coordinator import HaismartConfigEntry, HaismartCoordinator
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> bool:
+    # The coordinator reads the bundled model rules while it is being constructed, and the bundle is
+    # a gzip file: decompressing it on the event loop is blocking I/O that HA flags. Warm the cache
+    # in an executor first, so that one-off read happens off the loop (it is a no-op afterwards).
+    await hass.async_add_executor_job(_preload_model_rules)
     coordinator = HaismartCoordinator(hass, entry)
     await coordinator.async_config_entry_first_refresh()
 

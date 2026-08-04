@@ -208,6 +208,9 @@
           "off": "Apagado",
           "on": "Encendido"
         }
+      },
+      "last_self_clean": {
+        "name": "Última autolimpieza"
       }
     },
     "switch": {
@@ -327,6 +330,11 @@
       },
       "wind_avoidance": {
         "name": "Evitar corriente de aire"
+      }
+    },
+    "button": {
+      "start_self_clean": {
+        "name": "Iniciar autolimpieza"
       }
     }
   },

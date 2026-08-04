@@ -299,6 +299,43 @@ async def test_compact12_family_decodes_and_controls_via_4d5f(
     assert words[(12 - 1) * 2 + 1] == 24 - 16  # setpoint packed at word 12
 
 
+async def test_self_clean_button_fires_one_bit_and_gates_on_state(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The self-clean button sends selfCleaningStatus as a one-bit grSetDAC group-set (issue #8).
+
+    Live-confirmed on the classic family — with the unit on and not in auto/sleep the single bit
+    landed and the unit's panel showed "CL". This pins the frame it sends (exactly word 5 bit 4,
+    nothing else) and that the model's own modifiers gate it: off, and the button disappears from
+    reach. It's a start-only trigger, so there is no "off" to test.
+    """
+    on = make_status_frame(power=True, mode_code=1)  # on, cooling — self-clean writable
+    mock_uss.read.return_value = [on]
+    mock_uss.send.baseline = on
+    await _setup(hass)
+
+    btn = "button.downstairs_ac_start_self_clean"
+    state = hass.states.get(btn)
+    assert state is not None and state.state != "unavailable"
+
+    await hass.services.async_call("button", "press", {"entity_id": btn}, blocking=True)
+    sent = mock_uss.send.last_frame
+    assert sent[:2] == b"\xff\xff" and sent[10:12] == b"\x60\x01"  # classic grSetDAC
+    data = sent[12:-1]
+    base = on[92:104]
+    changed = [i for i in range(len(base)) if base[i] != data[i]]
+    assert changed == [9] and (data[9] ^ base[9]) == 0x10  # only word 5 bit 4 — selfCleaningStatus
+
+
+async def test_self_clean_button_absent_where_the_family_cannot_write_it(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A family whose write map has no self-clean flag gets no button — the compact-12 case."""
+    mock_uss.read.return_value = [make_compact12_frame()]
+    await _setup(hass)
+    assert hass.states.get("button.downstairs_ac_start_self_clean") is None
+
+
 async def test_compact12_omits_the_controls_it_cannot_write(
     hass: HomeAssistant, mock_uss
 ) -> None:

@@ -943,7 +943,10 @@ def test_extended36_control_encodes_a_6001_group_set_from_word_20():
     # the encoder refuses what it cannot map: an unknown field, an unnamed enum code, and a setpoint
     # outside 16..30 that would otherwise fit the 8-bit field
     with pytest.raises(KeyError):
-        wm.encode_control(base, {"selfCleaningStatus": 1})
+        wm.encode_control(base, {"echoStatus": 1})
+    # self-clean IS placed on this family now — same shared write frame (start-only), carried over
+    # from the classic hardware confirmation; the flag lands in word 5 bit 4.
+    assert wm.encode_control(bytearray(base), {"selfCleaningStatus": 1})[9] & 0x10
     with pytest.raises(ValueError, match="not a supported code"):
         wm.encode_control(base, {"operationMode": 3})
     with pytest.raises(ValueError, match="outside the 0..14"):
@@ -1895,7 +1898,7 @@ def test_published_write_map_is_the_reports_writable_words():
     """
     from haismart_hrdp.canonical_map import CANONICAL, CANONICAL_WRITE
 
-    assert len(CANONICAL_WRITE) > 3 * len(uss.GRSETDAC_FIELDS)
+    assert len(CANONICAL_WRITE) > 2 * len(uss.GRSETDAC_FIELDS)
     for name, w in CANONICAL_WRITE.items():
         c = CANONICAL.get(name)
         if c is None:
@@ -1950,6 +1953,7 @@ def test_grsetdac_fields_match_their_confirmed_positions():
         "screenDisplayStatus": (3, 9, 1),
         "windDirectionHorizontal": (4, 0, 3),
         "ecoMode": (4, 3, 3),
+        "selfCleaningStatus": (5, 4, 1),  # start-only; live-confirmed (panel showed "CL")
     }
 
 
@@ -1964,9 +1968,14 @@ def test_encoder_membership_is_not_widened_by_the_published_map():
     from haismart_hrdp.canonical_map import CANONICAL_WRITE
 
     assert len(CANONICAL_WRITE) > len(uss.GRSETDAC_FIELDS)
-    for withheld in ("echoStatus", "selfCleaningStatus", "lockStatus", "targetHumidity"):
+    for withheld in ("echoStatus", "lockStatus", "targetHumidity"):
         assert withheld in CANONICAL_WRITE, "expected the map to describe it"
         assert withheld not in uss.GRSETDAC_FIELDS, f"{withheld} must not be writable"
+    # selfCleaningStatus looked identical to echoStatus on paper (both published, both model-writable)
+    # and was withheld the same way -- until a live write of it landed (the panel showed "CL") while
+    # echoStatus's was silently discarded. So it, and only it, moved into the encoder.
+    assert "selfCleaningStatus" in CANONICAL_WRITE
+    assert "selfCleaningStatus" in uss.GRSETDAC_FIELDS
     # ecoMode is the one field the shared map cannot supply, so it stays stated locally
     assert "ecoMode" not in CANONICAL_WRITE
     assert uss.GRSETDAC_FIELDS["ecoMode"] == (4, 3, 3)

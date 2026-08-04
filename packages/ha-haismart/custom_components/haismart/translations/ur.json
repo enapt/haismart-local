@@ -208,6 +208,9 @@
           "off": "بند",
           "on": "آن"
         }
+      },
+      "last_self_clean": {
+        "name": "آخری سیلف کلین"
       }
     },
     "switch": {
@@ -327,6 +330,11 @@
       },
       "wind_avoidance": {
         "name": "ہوا کے بہاؤ سے گریز"
+      }
+    },
+    "button": {
+      "start_self_clean": {
+        "name": "سیلف کلین شروع کریں"
       }
     }
   },

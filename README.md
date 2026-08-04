@@ -86,7 +86,7 @@ One device per air conditioner, with:
 | **Compressor current / frequency** *(diagnostic)* | What the outdoor unit is actually doing |
 | **Coil / discharge temperature** *(diagnostic)* | Evaporator and compressor-discharge temperatures |
 | **Compressor / Fan** *(diagnostic, on/off)* | Whether the compressor and indoor fan are actually running |
-| **Self-clean** *(diagnostic, on/off)* | Whether a self-clean cycle is running. Reported, not controlled — the cycle runs to completion and ignores a second press, so there is nothing an off switch could do |
+| **Self-clean** | Start a cycle with the **Start self-clean** button — a one-shot trigger: it runs to completion and can't be cancelled, so it's a button, not a switch. A binary sensor shows whether a cycle is running, and a **Last self-clean** timestamp records when the last one finished, so a "days since"-style reminder is a one-line automation. Only on units whose model has it, and the button greys out when a clean can't be started — off, auto mode, sleep, or a fault |
 | **Optional features** *(diagnostic, on/off)* | The extra functions a unit reports having — fresh air, electric heating, a 10 °C keep-warm, ambient light, an intelligent mode, humidification, the buzzer, and others — each read-only, and only the ones your unit *actually* has (a model over-declares; the ones it lacks are hidden) |
 | **Presence airflow** *(diagnostic, enum)* | Where a presence-sensing unit is directing air: off / avoid / follow. Only on units with the sensor |
 | **Fault** *(diagnostic, problem)* | Whether the unit is reporting a fault. Its attributes name the active faults with the service code the unit shows (E1, F4, …) — that is what an engineer will ask for |

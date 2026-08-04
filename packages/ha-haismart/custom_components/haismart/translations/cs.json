@@ -208,6 +208,9 @@
           "off": "Vypnuto",
           "on": "Zapnuto"
         }
+      },
+      "last_self_clean": {
+        "name": "Poslední samočištění"
       }
     },
     "switch": {
@@ -327,6 +330,11 @@
       },
       "wind_avoidance": {
         "name": "Vyhýbání proudu vzduchu"
+      }
+    },
+    "button": {
+      "start_self_clean": {
+        "name": "Spustit samočištění"
       }
     }
   },

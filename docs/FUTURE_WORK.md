@@ -106,9 +106,16 @@ Step 4 is still required — it is the only one that observes the unit itself.
 
 `selfCleaningStatus` was not tested the same way because writing it starts a self-clean cycle that
 runs to completion and cannot be called back — not a thing to trigger on a whim on someone's unit.
-It has both halves of its *state transition* observed but no confirmed *write*, and on the evidence
-of `echoStatus` the assumption that `writeType=G` implies a working write is not one to make. It also
-stays read-only.
+It had both halves of its *state transition* observed but no confirmed *write*.
+
+**✅ RESOLVED 2026-08-04 — confirmed on hardware and shipped.** A live self-verifying write on the
+classic family, with the unit on and not in auto/sleep, set exactly word 5 bit 4: it read back set on
+the next poll and the unit's panel showed **CL** — a cycle started. So unlike `echoStatus` (published
+and model-writable but silently dropped), self-clean is honoured. It now ships as a **"Start
+self-clean" button** (a one-shot trigger — the cycle can't be called back, so it is a button, not a
+switch), plus a **"Last self-clean" timestamp sensor** for "days since"-style automations. Its
+writability is gated by the model's own modifiers (off / auto / sleep / fault) via `locked_fields`.
+The panel reference predicted the outcome; the write settled it.
 
 ⚠️ **When it is tested, one bit will not be enough.** Other implementations of this protocol start a
 cleaning cycle by setting the flag **together with the machine state the cycle needs** — powered on,

@@ -208,6 +208,9 @@
           "off": "Fra",
           "on": "Til"
         }
+      },
+      "last_self_clean": {
+        "name": "Sidste selvrensning"
       }
     },
     "switch": {
@@ -327,6 +330,11 @@
       },
       "wind_avoidance": {
         "name": "Luftstrøm undgåelse"
+      }
+    },
+    "button": {
+      "start_self_clean": {
+        "name": "Start selvrensning"
       }
     }
   },

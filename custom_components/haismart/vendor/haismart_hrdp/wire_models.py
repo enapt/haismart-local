@@ -597,6 +597,11 @@ _EXT36_WRITE = {
     # rests on the device's own declaration rather than on the shared map; see the guard on offering
     # the control at all.
     "ecoMode": WriteField(4, 3, 2, "std_enum", std_to_epp={0: 0, 5: 1, 6: 2, 7: 3}),
+    # Start-only self-clean trigger. This family writes with the same 6001 group command at zero
+    # displacement, so the flag sits where the shared write frame puts it (w5.b4) — the same place a
+    # live write confirmed on the classic family. Value is restricted to the start (1); the model
+    # declares no OFF command, and its own modifiers (off / auto / sleep / fault) gate availability.
+    "selfCleaningStatus": WriteField(5, 4, 1, "passthrough", max_epp=1),
 }
 
 # The "extended-36" family: a 36-word report (165 B) carrying the **classic** climate block displaced

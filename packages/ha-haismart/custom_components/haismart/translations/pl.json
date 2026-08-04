@@ -208,6 +208,9 @@
           "off": "Wył.",
           "on": "Wł."
         }
+      },
+      "last_self_clean": {
+        "name": "Ostatnie samoczyszczenie"
       }
     },
     "switch": {
@@ -327,6 +330,11 @@
       },
       "wind_avoidance": {
         "name": "Unikanie strumienia powietrza"
+      }
+    },
+    "button": {
+      "start_self_clean": {
+        "name": "Uruchom samoczyszczenie"
       }
     }
   },

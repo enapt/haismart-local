@@ -216,6 +216,13 @@ as the guaranteed floor, flash **ESPHome** onto the module.
 - **HA log: "Requirements for haismart not found" / import errors.** The two libs landed in a different Python
   than HA's. Re-run `install-dev.sh` with `--python` pointing at HA's interpreter (Core/venv: the venv's
   `bin/python`; Docker: run inside the container).
+- **One of your AC's controls turns up under "Favourites" on the Home dashboard and you never put it
+  there.** Nothing to do with this integration, and there is no star to un-click. On Home Assistant's
+  Home dashboard that section shows your pinned favourites *and then fills the remaining slots with
+  entities it predicts you use* — so a control you adjusted recently can appear on its own. Manage it
+  from **Edit home**, which has the favourites list and a toggle for the suggested entities. (Reported
+  upstream at [home-assistant/frontend#29840](https://github.com/home-assistant/frontend/issues/29840),
+  since the heading says "Favourites" either way.)
 - **"No decodable status" / entities unavailable right after adding.** Two different causes, and
   recent versions tell them apart for you. If the climate entity works but the temperatures are
   missing and a repair notification has appeared, the AC's **report layout is not one we know yet**

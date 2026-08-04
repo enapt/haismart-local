@@ -973,12 +973,18 @@ async def test_the_unit_narrows_the_model_list_and_skipping_is_allowed(
 ) -> None:
     """The identifier a unit announces names its family, so offer that family's models to choose.
 
-    171 published models is not a question anyone can answer; the couple of dozen sharing this
-    unit's own identifier is. And "skip" has to be a real option — without a model the appliance
-    still reads and controls, whereas a wrong pick applies another model's rules.
+    Over a thousand published models is not a question anyone can answer; the couple of dozen
+    sharing this unit's identifier *and sold where its owner lives* is. And "skip" has to be a real
+    option — without a model the appliance still reads and controls, whereas a wrong pick applies
+    another model's rules.
+
+    Both narrowings are needed now. The family alone reaches 186 products since the bundle began
+    covering every region, so the region does the rest of the work — from the account where there is
+    one, and otherwise from Home Assistant's own country, which is what an offline install has.
     """
     from custom_components.haismart.const import CONF_PRODUCT_CODE
 
+    hass.config.country = "TH"          # as a configured install has; the fixture leaves it unset
     flow_id = await _start_manual(hass)
     with _reports_uplus_id():
         result = await hass.config_entries.flow.async_configure(
@@ -998,6 +1004,29 @@ async def test_the_unit_narrows_the_model_list_and_skipping_is_allowed(
     await hass.async_block_till_done()
     assert done["type"] == FlowResultType.CREATE_ENTRY
     assert done["data"][CONF_PRODUCT_CODE] == "AAC1UKZ01"
+
+
+async def test_an_unknown_region_offers_the_whole_family_rather_than_nothing(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """With no account and no country, completeness beats brevity.
+
+    The region lists are a snapshot and the appliance in front of someone is not: filtering to an
+    empty list would hide the very model they own. So the long list stands, and the field accepts
+    typing -- which now also resolves through the owner's own region when they have an account.
+    """
+    from custom_components.haismart.const import CONF_PRODUCT_CODE
+
+    assert hass.config.country is None
+    flow_id = await _start_manual(hass)
+    with _reports_uplus_id():
+        result = await hass.config_entries.flow.async_configure(
+            flow_id, {CONF_HOST: "192.168.1.50", CONF_LOCAL_KEY: LOCAL_KEY}
+        )
+
+    options = result["data_schema"].schema[CONF_PRODUCT_CODE].config["options"]
+    assert "HSU-24VRRA03TF" in options
+    assert len(options) > 40, "nothing should be dropped when the region is unknown"
 
 
 async def test_skipping_the_model_still_creates_a_working_entry(
@@ -1389,8 +1418,12 @@ async def test_a_model_number_from_another_region_resolves_through_the_account(
         CONF_ACCESS_TOKEN: "T",
         CONF_ZONE_INFO: "92",
     }
+    # A model number no bundle can hold: the catalogue is a snapshot, so anything published after it
+    # was taken looks like this. (This test used to name a real model from another region -- which
+    # the bundle now covers, that gap having been the bug it was written for.)
+    newer = "HSU-99XXXX/000WUSDC(W)-T9"
     listed = AsyncMock(return_value=[
-        CatalogueProduct(product_code="AACVX7E00", model="HSU-24HFAB/013WUSDC(W)-T3")
+        CatalogueProduct(product_code="AAZZZZZ99", model=newer)
     ])
     with (
         patch("custom_components.haismart.config_flow.HaierCloud.refresh_token",
@@ -1399,12 +1432,12 @@ async def test_a_model_number_from_another_region_resolves_through_the_account(
     ):
         result = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
         result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {CONF_PRODUCT_CODE: "HSU-24HFAB/013WUSDC(W)-T3"}
+            result["flow_id"], {CONF_PRODUCT_CODE: newer}
         )
         await hass.async_block_till_done()
 
-    assert result["data"][CONF_PRODUCT_CODE] == "AACVX7E00"
-    assert listed.await_args.kwargs["model"] == "HSU-24HFAB/013WUSDC(W)-T3"
+    assert result["data"][CONF_PRODUCT_CODE] == "AAZZZZZ99"
+    assert listed.await_args.kwargs["model"] == newer
 
 
 async def test_a_hand_made_entry_never_reaches_for_the_region_catalogue(

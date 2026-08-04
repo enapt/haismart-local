@@ -268,8 +268,8 @@ def _shipped_rules(entry: HaismartConfigEntry) -> dict[str, Any] | None:
     mode change on a 209-byte unit outright (issue #6).
 
     So fall back to what the whole family agrees on, which is correct without knowing the model:
-    every alarm name and every lock explanation is common to all members of every published family,
-    and a rule some member disagrees about is simply not applied. A missing rule locks nothing.
+    nearly every fault name is common to all members of a family (99% of them), a rule some member
+    disagrees about is simply not applied, and a missing rule locks nothing.
 
     The same fallback answers a case that has nothing to do with a wrong code: **a code this bundle
     has never heard of.** The catalogue it is built from covers one region, and appliances turn up

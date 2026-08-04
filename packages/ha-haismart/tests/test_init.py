@@ -3150,10 +3150,14 @@ async def test_a_product_code_the_bundle_never_heard_of_still_gets_its_family_s_
     from custom_components.haismart.const import CONF_DIGITAL_MODEL
 
     theirs = "2008610800820324021200118017740000000000000000000000000000000040"
-    assert rules_for_product("AACVX7E00") is None, "fixture assumes this code is not in the bundle"
+    # A code no bundle can know: the catalogue is a snapshot, so a product published after it was
+    # taken looks exactly like this. (An earlier version of this test used a real code from another
+    # region -- which the bundle now covers, the fixture's premise having been the bug.)
+    unknown = "ZZNOSUCH00"
+    assert rules_for_product(unknown) is None
 
     entry = _entry(**{
-        CONF_PRODUCT_CODE: "AACVX7E00",
+        CONF_PRODUCT_CODE: unknown,
         CONF_UPLUS_ID: theirs,
         CONF_DIGITAL_MODEL: json.dumps({"attributes": [{"name": "operationMode"}]}),
     })

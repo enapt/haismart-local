@@ -106,23 +106,36 @@ def products_for_uplus_id(uplus_id: str | None) -> list[str]:
     return list(_bundle()["by_uplus_id"].get(uplus_id, []))
 
 
-def models_for_uplus_id(uplus_id: str | None) -> dict[str, str]:
+def models_for_uplus_id(uplus_id: str | None, zone: str | None = None) -> dict[str, str]:
     """``{model number: product code}`` for the products sharing a uPlusId.
 
     The picker form of :func:`products_for_uplus_id`. A product code is an opaque token nobody can
     check (`AAC1UKZ01`), while a model number is printed on the appliance -- so asking "which of
-    these is yours" only works if the question is asked in model numbers. A unit hands over its
-    uPlusId on discovery for free, which narrows the 171 published models to a couple of dozen, and
-    that is short enough to choose from.
+    these is yours" only works if the question is asked in model numbers.
+
+    ⚠️ **A uPlusId alone no longer narrows this to a shortlist.** It did when the bundle held one
+    region's catalogue: ours came to 23 products, which is choosable. Across every region the same
+    identifier reaches 186, which is a list nobody reads.
+
+    ``zone`` -- the owner's dialling code, which onboarding already collects -- cuts it back to what
+    is actually published where they are, offline and with no lookup, because the sweep records which
+    regions publish each product. A zone that matches nothing falls back to the whole family rather
+    than offering an empty list: the region lists are a snapshot, and an appliance in front of
+    someone outranks a catalogue that has not heard of it.
 
     Model numbers are unique across the whole published set, so the mapping never collides.
     """
-    out = {}
+    out: dict[str, str] = {}
+    in_zone: dict[str, str] = {}
     for product_code in products_for_uplus_id(uplus_id):
-        model = (rules_for_product(product_code) or {}).get("model")
-        if model:
-            out[model] = product_code
-    return out
+        entry = rules_for_product(product_code) or {}
+        model = entry.get("model")
+        if not model:
+            continue
+        out[model] = product_code
+        if zone and zone in (entry.get("zones") or ()):
+            in_zone[model] = product_code
+    return in_zone or out
 
 
 def product_for_model(model: str | None) -> str | None:
@@ -145,12 +158,19 @@ def family_rules(uplus_id: str | None) -> dict[str, Any] | None:
     and the choice is not between "the right rules" and "no rules": it is between *asking someone to
     guess* and *applying only what holds whichever model it turns out to be*.
 
-    That second option is worth far more than it sounds, because the disagreement is concentrated:
-    across every multi-model family published, **every alarm and every lock explanation is common to
-    all members** (698/698 and 54/54). So fault names -- the part a user actually sees, and the part
-    that turns an unexplained failure into a service code -- need no model at all. Only the
-    conditional-availability rules genuinely vary (26% common), and those degrade safely: a rule
-    nobody disagrees about cannot lock the wrong control, and a missing rule locks nothing.
+    That second option is worth more than it sounds, because the disagreement is concentrated in the
+    conditional rules rather than in what a user reads. Measured across every multi-model family in
+    this bundle: **alarms 99% common (1393/1410), lock explanations 93% (117/126)**, constraints 21%
+    and modifiers 9%. So fault names -- the part that turns an unexplained failure into a service
+    code -- arrive very nearly in full with no model at all, while conditional availability thins
+    out, and thinning out is safe: a rule nobody disagrees about cannot lock the wrong control, and a
+    missing rule locks nothing.
+
+    ⚠️ Those first two figures were **100%** when this bundle held one region's 171 products, and
+    that is how they were first written down here. Widening it to every region's 1435 dropped them,
+    and one family now agrees on no lock explanation at all -- so "every alarm name is common" is no
+    longer true, and a claim measured on one corpus should not be quoted for a larger one. Re-measure
+    with ``tools/re/check_family_intersections.py`` after any change to the bundle.
 
     Attributes are merged the conservative way round: an attribute any member marks ``invisible``
     is marked invisible here. Optional-feature entities are built from that flag, and offering a

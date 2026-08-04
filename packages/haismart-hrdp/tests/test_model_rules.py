@@ -36,7 +36,10 @@ def test_our_own_model_carries_the_counts_the_published_model_states() -> None:
 
 
 def test_bundle_covers_the_published_line_and_refuses_the_unknown() -> None:
-    assert len(known_products()) == 171
+    # Every air conditioner published in any of the 100 regions the setup form offers. It was 171
+    # for a long time -- which was one region's catalogue, the endpoint being scoped by the country
+    # code an account signed in with, and every sweep here having used the same account.
+    assert len(known_products()) == 1435
     assert rules_for_product("NOSUCHCODE") is None
     assert rules_for_product(None) is None
 
@@ -44,13 +47,15 @@ def test_bundle_covers_the_published_line_and_refuses_the_unknown() -> None:
 def test_uplus_id_narrows_to_a_family_but_cannot_choose_within_it() -> None:
     """Why the bundle is keyed by product and not by the id a unit actually announces.
 
-    Our uPlusId covers 23 products. If rules were keyed on it, one of those 23 rule sets would have
-    to stand for all of them -- and they genuinely differ, so a unit would be locked or unlocked on
+    Our uPlusId covers 186 products. If rules were keyed on it, one of those rule sets would have to
+    stand for all of them -- and they genuinely differ, so a unit would be locked or unlocked on
     evidence about different hardware. This test pins the disagreement so the shortcut stays closed.
+    (It was 23 while the bundle held one region's catalogue; the identifier did not change, the
+    coverage did.)
     """
     family = products_for_uplus_id(OUR_UPLUS_ID)
     assert "AAC1UKZ01" in family
-    assert len(family) == 23
+    assert len(family) == 186
 
     shapes = {
         (len(r["modifiers"]), len(r["constraints"]))
@@ -74,12 +79,14 @@ def test_unknown_uplus_id_yields_no_family() -> None:
 def test_family_rules_are_correct_whichever_model_it_turns_out_to_be() -> None:
     """Where the model cannot be known, apply what every candidate agrees on.
 
-    A unit announces its family, not its model, and 19 of our family's 23 products are locally
+    A unit announces its family, not its model, and many of our family's members are locally
     indistinguishable -- same declared attributes, same visible set -- while still carrying
     different rules. So no observation can pick one, and the honest floor is the agreed subset.
 
-    It is a high floor: alarms and lock explanations are common across every published family, so
-    fault names arrive complete without anyone choosing anything.
+    The floor is lower than it was: with one region's catalogue every fault name was common to every
+    member of every family, and across all regions it is 99% of them, with one family agreeing on no
+    lock explanation at all. What the test pins is the property that makes the floor *safe* rather
+    than its height -- nothing is kept that any member contradicts.
     """
     from haismart_hrdp.model_rules import (
         family_rules,
@@ -90,7 +97,7 @@ def test_family_rules_are_correct_whichever_model_it_turns_out_to_be() -> None:
     uplus = "2008610800820324021200118012560000000000000000000000000000000040"
     agreed = family_rules(uplus)
     members = [rules_for_product(p) for p in products_for_uplus_id(uplus)]
-    assert len(members) == 23
+    assert len(members) == 186
 
     # every rule kept must appear in every member -- that is what makes it safe to apply blind
     for section in ("alarms", "invalid_reasons", "constraints", "modifiers"):

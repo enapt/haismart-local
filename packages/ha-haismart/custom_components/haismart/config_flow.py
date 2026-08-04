@@ -781,8 +781,17 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                 # so decompressing it here would be blocking I/O on the event loop. Warm it in an
                 # executor first; a no-op every time after.
                 await self.hass.async_add_executor_job(_preload_model_rules)
+                # Narrowed by region as well as by family. The family identifier alone no longer
+                # gives a shortlist -- it reaches 186 products now that the bundle spans every
+                # region -- but the products published where this owner lives are a couple of dozen
+                # of those. The region comes from the account when there is one and from Home
+                # Assistant's own country setting when there is not, so an offline install gets the
+                # short list too; an unknown region falls back to the whole family rather than to
+                # nothing.
                 self._model_choices = models_for_uplus_id(
-                    self._cloud_data.get(CONF_UPLUS_ID)
+                    self._cloud_data.get(CONF_UPLUS_ID),
+                    self._cloud_data.get(CONF_ZONE_INFO)
+                    or default_dial_code(self.hass.config.country),
                 )
                 return await self.async_step_model()
 

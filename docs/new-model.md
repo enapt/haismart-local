@@ -96,6 +96,14 @@ and saying so in the report saves a round-trip. With a real product code the res
 published description — its rules, its fault list, and which of its features your particular unit
 actually has — can be looked up directly.
 
+**A product code the integration cannot look up is not necessarily unknown to the manufacturer.**
+Its catalogue answers per **region** — it is scoped by the country code your account signed in with,
+and the regions publish very different sets: one lists 171 air conditioners, another 242, and a model
+number absent from the first is present in the second. Every product list here was one region's until
+**v0.38.0**, which ships all of them and, where the bundled list still falls short, asks the region
+your own account belongs to. So if an older release could not name your appliance, that is worth
+retrying on a current one before assuming the model is undocumented.
+
 The file carries one more thing that saves a round-trip. Once your unit's layout **is** recognised,
 diagnostics reads **every attribute your air conditioner declares** — the settings with no entity as
 well as the ones with — and prints them beside the values your unit publishes through its cloud

@@ -36,7 +36,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 
-from .canonical_map import CANONICAL
+from .canonical_map import CANONICAL, PROFILE_DISPLACEMENTS
 
 # Attribute-array geometry, shared with uss.py (kept local to avoid an import cycle).
 _ATTR_BASE = 92          # first attribute byte; word N (1-based) starts at _ATTR_BASE + 2*(N-1)
@@ -1119,6 +1119,99 @@ def select_wire_model(length: int, uplus_id: str | None = None) -> WireModel | N
                 return wm
     candidates = [wm for wm in WIRE_MODELS if length in wm.report_lengths]
     return candidates[0] if len(candidates) == 1 else None
+
+
+# The climate attributes a related-model layout is built from. Deliberately the core block and not
+# everything the map states: these are the fields the plausibility check below can actually judge,
+# and the ones a thermostat needs. Anything further would be placed on the strength of the
+# relationship alone, which is what `canonical_displacement` exists to refuse.
+_RELATED_KEYS: tuple[str, ...] = (
+    "power", "target_temperature", "current_temperature", "outdoor_temperature",
+    "heat_capable", "error_code", "last_changed_by", "operation_mode", "wind_speed",
+    "swing_vertical",
+)
+
+#: How much of an identifier two models must share before one is treated as the other's relative.
+#: The published models that are genuinely the same specification share far more than this; the
+#: leading characters below it are a product class, which is explicitly not a layout.
+_RELATED_PREFIX_MIN = 20
+
+
+def displacement_candidates(uplus_id: str | None) -> tuple[int, ...]:
+    """Displacements used by the published models most closely related to ``uplus_id``.
+
+    A device announces an identifier whose leading characters it shares with its relatives -- the
+    same specification, a revision apart -- and every published air conditioner is the one map at a
+    whole-word offset. So the models sharing the longest prefix with an unfamiliar device name the
+    offsets its report is likely to use.
+
+    Returns them ordered and without duplicates, empty when nothing shares a meaningful prefix. It
+    is a shortlist and nothing more: in practice the closest relatives of a given device disagree,
+    one carrying the leading media block and one not, so the answer is normally two candidates and
+    the report itself has to choose between them.
+    """
+    if not uplus_id:
+        return ()
+    best = 0
+    ranked: dict[int, int] = {}
+    for profile, disp in PROFILE_DISPLACEMENTS.items():
+        shared = 0
+        # strict=False on purpose: identifiers are compared only as far as the shorter runs, and a
+        # truncated one sharing everything it has is still a relative.
+        for a, b in zip(uplus_id, profile, strict=False):
+            if a != b:
+                break
+            shared += 1
+        if shared < _RELATED_PREFIX_MIN or shared < best:
+            continue
+        if shared > best:
+            best, ranked = shared, {}
+        ranked.setdefault(disp, shared)
+    return tuple(ranked)
+
+
+def related_wire_model(length: int, displacement: int) -> WireModel:
+    """A read-only layout for reports of ``length``, taken from the published map at ``displacement``.
+
+    Read-only on purpose. The positions come from the map, but no capture has confirmed them on this
+    particular appliance, and a group-set writes a whole block of words at once -- so a layout
+    arrived at this way may report, and may not command. ``canonical_displacement`` is left unset for
+    the same reason: the further attributes a device declares stay unplaced until the displacement
+    itself has been checked against a real report, field for field.
+    """
+    return WireModel(
+        family=f"related{displacement:+d}",
+        report_lengths=frozenset({length}),
+        fields=canonical_fields(displacement, list(_RELATED_KEYS)),
+        writable=False,
+    )
+
+
+def related_wire_models(length: int, uplus_id: str | None) -> tuple[WireModel, ...]:
+    """Candidate layouts for a report no registered family claims, best-related first."""
+    return tuple(related_wire_model(length, d) for d in displacement_candidates(uplus_id))
+
+
+#: What a related layout must actually produce before it is believed. The plausibility check alone
+#: cannot do this job: the candidate that is wrong by nineteen words reads *past the end* of a
+#: shorter report, so every field comes back absent, and a decode holding no readings at all passes
+#: a check on the readings it does not have. Absence is not agreement -- so require the block a
+#: thermostat is made of to be present before the layout counts as identified.
+_RELATED_REQUIRED = ("power", "target_temperature", "current_temperature")
+
+
+def decode_related(data: bytes, uplus_id: str | None, profile=None) -> dict | None:
+    """Decode ``data`` with the layout of the closest published relative that the report agrees with.
+
+    Tries each candidate offset in turn and keeps the first that both places the core readings and
+    finds them plausible. ``None`` when no relative fits, which leaves the caller on the partial
+    decode it would have used anyway -- an unfamiliar appliance is never made worse off by this.
+    """
+    for wm in related_wire_models(len(data), uplus_id):
+        decoded = wm.decode(data, profile)
+        if decoded is not None and all(k in decoded for k in _RELATED_REQUIRED):
+            return decoded
+    return None
 
 
 def device_type_class(uplus_id: str | None) -> str | None:

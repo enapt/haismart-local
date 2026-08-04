@@ -62,6 +62,21 @@ class CanonicalField:
 # Displacements seen across the published models, and how many models use each.
 DISPLACEMENTS: Mapping[int, int] = {0: 2, -19: 5}
 
+# Each published model and the displacement it uses, keyed by the identifier a device announces for
+# itself. An appliance whose own model was never published still names an identifier, and the models
+# that share its leading characters are its nearest relatives -- so this is what turns "we have no
+# layout for this length" into "it is one of these two". It narrows, it does not decide: relatives
+# routinely differ by exactly one displacement, so the report still has to say which.
+PROFILE_DISPLACEMENTS: Mapping[str, int] = {
+    "2008610800820324021200118007264200000000000000000000000000000040": -19,
+    "2008610800820324031200118006114500000000000000000000000000000040": -19,
+    "201c12002400081002111169c9cf44a02ea320b9520d1c18e042f62c18420c40": -19,
+    "201c120024000810021200000000000000000000010000000000000000000040": -19,
+    "201c120024000810031200000000000000000000020000000000000000000040": -19,
+    "2008610800820324021200118006915900000000000000000000000000000040": 0,
+    "2008610800820324031200118011124100000000000000000000000000000040": 0,
+}
+
 CANONICAL: Mapping[str, CanonicalField] = {
     "volume": CanonicalField(1, 0, 8, "int"),
     "otaControl": CanonicalField(1, 10, 2, "int"),

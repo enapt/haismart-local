@@ -36,6 +36,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from .canonical_map import CANONICAL_WRITE
 from .wire_models import (
     OPERATION_SOURCE,
+    decode_related,
     select_wire_model,
     vane_h_sweeping,
     vane_v_sweeping,
@@ -986,6 +987,14 @@ def parse_full_status(
     if len(data) not in STATUS_LAYOUTS:
         wm = select_wire_model(len(data), uplus_id)
         if wm is not None and (decoded := wm.decode(data, profile)) is not None:
+            return decoded
+        # No registered family claims this report. The appliance still names itself, and the
+        # published models sharing that name's leading characters are its nearest relatives -- each
+        # naming a whole-word offset its report may use. Try them and keep whichever one the report
+        # agrees with; relatives normally disagree by exactly one offset, so this is the step that
+        # decides between them. Anything that fails falls through to the partial decode below,
+        # exactly as before.
+        if wm is None and (decoded := decode_related(data, uplus_id, profile)) is not None:
             return decoded
     layout = derive_status_layout(data, digital_model)
     if layout is None and len(data) <= _OFF_ONOFF:

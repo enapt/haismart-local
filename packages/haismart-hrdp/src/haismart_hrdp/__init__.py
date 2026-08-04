@@ -123,8 +123,10 @@ from .wire_models import (
     WireModel,
     WriteField,
     declared_fields,
+    decode_related,
     device_type_class,
     probe_layout,
+    related_wire_models,
     select_wire_model,
 )
 
@@ -156,6 +158,8 @@ __all__ = [
     "WireField",
     "WriteField",
     "WIRE_MODELS",
+    "decode_related",
+    "related_wire_models",
     "select_wire_model",
     "declared_fields",
     "device_type_class",

@@ -164,7 +164,6 @@ SENSORS: tuple[HaismartSensorDescription, ...] = (
         translation_key="door_lock_status",
         device_class=SensorDeviceClass.ENUM,
         options=["true", "false"],
-        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda s: s.get("doorLockStatus"),
     ),
     HaismartSensorDescription(
@@ -250,7 +249,6 @@ class HaismartCloudOnlineSensor(HaismartEntity, SensorEntity):
     offline -- and it is exactly what distinguishes 'offline for the cloud' from 'unreachable'.
     """
 
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_translation_key = "cloud_online"
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = ["online", "offline"]
@@ -269,8 +267,6 @@ class HaismartCloudOnlineSensor(HaismartEntity, SensorEntity):
 
 class HaismartMetaSensor(HaismartEntity, SensorEntity):
     """Static device metadata from the cloud device list (works while the unit is offline)."""
-
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(self, coordinator: HaismartCoordinator, key: str, conf_key: str) -> None:
         super().__init__(coordinator)
@@ -291,7 +287,6 @@ class HaismartSupportedAttributesSensor(HaismartEntity, SensorEntity):
     device is offline. Values require the unit to be online.
     """
 
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_translation_key = "supported_attributes"
     _attr_icon = "mdi:format-list-checkbox"
 

@@ -3,6 +3,9 @@
 Each is written to be picked up cold: what it is, why it is not done, and what would settle it.
 Anything genuinely settled belongs at the bottom, under **Settled**, not here.
 
+The numbers are **identifiers, not positions** — items refer to each other by number, so an item
+keeps its own when it moves between the two sections. Expect the sequence to have gaps in both.
+
 ## 1. Vane positions on a unit whose model understates it
 
 Both axes now offer their positions, as `select` entities beside the swing controls, built from the
@@ -69,71 +72,6 @@ places the whole flag block at once, self-clean included.
 
 **The 117-byte family is separately open.** It is not a displacement of the published map at all, so
 nothing carries over: it needs its own report taken while a cycle runs.
-
-## 4. Two settings that decode and read but cannot be *written* — now tested, not just assumed
-
-`echoStatus` (the command-confirmation beeper, where set = silent) and `selfCleaningStatus` both
-decode cleanly and are marked `writeType=G`/writable by the device model. On paper they belong in the
-write map. They are still deliberately kept out of it, and this is no longer an assumption.
-
-**A live write settled `echoStatus`: the hardware silently ignores it.** On a real unit, a
-self-verifying write — seed from the unit's own status, flip exactly one bit, read back, revert —
-was run against two bits of the same word: `screenDisplayStatus` (the display light, a control we
-already ship) flipped and reverted cleanly, while `echoStatus`, byte-identical treatment, left the
-word **unchanged**. The op is accepted and the bit never lands. So `writeType=G` is necessary but not
-sufficient; the unit is the only authority on whether a group-set write takes. As a control it would
-silently do nothing, which is worse than absent — so it stays a **read-only sensor**, which is
-exactly how it now ships.
-
-⚠️ **Corrected 2026-08-02 — an earlier revision said the manufacturer's own app offers this control.
-It does not.** That claim came from the device model marking the attribute visible and writable, which
-is not the same thing. The app's air-conditioner control panel — the bundle the app actually renders,
-fetched for this exact unit — **never mentions `echoStatus` anywhere**, while every other control it
-offers appears 7 to 88 times. There is no beeper control in the app, and none on the handset either.
-
-That makes the panel a **free predictor of what a unit will honour, and on the evidence a perfect
-one.** Of this unit's fourteen attributes that the model marks visible, thirteen are referenced by
-the panel and one is not — and the one that is not is exactly the one the hardware discards. So the
-sequence to follow before offering any new control is four steps, not two:
-
-1. the device's model **declares** the attribute (it exists on this product line),
-2. the model does **not** mark it `invisible` (this particular unit has it),
-3. the **panel references it** (the manufacturer renders a control for it), and only then
-4. a **live self-verifying write** confirms the unit honours it.
-
-Step 3 costs nothing and would have predicted the `echoStatus` result without touching hardware.
-Step 4 is still required — it is the only one that observes the unit itself.
-
-`selfCleaningStatus` was not tested the same way because writing it starts a self-clean cycle that
-runs to completion and cannot be called back — not a thing to trigger on a whim on someone's unit.
-It had both halves of its *state transition* observed but no confirmed *write*.
-
-**✅ RESOLVED 2026-08-04 — confirmed on hardware and shipped.** A live self-verifying write on the
-classic family, with the unit on and not in auto/sleep, set exactly word 5 bit 4: it read back set on
-the next poll and the unit's panel showed **CL** — a cycle started. So unlike `echoStatus` (published
-and model-writable but silently dropped), self-clean is honoured. It now ships as a **"Start
-self-clean" button** (a one-shot trigger — the cycle can't be called back, so it is a button, not a
-switch), plus a **"Last self-clean" timestamp sensor** for "days since"-style automations. Its
-writability is gated by the model's own modifiers (off / auto / sleep / fault) via `locked_fields`.
-The panel reference predicted the outcome; the write settled it.
-
-⚠️ **When it is tested, one bit will not be enough.** Other implementations of this protocol start a
-cleaning cycle by setting the flag **together with the machine state the cycle needs** — powered on,
-dry mode, a 22 °C set point, both vanes centred, the display off, and the other cleaning flag
-explicitly cleared. That is the same shape as the co-command rules a device's own model publishes, so
-a test that flips the flag alone and sees nothing happen would prove nothing. It is one group-set
-either way; it just has to carry the whole state.
-
-Worth separating from the above: the **56 °C sterilising** flag lives in a different word from the
-ordinary self-clean flag, and there is reason to think it behaves as a *trigger* rather than a stored
-setting — an implementation that re-sends a status-derived baseline has to clear that word explicitly
-or it re-starts the cycle it just read back. Our control path carries the baseline forward untouched,
-which is the safe default for a setting and the wrong one for a trigger. Neither has been observed
-here, and the two should not be tested as if they were the same field.
-
-The general rule this leaves: **the model gives the candidate list of controls; a live self-verifying
-write gives the verdict.** Any control added beyond the confirmed set must pass that live write on
-real hardware first.
 
 ## 5. A timer, on units that publish one
 
@@ -297,6 +235,54 @@ in `model_declared_fields` on any unit that declares the attribute, so the evide
 on its own.
 
 
+## 11. Reads for the central-air-conditioner family — one report unlocks 79 products
+
+**Status: open, and the cheapest high-value item on this list.**
+
+Seventy-nine of the published air conditioners are central/ducted units. Between them they declare
+fourteen attributes, and **ten already have positions** in the shared map — `onOffStatus`,
+`operationMode`, `targetTemperature`, `windSpeed`, both vane fields, `muteStatus`, `rapidMode`,
+`indoorTemperature`, `tempUnit`. Nothing about their layout is unknown except **which displacement
+applies**, and that is what the layout prober scores from a report length plus a few stated states.
+
+**The displacement is derived, not awaited.** A model omits the leading media block or it does not,
+and the offset is exactly the span it omits. These seventy-nine declare no media attribute at all —
+checked against every attribute the shared map places below the climate block — which is the same
+thing the classic family does, and the classic family reads nineteen words earlier. Their attributes
+occupy the shared map's words twenty through twenty-five, so they occupy their own report's first six.
+
+Nothing further is needed to read them. What has not happened is a unit of that shape being seen,
+which would confirm the derivation rather than produce it.
+
+**⚠️ Re-scoped 2026-08-03 — expect no reporter, and do not treat this as a coverage gap.** The
+manufacturer ships **no phone-app interface for this device class in this region**: the app carries
+panels for refrigeration, air conditioning (wall and cabinet) and laundry, and none for the class
+these seventy-nine belong to. So an owner here has no vendor app to pair or control them with, and
+is correspondingly unlikely to arrive with a report. Two consequences worth stating plainly:
+
+* These products should **not** sit in a coverage denominator for this integration. Quoting "79
+  products unsupported" overstates the gap — they are outside what the vendor supports here too.
+* The derivation above still stands and costs nothing to keep. If a unit ever does appear, it is
+  one report away. **Also useful:** of the seventy-nine, **thirty-six publish their attribute list
+  in wire order** (word ascending, bit descending — verified against the shared map's anchors with
+  zero violations), so their positions can be solved without a capture at all. The other
+  forty-three show one consistent disagreement, which means either their list is not ordered or
+  their layout genuinely differs — untestable without hardware.
+
+## 12. Control for the central family — a parameter at a time, not a group
+
+**Status: open. Depends on 11 for reads, but is independent work.**
+
+Those models publish **no group-set command** at all — their operations are `getAllProperty`,
+`getAllAlarm`, `stopCurrentAlarm`, `getBigDataFrame`. They are written one parameter at a time, a
+method the vendor ships and prior art documents.
+
+⚠️ **Do not reuse the group-set safety argument here.** The encoder refuses any field it has not
+seen written because a group-set applies a whole word block, so a mistake changes a neighbour rather
+than failing. A single-parameter write cannot do that. The family deserves a safety property argued
+from its own mechanics — probably narrower than the current allowlist, and certainly not the same
+rule copied across without examination.
+
 # Settled
 
 Not open items. They are here because each looks like something to "fix" until you know why it is
@@ -357,53 +343,81 @@ mode while it is off.
 
 ---
 
-## 11. Reads for the central-air-conditioner family — one report unlocks 79 products
+## 4. One setting that decodes and reads but cannot be *written* — tested, not assumed
 
-**Status: open, and the cheapest high-value item on this list.**
+**Status: settled both ways. `echoStatus` stays read-only; `selfCleaningStatus` turned out to be
+writable and ships as a control since v0.34.0.** They are kept together because the pair is the whole
+argument: two attributes the model describes identically, one honoured and one silently discarded,
+and a free test that told them apart in advance.
 
-Seventy-nine of the published air conditioners are central/ducted units. Between them they declare
-fourteen attributes, and **ten already have positions** in the shared map — `onOffStatus`,
-`operationMode`, `targetTemperature`, `windSpeed`, both vane fields, `muteStatus`, `rapidMode`,
-`indoorTemperature`, `tempUnit`. Nothing about their layout is unknown except **which displacement
-applies**, and that is what the layout prober scores from a report length plus a few stated states.
+`echoStatus` (the command-confirmation beeper, where set = silent) and `selfCleaningStatus` both
+decode cleanly and are marked `writeType=G`/writable by the device model. On paper both belonged in
+the write map. One of them did not, and this is no longer an assumption.
 
-**The displacement is derived, not awaited.** A model omits the leading media block or it does not,
-and the offset is exactly the span it omits. These seventy-nine declare no media attribute at all —
-checked against every attribute the shared map places below the climate block — which is the same
-thing the classic family does, and the classic family reads nineteen words earlier. Their attributes
-occupy the shared map's words twenty through twenty-five, so they occupy their own report's first six.
+**A live write settled `echoStatus`: the hardware silently ignores it.** On a real unit, a
+self-verifying write — seed from the unit's own status, flip exactly one bit, read back, revert —
+was run against two bits of the same word: `screenDisplayStatus` (the display light, a control we
+already ship) flipped and reverted cleanly, while `echoStatus`, byte-identical treatment, left the
+word **unchanged**. The op is accepted and the bit never lands. So `writeType=G` is necessary but not
+sufficient; the unit is the only authority on whether a group-set write takes. As a control it would
+silently do nothing, which is worse than absent — so it stays a **read-only sensor**, which is
+exactly how it now ships.
 
-Nothing further is needed to read them. What has not happened is a unit of that shape being seen,
-which would confirm the derivation rather than produce it.
+⚠️ **Corrected 2026-08-02 — an earlier revision said the manufacturer's own app offers this control.
+It does not.** That claim came from the device model marking the attribute visible and writable, which
+is not the same thing. The app's air-conditioner control panel — the bundle the app actually renders,
+fetched for this exact unit — **never mentions `echoStatus` anywhere**, while every other control it
+offers appears 7 to 88 times. There is no beeper control in the app, and none on the handset either.
 
-**⚠️ Re-scoped 2026-08-03 — expect no reporter, and do not treat this as a coverage gap.** The
-manufacturer ships **no phone-app interface for this device class in this region**: the app carries
-panels for refrigeration, air conditioning (wall and cabinet) and laundry, and none for the class
-these seventy-nine belong to. So an owner here has no vendor app to pair or control them with, and
-is correspondingly unlikely to arrive with a report. Two consequences worth stating plainly:
+That makes the panel a **free predictor of what a unit will honour, and on the evidence a perfect
+one.** Of this unit's fourteen attributes that the model marks visible, thirteen are referenced by
+the panel and one is not — and the one that is not is exactly the one the hardware discards. So the
+sequence to follow before offering any new control is four steps, not two:
 
-* These products should **not** sit in a coverage denominator for this integration. Quoting "79
-  products unsupported" overstates the gap — they are outside what the vendor supports here too.
-* The derivation above still stands and costs nothing to keep. If a unit ever does appear, it is
-  one report away. **Also useful:** of the seventy-nine, **thirty-six publish their attribute list
-  in wire order** (word ascending, bit descending — verified against the shared map's anchors with
-  zero violations), so their positions can be solved without a capture at all. The other
-  forty-three show one consistent disagreement, which means either their list is not ordered or
-  their layout genuinely differs — untestable without hardware.
+1. the device's model **declares** the attribute (it exists on this product line),
+2. the model does **not** mark it `invisible` (this particular unit has it),
+3. the **panel references it** (the manufacturer renders a control for it), and only then
+4. a **live self-verifying write** confirms the unit honours it.
 
-## 12. Control for the central family — a parameter at a time, not a group
+Step 3 costs nothing and would have predicted the `echoStatus` result without touching hardware.
+Step 4 is still required — it is the only one that observes the unit itself.
 
-**Status: open. Depends on 11 for reads, but is independent work.**
+`selfCleaningStatus` was not tested the same way because writing it starts a self-clean cycle that
+runs to completion and cannot be called back — not a thing to trigger on a whim on someone's unit.
+It had both halves of its *state transition* observed but no confirmed *write*.
 
-Those models publish **no group-set command** at all — their operations are `getAllProperty`,
-`getAllAlarm`, `stopCurrentAlarm`, `getBigDataFrame`. They are written one parameter at a time, a
-method the vendor ships and prior art documents.
+**✅ RESOLVED 2026-08-04 — confirmed on hardware and shipped.** A live self-verifying write on the
+classic family, with the unit on and not in auto/sleep, set exactly word 5 bit 4: it read back set on
+the next poll and the unit's panel showed **CL** — a cycle started. So unlike `echoStatus` (published
+and model-writable but silently dropped), self-clean is honoured. It now ships as a **"Start
+self-clean" button** (a one-shot trigger — the cycle can't be called back, so it is a button, not a
+switch), plus a **"Last self-clean" timestamp sensor** for "days since"-style automations. Its
+writability is gated by the model's own modifiers (off / auto / sleep / fault) via `locked_fields`.
+The panel reference predicted the outcome; the write settled it.
 
-⚠️ **Do not reuse the group-set safety argument here.** The encoder refuses any field it has not
-seen written because a group-set applies a whole word block, so a mistake changes a neighbour rather
-than failing. A single-parameter write cannot do that. The family deserves a safety property argued
-from its own mechanics — probably narrower than the current allowlist, and certainly not the same
-rule copied across without examination.
+⚠️ **A prediction this file made, which the test then disproved — left standing because being wrong
+about it is instructive.** Before the write was attempted, this section argued that one bit would not
+be enough: other implementations of this protocol start a cleaning cycle by setting the flag
+**together with the machine state the cycle needs** — powered on, dry mode, a 22 °C set point, both
+vanes centred, the display off, and the other cleaning flag explicitly cleared — so a test that
+flipped the flag alone and saw nothing was expected to prove nothing.
+
+**One bit was enough.** Word 5 bit 4, on a unit that was merely on and not in auto or sleep, read
+back set and started a cycle. What another implementation *chooses* to send is evidence about that
+implementation, not about what the appliance requires — the reason it sets the surrounding state is
+plausibly that it wants the cycle to run under known conditions, not that the firmware demands it.
+Prior art narrows the search; only the unit answers the question.
+
+Worth separating from the above: the **56 °C sterilising** flag lives in a different word from the
+ordinary self-clean flag, and there is reason to think it behaves as a *trigger* rather than a stored
+setting — an implementation that re-sends a status-derived baseline has to clear that word explicitly
+or it re-starts the cycle it just read back. Our control path carries the baseline forward untouched,
+which is the safe default for a setting and the wrong one for a trigger. Neither has been observed
+here, and the two should not be tested as if they were the same field.
+
+The general rule this leaves: **the model gives the candidate list of controls; a live self-verifying
+write gives the verdict.** Any control added beyond the confirmed set must pass that live write on
+real hardware first.
 
 ## 13. The four-sided cassette vanes — what is known, and why it stops there
 
@@ -426,18 +440,38 @@ separates them: it would take a reading in which they differ. Nothing published 
 therefore a closed item rather than an open one, and it costs nothing, because no model of this shape
 is served by this integration.
 
-## 14. Deploy and verify the shipped rules
+## 14. Deploy and verify the shipped rules — done
 
-**Status: built, tested, not yet run on hardware.**
+**Status: closed 2026-08-04. Deployed and cross-checked on hardware.**
 
-The rules for all 171 published air conditioners now travel with the integration, and the coordinator
+The rules for all 171 published air conditioners travel with the integration, and the coordinator
 consults them when the catalogue cannot be reached. On a firewalled installation — which is the
-configuration this integration is for — that is now the ordinary path rather than the fallback.
+configuration this integration is for — that is the ordinary path rather than the fallback.
 
 It changes startup behaviour, and this project has twice shipped decode work that passed every test
-and was only caught by deploying. Before calling it good: deploy, then diff `model_declared_fields`
-against `digital_model.reported_values`, and confirm entity availability is unchanged on a unit whose
-rules previously came from the cloud.
+and was only caught by deploying, so the check asked for here was: deploy, diff
+`model_declared_fields` against `digital_model.reported_values`, and confirm entity availability is
+unchanged on a unit whose rules previously came from the cloud. All three were run:
+
+- **19 comparable readings, 19 agreeing.** The only two differences are how the numbers are written
+  — `15.0` against `"15"`, `30.0` against `"30"` — the wire giving a number and the cloud a string of
+  the same value.
+- **The shipped copy and the fetched copy agree** on the device's identity
+  (`model_rules_agreement: agree`), which is the check that exists because a fetched copy is matched
+  on the very code that would be wrong if it were wrong.
+- **Availability is unchanged and correctly conditional**: in fan-only the unit locks
+  `targetTemperature`, `ecoMode`, `muteStatus`, `rapidMode` and `silentSleepStatus`, and exactly
+  those entities are unavailable.
+
+⚠️ **Verified on one unit of one family.** The shipped rules cover 171 products; this exercises the
+path, not the table.
+
+⚠️ Worth knowing for the next person who checks this: **diagnostics does not print the `invisible`
+flags.** The per-attribute dump carries `dataList` and `type` only, so "does this install know the
+unit's real feature set?" cannot be answered from the file — it has to be inferred from whether the
+optional-feature entities look sane. On the unit above exactly one appears (`buzzer_silent`) with no
+phantoms, which is the expected result, but that is indirect evidence for something the file could
+simply state.
 
 ## 15. The compact family, resolved as far as it can be
 
@@ -717,3 +751,51 @@ no longer speaks for the appliance, and honest silence beats a stale answer.
 path, while a command's reply is handled somewhere else entirely. A correct function on a path that
 never runs looks exactly like no fix at all from the outside — worth remembering for anything in
 this area, since reads and commands take genuinely different routes through the code.
+
+## 23. Layouts resolved from the nearest published relatives — shipped
+
+**Status: shipped in v0.35.0, verified on hardware. Recorded because of what it assumes and what it
+deliberately declines to do.**
+
+An air conditioner whose exact layout nobody has reported used to fall back to the handful of
+readings that are identical on every model. It is now usually read in full instead: every published
+model is the shared map at one of a few whole-word offsets, a Model ID shares its leading characters
+with its close relatives, so the models nearest an unfamiliar unit name the offsets its report is
+likely to use. Those are shortlisted, decoded, and the one the report agrees with is kept.
+
+**The shortlist cannot decide alone, and two obvious ways to make it decide were tried and failed.**
+Most Model IDs match two published models rather than one, and those pairs disagree about the offset
+*every time* — one carries the leading media block and one does not. Neither the rule sections nor
+the declared attributes break that tie:
+
+- the rules are keyed by **product code**, while the ambiguity is on the **Model ID** side, so
+  nothing keyed on the product varies with the choice;
+- the attributes a device declares describe its **feature set**, not its layout. A boundary test
+  built on that agreed with the one unit it was developed against and then got **both** independent
+  checks wrong — two products that link exactly to a media-carrying model declare none of its
+  leading attributes. A lean unit can sit on a rich map.
+
+So the report is the only thing that settles it, and it costs nothing: it arrives on the first
+successful read, with no capture and nobody asked for anything.
+
+**Three refusals, all deliberate.** It reports and never commands, because a control writes a whole
+block of words at once and no capture has confirmed these positions on that appliance. It places only
+the core readings, leaving the rest unplaced until an offset is confirmed field by field. And it
+declines rather than guesses — a Model ID resembling nothing published yields no candidates at all.
+
+⚠️ **The failure this nearly shipped is worth keeping.** The candidate that is wrong by nineteen
+words reads *past the end* of a shorter report, so every field comes back absent — and a decode
+holding no readings passes a plausibility check on the readings it does not have. It returned an
+empty result that would have hidden the partial decode a unit was entitled to. The core readings must
+now be **present**, not merely not-implausible. Same shape as the validity band in item 21: a check
+that can only see what is there cannot speak for what is missing.
+
+⚠️ **This assumes the stronger claim that item 16 records as false of the wider published set** —
+that the only difference between layouts is where the block starts. What protects a merged-first-word
+model from being mis-read is the ordinary guard, not a proof; see item 16.
+
+⚠️ **Not yet exercised against a genuinely unknown appliance.** Both units here are the classic
+family, so the path stays dormant on them by design. It is proven on real captured data — resolving
+the offset from the identifier alone reproduces the confirmed decoder on every shared field — not
+against hardware nobody has mapped. The first reporter whose diagnostics show a resolved layout
+instead of a partial decode is the real test.

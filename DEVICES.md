@@ -2,7 +2,16 @@
 
 Model number alone is **not** a sufficient compatibility key — the Wi-Fi module and its firmware
 matter at least as much. Two units with the same model sticker can behave differently if one shipped
-with a newer module. Please record all three when you report a unit.
+with a newer module.
+
+**You do not need to write any of that down.** The integration knows it, and a diagnostics download
+carries it under `device_identity`: the `model_number` off the sticker, the `product_code` it is
+keyed on, the `uplus_id`, and the module's `module_firmware` and `module_sdk_version` as the
+appliance itself reports them. **Settings → Devices & Services → Haismart → ⋮ → Download
+diagnostics**, and attach the file.
+
+(If your unit is not yet added, or will not connect at all, then the model number off the sticker is
+the useful thing to quote.)
 
 The integration builds itself from the model description your AC's own cloud profile provides, so a
 model missing from this table will very likely still work. The table records what has actually been

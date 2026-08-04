@@ -10,6 +10,7 @@ from haismart_hrdp import (
     derive_status_layout,
     device_type_class,
     probe_layout,
+    rules_for_product,
     select_wire_model,
 )
 from haismart_hrdp.udiscovery import CLOUD_STATES
@@ -138,6 +139,15 @@ async def async_get_config_entry_diagnostics(
             # Whether the shipped rules and any fetched ones describe the same product.
             # "identity-mismatch" means the stored product code and uPlusId disagree.
             "model_rules_agreement": coordinator.model_rules_agreement,
+            # The number printed on the unit, looked up from the product code in the shipped
+            # catalogue. Reporters were being asked to transcribe this by hand; it is derivable
+            # from something already stored, so ask the catalogue instead of the person.
+            "model_number": _model_number(coordinator.product_code),
+            # What the Wi-Fi module runs. Two units with the same model sticker behave differently
+            # if one shipped with a newer module, so this belongs beside the model rather than only
+            # on the device page -- which is NOT part of this file, the one people attach to issues.
+            "module_firmware": coordinator.firmware,
+            "module_sdk_version": coordinator.sdk_version,
         },
         "profile": {
             "product_code": coordinator.product_code,
@@ -288,3 +298,17 @@ def _model_summary(model: dict[str, Any] | None) -> dict[str, Any] | None:
         "feature_set_known": known,
         "invisible_attributes": list(model.get("invisible_attributes") or ()) if known else None,
     }
+
+
+def _model_number(product_code: str | None) -> str | None:
+    """The model number printed on the unit, for a product code the shipped catalogue covers.
+
+    The two are different things and the difference matters in a bug report: `AAC1UKZ01` is the
+    product code the integration keys its rules on, `HSU-24VRRA03TF` is what is on the sticker and
+    what an owner recognises. The catalogue holds both for every published air conditioner, so a
+    report can carry the readable one without anyone typing it.
+    """
+    if not product_code:
+        return None
+    rules = rules_for_product(product_code)
+    return (rules or {}).get("model") or None

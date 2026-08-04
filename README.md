@@ -82,7 +82,7 @@ One device per air conditioner, with:
 | **Eco** | Eco level, on models where it's confirmed |
 | **Left-right vane** / **Up-down vane** | Where each vane points, on units that publish its positions |
 | **Power** *(diagnostic)* | Live power draw in watts, on units that report it |
-| **Energy** | A running kWh total, on the units that keep one themselves. Goes straight on the Energy dashboard — no helper needed. Most units carry the register but never fill it in, and there the sensor stays unavailable; see [Energy monitoring](#energy-monitoring) |
+| **Energy** | A running kWh total, on the units that keep one themselves. Goes straight on the Energy dashboard — no helper needed. Most units carry the register but never fill it in, and there the sensor reads *unknown*; see [Energy monitoring](#energy-monitoring) |
 | **Compressor current / frequency** *(diagnostic)* | What the outdoor unit is actually doing |
 | **Coil / discharge temperature** *(diagnostic)* | Evaporator and compressor-discharge temperatures |
 | **Compressor / Fan** *(diagnostic, on/off)* | Whether the compressor and indoor fan are actually running |
@@ -152,7 +152,7 @@ dashboard** needs a running total in kWh, which is a different thing.
 to the Energy dashboard under **Settings → Dashboards → Energy → Individual devices**. It is the
 figure the air conditioner's own meter keeps, so it survives restarts and outages and does not
 depend on how often Home Assistant polls. If your unit has one, use it and skip the rest of this
-section. If your Energy sensor shows as unavailable, your unit is one of the many that carries the
+section. If your Energy sensor reads *unknown*, your unit is one of the many that carries the
 register and never fills it in — read on.
 
 To build a total from the power reading instead, add a Riemann-sum integral helper over it:
@@ -418,6 +418,10 @@ An address change is not usually the cause — the integration follows a unit th
 nothing else is holding a local session to the same air conditioner (these modules accept one
 connection at a time), and that `nc -z <ac-ip> 56800` still succeeds.
 
+A control your AC ignores in its current mode is **not** shown as unavailable — it stays readable and
+refuses the command instead — so an unavailable entity here really does mean the unit is out of
+reach, rather than a setting that does not apply right now.
+
 </details>
 
 <details>
@@ -478,13 +482,19 @@ worth a great deal:
 1. Download diagnostics: **Settings → [Devices & Services](https://my.home-assistant.io/redirect/integrations/)
    → Haismart → ⋮ → Download diagnostics**. Secrets are redacted; the raw status bytes it contains
    are exactly what's needed to diagnose a decode problem.
-1. Include your **AC model number**, the Wi-Fi module if you know it, and the app you pair with.
+1. Say what you expected and what happened. **You don't need to look anything up** — see below.
 
-A diagnostics download is close to self-contained now. Besides the raw report it carries **every
-attribute your unit declares, read off its own report** — the settings that have no entity as well as
-the ones that do — alongside the values your air conditioner publishes through its cloud profile, so
-the two can be compared without asking you for anything further. On the reference unit those two
-independent sources agree on all 21 comparable readings.
+A diagnostics download is close to self-contained. It already knows what you would otherwise be asked
+to transcribe: under `device_identity` it carries your **model number** and the product code it is
+keyed on, the **Model ID**, and the Wi-Fi module's **firmware and SDK version** exactly as the
+appliance reports them. Besides the raw report it carries **every attribute your unit declares, read
+off its own report** — the settings that have no entity as well as the ones that do — alongside the
+values your air conditioner publishes through its cloud profile, so the two can be compared without
+asking you for anything further. On the reference unit those two independent sources agree on all 21
+comparable readings.
+
+The one thing worth typing is the model number **if your unit will not connect at all**, since none
+of the above exists until it does.
 
 **A model we have never seen usually reads anyway.** Every published air conditioner is the same
 attribute map at one of a few offsets, and a unit's Model ID names its closest relatives — so when no

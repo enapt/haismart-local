@@ -3206,3 +3206,36 @@ async def test_an_unmatched_rule_is_left_without_a_reason_rather_than_given_a_wr
          "invalid_code": "50009", "actions": []}
     ]}
     assert "invalid_code" not in _fill_gaps(fetched, bundled)["modifiers"][0]
+
+
+async def test_diagnostics_carries_what_a_bug_report_needs_without_transcription(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Reporters were asked to write down the model number, the module and its firmware by hand.
+
+    Two of the three the integration already knows, and the third it can look up. The model number
+    is derivable from the stored product code via the shipped catalogue, and the module's firmware
+    and SDK version arrive from the appliance's own discovery answer. They were reaching the device
+    page and nothing else — and the device page is not in the file people attach to issues.
+    """
+    from custom_components.haismart.diagnostics import (
+        _model_number,
+        async_get_config_entry_diagnostics,
+    )
+
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data
+    coordinator.firmware = "e_4.3.00 / R_6.0.01"
+    coordinator.sdk_version = "2.18"
+
+    diag = await async_get_config_entry_diagnostics(hass, entry)
+    identity = diag["device_identity"]
+    assert identity["module_firmware"] == "e_4.3.00 / R_6.0.01"
+    assert identity["module_sdk_version"] == "2.18"
+    # the readable number off the sticker, not the product code it was looked up from
+    assert identity["product_code"] == "AAC1UKZ01"
+    assert identity["model_number"] == "HSU-24VRRA03TF"
+
+    # a product code the catalogue does not cover yields nothing rather than a guess
+    assert _model_number("ZZZZZZZZZ") is None
+    assert _model_number(None) is None

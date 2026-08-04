@@ -453,9 +453,12 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # that cannot tell us reads "unknown" rather than being reported as cut off.
         self.cloud_connected: bool | None = None
         self.cloud_state: int | None = None
-        # Module firmware, reported by the same query. Surfaced as the HA device's software
-        # version, so it lands on the device page and in a diagnostics report without an entity.
+        # Module firmware and uSDK version, reported by the same query. The firmware is the HA
+        # device's software version so it shows on the device page; both are also reported in
+        # diagnostics, because that is the file people attach to issues and the device page is not
+        # in it. Which module a unit shipped with matters as much as the model on the sticker.
         self.firmware: str | None = None
+        self.sdk_version: str | None = None
         # Where the AC says it is. Only used in diagnostics: if this stops matching the configured
         # host the unit has moved on DHCP, which is the commonest way a working setup breaks and
         # otherwise presents as an AC that simply stopped answering.
@@ -753,6 +756,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """
         if info.firmware:
             self.firmware = " / ".join(info.firmware)
+        if info.sdk_version:
+            self.sdk_version = info.sdk_version
         self.reported_host = info.host or None
         self.reported_port = info.port or None
         self._sync_device_registry()

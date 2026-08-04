@@ -682,13 +682,25 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
             _LOGGER.debug("region catalogue lookup failed for %r: %s", model, err)
             return None
         wanted = model.strip().upper()
-        for row in rows:
-            if row.model.strip().upper() == wanted:
-                _LOGGER.info(
-                    "model %s is published in this account's region as product %s",
-                    row.model, row.product_code,
-                )
-                return row.product_code
+        matched = {r.product_code for r in rows if r.model.strip().upper() == wanted}
+        if len(matched) > 1:
+            # The same refusal the offline lookup makes, for the same reason: a model number can
+            # name several products, and where it does there is nothing here to choose between
+            # them. All 21 colliding numbers have their products in the same region as each other
+            # -- 1408 (number, region) pairs across 70 regions -- so returning the first row would
+            # be a coin toss between rule sets, which is what this layer exists to prevent.
+            _LOGGER.info(
+                "model %s names %d products in this account's region (%s); leaving the product "
+                "unset so the rules its family agrees on are applied instead",
+                model, len(matched), ", ".join(sorted(matched)),
+            )
+            return None
+        if matched:
+            code = next(iter(matched))
+            _LOGGER.info(
+                "model %s is published in this account's region as product %s", model, code
+            )
+            return code
         return None
 
     async def async_step_manual(

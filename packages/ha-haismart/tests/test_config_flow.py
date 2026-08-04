@@ -1458,3 +1458,53 @@ async def test_a_hand_made_entry_never_reaches_for_the_region_catalogue(
 
     assert listed.await_count == 0
     assert result["data"][CONF_PRODUCT_CODE] == "HSU-SOMETHING-UNKNOWN"
+
+
+async def test_the_region_lookup_refuses_an_ambiguous_model_number_too(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The offline lookup declines to choose between products sharing a number; so must this one.
+
+    Otherwise the refusal is only half a refusal: the same 21 numbers that collide in the bundle
+    collide inside individual regions as well -- 1408 (number, region) pairs across 70 of them -- so
+    taking the first row back from the catalogue would be exactly the coin toss between rule sets
+    that the offline path was fixed to stop making.
+    """
+    from unittest.mock import AsyncMock, patch
+
+    from haismart_extractor.cloud import CatalogueProduct
+
+    from custom_components.haismart.const import (
+        CONF_ACCESS_TOKEN,
+        CONF_CLOUD_CLIENT_ID,
+        CONF_REFRESH_TOKEN,
+        CONF_ZONE_INFO,
+    )
+
+    shared = "HSU-99SHARED/000W-T9"
+    flow_id = await _start_manual(hass)
+    flow = hass.config_entries.flow._progress[flow_id]
+    flow._cloud_data = {
+        CONF_REFRESH_TOKEN: "2_RT",
+        CONF_CLOUD_CLIENT_ID: "c" * 32,
+        CONF_ACCESS_TOKEN: "T",
+        CONF_ZONE_INFO: "1",
+    }
+    listed = AsyncMock(return_value=[
+        CatalogueProduct(product_code="AAFIRST00", model=shared),
+        CatalogueProduct(product_code="AASECOND0", model=shared),
+    ])
+    with (
+        patch("custom_components.haismart.config_flow.HaierCloud.refresh_token",
+              new=AsyncMock(return_value=type("R", (), {"access_token": "T2"})())),
+        patch("custom_components.haismart.config_flow.HaierCloud.list_ac_products", new=listed),
+    ):
+        result = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_PRODUCT_CODE: shared}
+        )
+        await hass.async_block_till_done()
+
+    # neither candidate is stored; what the owner typed is kept, and no product code is claimed
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_PRODUCT_CODE] not in {"AAFIRST00", "AASECOND0"}

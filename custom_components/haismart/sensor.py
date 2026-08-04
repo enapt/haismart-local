@@ -329,7 +329,14 @@ class HaismartSupportedAttributesSensor(HaismartStaticSensor):
     @property
     def native_value(self) -> str | None:
         names = self._attr_names()
-        return ", ".join(names) if names else None
+        if not names:
+            return None
+        joined = ", ".join(names)
+        if len(joined) <= 255:
+            return joined
+        # Truncate to fit HA's 255-char state limit; the full list is in extra_state_attributes.
+        truncated = joined[:248]
+        return truncated[:truncated.rfind(",")] + f"... ({len(names)} total)"
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

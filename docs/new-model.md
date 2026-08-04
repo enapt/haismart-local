@@ -103,9 +103,11 @@ Japan's lists 30 — while a region it does not recognise gets the complete set.
 shipped here before **v0.38.0** was one region's 171, so an appliance published elsewhere could not
 be named at all.
 
-v0.38.0 ships **all 1,435 published air conditioners** (1,400 distinct model numbers; 21 numbers are
-carried by more than one product, and where those disagree about their rules the integration declines
-to guess between them and falls back to what their family agrees on). Of the 100 countries the setup
+v0.38.0 ships **every published air conditioner: 1,435 product codes covering 1,400 model numbers**
+— which reduce to 1,245 once colour and market suffixes are ignored, and to 161 distinct sets of
+declared features, so the count is catalogue entries rather than distinct machines. (21 model numbers
+are carried by more than one product, and where those disagree about their rules the integration
+declines to guess between them and falls back to what their family agrees on.) Of the 100 countries the setup
 form offers, 94 publish at least one air conditioner and six publish none — Myanmar, Nigeria, Kenya,
 Cambodia, Laos and Nepal — where the model shortlist simply is not narrowed by region.
 

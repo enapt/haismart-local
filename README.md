@@ -60,12 +60,31 @@ work fine — this is used daily on an account registered outside South-East Asi
 | SmartAir2 / Smart Clima (older units) | ❌ No — same port, older unencrypted protocol | [oxystin/homebridge-haier-air-conditioner](https://github.com/oxystin/homebridge-haier-air-conditioner) |
 
 **Confirmed working units** are listed in [`DEVICES.md`](DEVICES.md). Yours not there? It will very
-likely still work, and not by luck: the integration carries the published description of **all 171
-air conditioners in this range** — which settings each model has, what its faults are called, and
-which controls it ignores in which state — so it configures itself for a unit nobody here has ever
-seen. Where your own account can describe your appliance, that is used too, and the two are combined
-rather than one being preferred. If something decodes oddly, that's a
-[great issue to open](#before-you-open-an-issue), and usually a quick fix.
+likely still work, and not by luck: the integration carries the published description of **every air
+conditioner in the manufacturer's catalogue — 1,435 product codes, covering 1,400 model numbers** —
+which settings each has, what its faults are called, and which controls it ignores in which state, so
+it configures itself for a unit nobody here has ever seen. Where your own account can describe your
+appliance, that is used too, and the two are combined rather than one being preferred. If something
+decodes oddly, that's a [great issue to open](#before-you-open-an-issue), and usually a quick fix.
+
+Those figures are entries in a catalogue rather than distinct appliances, and it is worth being
+straight about the difference: many are the same unit in another colour or for another market
+(`…(W)-T3` and `…(GREY)-T3` are one air conditioner), and by the settings they actually declare there
+are **161 distinct feature sets** among them. What the count means is that no published air
+conditioner is unknown to the integration — not that Haier sells 1,435 different machines.
+
+### Every region, not just one
+
+**The catalogue answers according to the country your account registered with**, and the regions
+publish very different lists — one 171 entries, another 242, Japan's 30, six countries none at all.
+Before **v0.38.0** what shipped here was a single region's 171, so an air conditioner published
+anywhere else could not be named, could not be offered by the number on its label, and could reach
+its own fault names only while Home Assistant had internet.
+
+All of them now ship, and every region's list has been checked against what ships: **no product in
+any region is missing**. Your country is also used at setup — to shorten the model list to what is
+sold where you are, and to look up a model number the shipped list has not heard of. If an older
+version could not identify your unit, this one very likely can.
 
 **Quick check:** if `nc -z <your-ac-ip> 56800` succeeds, the local protocol is listening.
 
@@ -324,7 +343,7 @@ the rest of this section work rather than being a compromise:
 | its address on your network | your network |
 | its device ID | the appliance |
 | how to read its reports | ships with the integration |
-| its faults, rules and real feature list | ships with the integration — all 171 published models |
+| its faults, rules and real feature list | ships with the integration — every published product |
 | which model it is | the number on its label, matched offline |
 | its temperatures, modes and telemetry | read from the appliance |
 | **its local key** | **Haier — once** |

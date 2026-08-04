@@ -31,10 +31,12 @@ protocol.
 
 Nakalista sa [`DEVICES.md`](../../DEVICES.md) ang mga unit na kumpirmadong gumagana. Wala roon ang
 modelo ninyo? Malamang gumana pa rin ito, at hindi ito swerte lamang: dala na ng integration ang
-opisyal na paglalarawan ng **lahat ng 171 aircon** sa hanay na ito — kung anong mga setting mayroon
+opisyal na paglalarawan ng **lahat ng 1,400 numero ng modelo** sa katalogo ng gumawa — kung anong mga setting mayroon
 ang bawat modelo, ano ang tawag sa bawat depekto, at aling mga kontrol ang binabalewala sa aling
 kalagayan — kaya kaya nitong i-configure ang sarili para sa unit na hindi pa namin nakikita. Kung
 kayang ilarawan din ng inyong account ang unit, pinagsasama ang dalawa sa halip na pumili ng isa.
+
+> Bago ang **v0.38.0** ang bilang na ito ay 171: ang listahan ay para lamang sa isang rehiyon, kaya hindi makilala ang aircon na inilabas sa ibang bansa. Kung hindi nakilala ng lumang bersyon ang unit mo, malamang makilala na ngayon.
 
 ## Ano ang makukuha ninyo
 

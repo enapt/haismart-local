@@ -25,8 +25,10 @@ layout confirmed on real hardware, which is what the capture procedure in
 "nobody has told us", not "it will not work".
 
 Since **v0.38.0** the integration also ships the published description of **every air conditioner in
-the manufacturer's catalogue — 1,435 models** — so it can name your unit, apply its own fault names
-and availability rules, and offer it in the setup list, with no account and no internet. Earlier
+the manufacturer's catalogue — 1,435 product codes, covering 1,400 model numbers** — so it can name
+your unit, apply its own fault names and availability rules, and offer it in the setup list, with no
+account and no internet. (Those are catalogue entries, not distinct machines: many are the same unit
+in another colour or for another market, and there are 161 distinct feature sets among them.) Earlier
 releases carried 171, which turned out to be one region's catalogue rather than the whole of it: the
 catalogue answers according to the country code an account registered with, and that code was being
 collected at setup and used for nothing else. If a previous version could not identify your air

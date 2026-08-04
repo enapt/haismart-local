@@ -28,10 +28,12 @@ với ứng dụng **Haier / Haismart** (còn có tên *Haier U+* hoặc *uHome*
 
 Các máy đã xác nhận hoạt động được liệt kê trong [`DEVICES.md`](../../DEVICES.md). Không thấy model
 của bạn? Rất có thể nó vẫn chạy được, và không phải nhờ may mắn: tích hợp mang sẵn mô tả chính thức
-của **toàn bộ 171 máy điều hòa** trong dòng sản phẩm này — mỗi model có những thiết lập nào, mỗi lỗi
+của **toàn bộ 1.400 số model** trong danh mục của nhà sản xuất — mỗi model có những thiết lập nào, mỗi lỗi
 tên là gì, và điều khiển nào bị bỏ qua trong trạng thái nào — nên nó tự cấu hình cho cả máy chưa ai
 ở đây từng thấy. Nếu tài khoản của bạn cũng mô tả được máy đó, cả hai nguồn được kết hợp chứ không
 chọn một.
+
+> Trước **v0.38.0** con số này là 171: danh sách đó chỉ thuộc một khu vực, nên máy điều hòa công bố ở nước khác không thể nhận dạng được. Nếu bản cũ không nhận ra thiết bị của bạn, bản này rất có thể nhận ra.
 
 ## Bạn nhận được gì
 

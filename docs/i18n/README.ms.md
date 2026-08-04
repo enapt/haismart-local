@@ -31,10 +31,12 @@ mendengar.
 
 Unit yang disahkan berfungsi disenaraikan dalam [`DEVICES.md`](../../DEVICES.md). Model anda tiada di
 situ? Besar kemungkinan ia tetap berfungsi, dan bukan secara kebetulan: integrasi ini sudah membawa
-perihalan rasmi **kesemua 171 penghawa dingin** dalam rangkaian ini — tetapan yang ada pada setiap
+perihalan rasmi **kesemua 1,400 nombor model** dalam katalog pengeluar — tetapan yang ada pada setiap
 model, nama bagi setiap kerosakan, dan kawalan mana yang diabaikan dalam keadaan tertentu — jadi ia
 menyediakan dirinya sendiri untuk unit yang belum pernah kami lihat. Jika akaun anda turut boleh
 memerihalkan unit itu, kedua-duanya digabungkan, bukan salah satu dipilih.
+
+> Sebelum **v0.38.0** angkanya ialah 171: senarai itu hanya untuk satu wilayah, jadi penghawa dingin yang diterbitkan di negara lain tidak dapat dikenali. Jika versi lama gagal mengenali unit anda, versi ini berkemungkinan besar berjaya.
 
 ## Apa yang anda dapat
 

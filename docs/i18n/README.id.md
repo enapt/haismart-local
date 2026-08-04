@@ -29,10 +29,12 @@ yang tepat.
 
 Unit yang sudah dipastikan bekerja ada di [`DEVICES.md`](../../DEVICES.md). Model Anda tidak
 tercantum? Kemungkinan besar tetap berfungsi, dan bukan karena kebetulan: integrasi ini sudah
-membawa deskripsi resmi **seluruh 171 AC** dalam rangkaian ini — setelan apa yang dimiliki tiap
+membawa deskripsi resmi **seluruh 1.400 nomor model** dalam katalog pabrikan — setelan apa yang dimiliki tiap
 model, nama tiap kerusakan, dan kontrol mana yang diabaikan dalam kondisi tertentu — sehingga ia
 menyiapkan dirinya sendiri untuk unit yang belum pernah kami lihat. Jika akun Anda juga bisa
 menjelaskan unit tersebut, keduanya digabungkan, bukan dipilih salah satu.
+
+> Sebelum **v0.38.0** angkanya 171: daftar itu hanya milik satu wilayah, sehingga AC yang diterbitkan di negara lain tidak bisa dikenali. Jika versi lama gagal mengenali unit Anda, versi ini kemungkinan besar berhasil.
 
 ## Apa yang Anda dapatkan
 

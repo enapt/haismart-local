@@ -137,8 +137,11 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
             for preset, (field, _) in _PRESET_FIELDS.items()
             if coordinator.supports_field(field)
         ]
+        # Always assign the attribute — the preset_modes property reads it directly, and HA's
+        # ClimateEntity gives it no class default, so leaving it unset crashes entity setup on a
+        # family with no writable presets (e.g. the 117-byte family — issue #4).
+        self._attr_preset_modes = [PRESET_NONE, *presets] if presets else None
         if presets:
-            self._attr_preset_modes = [PRESET_NONE, *presets]
             self._attr_supported_features |= ClimateEntityFeature.PRESET_MODE
         # Same gate for the horizontal axis: extended-46 deliberately leaves windDirectionHorizontal
         # out of its write map because the position isn't settled, and the encoder must never be

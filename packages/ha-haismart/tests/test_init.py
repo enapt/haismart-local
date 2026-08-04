@@ -279,6 +279,12 @@ async def test_compact12_family_decodes_and_controls_via_4d5f(
     assert climate is not None and climate.state == "cool"
     assert climate.attributes["current_temperature"] == 27.0
     assert climate.attributes["temperature"] == 22.0
+    # issue #4: this family has no writable presets, so the climate entity must build without a
+    # preset control -- and without crashing. The preset_modes property reads _attr_preset_modes,
+    # which HA's ClimateEntity gives no default, so it has to be assigned unconditionally.
+    features = ClimateEntityFeature(climate.attributes["supported_features"])
+    assert ClimateEntityFeature.PRESET_MODE not in features
+    assert "preset_modes" not in climate.attributes
 
     coord = entry.runtime_data
     assert coord.unknown_layout is None            # a KNOWN family — no "new model" repair

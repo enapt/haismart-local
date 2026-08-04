@@ -2964,7 +2964,11 @@ async def test_identity_already_known_is_never_overwritten(
         CONF_REFRESH_TOKEN: "2_RT",
         CONF_CLOUD_CLIENT_ID: "A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4",
         CONF_PRODUCT_CODE: "AAC1UKZ01",
-        CONF_UPLUS_ID: "MINE",
+        # the uPlusId this product code really publishes. A placeholder here made the entry
+        # self-contradictory -- a stored code whose own uPlusId is not the one the appliance reports
+        # is a *falsified* code, which is the one thing this lookup is now allowed to replace -- so
+        # the fixture has to be a coherent appliance for the test to be about overwriting at all.
+        CONF_UPLUS_ID: "2008610800820324021200118012560000000000000000000000000000000040",
         CONF_DEVICE_TYPE: "0201203a",
     })
     entry.add_to_hass(hass)
@@ -2979,9 +2983,118 @@ async def test_identity_already_known_is_never_overwritten(
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-    assert entry.data[CONF_PRODUCT_CODE] == "AAC1UKZ01"
-    assert entry.data[CONF_UPLUS_ID] == "MINE"
+    assert entry.data[CONF_PRODUCT_CODE] == "AAC1UKZ01"      # not the list's "WRONG"
+    assert entry.data[CONF_UPLUS_ID].startswith("20086108008203240212001180125")  # not "THEIRS"
     assert listed.await_count == 0, "nothing was missing, so nothing should have been fetched"
+
+
+async def test_a_product_code_the_appliance_disowns_is_corrected_from_the_account(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A stored code whose own uPlusId is not this appliance's has been falsified, not bettered.
+
+    Until v0.34 onboarding pre-filled this project's own product code, so appliances that never
+    declared one were recorded as hardware they are not — and that record cannot be corrected by the
+    source it came from, because there was none. It decides which controls lock and what a fault is
+    called, so an owner otherwise has to delete the appliance and add it again to shift it.
+    """
+    from unittest.mock import AsyncMock, patch
+
+    from haismart_extractor.cloud import CloudDevice
+
+    from custom_components.haismart.const import CONF_CLOUD_CLIENT_ID, CONF_REFRESH_TOKEN
+
+    theirs = "2008610800820324021200118017740000000000000000000000000000000040"
+    entry = _entry(**{
+        CONF_REFRESH_TOKEN: "2_RT",
+        CONF_CLOUD_CLIENT_ID: "A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4",
+        CONF_PRODUCT_CODE: "AAC1UKZ01",   # this project's own, pre-filled by an old setup form
+        CONF_UPLUS_ID: theirs,            # ...but the appliance reports a different family
+        CONF_DEVICE_TYPE: "0201203a",
+    })
+    entry.add_to_hass(hass)
+    listed = AsyncMock(return_value=[
+        CloudDevice("A1B2C3D4E5F6", "x", "9999", theirs, True, prod_no="AAD47CZ00")
+    ])
+    with (
+        patch("custom_components.haismart.coordinator.HaierCloud.refresh_token",
+              new=AsyncMock(return_value=type("R", (), {"access_token": "2_F"})())),
+        patch("custom_components.haismart.coordinator.HaierCloud.list_devices_v2", new=listed),
+    ):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert entry.data[CONF_PRODUCT_CODE] == "AAD47CZ00"
+    assert entry.runtime_data.product_code == "AAD47CZ00"   # and in memory, not only on disk
+
+
+async def test_a_disowned_code_is_left_alone_when_the_account_disagrees_too(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The list has to be answering about the same appliance for its answer to be a correction.
+
+    What condemned the stored code was that it publishes a different uPlusId than the appliance
+    reports. A reply that disagrees about the uPlusId as well is a second candidate, not a fix — so
+    nothing is replaced and the warning stands.
+    """
+    from unittest.mock import AsyncMock, patch
+
+    from haismart_extractor.cloud import CloudDevice
+
+    from custom_components.haismart.const import CONF_CLOUD_CLIENT_ID, CONF_REFRESH_TOKEN
+
+    entry = _entry(**{
+        CONF_REFRESH_TOKEN: "2_RT",
+        CONF_CLOUD_CLIENT_ID: "A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4",
+        CONF_PRODUCT_CODE: "AAC1UKZ01",
+        CONF_UPLUS_ID: "2008610800820324021200118017740000000000000000000000000000000040",
+        CONF_DEVICE_TYPE: "0201203a",
+    })
+    entry.add_to_hass(hass)
+    listed = AsyncMock(return_value=[
+        CloudDevice("A1B2C3D4E5F6", "x", "9999", "SOMETHING-ELSE", True, prod_no="AAD47CZ00")
+    ])
+    with (
+        patch("custom_components.haismart.coordinator.HaierCloud.refresh_token",
+              new=AsyncMock(return_value=type("R", (), {"access_token": "2_F"})())),
+        patch("custom_components.haismart.coordinator.HaierCloud.list_devices_v2", new=listed),
+    ):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert entry.data[CONF_PRODUCT_CODE] == "AAC1UKZ01"
+
+
+async def test_rules_from_a_disowned_product_code_are_not_applied(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A code the appliance contradicts must not supply this appliance's rulebook.
+
+    The rules decide which controls lock, what a fault is called and which hardware a unit is
+    credited with. Applying another product's was reported as fault names that did not match the
+    unit (issue #6). What the whole family agrees on is correct without knowing the model, so that
+    is what a disowned code falls back to.
+    """
+    from custom_components.haismart.const import CONF_DIGITAL_MODEL
+
+    theirs = "2008610800820324021200118017740000000000000000000000000000000040"
+    entry = _entry(**{
+        CONF_PRODUCT_CODE: "AAC1UKZ01",
+        CONF_UPLUS_ID: theirs,
+        CONF_DIGITAL_MODEL: json.dumps({"attributes": [{"name": "operationMode"}]}),
+    })
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    coord = entry.runtime_data
+    assert coord.model_rules_agreement == "identity-mismatch"
+    # the alarm names now come from the family the appliance says it belongs to, and its list is a
+    # different length from the one the stored code publishes
+    from haismart_hrdp import family_rules, rules_for_product
+
+    assert coord.digital_model["alarms"] == family_rules(theirs)["alarms"]
+    assert len(coord.digital_model["alarms"]) != len(rules_for_product("AAC1UKZ01")["alarms"])
 
 
 async def test_an_offline_entry_on_a_still_connected_appliance_is_warned_early(

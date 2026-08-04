@@ -236,8 +236,53 @@ def _load_digital_model(entry: HaismartConfigEntry) -> dict[str, Any] | None:
     # Doing this on load rather than during a rules refresh matters: an entry that already knows its
     # feature set never asks for a refresh, so it would otherwise never gain the missing sections.
     # Gaps only -- whatever the stored copy answers stands, being the device's own and current.
-    filled = _fill_gaps(stored, rules_for_product(entry.data.get(CONF_PRODUCT_CODE)))
+    filled = _fill_gaps(stored, _shipped_rules(entry))
     return with_rules(filled, entry.data.get(CONF_UPLUS_ID))
+
+
+def _contradicted_product_code(entry: HaismartConfigEntry) -> str | None:
+    """The uPlusId the stored product code publishes, when the appliance reports a different one.
+
+    ``None`` when they agree, or when either is unknown and there is nothing to check.
+    """
+    bundled = rules_for_product(entry.data.get(CONF_PRODUCT_CODE))
+    want, got = (bundled or {}).get("uplus_id"), entry.data.get(CONF_UPLUS_ID)
+    return want if want and got and want != got else None
+
+
+def _shipped_rules(entry: HaismartConfigEntry) -> dict[str, Any] | None:
+    """The published rules to complete this entry's model from.
+
+    Normally the ones for its product code, which is what rules are keyed by. But the appliance
+    announces its own uPlusId, and every product code publishes one, so the two can be checked
+    against each other -- and where they disagree the appliance wins. It is the device; a stored
+    code is a record of an answer given once, at setup, and until v0.34 it could be a *default*:
+    onboarding pre-filled this project's own product code, so appliances that never declared one
+    were labelled with hardware they are not.
+
+    Using rules the device contradicts is not a cosmetic mislabelling. They decide which controls
+    lock, what a fault is called, which settings the unit believes travel together -- one product's
+    co-commands, applied to another, asked for a setting its layout cannot write and failed every
+    mode change on a 209-byte unit outright (issue #6).
+
+    So fall back to what the whole family agrees on, which is correct without knowing the model:
+    every alarm name and every lock explanation is common to all members of every published family,
+    and a rule some member disagrees about is simply not applied. A missing rule locks nothing.
+    """
+    if (want := _contradicted_product_code(entry)) is not None:
+        uplus_id = entry.data.get(CONF_UPLUS_ID)
+        family = family_rules(uplus_id)
+        _LOGGER.warning(
+            "product code %s publishes uPlusId %s but this appliance reports %s, so the stored "
+            "code belongs to a different model: %s. Re-add the appliance to give it its own code "
+            "(its model number is on the label) -- fault names and conditional availability are "
+            "narrower until then",
+            entry.data.get(CONF_PRODUCT_CODE), want, uplus_id,
+            "using the rules its own family agrees on instead" if family
+            else "ignoring them, as its family publishes none",
+        )
+        return family
+    return rules_for_product(entry.data.get(CONF_PRODUCT_CODE))
 
 
 def _rule_agreement(entry: HaismartConfigEntry) -> str | None:
@@ -254,14 +299,9 @@ def _rule_agreement(entry: HaismartConfigEntry) -> str | None:
     bundled = rules_for_product(entry.data.get(CONF_PRODUCT_CODE))
     if stored is None or bundled is None:
         return None
-    want, got = bundled.get("uplus_id"), entry.data.get(CONF_UPLUS_ID)
-    if want and got and want != got:
-        _LOGGER.warning(
-            "product code %s publishes uPlusId %s but this entry reports %s; the stored product "
-            "code probably belongs to a different model, so fault names and availability rules may "
-            "be wrong. Re-add the device to correct it.",
-            entry.data.get(CONF_PRODUCT_CODE), want, got,
-        )
+    # The mismatch is reported (and acted on) by `_shipped_rules`, which is the one place that
+    # decides what to do about it; saying it twice in the log only makes it look like two faults.
+    if _contradicted_product_code(entry) is not None:
         return "identity-mismatch"
     same = all(
         len(stored.get(k) or ()) == len(bundled.get(k) or ())
@@ -1543,7 +1583,10 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # firewalled (the configuration this integration exists for) should not have its rule layer
         # quietly depend on reaching the internet. The remote copy is still consulted, but to check
         # this one rather than to replace it.
-        bundled = rules_for_product(data.get(CONF_PRODUCT_CODE))
+        # `_shipped_rules`, not the raw lookup: a stored code the appliance's own uPlusId
+        # contradicts is not about this appliance, and what is merged here is written back to the
+        # entry -- so this is the one path where using it outlives the mistake.
+        bundled = _shipped_rules(self.config_entry)
         if bundled is None:
             # No model known -- a hand-made entry whose owner skipped the question, or one added
             # before it was asked. The unit still announced its family, and the rules its family
@@ -1555,14 +1598,22 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if data.get(CONF_REFRESH_TOKEN) and data.get(CONF_CLOUD_CLIENT_ID):
             published = await self._async_account_published_model()
             if published is not None:
-                self._note_rule_agreement(bundled, published)
+                # Cross-checked against the copy keyed by PRODUCT CODE -- deliberately not against
+                # `bundled`, which on a contradicted code came from the family instead and therefore
+                # carries the appliance's own uPlusId. Comparing those could only ever agree, and
+                # catching a wrong identifier is the entire purpose of the comparison.
+                self._note_rule_agreement(
+                    rules_for_product(data.get(CONF_PRODUCT_CODE)), published
+                )
                 return _fill_gaps(published, bundled)
         # only a product code the entry actually stores will do. `self.product_code` falls back to
         # a built-in default, and a default is indistinguishable from a real code -- handing this
         # device another model's rules would make the wrong entities unavailable and name the wrong
-        # faults, which is worse than having none at all.
+        # faults, which is worse than having none at all. Nor one the appliance contradicts: this
+        # fetch is matched on the code, so it would answer confidently about a different model, and
+        # what comes back is merged into the entry and kept.
         product_code = data.get(CONF_PRODUCT_CODE)
-        if not product_code:
+        if not product_code or _contradicted_product_code(self.config_entry) is not None:
             return None
         try:
             return await get_public_device_config(
@@ -1575,6 +1626,13 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # configuration this integration is meant to make workable, so the rule layer should not be
         # the one part of it that needs the cloud. Same product code, so the same caveat holds; a
         # code the bundle has never heard of returns None and the stored model is left alone.
+        #
+        # ⚠️ Deliberately NOT the family fallback computed above. What this function returns is
+        # merged into the entry and kept, and a family's *agreed* rules are only what every member
+        # has in common -- in our own 23-member family, no modifier at all. Returning those would
+        # persist an empty rule set over the recorded fallback that `_load_digital_model` applies on
+        # every load, which is a fallback masking what it stands in for. Gap-filling a fetched copy
+        # with them is a different matter, and that is what the account path above does with it.
         bundled = rules_for_product(product_code)
         if bundled is not None:
             _LOGGER.debug("using shipped rules for product code %s", product_code)
@@ -1629,10 +1687,12 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     @property
     def needs_identity_topup(self) -> bool:
-        """Whether this entry is missing identity the account it is signed into already knows."""
+        """Whether this entry is missing -- or holds a falsified -- identity the account knows."""
         data = self.config_entry.data
         if not (data.get(CONF_REFRESH_TOKEN) and data.get(CONF_CLOUD_CLIENT_ID)):
             return False
+        if _contradicted_product_code(self.config_entry) is not None:
+            return True
         return not all(
             data.get(k) for k in (CONF_PRODUCT_CODE, CONF_UPLUS_ID, CONF_DEVICE_TYPE)
         )
@@ -1651,6 +1711,14 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         list has always carried this, so an entry added before it was kept can simply be told.
         Runs once per start, only where something is actually missing, and never overwrites a value
         the entry already holds -- what is stored may have come from a source this one cannot see.
+
+        One exception, and it is not a preference: a product code the appliance itself contradicts
+        has been *falsified*, not merely bettered. Until v0.34 onboarding pre-filled this project's
+        own code, so an appliance that never declared one was recorded as hardware it is not -- and
+        that stored answer cannot be corrected by the source it came from, since there was none. The
+        account's device list is where the real one has always been, so take it; a wrong identifier
+        otherwise survives every restart and can only be cleared by deleting the appliance and
+        adding it again.
         """
         data = self.config_entry.data
         usdk_client_id = data.get(CONF_CLOUD_CLIENT_ID)
@@ -1675,6 +1743,17 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return False
         if device is None:
             return False
+        # A code the appliance has disowned counts as absent, whatever is stored (see above) -- but
+        # only if the list is answering about the same appliance. The check that condemned the
+        # stored code was "your code publishes a different uPlusId than this appliance reports", so
+        # a reply that disagrees about the uPlusId as well is not a correction, it is a second
+        # candidate. In that case leave everything alone and let the warning stand.
+        stale = (
+            {CONF_PRODUCT_CODE}
+            if _contradicted_product_code(self.config_entry) is not None
+            and (device.uplus_id or "").upper() == (data.get(CONF_UPLUS_ID) or "").upper()
+            else set()
+        )
         learned = {
             key: value
             for key, value in (
@@ -1682,7 +1761,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 (CONF_UPLUS_ID, device.uplus_id),
                 (CONF_DEVICE_TYPE, device.device_type),
             )
-            if value and not data.get(key)
+            if value and (key in stale or not data.get(key)) and value != data.get(key)
         }
         if not learned:
             return False

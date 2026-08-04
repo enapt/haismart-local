@@ -3134,6 +3134,39 @@ async def test_rules_from_a_disowned_product_code_are_not_applied(
     assert len(coord.digital_model["alarms"]) != len(rules_for_product("AAC1UKZ01")["alarms"])
 
 
+async def test_a_product_code_the_bundle_never_heard_of_still_gets_its_family_s_rules(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A code absent from the catalogue is not a wrong code, and it should not cost the rules.
+
+    The published catalogue is a snapshot of one region and appliances arrive carrying codes that
+    are not in it -- the 209-byte reporter's own is one, and so is its model number. That entry was
+    getting no fault names and no explanation for a greyed-out control, while the rules its family
+    agrees on were sitting in the bundle unused. Its uPlusId reaches them, and the appliance
+    announces that without a key.
+    """
+    from haismart_hrdp import family_rules, rules_for_product
+
+    from custom_components.haismart.const import CONF_DIGITAL_MODEL
+
+    theirs = "2008610800820324021200118017740000000000000000000000000000000040"
+    assert rules_for_product("AACVX7E00") is None, "fixture assumes this code is not in the bundle"
+
+    entry = _entry(**{
+        CONF_PRODUCT_CODE: "AACVX7E00",
+        CONF_UPLUS_ID: theirs,
+        CONF_DIGITAL_MODEL: json.dumps({"attributes": [{"name": "operationMode"}]}),
+    })
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    model = entry.runtime_data.digital_model
+    assert model["alarms"] == family_rules(theirs)["alarms"]
+    # and no verdict is claimed about a code there is nothing to compare against
+    assert entry.runtime_data.model_rules_agreement is None
+
+
 async def test_an_offline_entry_on_a_still_connected_appliance_is_warned_early(
     hass: HomeAssistant, mock_uss
 ) -> None:

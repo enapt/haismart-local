@@ -270,21 +270,41 @@ def _shipped_rules(entry: HaismartConfigEntry) -> dict[str, Any] | None:
     So fall back to what the whole family agrees on, which is correct without knowing the model:
     every alarm name and every lock explanation is common to all members of every published family,
     and a rule some member disagrees about is simply not applied. A missing rule locks nothing.
+
+    The same fallback answers a case that has nothing to do with a wrong code: **a code this bundle
+    has never heard of.** The catalogue it is built from covers one region, and appliances turn up
+    carrying codes from another -- neither the code nor the model number of the first 209-byte
+    appliance reported is in it. Such an entry was getting no rules at all, meaning no fault names
+    and no explanation for a greyed-out control, while the rules its family agrees on sat here
+    unused. Its uPlusId reaches them, and an appliance announces that without a key.
+
+    Never persisted, which matters: the caller applies this to the model in memory on every load, so
+    a bundle that later learns the code supersedes it with no migration. See the warning in
+    ``_async_published_model`` about why the same fallback must not be stored.
     """
+    code = entry.data.get(CONF_PRODUCT_CODE)
+    uplus_id = entry.data.get(CONF_UPLUS_ID)
     if (want := _contradicted_product_code(entry)) is not None:
-        uplus_id = entry.data.get(CONF_UPLUS_ID)
         family = family_rules(uplus_id)
         _LOGGER.warning(
             "product code %s publishes uPlusId %s but this appliance reports %s, so the stored "
             "code belongs to a different model: %s. Re-add the appliance to give it its own code "
             "(its model number is on the label) -- fault names and conditional availability are "
             "narrower until then",
-            entry.data.get(CONF_PRODUCT_CODE), want, uplus_id,
+            code, want, uplus_id,
             "using the rules its own family agrees on instead" if family
             else "ignoring them, as its family publishes none",
         )
         return family
-    return rules_for_product(entry.data.get(CONF_PRODUCT_CODE))
+    if (own := rules_for_product(code)) is not None:
+        return own
+    if (family := family_rules(uplus_id)) is not None:
+        _LOGGER.debug(
+            "no published rules for product code %r; using the %d rule(s) and %d fault name(s) its "
+            "uPlusId family agrees on",
+            code, len(family.get("modifiers") or ()), len(family.get("alarms") or ()),
+        )
+    return family
 
 
 def _rule_agreement(entry: HaismartConfigEntry) -> str | None:

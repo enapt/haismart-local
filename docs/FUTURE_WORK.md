@@ -466,12 +466,17 @@ unchanged on a unit whose rules previously came from the cloud. All three were r
 ⚠️ **Verified on one unit of one family.** The shipped rules cover 171 products; this exercises the
 path, not the table.
 
-⚠️ Worth knowing for the next person who checks this: **diagnostics does not print the `invisible`
-flags.** The per-attribute dump carries `dataList` and `type` only, so "does this install know the
-unit's real feature set?" cannot be answered from the file — it has to be inferred from whether the
-optional-feature entities look sane. On the unit above exactly one appears (`buzzer_silent`) with no
-phantoms, which is the expected result, but that is indirect evidence for something the file could
-simply state.
+✅ **Found while running that check, and fixed: diagnostics did not print the `invisible` flags.**
+The model summary kept value ranges only, so "does this install know the unit's real feature set?"
+— the thing that decides whether the optional-feature entities can be trusted at all — could not be
+answered from the file. It had to be inferred from whether those entities happened to look sane,
+which is indirect evidence for something the file can simply state.
+
+It now carries `feature_set_known` and `invisible_attributes`. The two are separate on purpose:
+**present-but-empty and absent mean different things** — empty is "we know, and this unit lacks
+nothing", absent is "we do not know, so nothing optional is offered" — and an empty list alone would
+collapse them. Confirmed on hardware: `feature_set_known: true`, **28 of 42 attributes invisible**,
+which is why exactly one optional feature (`buzzer_silent`) appears and no phantoms do.
 
 ## 15. The compact family, resolved as far as it can be
 

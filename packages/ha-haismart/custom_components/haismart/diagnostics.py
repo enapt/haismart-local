@@ -258,6 +258,12 @@ def _model_summary(model: dict[str, Any] | None) -> dict[str, Any] | None:
     the values the device currently reports for them, and the grSetDAC attribute order are included
     -- which is all that is needed to work out a layout, and carries no credential. The reported
     values are the same settings the remote shows, alongside raw bytes that already say the same.
+
+    Also which attributes this unit does NOT have. A generic model lists everything the product line
+    might carry and marks the rest ``invisible``; that flag is what stops optional features being
+    offered for hardware the unit lacks, so whether it is known decides whether those entities can
+    be trusted. Summarising the model without it left that unanswerable from a diagnostics file --
+    the only evidence was whether the resulting entities happened to look sane.
     """
     if not model:
         return None
@@ -271,8 +277,14 @@ def _model_summary(model: dict[str, Any] | None) -> dict[str, Any] | None:
         for g in model.get("groupCommands", [])
         if g.get("name")
     }
+    # Present-but-empty and absent mean different things and must not collapse to the same output:
+    # empty is "we know, and this unit lacks nothing", absent is "we do not know, so nothing
+    # optional is offered". Hence the separate flag rather than an empty list standing for both.
+    known = "invisible_attributes" in model
     return {
         "attributes": attributes,
         "groupCommands": group_commands,
         "reported_values": _shadow_values(model),
+        "feature_set_known": known,
+        "invisible_attributes": list(model.get("invisible_attributes") or ()) if known else None,
     }

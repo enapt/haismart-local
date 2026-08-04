@@ -3076,3 +3076,28 @@ async def test_a_command_leaves_every_sensor_reading_as_it_found_them(
 
     missing = polled - set(coordinator.data)
     assert not missing, f"a command dropped these readings: {sorted(missing)}"
+
+
+async def test_diagnostics_says_whether_the_units_real_feature_set_is_known(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A generic model lists every attribute the product line might have and marks the ones this
+    unit lacks `invisible`. That flag decides whether optional-feature entities can be offered at
+    all, so a diagnostics file has to say whether it is known — and has to distinguish "known, and
+    this unit lacks nothing" from "not known". Both would otherwise be an absent list.
+    """
+    from custom_components.haismart.diagnostics import _model_summary
+
+    unknown = _model_summary({"attributes": [{"name": "onOffStatus"}]})
+    assert unknown["feature_set_known"] is False
+    assert unknown["invisible_attributes"] is None
+
+    empty = _model_summary({"attributes": [{"name": "onOffStatus"}], "invisible_attributes": []})
+    assert empty["feature_set_known"] is True
+    assert empty["invisible_attributes"] == []
+
+    known = _model_summary(
+        {"attributes": [{"name": "onOffStatus"}], "invisible_attributes": ["freshAirStatus"]}
+    )
+    assert known["feature_set_known"] is True
+    assert known["invisible_attributes"] == ["freshAirStatus"]

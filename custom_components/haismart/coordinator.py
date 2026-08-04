@@ -100,6 +100,7 @@ from .const import (
     EXTENDED_MISSES,
     ISSUE_STALE_LOCALKEY,
     ISSUE_UNKNOWN_LAYOUT,
+    MANUFACTURER,
     READ_TIMEOUT,
     REDISCOVER_COOLDOWN,
     TELEMETRY_MAX_AGE,
@@ -586,13 +587,14 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return True
 
     def _sync_device_registry(self) -> None:
-        """Keep the HA device's firmware version and configuration link in step with what we learn.
+        """Keep the HA device's identity/links in step with what we learn.
 
-        `entity.py` builds its DeviceInfo once per entity, so both values freeze at the moment the
+        `entity.py` builds its DeviceInfo once per entity, so these freeze at the moment the
         entities are created. Firmware that arrives on a later UDISCOVERY reply -- because the
-        first query went unanswered, or the module was slow -- then never shows up at all, and
-        after the AC moves on DHCP the configuration link still points at the address it left, on
-        the very page someone opens to work out why it stopped answering.
+        first query went unanswered, or the module was slow -- then never shows up at all; after
+        the AC moves on DHCP the configuration link still points at the address it left; and
+        brand/model backfilled from the cloud device list (works offline) would never reach the
+        device page.
 
         Never raises, and a no-op once both agree: this runs on every successful discovery query.
         """
@@ -606,6 +608,15 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         url = f"http://{self.host}"
         if device.configuration_url != url:
             updates["configuration_url"] = url
+        data = self.config_entry.data
+        manufacturer = data.get(CONF_BRAND) or MANUFACTURER
+        if device.manufacturer != manufacturer:
+            updates["manufacturer"] = manufacturer
+        model = data.get(CONF_MODEL_NAME) or self.product_code
+        if device.model != model:
+            updates["model"] = model
+        if device.model_id != self.product_code:
+            updates["model_id"] = self.product_code
         if updates:
             registry.async_update_device(device.id, **updates)
 
@@ -1470,6 +1481,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.hass.config_entries.async_update_entry(
             self.config_entry, data={**data, **updates}
         )
+        self._sync_device_registry()
 
     async def _async_cloud_creds(self) -> CloudControlCreds | None:
         """Fully-derived cloud-control CONNECT credentials from the entry, or None if the entry

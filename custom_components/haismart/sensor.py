@@ -322,17 +322,19 @@ class HaismartSupportedAttributesSensor(HaismartStaticSensor):
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.device_id}_supported_attributes"
 
-    @property
-    def native_value(self) -> int | None:
+    def _attr_names(self) -> list[str]:
         model = self.coordinator.digital_model or {}
-        names = [a.get("name") for a in model.get("attributes") or () if a.get("name")]
-        return len(names) or None
+        return [a.get("name") for a in model.get("attributes") or () if a.get("name")]
+
+    @property
+    def native_value(self) -> str | None:
+        names = self._attr_names()
+        return ", ".join(names) if names else None
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        model = self.coordinator.digital_model or {}
-        names = [a.get("name") for a in model.get("attributes") or () if a.get("name")]
-        return {"attributes": names}
+        names = self._attr_names()
+        return {"count": len(names), "attributes": names}
 
 
 class HaismartModelIdSensor(HaismartStaticSensor):

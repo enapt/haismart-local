@@ -21,7 +21,7 @@ from haismart_extractor import HaierCloud
 from homeassistant.components.climate import ClimateEntityFeature
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     async_fire_time_changed,
@@ -2310,12 +2310,20 @@ async def test_co_commands_never_override_an_explicit_choice(
     assert _sent_field(mock_uss.send, "windSpeed") == 5
 
 
-async def test_controls_the_unit_ignores_go_unavailable(hass: HomeAssistant, mock_uss) -> None:
+async def test_controls_the_unit_ignores_stay_readable_and_refuse_the_command(
+    hass: HomeAssistant, mock_uss
+) -> None:
     """A unit in fan-only discards its setpoint, boost, quiet and sleep — its own model says so.
 
-    Offering those controls anyway is how an owner ends up believing a setting took effect. The
-    switches go unavailable, and the climate entity drops the temperature control rather than the
-    whole entity, which would take the mode and power with it.
+    Offering those controls as if they worked is how an owner ends up believing a setting took
+    effect. Taking the entities away is not the answer either: the settings are still perfectly
+    readable, so an unavailable entity reads as a fault and leaves a gap in the history for as long
+    as the mode lasts. They stay, showing the truth, and the *command* is refused with the reason
+    the model gives.
+
+    The climate entity drops the temperature control rather than the whole entity — that is the
+    mechanism Home Assistant provides for exactly this, and why the thermostat looks right while
+    the switches looked broken.
     """
     mock_uss.read.return_value = [make_status_frame(mode_code=6, fan_code=3)]  # fan-only
     entry = _entry(digital_model=json.dumps(locking_digital_model()))
@@ -2326,10 +2334,25 @@ async def test_controls_the_unit_ignores_go_unavailable(hass: HomeAssistant, moc
     assert entry.runtime_data.locked_fields == {
         "targetTemperature", "silentSleepStatus", "muteStatus", "rapidMode", "ecoMode",
     }
-    for key in ("sleep", "quiet", "strong"):
-        assert hass.states.get(f"switch.downstairs_ac_{key}").state == "unavailable"
-    assert hass.states.get("switch.downstairs_ac_health").state != "unavailable"
-    assert hass.states.get("select.downstairs_ac_eco").state == "unavailable"
+    # readable throughout — a locked setting is a normal operating state, not a fault
+    for key in ("sleep", "quiet", "strong", "health"):
+        assert hass.states.get(f"switch.downstairs_ac_{key}").state not in (
+            "unavailable", "unknown",
+        )
+    assert hass.states.get("select.downstairs_ac_eco").state not in ("unavailable", "unknown")
+
+    # ...and the command is refused, naming the condition rather than failing blankly
+    with pytest.raises(ServiceValidationError) as err:
+        await hass.services.async_call(
+            "switch", "turn_on",
+            {"entity_id": "switch.downstairs_ac_quiet"}, blocking=True,
+        )
+    assert "fan-only" in str(err.value) or "current state" in str(err.value)
+
+    # a control the model does NOT lock in this mode still works
+    await hass.services.async_call(
+        "switch", "turn_on", {"entity_id": "switch.downstairs_ac_health"}, blocking=True,
+    )
 
     climate = hass.states.get(CLIMATE)
     assert climate.state == "fan_only"                          # the entity itself still works
@@ -2396,8 +2419,8 @@ async def test_locking_is_a_no_op_without_a_model(hass: HomeAssistant, mock_uss)
 
 
 async def test_sleep_does_not_strand_the_preset_control(hass: HomeAssistant, mock_uss) -> None:
-    """Sleep locks boost, so the Strong SWITCH goes unavailable — but Boost must stay selectable as
-    a preset, because a preset write clears sleep in the very same command. Filtering it out there
+    """Sleep locks boost, so the Strong SWITCH refuses — but Boost must stay selectable as a
+    preset, because a preset write clears sleep in the very same command. Filtering it out there
     would leave a unit stuck in whichever preset it was last given."""
     frame = make_status_frame()
     frame = bytes(frame[:97] + bytes([frame[97] | 0x20]) + frame[98:])   # sleep bit on
@@ -2409,7 +2432,10 @@ async def test_sleep_does_not_strand_the_preset_control(hass: HomeAssistant, moc
     await hass.async_block_till_done()
 
     assert "rapidMode" in entry.runtime_data.locked_fields
-    assert hass.states.get("switch.downstairs_ac_strong").state == "unavailable"
+    with pytest.raises(ServiceValidationError):
+        await hass.services.async_call(
+            "switch", "turn_on", {"entity_id": "switch.downstairs_ac_strong"}, blocking=True,
+        )
 
     climate = hass.states.get(CLIMATE)
     assert climate.attributes["preset_mode"] == "sleep"
@@ -2439,7 +2465,11 @@ async def test_recorded_rules_reach_a_unit_whose_model_arrived_without_them(
     await hass.async_block_till_done()
 
     assert "targetTemperature" in entry.runtime_data.locked_fields
-    assert hass.states.get("switch.downstairs_ac_quiet").state == "unavailable"
+    # and the lock reaches the entities: quiet is locked in fan-only, so the command is refused
+    with pytest.raises(ServiceValidationError):
+        await hass.services.async_call(
+            "switch", "turn_on", {"entity_id": "switch.downstairs_ac_quiet"}, blocking=True,
+        )
 
 
 async def test_setting_up_a_credentialed_entry_makes_no_real_request(

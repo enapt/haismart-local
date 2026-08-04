@@ -105,13 +105,19 @@ your unit's own model: the modes and fan speeds it really has, the setpoint rang
 positions its vanes can hold, and the rules saying which settings it ignores in which state. That is
 why a heat pump gets Heat and a cooling-only unit does not, without anyone maintaining a list.
 
-**Some controls come and go with the mode, and that is deliberate.** Air conditioners ignore certain
-settings in certain states — a unit in fan-only discards the temperature you set, and most of them
-ignore boost while dehumidifying. Your unit's own model says which, so those controls go
-*unavailable* while they would have no effect, and the temperature disappears from the thermostat
-card rather than sitting there accepting numbers the unit throws away. A unit reporting a fault
-keeps only its power and mode controls. Nothing is hidden while the AC is merely switched off — that
-is when you are most likely to be setting it up.
+**Some settings only apply in some modes, and the integration knows which.** Air conditioners ignore
+certain settings in certain states — a unit in fan-only discards the temperature you set, and most
+of them ignore boost while dehumidifying. Your unit's own model says which.
+
+Those controls **stay visible and keep showing their real state**; what changes is that the command
+is refused, naming the reason — *"Eco does not accept that setting: not available in fan-only
+mode"*. They are not marked unavailable, because a setting your AC ignores in its current mode is
+normal operation, not a fault: flagging it made a working system look broken, and took the reading
+and its history away for as long as the mode lasted. The one thing that does disappear is the
+temperature on the thermostat card, which is the mechanism Home Assistant provides for exactly this
+— better than a box that accepts numbers the unit throws away. A unit reporting a fault refuses its
+settings the same way. Nothing is restricted while the AC is merely switched off — that is when you
+are most likely to be setting it up.
 
 The climate entity also carries **presets** for the three comfort modes — eco, sleep and boost — so
 they work from the thermostat card, from a voice assistant and from `climate.set_preset_mode`, not

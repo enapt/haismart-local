@@ -315,9 +315,14 @@ enter from the issue, which is why they are collected there.
 
 ## The one rule we decline to honour
 
-`locked_attributes` drives entity availability: a unit in fan-only shows no setpoint, boost and quiet
-go unavailable in the modes that discard them, and a faulted unit keeps only its power and mode
-controls.
+`locked_attributes` decides which commands a unit will discard: a unit in fan-only shows no setpoint,
+boost and quiet refuse in the modes that discard them, and a faulted unit accepts only power and
+mode.
+
+⚠️ It used to drive entity **availability** as well, and that was wrong — see item 24. A setting the
+unit ignores in its current mode is normal operation, so the entity stays and the *command* is
+refused. The setpoint is still dropped from the thermostat, because a climate entity has a real
+mechanism for that.
 
 The rules are fetched per device, from the model its own maker publishes. A device's shadow — what
 onboarding used to store on its own — carries attributes and their values but no rules at all, so
@@ -459,9 +464,10 @@ unchanged on a unit whose rules previously came from the cloud. All three were r
 - **The shipped copy and the fetched copy agree** on the device's identity
   (`model_rules_agreement: agree`), which is the check that exists because a fetched copy is matched
   on the very code that would be wrong if it were wrong.
-- **Availability is unchanged and correctly conditional**: in fan-only the unit locks
+- **Locking is unchanged and correctly conditional**: in fan-only the unit locks
   `targetTemperature`, `ecoMode`, `muteStatus`, `rapidMode` and `silentSleepStatus`, and exactly
-  those entities are unavailable.
+  those commands are refused. (At the time this was checked those entities went *unavailable*; item
+  24 changed that to a refusal, without changing which fields lock.)
 
 ⚠️ **Verified on one unit of one family.** The shipped rules cover 171 products; this exercises the
 path, not the table.
@@ -804,3 +810,45 @@ family, so the path stays dormant on them by design. It is proven on real captur
 the offset from the identifier alone reproduces the confirmed decoder on every shared field — not
 against hardware nobody has mapped. The first reporter whose diagnostics show a resolved layout
 instead of a partial decode is the real test.
+
+## 24. A setting the unit ignores is not a fault — settled
+
+**Status: fixed in v0.36.0, confirmed on hardware in both modes. Recorded because the wrong
+behaviour was deliberate, defensible, and still wrong.**
+
+A control the unit discards in its current mode used to be marked **unavailable**. The reasoning was
+sound as far as it went: a switch that reports "on" and changes nothing is worse than one that says
+it cannot be used. But `available` in Home Assistant means *the state cannot be read* — and these
+states read perfectly. Using it for "cannot be set right now" produced three problems at once:
+
+- the dashboard showed a warning, so a working system looked broken, every time the unit sat in
+  fan-only;
+- the reading and its history vanished for as long as the mode lasted;
+- **no reason could be shown**, because Home Assistant has nowhere to attach one to an unavailable
+  entity — so the explanation the model publishes could never reach the person looking at it.
+
+The controls now stay, showing the truth, and the *command* is refused with the model's own words:
+*"Eco does not accept that setting: not available in fan-only mode"*. Nothing silently does nothing,
+which is the thing the original design was right to avoid.
+
+**Where the refusal lives matters.** It is on the entity, not in `async_send_control`. Commands are
+deliberately not gated centrally: a model marks almost everything unwritable while a unit is off,
+including the mode, and turning a unit on *is* a write of the mode — which real hardware accepts. An
+entity knows which field it is and refuses only for itself.
+
+**The self-clean button is deliberately different** and still goes unavailable. A button has no
+reading and no history to lose — it is an action, not a state — and a disabled button is already how
+Home Assistant says "not now". The switches went unavailable while still perfectly readable, which
+is what made them look like a fault.
+
+⚠️ **This was only half the bug.** The reason text did not exist either. The sentences were being
+merged from the catalogue, but the *code* selecting one lives on each rule, and gap-filling only
+fills empty sections — a signed-in install has rules, so nothing was filled, and a device's own
+account states no code on any rule. Every signed-in install shipped the phrasebook with no phrases.
+Rules now adopt the code from their catalogue twin, matched on trigger. That cannot change what is
+locked: a code labels a rule that has already fired.
+
+**Verified on hardware, both directions.** In fan-only: 26 entities, none flagged, `locked_fields`
+naming five, and setting Eco or Quiet refused with the reason. In cool: same 26 entities, no locks,
+and Eco set to `level1` and back to `off` on the real unit. No entity changes state between modes,
+so switching modes leaves no history gap and no automation sees an entity blink out.

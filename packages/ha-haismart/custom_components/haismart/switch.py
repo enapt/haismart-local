@@ -67,16 +67,19 @@ class HaismartSwitch(HaismartEntity, SwitchEntity):
 
     @property
     def available(self) -> bool:
-        """Unavailable while the unit's own model says this setting is ignored.
+        """Available whenever the unit is; a setting it currently ignores is not a fault.
 
         Boost in dry mode, quiet in fan-only, anything at all while a fault is active: the model
-        states which settings a unit discards in which state, and a switch that reports "on" and
-        changes nothing is worse than one that says it cannot be used right now.
+        states which settings a unit discards in which state. Those used to make the switch
+        unavailable, which reads in the dashboard as something being broken, and takes the reading
+        and its history away for as long as the mode lasts. The state is still perfectly readable
+        throughout.
+
+        So the switch stays, showing the truth, and the *command* is refused with the model's own
+        reason (:meth:`HaismartEntity.raise_if_locked`). Nothing silently does nothing, which is the
+        thing actually worth avoiding.
         """
-        return (
-            super().available
-            and self.entity_description.field not in self.coordinator.locked_fields
-        )
+        return super().available
 
     @property
     def is_on(self) -> bool | None:
@@ -84,7 +87,9 @@ class HaismartSwitch(HaismartEntity, SwitchEntity):
         return None if value is None else bool(value)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
+        self.raise_if_locked(self.entity_description.field)
         await self.coordinator.async_send_control({self.entity_description.field: 1})
 
     async def async_turn_off(self, **kwargs: Any) -> None:
+        self.raise_if_locked(self.entity_description.field)
         await self.coordinator.async_send_control({self.entity_description.field: 0})

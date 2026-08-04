@@ -92,10 +92,10 @@ class HaismartEcoSelect(HaismartEntity, SelectEntity):
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.device_id}_eco"
 
-    @property
-    def available(self) -> bool:
-        # The model states when a unit ignores its economy setting -- fan-only and auto both do.
-        return super().available and "ecoMode" not in self.coordinator.locked_fields
+    # No `available` override. The model states when a unit ignores its economy setting -- fan-only
+    # and auto both do -- but that is a normal operating state, not a fault, and it is what the
+    # setting still reads as. Going unavailable said "broken" and lost the reading; the command is
+    # refused instead, with the model's own reason.
 
     @property
     def current_option(self) -> str | None:
@@ -103,6 +103,7 @@ class HaismartEcoSelect(HaismartEntity, SelectEntity):
         return None if value is None else _ECO_REVERSE.get(value)
 
     async def async_select_option(self, option: str) -> None:
+        self.raise_if_locked("ecoMode")
         code = _ECO.get(option)
         if code is None:
             raise ServiceValidationError(
@@ -146,10 +147,9 @@ class HaismartVaneSelect(HaismartEntity, SelectEntity):
         positions = sorted(codes - {self._vane.fixed, self._vane.auto})
         return f"position_{positions.index(code) + 1}"
 
-    @property
-    def available(self) -> bool:
-        # A faulted unit, or one running a self-clean cycle, will not move its vanes.
-        return super().available and self._vane.field not in self.coordinator.locked_fields
+    # No `available` override, for the same reason as the economy setting above: a faulted unit, or
+    # one running a self-clean cycle, will not move its vanes -- but it still reports where they
+    # are, and that reading is worth keeping. The command is refused instead.
 
     @property
     def current_option(self) -> str | None:
@@ -163,6 +163,7 @@ class HaismartVaneSelect(HaismartEntity, SelectEntity):
         return option if option in self._codes else None
 
     async def async_select_option(self, option: str) -> None:
+        self.raise_if_locked(self._vane.field)
         code = self._codes.get(option)
         if code is None:
             raise ServiceValidationError(

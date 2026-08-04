@@ -51,6 +51,12 @@ class HaismartSelfCleanButton(HaismartEntity, ButtonEntity):
         faulted — the exact states the hardware would drop the op in — and ``locked_fields`` already
         evaluates them. So the button disables itself in those states rather than fire an op that
         does nothing.
+
+        Unlike the switches and selects, this one really does go unavailable, and the difference is
+        not an oversight. A button has no reading and no history to lose — it is an action, not a
+        state — so nothing is taken away by greying it, and a disabled button is how Home Assistant
+        already says "not now". Those entities went unavailable while still perfectly readable,
+        which is what made it look like a fault.
         """
         return (
             super().available

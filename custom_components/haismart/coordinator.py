@@ -113,6 +113,7 @@ GATEWAY_TIMEOUT = 8.0
 
 # Per-request timeout for the cloud control channel (one TLS connect + one round-trip).
 CLOUD_CONTROL_TIMEOUT = 8.0
+CLOUD_OFFLINE_RETRY_INTERVAL = 60.0
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -357,6 +358,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # that cannot tell us reads "unknown" rather than being reported as cut off.
         self.cloud_connected: bool | None = None
         self.cloud_state: int | None = None
+        self._cloud_offline_until: float = 0.0
         # Module firmware, reported by the same query. Surfaced as the HA device's software
         # version, so it lands on the device page and in a diagnostics report without an entity.
         self.firmware: str | None = None
@@ -409,12 +411,29 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # to cope with it, so an unfamiliar model degrades to plain status instead of failing.
         # added without a LAN IP (cloud-only entry): skip local polling entirely -- pull the status
         # over the cloud control channel instead (works whenever the unit is online through the
-        # cloud); set/get attribute services keep working regardless.
+        # cloud); set/get attribute services keep working regardless. When the gateway reports the
+        # device offline (errNo 16), back off instead of hammering a dead unit every cycle.
         if not self.host:
+            now = self.hass.loop.time()
+            if now < self._cloud_offline_until:
+                raise UpdateFailed(
+                    f"device {self.device_id} is offline for the cloud "
+                    f"(retrying in {CLOUD_OFFLINE_RETRY_INTERVAL:.0f}s)"
+                )
             _LOGGER.debug("no LAN host configured: attempting cloud polling")
             try:
                 return await self.async_fetch_cloud_status()
-            except (CloudControlError, HomeAssistantError, OSError, RuntimeError) as err:
+            except CloudControlError as err:
+                if err.err_no == ERR_DEVICE_OFFLINE:
+                    self._cloud_offline_until = now + CLOUD_OFFLINE_RETRY_INTERVAL
+                    _LOGGER.warning(
+                        "%s: device is offline for the cloud; cloud status retries every %.0f s",
+                        self.device_id, CLOUD_OFFLINE_RETRY_INTERVAL,
+                    )
+                else:
+                    _LOGGER.debug("cloud polling failed for %s: %s", self.device_id, err)
+                raise UpdateFailed(f"cloud status read failed: {err}") from err
+            except (HomeAssistantError, OSError, RuntimeError) as err:
                 _LOGGER.debug("cloud polling failed for %s: %s", self.device_id, err)
                 raise UpdateFailed(f"cloud status read failed: {err}") from err
         try:

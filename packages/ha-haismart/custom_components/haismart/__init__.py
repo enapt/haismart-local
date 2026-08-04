@@ -6,6 +6,7 @@ from __future__ import annotations
 # ruff: noqa: E402 - the sys.path shim below must precede the submodule imports by design.
 import os as _os
 import sys as _sys
+import logging as _logging
 
 _vendor = _os.path.join(_os.path.dirname(__file__), "vendor")
 if _vendor not in _sys.path:
@@ -16,9 +17,12 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from .const import DOMAIN, PLATFORMS
 from .coordinator import HaismartConfigEntry, HaismartCoordinator
+
+_LOGGER = _logging.getLogger(__name__)
 
 # Services are registered once per HA run, not per entry (a second entry would otherwise
 # overwrite the first's registrations and leave a dangling handler after it unloads).
@@ -80,7 +84,21 @@ async def _async_register_services(hass: HomeAssistant) -> None:
 
 async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> bool:
     coordinator = HaismartCoordinator(hass, entry)
-    await coordinator.async_config_entry_first_refresh()
+    if coordinator.host:
+        await coordinator.async_config_entry_first_refresh()
+    else:
+        # Added without a LAN IP: local polling is skipped and the device may legitimately be
+        # offline for the cloud (a washer that is simply switched off). Do not fail setup in an
+        # endless retry loop -- set up anyway and let the entities show as unavailable until the
+        # device comes online; the first successful cloud read brings them alive.
+        try:
+            await coordinator.async_config_entry_first_refresh()
+        except UpdateFailed as err:
+            _LOGGER.info(
+                "%s: added cloud-only and currently offline for the cloud (%s); "
+                "it will come online automatically",
+                entry.title, err,
+            )
 
     # A successful first read means the stored key works, so clear any stale-localKey repair left
     # over from a rotation (e.g. after a manual reauth, which reloads the entry).

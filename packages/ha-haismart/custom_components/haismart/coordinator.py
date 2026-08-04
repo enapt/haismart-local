@@ -433,6 +433,10 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # device offline (errNo 16), back off instead of hammering a dead unit every cycle.
         if not self.host:
             now = self.hass.loop.time()
+            # Keep the cloud device-list metadata fresh (online flag, static info) even while the
+            # device is offline -- the list is served by the cloud server. Self-throttled to
+            # CLOUD_META_INTERVAL and never raises; the LAN path calls it further down.
+            await self.async_refresh_cloud_meta()
             if now < self._cloud_offline_until:
                 raise UpdateFailed(
                     f"device {self.device_id} is offline for the cloud "

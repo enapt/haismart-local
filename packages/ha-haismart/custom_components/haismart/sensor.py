@@ -257,7 +257,20 @@ class HaismartSensor(HaismartEntity, SensorEntity):
         return self.entity_description.value_fn(self.coordinator.data)
 
 
-class HaismartCloudOnlineSensor(HaismartEntity, SensorEntity):
+class HaismartStaticSensor(HaismartEntity, SensorEntity):
+    """A sensor sourced from the cloud device list / config entry, not the live status.
+
+    A coordinator whose refresh is failing (a device offline for the cloud) marks every
+    CoordinatorEntity unavailable; these read metadata that is available anyway -- the digital
+    model, the device list and entry data -- so they stay usable.
+    """
+
+    @property
+    def available(self) -> bool:
+        return True
+
+
+class HaismartCloudOnlineSensor(HaismartStaticSensor):
     """Whether the unit is currently online for the Haier cloud, per the cloud device list.
 
     Sourced from the cloud SERVER, not the unit, so it is meaningful even while the device is
@@ -280,7 +293,7 @@ class HaismartCloudOnlineSensor(HaismartEntity, SensorEntity):
         return "online" if self.coordinator.cloud_online else "offline"
 
 
-class HaismartMetaSensor(HaismartEntity, SensorEntity):
+class HaismartMetaSensor(HaismartStaticSensor):
     """Static device metadata from the cloud device list (works while the unit is offline)."""
 
     def __init__(self, coordinator: HaismartCoordinator, key: str, conf_key: str) -> None:
@@ -295,7 +308,7 @@ class HaismartMetaSensor(HaismartEntity, SensorEntity):
         return self.coordinator.config_entry.data.get(self._conf_key) or None
 
 
-class HaismartSupportedAttributesSensor(HaismartEntity, SensorEntity):
+class HaismartSupportedAttributesSensor(HaismartStaticSensor):
     """The attributes this unit's digital model declares (names, not values).
 
     The digital model is served by the cloud server, so the list is available even while the
@@ -322,7 +335,7 @@ class HaismartSupportedAttributesSensor(HaismartEntity, SensorEntity):
         return {"attributes": names}
 
 
-class HaismartModelIdSensor(HaismartEntity, SensorEntity):
+class HaismartModelIdSensor(HaismartStaticSensor):
     """The AC's uPlusId — the identifier that selects its report layout.
 
     Enabled by default, unlike the localKey sensor it used to be an attribute of. The two were
@@ -370,7 +383,7 @@ class HaismartModelIdSensor(HaismartEntity, SensorEntity):
         }
 
 
-class HaismartLocalKeySensor(HaismartEntity, SensorEntity):
+class HaismartLocalKeySensor(HaismartStaticSensor):
     """The AC's current localKey, for backup/export. Diagnostic + disabled by default (a secret).
 
     Enable it to see/copy the key (it rides along in HA backups); the attributes carry all the

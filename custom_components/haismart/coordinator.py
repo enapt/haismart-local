@@ -355,7 +355,48 @@ def _fill_gaps(
     for section, value in bundled.items():
         if not merged.get(section) and value:
             merged[section] = value
+    merged["modifiers"] = _with_invalid_codes(
+        merged.get("modifiers"), bundled.get("modifiers")
+    )
     return merged
+
+
+def _with_invalid_codes(
+    fetched: list[dict[str, Any]] | None, bundled: list[dict[str, Any]] | None
+) -> list[dict[str, Any]] | None:
+    """The fetched rules, each given the reason code its catalogue twin states.
+
+    Filling whole empty sections is not enough for the lock explanations, and the reason is easy to
+    miss: the sentences live in `invalid_reasons` but the *code* selecting one lives on the rule
+    itself, and a signed-in install has rules -- so that section is not empty, nothing is filled,
+    and the account copy states no code on any rule. The sentences arrive with nothing pointing at
+    them. Controls then grey out correctly and can never say why, which is how this integration
+    shipped for every signed-in install.
+
+    Rules are matched on their **trigger**, which is what identifies one: the same condition on the
+    same attributes is the same rule, whichever publication it came from. The action lists are
+    allowed to differ -- they do, since the catalogue names attributes the account copy omits -- and
+    nothing about them is copied. Only a missing code is added, so a rule that states its own keeps
+    it.
+
+    This cannot change what is locked. A code labels a rule that has already fired; locking is
+    decided from `actions` and `trigger`, neither of which is touched here.
+    """
+    if not fetched or not bundled:
+        return fetched
+    by_trigger = {
+        json.dumps(m.get("trigger"), sort_keys=True): m.get("invalid_code")
+        for m in bundled
+        if m.get("invalid_code")
+    }
+    out = []
+    for rule in fetched:
+        if not rule.get("invalid_code") and (
+            code := by_trigger.get(json.dumps(rule.get("trigger"), sort_keys=True))
+        ):
+            rule = {**rule, "invalid_code": code}
+        out.append(rule)
+    return out
 
 
 class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):

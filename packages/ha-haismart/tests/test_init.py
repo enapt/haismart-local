@@ -3101,3 +3101,78 @@ async def test_diagnostics_says_whether_the_units_real_feature_set_is_known(
     )
     assert known["feature_set_known"] is True
     assert known["invisible_attributes"] == ["freshAirStatus"]
+
+
+async def test_a_lock_rule_gains_the_reason_code_its_catalogue_twin_states() -> None:
+    """Filling empty sections is not enough to explain a lock, and the reason is easy to miss.
+
+    The sentences live in `invalid_reasons`, but the *code* choosing one lives on the rule itself.
+    A signed-in install has rules, so that section is not empty, so nothing is filled — and the
+    account copy states no code on any rule. The sentences arrive with nothing pointing at them,
+    which is why controls greyed out correctly and could never say why.
+
+    Rules are matched on their trigger, since that is what identifies a rule. Action lists are
+    allowed to differ — they do — and nothing about them is copied, so this can never change what
+    is locked.
+    """
+    from haismart_hrdp import lock_reasons
+
+    from custom_components.haismart.coordinator import _fill_gaps
+
+    fan_only = {"operator": "AND", "conditions": {"operationMode": ["6"]}}
+    fetched = {
+        "attributes": [{"name": "operationMode"}],
+        # as a device's own account publishes them: no invalid_code anywhere
+        "modifiers": [
+            {"priority": 4, "trigger": fan_only,
+             "actions": [{"name": "targetTemperature", "writable": False}]},
+        ],
+    }
+    bundled = {
+        "invalid_reasons": {"50009": "not available in fan-only mode"},
+        "modifiers": [
+            # the same rule, and it names more attributes than the account copy does
+            {"priority": 4, "trigger": fan_only, "invalid_code": "50009",
+             "actions": [{"name": "targetTemperature", "writable": False},
+                         {"name": "generatorMode", "writable": False}]},
+        ],
+    }
+
+    merged = _fill_gaps(fetched, bundled)
+    rule = merged["modifiers"][0]
+    assert rule["invalid_code"] == "50009"
+    assert rule["actions"] == fetched["modifiers"][0]["actions"], (
+        "only the code may be adopted — the actions decide what is locked"
+    )
+
+    # end to end: the lock can now say why, in the state that triggers it
+    assert lock_reasons(merged, {"operationMode": "6"}) == {
+        "targetTemperature": "not available in fan-only mode"
+    }
+    # and without the fix there is nothing to say
+    assert lock_reasons(fetched, {"operationMode": "6"}) == {"targetTemperature": ""}
+
+
+async def test_a_rule_that_states_its_own_reason_keeps_it() -> None:
+    """Only a missing code is filled in; a rule that names one is left alone."""
+    from custom_components.haismart.coordinator import _fill_gaps
+
+    trigger = {"operator": "AND", "conditions": {"operationMode": ["6"]}}
+    fetched = {"modifiers": [{"trigger": trigger, "invalid_code": "50001", "actions": []}]}
+    bundled = {"modifiers": [{"trigger": trigger, "invalid_code": "50009", "actions": []}]}
+    assert _fill_gaps(fetched, bundled)["modifiers"][0]["invalid_code"] == "50001"
+
+
+async def test_an_unmatched_rule_is_left_without_a_reason_rather_than_given_a_wrong_one() -> None:
+    """A trigger with no twin gets nothing. A wrong explanation is worse than none, and the lock
+    itself does not depend on having one."""
+    from custom_components.haismart.coordinator import _fill_gaps
+
+    fetched = {"modifiers": [
+        {"trigger": {"operator": "AND", "conditions": {"operationMode": ["2"]}}, "actions": []}
+    ]}
+    bundled = {"modifiers": [
+        {"trigger": {"operator": "AND", "conditions": {"operationMode": ["6"]}},
+         "invalid_code": "50009", "actions": []}
+    ]}
+    assert "invalid_code" not in _fill_gaps(fetched, bundled)["modifiers"][0]

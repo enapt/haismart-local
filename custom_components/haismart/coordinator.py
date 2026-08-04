@@ -612,7 +612,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         updates: dict[str, Any] = {}
         if self.firmware and device.sw_version != self.firmware:
             updates["sw_version"] = self.firmware
-        url = f"http://{self.host}"
+        url = f"http://{self.host}" if self.host else None
         if device.configuration_url != url:
             updates["configuration_url"] = url
         data = self.config_entry.data

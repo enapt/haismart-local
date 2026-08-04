@@ -39,5 +39,7 @@ class HaismartEntity(CoordinatorEntity[HaismartCoordinator]):
             # Reported by the AC over the key-free UDISCOVERY query; absent on units that don't
             # answer it, in which case HA simply shows no firmware version.
             sw_version=coordinator.firmware,
-            configuration_url=f"http://{coordinator.host}",
+            # Empty host = cloud-only entry (no LAN address), which has no configuration URL;
+            # a blank "http://" is rejected by the HA device registry and kills entity creation.
+            configuration_url=f"http://{coordinator.host}" if coordinator.host else None,
         )

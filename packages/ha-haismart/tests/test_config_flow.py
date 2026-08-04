@@ -1322,3 +1322,39 @@ async def test_attaching_an_account_to_a_hand_added_entry_stops_the_key_going_st
     assert entry.data[CONF_HOST] == "192.168.1.50"
     assert entry.data[CONF_DEVICE_ID] == "A1B2C3D4E5F6"
     assert entry.data[CONF_LOCAL_KEY] == LOCAL_KEY
+
+
+async def test_the_model_shortlist_is_decompressed_off_the_event_loop(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The shortlist comes out of a gzipped bundle, and a first install opens it here.
+
+    The coordinator warms that cache when an entry is set up, but on a first install there is no
+    entry yet — this flow is the first thing to touch the bundle. Reading it straight from the step
+    decompresses a file on the event loop, which Home Assistant reports as a blocking call against
+    this integration. So the warm-up has to happen here too, in an executor.
+    """
+    from custom_components.haismart import config_flow
+
+    handed_to_executor: list[object] = []
+    original = hass.async_add_executor_job
+
+    def _record(target, *args):
+        handed_to_executor.append(target)
+        return original(target, *args)
+
+    hass.async_add_executor_job = _record
+    try:
+        flow_id = await _start_manual(hass)
+        with _reports_uplus_id():
+            result = await hass.config_entries.flow.async_configure(
+                flow_id, {CONF_HOST: "192.168.1.50", CONF_LOCAL_KEY: LOCAL_KEY}
+            )
+    finally:
+        hass.async_add_executor_job = original
+
+    assert result["step_id"] == "model"
+    # The claim is precisely this: the bundle read was handed to the executor rather than run on
+    # the loop. Asserting only that the warm-up "happened" would pass just as well for the inline
+    # call that is the bug.
+    assert config_flow._preload_model_rules in handed_to_executor

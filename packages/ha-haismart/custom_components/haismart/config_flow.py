@@ -40,6 +40,9 @@ from haismart_hrdp.model_rules import (
     models_for_uplus_id,
     product_for_model,
 )
+from haismart_hrdp.model_rules import (
+    preload as _preload_model_rules,
+)
 from homeassistant.config_entries import (
     ConfigFlow,
     ConfigFlowResult,
@@ -732,6 +735,11 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                         CONF_PRODUCT_CODE
                     ]
                     return await self._async_finish_manual()
+                # The shortlist is read out of a gzipped bundle. On a first install nothing has
+                # opened it yet -- the coordinator's own warm-up only runs once an entry exists --
+                # so decompressing it here would be blocking I/O on the event loop. Warm it in an
+                # executor first; a no-op every time after.
+                await self.hass.async_add_executor_job(_preload_model_rules)
                 self._model_choices = models_for_uplus_id(
                     self._cloud_data.get(CONF_UPLUS_ID)
                 )

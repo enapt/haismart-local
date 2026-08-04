@@ -312,6 +312,17 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         self._local_key: str | None = None
         self._localkey_version: int | None = None
 
+    def _zone_from_signed_in_account(self) -> str | None:
+        """The region a previously added appliance's account reported, if there is one.
+
+        Stored at sign-in from the server's own answer, so on a second appliance it is known
+        rather than guessed. Newest entry first.
+        """
+        for entry in reversed(self.hass.config_entries.async_entries(DOMAIN)):
+            if entry.data.get(CONF_REFRESH_TOKEN) and (zone := entry.data.get(CONF_ZONE_INFO)):
+                return str(zone)
+        return None
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -370,7 +381,14 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                         reason="no_devices",
                         description_placeholders={"username": user_input[CONF_USERNAME]},
                     )
-        default_zone = default_dial_code(self.hass.config.country)
+        # Prefer the region an account already signed in reported for itself. The server states it
+        # at sign-in and it is stored, so on a second appliance the answer is known -- and it beats
+        # Home Assistant's country, which says where the installation is rather than where the
+        # account was registered. Nothing about the region can be discovered without it: no cloud
+        # call answers, so the first sign-in has to ask.
+        default_zone = self._zone_from_signed_in_account() or default_dial_code(
+            self.hass.config.country
+        )
         zone_field = (
             vol.Required(CONF_ZONE_INFO, default=default_zone)
             if default_zone

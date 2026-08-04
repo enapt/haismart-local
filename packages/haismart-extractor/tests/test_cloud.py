@@ -633,3 +633,56 @@ async def test_search_products_sends_the_paging_parameters_and_reads_the_rows() 
 
     assert data["prodInfos"][0]["prodNo"] == "AAC1UKZ01"
     assert seen[0] == {"index": 40, "count": 20, "appTypeCode": "A177"}   # capped, and no blanks
+
+
+# --- the product catalogue is REGION-scoped -----------------------------------------
+
+
+async def test_ac_product_catalogue_is_parsed_and_paged() -> None:
+    """Rows come from `data.prodInfos`, and a full appliance type is paged, not truncated.
+
+    Reading a different key made a first sweep report zero products for models that were there, so
+    this pins the shape as well as the paging.
+    """
+    def page(rows: list[dict]) -> str:
+        return json.dumps({"retCode": "00000", "data": {"prodInfos": rows, "brands": []}})
+
+    first = [{"prodNo": f"AAA{n:05d}", "model": f"HSU-{n}", "appTypeCode": "A120",
+              "appTypeName": "Central", "brand": "Haier"} for n in range(20)]
+    second = [{"prodNo": "AACVX7E00", "model": "HSU-24HFAB/013WUSDC(W)-T3",
+               "appTypeCode": "A120", "appTypeName": "Central", "brand": "Haier"}]
+    bodies = [page(first), page(second)] + [page([])] * 6
+    seen: list[Request] = []
+
+    async def transport(request: Request) -> Response:
+        seen.append(request)
+        return Response(200, bodies[len(seen) - 1])
+
+    cloud = HaierCloud(AppCredentials("a", "k", "c"), "T", zone_info="92", transport=transport)
+    rows = await cloud.list_ac_products()
+
+    assert len(rows) == 21                       # the full page plus the next one
+    assert rows[-1].product_code == "AACVX7E00"
+    assert rows[-1].model == "HSU-24HFAB/013WUSDC(W)-T3"
+    # a full page is followed up; a short one ends that appliance type
+    assert json.loads(seen[0].body)["index"] == 0
+    assert json.loads(seen[1].body)["index"] == 20
+    # ...and the region the account registered with travels with every request -- as a header, on
+    # every device-center call -- because it is what decides which products the catalogue answers
+    # with at all
+    assert all(r.headers["zoneInfo"] == "92" for r in seen)
+
+
+async def test_catalogue_search_passes_the_model_number_as_keys() -> None:
+    """The server's own keyword search matches model numbers; product codes return nothing."""
+    seen: list[Request] = []
+
+    async def transport(request: Request) -> Response:
+        seen.append(request)
+        return Response(200, json.dumps({"retCode": "00000", "data": {"prodInfos": []}}))
+
+    cloud = HaierCloud(AppCredentials("a", "k", "c"), "T", zone_info="66", transport=transport)
+    await cloud.list_ac_products(model="HSU-24HFAB")
+
+    assert json.loads(seen[0].body)["keys"] == "HSU-24HFAB"
+    assert seen[0].headers["zoneInfo"] == "66"

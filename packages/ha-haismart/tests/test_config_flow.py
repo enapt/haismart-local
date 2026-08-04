@@ -1358,3 +1358,70 @@ async def test_the_model_shortlist_is_decompressed_off_the_event_loop(
     # the loop. Asserting only that the warm-up "happened" would pass just as well for the inline
     # call that is the bug.
     assert config_flow._preload_model_rules in handed_to_executor
+
+
+async def test_a_model_number_from_another_region_resolves_through_the_account(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The shipped catalogue is one region's, so an owner elsewhere types a number it never knew.
+
+    The catalogue answers according to the dialling code the account registered with, and the
+    regions publish very different sets -- the number on the first 209-byte appliance reported here
+    resolves to nothing under this project's own region and resolves exactly under its owner's. So a
+    number the bundle cannot place is put to the account's own region before being kept verbatim.
+    """
+    from unittest.mock import AsyncMock, patch
+
+    from haismart_extractor.cloud import CatalogueProduct
+
+    from custom_components.haismart.const import (
+        CONF_ACCESS_TOKEN,
+        CONF_CLOUD_CLIENT_ID,
+        CONF_REFRESH_TOKEN,
+        CONF_ZONE_INFO,
+    )
+
+    flow_id = await _start_manual(hass)
+    flow = hass.config_entries.flow._progress[flow_id]
+    flow._cloud_data = {
+        CONF_REFRESH_TOKEN: "2_RT",
+        CONF_CLOUD_CLIENT_ID: "c" * 32,
+        CONF_ACCESS_TOKEN: "T",
+        CONF_ZONE_INFO: "92",
+    }
+    listed = AsyncMock(return_value=[
+        CatalogueProduct(product_code="AACVX7E00", model="HSU-24HFAB/013WUSDC(W)-T3")
+    ])
+    with (
+        patch("custom_components.haismart.config_flow.HaierCloud.refresh_token",
+              new=AsyncMock(return_value=type("R", (), {"access_token": "T2"})())),
+        patch("custom_components.haismart.config_flow.HaierCloud.list_ac_products", new=listed),
+    ):
+        result = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_PRODUCT_CODE: "HSU-24HFAB/013WUSDC(W)-T3"}
+        )
+        await hass.async_block_till_done()
+
+    assert result["data"][CONF_PRODUCT_CODE] == "AACVX7E00"
+    assert listed.await_args.kwargs["model"] == "HSU-24HFAB/013WUSDC(W)-T3"
+
+
+async def test_a_hand_made_entry_never_reaches_for_the_region_catalogue(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """No account, no lookup: an offline install keeps whatever the owner typed."""
+    from unittest.mock import AsyncMock, patch
+
+    flow_id = await _start_manual(hass)
+    with patch(
+        "custom_components.haismart.config_flow.HaierCloud.list_ac_products", new=AsyncMock()
+    ) as listed:
+        result = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_PRODUCT_CODE: "HSU-SOMETHING-UNKNOWN"}
+        )
+        await hass.async_block_till_done()
+
+    assert listed.await_count == 0
+    assert result["data"][CONF_PRODUCT_CODE] == "HSU-SOMETHING-UNKNOWN"

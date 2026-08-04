@@ -150,6 +150,27 @@ class RefreshResult:
         )
 
 
+# The appliance types the product catalogue files air conditioners under.
+AC_APP_TYPE_CODES = ("A120", "A177", "A178")   # central / wall mounted / floor standing
+
+
+@dataclass(frozen=True)
+class CatalogueProduct:
+    """One row of the published product catalogue: the join between a **model number** printed on an
+    appliance and the **product code** its rules are keyed by.
+
+    That join exists nowhere else. A product code is opaque and an appliance never announces one, so
+    a catalogue row is the only route from what an owner can read off a label to what the rule
+    layer needs.
+    """
+
+    product_code: str
+    model: str
+    app_type: str = ""
+    app_type_name: str = ""
+    brand: str = ""
+
+
 @dataclass(frozen=True)
 class LoginResult:
     """Result of an email/password account login (`HaierCloud.login`).
@@ -783,6 +804,53 @@ class HaierCloud:
         return self._checked(
             await self.post(self.domains.uhome, PRODUCT_SEARCH_PATH, payload), "product search"
         )
+
+    async def list_ac_products(
+        self, *, model: str = "", limit: int = 400
+    ) -> list[CatalogueProduct]:
+        """Air conditioners the catalogue publishes **for this account's region**, parsed.
+
+        ⚠️ The region is not a detail: this catalogue is scoped by the ``zoneInfo`` header every
+        device-center call carries -- the dialling code the account registered with. Asked as a
+        Thai account it
+        answers with 171 air conditioners; asked as a Pakistani one it answers with a different set,
+        and a model absent from the first is present in the second. So a lookup that ignores the
+        region can report a real appliance as unpublished -- which is exactly what happened to the
+        first 209-byte unit reported here.
+
+        ``model`` is passed to the server's own keyword search (its ``keys`` parameter), which
+        matches model numbers rather than product codes: searching for a product code returns
+        nothing, searching for the number on the label returns its row.
+
+        Rows come from ``data.prodInfos``. Reading a different key -- there is no ``productList`` --
+        made a first pass report zero rows for a product that was there, so the shape is parsed here,
+        once, rather than in each caller.
+        """
+        out: list[CatalogueProduct] = []
+        seen: set[str] = set()
+        for app_type in AC_APP_TYPE_CODES:
+            index = 0
+            while len(out) < limit:
+                reply = await self.search_products(
+                    index=index, count=20, keys=model, app_type_code=app_type
+                )
+                rows = ((reply.get("data") or {}).get("prodInfos")) or []
+                for row in rows:
+                    code = row.get("prodNo")
+                    if not code or code in seen:
+                        continue
+                    seen.add(code)
+                    out.append(CatalogueProduct(
+                        product_code=code,
+                        model=row.get("model") or "",
+                        app_type=row.get("appTypeCode") or "",
+                        app_type_name=row.get("appTypeName") or "",
+                        brand=row.get("brand") or "",
+                    ))
+                if len(rows) < 20:
+                    break
+                index += 20
+        return out
 
     async def get_device_model(self, device_id: str) -> dict:
         """Device capability model — `/dcs/.../model-info/find/info` (confirmed). Drives the

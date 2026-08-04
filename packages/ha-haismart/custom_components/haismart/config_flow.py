@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import json
 import logging
+from dataclasses import replace
 from functools import partial
 from typing import TYPE_CHECKING, Any
 
@@ -650,6 +651,46 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
             _LOGGER.debug("no published model for product code %s: %s", product_code, err)
             return None
 
+    async def _async_region_product_code(self, model: str) -> str | None:
+        """The product code for a model number, from **this account's own region catalogue**.
+
+        The shipped catalogue is one region's. That is not a shortcoming of the sweep behind it but
+        a property of the endpoint: it answers according to the dialling code the account registered
+        with, and the regions publish different -- sometimes wildly different -- sets. So a model
+        number that resolves to nothing here may be perfectly well published for the owner asking,
+        and they are exactly the person whose account can ask.
+
+        Needs the credentials the login path collected; returns ``None`` for a hand-made entry, an
+        unreachable catalogue, or a number no region knows, in every case leaving the answer the
+        owner typed to stand as it did before.
+        """
+        data = self._cloud_data
+        if not (data.get(CONF_REFRESH_TOKEN) and data.get(CONF_CLOUD_CLIENT_ID)):
+            return None
+        try:
+            cloud = HaierCloud(
+                replace(SEA_APP_CREDENTIALS, client_id=data[CONF_CLOUD_CLIENT_ID]),
+                data.get(CONF_ACCESS_TOKEN) or "",
+                zone_info=data.get(CONF_ZONE_INFO, "0"),
+                transport=async_cloud_transport(self.hass),
+            )
+            cloud.access_token = (
+                await cloud.refresh_token(data[CONF_REFRESH_TOKEN])
+            ).access_token
+            rows = await cloud.list_ac_products(model=model)
+        except (CloudError, KeyError, OSError, RuntimeError, TimeoutError, ValueError) as err:
+            _LOGGER.debug("region catalogue lookup failed for %r: %s", model, err)
+            return None
+        wanted = model.strip().upper()
+        for row in rows:
+            if row.model.strip().upper() == wanted:
+                _LOGGER.info(
+                    "model %s is published in this account's region as product %s",
+                    row.model, row.product_code,
+                )
+                return row.product_code
+        return None
+
     async def async_step_manual(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -797,6 +838,13 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                 resolved = self._model_choices.get(picked) or product_for_model(picked)
                 if not resolved and picked in known_products():
                     resolved = picked
+                if not resolved:
+                    # ...and a fourth way: the appliance is published in a region the shipped
+                    # catalogue does not cover. That catalogue is scoped by the account's own
+                    # dialling code, so a signed-in install can ask *its* region -- which is where
+                    # the model number of an appliance from another one actually lives. Without
+                    # this, an owner types the number off their label and it resolves to nothing.
+                    resolved = await self._async_region_product_code(picked)
                 self._pending_manual[CONF_PRODUCT_CODE] = resolved or picked
             return await self._async_finish_manual()
         return self.async_show_form(

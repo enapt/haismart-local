@@ -274,12 +274,27 @@ def _build_profile(
     entry: HaismartConfigEntry, product_code: str, model: dict[str, Any] | None
 ) -> AttributeProfile:
     """Prefer the cloud-fetched digital model (correct for ANY model); otherwise fall back to the
-    hardcoded per-model profile keyed by product_code."""
+    hardcoded per-model profile keyed by product_code.
+
+    The model profile is AC-shaped (``operationMode``/``windSpeed``/target temperature). A unit
+    whose model has no ``operationMode`` is not an AC — a washer, say — so it is expected to fall
+    back to the generic profile and is logged at DEBUG, not warned about."""
     if model is not None:
         try:
             return profile_from_device_config(model)
-        except (ValueError, KeyError, TypeError):
-            _LOGGER.warning("stored digital model is unusable; using the hardcoded profile")
+        except ValueError as err:
+            if not any(a.get("name") == "operationMode" for a in model.get("attributes") or ()):
+                _LOGGER.debug(
+                    "device model has no operationMode (non-AC unit); using the generic profile"
+                )
+            else:
+                _LOGGER.warning(
+                    "stored digital model is unusable (%s); using the hardcoded profile", err
+                )
+        except (KeyError, TypeError) as err:
+            _LOGGER.warning(
+                "stored digital model is unusable (%s); using the hardcoded profile", err
+            )
     return profile_for(product_code)
 
 

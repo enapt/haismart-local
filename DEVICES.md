@@ -24,6 +24,14 @@ layout confirmed on real hardware, which is what the capture procedure in
 [`docs/new-model.md`](docs/new-model.md) provides. So an absence from this table increasingly means
 "nobody has told us", not "it will not work".
 
+Since **v0.38.0** the integration also ships the published description of **every air conditioner in
+the manufacturer's catalogue — 1,435 models** — so it can name your unit, apply its own fault names
+and availability rules, and offer it in the setup list, with no account and no internet. Earlier
+releases carried 171, which turned out to be one region's catalogue rather than the whole of it: the
+catalogue answers according to the country code an account registered with, and that code was being
+collected at setup and used for nothing else. If a previous version could not identify your air
+conditioner, this one very likely can.
+
 A diagnostics download from a unit on a recognised layout now reads **every attribute that unit
 declares** and prints it beside the values the unit publishes through its cloud profile — two
 independent sources for the same readings. That is usually enough to confirm a model belongs in this

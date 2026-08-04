@@ -96,13 +96,21 @@ and saying so in the report saves a round-trip. With a real product code the res
 published description — its rules, its fault list, and which of its features your particular unit
 actually has — can be looked up directly.
 
-**A product code the integration cannot look up is not necessarily unknown to the manufacturer.**
-Its catalogue answers per **region** — it is scoped by the country code your account signed in with,
-and the regions publish very different sets: one lists 171 air conditioners, another 242, and a model
-number absent from the first is present in the second. Every product list here was one region's until
-**v0.38.0**, which ships all of them and, where the bundled list still falls short, asks the region
-your own account belongs to. So if an older release could not name your appliance, that is worth
-retrying on a current one before assuming the model is undocumented.
+**A product code an older release could not look up was not necessarily unknown to the
+manufacturer.** Its catalogue answers per **region**, scoped by the country code your account signed
+in with, and the regions publish very different sets — one lists 171 air conditioners, another 242,
+Japan's lists 30 — while a region it does not recognise gets the complete set. Every product list
+shipped here before **v0.38.0** was one region's 171, so an appliance published elsewhere could not
+be named at all.
+
+v0.38.0 ships **all 1,435 published air conditioners** (1,400 distinct model numbers; 21 numbers are
+carried by more than one product, and where those disagree about their rules the integration declines
+to guess between them and falls back to what their family agrees on). Of the 100 countries the setup
+form offers, 94 publish at least one air conditioner and six publish none — Myanmar, Nigeria, Kenya,
+Cambodia, Laos and Nepal — where the model shortlist simply is not narrowed by region.
+
+So if an older release could not name your appliance, retry on a current one before assuming the
+model is undocumented.
 
 The file carries one more thing that saves a round-trip. Once your unit's layout **is** recognised,
 diagnostics reads **every attribute your air conditioner declares** — the settings with no entity as

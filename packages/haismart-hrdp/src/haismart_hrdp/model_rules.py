@@ -60,17 +60,22 @@ def preload() -> None:
 
 
 @lru_cache(maxsize=1)
-def _by_model() -> dict[str, str]:
-    """``{MODEL NUMBER: product code}``, built from the bundle rather than stored in it.
+def _by_model() -> dict[str, list[str]]:
+    """``{MODEL NUMBER: [product codes]}``, built from the bundle rather than stored in it.
 
-    Upper-cased on both sides so a number copied off a label matches regardless of how it was
-    typed. Model numbers are unique across the published set, so this cannot collide.
+    Upper-cased on both sides so a number copied off a label matches regardless of how it was typed.
+
+    ⚠️ **A model number is not unique.** It was across one region's 171 products, and this said so;
+    across all 1435 there are 21 numbers carried by two or three products each, and 15 of those
+    disagree about their rules. A ``{number: code}`` dict silently kept whichever came last, which
+    is a coin toss between rule sets -- the exact failure this layer exists to prevent. So the
+    candidates are all kept, and :func:`product_for_model` decides what a tie means.
     """
-    return {
-        entry["model"].upper(): code
-        for code, entry in _bundle()["models"].items()
-        if entry.get("model")
-    }
+    out: dict[str, list[str]] = {}
+    for code, entry in _bundle()["models"].items():
+        if entry.get("model"):
+            out.setdefault(entry["model"].upper(), []).append(code)
+    return out
 
 
 def known_products() -> frozenset[str]:
@@ -141,13 +146,31 @@ def models_for_uplus_id(uplus_id: str | None, zone: str | None = None) -> dict[s
 def product_for_model(model: str | None) -> str | None:
     """The product code for a model number as printed on the appliance, or ``None``.
 
-    All 171 published model numbers are distinct, so this needs no other identifier to disambiguate
-    -- which is what lets an install with no account resolve the rules for its own unit from a
-    number the owner can read off the label.
+    This is what lets an install with no account resolve its own unit's rules from a number its
+    owner can read off the label.
+
+    ``None`` when the number is unknown **or ambiguous in a way that matters**: 21 numbers name more
+    than one product, and where those products disagree about their rules there is no answer to give
+    -- picking one would apply a rulebook on the strength of a tie. Where they agree, the tie is not
+    a tie and the first is returned.
+
+    Refusing is not the end of the road: the appliance still announces its family, and
+    :func:`family_rules` applies what every candidate in it agrees on. That is the same trade made
+    for a unit whose model is unknown altogether, and it is why refusing here is cheap.
     """
     if not model:
         return None
-    return _by_model().get(model.strip().upper())
+    codes = _by_model().get(model.strip().upper()) or []
+    if len(codes) == 1:
+        return codes[0]
+    if not codes:
+        return None
+    sections = ("modifiers", "constraints", "alarms", "invalid_reasons")
+    shapes = {
+        json.dumps({s: (rules_for_product(c) or {}).get(s) for s in sections}, sort_keys=True)
+        for c in codes
+    }
+    return codes[0] if len(shapes) == 1 else None
 
 
 def family_rules(uplus_id: str | None) -> dict[str, Any] | None:

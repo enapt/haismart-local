@@ -134,3 +134,37 @@ def test_family_rules_gives_a_single_model_family_its_own_rules() -> None:
     assert solo, "expected at least one single-model family"
     assert family_rules(solo) == rules_for_product(products_for_uplus_id(solo)[0])
     assert family_rules("nonexistent") is None
+
+
+def test_a_model_number_shared_by_products_that_disagree_resolves_to_nothing() -> None:
+    """A number on a label is not a unique key, and a tie must not be broken by luck.
+
+    Across one region's catalogue every model number named exactly one product, and this module said
+    so. Across every region, 21 numbers name two or three -- and 15 of those sets disagree about
+    their rules, so the dict that used to hold one code per number was silently choosing a rulebook.
+    Where the candidates agree the answer is still an answer; where they differ there is none, and
+    the family fallback covers it.
+    """
+    from haismart_hrdp.model_rules import _by_model, product_for_model, rules_for_product
+
+    shared = {m: c for m, c in _by_model().items() if len(c) > 1}
+    assert shared, "fixture assumes the bundle spans regions, where numbers do collide"
+
+    def shape(code: str) -> str:
+        r = rules_for_product(code) or {}
+        return json.dumps({s: r.get(s) for s in
+                           ("modifiers", "constraints", "alarms", "invalid_reasons")}, sort_keys=True)
+
+    refused = agreed = 0
+    for number, codes in shared.items():
+        answer = product_for_model(number)
+        if len({shape(c) for c in codes}) == 1:
+            assert answer in codes, "candidates agree, so either is the same answer"
+            agreed += 1
+        else:
+            assert answer is None, f"{number} names {codes}, which disagree -- no answer to give"
+            refused += 1
+    assert refused and agreed, (refused, agreed)
+
+    # an unambiguous number still resolves, which is the ordinary case
+    assert product_for_model("HSU-24VRRA03TF") == "AAC1UKZ01"

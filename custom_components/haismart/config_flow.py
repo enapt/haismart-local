@@ -63,12 +63,14 @@ from .cloud_transport import async_cloud_transport
 from .const import (
     AC_DEVICE_CLASSES,
     CONF_ACCESS_TOKEN,
+    CONF_BRAND,
     CONF_CLOUD_CLIENT_ID,
     CONF_DEVICE_ID,
     CONF_DIGITAL_MODEL,
     CONF_HOST,
     CONF_LOCAL_KEY,
     CONF_LOCALKEY_VERSION,
+    CONF_MODEL_NAME,
     CONF_NAME,
     CONF_PRODUCT_CODE,
     CONF_REFRESH_TOKEN,
@@ -377,6 +379,15 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                 # responses, which is fine (length keying still works).
                 if getattr(picked, "uplus_id", ""):
                     self._cloud_data[CONF_UPLUS_ID] = picked.uplus_id
+                # Static device info (brand/model/product code) comes from the cloud device list,
+                # which works even while the device is offline — store it so the device page shows
+                # it without needing a single live read.
+                if getattr(picked, "brand", ""):
+                    self._cloud_data[CONF_BRAND] = picked.brand
+                if getattr(picked, "model", ""):
+                    self._cloud_data[CONF_MODEL_NAME] = picked.model
+                if getattr(picked, "prod_no", ""):
+                    self._cloud_data[CONF_PRODUCT_CODE] = picked.prod_no
                 self._picked = picked
                 return await self._async_setup_cloud_device(picked.device_id, picked.name)
         choices = {d.device_id: f"{d.name or d.device_id} ({d.device_id})" for d in available}

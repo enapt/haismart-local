@@ -79,6 +79,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .cloud_transport import async_cloud_transport
 from .const import (
     CONF_ACCESS_TOKEN,
+    CONF_BRAND,
     CONF_CLOUD_CLIENT_ID,
     CONF_DEVICE_ID,
     CONF_DIGITAL_MODEL,
@@ -86,6 +87,7 @@ from .const import (
     CONF_HOST,
     CONF_LOCAL_KEY,
     CONF_LOCALKEY_VERSION,
+    CONF_MODEL_NAME,
     CONF_PRODUCT_CODE,
     CONF_REFRESH_TOKEN,
     CONF_SCAN_INTERVAL,
@@ -1408,6 +1410,66 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.config_entry, data={**data, **updates}
         )
         return True
+
+    async def async_enrich_identity(self) -> None:
+        """Backfill the static device info (brand/model/product code) from the cloud device list.
+
+        Entries added before those fields were stored show nothing but a generic model on the
+        device page. The list comes from the cloud server, so this works while the device is
+        offline — no live read involved. Never raises: it runs as a background task and must not
+        be able to fail setup.
+        """
+        data = self.config_entry.data
+        if data.get(CONF_BRAND) and data.get(CONF_MODEL_NAME) and data.get(CONF_PRODUCT_CODE):
+            return
+        usdk_client_id = data.get(CONF_CLOUD_CLIENT_ID)
+        if not usdk_client_id:
+            return
+        zone = data.get(CONF_ZONE_INFO, "0")
+        access_token = data.get(CONF_ACCESS_TOKEN) or ""
+        refresh_token = data.get(CONF_REFRESH_TOKEN)
+        try:
+            cloud = HaierCloud(
+                replace(SEA_APP_CREDENTIALS, client_id=usdk_client_id),
+                access_token, zone_info=zone,
+                transport=async_cloud_transport(self.hass),
+            )
+            if refresh_token:
+                try:
+                    access_token = (await cloud.refresh_token(refresh_token)).access_token
+                    cloud = HaierCloud(
+                        replace(SEA_APP_CREDENTIALS, client_id=usdk_client_id),
+                        access_token, zone_info=zone,
+                        transport=async_cloud_transport(self.hass),
+                    )
+                except (CloudError, OSError, RuntimeError) as err:
+                    _LOGGER.debug(
+                        "identity backfill token refresh failed (%s); trying the stored token", err
+                    )
+            devices = await cloud.list_devices_v2()
+        except (CloudError, OSError, RuntimeError, TimeoutError) as err:
+            _LOGGER.debug("identity backfill for %s failed: %s", self.device_id, err)
+            return
+        device = next(
+            (d for d in devices if str(d.device_id).upper() == self.device_id.upper()), None
+        )
+        if device is None:
+            return
+        updates: dict[str, Any] = {}
+        if not data.get(CONF_BRAND) and getattr(device, "brand", ""):
+            updates[CONF_BRAND] = device.brand
+        if not data.get(CONF_MODEL_NAME) and getattr(device, "model", ""):
+            updates[CONF_MODEL_NAME] = device.model
+        if not data.get(CONF_PRODUCT_CODE) and getattr(device, "prod_no", ""):
+            updates[CONF_PRODUCT_CODE] = device.prod_no
+        if not updates:
+            return
+        _LOGGER.info("%s: backfilled device info from the cloud: %s", self.device_id, updates)
+        if CONF_PRODUCT_CODE in updates:
+            self.product_code = updates[CONF_PRODUCT_CODE]
+        self.hass.config_entries.async_update_entry(
+            self.config_entry, data={**data, **updates}
+        )
 
     async def _async_cloud_creds(self) -> CloudControlCreds | None:
         """Fully-derived cloud-control CONNECT credentials from the entry, or None if the entry

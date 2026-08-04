@@ -21,6 +21,37 @@ Length is therefore a *good but imperfect* key. The integration prefers an exact
 plausible — a candidate that reads an impossible room temperature or setpoint is rejected in favour
 of the partial "unknown layout" path, so a wrong family is never published as fact.
 
+## When no family claims the report
+
+Since **v0.35.0** there is a step between "no family matches" and the partial decode.
+
+Every published model is the same attribute map at one of a small number of whole-word offsets, and a
+Model ID shares its leading characters with its close relatives. So the published models most like an
+unfamiliar unit name the offsets its report is likely to use. The integration shortlists those and
+tries each against the report the unit actually sent, keeping whichever one agrees with it.
+
+The shortlist never decides on its own, and is not built to. Most Model IDs match two published
+models rather than one, and **those pairs disagree about the offset every time** — one carries the
+leading media block and one does not. Nothing else separates them: the rule sections are keyed by
+product code rather than by Model ID, and the attributes a device declares describe its feature set,
+not its layout, so a lean unit may sit on a rich map. Both were tried against the models that state
+an answer and both got it wrong. Only the report settles it, which is why the candidates are decoded
+rather than ranked.
+
+Three limits, all deliberate:
+
+- **Read-only.** A control command writes a whole block of words at once, so a layout arrived at this
+  way drives readings and never commands. Control still needs a family confirmed on real hardware.
+- **Core readings only.** Power, setpoint, room and outdoor temperature, mode, fan, vertical swing,
+  fault code and who last changed the unit. The further attributes a device declares stay unplaced
+  until the offset has been checked field by field against a real report.
+- **It refuses rather than guesses.** A Model ID resembling nothing published produces no candidates,
+  and a candidate that "fits" only because it read past the end of a shorter report — every field
+  absent, nothing implausible because nothing is there — is rejected rather than believed.
+
+A resolved layout is reported as `related-19` / `related+0` (the offset it used) rather than a family
+name, so diagnostics distinguish it from a family confirmed on hardware.
+
 ## Known families
 
 | Report | Family | Setpoint | Sensors | Status |

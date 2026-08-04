@@ -97,11 +97,17 @@ Start from [`docs/new-model.md`](docs/new-model.md): three status captures in kn
 control-word block and identify the sensor bytes by elimination. If you have the unit in front of
 you, that is the fastest path to a correct layout.
 
-You rarely have to find the layout by hand. When a report is unrecognised, diagnostics runs a search
-over the known families — see [`docs/report-layouts.md`](docs/report-layouts.md) — and attaches
-ranked candidates, because every layout met so far has been a known map displaced from some word
-onward. That search runs unaided, though — it cannot know which capture was which — so re-run it over
-the attachments with the states the reporter gave:
+You rarely have to find the layout by hand. Since v0.35.0 an unrecognised report is first matched
+against the published models nearest its Model ID, and if one of their offsets explains what the unit
+sent, it is decoded with that — read-only, since control needs a family confirmed on hardware. A
+reporter arriving with working temperatures and a dead thermostat has hit that path, and their
+captures are what promote it to a real family.
+
+When nothing fits at all, diagnostics runs a search over the known families — see
+[`docs/report-layouts.md`](docs/report-layouts.md) — and attaches ranked candidates, because every
+layout met so far has been a known map displaced from some word onward. That search runs unaided,
+though — it cannot know which capture was which — so re-run it over the attachments with the states
+the reporter gave:
 
 ```bash
 scripts/probe-diagnostics.py off.json cool.json fan.json \

@@ -5,6 +5,25 @@ work. If yours connects but some values look wrong — or Home Assistant reports
 — its status report packs fields in a layout we haven't mapped yet. Working that out needs **no code
 and no protocol knowledge**, just three captures from you.
 
+## First: check whether it already reads
+
+Since **v0.35.0** an air conditioner whose exact layout we have never seen can often still be read,
+by matching it to the published models closest to it and checking the result against what the unit
+actually sent. So before capturing anything, look at what you have:
+
+- **Readings look right, and you can control it.** Nothing to do — your model is recognised.
+- **Readings look right, but the thermostat and switches won't change anything.** This is the new
+  path doing its job. It reads, and deliberately never commands: sending a command writes a whole
+  block of settings at once, so it stays reserved for layouts confirmed on real hardware. **The
+  captures below are exactly what turns your model into a controllable one** — and because the
+  readings already work, they are easy to take.
+- **Only power, setpoint, mode and fan appear, or values are clearly wrong.** No published model was
+  close enough, or none of the candidates agreed with your report. The captures below are the way
+  forward, and they are the whole job.
+
+In every case, please open an issue either way — a model that now works without any capture is worth
+recording just as much as one that doesn't.
+
 ## Why three captures
 
 The report is a fixed prefix followed by a block of control words and then read-only sensor bytes.

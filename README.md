@@ -480,9 +480,15 @@ the ones that do — alongside the values your air conditioner publishes through
 the two can be compared without asking you for anything further. On the reference unit those two
 independent sources agree on all 21 comparable readings.
 
-**Adding support for a new model** is the most valuable contribution here, and it doesn't require
-writing any code — see [`docs/new-model.md`](docs/new-model.md) for a short capture procedure. When a
-report's layout isn't recognised, the diagnostics file proposes candidate layouts itself;
+**A model we have never seen usually reads anyway.** Every published air conditioner is the same
+attribute map at one of a few offsets, and a unit's Model ID names its closest relatives — so when no
+known layout claims a report, the integration tries the offsets those relatives use and keeps
+whichever one the report itself agrees with. That is **read-only**: a control command writes a whole
+block of settings at once, so commanding still needs a layout confirmed on real hardware.
+
+**Adding that confirmation** is the most valuable contribution here, and it doesn't require writing
+any code — see [`docs/new-model.md`](docs/new-model.md) for a short capture procedure. When nothing
+fits at all, the diagnostics file proposes candidate layouts itself;
 [`docs/report-layouts.md`](docs/report-layouts.md) is the inventory of every known one.
 
 ## Contributing

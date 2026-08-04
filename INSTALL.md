@@ -220,6 +220,10 @@ as the guaranteed floor, flash **ESPHome** onto the module.
   recent versions tell them apart for you. If the climate entity works but the temperatures are
   missing and a repair notification has appeared, the AC's **report layout is not one we know yet**
   — the key is fine; please report the model (see [`docs/new-model.md`](docs/new-model.md)).
+  Since v0.35.0 that is rarer: an unfamiliar layout is usually matched against the published models
+  closest to it, which gives full **readings** with no capture needed. Such a unit reads but will not
+  take commands — if your temperatures are right and the thermostat does nothing, that is what has
+  happened, and the same capture procedure is what enables control.
   Otherwise it is a **stale `localKey`** — it
   rotates server-side. The login/cloud paths auto-refetch it; the offline path will prompt a reauth (and raise
   a repair suggesting you add account creds so it self-heals next time).

@@ -8,6 +8,13 @@ The integration builds itself from the model description your AC's own cloud pro
 model missing from this table will very likely still work. The table records what has actually been
 **observed**, not the limit of what is supported.
 
+Since **v0.35.0** that holds even for a report layout nobody has ever sent in: a unit whose Model ID
+resembles published models close to it is read using the offsets those relatives use, provided the
+report agrees with the result. Such a unit **reads but does not command** — control still needs a
+layout confirmed on real hardware, which is what the capture procedure in
+[`docs/new-model.md`](docs/new-model.md) provides. So an absence from this table increasingly means
+"nobody has told us", not "it will not work".
+
 A diagnostics download from a unit on a recognised layout now reads **every attribute that unit
 declares** and prints it beside the values the unit publishes through its cloud profile — two
 independent sources for the same readings. That is usually enough to confirm a model belongs in this

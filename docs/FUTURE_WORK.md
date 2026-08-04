@@ -304,6 +304,11 @@ the way it is.
 
 ## The layout prober is told what the captures were
 
+Since v0.35.0 the prober is the *second* thing to run, not the first: an unfamiliar report is
+matched against the offsets its nearest published relatives use, and the prober is what remains for
+the reports that survive that — a layout no relative explains. Its output is still a shortlist to verify
+rather than a result.
+
 `probe_layout` scores against `stated=[StatedState(...)]` — what each capture was known to be in — as
 heavily as it scores the device's published values, and a contradiction costs more than a match
 earns. That takes the cloud off the critical path: on two real reports, 77 of 83 candidates tie at
@@ -496,6 +501,14 @@ shared map at an offset" is true of what this integration meets and false of the
 and a decoder that assumed the stronger version would mis-read such a unit's setpoint, mode and fan
 in a way that still produces plausible numbers. If a report arrives that decodes sensibly from the
 second word and nonsensically in the first, this is the shape to suspect.
+
+⚠️ **v0.35.0 makes this worth re-reading.** Resolving an unfamiliar report against the offsets its
+nearest published relatives use assumes exactly the stronger claim — that the only difference is
+where the block starts. A unit of the shape above would be shortlisted like any other. What stops it
+being mis-read is the same thing that stops any wrong candidate: the decode has to produce the core
+readings *and* find them plausible, and a merged first word puts the setpoint in four bits, which
+does not survive that. That is a guard, not a proof. A model of this shape appearing in-region is the
+case where the resolver should be checked before it is trusted.
 
 ## 17. What still needs the cloud — settled, and it is one thing
 

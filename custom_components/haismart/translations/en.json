@@ -175,6 +175,9 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "door_lock_status": {
+        "name": "Door lock status"
+      },
       "human_sensing": {
         "name": "Presence airflow",
         "state": {
@@ -186,6 +189,9 @@
       },
       "indoor_temperature": {
         "name": "Indoor temperature"
+      },
+      "laundry_procedure": {
+        "name": "Laundry procedure"
       },
       "last_changed_by": {
         "name": "Last changed by",

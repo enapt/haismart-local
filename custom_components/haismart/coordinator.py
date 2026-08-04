@@ -222,7 +222,7 @@ def _load_digital_model(entry: HaismartConfigEntry) -> dict[str, Any] | None:
     stored = _stored_digital_model(entry)
     if stored is None:
         if entry.data.get(CONF_DIGITAL_MODEL):
-            _LOGGER.debug("stored digital model is corrupted or empty; skipping write-validation")
+            _LOGGER.warning("stored digital model is unusable; model write-validation disabled")
         return None
     return with_rules(stored, entry.data.get(CONF_UPLUS_ID))
 
@@ -278,9 +278,30 @@ def _build_profile(
     if model is not None:
         try:
             return profile_from_device_config(model)
-        except (ValueError, KeyError, TypeError) as err:
-            _LOGGER.debug("stored digital model parsing failed: %s; falling back to hardcoded profile", err)
+        except (ValueError, KeyError, TypeError):
+            _LOGGER.warning("stored digital model is unusable; using the hardcoded profile")
     return profile_for(product_code)
+
+
+def _cloud_attrs_to_state(raw: dict[str, Any]) -> dict[str, Any]:
+    """Flatten an ``Attr/R`` (read-all) response into ``{attr_name: value}``.
+
+    The gateway's exact ``data`` shape is not contractual, so accept every layout we have seen
+    and everything that resembles one: a bare ``{name, value}`` pair, a name->value dict, or a
+    list of ``{name, value}`` items. Anything else yields ``{}``.
+    """
+    data = raw.get("data")
+    if isinstance(data, dict):
+        if "name" in data and "value" in data:
+            return {str(data["name"]): data["value"]}
+        return {str(k): v for k, v in data.items() if k not in ("sn", "errNo", "devId")}
+    if isinstance(data, list):
+        out: dict[str, Any] = {}
+        for item in data:
+            if isinstance(item, dict) and "name" in item:
+                out[str(item["name"])] = item.get("value")
+        return out
+    return {}
 
 
 class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
@@ -371,15 +392,16 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # extended-status query rides along inside the ordinary read rather than costing a second
         # connection or its own poll interval. `_ask_extended` latches off if a unit turns out not
         # to cope with it, so an unfamiliar model degrades to plain status instead of failing.
-        # added without a LAN IP (cloud-only entry): skip local polling entirely -- the cloud
-        # control channel (set/get attribute services) still works without a host.
+        # added without a LAN IP (cloud-only entry): skip local polling entirely -- pull the status
+        # over the cloud control channel instead (works whenever the unit is online through the
+        # cloud); set/get attribute services keep working regardless.
         if not self.host:
             _LOGGER.debug("no LAN host configured: attempting cloud polling")
             try:
                 return await self.async_fetch_cloud_status()
-            except Exception as err:
-                _LOGGER.debug("cloud polling failed: %s", err)
-                return {}
+            except (CloudControlError, HomeAssistantError, OSError, RuntimeError) as err:
+                _LOGGER.debug("cloud polling failed for %s: %s", self.device_id, err)
+                raise UpdateFailed(f"cloud status read failed: {err}") from err
         try:
             blobs = await self._async_read()
         except (TimeoutError, OSError, RuntimeError) as err:
@@ -488,23 +510,6 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         raise UpdateFailed(
             f"no decodable status from {self.host} ({misses} consecutive misses)"
         )
-
-    async def async_fetch_cloud_status(self) -> dict[str, Any]:
-        """Fetch status from cloud if LAN polling is unavailable."""
-        from haismart_extractor import HaierCloud
-        from haismart_extractor.cloud import SEA_APP_CREDENTIALS
-        
-        async with async_cloud_transport(self.hass) as transport:
-            client, _ = await HaierCloud.login(
-                SEA_APP_CREDENTIALS,
-                self.config_entry.data.get(CONF_GATEWAY_USERNAME, ""), # Need to ensure this is available
-                self.config_entry.data.get(CONF_GATEWAY_PASSWORD, ""),
-                zone_info=self.config_entry.data.get(CONF_ZONE_INFO, "0"),
-                transport=transport,
-            )
-            # Fetch device status using the device ID
-            status = await client.get_device_status(self.device_id)
-            return status
 
     async def _async_read(self) -> list[bytes]:
         """One read cycle against the current host, holding the single-session lock."""
@@ -1464,6 +1469,28 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 },
             ) from err
         return dict(res.raw)
+
+    async def async_fetch_cloud_status(self) -> dict[str, Any]:
+        """Pull the unit's full attribute status over the cloud control channel.
+
+        The LAN-less (cloud-only) read path: ``Attr/R`` without a name returns every attribute
+        the unit reports, mapped to ``{attr_name: value}`` for the entities. Raises
+        :class:`CloudControlError` when the entry has no account credentials or the gateway
+        rejects/does not answer (a unit that is offline for the cloud reports errNo 16).
+        """
+        creds = await self._async_cloud_creds()
+        if creds is None:
+            raise CloudControlError("entry has no Haier account credentials for cloud reads")
+        res = await self.hass.async_add_executor_job(
+            partial(
+                CloudControlClient(creds).get_attribute,
+                self.device_id, None, timeout=CLOUD_CONTROL_TIMEOUT,
+            )
+        )
+        state = _cloud_attrs_to_state(res.raw)
+        if not state:
+            _LOGGER.debug("cloud status for %s carried no attributes: %s", self.device_id, res.raw)
+        return state
 
     async def _async_try_cloud_fallback(
         self, changes: dict[str, int], local_err: BaseException

@@ -153,6 +153,21 @@ SENSORS: tuple[HaismartSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda s: s.get("discharge_temperature"),
     ),
+    HaismartSensorDescription(
+        key="doorLockStatus",
+        translation_key="door_lock_status",
+        device_class=SensorDeviceClass.ENUM,
+        options=["true", "false"],
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda s: s.get("doorLockStatus"),
+    ),
+    HaismartSensorDescription(
+        key="targetLaundryProcedure",
+        translation_key="laundry_procedure",
+        device_class=SensorDeviceClass.ENUM,
+        options=["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
+        value_fn=lambda s: s.get("targetLaundryProcedure"),
+    ),
 )
 
 

@@ -31,8 +31,8 @@ async def async_resolve_host_arp(device_id: str) -> str | None:
     target = device_id.replace(":", "").lower()
     try:
         from aiodiscover import DiscoverHosts
-
-        hosts = await DiscoverHosts().async_discover()
+        # Limit discovery to ARP/DHCP to avoid needing raw socket permissions for TC
+        hosts = await DiscoverHosts(arp=True, dhcp=True, tc=False).async_discover()
     except Exception:  # noqa: BLE001 - best-effort; aiodiscover ships with the dhcp component
         return None
     for host in hosts:

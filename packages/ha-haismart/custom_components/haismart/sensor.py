@@ -214,8 +214,9 @@ async def async_setup_entry(
     entities.append(HaismartMetaSensor(coordinator, "device_type", CONF_DEVICE_TYPE))
     entities.append(HaismartMetaSensor(coordinator, "product_code", CONF_PRODUCT_CODE))
     entities.append(HaismartSupportedAttributesSensor(coordinator))
-    # One sensor per digital-model attribute. The state is the last-known value (an em dash when
-    # the unit never reported one); LIST options (translated) and STEP ranges live on
+    # One sensor per digital-model attribute. The state is the last-known value -- for a LIST
+    # attribute ``ValueDescription(option:description, ...)``, translated to English -- with an
+    # em dash when the unit never reported one; LIST options and STEP ranges also live on
     # extra_state_attributes. Attributes with a value come first so the meaningful rows sit at
     # the top, then the rest alphabetically by translated description.
     model = coordinator.digital_model or {}
@@ -338,7 +339,7 @@ def _attr_segments(attr: dict[str, Any], limit: int = 255) -> list[str]:
             if data is None:
                 continue
             desc = ZH_EN.get(item.get("desc") or "", item.get("desc") or "")
-            options.append(f"{data}({desc})" if desc else str(data))
+            options.append(f"{data}:{desc}" if desc else str(data))
         return _split_attr_segments(options, limit)
     if vr.get("type") == "STEP":
         step = vr.get("dataStep") or {}
@@ -409,9 +410,11 @@ class HaismartAttributeSensor(HaismartStaticSensor):
 
     The cloud-served digital model can declare hundreds of attributes; each becomes a sensor so
     the rows stay readable on the device page. The state is the last-known value the cloud
-    reported for that attribute (an em dash when the unit never reported one -- it is offline
-    more often than not, so a live read is not always possible). The translated description,
-    raw attribute name, LIST options and STEP range live on extra_state_attributes.
+    reported for that attribute with its translated description first -- a LIST attribute reads
+    ``ValueDescription(option:description, ...)`` so the current setting is immediately
+    visible -- and an em dash when the unit never reported one (it is offline more often than
+    not, so a live read is not always possible). The translated description, raw attribute
+    name, LIST options and STEP range also live on extra_state_attributes.
     """
 
     _attr_icon = "mdi:format-list-checkbox"
@@ -426,7 +429,51 @@ class HaismartAttributeSensor(HaismartStaticSensor):
 
     @property
     def native_value(self) -> str:
-        value = self._attr.get("value")
+        attr = self._attr
+        value = attr.get("value")
+        vr = attr.get("valueRange") or {}
+        if vr.get("type") == "LIST":
+            options: list[str] = []
+            value_desc: str | None = None
+            for item in vr.get("dataList") or ():
+                data = item.get("data")
+                if data is None:
+                    continue
+                desc = ZH_EN.get(item.get("desc") or "", item.get("desc") or "")
+                options.append(f"{data}:{desc}" if desc else str(data))
+                if value not in (None, "") and str(data) == str(value):
+                    value_desc = desc or str(data)
+            joined = ", ".join(options)
+            if value not in (None, ""):
+                head = value_desc or str(value)
+                text = f"{head}({joined})"
+                if len(text) <= 255:
+                    return text
+                # A few LIST attributes carry hundreds of options; keep the current value's
+                # description plus as many options as fit, the full list is on
+                # extra_state_attributes.
+                budget = 255 - len(head) - 3
+                kept: list[str] = []
+                used = 0
+                for opt in options:
+                    sep = 2 if kept else 0
+                    if used + sep + len(opt) > budget:
+                        break
+                    kept.append(opt)
+                    used += sep + len(opt)
+                return f"{head}({', '.join(kept)}…)"
+            text = f"({joined})"
+            if len(text) <= 255:
+                return text
+            kept: list[str] = []
+            used = 0
+            for opt in options:
+                sep = 2 if kept else 0
+                if used + sep + len(opt) > 253:
+                    break
+                kept.append(opt)
+                used += sep + len(opt)
+            return f"({', '.join(kept)}…)"
         return "\u2014" if value in (None, "") else str(value)
 
     @property

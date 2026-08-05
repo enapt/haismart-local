@@ -333,8 +333,27 @@ class HaismartSupportedAttributesSensor(HaismartStaticSensor):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
+        # The full list can be hundreds of names, far past HA's 255-char limit for a single
+        # attribute value, so split it into several attributes whose joined length each fits.
         names = self._attr_names()
-        return {"count": len(names), "attributes": names}
+        chunks: list[str] = []
+        current: list[str] = []
+        current_len = 0
+        for name in names:
+            sep_len = 2 if current else 0  # ", " between names
+            if current and current_len + sep_len + len(name) > 255:
+                chunks.append(", ".join(current))
+                current = [name]
+                current_len = len(name)
+            else:
+                current.append(name)
+                current_len += sep_len + len(name)
+        if current:
+            chunks.append(", ".join(current))
+        attrs: dict[str, Any] = {"count": len(names)}
+        for i, chunk in enumerate(chunks, 1):
+            attrs[f"attributes_{i:02d}"] = chunk
+        return attrs
 
 
 class HaismartModelIdSensor(HaismartStaticSensor):

@@ -324,48 +324,24 @@ class HaismartMetaSensor(HaismartStaticSensor):
         return self.coordinator.config_entry.data.get(self._conf_key) or None
 
 
-def _attr_segments(attr: dict[str, Any], limit: int = 255) -> list[str]:
-    """One attribute's LIST options or STEP range, split to fit HA's 255-char cap.
+def _split_list(options: list[str], limit: int = 255) -> list[str]:
+    """Chunk option tokens so each piece fits HA's 255-char cap without dropping any.
 
-    Options are ``data(description)`` tokens with every description translated to English;
-    anything untranslated stays in the original Chinese rather than disappearing. A single
-    option longer than the cap is kept as-is (truncation is the sensor's problem, not ours).
-    """
-    vr = attr.get("valueRange") or {}
-    if vr.get("type") == "LIST":
-        options: list[str] = []
-        for item in vr.get("dataList") or ():
-            data = item.get("data")
-            if data is None:
-                continue
-            desc = ZH_EN.get(item.get("desc") or "", item.get("desc") or "")
-            options.append(f"{data}:{desc}" if desc else str(data))
-        return _split_attr_segments(options, limit)
-    if vr.get("type") == "STEP":
-        step = vr.get("dataStep") or {}
-        if step.get("minValue") is not None and step.get("maxValue") is not None:
-            return [f"{step.get('minValue')}..{step.get('maxValue')}"]
-    return []
-
-
-def _split_attr_segments(segments: list[str], limit: int = 255) -> list[str]:
-    """Pack option tokens into chunks that each fit HA's 255-char cap.
-
-    Every token already fits alone; a chunk holds as many as join within the limit. Used for
-    a LIST attribute's options, which then ride on extra_state_attributes.
+    Splits only between options -- an option is never cut in half and nothing is elided with
+    an ellipsis; a long list simply spans several ``option_list_N`` attributes.
     """
     chunks: list[str] = []
     current: list[str] = []
     current_len = 0
-    for segment in segments:
-        sep_len = 2 if current else 0  # ", " between segments
-        if current and current_len + sep_len + len(segment) > limit:
+    for option in options:
+        sep_len = 2 if current else 0  # ", " between options
+        if current and current_len + sep_len + len(option) > limit:
             chunks.append(", ".join(current))
-            current = [segment]
-            current_len = len(segment)
+            current = [option]
+            current_len = len(option)
         else:
-            current.append(segment)
-            current_len += sep_len + len(segment)
+            current.append(option)
+            current_len += sep_len + len(option)
     if current:
         chunks.append(", ".join(current))
     return chunks
@@ -429,20 +405,10 @@ class HaismartAttributeSensor(HaismartStaticSensor):
 
     @property
     def native_value(self) -> str:
-        attr = self._attr
-        value = attr.get("value")
-        vr = attr.get("valueRange") or {}
+        value = self._attr.get("value")
+        vr = self._attr.get("valueRange") or {}
         if vr.get("type") == "LIST":
-            options: list[str] = []
-            value_desc: str | None = None
-            for item in vr.get("dataList") or ():
-                data = item.get("data")
-                if data is None:
-                    continue
-                desc = ZH_EN.get(item.get("desc") or "", item.get("desc") or "")
-                options.append(f"{data}:{desc}" if desc else str(data))
-                if value not in (None, "") and str(data) == str(value):
-                    value_desc = desc or str(data)
+            options, value_desc = self._list_options()
             joined = ", ".join(options)
             if value not in (None, ""):
                 head = value_desc or str(value)
@@ -476,6 +442,22 @@ class HaismartAttributeSensor(HaismartStaticSensor):
             return f"({', '.join(kept)}…)"
         return "\u2014" if value in (None, "") else str(value)
 
+    def _list_options(self) -> tuple[list[str], str | None]:
+        """The LIST options as ``data:description`` tokens (fully translated), plus the
+        description of the option matching the current value, if any."""
+        value = self._attr.get("value")
+        options: list[str] = []
+        value_desc: str | None = None
+        for item in (self._attr.get("valueRange") or {}).get("dataList") or ():
+            data = item.get("data")
+            if data is None:
+                continue
+            desc = ZH_EN.get(item.get("desc") or "", item.get("desc") or "")
+            options.append(f"{data}:{desc}" if desc else str(data))
+            if value not in (None, "") and str(data) == str(value):
+                value_desc = desc or str(data)
+        return options, value_desc
+
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         attr = self._attr
@@ -489,9 +471,13 @@ class HaismartAttributeSensor(HaismartStaticSensor):
             if step.get("minValue") is not None and step.get("maxValue") is not None:
                 attrs["range"] = f"{step.get('minValue')}..{step.get('maxValue')}"
         if vr.get("type") == "LIST":
-            segments = _attr_segments(attr)
-            for i, chunk in enumerate(segments, 1):
-                key = "option_list" if len(segments) == 1 else f"option_list_{i:02d}"
+            # The complete list, every option translated and none elided: a single
+            # option_list when it fits the 255-char cap, otherwise option_list_01..NN each
+            # holding as many options as fit. Only the (capped) state is ever shortened.
+            options, _ = self._list_options()
+            chunks = _split_list(options)
+            for i, chunk in enumerate(chunks, 1):
+                key = "option_list" if len(chunks) == 1 else f"option_list_{i:02d}"
                 attrs[key] = chunk
         return attrs
 

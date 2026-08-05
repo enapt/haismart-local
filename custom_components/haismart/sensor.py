@@ -215,13 +215,15 @@ async def async_setup_entry(
     entities.append(HaismartMetaSensor(coordinator, "product_code", CONF_PRODUCT_CODE))
     entities.append(HaismartSupportedAttributesSensor(coordinator))
     # The attribute list split into chunk sensors that each fit HA's 255-char state cap. Each
-    # chunk carries `name=value` and, for LIST attributes, every option with its translated
-    # description; long lists span several sensors with a repeated header.
+    # chunk carries `name: value | options...` with every LIST option translated to English;
+    # long lists span several sensors with a repeated header. Attributes with a last-known
+    # value come first so the meaningful rows sit at the top.
     model = coordinator.digital_model or {}
+    attrs = [a for a in model.get("attributes") or () if a.get("name")]
+    attrs.sort(key=lambda a: a.get("value") in (None, ""))
     segments: list[str] = []
-    for attr in model.get("attributes") or ():
-        if attr.get("name"):
-            segments.extend(_attr_segments(attr))
+    for attr in attrs:
+        segments.extend(_attr_segments(attr))
     for i, chunk in enumerate(_split_attr_segments(segments), 1):
         entities.append(HaismartAttributeChunkSensor(coordinator, i, chunk))
     # Read-only enum state for the multi-state optional features a unit declares (presence-based
@@ -323,7 +325,7 @@ def _attr_segments(attr: dict[str, Any], limit: int = 255) -> list[str]:
     """One attribute as display segments, each fitting HA's 255-char state cap.
 
     LIST attributes show every option with its (translated) description; STEP attributes show
-    their range; the last-known value from the digital model is attached when present. An
+    their range. The last-known value from the digital model is attached when present. An
     attribute whose options do not fit a single segment spans several, each repeating its
     ``name:`` header so a long list stays readable across sensors. Anything untranslated stays
     in the original Chinese rather than disappearing.
@@ -332,14 +334,14 @@ def _attr_segments(attr: dict[str, Any], limit: int = 255) -> list[str]:
     value = attr.get("value")
     vr = attr.get("valueRange") or {}
     if vr.get("type") == "LIST":
-        header = f"{name}=" if value not in (None, "") else f"{name}:"
+        header = f"{name}: {value} | " if value not in (None, "") else f"{name}: "
         options = []
         for item in vr.get("dataList") or ():
             data = item.get("data")
             if data is None:
                 continue
             desc = ZH_EN.get(item.get("desc") or "", item.get("desc") or "")
-            options.append(f"{data}{f'({desc})' if desc else ''}")
+            options.append(f"{data}({desc})" if desc else str(data))
         segments: list[str] = []
         current: list[str] = []
         current_len = 0
@@ -356,16 +358,17 @@ def _attr_segments(attr: dict[str, Any], limit: int = 255) -> list[str]:
             segments.append(header + ", ".join(current))
         return segments
     parts: list[str] = []
-    if value not in (None, ""):
-        parts.append(str(value))
     if vr.get("type") == "STEP":
         step = vr.get("dataStep") or {}
         if step.get("minValue") is not None and step.get("maxValue") is not None:
-            parts.append(f"[{step.get('minValue')}..{step.get('maxValue')}]")
+            parts.append(f"{step.get('minValue')}..{step.get('maxValue')}")
     if parts:
-        return [f"{name}={' '.join(parts)}"]
+        joined = " | ".join([str(value)] + parts) if value not in (None, "") else " | ".join(parts)
+        return [f"{name}: {joined}"]
+    if value not in (None, ""):
+        return [f"{name}: {value}"]
     desc = attr.get("desc") or ""
-    return [f"{name}({ZH_EN.get(desc, desc)})" if desc else name]
+    return [f"{name}: {ZH_EN.get(desc, desc)}" if desc else name]
 
 
 def _split_attr_segments(segments: list[str], limit: int = 255) -> list[str]:

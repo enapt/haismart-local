@@ -213,10 +213,14 @@ async def async_setup_entry(
     entities.append(HaismartMetaSensor(coordinator, "device_type", CONF_DEVICE_TYPE))
     entities.append(HaismartMetaSensor(coordinator, "product_code", CONF_PRODUCT_CODE))
     entities.append(HaismartSupportedAttributesSensor(coordinator))
-    # The attribute-name list split into chunk sensors that each fit HA's 255-char state cap.
+    # The attribute list split into chunk sensors that each fit HA's 255-char state cap. Each
+    # chunk carries ``name=value`` tokens for the attributes the digital model reports a value
+    # for (the cloud's last-known values), so the sensor states show values, not just names.
     model = coordinator.digital_model or {}
-    names = [a.get("name") for a in model.get("attributes") or () if a.get("name")]
-    for i, chunk in enumerate(_split_attr_names(names), 1):
+    labels = [
+        _attr_label(a) for a in model.get("attributes") or () if a.get("name")
+    ]
+    for i, chunk in enumerate(_split_attr_names(labels), 1):
         entities.append(HaismartAttributeChunkSensor(coordinator, i, chunk))
     # Read-only enum state for the multi-state optional features a unit declares (presence-based
     # airflow and the like). Membership from the model, position from the map -- same safe basis as
@@ -332,6 +336,19 @@ def _split_attr_names(names: list[str], limit: int = 255) -> list[str]:
     return chunks
 
 
+def _attr_label(attr: dict[str, Any]) -> str:
+    """One attribute as a readable ``name`` / ``name=value`` token for the chunk sensors.
+
+    The digital model carries the names and, for the attributes the cloud last reported, the
+    current value as well. ``name=value`` when a value is present, plain ``name`` otherwise.
+    """
+    name = attr.get("name") or ""
+    value = attr.get("value")
+    if value is None or value == "":
+        return name
+    return f"{name}={value}"
+
+
 class HaismartSupportedAttributesSensor(HaismartStaticSensor):
     """The attributes this unit's digital model declares (names, not values).
 
@@ -366,10 +383,13 @@ class HaismartSupportedAttributesSensor(HaismartStaticSensor):
 
 
 class HaismartAttributeChunkSensor(HaismartStaticSensor):
-    """One chunk of the digital model's attribute names, as a sensor state of its own.
+    """One chunk of the digital model's attributes, as a sensor state of its own.
 
-    The cloud-served digital model can declare hundreds of attribute names and HA caps a state
-    at 255 characters, so the names are split into several of these sensors that each fit.
+    The cloud-served digital model can declare hundreds of attributes and HA caps a state at
+    255 characters, so the list is split into several of these sensors that each fit. Each
+    token is ``name`` or ``name=value``, the value being the last one the cloud reported for
+    that attribute (the unit itself is offline more often than not, so a live read is not
+    always possible).
     """
 
     _attr_icon = "mdi:format-list-checkbox"

@@ -44,6 +44,7 @@ from .const import (
 )
 from .coordinator import HaismartConfigEntry, HaismartCoordinator
 from .entity import HaismartEntity
+from .zh_translations import ZH_EN
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -214,13 +215,14 @@ async def async_setup_entry(
     entities.append(HaismartMetaSensor(coordinator, "product_code", CONF_PRODUCT_CODE))
     entities.append(HaismartSupportedAttributesSensor(coordinator))
     # The attribute list split into chunk sensors that each fit HA's 255-char state cap. Each
-    # chunk carries ``name=value`` tokens for the attributes the digital model reports a value
-    # for (the cloud's last-known values), so the sensor states show values, not just names.
+    # chunk carries `name=value` and, for LIST attributes, every option with its translated
+    # description; long lists span several sensors with a repeated header.
     model = coordinator.digital_model or {}
-    labels = [
-        _attr_label(a) for a in model.get("attributes") or () if a.get("name")
-    ]
-    for i, chunk in enumerate(_split_attr_names(labels), 1):
+    segments: list[str] = []
+    for attr in model.get("attributes") or ():
+        if attr.get("name"):
+            segments.extend(_attr_segments(attr))
+    for i, chunk in enumerate(_split_attr_segments(segments), 1):
         entities.append(HaismartAttributeChunkSensor(coordinator, i, chunk))
     # Read-only enum state for the multi-state optional features a unit declares (presence-based
     # airflow and the like). Membership from the model, position from the map -- same safe basis as
@@ -317,36 +319,76 @@ class HaismartMetaSensor(HaismartStaticSensor):
         return self.coordinator.config_entry.data.get(self._conf_key) or None
 
 
-def _split_attr_names(names: list[str], limit: int = 255) -> list[str]:
-    """Split attribute names into comma-joined chunks that each fit HA's 255-char state cap."""
-    chunks: list[str] = []
-    current: list[str] = []
-    current_len = 0
-    for name in names:
-        sep_len = 2 if current else 0  # ", " between names
-        if current and current_len + sep_len + len(name) > limit:
-            chunks.append(", ".join(current))
-            current = [name]
-            current_len = len(name)
-        else:
-            current.append(name)
-            current_len += sep_len + len(name)
-    if current:
-        chunks.append(", ".join(current))
-    return chunks
+def _attr_segments(attr: dict[str, Any], limit: int = 255) -> list[str]:
+    """One attribute as display segments, each fitting HA's 255-char state cap.
 
-
-def _attr_label(attr: dict[str, Any]) -> str:
-    """One attribute as a readable ``name`` / ``name=value`` token for the chunk sensors.
-
-    The digital model carries the names and, for the attributes the cloud last reported, the
-    current value as well. ``name=value`` when a value is present, plain ``name`` otherwise.
+    LIST attributes show every option with its (translated) description; STEP attributes show
+    their range; the last-known value from the digital model is attached when present. An
+    attribute whose options do not fit a single segment spans several, each repeating its
+    ``name:`` header so a long list stays readable across sensors. Anything untranslated stays
+    in the original Chinese rather than disappearing.
     """
     name = attr.get("name") or ""
     value = attr.get("value")
-    if value is None or value == "":
-        return name
-    return f"{name}={value}"
+    vr = attr.get("valueRange") or {}
+    if vr.get("type") == "LIST":
+        header = f"{name}=" if value not in (None, "") else f"{name}:"
+        options = []
+        for item in vr.get("dataList") or ():
+            data = item.get("data")
+            if data is None:
+                continue
+            desc = ZH_EN.get(item.get("desc") or "", item.get("desc") or "")
+            options.append(f"{data}{f'({desc})' if desc else ''}")
+        segments: list[str] = []
+        current: list[str] = []
+        current_len = 0
+        for opt in options:
+            sep_len = 2 if current else 0  # ", " between options
+            if current and len(header) + current_len + sep_len + len(opt) > limit:
+                segments.append(header + ", ".join(current))
+                current = [opt]
+                current_len = len(opt)
+            else:
+                current.append(opt)
+                current_len += sep_len + len(opt)
+        if current:
+            segments.append(header + ", ".join(current))
+        return segments
+    parts: list[str] = []
+    if value not in (None, ""):
+        parts.append(str(value))
+    if vr.get("type") == "STEP":
+        step = vr.get("dataStep") or {}
+        if step.get("minValue") is not None and step.get("maxValue") is not None:
+            parts.append(f"[{step.get('minValue')}..{step.get('maxValue')}]")
+    if parts:
+        return [f"{name}={' '.join(parts)}"]
+    desc = attr.get("desc") or ""
+    return [f"{name}({ZH_EN.get(desc, desc)})" if desc else name]
+
+
+def _split_attr_segments(segments: list[str], limit: int = 255) -> list[str]:
+    """Pack attribute segments into sensor-state chunks that each fit HA's 255-char cap.
+
+    Every segment already fits alone; a chunk holds as many as join within the limit. A long
+    attribute's continuation segments repeat its header, so the split stays readable.
+    """
+    chunks: list[str] = []
+    current: list[str] = []
+    current_len = 0
+    for segment in segments:
+        sep_len = 2 if current else 0  # ", " between segments
+        if current and current_len + sep_len + len(segment) > limit:
+            chunks.append(", ".join(current))
+            current = [segment]
+            current_len = len(segment)
+        else:
+            current.append(segment)
+            current_len += sep_len + len(segment)
+    if current:
+        chunks.append(", ".join(current))
+    return chunks
 
 
 class HaismartSupportedAttributesSensor(HaismartStaticSensor):
@@ -379,7 +421,15 @@ class HaismartSupportedAttributesSensor(HaismartStaticSensor):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         names = self._attr_names()
-        return {"count": len(names), "chunks": len(_split_attr_names(names))}
+        return {"count": len(names), "chunks": len(_split_attr_segments(self._segments()))}
+
+    def _segments(self) -> list[str]:
+        model = self.coordinator.digital_model or {}
+        segments: list[str] = []
+        for attr in model.get("attributes") or ():
+            if attr.get("name"):
+                segments.extend(_attr_segments(attr))
+        return segments
 
 
 class HaismartAttributeChunkSensor(HaismartStaticSensor):

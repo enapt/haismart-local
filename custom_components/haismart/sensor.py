@@ -213,6 +213,11 @@ async def async_setup_entry(
     entities.append(HaismartMetaSensor(coordinator, "device_type", CONF_DEVICE_TYPE))
     entities.append(HaismartMetaSensor(coordinator, "product_code", CONF_PRODUCT_CODE))
     entities.append(HaismartSupportedAttributesSensor(coordinator))
+    # The attribute-name list split into chunk sensors that each fit HA's 255-char state cap.
+    model = coordinator.digital_model or {}
+    names = [a.get("name") for a in model.get("attributes") or () if a.get("name")]
+    for i, chunk in enumerate(_split_attr_names(names), 1):
+        entities.append(HaismartAttributeChunkSensor(coordinator, i, chunk))
     # Read-only enum state for the multi-state optional features a unit declares (presence-based
     # airflow and the like). Membership from the model, position from the map -- same safe basis as
     # the feature binary sensors, and read-only for the same reason.
@@ -308,11 +313,34 @@ class HaismartMetaSensor(HaismartStaticSensor):
         return self.coordinator.config_entry.data.get(self._conf_key) or None
 
 
+def _split_attr_names(names: list[str], limit: int = 255) -> list[str]:
+    """Split attribute names into comma-joined chunks that each fit HA's 255-char state cap."""
+    chunks: list[str] = []
+    current: list[str] = []
+    current_len = 0
+    for name in names:
+        sep_len = 2 if current else 0  # ", " between names
+        if current and current_len + sep_len + len(name) > limit:
+            chunks.append(", ".join(current))
+            current = [name]
+            current_len = len(name)
+        else:
+            current.append(name)
+            current_len += sep_len + len(name)
+    if current:
+        chunks.append(", ".join(current))
+    return chunks
+
+
 class HaismartSupportedAttributesSensor(HaismartStaticSensor):
     """The attributes this unit's digital model declares (names, not values).
 
     The digital model is served by the cloud server, so the list is available even while the
     device is offline. Values require the unit to be online.
+
+    HA caps a sensor state at 255 characters and a model can declare hundreds of attributes, so
+    the names are split into several chunk sensors (``supported_attributes_01``,
+    ``supported_attributes_02``, ...) that each fit; this one reports the total count.
     """
 
     _attr_translation_key = "supported_attributes"
@@ -333,27 +361,29 @@ class HaismartSupportedAttributesSensor(HaismartStaticSensor):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        # The full list can be hundreds of names, far past HA's 255-char limit for a single
-        # attribute value, so split it into several attributes whose joined length each fits.
         names = self._attr_names()
-        chunks: list[str] = []
-        current: list[str] = []
-        current_len = 0
-        for name in names:
-            sep_len = 2 if current else 0  # ", " between names
-            if current and current_len + sep_len + len(name) > 255:
-                chunks.append(", ".join(current))
-                current = [name]
-                current_len = len(name)
-            else:
-                current.append(name)
-                current_len += sep_len + len(name)
-        if current:
-            chunks.append(", ".join(current))
-        attrs: dict[str, Any] = {"count": len(names)}
-        for i, chunk in enumerate(chunks, 1):
-            attrs[f"attributes_{i:02d}"] = chunk
-        return attrs
+        return {"count": len(names), "chunks": len(_split_attr_names(names))}
+
+
+class HaismartAttributeChunkSensor(HaismartStaticSensor):
+    """One chunk of the digital model's attribute names, as a sensor state of its own.
+
+    The cloud-served digital model can declare hundreds of attribute names and HA caps a state
+    at 255 characters, so the names are split into several of these sensors that each fit.
+    """
+
+    _attr_icon = "mdi:format-list-checkbox"
+
+    def __init__(self, coordinator: HaismartCoordinator, index: int, text: str) -> None:
+        super().__init__(coordinator)
+        self._index = index
+        self._text = text
+        self._attr_name = f"Supported attributes {index:02d}"
+        self._attr_unique_id = f"{coordinator.device_id}_supported_attributes_{index:02d}"
+
+    @property
+    def native_value(self) -> str:
+        return self._text
 
 
 class HaismartModelIdSensor(HaismartStaticSensor):

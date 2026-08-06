@@ -11,6 +11,12 @@ once so the integration can fetch your unit's key — after that it talks only t
 Everything else it needs, including the published details of **every air conditioner in the range**,
 ships with it: keep a copy of that key and setup works with no internet at all._
 
+> **This is the home of the project.** [`enapt/haismart-local`](https://github.com/enapt/haismart-local)
+> is where releases are cut and where issues get answered. Copies exist elsewhere — that is what the
+> MIT licence is for — but they are not tracked here, may be based on much older code, and their
+> version numbers are their own. If you arrived from one, check the release you are running against
+> [the list here](https://github.com/enapt/haismart-local/releases).
+
 **🌐 Getting started in your language:** [Bahasa Indonesia](docs/i18n/README.id.md) ·
 [ไทย](docs/i18n/README.th.md) · [Tiếng Việt](docs/i18n/README.vi.md) ·
 [Bahasa Melayu](docs/i18n/README.ms.md) · [Filipino](docs/i18n/README.fil.md)\

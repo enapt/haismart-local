@@ -106,6 +106,7 @@ from .const import (
     ISSUE_KEY_WILL_ROTATE,
     ISSUE_STALE_LOCALKEY,
     ISSUE_UNKNOWN_LAYOUT,
+    OUTDOOR_TEMP_MAX_AGE,
     READ_TIMEOUT,
     REDISCOVER_COOLDOWN,
     STATUS_HOLD_MAX_AGE,
@@ -509,6 +510,13 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # last fault reading, held across control sessions that never request the alarm frame
         self._alarms: dict[str, Any] = {}
         self._alarms_at = 0.0
+        # The outdoor reading last seen, and when it was last known to speak for now (see
+        # `_drop_stale_outdoor_temp`). Starting the clock at first sight rather than at zero means a
+        # restart holds a possibly-parked reading for at most one `OUTDOOR_TEMP_MAX_AGE`, which is
+        # better than blanking a sensor whose unit may have been off for two minutes.
+        self._outdoor_temp: float | None = None
+        self._outdoor_temp_fresh_at: float | None = None
+        self._outdoor_temp_stale = False
         self._misses = 0
         # Consecutive failed cycles whose predecessor's reading is still being published, and when
         # that run of failures began (see `_held_status`). Cleared by any successful read.
@@ -704,6 +712,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                                 self.host, len(EXTENDED_STATUS_FRAME_TYPES),
                             )
                 self._apply_telemetry(state, telemetry)
+                self._drop_stale_outdoor_temp(state)
                 state.update(alarms)
                 state["features"] = self._feature_states(blob)
                 state["features_enum"] = self._feature_enum_states(blob)
@@ -1134,6 +1143,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 self.last_raw_status = blob
                 self._misses = 0
                 self._apply_telemetry(state, telemetry)
+                self._drop_stale_outdoor_temp(state)
                 # The echo is a status report and nothing else: it carries no alarm frame, so the
                 # last fault reading stands in exactly as the telemetry does. The optional-feature
                 # states DO come from the status words, so they are read from the echo itself
@@ -1177,6 +1187,54 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._telemetry = {}
             return
         state.update(self._telemetry)
+
+    def _drop_stale_outdoor_temp(self, state: dict[str, Any]) -> None:
+        """Let the outdoor temperature read unknown once the unit has been off long enough that it
+        is no longer a measurement.
+
+        The probe is in the outdoor unit, which sleeps when the AC is off; the indoor board then
+        keeps sending the last value it took. Nothing is cached here -- the AC is repeating itself,
+        and it will do so indefinitely. Published as a MEASUREMENT, that parked number lands in
+        long-term statistics as if it had been measured, so a unit off overnight quietly rewrites
+        the day's minimum. Same judgement as `_apply_telemetry`'s age bound, for the same reason: a
+        plausible-looking wrong number is worse than a gap.
+
+        Whether it is parked is decided by WATCHING it, not by assuming: a unit that keeps
+        refreshing the reading while off (nothing rules that out -- the staleness is documented
+        behaviour, not a law) resets the clock by sending a different value, and never blanks. The
+        needs the unit to be off AND the value to have sat unchanged past the bound. A reading that
+        is genuinely current is never suppressed, which is the direction that matters: withholding a
+        real measurement would hide exactly the decode faults absence is supposed to reveal.
+
+        Deliberately quiet -- this is ordinary behaviour for a switched-off air conditioner, not a
+        fault. It raises nothing and logs at debug, once per transition rather than per cycle.
+        """
+        value = state.get("outdoor_temperature")
+        if value is None:
+            return
+        now = self.hass.loop.time()
+        changed = value != self._outdoor_temp
+        self._outdoor_temp = value
+        # `power` unknown counts as running: never blank a reading on the strength of a state we
+        # could not decode.
+        if state.get("power") is not False or changed or self._outdoor_temp_fresh_at is None:
+            self._outdoor_temp_fresh_at = now
+            if self._outdoor_temp_stale:
+                self._outdoor_temp_stale = False
+                _LOGGER.debug(
+                    "%s is reporting a fresh outdoor temperature again (%.1f C)", self.host, value,
+                )
+            return
+        if now - self._outdoor_temp_fresh_at <= OUTDOOR_TEMP_MAX_AGE:
+            return
+        del state["outdoor_temperature"]
+        if not self._outdoor_temp_stale:
+            self._outdoor_temp_stale = True
+            _LOGGER.debug(
+                "%s has been off with its outdoor temperature parked at %.1f C for over %.0f s; "
+                "reporting it as unknown rather than as a current measurement",
+                self.host, value, OUTDOOR_TEMP_MAX_AGE,
+            )
 
     def _held_alarms(self, alarms: dict[str, Any]) -> dict[str, Any]:
         """Carry the last fault reading across a cycle that did not ask for one.

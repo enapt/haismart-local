@@ -47,7 +47,7 @@ table without anyone here owning one.
 | `AAC1UKZ01` | HSU-24VRRA03TF | 127-byte classic | ❌ | `deviceType 0201203a`, OUI `AC:B7:22`. Cooling-only. The original unit this project was written for. |
 | `AAC1UKZ01` | HSU-12HFMF/013WUSDC(W) | 117-byte compact-12 | ✅ | OUI `04:E2:29`. A **different wire family** — all attributes (sensors included) are packed into one word array. Reading and control both confirmed on real hardware. |
 | `AAD180E00` | HSU-12KCROC(IN)-R32 | 165-byte extended-36 | ✅ | `deviceType 02012036`. The classic bit map **displaced by 19 words**: the report carries a voice/media block first, so the climate attributes start at word 20. **Confirmed on hardware by the reporter** (2026-07-29): reading and full control — temperature, modes, fan speed, health, display light. |
-| `AAC1UKZ01` | HS-25VRB03 | 175-byte extended-36 | ❌ | Module `MK-QTWiFi3.1S`, firmware `e.4.3.00` / `R_6.0.01`, Malaysia. The extended-36 map with five further words of counters on the end. **Confirmed on hardware by the reporter** (2026-07-31): reading and full control — power, mode, temperature, fan speed, both swings, no snap-back. Its report carries **live power in watts**, which no other family here reports directly, plus a working **cumulative energy total in watt-hours** — the only unit here with both, so it feeds the Energy dashboard with no helper — and it publishes both vanes' positions. |
+| `AAC1UKZ01` | HS-25VRB03 | 175-byte extended-36 | ❌ | Module `MK-QTWiFi3.1S`, firmware `e.4.3.00` / `R_6.0.01`, Malaysia. The extended-36 map with five further words of counters on the end. **Confirmed on hardware by the reporter** (2026-07-31): reading and full control — power, mode, temperature, fan speed, both swings, no snap-back. Its report carries **live power in watts**, which no other family here reports directly, plus a working **cumulative energy total in watt-hours** — the only unit here with both, so it feeds the Energy dashboard with no helper — and it publishes both vanes' positions. **Self-clean confirmed on hardware by the reporter** (2026-08-05): the button starts a cycle and the unit's own panel shows `CL`. That control had shipped for this family on the strength of the write command being shared across layouts rather than on an observation, so this is the first time it has been *seen* to work outside the classic family. |
 | `AAC1UKZ01` | HSU-24HFAB/013WUSDC(W)-T3 | 209-byte extended-46 | ✅ | OUI `5C:24:1F`. Extended-36 with a further ten-word block inserted at word 25, and a **half-degree setpoint**. Reading confirmed against three captured states, fan speed included — it answers from the inserted block rather than the usual word. Control covers power, mode and temperature; fan speed is read-only here and the swings are not settled. |
 
 > **"Report" is the status layout, not just a length.** Most models share the *classic* family (the
@@ -84,6 +84,23 @@ still ramping when it was measured.
 
 If your unit's Eco behaves differently, please say so in an issue — levels may well be scaled per
 model or per capacity.
+
+## Why the outdoor temperature stops moving when the AC is off
+
+This one gets reported as a bug and is not one. The outdoor probe sits in the **outdoor** unit,
+which is dormant while the air conditioner is off, so the indoor board keeps sending the last value
+it managed to take. The indoor probe is on the indoor board, which stays awake — which is why one
+reading carries on updating and the other appears frozen.
+
+It is the appliance repeating itself, not the integration caching: the same behaviour is documented
+independently for this protocol ("remains unchanged, reflecting the last measured value").
+
+What the integration does about it: after the unit has been off for **30 minutes with the reading
+unchanged**, the sensor reports `unknown` rather than a number. A parked reading is still broadly
+true for a while, but a unit switched off overnight would otherwise write a value measured at dusk
+into eight hours of history and drag the day's minimum with it. A unit that *does* keep refreshing
+the reading while off simply carries on — the check waits for the value to actually stand still, so
+a genuine measurement is never suppressed.
 
 ## Known NOT to work
 

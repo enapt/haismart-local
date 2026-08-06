@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
@@ -39,6 +40,7 @@ from custom_components.haismart.const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     EXTENDED_MISSES,
+    OUTDOOR_TEMP_MAX_AGE,
     REDISCOVER_COOLDOWN,
     TELEMETRY_MAX_AGE,
     UDISCOVERY_INTERVAL,
@@ -1032,6 +1034,95 @@ async def test_telemetry_survives_a_dropped_reply_then_expires(
     await _tick(hass, freezer)
     assert hass.states.get("sensor.downstairs_ac_power").state == "unknown"
     assert hass.states.get(CLIMATE).state == "cool"        # the status itself still decodes
+
+
+OUTDOOR = "sensor.downstairs_ac_outdoor_temperature"
+
+
+async def test_a_parked_outdoor_reading_goes_unknown_once_the_unit_has_been_off(
+    hass: HomeAssistant, mock_uss, freezer
+) -> None:
+    """The outdoor probe is in the outdoor unit, which sleeps when the AC is off — so the indoor
+    board repeats the last value it took, for as long as the unit stays off. Published as a
+    MEASUREMENT it would write that number into long-term statistics as though it had been
+    measured, so past OUTDOOR_TEMP_MAX_AGE it reads unknown instead."""
+    mock_uss.read.return_value = [make_status_frame(outdoor_temp=33)]
+    await _setup(hass)
+    assert float(hass.states.get(OUTDOOR).state) == 33.0
+
+    # Off, but only just: a recently parked reading is still broadly true and stands.
+    mock_uss.read.return_value = [make_status_frame(power=False, outdoor_temp=33)]
+    await _tick(hass, freezer)
+    assert float(hass.states.get(OUTDOOR).state) == 33.0
+
+    freezer.tick(timedelta(seconds=OUTDOOR_TEMP_MAX_AGE))
+    await _tick(hass, freezer)
+    assert hass.states.get(OUTDOOR).state == "unknown"
+    # ...and only that reading: the indoor probe is on the indoor board, which stays awake.
+    assert float(hass.states.get("sensor.downstairs_ac_indoor_temperature").state) == 26.5
+    assert hass.states.get(CLIMATE).state == "off"
+
+
+async def test_a_running_unit_never_has_its_outdoor_reading_suppressed(
+    hass: HomeAssistant, mock_uss, freezer
+) -> None:
+    """The bound is about a dormant probe, not about a value that looks too steady. An AC that runs
+    all day in stable weather reports the same number for hours and every one of them is a real
+    measurement — withholding those would hide the decode faults absence is meant to reveal."""
+    mock_uss.read.return_value = [make_status_frame(outdoor_temp=33)]
+    await _setup(hass)
+
+    freezer.tick(timedelta(seconds=OUTDOOR_TEMP_MAX_AGE * 3))
+    await _tick(hass, freezer)
+    assert float(hass.states.get(OUTDOOR).state) == 33.0
+
+
+async def test_an_off_unit_that_keeps_refreshing_its_outdoor_reading_keeps_the_sensor(
+    hass: HomeAssistant, mock_uss, freezer
+) -> None:
+    """Staleness while off is documented behaviour, not a law, so it is watched for rather than
+    assumed: a unit that sends a *different* value while off is plainly still reading its probe, and
+    saying so resets the clock. Only a value that has actually sat unchanged is dropped."""
+    mock_uss.read.return_value = [make_status_frame(power=False, outdoor_temp=33)]
+    await _setup(hass)
+
+    for offset, expected in ((1, 32), (2, 31)):
+        freezer.tick(timedelta(seconds=OUTDOOR_TEMP_MAX_AGE))
+        mock_uss.read.return_value = [
+            make_status_frame(power=False, outdoor_temp=33 - offset)
+        ]
+        await _tick(hass, freezer)
+        assert float(hass.states.get(OUTDOOR).state) == float(expected)
+
+
+async def test_the_outdoor_bound_raises_nothing_and_warns_about_nothing(
+    hass: HomeAssistant, mock_uss, freezer, caplog
+) -> None:
+    """A switched-off air conditioner is ordinary. Blanking the reading must not look like a fault:
+    no repair, no warning in the log, and every other entity untouched."""
+    from homeassistant.helpers import issue_registry as ir
+
+    mock_uss.read.return_value = [make_status_frame(outdoor_temp=33)]
+    await _setup(hass)
+    mock_uss.read.return_value = [make_status_frame(power=False, outdoor_temp=33)]
+    before = set(ir.async_get(hass).issues)
+    caplog.clear()
+    with caplog.at_level(logging.WARNING):
+        freezer.tick(timedelta(seconds=OUTDOOR_TEMP_MAX_AGE))
+        await _tick(hass, freezer)
+
+    assert hass.states.get(OUTDOOR).state == "unknown"
+    # Scoped to this integration on purpose: jumping the clock makes asyncio grumble about a task
+    # that took half an hour of frozen time, which says nothing about the code under test.
+    assert not [
+        r for r in caplog.records
+        if r.levelno >= logging.WARNING and r.name.startswith("custom_components.haismart")
+    ]
+    # Nothing NEW: this entry already carries the rotation warning, which has nothing to do with a
+    # parked probe. What matters is that going unknown adds no repair of its own.
+    assert set(ir.async_get(hass).issues) == before
+    # unknown, never unavailable: the entity is working and the value is simply not known.
+    assert hass.states.get(OUTDOOR).state != "unavailable"
 
 
 async def test_setup_retries_when_unreachable(hass: HomeAssistant, mock_uss) -> None:

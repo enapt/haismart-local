@@ -80,6 +80,21 @@ REDISCOVER_COOLDOWN = 300.0  # seconds between attempts
 # slow-moving measurements, so a value from seconds ago beats a gap, while a unit that has genuinely
 # stopped reporting still ends up honestly unknown rather than frozen on an old number.
 TELEMETRY_MAX_AGE = 120.0    # seconds a previous extended reading may stand in for a missing one
+# The outdoor probe sits in the OUTDOOR unit, which is dormant while the AC is off -- so the indoor
+# board keeps reporting the last value it took rather than a current one. Documented behaviour of
+# this protocol ("remains unchanged, reflecting the last measured value"), and confirmed on
+# hardware: on a unit left off, the indoor reading kept moving while the outdoor one stood still.
+#
+# That reading is published as a MEASUREMENT, so a unit switched off overnight writes a value that
+# was true at dusk into eight hours of long-term statistics and skews the daily minimum -- the same
+# reasoning that makes an absent probe read absent rather than a confident -64 C. Past this age it
+# reads unknown instead, exactly as stale telemetry does.
+#
+# Generous, because a recently-parked reading is still broadly true and short off-periods are the
+# common case; it is the overnight one that invents history. Not a decode check: the value is
+# correctly decoded and knowably unrefreshed, which is why it is bounded by age rather than by a
+# plausibility band: a band on a confirmed field cannot prevent a decode error, only hide one.
+OUTDOOR_TEMP_MAX_AGE = 1800.0  # seconds an outdoor reading may stand while the unit is off
 # Consecutive cycles that carry status but no extended report before we conclude the unit does not
 # answer that query and stop appending it. More than one, because a single reply can simply be
 # dropped and the conclusion is expensive: it removes the power, current, frequency, coil,

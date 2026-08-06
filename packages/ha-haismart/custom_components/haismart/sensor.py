@@ -219,13 +219,15 @@ async def async_setup_entry(
     entities.append(HaismartMetaSensor(coordinator, "device_type", CONF_DEVICE_TYPE))
     entities.append(HaismartMetaSensor(coordinator, "product_code", CONF_PRODUCT_CODE))
     entities.append(HaismartSupportedAttributesSensor(coordinator))
-    # One sensor per digital-model attribute, on their own "Supported attributes" device so the
-    # main device page keeps only the built-in sensors. The state is the last-known value --
-    # for a LIST attribute ``ValueDescription(option:description, ...)``, translated to
-    # English -- with an em dash when the unit never reported one; LIST options and STEP ranges
-    # also live on extra_state_attributes. The ``0``/``1`` flag in the unique id sorts
-    # value-having attributes before the others on the device page (which orders by entity id),
-    # each group then alphabetically by attribute name.
+    # One sensor per digital-model attribute, on their own "Supported attributes" devices so the
+    # main device page keeps only the built-in sensors. The sensors split across two devices --
+    # one for the attributes the cloud reports a value for, one for those without one (unit
+    # offline); each attribute belongs to exactly one of them, decided at creation. The state is
+    # the last-known value -- for a LIST attribute ``ValueDescription(option:description, ...)``,
+    # translated to English -- with an em dash when the unit never reported one; LIST options and
+    # STEP ranges also live on extra_state_attributes. The ``0``/``1`` flag in the unique id
+    # sorts value-having attributes before the others on the device page (which orders by entity
+    # id), each group then alphabetically by attribute name.
     model = coordinator.digital_model or {}
     attrs = [a for a in model.get("attributes") or () if a.get("name")]
     attrs.sort(key=lambda a: (a.get("value") in (None, ""), (a.get("name") or "").lower()))
@@ -387,15 +389,15 @@ class HaismartAttributeSensor(HaismartStaticSensor):
     """One digital-model attribute, as a sensor of its own.
 
     The cloud-served digital model can declare hundreds of attributes; each becomes a sensor so
-    the rows stay readable. They live on their own "Supported attributes" device (a separate
-    device registry entry) rather than the unit's, keeping the unit's device page to the
-    built-in sensors.
+    the rows stay readable. The sensors split across two "Supported attributes" devices: one for
+    the attributes the cloud currently reports a value for, one for the ones it does not (the unit
+    is offline more often than not, so a live read is not always possible). An attribute belongs
+    to exactly one of the two, decided at creation time from whether the model carries a value.
 
     The state is the last-known value the cloud reported for that attribute with its translated
     description first -- a LIST attribute reads ``ValueDescription(option:description, ...)`` so
     the current setting is immediately visible -- and an em dash when the unit never reported
-    one (it is offline more often than not, so a live read is not always possible). The
-    translated description, raw attribute name, LIST options and STEP range also live on
+    one. The translated description, raw attribute name, LIST options and STEP range also live on
     extra_state_attributes. The ``0``/``1`` flag in the unique id orders value-having
     attributes before the others on the device page, each group alphabetically by name.
     """
@@ -407,16 +409,18 @@ class HaismartAttributeSensor(HaismartStaticSensor):
         self._attr = attr
         name = attr.get("name") or ""
         desc = ZH_EN.get(attr.get("desc") or "", attr.get("desc") or "")
-        self._attr_name = desc or name
+        self._attr_name = f"{name}|{desc}" if desc else name
         value_flag = "0" if attr.get("value") not in (None, "") else "1"
         self._attr_unique_id = f"{coordinator.device_id}_attribute_{value_flag}_{name}"
         entry_data = coordinator.config_entry.data
+        offline = attr.get("value") in (None, "")
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, coordinator.device_id, "supported_attributes")},
+            identifiers={(DOMAIN, coordinator.device_id, "supported_attributes_offline" if offline else "supported_attributes")},
             manufacturer=entry_data.get(CONF_BRAND) or MANUFACTURER,
             model=entry_data.get(CONF_MODEL_NAME) or coordinator.product_code,
             model_id=coordinator.product_code,
-            name=f"{coordinator.config_entry.title} Supported attributes",
+            name=f"{coordinator.config_entry.title} Supported attributes"
+            + (" (offline)" if offline else ""),
         )
 
     @property

@@ -852,3 +852,46 @@ locked: a code labels a rule that has already fired.
 naming five, and setting Eco or Quiet refused with the reason. In cool: same 26 entities, no locks,
 and Eco set to `level1` and back to `off` on the real unit. No entity changes state between modes,
 so switching modes leaves no history gap and no automation sees an entity blink out.
+
+## 25. An outdoor reading that is not a measurement — settled
+
+**Status: shipped in v0.39.0, deployed and verified on hardware. Reported as a bug by the owner of
+a 175-byte unit; the diagnosis is that it was never our bug, and the fix is about how we present
+what the appliance says rather than about what we read.**
+
+The outdoor temperature stops changing when the air conditioner is switched off. The probe is in the
+**outdoor** unit, which is dormant then, so the indoor board carries on reporting the last value it
+managed to take. The indoor probe is on the indoor board, which stays awake — which is exactly the
+asymmetry that was reported: one reading kept moving, the other stood still.
+
+Nothing was cached on our side. The decode is stateless, and neither of the two hold-overs that do
+exist (telemetry, faults) can reach this field — the extended report names `outdoor_coil`,
+`outdoor_in_air` and `outdoor_defrost`, and no `outdoor_temperature`. The behaviour is documented
+independently for this protocol: the value *"remains unchanged, reflecting the last measured value"*.
+
+**Why it still needed fixing.** The reading is published as a `MEASUREMENT`, so it lands in
+long-term statistics. A unit switched off overnight therefore wrote a value that was true at dusk
+into eight hours of history and dragged the day's minimum with it. Presenting a parked number as a
+current measurement is the thing that was wrong, not the number itself.
+
+**What ships:** after the unit has been off for 30 minutes *with the reading unchanged*, the sensor
+reports `unknown`. Both conditions are required, and the second is the important one — staleness
+while off is documented behaviour, not a law, so a unit that keeps refreshing its probe resets the
+clock simply by sending a different value and never blanks.
+
+⚠️ **This is deliberately NOT the same shape as a plausibility band**, which
+[Rule 13](#21-a-reading-that-looked-intermittent-and-the-rule-that-came-out-of-it--settled) exists to
+warn against. A band on a confirmed field cannot prevent a decode error, only hide one, and it hides
+it as absence. Here the value is correctly decoded and *knowably* unrefreshed, which is why the bound
+is on age and on observed stillness rather than on the value looking wrong. A reading that is
+genuinely current is never suppressed — that direction is the one that matters, and it is the one
+verified live.
+
+**A switched-off air conditioner is ordinary**, so this raises no repair and logs at debug, once per
+transition. The sensor reads `unknown` rather than `unavailable`: the entity works, the value is
+simply not known.
+
+**Verified on hardware (2026-08-06):** 26 entities, none unavailable, no exceptions, and the unit
+running in fan-only with its outdoor reading present — i.e. a live measurement is not suppressed.
+⚠️ The 30-minute drop itself is covered by tests rather than by the deploy, since observing it live
+means leaving the appliance switched off for half an hour.

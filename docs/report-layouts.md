@@ -87,6 +87,14 @@ frame and needs no layout at all.
 extended-36 — on the latter the reports corroborate it, with the two purification bits set together
 there and the self-clean bit clear on units that were not cleaning.
 
+★ **And on extended-36 it is now observed, not inferred** (a 175-byte unit, 2026-08-05): the control
+shipped for that family on the strength of the command being shared across layouts, which is exactly
+the kind of inference the write gate says not to trust. Its owner pressed the button and the unit
+started a cycle with `CL` on its panel. So a write confirmed on one family does carry to another
+unmodified — the first direct evidence for that, which until then rested on the published write
+frame alone. It does not license skipping the check: the gate exists because a field can decode,
+be declared, validate, and still be discarded by the hardware.
+
 It is **not offered** on the other two, for different reasons.
 
 On **compact-12** nothing carries over: its map differs throughout, so the flag needs its own

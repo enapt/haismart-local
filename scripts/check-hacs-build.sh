@@ -34,6 +34,20 @@ cp -r "$dest" "$tmp/expected"
 rm -rf "$dest"
 cp -r "$tmp/actual" "$dest"
 
+# hacs.json is NOT generated -- it is committed at the repo root, because that is the only copy
+# HACS reads. The package keeps its own copy for the monorepo layout, so the two can drift with
+# nothing to catch it: a declaration added to the package copy alone is simply never applied, which
+# is exactly how the supported-Home-Assistant floor sat unread for several releases.
+if ! diff -q "$root/hacs.json" "$root/packages/ha-haismart/hacs.json" >/dev/null 2>&1; then
+  {
+    echo "hacs.json differs between the repo root and packages/ha-haismart/:"
+    diff "$root/hacs.json" "$root/packages/ha-haismart/hacs.json" | sed "s/^/  /"
+    echo
+    echo "HACS only ever reads the ROOT copy. Make them identical."
+  } >&2
+  exit 1
+fi
+
 if diff -rq $DIFF_SKIP "$tmp/actual" "$tmp/expected" >/dev/null 2>&1; then
   echo "custom_components/ is in sync with packages/"
   exit 0

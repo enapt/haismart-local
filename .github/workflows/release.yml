@@ -1,0 +1,37 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  version:
+    name: The tag and the manifest agree
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Compare the tag with the shipped version
+        # HACS installs from the repository tree at the tag -- there is no release zip -- so the
+        # manifest committed here is exactly what lands in a user's config directory, and Home
+        # Assistant reads its `version` to decide whether an update is available. A tag whose
+        # manifest still says the previous version therefore offers the release forever or never.
+        #
+        # scripts/release.sh derives both from one argument so they cannot disagree; this is the
+        # backstop for a tag pushed any other way, which is the case that has actually happened.
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          fail=0
+          for f in custom_components/haismart/manifest.json \
+                   packages/ha-haismart/custom_components/haismart/manifest.json; do
+            got="$(python3 -c "import json;print(json.load(open('$f'))['version'])")"
+            if [ "$got" != "$tag" ]; then
+              echo "::error file=$f::tagged $GITHUB_REF_NAME but this manifest says $got"
+              fail=1
+            fi
+          done
+          exit $fail

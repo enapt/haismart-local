@@ -431,7 +431,7 @@ class HaismartAttributeSensor(HaismartStaticSensor):
         if self.coordinator.is_ac is False:
             name = self._attr.get("name") or ""
             desc = ZH_EN.get(self._attr.get("desc") or "", self._attr.get("desc") or "")
-            heading = f"{name}|{desc}\n" if desc else f"{name}\n"
+            heading = f"{name} | {desc}\n" if desc else f"{name}\n"
         value = self._attr.get("value")
         vr = self._attr.get("valueRange") or {}
         options: list[str] = []

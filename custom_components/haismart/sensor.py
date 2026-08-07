@@ -442,7 +442,7 @@ class HaismartAttributeSensor(HaismartStaticSensor):
                 head = value_desc or str(value)
         if value in (None, ""):
             return f"{heading}: \u2014" if heading else "\u2014"
-        text = f"{head}({', '.join(options)})" if vr.get("type") == "LIST" else str(value)
+        text = f"{head} ({', '.join(options)})" if vr.get("type") == "LIST" else str(value)
         if len(heading) + len(text) <= 255:
             return f"{heading}: {text}" if heading else text
         # A few LIST attributes carry hundreds of options; keep the current value's
@@ -458,8 +458,8 @@ class HaismartAttributeSensor(HaismartStaticSensor):
             kept.append(opt)
             used += sep + len(opt)
         if heading:
-            return f"{heading}: {head}({', '.join(kept)}…)"
-        return f"{head}({', '.join(kept)}…)"
+            return f"{heading}: {head} ({', '.join(kept)}…)"
+        return f"{head} ({', '.join(kept)}…)"
 
     def _list_options(self) -> tuple[list[str], str | None]:
         """The LIST options as ``data:description`` tokens (fully translated), plus the

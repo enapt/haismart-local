@@ -425,42 +425,39 @@ class HaismartAttributeSensor(HaismartStaticSensor):
 
     @property
     def native_value(self) -> str:
+        # Only the washer's supported-attribute sensors lead with name|description;
+        # AC attribute sensors keep the plain value.
+        heading = ""
+        if self.coordinator.is_ac is False:
+            name = self._attr.get("name") or ""
+            desc = ZH_EN.get(self._attr.get("desc") or "", self._attr.get("desc") or "")
+            heading = f"{name}|{desc}<br>" if desc else f"{name}<br>"
         value = self._attr.get("value")
         vr = self._attr.get("valueRange") or {}
+        options: list[str] = []
+        head = ""
         if vr.get("type") == "LIST":
             options, value_desc = self._list_options()
-            joined = ", ".join(options)
             if value not in (None, ""):
                 head = value_desc or str(value)
-                text = f"{head}({joined})"
-                if len(text) <= 255:
-                    return text
-                # A few LIST attributes carry hundreds of options; keep the current value's
-                # description plus as many options as fit, the full list is on
-                # extra_state_attributes.
-                budget = 255 - len(head) - 3
-                kept: list[str] = []
-                used = 0
-                for opt in options:
-                    sep = 2 if kept else 0
-                    if used + sep + len(opt) > budget:
-                        break
-                    kept.append(opt)
-                    used += sep + len(opt)
-                return f"{head}({', '.join(kept)}…)"
-            text = f"({joined})"
-            if len(text) <= 255:
-                return text
-            kept: list[str] = []
-            used = 0
-            for opt in options:
-                sep = 2 if kept else 0
-                if used + sep + len(opt) > 253:
-                    break
-                kept.append(opt)
-                used += sep + len(opt)
-            return f"({', '.join(kept)}…)"
-        return "\u2014" if value in (None, "") else str(value)
+        if value in (None, ""):
+            return f"{heading}\u2014"
+        text = f"{head}({', '.join(options)})" if vr.get("type") == "LIST" else str(value)
+        if len(heading) + len(text) <= 255:
+            return heading + text
+        # A few LIST attributes carry hundreds of options; keep the current value's
+        # description plus as many options as fit, the full list is on
+        # extra_state_attributes.
+        budget = 255 - len(heading) - 3
+        kept: list[str] = []
+        used = 0
+        for opt in options:
+            sep = 2 if kept else 0
+            if used + sep + len(opt) > budget:
+                break
+            kept.append(opt)
+            used += sep + len(opt)
+        return f"{heading}{head}({', '.join(kept)}…)"
 
     def _list_options(self) -> tuple[list[str], str | None]:
         """The LIST options as ``data:description`` tokens (fully translated), plus the

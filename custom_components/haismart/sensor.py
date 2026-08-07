@@ -431,7 +431,7 @@ class HaismartAttributeSensor(HaismartStaticSensor):
         if self.coordinator.is_ac is False:
             name = self._attr.get("name") or ""
             desc = ZH_EN.get(self._attr.get("desc") or "", self._attr.get("desc") or "")
-            heading = f"{name} | {desc}\n" if desc else f"{name}\n"
+            heading = f"{name} ({desc})\n" if desc else f"{name}\n"
         value = self._attr.get("value")
         vr = self._attr.get("valueRange") or {}
         options: list[str] = []
@@ -441,14 +441,14 @@ class HaismartAttributeSensor(HaismartStaticSensor):
             if value not in (None, ""):
                 head = value_desc or str(value)
         if value in (None, ""):
-            return f"{heading}\u2014"
+            return f"{heading}: \u2014" if heading else "\u2014"
         text = f"{head}({', '.join(options)})" if vr.get("type") == "LIST" else str(value)
         if len(heading) + len(text) <= 255:
-            return heading + text
+            return f"{heading}: {text}" if heading else text
         # A few LIST attributes carry hundreds of options; keep the current value's
         # description plus as many options as fit, the full list is on
         # extra_state_attributes.
-        budget = 255 - len(heading) - 3
+        budget = 255 - len(heading) - 4
         kept: list[str] = []
         used = 0
         for opt in options:
@@ -457,7 +457,9 @@ class HaismartAttributeSensor(HaismartStaticSensor):
                 break
             kept.append(opt)
             used += sep + len(opt)
-        return f"{heading}{head}({', '.join(kept)}…)"
+        if heading:
+            return f"{heading}: {head}({', '.join(kept)}…)"
+        return f"{head}({', '.join(kept)}…)"
 
     def _list_options(self) -> tuple[list[str], str | None]:
         """The LIST options as ``data:description`` tokens (fully translated), plus the
@@ -470,7 +472,7 @@ class HaismartAttributeSensor(HaismartStaticSensor):
             if data is None:
                 continue
             desc = ZH_EN.get(item.get("desc") or "", item.get("desc") or "")
-            options.append(f"{data}:{desc}" if desc else str(data))
+            options.append(f"{data}: {desc}" if desc else str(data))
             if value not in (None, "") and str(data) == str(value):
                 value_desc = desc or str(data)
         return options, value_desc

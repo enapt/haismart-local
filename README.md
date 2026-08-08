@@ -37,6 +37,7 @@ English-only; the pages above cover install and setup._
 - [Troubleshooting](#troubleshooting)
 - [Why it keeps asking for a key](#why-it-keeps-asking-for-a-key)
   - ["This air conditioner is already being set up"](#this-air-conditioner-is-already-being-set-up)
+  - [Getting the key by hand](#getting-the-key-by-hand)
 - [Before you open an issue](#before-you-open-an-issue)
 - [Contributing](#contributing)
 - [Credits](#credits)
@@ -529,6 +530,37 @@ If you are stuck on an older version, **restart Home Assistant** and then go str
 > Do **not** press *Ignore* on the Discovered card to get rid of it. That records the appliance as
 > one you have chosen not to add, and setup will then refuse with *"already configured"* instead,
 > which is harder to undo.
+
+### Getting the key by hand
+
+If setup will not complete no matter what, you can ask Haier for the key directly.
+
+**It runs on any computer with Python** — your laptop is fine. The tool only talks to Haier's
+servers, never to the air conditioner, so it does not need to be on the same network as the unit,
+or on your Home Assistant machine at all:
+
+```bash
+pip install 'haismart-extractor[cloud] @ git+https://github.com/enapt/haismart-local#subdirectory=packages/haismart-extractor'
+
+haismart-keys --username you@example.com --region 66
+```
+
+It signs in, lists every air conditioner on the account, and prints each one's device ID, model,
+product code and **local key** — everything the *"I already have this unit's local key"* route asks
+for.
+
+> The copy bundled inside an installed integration is *not* runnable from the **Terminal & SSH**
+> add-on — that container has no `cryptography`, and `docker exec` into the core container is
+> refused while protection mode is on. Install it on a computer instead; it is the same tool and it
+> needs nothing from your network.
+
+`--region` is the dialling code of the country the **account** was registered in, the same value
+setup asks for. The password is prompted for, never passed as an argument. Add `--json` for
+machine-readable output.
+
+> ⚠️ **A local key is a secret** — it is what lets anything on your network control the appliance.
+> Do not paste the output into a bug report or a forum post. Use `--no-keys`, which prints
+> everything except the keys and is safe to share.
 
 ### If it still cannot fetch the key
 

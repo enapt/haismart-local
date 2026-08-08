@@ -9,14 +9,22 @@ description = "Cloud client for the Haismart (Haier SE-Asia) platform: account l
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
-dependencies = []
+# `cryptography` is not optional: cloud.py imports it at module scope to build the login payload,
+# and __init__ imports cloud.py, so the package cannot be imported without it. It was undeclared,
+# which meant `pip install haismart-extractor` produced something that failed on import.
+dependencies = ["cryptography>=41"]
 
 [project.optional-dependencies]
+# The HTTP transport is injectable, so a host that brings its own (the Home Assistant integration
+# passes its shared client) needs none of this. Anything using the built-in transport -- the CLI
+# included -- wants `[cloud]`.
 cloud = ["httpx>=0.27"]
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff", "mypy"]
 
 [project.scripts]
-haismart-record = "haismart_extractor.recorder:main"
+# `haismart-record = "haismart_extractor.recorder:main"` used to be here, pointing at a module that
+# does not exist -- `pip install` produced a script that failed on import.
+haismart-keys = "haismart_extractor.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/haismart_extractor"]

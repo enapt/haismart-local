@@ -144,6 +144,13 @@ def _print_human(rows: list[dict[str, Any]]) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Parse, gather the password, then hand over to :func:`run`.
+
+    Deliberately thin, and everything that can be decided without the network happens here. The work
+    lives in an async function so that a caller -- a test, or anything embedding this -- owns the
+    event loop. ``asyncio.run`` sets the current loop to None on exit, which is correct for a
+    process about to exit and ruinous inside a longer-lived one.
+    """
     args = _parser().parse_args(argv)
 
     try:
@@ -170,9 +177,19 @@ def main(argv: list[str] | None = None) -> int:
         print("error: no password given", file=sys.stderr)
         return 2
 
+    return asyncio.run(run(args, password))
+
+
+async def run(args: argparse.Namespace, password: str) -> int:
+    """Sign in, fetch the keys, print them. Returns the process exit code.
+
+    0 everything, 1 could not sign in, 2 nothing to do (bad arguments, no devices), 3 signed in but
+    at least one key did not come back -- which must not read as success, since the key is the whole
+    reason for running this.
+    """
     try:
-        result, devices = asyncio.run(
-            _collect(args.username, password, str(args.region).strip().lstrip("+"))
+        result, devices = await _collect(
+            args.username, password, str(args.region).strip().lstrip("+")
         )
     except CloudError as err:
         print(f"error: sign-in failed -- {err}", file=sys.stderr)
@@ -199,7 +216,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     try:
-        keys = _fetch_keys(result, [d.device_id for d in devices])
+        keys = await asyncio.to_thread(_fetch_keys, result, [d.device_id for d in devices])
     except (GatewayError, OSError, RuntimeError, TimeoutError) as err:
         # Sign-in worked, so say so: the natural conclusion from "it failed" is to go and check the
         # password that has in fact just been proven correct.

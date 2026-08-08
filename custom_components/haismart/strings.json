@@ -6,6 +6,7 @@
         "title": "Add a Haier AC",
         "description": "Signing in is the recommended route: Home Assistant fetches the local key, finds the unit on your network and reads its model, so there is nothing to paste. It talks to the air conditioner directly from then on — and once it is set up you can block the unit from the internet entirely; see the README on going fully cloud-independent.\n\nGoogle/Facebook accounts: create a throwaway email/password Haier account, share your AC(s) to it in the app, then sign in with that account.",
         "menu_options": {
+          "account": "Use the Haier account already added (nothing to type)",
           "login": "Sign in with your Haier account (recommended)",
           "manual": "I already have this unit's local key"
         }
@@ -137,6 +138,10 @@
         "data": {
           "host": "Air conditioner"
         }
+      },
+      "discovery_confirm": {
+        "title": "Set up this air conditioner",
+        "description": "Home Assistant found a Haier air conditioner at {host} (`{device_id}`).\n\nIts local key will be fetched from the Haier account you have already added, so there is nothing to type. Select **Submit** to add it."
       }
     },
     "error": {
@@ -147,7 +152,8 @@
       "invalid_key": "The local key must be a 32-character hex string.",
       "invalid_auth": "The air conditioner answered, but this local key does not decrypt its status — the key is wrong, or it has been rotated.",
       "cannot_connect": "Could not reach the air conditioner on port 56800. Check the IP address, and that Home Assistant is on the same network.",
-      "device_id_required": "The air conditioner did not answer the identification query, so its device ID could not be read automatically. Enter it manually — it is the module's Wi-Fi MAC address, 12 hex characters with no separators."
+      "device_id_required": "The air conditioner did not answer the identification query, so its device ID could not be read automatically. Enter it manually — it is the module's Wi-Fi MAC address, 12 hex characters with no separators.",
+      "account_expired": "The Haier account already set up here could not be used — its sign-in has expired, or signing in elsewhere replaced it. Signing in again below fixes it for every air conditioner you have added."
     },
     "abort": {
       "already_configured": "This device is already configured.",
@@ -155,7 +161,8 @@
       "all_configured": "All of this account's ACs are already added to Home Assistant.",
       "unknown": "Unexpected error — the device announcement wasn't understood.",
       "no_devices": "Signed in as {username}, but this Haier account has no devices. If you sign in to the app with Google or Facebook, share the air conditioner to this account in the app first, then try again.",
-      "already_in_progress": "This air conditioner is already being set up."
+      "already_in_progress": "This air conditioner is already being set up.",
+      "account_no_devices": "The Haier account already set up here no longer lists any devices. Check the air conditioner is still in the Haier app under this account, then try again."
     }
   },
   "options": {

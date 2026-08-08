@@ -6,6 +6,7 @@
         "title": "Tambahkan AC Haier",
         "description": "Masuk adalah cara yang disarankan: Home Assistant mengambil kunci lokal, menemukan unit di jaringan Anda, dan membaca modelnya, jadi tidak ada yang perlu ditempel. Setelah itu ia berbicara langsung dengan AC — dan begitu selesai disiapkan, Anda dapat memblokir akses internet unit sepenuhnya; lihat README tentang menjadi sepenuhnya mandiri dari cloud.\n\nAkun Google/Facebook: buat akun Haier terpisah dengan email dan kata sandi, bagikan AC Anda ke akun itu di aplikasi, lalu masuk dengan akun tersebut.",
         "menu_options": {
+          "account": "Gunakan akun Haier yang sudah ditambahkan (tidak perlu mengetik apa pun)",
           "login": "Masuk dengan akun Haier Anda (disarankan)",
           "manual": "Saya sudah punya kunci lokal unit ini"
         }
@@ -137,6 +138,10 @@
         "data": {
           "host": "AC"
         }
+      },
+      "discovery_confirm": {
+        "title": "Siapkan AC ini",
+        "description": "Home Assistant menemukan AC Haier di {host} (`{device_id}`).\n\nKunci lokalnya akan diambil dari akun Haier yang sudah Anda tambahkan, jadi tidak ada yang perlu diketik. Pilih **Kirim** untuk menambahkannya."
       }
     },
     "error": {
@@ -147,7 +152,8 @@
       "invalid_key": "Kunci lokal harus berupa string heksadesimal 32 karakter.",
       "invalid_auth": "AC merespons, tetapi kunci lokal ini tidak dapat mendekripsi statusnya — kuncinya salah, atau sudah diganti.",
       "cannot_connect": "Tidak dapat menjangkau AC di port 56800. Periksa alamat IP-nya, dan pastikan Home Assistant berada di jaringan yang sama.",
-      "device_id_required": "AC tidak menjawab kueri identifikasi, sehingga ID perangkatnya tidak dapat dibaca otomatis. Masukkan secara manual — ini adalah alamat MAC Wi-Fi modul, 12 karakter heksadesimal tanpa pemisah."
+      "device_id_required": "AC tidak menjawab kueri identifikasi, sehingga ID perangkatnya tidak dapat dibaca otomatis. Masukkan secara manual — ini adalah alamat MAC Wi-Fi modul, 12 karakter heksadesimal tanpa pemisah.",
+      "account_expired": "Akun Haier yang sudah disiapkan di sini tidak dapat digunakan — masa masuknya telah berakhir, atau masuk di tempat lain telah menggantikannya. Masuk lagi di bawah ini memperbaikinya untuk semua AC yang sudah Anda tambahkan."
     },
     "abort": {
       "already_configured": "Perangkat ini sudah dikonfigurasi.",
@@ -155,7 +161,8 @@
       "all_configured": "Semua AC pada akun ini sudah ditambahkan ke Home Assistant.",
       "unknown": "Kesalahan tak terduga — pengumuman perangkat tidak dapat dipahami.",
       "no_devices": "Masuk sebagai {username}, tetapi akun Haier ini tidak memiliki perangkat. Jika Anda masuk ke aplikasi dengan Google atau Facebook, bagikan AC ke akun ini terlebih dahulu di aplikasi, lalu coba lagi.",
-      "already_in_progress": "AC ini sedang dalam proses penyiapan."
+      "already_in_progress": "AC ini sedang dalam proses penyiapan.",
+      "account_no_devices": "Akun Haier yang sudah disiapkan di sini tidak lagi mencantumkan perangkat apa pun. Periksa apakah AC masih ada di aplikasi Haier dengan akun ini, lalu coba lagi."
     }
   },
   "options": {

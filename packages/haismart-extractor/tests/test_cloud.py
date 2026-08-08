@@ -686,3 +686,140 @@ async def test_catalogue_search_passes_the_model_number_as_keys() -> None:
 
     assert json.loads(seen[0].body)["keys"] == "HSU-24HFAB"
     assert seen[0].headers["zoneInfo"] == "66"
+
+
+# --- the catalogue's attribute spelling ---------------------------------------------------------
+#
+# Renaming `property` to `attributes` was never enough. The two sources state an attribute's
+# permitted values completely differently, and every consumer reads only the account spelling --
+# so a hand-configured install fetched its published model, stored it, and then threw it away
+# ("stored digital model is unusable; using the hardcoded profile"), silently falling back to a
+# per-product hardcoded profile that an unrecognised appliance does not have. Found by onboarding a
+# appliance with no account configured; invisible to every test because none fed a real catalogue
+# document to `profile_from_device_config`.
+
+
+def _catalogue_attr(name, data_type, variants, **extra):
+    """One attribute exactly as the published catalogue spells it."""
+    return {
+        "name": name, "dataType": data_type, "description": "desc-" + name,
+        "invisible": False, "readable": True, "writable": True, "writeType": "G",
+        "standardType": "1", "variants": variants, **extra,
+    }
+
+
+def test_catalogue_enums_become_the_value_range_every_consumer_reads() -> None:
+    """`enumList[{stdValue, description}]` is the account model's `valueRange.dataList`.
+
+    `desc` is load-bearing rather than decoration: a code the Haier-wide STD table does not know is
+    resolved by keyword against exactly that text before it is dropped, so losing it silently
+    narrows what a model can express.
+    """
+    cfg = normalize_public_config({"property": [
+        _catalogue_attr("operationMode", "enum", {"enumList": [
+            {"stdValue": "1", "description": "制冷"},
+            {"stdValue": "6", "description": "送风"},
+        ]}),
+    ]})
+    attr = cfg["attributes"][0]
+    assert attr["valueRange"] == {
+        "type": "LIST",
+        "dataList": [{"data": "1", "desc": "制冷"},
+                     {"data": "6", "desc": "送风"}],
+    }
+    assert attr["desc"] == "desc-operationMode"        # description -> desc
+    assert attr["operationType"] == "G"                # writeType -> operationType
+    assert "variants" not in attr                      # one spelling of one fact, not two
+
+
+def test_catalogue_bools_become_a_list_of_false_and_true() -> None:
+    """`boolList` carries the strings "false"/"true", which is what the account model lists too --
+    so the write path keeps working on the model's own codes rather than on 0/1."""
+    cfg = normalize_public_config({"property": [
+        _catalogue_attr("onOffStatus", "bool", {"boolList": [
+            {"stdValue": "false", "description": "off"}, {"stdValue": "true", "description": "on"},
+        ]}),
+    ]})
+    assert cfg["attributes"][0]["valueRange"] == {
+        "type": "LIST",
+        "dataList": [{"data": "false", "desc": "off"}, {"data": "true", "desc": "on"}],
+    }
+
+
+@pytest.mark.parametrize(
+    ("kind", "data_type", "expected_type"),
+    [("doubleStep", "double", "Double"), ("intStep", "int", "Int")],
+)
+def test_catalogue_steps_become_bounded_ranges(kind, data_type, expected_type) -> None:
+    """Both step kinds become `valueRange.STEP`, stringified as the account model states them."""
+    cfg = normalize_public_config({"property": [
+        _catalogue_attr("targetTemperature", data_type,
+                        {kind: {"minValue": 16, "maxValue": 30, "step": 1, "unit": "℃"}}),
+    ]})
+    assert cfg["attributes"][0]["valueRange"] == {
+        "type": "STEP",
+        "dataStep": {"dataType": expected_type, "minValue": "16", "maxValue": "30",
+                     "step": "1", "unit": "℃"},
+    }
+
+
+def test_an_attribute_whose_range_cannot_be_read_gets_none_at_all() -> None:
+    """The safe failure is no range, never a permissive one.
+
+    An attribute with no range is refused by the write validator, so an unreadable range costs a
+    control. Inventing bounds would instead let an out-of-range value reach the appliance, which is
+    the one genuinely dangerous way for this to fail -- that half is asserted against the real
+    validator in the integration suite, which is where the two packages meet.
+    """
+    cfg = normalize_public_config({"property": [
+        # The real population: free-text attributes carry no `variants` key at all. Across every
+        # published air-conditioner model they are the ONLY ones without a range -- 26 of
+        # 49,855 attributes, every one of them a `string`, `stringYMD` or `stringHMS` (clientId,
+        # token, softVersion, date, irCode...). A string has no enumerable range, so having none is
+        # correct rather than missing.
+        {"name": "token", "dataType": "string", "description": "t", "invisible": False,
+         "readable": True, "writable": True, "standardType": "1"},
+        {"name": "date", "dataType": "stringYMD", "description": "d", "invisible": False,
+         "readable": True, "writable": True, "standardType": "1"},
+        # ...and the defensive cases, which no published model produces but which cost nothing.
+        _catalogue_attr("weird", "enum", {"somethingElse": [{"stdValue": "1"}]}),
+        _catalogue_attr("nulled", "enum", None),
+        _catalogue_attr("wrongtype", "enum", ["not", "a", "mapping"]),
+    ]})
+    assert [a["name"] for a in cfg["attributes"]] == [
+        "token", "date", "weird", "nulled", "wrongtype",
+    ]
+    for attr in cfg["attributes"]:
+        assert "valueRange" not in attr
+
+
+def test_unknown_attribute_fields_survive_and_nameless_entries_do_not() -> None:
+    """Carry what is not understood; drop only what cannot be referred to.
+
+    A field this adapter has never seen is still the vendor describing the attribute, so dropping it
+    would lose information for no reason -- but an entry with no name cannot be looked up by any
+    consumer, and keeping it only invites a KeyError somewhere later.
+    """
+    cfg = normalize_public_config({"property": [
+        _catalogue_attr("x", "bool", {"boolList": []}, somethingNew="keep me", code=7),
+        {"dataType": "bool", "variants": {"boolList": []}},          # no name
+        "not even a mapping",
+    ]})
+    assert len(cfg["attributes"]) == 1
+    assert cfg["attributes"][0]["somethingNew"] == "keep me"
+    assert cfg["attributes"][0]["code"] == 7
+
+
+def test_a_model_already_in_the_account_spelling_is_left_exactly_alone() -> None:
+    """Some published models arrive already spelled the modern way, and must not be re-adapted.
+
+    Across every published air-conditioner model the section name and the inner spelling
+    always agree -- 153 documents use `property` with `variants`, 18 use `attributes` with
+    `valueRange`, and none mixes them. That is what makes keying this on the section name correct
+    rather than merely convenient, so it is asserted here and not assumed.
+    """
+    already = {"name": "onOffStatus", "desc": "on/off", "operationType": "IG", "readable": True,
+               "writable": True, "invisible": False, "code": 3,
+               "valueRange": {"type": "LIST", "dataList": [{"data": "true", "desc": "on"}]}}
+    cfg = normalize_public_config({"attributes": [dict(already)]})
+    assert cfg["attributes"] == [already]

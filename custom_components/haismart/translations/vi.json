@@ -6,6 +6,7 @@
         "title": "Thêm điều hòa Haier",
         "description": "Đăng nhập là cách được khuyến nghị: Home Assistant lấy khóa cục bộ, tìm máy trong mạng của bạn và đọc model của nó, nên bạn không phải dán gì cả. Từ đó nó giao tiếp trực tiếp với điều hòa — và sau khi cài đặt xong, bạn có thể chặn hoàn toàn máy truy cập internet; xem README về việc hoàn toàn độc lập với đám mây.\n\nTài khoản Google/Facebook: hãy tạo một tài khoản Haier riêng bằng email và mật khẩu, chia sẻ điều hòa của bạn cho tài khoản đó trong ứng dụng, rồi đăng nhập bằng tài khoản ấy.",
         "menu_options": {
+          "account": "Dùng tài khoản Haier đã thêm (không phải nhập gì)",
           "login": "Đăng nhập bằng tài khoản Haier (khuyến nghị)",
           "manual": "Tôi đã có khóa cục bộ của máy này"
         }
@@ -137,6 +138,10 @@
         "data": {
           "host": "Điều hòa"
         }
+      },
+      "discovery_confirm": {
+        "title": "Thiết lập máy điều hòa này",
+        "description": "Home Assistant đã tìm thấy một máy điều hòa Haier tại {host} (`{device_id}`).\n\nKhóa cục bộ của máy sẽ được lấy từ tài khoản Haier bạn đã thêm, nên không phải nhập gì. Chọn **Gửi** để thêm máy."
       }
     },
     "error": {
@@ -147,7 +152,8 @@
       "invalid_key": "Khóa cục bộ phải là một chuỗi hex gồm 32 ký tự.",
       "invalid_auth": "Điều hòa có phản hồi, nhưng khóa cục bộ này không giải mã được trạng thái của nó — khóa sai, hoặc đã bị thay đổi.",
       "cannot_connect": "Không kết nối được tới điều hòa ở cổng 56800. Hãy kiểm tra địa chỉ IP, và bảo đảm Home Assistant ở cùng mạng.",
-      "device_id_required": "Điều hòa không phản hồi truy vấn nhận dạng, nên không thể đọc tự động ID thiết bị. Hãy nhập thủ công — đó là địa chỉ MAC Wi-Fi của mô-đun, 12 ký tự thập lục phân không có dấu phân cách."
+      "device_id_required": "Điều hòa không phản hồi truy vấn nhận dạng, nên không thể đọc tự động ID thiết bị. Hãy nhập thủ công — đó là địa chỉ MAC Wi-Fi của mô-đun, 12 ký tự thập lục phân không có dấu phân cách.",
+      "account_expired": "Không dùng được tài khoản Haier đã thiết lập ở đây — phiên đăng nhập đã hết hạn, hoặc một lần đăng nhập ở nơi khác đã thay thế nó. Đăng nhập lại bên dưới sẽ khắc phục cho mọi máy điều hòa bạn đã thêm."
     },
     "abort": {
       "already_configured": "Thiết bị này đã được cấu hình.",
@@ -155,7 +161,8 @@
       "all_configured": "Tất cả điều hòa của tài khoản này đã được thêm vào Home Assistant.",
       "unknown": "Lỗi ngoài dự kiến — không hiểu được thông báo tự giới thiệu của thiết bị.",
       "no_devices": "Đã đăng nhập với tên {username}, nhưng tài khoản Haier này không có thiết bị nào. Nếu bạn đăng nhập ứng dụng bằng Google hoặc Facebook, hãy chia sẻ điều hòa sang tài khoản này trong ứng dụng trước, rồi thử lại.",
-      "already_in_progress": "Điều hòa này đang trong quá trình thiết lập."
+      "already_in_progress": "Điều hòa này đang trong quá trình thiết lập.",
+      "account_no_devices": "Tài khoản Haier đã thiết lập ở đây không còn liệt kê thiết bị nào. Hãy kiểm tra máy điều hòa vẫn nằm trong ứng dụng Haier với tài khoản này, rồi thử lại."
     }
   },
   "options": {

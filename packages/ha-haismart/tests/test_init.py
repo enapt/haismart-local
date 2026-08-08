@@ -3594,3 +3594,114 @@ async def test_diagnostics_carries_what_a_bug_report_needs_without_transcription
     # a product code the catalogue does not cover yields nothing rather than a guess
     assert _model_number("ZZZZZZZZZ") is None
     assert _model_number(None) is None
+
+
+# --- a published model must be usable, not merely stored ----------------------------------------
+
+
+def _catalogue_doc():
+    """A published model exactly as the open catalogue spells it, trimmed to what matters here."""
+    def attr(name, data_type, variants):
+        return {"name": name, "dataType": data_type, "description": "d-" + name,
+                "invisible": False, "readable": True, "writable": True, "writeType": "G",
+                "standardType": "1", "variants": variants}
+    return {"property": [
+        attr("operationMode", "enum", {"enumList": [
+            {"stdValue": "0", "description": "auto"}, {"stdValue": "1", "description": "cool"},
+            {"stdValue": "2", "description": "dry"}, {"stdValue": "6", "description": "fan"}]}),
+        attr("windSpeed", "enum", {"enumList": [
+            {"stdValue": "1", "description": "high"}, {"stdValue": "2", "description": "mid"},
+            {"stdValue": "3", "description": "low"}, {"stdValue": "5", "description": "auto"}]}),
+        attr("targetTemperature", "double",
+             {"doubleStep": {"minValue": 16, "maxValue": 30, "step": 1, "unit": "C"}}),
+        attr("onOffStatus", "bool", {"boolList": [
+            {"stdValue": "false", "description": "off"},
+            {"stdValue": "true", "description": "on"}]}),
+    ]}
+
+
+def test_a_catalogue_model_builds_a_profile_and_bounds_a_write() -> None:
+    """The offline install's whole point: its published model has to actually drive the entities.
+
+    Before the catalogue's attribute spelling was adapted, this raised and the coordinator fell back
+    to a hardcoded per-product profile -- fine for a product that has one, and a generic guess for
+    any appliance that does not. The assertions are on the *contents*: the modes and speeds the
+    model declared, and bounds that genuinely refuse a value outside them.
+    """
+    from haismart_extractor.cloud import normalize_public_config
+    from haismart_hrdp.profiles import profile_from_device_config, validate_write
+
+    cfg = normalize_public_config(_catalogue_doc())
+    profile = profile_from_device_config(cfg)
+
+    assert set(profile.mode_values.values()) >= {"cool", "dry", "fan_only"}
+    assert set(profile.fan_values.values()) >= {"high", "medium", "low", "auto"}
+    # keyed by the numeric STD codes the decoder actually emits, not by words
+    assert profile.mode_values["1"] == "cool" and profile.fan_values["3"] == "low"
+    # ...and the flag that separates a real profile from the generic STD fallback. This is the
+    # crux: the fallback lists every code the protocol defines so decoding always works, and must
+    # never be read as a capability list. An offline install used to get exactly that.
+    assert profile.modes_authoritative
+
+    assert validate_write(cfg, "targetTemperature", 24)[0]
+    assert not validate_write(cfg, "targetTemperature", 44)[0]
+    assert validate_write(cfg, "operationMode", 1)[0]
+    assert not validate_write(cfg, "operationMode", 9)[0]
+    assert validate_write(cfg, "onOffStatus", "true")[0]
+
+
+def test_an_unbounded_attribute_is_refused_rather_than_waved_through() -> None:
+    """An attribute whose range could not be read must cost a control, never gain a free one."""
+    from haismart_extractor.cloud import normalize_public_config
+    from haismart_hrdp.profiles import validate_write
+
+    doc = _catalogue_doc()
+    doc["property"].append({"name": "mystery", "dataType": "enum", "description": "?",
+                            "invisible": False, "readable": True, "writable": True,
+                            "variants": {"unknownKind": [{"stdValue": "1"}]}})
+    cfg = normalize_public_config(doc)
+    ok, why = validate_write(cfg, "mystery", "1")
+    assert not ok and "unsupported valueRange" in why
+
+
+def test_the_two_published_serialisations_agree_attribute_for_attribute() -> None:
+    """The same model from the account and from the catalogue must reach consumers identically.
+
+    This is the property the adapter exists to provide, so it is asserted directly rather than
+    inferred from the pieces: adapt the catalogue spelling and compare against the account
+    spelling of the same attributes, key for key.
+    """
+    from haismart_extractor.cloud import normalize_public_config
+
+    account = {
+        "name": "operationMode", "desc": "d-operationMode", "invisible": False,
+        "readable": True, "writable": True, "operationType": "G", "standardType": "1",
+        "dataType": "enum",
+        "valueRange": {"type": "LIST", "dataList": [
+            {"data": "0", "desc": "auto"}, {"data": "1", "desc": "cool"},
+            {"data": "2", "desc": "dry"}, {"data": "6", "desc": "fan"}]},
+    }
+    adapted = normalize_public_config(_catalogue_doc())["attributes"][0]
+    assert adapted == account
+
+
+def test_the_published_model_states_which_features_a_unit_actually_has() -> None:
+    """A generic model over-declares; the published one says what this unit is missing.
+
+    The optional-feature entities refuse to appear unless that set is known, because guessing
+    produces sensors for hardware that is not fitted -- so an offline install that stored the flags
+    but never collected them got no such entities at all. On the reference product's published
+    model 25 of 39 attributes are invisible, leaving the same 14 an account yields.
+    """
+    from haismart_hrdp import invisible_attributes
+
+    model = {"attributes": [
+        {"name": "onOffStatus", "invisible": False},
+        {"name": "freshAirStatus", "invisible": True},
+        {"name": "humidificationStatus", "invisible": True},
+        {"name": "echoStatus", "invisible": False},
+    ]}
+    assert invisible_attributes(model) == frozenset({"freshAirStatus", "humidificationStatus"})
+    # and the presence of the key is itself the signal, so an all-visible model records an EMPTY
+    # list rather than nothing -- "we checked" and "we do not know" must stay distinguishable
+    assert sorted(invisible_attributes({"attributes": [{"name": "a", "invisible": False}]})) == []

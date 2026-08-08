@@ -6,6 +6,7 @@
         "title": "Ajouter un climatiseur Haier",
         "description": "La connexion est la méthode recommandée : Home Assistant récupère la clé locale, trouve l'appareil sur votre réseau et lit son modèle, il n'y a donc rien à coller. Il communique ensuite directement avec le climatiseur — et une fois l'installation terminée, vous pouvez couper complètement l'accès Internet de l'appareil ; voir le README sur l'indépendance totale vis-à-vis du cloud.\n\nComptes Google/Facebook : créez un compte Haier dédié avec e-mail et mot de passe, partagez-lui vos climatiseurs dans l'application, puis connectez-vous avec ce compte.",
         "menu_options": {
+          "account": "Utiliser le compte Haier déjà ajouté (rien à saisir)",
           "login": "Se connecter avec votre compte Haier (recommandé)",
           "manual": "J'ai déjà la clé locale de cet appareil"
         }
@@ -137,6 +138,10 @@
         "data": {
           "host": "Climatiseur"
         }
+      },
+      "discovery_confirm": {
+        "title": "Configurer ce climatiseur",
+        "description": "Home Assistant a trouvé un climatiseur Haier à l'adresse {host} (`{device_id}`).\n\nSa clé locale sera récupérée depuis le compte Haier que vous avez déjà ajouté : il n'y a rien à saisir. Sélectionnez **Valider** pour l'ajouter."
       }
     },
     "error": {
@@ -147,7 +152,8 @@
       "invalid_key": "La clé locale doit être une chaîne hexadécimale de 32 caractères.",
       "invalid_auth": "Le climatiseur a répondu, mais cette clé locale ne déchiffre pas son état — la clé est incorrecte ou a été renouvelée.",
       "cannot_connect": "Impossible de joindre le climatiseur sur le port 56800. Vérifiez l'adresse IP et que Home Assistant est bien sur le même réseau.",
-      "device_id_required": "Le climatiseur n'a pas répondu à la requête d'identification, son identifiant n'a donc pas pu être lu automatiquement. Saisissez-le manuellement — c'est l'adresse MAC Wi-Fi du module, 12 caractères hexadécimaux sans séparateurs."
+      "device_id_required": "Le climatiseur n'a pas répondu à la requête d'identification, son identifiant n'a donc pas pu être lu automatiquement. Saisissez-le manuellement — c'est l'adresse MAC Wi-Fi du module, 12 caractères hexadécimaux sans séparateurs.",
+      "account_expired": "Le compte Haier déjà configuré ici n'a pas pu être utilisé : sa connexion a expiré, ou une connexion ailleurs l'a remplacée. Se reconnecter ci-dessous corrige le problème pour tous les climatiseurs que vous avez ajoutés."
     },
     "abort": {
       "already_configured": "Cet appareil est déjà configuré.",
@@ -155,7 +161,8 @@
       "all_configured": "Tous les climatiseurs de ce compte sont déjà ajoutés à Home Assistant.",
       "unknown": "Erreur inattendue — l'annonce de l'appareil n'a pas été comprise.",
       "no_devices": "Connecté en tant que {username}, mais ce compte Haier ne possède aucun appareil. Si vous vous connectez à l'application avec Google ou Facebook, partagez d'abord le climatiseur avec ce compte dans l'application, puis réessayez.",
-      "already_in_progress": "Ce climatiseur est déjà en cours de configuration."
+      "already_in_progress": "Ce climatiseur est déjà en cours de configuration.",
+      "account_no_devices": "Le compte Haier déjà configuré ici ne liste plus aucun appareil. Vérifiez que le climatiseur figure toujours dans l'application Haier sous ce compte, puis réessayez."
     }
   },
   "options": {

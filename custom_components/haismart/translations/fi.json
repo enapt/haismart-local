@@ -6,6 +6,7 @@
         "title": "Lisää Haier-ilmastointilaite",
         "description": "Sisäänkirjautuminen on suositeltu tapa: Home Assistant hakee paikallisen avaimen, löytää laitteen verkostasi ja lukee sen mallin, joten mitään ei tarvitse liittää. Sen jälkeen se keskustelee suoraan ilmastointilaitteen kanssa — ja kun kaikki on määritetty, voit estää laitteen internetyhteyden kokonaan; katso README täydestä pilviriippumattomuudesta.\n\nGoogle-/Facebook-tilit: luo erillinen Haier-tili sähköpostilla ja salasanalla, jaa ilmastointilaitteesi sille sovelluksessa ja kirjaudu sitten sisään sillä tilillä.",
         "menu_options": {
+          "account": "Käytä jo lisättyä Haier-tiliä (ei mitään kirjoitettavaa)",
           "login": "Kirjaudu Haier-tililläsi (suositeltu)",
           "manual": "Minulla on jo tämän laitteen paikallinen avain"
         }
@@ -137,6 +138,10 @@
         "data": {
           "host": "Ilmastointilaite"
         }
+      },
+      "discovery_confirm": {
+        "title": "Määritä tämä ilmastointilaite",
+        "description": "Home Assistant löysi Haier-ilmastointilaitteen osoitteesta {host} (`{device_id}`).\n\nSen paikallinen avain haetaan jo lisäämältäsi Haier-tililtä, joten mitään ei tarvitse kirjoittaa. Lisää se valitsemalla **Lähetä**."
       }
     },
     "error": {
@@ -147,7 +152,8 @@
       "invalid_key": "Paikallisen avaimen on oltava 32 merkin heksadesimaalimerkkijono.",
       "invalid_auth": "Ilmastointilaite vastasi, mutta tämä paikallinen avain ei pura sen tilatietoja – avain on väärä tai se on vaihdettu.",
       "cannot_connect": "Ilmastointilaitteeseen ei saatu yhteyttä portissa 56800. Tarkista IP-osoite ja se, että Home Assistant on samassa verkossa.",
-      "device_id_required": "Ilmastointilaite ei vastannut tunnistuskyselyyn, joten sen laitetunnusta ei voitu lukea automaattisesti. Syötä se käsin — se on moduulin Wi-Fi-MAC-osoite, 12 heksadesimaalimerkkiä ilman erottimia."
+      "device_id_required": "Ilmastointilaite ei vastannut tunnistuskyselyyn, joten sen laitetunnusta ei voitu lukea automaattisesti. Syötä se käsin — se on moduulin Wi-Fi-MAC-osoite, 12 heksadesimaalimerkkiä ilman erottimia.",
+      "account_expired": "Tässä jo määritettyä Haier-tiliä ei voitu käyttää — sen kirjautuminen on vanhentunut tai muualla tehty kirjautuminen on korvannut sen. Uudelleenkirjautuminen alla korjaa tämän kaikille lisäämillesi ilmastointilaitteille."
     },
     "abort": {
       "already_configured": "Tämä laite on jo määritetty.",
@@ -155,7 +161,8 @@
       "all_configured": "Kaikki tämän tilin ilmastointilaitteet on jo lisätty Home Assistantiin.",
       "unknown": "Odottamaton virhe – laitteen ilmoitusta ei ymmärretty.",
       "no_devices": "Kirjauduttu tunnuksella {username}, mutta tällä Haier-tilillä ei ole laitteita. Jos kirjaudut sovellukseen Googlella tai Facebookilla, jaa ilmastointilaite ensin tälle tilille sovelluksessa ja yritä sitten uudelleen.",
-      "already_in_progress": "Tämän ilmastointilaitteen määritys on jo käynnissä."
+      "already_in_progress": "Tämän ilmastointilaitteen määritys on jo käynnissä.",
+      "account_no_devices": "Tässä jo määritetty Haier-tili ei enää listaa laitteita. Tarkista, että ilmastointilaite on yhä Haier-sovelluksessa tällä tilillä, ja yritä uudelleen."
     }
   },
   "options": {

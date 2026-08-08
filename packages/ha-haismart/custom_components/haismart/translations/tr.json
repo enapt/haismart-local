@@ -6,6 +6,7 @@
         "title": "Haier klima ekle",
         "description": "Oturum açmak önerilen yoldur: Home Assistant yerel anahtarı alır, cihazı ağınızda bulur ve modelini okur; yani yapıştırmanız gereken hiçbir şey yoktur. Bundan sonra doğrudan klimayla konuşur — kurulum tamamlandığında ise cihazın internet erişimini tamamen engelleyebilirsiniz; tam bulut bağımsızlığı için README dosyasına bakın.\n\nGoogle/Facebook hesapları: e-posta ve parolayla ayrı bir Haier hesabı oluşturun, uygulamada klimalarınızı bu hesapla paylaşın ve ardından o hesapla oturum açın.",
         "menu_options": {
+          "account": "Zaten eklenmiş Haier hesabını kullan (yazılacak bir şey yok)",
           "login": "Haier hesabınızla oturum açın (önerilir)",
           "manual": "Bu cihazın yerel anahtarı bende var"
         }
@@ -137,6 +138,10 @@
         "data": {
           "host": "Klima"
         }
+      },
+      "discovery_confirm": {
+        "title": "Bu klimayı kur",
+        "description": "Home Assistant, {host} (`{device_id}`) adresinde bir Haier klima buldu.\n\nYerel anahtarı, hâlihazırda eklediğiniz Haier hesabından alınacak; yani yazılacak bir şey yok. Eklemek için **Gönder**'i seçin."
       }
     },
     "error": {
@@ -147,7 +152,8 @@
       "invalid_key": "Yerel anahtar 32 karakterlik onaltılık bir dize olmalıdır.",
       "invalid_auth": "Klima yanıt verdi, ancak bu yerel anahtar durumunu çözmüyor — anahtar yanlış ya da değiştirilmiş.",
       "cannot_connect": "Klimaya 56800 numaralı bağlantı noktasından ulaşılamadı. IP adresini ve Home Assistant'ın aynı ağda olup olmadığını kontrol edin.",
-      "device_id_required": "Klima, kimlik sorgusuna yanıt vermedi; bu nedenle cihaz kimliği otomatik olarak okunamadı. Elle girin — bu, modülün Wi-Fi MAC adresidir: ayırıcı içermeyen 12 onaltılık karakter."
+      "device_id_required": "Klima, kimlik sorgusuna yanıt vermedi; bu nedenle cihaz kimliği otomatik olarak okunamadı. Elle girin — bu, modülün Wi-Fi MAC adresidir: ayırıcı içermeyen 12 onaltılık karakter.",
+      "account_expired": "Burada zaten kurulu olan Haier hesabı kullanılamadı — oturumunun süresi doldu ya da başka bir yerde yapılan giriş onun yerini aldı. Aşağıdan yeniden giriş yapmak, eklediğiniz tüm klimalar için bunu düzeltir."
     },
     "abort": {
       "already_configured": "Bu cihaz zaten yapılandırılmış.",
@@ -155,7 +161,8 @@
       "all_configured": "Bu hesaptaki tüm klimalar Home Assistant'a zaten eklenmiş.",
       "unknown": "Beklenmeyen hata — cihazın duyurusu anlaşılamadı.",
       "no_devices": "{username} olarak oturum açıldı, ancak bu Haier hesabında hiç cihaz yok. Uygulamaya Google veya Facebook ile giriyorsanız, önce uygulamada klimayı bu hesapla paylaşın, sonra yeniden deneyin.",
-      "already_in_progress": "Bu klima zaten kuruluyor."
+      "already_in_progress": "Bu klima zaten kuruluyor.",
+      "account_no_devices": "Burada zaten kurulu olan Haier hesabı artık hiçbir cihaz listelemiyor. Klimanın Haier uygulamasında hâlâ bu hesapta olduğunu kontrol edip tekrar deneyin."
     }
   },
   "options": {

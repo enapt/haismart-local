@@ -6,6 +6,7 @@
         "title": "Haier-airco toevoegen",
         "description": "Inloggen is de aanbevolen route: Home Assistant haalt de lokale sleutel op, vindt het apparaat op uw netwerk en leest het model uit, dus er valt niets te plakken. Daarna communiceert het rechtstreeks met de airconditioner — en zodra alles is ingesteld kunt u het apparaat volledig van internet afsluiten; zie de README over volledig cloudonafhankelijk werken.\n\nGoogle-/Facebook-accounts: maak een apart Haier-account met e-mail en wachtwoord, deel uw airco's daarmee in de app en log daarna in met dat account.",
         "menu_options": {
+          "account": "Het al toegevoegde Haier-account gebruiken (niets in te typen)",
           "login": "Inloggen met uw Haier-account (aanbevolen)",
           "manual": "Ik heb de lokale sleutel van dit apparaat al"
         }
@@ -137,6 +138,10 @@
         "data": {
           "host": "Airconditioner"
         }
+      },
+      "discovery_confirm": {
+        "title": "Deze airco instellen",
+        "description": "Home Assistant heeft een Haier-airco gevonden op {host} (`{device_id}`).\n\nDe lokale sleutel wordt opgehaald uit het Haier-account dat je al hebt toegevoegd, dus er valt niets in te typen. Kies **Verzenden** om hem toe te voegen."
       }
     },
     "error": {
@@ -147,7 +152,8 @@
       "invalid_key": "De lokale sleutel moet een hex-string van 32 tekens zijn.",
       "invalid_auth": "De airco antwoordde, maar deze lokale sleutel ontsleutelt de status niet — de sleutel is onjuist of is gewisseld.",
       "cannot_connect": "Kon de airco niet bereiken op poort 56800. Controleer het IP-adres en of Home Assistant in hetzelfde netwerk zit.",
-      "device_id_required": "De airconditioner reageerde niet op de identificatievraag, waardoor het apparaat-ID niet automatisch kon worden gelezen. Voer het handmatig in — het is het wifi-MAC-adres van de module, 12 hexadecimale tekens zonder scheidingstekens."
+      "device_id_required": "De airconditioner reageerde niet op de identificatievraag, waardoor het apparaat-ID niet automatisch kon worden gelezen. Voer het handmatig in — het is het wifi-MAC-adres van de module, 12 hexadecimale tekens zonder scheidingstekens.",
+      "account_expired": "Het hier al ingestelde Haier-account kon niet worden gebruikt — de aanmelding is verlopen, of een aanmelding elders heeft deze vervangen. Hieronder opnieuw aanmelden lost dit op voor alle airco's die je hebt toegevoegd."
     },
     "abort": {
       "already_configured": "Dit apparaat is al geconfigureerd.",
@@ -155,7 +161,8 @@
       "all_configured": "Alle airco's van dit account zijn al aan Home Assistant toegevoegd.",
       "unknown": "Onverwachte fout — de aankondiging van het apparaat werd niet begrepen.",
       "no_devices": "Aangemeld als {username}, maar dit Haier-account heeft geen apparaten. Meld je je in de app aan met Google of Facebook, deel de airco dan eerst met dit account in de app en probeer het daarna opnieuw.",
-      "already_in_progress": "Deze airco wordt al ingesteld."
+      "already_in_progress": "Deze airco wordt al ingesteld.",
+      "account_no_devices": "Het hier al ingestelde Haier-account vermeldt geen apparaten meer. Controleer of de airco nog onder dit account in de Haier-app staat en probeer het opnieuw."
     }
   },
   "options": {

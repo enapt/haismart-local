@@ -298,7 +298,6 @@ PUBLIC_CONFIG_URL = "https://standardcfm.haigeek.com/hardwareconfig/app/resource
 # fetch answers with the caller's own devices whatever it is asked -- so dropping them meant every
 # reporter's family got its attribute list and no conditional availability at all.
 PUBLIC_CONFIG_SECTIONS = {
-    "property": "attributes",
     "alarm": "alarms",
     "basicInfo": "baseInfo",
 }
@@ -402,8 +401,95 @@ def _adapt_logic_patch(entries: Any) -> list[dict]:
     return out
 
 
+# How the catalogue spells an attribute's permitted values, against the account model's
+# ``valueRange``. Enumerated over every published air-conditioner model (4051 attributes across 171
+# products): exactly four ``dataType``\\ s, each paired with exactly one variant kind,
+# with no attribute missing its ``variants`` and no pairing ever crossed. So this table is the whole
+# vocabulary rather than the part that happened to be looked for.
+#
+#   bool   -> boolList   [{stdValue, description}]     -> LIST
+#   enum   -> enumList   [{stdValue, description}]     -> LIST
+#   int    -> intStep    {minValue, maxValue, step, unit} -> STEP
+#   double -> doubleStep {minValue, maxValue, step, unit} -> STEP
+_VARIANT_LIST_KINDS = ("enumList", "boolList")
+_VARIANT_STEP_KINDS = (("doubleStep", "Double"), ("intStep", "Int"))
+
+
+def _value_range_from_variants(variants: Any) -> dict | None:
+    """One attribute's ``variants`` as the ``valueRange`` every consumer here already reads.
+
+    Returns ``None`` when nothing recognisable is present, which leaves the attribute without a
+    ``valueRange`` -- and that is the safe outcome, because :func:`validate_write` refuses a write it
+    cannot bound. Inventing a permissive range would be the one genuinely dangerous way to fail.
+    """
+    if not isinstance(variants, Mapping):
+        return None
+    for kind in _VARIANT_LIST_KINDS:
+        items = variants.get(kind)
+        if isinstance(items, list):
+            # ``desc`` is load-bearing, not decoration: an enum code the Haier-wide STD table does
+            # not know is resolved by keyword against exactly this text before it is dropped.
+            return {
+                "type": "LIST",
+                "dataList": [
+                    {"data": str(i["stdValue"]), "desc": str(i.get("description") or "")}
+                    for i in items
+                    if isinstance(i, Mapping) and i.get("stdValue") is not None
+                ],
+            }
+    for kind, data_type in _VARIANT_STEP_KINDS:
+        step = variants.get(kind)
+        if isinstance(step, Mapping):
+            # Bounds are stringified because that is how the account model states them and both
+            # readers float() them; keeping one spelling means a test can compare the two sources
+            # for equality rather than for equivalence.
+            out: dict[str, Any] = {"dataType": data_type}
+            for field in ("minValue", "maxValue", "step"):
+                if step.get(field) is not None:
+                    out[field] = str(step[field])
+            if step.get("unit"):
+                # Not in the account model, and read by nothing -- but it is real information about
+                # the attribute, and discarding it to make the two dicts diff clean would be the
+                # wrong way round.
+                out["unit"] = str(step["unit"])
+            return {"type": "STEP", "dataStep": out}
+    return None
+
+
+def _adapt_property(entries: Any) -> list[dict]:
+    """The catalogue's attribute list in the account model's spelling.
+
+    Renaming ``property`` to ``attributes`` was never enough: the two sources describe an
+    attribute's permitted values completely differently, and everything downstream --
+    ``profile_from_device_config``, ``model_enum_codes``, ``validate_write`` -- reads only the
+    account spelling. Until this existed, a hand-configured install fetched its published model,
+    stored it, and then silently discarded it ("stored digital model is unusable; using the
+    hardcoded profile"), so an appliance with no hardcoded profile of its own got a generic one.
+    Confirmed on hardware, onboarding an appliance with no account configured.
+
+    Only the keys that differ are touched; everything else is carried through untouched, so a field
+    this does not know about survives rather than being dropped.
+    """
+    out: list[dict] = []
+    for entry in entries or ():
+        if not isinstance(entry, Mapping) or not entry.get("name"):
+            continue
+        attr = {k: v for k, v in entry.items() if k not in ("variants", "description", "writeType")}
+        if (desc := entry.get("description")) is not None:
+            attr["desc"] = desc
+        if (write_type := entry.get("writeType")) is not None:
+            # Same I/G/IG vocabulary under the two names. Read by nothing here today; carried so the
+            # two sources stay comparable and so it is there when something wants it.
+            attr["operationType"] = write_type
+        if (value_range := _value_range_from_variants(entry.get("variants"))) is not None:
+            attr["valueRange"] = value_range
+        out.append(attr)
+    return out
+
+
 # Rule sections that need their inner shape translated, not merely renamed.
 PUBLIC_CONFIG_ADAPTERS = {
+    "property": ("attributes", _adapt_property),
     "logicLimit": ("modifiers", _adapt_logic_limit),
     "logicPatch": ("constraints", _adapt_logic_patch),
 }

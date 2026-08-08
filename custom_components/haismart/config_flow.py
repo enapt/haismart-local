@@ -35,7 +35,13 @@ from haismart_extractor.cloud import (
     HaierCloud,
     get_public_device_config,
 )
-from haismart_hrdp import async_read_status, merge_rules, probe_localkey_version, udiscovery
+from haismart_hrdp import (
+    async_read_status,
+    invisible_attributes,
+    merge_rules,
+    probe_localkey_version,
+    udiscovery,
+)
 from haismart_hrdp.model_rules import (
     known_products,
     models_for_uplus_id,
@@ -97,7 +103,7 @@ from .const import (
     UDISCOVERY_TIMEOUT,
 )
 from .countries import country_options, default_dial_code
-from .discovery import async_resolve_host_arp, async_scan_for_appliances
+from .discovery import async_find_host, async_scan_for_appliances
 
 
 class CannotConnect(HomeAssistantError):
@@ -237,12 +243,25 @@ async def _async_fetch_localkey(
 async def _async_resolve_host(hass, device_id: str, timeout: float = 1.5) -> str | None:
     """Best-effort: find the AC's current LAN IP so the user needn't type it.
 
-    These units do NOT announce ``_cae._udp`` mDNS, so we map the **deviceId (= MAC)** to an IP via
-    HA's own DHCP/ARP library (``aiodiscover`` — what the ``dhcp`` component uses).
-    mDNS is still tried first (cheap, harmless; a future unit/firmware may announce). Returns the IP
-    or ``None`` -> the flow then asks for the host."""
+    Three ways, cheapest first, and each is tried only because the one before it came up empty:
+
+    mDNS first -- these units do NOT announce ``_cae._udp``, so it is only for a future firmware
+    that might, and it costs nothing. Then :func:`async_find_host`, which maps the **deviceId
+    (= MAC)** through Home Assistant's own DHCP/ARP data and, when that comes up empty, asks the
+    network directly with a UDISCOVERY broadcast.
+
+    ⚠️ It must be ``async_find_host`` and not the appliance scan the offline form uses. That scan
+    answers "which appliances are out there", and it **returns as soon as the ARP sweep yields any
+    of them** -- so on a subnet where ARP knows one unit and not another, it hands back a list that
+    simply does not contain the one being looked for, and never reaches its broadcast -- so an
+    appliance at a perfectly reachable address still produces the "what is its IP?" form.
+    ``async_find_host`` is asking about one device, so a miss falls through to the broadcast, which
+    is the step that does not depend on ARP having been right.
+
+    Returns the IP, or ``None`` -> the flow then asks for the host after all.
+    """
     ip = await _async_resolve_host_mdns(hass, device_id, timeout)
-    return ip or await async_resolve_host_arp(device_id)
+    return ip or await async_find_host(hass, device_id)
 
 
 async def _async_resolve_host_mdns(hass, device_id: str, timeout: float) -> str | None:
@@ -311,6 +330,204 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         self._cloud: HaierCloud | None = None
         self._local_key: str | None = None
         self._localkey_version: int | None = None
+        # an account held by another entry has been tried for this appliance already (once is enough
+        # -- it is a network round trip, and every path below funnels through the manual form)
+        self._account_tried = False
+        # set when a stored account turned out to be dead, so the sign-in form opens saying so
+        self._login_error: str | None = None
+
+    def _stored_accounts(
+        self, exclude_entry_id: str | None = None
+    ) -> list[dict[str, str]]:
+        """Every distinct set of account credentials the configured appliances hold.
+
+        An account is a property of the *owner*, not of one air conditioner, but it is stored per
+        entry because that is where the tokens have to live for each coordinator to refresh its own
+        key. So a second appliance being added has, sitting right there, everything needed to fetch
+        its key without anyone signing in again -- and until now nothing looked.
+
+        All of them, not just the newest: two Haier accounts in one Home Assistant is unusual but
+        entirely legitimate -- a household where the appliances were bought and registered
+        separately -- and under a single-account assumption exactly one of them would keep being
+        asked for a key that the other account could not have supplied anyway.
+
+        Newest first, on the same reasoning as the zone default: the most recent sign-in is the one
+        whose tokens are most likely still live. Deduplicated by terminal, since several appliances
+        added in one sitting all carry the same pair.
+
+        ``exclude_entry_id`` skips an entry whose own credentials have just been tried and failed,
+        so that a re-key attempt reaches for a genuinely different one rather than repeating itself.
+        """
+        out: list[dict[str, str]] = []
+        seen: set[tuple[str, str]] = set()
+        for entry in reversed(self.hass.config_entries.async_entries(DOMAIN)):
+            if entry.entry_id == exclude_entry_id:
+                continue
+            data = entry.data
+            if not (data.get(CONF_REFRESH_TOKEN) and data.get(CONF_CLOUD_CLIENT_ID)):
+                continue
+            token = (str(data[CONF_CLOUD_CLIENT_ID]), str(data[CONF_REFRESH_TOKEN]))
+            if token in seen:
+                continue
+            seen.add(token)
+            out.append({
+                CONF_REFRESH_TOKEN: token[1],
+                CONF_CLOUD_CLIENT_ID: token[0],
+                CONF_ACCESS_TOKEN: str(data.get(CONF_ACCESS_TOKEN) or ""),
+                CONF_ZONE_INFO: str(data.get(CONF_ZONE_INFO) or "0"),
+            })
+        return out
+
+    def _stored_cloud_data(self, exclude_entry_id: str | None = None) -> dict[str, str] | None:
+        """The most recently stored account, for the callers that only need to know there is one."""
+        accounts = self._stored_accounts(exclude_entry_id)
+        return accounts[0] if accounts else None
+
+    async def _async_cloud_from_stored(
+        self, data: dict[str, str]
+    ) -> HaierCloud | None:
+        """A signed-in client built from stored credentials, or ``None`` if they no longer work.
+
+        The access token is re-minted from the durable refreshToken rather than reused: access
+        tokens expire in about a day, so a stored one is usually dead while the refreshToken beside
+        it is fine. This is the same exchange the coordinator performs before every key refresh.
+        """
+        try:
+            cloud = HaierCloud(
+                replace(SEA_APP_CREDENTIALS, client_id=data[CONF_CLOUD_CLIENT_ID]),
+                data.get(CONF_ACCESS_TOKEN) or "",
+                zone_info=data.get(CONF_ZONE_INFO, "0"),
+                # HA's shared httpx client: building one here would load the CA bundle from disk,
+                # which is blocking I/O on the event loop
+                transport=async_cloud_transport(self.hass),
+            )
+            cloud.access_token = (
+                await cloud.refresh_token(data[CONF_REFRESH_TOKEN])
+            ).access_token
+        except (CloudError, KeyError, OSError, RuntimeError, TimeoutError, ValueError) as err:
+            _LOGGER.debug("the stored account did not authenticate: %s", err)
+            return None
+        return cloud
+
+    async def _async_adopt_stored_account(self, device_id: str) -> bool:
+        """Arm this flow with an account another appliance already holds, for ``device_id``.
+
+        This is what stops the second air conditioner being treated as though its owner had never
+        signed in. Discovery hands over a device ID and an address and nothing else, so the offline
+        form used to ask for a localKey -- a 32-hex secret with no way to obtain it by hand -- from
+        someone whose account was already configured and could have fetched it outright. Reported as
+        issue #9: one unit added through sign-in, the other clicked in the Discovered box, and only
+        the second one asks.
+
+        Returns ``True`` when the caller should continue down the account path. The appliance must
+        actually be on the account: a key is issued per device, so a unit the account does not own
+        would only fail slower, and taking the answer from a device list is also how the model, the
+        product code and the wire-model identifier arrive. A device list that cannot be reached is
+        the one case where the fetch is still attempted -- the credentials may be fine and the
+        listing merely unlucky, and the key request is the authority on that.
+        """
+        self._account_tried = True
+        wanted = _clean_device_id(device_id)
+        for stored in self._stored_accounts():
+            cloud = await self._async_cloud_from_stored(stored)
+            if cloud is None:
+                continue
+            self._cloud = cloud
+            self._cloud_data = {**stored, CONF_ACCESS_TOKEN: cloud.access_token}
+            try:
+                self._devices = await cloud.list_devices_v2()
+            except (CloudError, OSError, RuntimeError, TimeoutError) as err:
+                _LOGGER.debug("stored account signed in, but the device list failed: %s", err)
+                return True
+            picked = next(
+                (d for d in self._devices if _clean_device_id(d.device_id) == wanted), None
+            )
+            if picked is None:
+                self._cloud = None
+                self._cloud_data = {}
+                self._devices = []
+                continue
+            self._picked = picked
+            self._absorb_picked(picked)
+            if picked.name:
+                self._discovered[CONF_NAME] = picked.name
+            _LOGGER.info(
+                "using the Haier account already configured to set up %s -- no key needed",
+                device_id,
+            )
+            return True
+        _LOGGER.debug(
+            "%s is not on any account already configured; asking for its key instead", device_id
+        )
+        return False
+
+    def _absorb_picked(self, picked: Any) -> None:
+        """Keep the identifiers the device list hands over: they are not derivable from anything
+        else, and each one that is dropped leaves the entry guessing at something it was told.
+
+        * ``uplus_id`` selects the wire map, so the decoder need not key on report length;
+        * ``device_type`` names the variant a uPlusId can only give the class of;
+        * ``prod_no`` is the product code the rules, the fault names and the real feature set are
+          all keyed by -- dropping it leaves a built-in default that looks exactly like a real one.
+        """
+        for attr, key in (
+            ("uplus_id", CONF_UPLUS_ID),
+            ("device_type", CONF_DEVICE_TYPE),
+            ("prod_no", CONF_PRODUCT_CODE),
+        ):
+            if value := getattr(picked, attr, ""):
+                self._cloud_data[key] = value
+
+    async def _async_share_after_login(
+        self, cloud: HaierCloud, creds: dict[str, str]
+    ) -> None:
+        """Hand the credentials a fresh sign-in just issued to the account's other appliances.
+
+        Needs the device list to prove which entries are on this account, and that is the only
+        reason it makes a request -- so it does not make one when no other entry holds an account
+        to supersede, which is the ordinary single-appliance install.
+
+        Best effort throughout, and deliberately catching everything: this runs inside a step whose
+        actual job is to repair an appliance, and a courtesy update to its neighbours failing must
+        never be what turns that repair into an error message.
+        """
+        if not any(
+            e.data.get(CONF_REFRESH_TOKEN) for e in self.hass.config_entries.async_entries(DOMAIN)
+        ):
+            return
+        try:
+            devices = await cloud.list_devices_v2()
+        except Exception as err:  # noqa: BLE001 - courtesy only; never fatal to the caller
+            _LOGGER.debug("could not list devices to share the new credentials: %s", err)
+            return
+        self._async_share_account(devices, creds)
+
+    @callback
+    def _async_share_account(self, devices: list[Any], creds: dict[str, str]) -> None:
+        """Give every already-configured appliance on this account the tokens just issued.
+
+        Signing in mints a **fresh per-install CLIENTID** and binds the new token to it, so an
+        account that signs in again is, to the manufacturer, a different terminal. Entries created
+        before that hold the previous pair, and nothing was updating them -- so adding a second air
+        conditioner by signing in again could leave the first one unable to refresh its key, which
+        surfaces as it suddenly asking for one. Sharing the new credentials across the account's
+        entries removes the possibility whether or not the old terminal is actually revoked.
+
+        Membership is proven, not assumed: an entry is only updated if its appliance is on the
+        device list this sign-in just returned. Nothing else identifies an entry's account, and
+        writing one account's tokens into another's entry would be far worse than leaving it alone.
+        """
+        owned = {_clean_device_id(d.device_id) for d in devices}
+        for entry in self.hass.config_entries.async_entries(DOMAIN):
+            data = entry.data
+            if _clean_device_id(str(data.get(CONF_DEVICE_ID, ""))) not in owned:
+                continue
+            if not data.get(CONF_REFRESH_TOKEN):
+                continue  # a hand-made entry: it never had an account, and gains nothing here
+            if all(data.get(k) == v for k, v in creds.items()):
+                continue
+            _LOGGER.debug("updating %s with the credentials just issued", entry.title)
+            self.hass.config_entries.async_update_entry(entry, data={**data, **creds})
 
     def _zone_from_signed_in_account(self) -> str | None:
         """The region a previously added appliance's account reported, if there is one.
@@ -326,8 +543,45 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Choose how to add the AC: email/password sign-in, or fully manual."""
-        return self.async_show_menu(step_id="user", menu_options=["login", "manual"])
+        """Choose how to add the AC: email/password sign-in, or fully manual.
+
+        An owner who has already signed in is offered that account first, and adding their next
+        appliance costs them nothing at all -- no password, no key. Signing in again would work too,
+        but it is strictly worse: it mints a second terminal identity for one account, which is the
+        thing :meth:`_async_share_account` exists to contain.
+        """
+        options = ["login", "manual"]
+        if self._stored_cloud_data() is not None:
+            options.insert(0, "account")
+        return self.async_show_menu(step_id="user", menu_options=options)
+
+    async def async_step_account(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Add another appliance using the account already configured, without signing in again."""
+        stored = self._stored_cloud_data()
+        cloud = await self._async_cloud_from_stored(stored) if stored else None
+        if stored is None or cloud is None:
+            # Do not dead-end and do not pretend: send them to the sign-in form with the reason.
+            # The stored refreshToken is durable but not eternal, and it is also what a sign-in
+            # elsewhere can invalidate.
+            self._login_error = "account_expired"
+            return await self.async_step_login()
+        self._cloud = cloud
+        self._cloud_data = {**stored, CONF_ACCESS_TOKEN: cloud.access_token}
+        try:
+            self._devices = await self._cloud.list_devices_v2()
+        except (CloudError, OSError, RuntimeError, TimeoutError) as err:
+            _LOGGER.warning("the configured account's device list failed: %s", err)
+            self._login_error = "account_expired"
+            return await self.async_step_login()
+        if not self._devices:
+            # Its own reason, not the sign-in path's: that one names the account just typed, and
+            # there is no name to give here -- "Signed in as , but..." is how a placeholder that
+            # has nothing to say reads to a user.
+            return self.async_abort(reason="account_no_devices")
+        self._async_share_account(self._devices, self._cloud_data)
+        return await self.async_step_pick_device()
 
     async def async_step_login(
         self, user_input: dict[str, Any] | None = None
@@ -373,6 +627,10 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                     placeholders = {"error": str(err)[:120]}
                 else:
                     if self._devices:
+                        # This sign-in issued a new terminal identity; hand it to every appliance
+                        # already configured on the same account before going on, so none of them
+                        # is left holding the superseded one.
+                        self._async_share_account(self._devices, self._cloud_data)
                         return await self.async_step_pick_device()
                     # Sign-in SUCCEEDED and the account simply has no devices. Re-showing the form
                     # as an error invites the user to retype credentials forever and throws away the
@@ -381,6 +639,11 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                         reason="no_devices",
                         description_placeholders={"username": user_input[CONF_USERNAME]},
                     )
+        # An account we already held turned out not to work, and this form is the fix. Say that,
+        # rather than opening a blank sign-in form for no visible reason.
+        if self._login_error and not errors:
+            errors["base"] = self._login_error
+            self._login_error = None
         # Prefer the region an account already signed in reported for itself. The server states it
         # at sign-in and it is stored, so on a second appliance the answer is known -- and it beats
         # Home Assistant's country, which says where the installation is rather than where the
@@ -435,23 +698,7 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                 (d for d in available if d.device_id == user_input[CONF_DEVICE_ID]), None
             )
             if picked is not None:
-                # Persist the uPlusId (device-list wifiType) — the precise wire-model key, so the
-                # decoder need not fall back to keying on report length. Absent on older list
-                # responses, which is fine (length keying still works).
-                if getattr(picked, "uplus_id", ""):
-                    self._cloud_data[CONF_UPLUS_ID] = picked.uplus_id
-                # The exact deviceType, which onboarding already reads twice and used to discard.
-                # Diagnostics can only derive a device's *class* from the uPlusId; this names the
-                # variant, so an unfamiliar unit reports what it actually is.
-                if getattr(picked, "device_type", ""):
-                    self._cloud_data[CONF_DEVICE_TYPE] = picked.device_type
-                # The product code, which the device list hands over and this step already passes
-                # on when asking for the model's rules -- and then dropped, leaving the entry to
-                # fall back to a built-in default indistinguishable from a real one. It is the
-                # identifier the rules, the fault names and the unit's real feature set are all
-                # keyed by, so an account that knows it should never leave the entry guessing.
-                if getattr(picked, "prod_no", ""):
-                    self._cloud_data[CONF_PRODUCT_CODE] = picked.prod_no
+                self._absorb_picked(picked)
                 self._picked = picked
                 return await self._async_setup_cloud_device(picked.device_id, picked.name)
         choices = {d.device_id: f"{d.name or d.device_id} ({d.device_id})" for d in available}
@@ -662,12 +909,22 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         if not product_code:
             return None
         try:
-            return await get_public_device_config(
+            model = await get_public_device_config(
                 product_code, transport=async_cloud_transport(self.hass)
             )
         except (CloudError, OSError, RuntimeError, TimeoutError, ValueError) as err:
             _LOGGER.debug("no published model for product code %s: %s", product_code, err)
             return None
+        if model.get("attributes"):
+            # Record which attributes this unit does not actually have. A generic model
+            # over-declares -- it lists everything the product line might carry and marks the rest
+            # invisible -- and the optional-feature entities refuse to appear at all unless that
+            # set is known, because guessing produces sensors for hardware that is not fitted.
+            # Only a published model carries the flag, and this IS one, so the offline install is
+            # entitled to the same feature set an account gives it. Without this the model was
+            # stored with the flags still on each attribute and nothing ever read them across.
+            model["invisible_attributes"] = sorted(invisible_attributes(model))
+        return model
 
     async def _async_region_product_code(self, model: str) -> str | None:
         """The product code for a model number, from **this account's own region catalogue**.
@@ -724,6 +981,22 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_manual(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
+        # Never ask for a key we could fetch. Every route that ends at this form -- discovery, the
+        # network scan's picker, the menu -- arrives knowing which appliance it is, and an owner who
+        # has signed in for one air conditioner can have the key for the next one without being
+        # asked anything. Tried once per flow, and skipped when this flow signed in itself: it holds
+        # a better account than any stored one, and if its fetch failed, repeating it here would
+        # only fail again more slowly.
+        if (
+            user_input is None
+            and not self._account_tried
+            and not self._cloud_data.get(CONF_REFRESH_TOKEN)
+            and (known := self._discovered.get(CONF_DEVICE_ID))
+            and await self._async_adopt_stored_account(known)
+        ):
+            return await self._async_setup_cloud_device(
+                known, self._discovered.get(CONF_NAME)
+            )
         # Before asking for an address, look for one. Home Assistant already knows every MAC on the
         # subnet, the appliance's device ID *is* its MAC, and the appliances answer a key-free query
         # -- so on the ordinary network the address, the device ID and the wire-model identifier can
@@ -969,14 +1242,14 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured(updates={CONF_HOST: host})
         self._discovered = {CONF_HOST: host, CONF_DEVICE_ID: device_id}
         self.context["title_placeholders"] = {"device_id": device_id}
-        return await self.async_step_manual()
+        return await self._async_discovered(device_id)
 
     async def async_step_dhcp(
         self, discovery_info: DhcpServiceInfo
     ) -> ConfigFlowResult:
-        """DHCP-discovered on the LAN (the deviceId **is** the module's MAC): the sanctioned
-        to find units that don't announce mDNS. Prefills host + deviceId (the manual step then
-        just needs the key; or use the login menu path for the key too)."""
+        """DHCP-discovered on the LAN (the deviceId **is** the module's MAC): the sanctioned way
+        to find units that don't announce mDNS. Prefills host + deviceId, and fetches the key from
+        an account already configured so that nothing at all is asked for."""
         device_id = _clean_device_id(format_mac(discovery_info.macaddress))
         host = discovery_info.ip
         if not device_id:
@@ -985,6 +1258,47 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured(updates={CONF_HOST: host})  # follow a DHCP host move
         self._discovered = {CONF_HOST: host, CONF_DEVICE_ID: device_id}
         self.context["title_placeholders"] = {"device_id": device_id}
+        return await self._async_discovered(device_id)
+
+    async def _async_discovered(self, device_id: str) -> ConfigFlowResult:
+        """An appliance found on the network: ask nothing of an owner whose account can answer.
+
+        ⚠️ Both discovery steps run on their own, the moment a matching appliance is seen -- nobody
+        has clicked anything yet, and what they return is what becomes the card in Home Assistant's
+        Discovered box. So this must always put a form in front of the owner. Returning the created
+        entry from here instead would add every Haier appliance on the network silently, including
+        ones somebody deliberately left out.
+
+        Which form depends on what we can answer for them. Discovery knows an address and a device
+        ID, which is everything except the one secret; an owner who has signed in already has that
+        secret available to them, so asking for it is asking for something we could simply fetch --
+        and it is unobtainable by hand, which makes the question a dead end rather than an
+        inconvenience (issue #9). With an account, the card leads to a confirmation and nothing
+        else. Without one, it leads to the offline form exactly as it always has.
+        """
+        if self._stored_cloud_data() is not None:
+            return await self.async_step_discovery_confirm()
+        return await self.async_step_manual()
+
+    async def async_step_discovery_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Confirm a discovered appliance whose key an account already configured can fetch."""
+        device_id = self._discovered[CONF_DEVICE_ID]
+        if user_input is None:
+            return self.async_show_form(
+                step_id="discovery_confirm",
+                description_placeholders={
+                    CONF_DEVICE_ID: device_id,
+                    CONF_HOST: self._discovered.get(CONF_HOST, ""),
+                },
+            )
+        # The account is only reached for now: it may have expired between the card appearing and
+        # this click, and the offline form is the fallback then, as everywhere else.
+        if await self._async_adopt_stored_account(device_id):
+            return await self._async_setup_cloud_device(
+                device_id, self._discovered.get(CONF_NAME)
+            )
         return await self.async_step_manual()
 
     async def async_step_reconfigure(
@@ -1065,8 +1379,18 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                 _LOGGER.warning("attaching cloud credentials failed: %s", err)
                 errors["base"] = "cannot_connect_cloud"
             else:
+                # Same sign-in, same consequence for everyone else on the account.
+                await self._async_share_after_login(_cloud, cloud_data)
                 return self.async_update_reload_and_abort(entry, data_updates=cloud_data)
-        default_zone = default_dial_code(self.hass.config.country)
+        # The region an account already reported for itself beats Home Assistant's country, which
+        # says where the installation is rather than where the account was registered. Measured
+        # confirmed: the server does NOT resolve this -- signing in with the wrong dialling code
+        # fails as "account is not registered" -- so on a re-authentication, where an account is by
+        # definition already configured, offering anything but its own zone invites the one failure
+        # whose message points at the password.
+        default_zone = (
+            self._zone_from_signed_in_account() or default_dial_code(self.hass.config.country)
+        )
         zone_field = (
             vol.Required(CONF_ZONE_INFO, default=default_zone)
             if default_zone
@@ -1101,7 +1425,39 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         Reauth is reached only AFTER an automatic gateway refresh has already failed, and the most
         likely reason is an expired refreshToken -- which signing in again fixes instantly. Asking
         solely for a 32-hex key demands a value the user has no way to produce.
+
+        Before asking anything, try another appliance's account. This is not a repeat of the
+        refresh that just failed: signing in mints a per-install terminal identity and binds the
+        token to it, so a sibling entry holds genuinely different credentials -- and if the reason
+        this entry's stopped working is that a later sign-in superseded them, the sibling is
+        holding the very credentials that replaced them. That makes this the case it repairs best,
+        and it repairs it without the owner seeing anything at all.
         """
+        entry = self._get_reauth_entry()
+        device_id = entry.data[CONF_DEVICE_ID]
+        for stored in self._stored_accounts(exclude_entry_id=entry.entry_id):
+            cloud = await self._async_cloud_from_stored(stored)
+            if cloud is None:
+                continue
+            creds = {**stored, CONF_ACCESS_TOKEN: cloud.access_token}
+            try:
+                local_key, version = await _async_fetch_localkey(self.hass, creds, device_id)
+            except (GatewayError, KeyError, OSError, RuntimeError, TimeoutError) as err:
+                _LOGGER.debug(
+                    "another appliance's account could not re-key %s either: %s", device_id, err
+                )
+                continue
+            _LOGGER.info(
+                "re-keyed %s from the account another appliance holds; nothing to ask", device_id
+            )
+            return self.async_update_reload_and_abort(
+                entry,
+                data_updates={
+                    CONF_LOCAL_KEY: local_key,
+                    CONF_LOCALKEY_VERSION: version,
+                    **creds,
+                },
+            )
         return self.async_show_menu(
             step_id="reauth", menu_options=["reauth_cloud", "reauth_confirm"]
         )
@@ -1126,6 +1482,9 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                 local_key, version = await _async_fetch_localkey(
                     self.hass, cloud_data, device_id
                 )
+                # This sign-in superseded the terminal every other appliance on the account is
+                # using. Repairing one air conditioner must not be what breaks the next.
+                await self._async_share_after_login(_cloud, cloud_data)
             except CloudAuthError as err:
                 errors["base"] = _login_error_for(err)
                 placeholders = {"username": user_input[CONF_USERNAME], "zone": zone}
@@ -1141,7 +1500,15 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                         **cloud_data,
                     },
                 )
-        default_zone = default_dial_code(self.hass.config.country)
+        # The region an account already reported for itself beats Home Assistant's country, which
+        # says where the installation is rather than where the account was registered. Measured
+        # confirmed: the server does NOT resolve this -- signing in with the wrong dialling code
+        # fails as "account is not registered" -- so on a re-authentication, where an account is by
+        # definition already configured, offering anything but its own zone invites the one failure
+        # whose message points at the password.
+        default_zone = (
+            self._zone_from_signed_in_account() or default_dial_code(self.hass.config.country)
+        )
         zone_field = (
             vol.Required(CONF_ZONE_INFO, default=default_zone)
             if default_zone

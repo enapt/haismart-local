@@ -283,7 +283,7 @@ It's fully self-contained — no `pip install` step, the helper libraries are bu
 Or: **Settings → Devices & Services → + Add Integration → Haismart**. If it isn't listed, hard-refresh
 your browser (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>).
 
-Then pick one of two paths:
+Then pick one of the paths offered:
 
 **Sign in (recommended).** Enter your Haier account email (or phone) and password, and the country
 your **account** was registered in. The integration lists your air conditioners, fetches the chosen
@@ -308,6 +308,21 @@ that family agrees on are used instead, which still covers every fault name.
 > The key is the one thing an appliance will never hand over. If you do not have one saved — from
 > the *Local key* diagnostic sensor of a previous install, or a backup — sign in instead; that
 > fetches it for you.
+
+### Adding a second air conditioner
+
+Once one unit is set up through an account, that account is stored — so the next one costs you
+nothing. **Add Integration → Haismart** now offers a third choice, first in the list:
+
+**Use the Haier account already added.** No password, no key, no address. It lists the appliances on
+the account that are not set up yet; pick one and it is added. The same thing happens if your air
+conditioner appears in Home Assistant's **Discovered** box — the card leads to a confirmation rather
+than to a key prompt, because the key can simply be fetched.
+
+Signing in a second time also works, but there is no reason to: each sign-in registers a new
+terminal with Haier, and the credentials your first air conditioner is holding are the ones that get
+superseded. If you do sign in again, every appliance already set up on that account is updated with
+the new credentials, so none of them is left behind.
 
 ## Automation examples
 
@@ -404,7 +419,9 @@ live on entirely different servers and no country code will work.
 
 The AC answered and the connection is fine, but Home Assistant couldn't read the reply. Two causes:
 
-- **Stale local key** — keys rotate server-side. If you signed in with your account, it re-fetches
+- **Stale local key** — keys rotate server-side. If another air conditioner on the same account is
+  set up here, its credentials are tried first and the key is re-fetched with nothing shown to you
+  at all. Otherwise, if you signed in with your account, it re-fetches
   automatically; otherwise you'll be prompted to re-authenticate. The integration tells you which
   situation you are in rather than making you guess — see
   [Why it keeps asking for a key](#why-it-keeps-asking-for-a-key).

@@ -6,6 +6,7 @@
         "title": "Legg til et Haier-klimaanlegg",
         "description": "Å logge inn er den anbefalte veien: Home Assistant henter den lokale nøkkelen, finner enheten på nettverket ditt og leser av modellen, så det er ingenting å lime inn. Deretter snakker den direkte med klimaanlegget — og når alt er satt opp, kan du blokkere enhetens internettilgang helt; se README om å bli helt skyuavhengig.\n\nGoogle-/Facebook-kontoer: opprett en egen Haier-konto med e-post og passord, del klimaanleggene dine med den i appen, og logg deretter inn med den kontoen.",
         "menu_options": {
+          "account": "Bruk Haier-kontoen som allerede er lagt til (ingenting å skrive)",
           "login": "Logg inn med Haier-kontoen din (anbefales)",
           "manual": "Jeg har allerede enhetens lokale nøkkel"
         }
@@ -137,6 +138,10 @@
         "data": {
           "host": "Klimaanlegg"
         }
+      },
+      "discovery_confirm": {
+        "title": "Sett opp dette klimaanlegget",
+        "description": "Home Assistant fant et Haier-klimaanlegg på {host} (`{device_id}`).\n\nDen lokale nøkkelen hentes fra Haier-kontoen du allerede har lagt til, så det er ingenting å skrive. Velg **Send inn** for å legge det til."
       }
     },
     "error": {
@@ -147,7 +152,8 @@
       "invalid_key": "Den lokale nøkkelen må være en hex-streng på 32 tegn.",
       "invalid_auth": "Klimaanlegget svarte, men denne lokale nøkkelen dekrypterer ikke statusen – nøkkelen er feil, eller den er byttet.",
       "cannot_connect": "Fikk ikke kontakt med klimaanlegget på port 56800. Kontroller IP-adressen, og at Home Assistant er på samme nettverk.",
-      "device_id_required": "Klimaanlegget svarte ikke på identifikasjonsforespørselen, så enhets-ID-en kunne ikke leses automatisk. Skriv den inn manuelt — det er modulens Wi-Fi-MAC-adresse, 12 heksadesimale tegn uten skilletegn."
+      "device_id_required": "Klimaanlegget svarte ikke på identifikasjonsforespørselen, så enhets-ID-en kunne ikke leses automatisk. Skriv den inn manuelt — det er modulens Wi-Fi-MAC-adresse, 12 heksadesimale tegn uten skilletegn.",
+      "account_expired": "Haier-kontoen som allerede er satt opp her, kunne ikke brukes — innloggingen er utløpt, eller en innlogging et annet sted har erstattet den. Å logge inn på nytt nedenfor retter dette for alle klimaanleggene du har lagt til."
     },
     "abort": {
       "already_configured": "Denne enheten er allerede konfigurert.",
@@ -155,7 +161,8 @@
       "all_configured": "Alle klimaanleggene på denne kontoen er allerede lagt til i Home Assistant.",
       "unknown": "Uventet feil – kunngjøringen fra enheten ble ikke forstått.",
       "no_devices": "Logget inn som {username}, men denne Haier-kontoen har ingen enheter. Hvis du logger inn i appen med Google eller Facebook, del først klimaanlegget med denne kontoen i appen, og prøv så igjen.",
-      "already_in_progress": "Dette klimaanlegget settes allerede opp."
+      "already_in_progress": "Dette klimaanlegget settes allerede opp.",
+      "account_no_devices": "Haier-kontoen som allerede er satt opp her, viser ingen enheter lenger. Kontroller at klimaanlegget fortsatt ligger under denne kontoen i Haier-appen, og prøv igjen."
     }
   },
   "options": {

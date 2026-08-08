@@ -6,6 +6,7 @@
         "title": "Lägg till en Haier-luftkonditionering",
         "description": "Att logga in är den rekommenderade vägen: Home Assistant hämtar den lokala nyckeln, hittar enheten i ditt nätverk och läser av dess modell, så det finns inget att klistra in. Därefter talar den direkt med luftkonditioneringen — och när allt är uppsatt kan du blockera enhetens internetåtkomst helt; se README om att bli helt molnoberoende.\n\nGoogle-/Facebook-konton: skapa ett separat Haier-konto med e-post och lösenord, dela dina luftkonditioneringar med det i appen och logga sedan in med det kontot.",
         "menu_options": {
+          "account": "Använd Haier-kontot som redan lagts till (inget att skriva)",
           "login": "Logga in med ditt Haier-konto (rekommenderas)",
           "manual": "Jag har redan enhetens lokala nyckel"
         }
@@ -137,6 +138,10 @@
         "data": {
           "host": "Luftkonditionering"
         }
+      },
+      "discovery_confirm": {
+        "title": "Konfigurera den här luftkonditioneringen",
+        "description": "Home Assistant hittade en Haier-luftkonditionering på {host} (`{device_id}`).\n\nDess lokala nyckel hämtas från Haier-kontot du redan lagt till, så det finns inget att skriva. Välj **Skicka** för att lägga till den."
       }
     },
     "error": {
@@ -147,7 +152,8 @@
       "invalid_key": "Den lokala nyckeln måste vara en hex-sträng på 32 tecken.",
       "invalid_auth": "Luftkonditioneringen svarade, men den här lokala nyckeln avkodar inte dess status – nyckeln är fel eller har bytts.",
       "cannot_connect": "Det gick inte att nå luftkonditioneringen på port 56800. Kontrollera IP-adressen och att Home Assistant är i samma nätverk.",
-      "device_id_required": "Luftkonditioneringen svarade inte på identifieringsförfrågan, så dess enhets-ID kunde inte läsas automatiskt. Ange det manuellt — det är modulens Wi-Fi-MAC-adress, 12 hexadecimala tecken utan avgränsare."
+      "device_id_required": "Luftkonditioneringen svarade inte på identifieringsförfrågan, så dess enhets-ID kunde inte läsas automatiskt. Ange det manuellt — det är modulens Wi-Fi-MAC-adress, 12 hexadecimala tecken utan avgränsare.",
+      "account_expired": "Haier-kontot som redan är konfigurerat här kunde inte användas — inloggningen har gått ut, eller så har en inloggning någon annanstans ersatt den. Att logga in igen nedan åtgärdar det för alla luftkonditioneringar du har lagt till."
     },
     "abort": {
       "already_configured": "Den här enheten är redan konfigurerad.",
@@ -155,7 +161,8 @@
       "all_configured": "Alla det här kontots luftkonditioneringar är redan tillagda i Home Assistant.",
       "unknown": "Oväntat fel – enhetens annonsering gick inte att tolka.",
       "no_devices": "Inloggad som {username}, men det här Haier-kontot har inga enheter. Om du loggar in i appen med Google eller Facebook: dela först luftkonditioneringen med det här kontot i appen och försök sedan igen.",
-      "already_in_progress": "Den här luftkonditioneringen håller redan på att ställas in."
+      "already_in_progress": "Den här luftkonditioneringen håller redan på att ställas in.",
+      "account_no_devices": "Haier-kontot som redan är konfigurerat här listar inte längre några enheter. Kontrollera att luftkonditioneringen fortfarande finns i Haier-appen under det här kontot och försök igen."
     }
   },
   "options": {

@@ -6,6 +6,7 @@
         "title": "Adicionar um ar-condicionado Haier",
         "description": "Fazer login é o caminho recomendado: o Home Assistant obtém a chave local, encontra a unidade na sua rede e lê o modelo dela, então não há nada para colar. A partir daí ele fala diretamente com o ar-condicionado — e, depois de configurado, você pode bloquear totalmente o acesso da unidade à internet; veja o README sobre independência total da nuvem.\n\nContas Google/Facebook: crie uma conta Haier separada com e-mail e senha, compartilhe seus aparelhos com ela no aplicativo e faça login com essa conta.",
         "menu_options": {
+          "account": "Usar a conta Haier já adicionada (nada para digitar)",
           "login": "Entrar com sua conta Haier (recomendado)",
           "manual": "Já tenho a chave local desta unidade"
         }
@@ -137,6 +138,10 @@
         "data": {
           "host": "Ar-condicionado"
         }
+      },
+      "discovery_confirm": {
+        "title": "Configurar este ar-condicionado",
+        "description": "O Home Assistant encontrou um ar-condicionado Haier em {host} (`{device_id}`).\n\nA chave local dele será obtida da conta Haier que você já adicionou, então não há nada para digitar. Selecione **Enviar** para adicioná-lo."
       }
     },
     "error": {
@@ -147,7 +152,8 @@
       "invalid_key": "A chave local precisa ser uma sequência hexadecimal de 32 caracteres.",
       "invalid_auth": "O ar-condicionado respondeu, mas esta chave local não descriptografa o estado dele — a chave está errada ou foi trocada.",
       "cannot_connect": "Não foi possível alcançar o ar-condicionado na porta 56800. Confira o endereço IP e se o Home Assistant está na mesma rede.",
-      "device_id_required": "O ar-condicionado não respondeu à consulta de identificação, então o ID do dispositivo não pôde ser lido automaticamente. Digite-o manualmente: é o endereço MAC Wi-Fi do módulo, 12 caracteres hexadecimais sem separadores."
+      "device_id_required": "O ar-condicionado não respondeu à consulta de identificação, então o ID do dispositivo não pôde ser lido automaticamente. Digite-o manualmente: é o endereço MAC Wi-Fi do módulo, 12 caracteres hexadecimais sem separadores.",
+      "account_expired": "Não foi possível usar a conta Haier já configurada aqui: o login expirou ou um login em outro lugar o substituiu. Entrar novamente abaixo resolve isso para todos os ares-condicionados que você adicionou."
     },
     "abort": {
       "already_configured": "Este dispositivo já está configurado.",
@@ -155,7 +161,8 @@
       "all_configured": "Todos os aparelhos desta conta já foram adicionados ao Home Assistant.",
       "unknown": "Erro inesperado — o anúncio do dispositivo não foi compreendido.",
       "no_devices": "Conectado como {username}, mas esta conta Haier não tem dispositivos. Se você entra no aplicativo com Google ou Facebook, compartilhe primeiro o ar-condicionado com esta conta no aplicativo e tente de novo.",
-      "already_in_progress": "Este ar-condicionado já está sendo configurado."
+      "already_in_progress": "Este ar-condicionado já está sendo configurado.",
+      "account_no_devices": "A conta Haier já configurada aqui não lista mais nenhum dispositivo. Verifique se o ar-condicionado ainda está no aplicativo Haier nesta conta e tente de novo."
     }
   },
   "options": {

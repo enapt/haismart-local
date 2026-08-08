@@ -6,6 +6,7 @@
         "title": "Dodaj klimatyzator Haier",
         "description": "Logowanie to zalecana droga: Home Assistant pobiera klucz lokalny, znajduje urządzenie w Twojej sieci i odczytuje jego model, więc nie trzeba niczego wklejać. Od tej chwili komunikuje się bezpośrednio z klimatyzatorem — a po zakończeniu konfiguracji możesz całkowicie odciąć urządzenie od internetu; zobacz README o pełnej niezależności od chmury.\n\nKonta Google/Facebook: załóż osobne konto Haier z adresem e-mail i hasłem, udostępnij mu swoje klimatyzatory w aplikacji, a następnie zaloguj się na to konto.",
         "menu_options": {
+          "account": "Użyj już dodanego konta Haier (nic nie trzeba wpisywać)",
           "login": "Zaloguj się kontem Haier (zalecane)",
           "manual": "Mam już klucz lokalny tego urządzenia"
         }
@@ -137,6 +138,10 @@
         "data": {
           "host": "Klimatyzator"
         }
+      },
+      "discovery_confirm": {
+        "title": "Skonfiguruj ten klimatyzator",
+        "description": "Home Assistant znalazł klimatyzator Haier pod adresem {host} (`{device_id}`).\n\nJego klucz lokalny zostanie pobrany z już dodanego konta Haier, więc nie trzeba nic wpisywać. Wybierz **Wyślij**, aby go dodać."
       }
     },
     "error": {
@@ -147,7 +152,8 @@
       "invalid_key": "Klucz lokalny musi być 32-znakowym ciągiem szesnastkowym.",
       "invalid_auth": "Klimatyzator odpowiedział, ale ten klucz lokalny nie odszyfrowuje jego stanu — klucz jest nieprawidłowy albo został zmieniony.",
       "cannot_connect": "Nie udało się połączyć z klimatyzatorem na porcie 56800. Sprawdź adres IP oraz to, czy Home Assistant jest w tej samej sieci.",
-      "device_id_required": "Klimatyzator nie odpowiedział na zapytanie identyfikacyjne, więc nie udało się automatycznie odczytać jego identyfikatora. Wprowadź go ręcznie — to adres MAC Wi-Fi modułu, 12 znaków szesnastkowych bez separatorów."
+      "device_id_required": "Klimatyzator nie odpowiedział na zapytanie identyfikacyjne, więc nie udało się automatycznie odczytać jego identyfikatora. Wprowadź go ręcznie — to adres MAC Wi-Fi modułu, 12 znaków szesnastkowych bez separatorów.",
+      "account_expired": "Nie udało się użyć konta Haier już skonfigurowanego tutaj — jego logowanie wygasło albo zastąpiło je logowanie w innym miejscu. Ponowne zalogowanie poniżej naprawi to dla wszystkich dodanych klimatyzatorów."
     },
     "abort": {
       "already_configured": "To urządzenie jest już skonfigurowane.",
@@ -155,7 +161,8 @@
       "all_configured": "Wszystkie klimatyzatory z tego konta zostały już dodane do Home Assistanta.",
       "unknown": "Nieoczekiwany błąd — nie udało się zrozumieć ogłoszenia urządzenia.",
       "no_devices": "Zalogowano jako {username}, ale to konto Haier nie ma żadnych urządzeń. Jeśli logujesz się w aplikacji przez Google lub Facebooka, najpierw udostępnij klimatyzator temu kontu w aplikacji, a potem spróbuj ponownie.",
-      "already_in_progress": "Ten klimatyzator jest już konfigurowany."
+      "already_in_progress": "Ten klimatyzator jest już konfigurowany.",
+      "account_no_devices": "Konto Haier już skonfigurowane tutaj nie wymienia żadnych urządzeń. Sprawdź, czy klimatyzator nadal jest w aplikacji Haier na tym koncie, i spróbuj ponownie."
     }
   },
   "options": {

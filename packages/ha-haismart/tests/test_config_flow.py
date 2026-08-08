@@ -128,12 +128,14 @@ async def test_user_flow_duplicate_aborts(hass: HomeAssistant, mock_uss) -> None
     assert result2["reason"] == "already_configured"
 
 
-def _zeroconf_info(host: str = "192.168.1.50") -> ZeroconfServiceInfo:
+def _zeroconf_info(
+    host: str = "192.168.1.50", device_id: str = "A1B2C3D4E5F6"
+) -> ZeroconfServiceInfo:
     return ZeroconfServiceInfo(
         ip_address=ip_address(host),
         ip_addresses=[ip_address(host)],
-        hostname="A1B2C3D4E5F6.local.",
-        name="A1B2C3D4E5F6._cae._udp.local.",
+        hostname=f"{device_id}.local.",
+        name=f"{device_id}._cae._udp.local.",
         port=56800,
         type="_cae._udp.local.",
         properties={},
@@ -658,6 +660,11 @@ def test_every_error_and_abort_string_exists() -> None:
     declared_aborts = set(strings["config"]["abort"])
     used_errors = set(re.findall(r'errors\["base"\]\s*=\s*"([a-z_]+)"', source))
     used_errors |= set(re.findall(r'return "([a-z_]+)"', source))     # _login_error_for
+    # An error can also be *carried* to the form it belongs on rather than raised where it is
+    # noticed: a step that fails before it has a form of its own stores the reason and hands over.
+    # Scanning only for the raise site reported such a string as unused, which under this test's
+    # own logic means "delete it" -- exactly backwards.
+    used_errors |= set(re.findall(r'_login_error\s*=\s*"([a-z_]+)"', source))
     used_aborts = set(re.findall(r'reason="([a-z_]+)"', source))
 
     # HA supplies these itself; they need no local definition
@@ -1508,3 +1515,541 @@ async def test_the_region_lookup_refuses_an_ambiguous_model_number_too(
     # neither candidate is stored; what the owner typed is kept, and no product code is claimed
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_PRODUCT_CODE] not in {"AAFIRST00", "AASECOND0"}
+
+
+# --- issue #9: a second appliance must not be asked for a key the account can fetch -------------
+#
+# The report: one air conditioner added by signing in, the other clicked in Home Assistant's
+# "Discovered" box -- and only the second one asks for a 32-hex local key its owner has no way to
+# obtain. Whichever unit was added second was the one that failed, so it read as the first entry
+# breaking. It was not: the discovery path simply never looked at the account already configured.
+
+
+def _cloud_entry(device_id="A1B2C3D4E5F6", **overrides) -> MockConfigEntry:
+    """An entry added through sign-in: it carries the account, which is the point of these tests."""
+    CONF_ACCESS_TOKEN, CONF_CLOUD_CLIENT_ID, _, CONF_REFRESH_TOKEN, CONF_ZONE_INFO = _cloud_consts()
+    return _entry(
+        **{
+            CONF_DEVICE_ID: device_id,
+            CONF_REFRESH_TOKEN: "OLD_RT",
+            CONF_ACCESS_TOKEN: "OLD_AT",
+            CONF_CLOUD_CLIENT_ID: "OLDCLIENTIDOLDCLIENTIDOLDCLIENT01",
+            CONF_ZONE_INFO: "66",
+            **overrides,
+        }
+    )
+
+
+def _stored_account_patches(devices, *, key=("cafe" * 8, 45), refresh="NEW_AT"):
+    """Stub every network call the stored-account path makes. Returns a list of context managers."""
+    from types import SimpleNamespace
+    from unittest.mock import patch
+
+    return [
+        patch("custom_components.haismart.config_flow.HaierCloud.refresh_token",
+              return_value=SimpleNamespace(access_token=refresh, refresh_token="", client_id="")),
+        patch("custom_components.haismart.config_flow.HaierCloud.list_devices_v2",
+              return_value=devices),
+        patch("custom_components.haismart.config_flow.HaierCloud.get_digital_model",
+              return_value={"attributes": []}),
+        patch("custom_components.haismart.config_flow._async_fetch_localkey", return_value=key),
+    ]
+
+
+def _two_devices():
+    from haismart_extractor.cloud import CloudDevice
+
+    return [
+        CloudDevice("A1B2C3D4E5F6", "Downstairs", "0201203a", "UPLUS", True,
+                    prod_no="AAC1UKZ01"),
+        CloudDevice("ACB722AABBCC", "Upstairs", "0201203a", "UPLUS", True,
+                    prod_no="AAC1UKZ01"),
+    ]
+
+
+async def _dhcp_discover(hass, extra_patches, ip="192.168.1.51", mac="acb722aabbcc"):
+    from contextlib import ExitStack
+
+    dhcp_mod = pytest.importorskip("homeassistant.components.dhcp")
+    info = dhcp_mod.DhcpServiceInfo(ip=ip, hostname="haier-ac", macaddress=mac)
+    with ExitStack() as stack:
+        for p in extra_patches:
+            stack.enter_context(p)
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": "dhcp"}, data=info
+        )
+        # Discovery runs on its own, so its first answer is always a form -- the card in the
+        # Discovered box. Confirming is the click that card represents.
+        if result.get("step_id") == "discovery_confirm":
+            result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+        await hass.async_block_till_done()
+    return result
+
+
+async def test_a_discovered_appliance_uses_the_account_the_first_one_holds(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Issue #9. The whole point: the second unit is set up with nothing asked for at all.
+
+    Not "asked for less" -- asked for nothing. The address comes from the DHCP announcement, the
+    key from the account the first air conditioner is already holding, and the entry is created.
+    """
+    CONF_ACCESS_TOKEN, CONF_CLOUD_CLIENT_ID, _, CONF_REFRESH_TOKEN, _ = _cloud_consts()
+    _cloud_entry().add_to_hass(hass)
+
+    result = await _dhcp_discover(hass, _stored_account_patches(_two_devices()))
+
+    assert result["type"] == FlowResultType.CREATE_ENTRY, (
+        f"the second appliance was asked for something: {result.get('step_id')}"
+    )
+    assert result["data"][CONF_DEVICE_ID] == "ACB722AABBCC"
+    assert result["data"][CONF_LOCAL_KEY] == "cafe" * 8
+    assert result["data"][CONF_HOST] == "192.168.1.51"
+    # named and identified from the device list, not left as a bare MAC
+    assert result["title"] == "Upstairs"
+    assert result["data"][CONF_PRODUCT_CODE] == "AAC1UKZ01"
+    # ...and it carries the account itself, so its own key rotation self-heals from now on. An
+    # entry that borrowed a key once and stored no credentials would be back to asking in a day.
+    assert result["data"][CONF_REFRESH_TOKEN] == "OLD_RT"
+    assert result["data"][CONF_CLOUD_CLIENT_ID] == "OLDCLIENTIDOLDCLIENTIDOLDCLIENT01"
+    assert result["data"][CONF_ACCESS_TOKEN] == "NEW_AT"   # re-minted, not the stale stored one
+
+
+async def test_a_discovered_appliance_not_on_the_account_still_asks_for_its_key(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A key is issued per device, so an account that does not own this one cannot fetch it.
+
+    Borrowing credentials is only ever a shortcut past a question we can answer. Where we cannot,
+    the offline form is the honest answer and must still appear.
+    """
+    from haismart_extractor.cloud import CloudDevice
+
+    _cloud_entry().add_to_hass(hass)
+    someone_elses = [
+        CloudDevice("A1B2C3D4E5F6", "Downstairs", "0201203a", "UPLUS", True, prod_no="AAC1UKZ01")
+    ]
+
+    result = await _dhcp_discover(hass, _stored_account_patches(someone_elses))
+
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "manual"
+
+
+async def test_a_discovered_appliance_asks_for_its_key_when_no_account_is_configured(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """No account, no shortcut -- and nothing may be attempted over the network to discover that.
+
+    This is the fully-offline install the project exists for. It must not acquire a cloud call.
+    """
+    from unittest.mock import patch
+
+    with patch(
+        "custom_components.haismart.config_flow.HaierCloud.refresh_token"
+    ) as refresh, patch(
+        "custom_components.haismart.config_flow._async_fetch_localkey"
+    ) as fetch:
+        result = await _dhcp_discover(hass, [])
+
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "manual"
+    refresh.assert_not_called()
+    fetch.assert_not_called()
+
+
+async def test_a_stored_account_that_no_longer_works_falls_back_to_the_form(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Expired credentials must degrade to the old behaviour, never to a dead end."""
+    from unittest.mock import patch
+
+    _cloud_entry().add_to_hass(hass)
+    result = await _dhcp_discover(hass, [
+        patch("custom_components.haismart.config_flow.HaierCloud.refresh_token",
+              side_effect=CloudError("token expired")),
+    ])
+
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "manual"
+
+
+async def test_the_menu_offers_the_configured_account_only_when_there_is_one(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Offered first when an account is held, and absent when none is -- no dead option."""
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+    assert result["menu_options"] == ["login", "manual"]
+
+    _cloud_entry().add_to_hass(hass)
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+    assert result["menu_options"] == ["account", "login", "manual"]
+
+    # a hand-made entry holds no account, so it must not conjure the option
+    await hass.config_entries.async_remove(
+        hass.config_entries.async_entries(DOMAIN)[0].entry_id
+    )
+    _entry(**{CONF_DEVICE_ID: "AABBCCDDEEFF"}).add_to_hass(hass)
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+    assert result["menu_options"] == ["login", "manual"]
+
+
+async def test_the_account_menu_path_adds_an_appliance_without_signing_in_again(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Add Integration -> "use the account already added" -> pick -> done. No password, no key."""
+    from contextlib import ExitStack
+
+    _cloud_entry().add_to_hass(hass)
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+    with ExitStack() as stack:
+        for p in _stored_account_patches(_two_devices()):
+            stack.enter_context(p)
+        stack.enter_context(__import__("unittest").mock.patch(
+            "custom_components.haismart.config_flow._async_resolve_host",
+            return_value="192.168.1.51"))
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"next_step_id": "account"}
+        )
+        # the configured appliance is filtered out; only the new one is offered
+        assert result["step_id"] == "pick_device"
+        assert list(result["data_schema"].schema[CONF_DEVICE_ID].container) == ["ACB722AABBCC"]
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_DEVICE_ID: "ACB722AABBCC"}
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_LOCAL_KEY] == "cafe" * 8
+
+
+async def test_a_dead_stored_account_sends_you_to_sign_in_saying_why(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Choosing the stored account when it has expired must explain itself, not blank-form you."""
+    from unittest.mock import patch
+
+    _cloud_entry().add_to_hass(hass)
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+    with patch("custom_components.haismart.config_flow.HaierCloud.refresh_token",
+               side_effect=CloudError("token expired")):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"next_step_id": "account"}
+        )
+    assert result["step_id"] == "login"
+    assert result["errors"] == {"base": "account_expired"}
+
+
+async def test_signing_in_again_hands_the_new_credentials_to_the_existing_entries(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Every sign-in mints a fresh per-install CLIENTID and binds the new token to it.
+
+    Entries created before it hold the superseded pair, and nothing was updating them -- so adding
+    a second air conditioner by signing in again could leave the first unable to refresh its key,
+    which is exactly how it presents: the one that used to work starts asking for a key.
+    """
+    from unittest.mock import patch
+
+    CONF_ACCESS_TOKEN, CONF_CLOUD_CLIENT_ID, _, CONF_REFRESH_TOKEN, _ = _cloud_consts()
+    # on the account (the second device the sign-in below will list), and signed in earlier -- so
+    # it holds the previous terminal's credentials
+    older = _cloud_entry(device_id="A1B2C3D4E5F7")
+    older.add_to_hass(hass)
+    # NOT on the account: a hand-made entry, and someone else's unit. Must not be touched.
+    offline = _entry(**{CONF_DEVICE_ID: "AABBCCDDEEFF"})
+    offline.add_to_hass(hass)
+
+    await _drive_login_to_pick(hass, mock_uss, [
+        patch("custom_components.haismart.config_flow._async_fetch_localkey",
+              return_value=("beef" * 8, 46)),
+        patch("custom_components.haismart.config_flow._async_resolve_host",
+              return_value="192.168.1.50"),
+    ])
+
+    assert older.data[CONF_REFRESH_TOKEN] == "2_RT"       # the token this sign-in issued
+    assert older.data[CONF_ACCESS_TOKEN] == "2_FRESH"
+    assert older.data[CONF_CLOUD_CLIENT_ID] == "A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4"
+    assert CONF_REFRESH_TOKEN not in offline.data      # untouched: not on this account
+
+
+async def test_a_stale_key_is_re_fetched_from_another_appliances_account(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The other half of issue #9: the appliance that used to work suddenly asking for a key.
+
+    Its own credentials failed -- which is what got it here -- but a sibling holds a different
+    terminal's, quite possibly the very ones that superseded them. Trying those repairs it with
+    nothing shown to the owner at all.
+    """
+    from unittest.mock import patch
+
+    CONF_ACCESS_TOKEN, CONF_CLOUD_CLIENT_ID, CONF_LOCALKEY_VERSION_, _, _ = _cloud_consts()
+    stale = _entry(**{CONF_DEVICE_ID: "A1B2C3D4E5F6"})       # hand-made: no account of its own
+    stale.add_to_hass(hass)
+    _cloud_entry(device_id="ACB722AABBCC").add_to_hass(hass)  # the sibling, signed in
+
+    with patch(
+        "custom_components.haismart.config_flow.HaierCloud.refresh_token",
+        return_value=__import__("types").SimpleNamespace(
+            access_token="NEW_AT", refresh_token="", client_id=""
+        ),
+    ), patch(
+        "custom_components.haismart.config_flow._async_fetch_localkey",
+        return_value=("dead" * 8, 46),
+    ):
+        stale.async_start_reauth(hass)
+        await hass.async_block_till_done()
+
+    assert not hass.config_entries.flow.async_progress_by_handler(DOMAIN), (
+        "the owner was asked something the sibling's account could answer"
+    )
+    assert stale.data[CONF_LOCAL_KEY] == "dead" * 8
+    assert stale.data[CONF_LOCALKEY_VERSION_] == 46
+    # and it keeps the credentials, so the next rotation never reaches reauth at all
+    assert stale.data[CONF_ACCESS_TOKEN] == "NEW_AT"
+    assert stale.data[CONF_CLOUD_CLIENT_ID] == "OLDCLIENTIDOLDCLIENTIDOLDCLIENT01"
+
+
+async def test_reauth_still_asks_when_no_other_account_can_help(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A sibling whose account is also dead must not swallow the menu the owner needs."""
+    from unittest.mock import patch
+
+    stale = _entry(**{CONF_DEVICE_ID: "A1B2C3D4E5F6"})
+    stale.add_to_hass(hass)
+    _cloud_entry(device_id="ACB722AABBCC").add_to_hass(hass)
+
+    with patch(
+        "custom_components.haismart.config_flow.HaierCloud.refresh_token",
+        side_effect=CloudError("token expired"),
+    ):
+        stale.async_start_reauth(hass)
+        await hass.async_block_till_done()
+        flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+        assert len(flows) == 1
+        menu = await hass.config_entries.flow.async_configure(flows[0]["flow_id"])
+
+    assert menu["step_id"] == "reauth"
+    assert set(menu["menu_options"]) == {"reauth_cloud", "reauth_confirm"}
+
+
+async def test_two_haier_accounts_are_both_tried(hass: HomeAssistant, mock_uss) -> None:
+    """A household with two Haier accounts must not have one of them permanently ignored.
+
+    Under a newest-account-only rule the appliance registered to the *other* account is asked for
+    a key forever, and no amount of retrying can help, because the account being consulted could
+    never have supplied it.
+    """
+    from contextlib import ExitStack
+    from types import SimpleNamespace
+    from unittest.mock import patch
+
+    from haismart_extractor.cloud import CloudDevice
+
+    _, CONF_CLOUD_CLIENT_ID, _, CONF_REFRESH_TOKEN, _ = _cloud_consts()
+    # older account: owns the appliance about to be discovered
+    _cloud_entry(device_id="A1B2C3D4E5F6").add_to_hass(hass)
+    # newer account: a different household member, owns something else entirely
+    _cloud_entry(
+        device_id="AABBCCDDEEFF",
+        **{CONF_REFRESH_TOKEN: "OTHER_RT", CONF_CLOUD_CLIENT_ID: "OTHERCLIENTIDOTHERCLIENTIDOTH02"},
+    ).add_to_hass(hass)
+
+    async def _list(self, *a, **kw):
+        # the account is identified by the clientId its client was built with
+        if self.creds.client_id == "OLDCLIENTIDOLDCLIENTIDOLDCLIENT01":
+            return [CloudDevice("ACB722AABBCC", "Upstairs", "0201203a", "UPLUS", True,
+                                prod_no="AAC1UKZ01")]
+        return [CloudDevice("AABBCCDDEEFF", "Someone else's", "0201203a", "UPLUS", True)]
+
+    with ExitStack() as stack:
+        stack.enter_context(patch(
+            "custom_components.haismart.config_flow.HaierCloud.refresh_token",
+            return_value=SimpleNamespace(access_token="NEW_AT", refresh_token="", client_id="")))
+        stack.enter_context(patch(
+            "custom_components.haismart.config_flow.HaierCloud.list_devices_v2", _list))
+        stack.enter_context(patch(
+            "custom_components.haismart.config_flow.HaierCloud.get_digital_model",
+            return_value={"attributes": []}))
+        stack.enter_context(patch(
+            "custom_components.haismart.config_flow._async_fetch_localkey",
+            return_value=("cafe" * 8, 45)))
+        result = await _dhcp_discover(hass, [])
+
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    # set up from the OLDER account -- the one that actually owns it
+    assert result["data"][CONF_CLOUD_CLIENT_ID] == "OLDCLIENTIDOLDCLIENTIDOLDCLIENT01"
+    assert result["data"][CONF_LOCAL_KEY] == "cafe" * 8
+
+
+async def test_discovery_never_adds_an_appliance_on_its_own(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Discovery must put a card in front of the owner, never create the entry unprompted.
+
+    Both discovery steps run the moment a matching appliance is seen -- nobody has clicked
+    anything. Once the key could be fetched without asking, "ask nothing" was one step away from
+    "add every Haier appliance on the network silently", including ones deliberately left out.
+    """
+    from contextlib import ExitStack
+
+    _cloud_entry().add_to_hass(hass)
+    dhcp_mod = pytest.importorskip("homeassistant.components.dhcp")
+    info = dhcp_mod.DhcpServiceInfo(
+        ip="192.168.1.51", hostname="haier-ac", macaddress="acb722aabbcc"
+    )
+    with ExitStack() as stack:
+        for p in _stored_account_patches(_two_devices()):
+            stack.enter_context(p)
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": "dhcp"}, data=info
+        )
+        await hass.async_block_till_done()
+        assert result["type"] == FlowResultType.FORM
+        assert result["step_id"] == "discovery_confirm"
+        assert not hass.config_entries.async_entries(DOMAIN)[1:], "an entry appeared unprompted"
+        # the card names the appliance it is offering, so it can be told from another one
+        assert result["description_placeholders"][CONF_HOST] == "192.168.1.51"
+        assert result["description_placeholders"][CONF_DEVICE_ID] == "ACB722AABBCC"
+
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+        await hass.async_block_till_done()
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+
+
+async def test_zeroconf_discovery_also_uses_the_configured_account(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The mDNS path is kept for future firmware, and must not be the one that still asks."""
+    from contextlib import ExitStack
+
+    _cloud_entry().add_to_hass(hass)
+    with ExitStack() as stack:
+        for p in _stored_account_patches(_two_devices()):
+            stack.enter_context(p)
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": "zeroconf"},
+            data=_zeroconf_info("192.168.1.51", "ACB722AABBCC"),
+        )
+        assert result["step_id"] == "discovery_confirm"
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+        await hass.async_block_till_done()
+
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_LOCAL_KEY] == "cafe" * 8
+
+
+async def test_picking_an_appliance_off_the_lan_scan_uses_the_account_too(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The offline menu route identifies the appliance by scanning; that is enough to fetch a key.
+
+    Someone with an account who reaches for "manual" out of habit should still not be asked for a
+    32-hex secret: by the time they have picked their air conditioner off the list, it is known,
+    and known is all the fetch needs.
+    """
+    from contextlib import ExitStack
+    from unittest.mock import patch
+
+    from haismart_hrdp.udiscovery import DeviceInfo
+
+    _cloud_entry().add_to_hass(hass)
+    found = [DeviceInfo(device_id="ACB722AABBCC", host="192.168.1.51", uplus_id="UPLUS")]
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+    with ExitStack() as stack:
+        for p in _stored_account_patches(_two_devices()):
+            stack.enter_context(p)
+        stack.enter_context(patch(
+            "custom_components.haismart.config_flow.async_scan_for_appliances",
+            return_value=found))
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"next_step_id": "manual"}
+        )
+        assert result["step_id"] == "pick_local"
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_HOST: "192.168.1.51"}
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] == FlowResultType.CREATE_ENTRY, (
+        f"asked for something after the appliance was identified: {result.get('step_id')}"
+    )
+    assert result["data"][CONF_LOCAL_KEY] == "cafe" * 8
+
+
+async def test_the_address_is_scanned_for_before_it_is_asked_for(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Home Assistant's DHCP/ARP record is passive, so a quiet appliance is missing from it.
+
+    An appliance at a perfectly reachable address can otherwise produce the "what is its IP?" form,
+    because it has not spoken since the last restart. Asking the appliances
+    directly -- the same scan the offline path uses -- answers it, and an identification beats a
+    question.
+    """
+    from unittest.mock import patch
+
+    from custom_components.haismart.config_flow import _async_resolve_host
+
+    async def _find(_hass, device_id):
+        return {"ACB722AABBCC": "192.168.1.53"}.get(device_id)
+
+    with patch(
+        "custom_components.haismart.config_flow._async_resolve_host_mdns", return_value=None
+    ), patch(
+        "custom_components.haismart.config_flow.async_find_host", side_effect=_find
+    ) as find:
+        assert await _async_resolve_host(hass, "ACB722AABBCC") == "192.168.1.53"
+        # an appliance nothing on the network admits to being leaves the question to be asked
+        assert await _async_resolve_host(hass, "001122334455") is None
+        assert find.call_count == 2
+
+
+async def test_mdns_short_circuits_the_network_lookup(hass: HomeAssistant, mock_uss) -> None:
+    """A unit that announces itself needs no scanning, so nothing slower may run."""
+    from unittest.mock import patch
+
+    from custom_components.haismart.config_flow import _async_resolve_host
+
+    with patch(
+        "custom_components.haismart.config_flow._async_resolve_host_mdns",
+        return_value="192.168.1.7",
+    ), patch(
+        "custom_components.haismart.config_flow.async_find_host"
+    ) as find:
+        assert await _async_resolve_host(hass, "ACB722AABBCC") == "192.168.1.7"
+        find.assert_not_called()
+
+
+async def test_re_authentication_offers_the_region_the_account_reported(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The region is not guessable and the server will not resolve it.
+
+    Confirmed against the live endpoint: only the account's own dialling code
+    authenticates -- 0, empty and a wrong code all come back "account is not registered", which
+    reads to an owner as a rejected password. So the one screen where an account is by definition
+    already configured must default to the zone that account reported, not to where Home Assistant
+    happens to be installed.
+    """
+    CONF_ACCESS_TOKEN, CONF_CLOUD_CLIENT_ID, _, CONF_REFRESH_TOKEN, CONF_ZONE_INFO = _cloud_consts()
+    hass.config.country = "GB"          # 44 -- deliberately not the account's region
+    entry = _cloud_entry(**{CONF_ZONE_INFO: "66"})
+    entry.add_to_hass(hass)
+
+    entry.async_start_reauth(hass)
+    await hass.async_block_till_done()
+    flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+    menu = await hass.config_entries.flow.async_configure(flows[0]["flow_id"])
+    assert menu["step_id"] == "reauth"
+    form = await hass.config_entries.flow.async_configure(
+        flows[0]["flow_id"], {"next_step_id": "reauth_cloud"}
+    )
+    assert form["step_id"] == "reauth_cloud"
+    zone_field = next(
+        f for f in form["data_schema"].schema if str(f) == CONF_ZONE_INFO
+    )
+    assert zone_field.default() == "66", "offered HA's country instead of the account's region"

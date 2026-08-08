@@ -6,6 +6,7 @@
         "title": "Adaugă un aer condiționat Haier",
         "description": "Autentificarea este calea recomandată: Home Assistant obține cheia locală, găsește aparatul în rețeaua dumneavoastră și îi citește modelul, deci nu aveți nimic de lipit. De atunci comunică direct cu aparatul — iar după configurare puteți bloca complet accesul acestuia la internet; consultați README despre independența totală față de cloud.\n\nConturi Google/Facebook: creați un cont Haier separat, cu e-mail și parolă, partajați-i aparatele în aplicație și autentificați-vă apoi cu acel cont.",
         "menu_options": {
+          "account": "Folosește contul Haier deja adăugat (nu trebuie tastat nimic)",
           "login": "Autentificare cu contul Haier (recomandat)",
           "manual": "Am deja cheia locală a acestui aparat"
         }
@@ -137,6 +138,10 @@
         "data": {
           "host": "Aparat de aer condiționat"
         }
+      },
+      "discovery_confirm": {
+        "title": "Configurează acest aparat de aer condiționat",
+        "description": "Home Assistant a găsit un aparat de aer condiționat Haier la {host} (`{device_id}`).\n\nCheia lui locală va fi preluată din contul Haier pe care l-ai adăugat deja, deci nu trebuie tastat nimic. Selectează **Trimite** pentru a-l adăuga."
       }
     },
     "error": {
@@ -147,7 +152,8 @@
       "invalid_key": "Cheia locală trebuie să fie un șir hexazecimal de 32 de caractere.",
       "invalid_auth": "Aparatul a răspuns, dar această cheie locală nu îi decriptează starea — cheia este greșită sau a fost schimbată.",
       "cannot_connect": "Aparatul nu a putut fi contactat pe portul 56800. Verifică adresa IP și dacă Home Assistant se află în aceeași rețea.",
-      "device_id_required": "Aparatul de aer condiționat nu a răspuns la interogarea de identificare, așa că ID-ul dispozitivului nu a putut fi citit automat. Introduceți-l manual — este adresa MAC Wi-Fi a modulului, 12 caractere hexazecimale fără separatori."
+      "device_id_required": "Aparatul de aer condiționat nu a răspuns la interogarea de identificare, așa că ID-ul dispozitivului nu a putut fi citit automat. Introduceți-l manual — este adresa MAC Wi-Fi a modulului, 12 caractere hexazecimale fără separatori.",
+      "account_expired": "Contul Haier deja configurat aici nu a putut fi folosit — autentificarea a expirat sau a fost înlocuită de o autentificare în altă parte. Reautentificarea de mai jos rezolvă asta pentru toate aparatele de aer condiționat adăugate."
     },
     "abort": {
       "already_configured": "Acest dispozitiv este deja configurat.",
@@ -155,7 +161,8 @@
       "all_configured": "Toate aparatele acestui cont sunt deja adăugate în Home Assistant.",
       "unknown": "Eroare neașteptată — anunțul dispozitivului nu a fost înțeles.",
       "no_devices": "Autentificat ca {username}, dar acest cont Haier nu are dispozitive. Dacă intri în aplicație cu Google sau Facebook, partajează mai întâi aparatul cu acest cont din aplicație, apoi încearcă din nou.",
-      "already_in_progress": "Acest aparat este deja în curs de configurare."
+      "already_in_progress": "Acest aparat este deja în curs de configurare.",
+      "account_no_devices": "Contul Haier deja configurat aici nu mai listează niciun dispozitiv. Verifică dacă aparatul de aer condiționat este încă în aplicația Haier pe acest cont, apoi încearcă din nou."
     }
   },
   "options": {

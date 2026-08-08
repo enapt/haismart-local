@@ -6,6 +6,7 @@
         "title": "Přidat klimatizaci Haier",
         "description": "Přihlášení je doporučená cesta: Home Assistant získá lokální klíč, najde jednotku ve vaší síti a načte její model, takže není co vkládat. Od té chvíle komunikuje s klimatizací přímo — a jakmile je vše nastaveno, můžete jednotce úplně zablokovat přístup k internetu; viz README o plné nezávislosti na cloudu.\n\nÚčty Google/Facebook: založte si samostatný účet Haier s e-mailem a heslem, sdílejte s ním v aplikaci své klimatizace a poté se přihlaste tímto účtem.",
         "menu_options": {
+          "account": "Použít již přidaný účet Haier (nic se nezadává)",
           "login": "Přihlásit se účtem Haier (doporučeno)",
           "manual": "Lokální klíč této jednotky už mám"
         }
@@ -137,6 +138,10 @@
         "data": {
           "host": "Klimatizace"
         }
+      },
+      "discovery_confirm": {
+        "title": "Nastavit tuto klimatizaci",
+        "description": "Home Assistant našel klimatizaci Haier na {host} (`{device_id}`).\n\nJejí místní klíč se načte z účtu Haier, který jste již přidali, takže není co zadávat. Přidejte ji volbou **Odeslat**."
       }
     },
     "error": {
@@ -147,7 +152,8 @@
       "invalid_key": "Lokální klíč musí být hexadecimální řetězec o 32 znacích.",
       "invalid_auth": "Klimatizace odpověděla, ale tento lokální klíč její stav nedešifruje – klíč je nesprávný, nebo byl změněn.",
       "cannot_connect": "Klimatizaci se nepodařilo kontaktovat na portu 56800. Zkontrolujte IP adresu a to, že je Home Assistant ve stejné síti.",
-      "device_id_required": "Klimatizace neodpověděla na identifikační dotaz, takže její ID zařízení nebylo možné načíst automaticky. Zadejte je ručně — je to MAC adresa Wi-Fi modulu, 12 hexadecimálních znaků bez oddělovačů."
+      "device_id_required": "Klimatizace neodpověděla na identifikační dotaz, takže její ID zařízení nebylo možné načíst automaticky. Zadejte je ručně — je to MAC adresa Wi-Fi modulu, 12 hexadecimálních znaků bez oddělovačů.",
+      "account_expired": "Účet Haier, který je zde již nastaven, nešlo použít — jeho přihlášení vypršelo, nebo je nahradilo přihlášení jinde. Opětovné přihlášení níže to spraví pro všechny přidané klimatizace."
     },
     "abort": {
       "already_configured": "Toto zařízení je již nakonfigurováno.",
@@ -155,7 +161,8 @@
       "all_configured": "Všechny klimatizace tohoto účtu jsou již v Home Assistantovi přidány.",
       "unknown": "Neočekávaná chyba – ohlášení zařízení nebylo srozumitelné.",
       "no_devices": "Přihlášeno jako {username}, ale tento účet Haier nemá žádná zařízení. Pokud se do aplikace přihlašujete přes Google nebo Facebook, nejprve v aplikaci sdílejte klimatizaci s tímto účtem a poté to zkuste znovu.",
-      "already_in_progress": "Tato klimatizace se již nastavuje."
+      "already_in_progress": "Tato klimatizace se již nastavuje.",
+      "account_no_devices": "Účet Haier, který je zde již nastaven, už neuvádí žádná zařízení. Zkontrolujte, zda je klimatizace v aplikaci Haier stále pod tímto účtem, a zkuste to znovu."
     }
   },
   "options": {

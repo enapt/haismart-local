@@ -6,6 +6,7 @@
         "title": "Haier-Klimagerät hinzufügen",
         "description": "Die Anmeldung ist der empfohlene Weg: Home Assistant holt den lokalen Schlüssel, findet das Gerät in Ihrem Netzwerk und liest sein Modell aus, sodass nichts eingefügt werden muss. Danach kommuniziert es direkt mit dem Klimagerät — und sobald alles eingerichtet ist, können Sie das Gerät vollständig vom Internet trennen; siehe die README zum vollständig cloudunabhängigen Betrieb.\n\nGoogle-/Facebook-Konten: Legen Sie ein separates Haier-Konto mit E-Mail und Passwort an, teilen Sie Ihre Klimageräte in der App mit diesem Konto und melden Sie sich dann damit an.",
         "menu_options": {
+          "account": "Bereits hinzugefügtes Haier-Konto verwenden (nichts einzugeben)",
           "login": "Mit Ihrem Haier-Konto anmelden (empfohlen)",
           "manual": "Ich habe den lokalen Schlüssel dieses Geräts bereits"
         }
@@ -137,6 +138,10 @@
         "data": {
           "host": "Klimagerät"
         }
+      },
+      "discovery_confirm": {
+        "title": "Dieses Klimagerät einrichten",
+        "description": "Home Assistant hat ein Haier-Klimagerät unter {host} (`{device_id}`) gefunden.\n\nSein lokaler Schlüssel wird aus dem bereits hinzugefügten Haier-Konto abgerufen, es ist also nichts einzugeben. Wählen Sie **Absenden**, um es hinzuzufügen."
       }
     },
     "error": {
@@ -147,7 +152,8 @@
       "invalid_key": "Der lokale Schlüssel muss eine 32-stellige Hex-Zeichenkette sein.",
       "invalid_auth": "Das Klimagerät hat geantwortet, aber dieser lokale Schlüssel entschlüsselt seinen Status nicht – der Schlüssel ist falsch oder wurde gewechselt.",
       "cannot_connect": "Das Klimagerät war über Port 56800 nicht erreichbar. Prüfe die IP-Adresse und ob Home Assistant im selben Netzwerk ist.",
-      "device_id_required": "Das Klimagerät hat auf die Identifikationsabfrage nicht geantwortet, daher konnte seine Geräte-ID nicht automatisch gelesen werden. Geben Sie sie manuell ein — es ist die WLAN-MAC-Adresse des Moduls, 12 Hex-Zeichen ohne Trennzeichen."
+      "device_id_required": "Das Klimagerät hat auf die Identifikationsabfrage nicht geantwortet, daher konnte seine Geräte-ID nicht automatisch gelesen werden. Geben Sie sie manuell ein — es ist die WLAN-MAC-Adresse des Moduls, 12 Hex-Zeichen ohne Trennzeichen.",
+      "account_expired": "Das hier bereits eingerichtete Haier-Konto konnte nicht verwendet werden — die Anmeldung ist abgelaufen oder wurde durch eine Anmeldung an anderer Stelle ersetzt. Eine erneute Anmeldung unten behebt das für alle hinzugefügten Klimageräte."
     },
     "abort": {
       "already_configured": "Dieses Gerät ist bereits konfiguriert.",
@@ -155,7 +161,8 @@
       "all_configured": "Alle Klimageräte dieses Kontos sind bereits zu Home Assistant hinzugefügt.",
       "unknown": "Unerwarteter Fehler – die Ankündigung des Geräts wurde nicht verstanden.",
       "no_devices": "Als {username} angemeldet, aber dieses Haier-Konto hat keine Geräte. Wenn du dich in der App mit Google oder Facebook anmeldest, teile das Klimagerät zuerst in der App mit diesem Konto und versuche es dann erneut.",
-      "already_in_progress": "Dieses Klimagerät wird bereits eingerichtet."
+      "already_in_progress": "Dieses Klimagerät wird bereits eingerichtet.",
+      "account_no_devices": "Das hier bereits eingerichtete Haier-Konto führt keine Geräte mehr auf. Prüfen Sie, ob das Klimagerät in der Haier-App noch unter diesem Konto liegt, und versuchen Sie es erneut."
     }
   },
   "options": {

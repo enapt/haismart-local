@@ -6,6 +6,7 @@
         "title": "添加海尔空调",
         "description": "登录是推荐的方式：Home Assistant 会获取本地密钥、在您的网络中找到设备并读取其型号，因此无需粘贴任何内容。此后它将直接与空调通信——设置完成后，您可以彻底阻断该设备的互联网访问；请参阅 README 中关于完全脱离云端的说明。\n\nGoogle/Facebook 账号：请另建一个使用邮箱和密码的海尔账号，在 App 中把您的空调共享给它，然后用该账号登录。",
         "menu_options": {
+          "account": "使用已添加的 Haier 账户（无需输入任何内容）",
           "login": "使用您的海尔账号登录（推荐）",
           "manual": "我已经有本机的本地密钥"
         }
@@ -137,6 +138,10 @@
         "data": {
           "host": "空调"
         }
+      },
+      "discovery_confirm": {
+        "title": "设置此空调",
+        "description": "Home Assistant 在 {host}（`{device_id}`）发现了一台 Haier 空调。\n\n它的本地密钥将从你已添加的 Haier 账户获取，因此无需输入任何内容。选择**提交**即可添加。"
       }
     },
     "error": {
@@ -147,7 +152,8 @@
       "invalid_key": "本地密钥必须是 32 位十六进制字符串。",
       "invalid_auth": "空调有响应，但此本地密钥无法解密其状态——密钥有误，或已被轮换。",
       "cannot_connect": "无法通过 56800 端口连接到空调。请检查 IP 地址，并确认 Home Assistant 与它在同一网络中。",
-      "device_id_required": "空调未响应识别查询，因此无法自动读取其设备 ID。请手动输入——它是模块的 Wi-Fi MAC 地址，12 个十六进制字符，不含分隔符。"
+      "device_id_required": "空调未响应识别查询，因此无法自动读取其设备 ID。请手动输入——它是模块的 Wi-Fi MAC 地址，12 个十六进制字符，不含分隔符。",
+      "account_expired": "无法使用此处已设置的 Haier 账户——其登录已过期，或已被在其他位置的登录取代。在下方重新登录即可为你已添加的所有空调修复此问题。"
     },
     "abort": {
       "already_configured": "此设备已配置。",
@@ -155,7 +161,8 @@
       "all_configured": "此账号下的所有空调均已添加到 Home Assistant。",
       "unknown": "意外错误——无法理解设备的通告信息。",
       "no_devices": "已以 {username} 登录，但此海尔账号下没有设备。如果你在 App 中使用 Google 或 Facebook 登录，请先在 App 中把空调共享到此账号，然后重试。",
-      "already_in_progress": "这台空调已在配置流程中。"
+      "already_in_progress": "这台空调已在配置流程中。",
+      "account_no_devices": "此处已设置的 Haier 账户不再列出任何设备。请检查该空调是否仍在此账户下的 Haier 应用中，然后重试。"
     }
   },
   "options": {

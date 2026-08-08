@@ -895,3 +895,30 @@ simply not known.
 running in fan-only with its outdoor reading present — i.e. a live measurement is not suppressed.
 ⚠️ The 30-minute drop itself is covered by tests rather than by the deploy, since observing it live
 means leaving the appliance switched off for half an hour.
+
+## 26. Home Assistant's own network view does not see these appliances reliably
+
+`aiodiscover` is the library Home Assistant's `dhcp` component uses to learn what is on the subnet,
+and it is also what this integration used to turn a device ID into an address. On at least one
+network it does not see these units — while the very same MAC is sitting in the host's ARP table.
+
+Two consequences, one cause:
+
+* **The Discovered card cannot be relied on.** With an appliance removed and Home Assistant
+  restarted, no discovery flow appeared for it inside two minutes, despite its OUI being in the
+  manifest's matcher list. When discovery *does* fire the card behaves correctly and leads to a
+  confirmation rather than a key prompt — that path is covered by tests but has not been seen
+  happen by itself on hardware.
+* **Address resolution occasionally falls through to asking.** Host lookup now ends in a
+  UDISCOVERY broadcast, which is not ARP-dependent, and with it in place an address was found
+  without asking in every run but one — the exception being a run seconds after a restart. Not
+  diagnosed. It is recoverable (one field, and the answer is discoverable) rather than a dead end.
+
+**What would settle it:** instrument which of the three steps answers, across restarts and on more
+than one network. If the broadcast proves dependable and ARP does not, the order should change
+rather than the fallback merely existing. Do not "fix" this by widening the manifest matcher — the
+matcher is correct; what feeds it is not.
+
+⇒ Because of this, **the dependable way to add a second appliance is
+Add Integration → use the account already added**, not waiting for a card to appear. That route
+asks for nothing and does not depend on ARP at all.

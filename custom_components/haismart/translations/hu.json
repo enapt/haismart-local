@@ -6,6 +6,7 @@
         "title": "Haier klíma hozzáadása",
         "description": "A bejelentkezés az ajánlott út: a Home Assistant lekéri a helyi kulcsot, megtalálja a készüléket a hálózatán és beolvassa a modelljét, így nincs mit beilleszteni. Ezután közvetlenül a klímaberendezéssel kommunikál — a beállítás után pedig teljesen letilthatja a készülék internet-hozzáférését; lásd a README teljes felhőfüggetlenségről szóló részét.\n\nGoogle-/Facebook-fiókok: hozzon létre egy külön Haier-fiókot e-mail-címmel és jelszóval, ossza meg vele a klímaberendezéseit az alkalmazásban, majd jelentkezzen be azzal a fiókkal.",
         "menu_options": {
+          "account": "A már hozzáadott Haier-fiók használata (nincs mit beírni)",
           "login": "Bejelentkezés Haier-fiókkal (ajánlott)",
           "manual": "Már megvan a készülék helyi kulcsa"
         }
@@ -137,6 +138,10 @@
         "data": {
           "host": "Klímaberendezés"
         }
+      },
+      "discovery_confirm": {
+        "title": "Klímaberendezés beállítása",
+        "description": "A Home Assistant Haier klímaberendezést talált a következő címen: {host} (`{device_id}`).\n\nA helyi kulcsát a már hozzáadott Haier-fiókból tölti le, így nincs mit beírni. A hozzáadáshoz válassza a **Küldés** lehetőséget."
       }
     },
     "error": {
@@ -147,7 +152,8 @@
       "invalid_key": "A helyi kulcsnak 32 karakteres hexadecimális karakterláncnak kell lennie.",
       "invalid_auth": "A klíma válaszolt, de ez a helyi kulcs nem fejti vissza az állapotát – a kulcs hibás, vagy lecserélték.",
       "cannot_connect": "Nem sikerült elérni a klímát az 56800-as porton. Ellenőrizd az IP-címet, és hogy a Home Assistant ugyanazon a hálózaton van-e.",
-      "device_id_required": "A klímaberendezés nem válaszolt az azonosítási lekérdezésre, ezért az eszközazonosítója nem volt automatikusan beolvasható. Adja meg kézzel — ez a modul Wi-Fi MAC-címe, 12 hexadecimális karakter elválasztók nélkül."
+      "device_id_required": "A klímaberendezés nem válaszolt az azonosítási lekérdezésre, ezért az eszközazonosítója nem volt automatikusan beolvasható. Adja meg kézzel — ez a modul Wi-Fi MAC-címe, 12 hexadecimális karakter elválasztók nélkül.",
+      "account_expired": "Az itt már beállított Haier-fiók nem volt használható — a bejelentkezése lejárt, vagy egy máshol történt bejelentkezés váltotta fel. Az alábbi ismételt bejelentkezés ezt minden hozzáadott klímaberendezésnél megoldja."
     },
     "abort": {
       "already_configured": "Ez az eszköz már konfigurálva van.",
@@ -155,7 +161,8 @@
       "all_configured": "Ennek a fióknak az összes klímája már hozzá van adva a Home Assistanthoz.",
       "unknown": "Váratlan hiba – az eszköz bejelentkezési üzenete értelmezhetetlen volt.",
       "no_devices": "Bejelentkezve mint {username}, de ehhez a Haier-fiókhoz nem tartozik eszköz. Ha az alkalmazásba Google- vagy Facebook-fiókkal lépsz be, előbb oszd meg a klímát ezzel a fiókkal az alkalmazásban, majd próbáld újra.",
-      "already_in_progress": "Ennek a klímának a beállítása már folyamatban van."
+      "already_in_progress": "Ennek a klímának a beállítása már folyamatban van.",
+      "account_no_devices": "Az itt már beállított Haier-fiók már nem sorol fel eszközöket. Ellenőrizze, hogy a klímaberendezés még mindig ebben a fiókban szerepel-e a Haier alkalmazásban, majd próbálja újra."
     }
   },
   "options": {

@@ -530,6 +530,16 @@ If you are stuck on an older version, **restart Home Assistant** and then go str
 > one you have chosen not to add, and setup will then refuse with *"already configured"* instead,
 > which is harder to undo.
 
+### If it still cannot fetch the key
+
+Since **v0.40.3** the screen tells you why, instead of leaving the reason in the log. When the fetch
+fails you get the exact response — a timeout, a refusal from Haier's key service, a reply that
+carried no key — printed on the page, along with whether the air conditioner itself says it can
+still reach Haier.
+
+That is deliberate: setup has not finished at that point, so there is no device and no diagnostics
+download to attach to a report. Quote what the screen shows and it names the cause.
+
 ## Before you open an issue
 
 For a quick question — "is my model likely to work?", "does this log line mean what I think?" — there

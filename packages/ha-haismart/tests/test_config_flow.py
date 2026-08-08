@@ -1285,7 +1285,13 @@ async def test_a_cut_off_appliance_explains_why_its_key_could_not_be_fetched(
 async def test_a_connected_appliance_gets_no_such_explanation(
     hass: HomeAssistant, mock_uss
 ) -> None:
-    """The unit is online, so its connectivity is not the reason — say nothing rather than guess."""
+    """The unit is online, so its connectivity is not the reason — say nothing rather than guess.
+
+    ⚠️ This asserted that the note was EMPTY, which was a proxy for its actual claim and outlived
+    it: the note now also carries why the fetch failed, which is the opposite of a guess. The claim
+    is that the *connectivity* explanation is withheld from an appliance that is plainly online,
+    so that is what is checked.
+    """
     from unittest.mock import AsyncMock, patch
 
     from haismart_extractor import GatewayError
@@ -1297,7 +1303,11 @@ async def test_a_connected_appliance_gets_no_such_explanation(
               new=AsyncMock(return_value="192.168.1.50")),
     ])
     assert result["step_id"] == "key_failed"
-    assert result["description_placeholders"]["note"] == ""
+    note = result["description_placeholders"]["note"]
+    assert "cannot reach Haier's servers" not in note
+    assert "blocked the unit from the internet" not in note
+    # ...and what it does say is the reason, which is knowledge rather than inference
+    assert "CONNACK rc=5" in note
 
 
 async def test_attaching_an_account_to_a_hand_added_entry_stops_the_key_going_stale(
@@ -2141,3 +2151,86 @@ async def test_two_announcements_of_one_appliance_still_collapse_to_one_card(
     assert second["type"] == FlowResultType.ABORT
     assert second["reason"] == "already_in_progress"
     assert len(hass.config_entries.flow.async_progress_by_handler(DOMAIN)) == 1
+
+
+# --- the screen has to say why, because the people it happens to have no logs ------------------
+
+
+async def test_a_failed_key_fetch_says_why_on_the_screen(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Setup that cannot fetch a key must state the reason where the person can read it.
+
+    This failure was visible only in the log, and the people it happens to are the least able to
+    produce one: setup has not finished, so there is no device, no diagnostics download and nothing
+    to attach to a report. Two very different faults also look identical from outside — a setup that
+    never got as far as asking, and one that asked and was refused — and only the reason separates
+    them.
+    """
+    from unittest.mock import patch
+
+    from haismart_extractor import GatewayError
+
+    result = await _drive_login_to_pick(hass, mock_uss, [
+        patch("custom_components.haismart.config_flow._async_fetch_localkey",
+              side_effect=GatewayError("CONNACK rc=5 (creds rejected/stale)")),
+        patch("custom_components.haismart.config_flow._async_resolve_host",
+              return_value="192.168.1.50"),
+    ])
+
+    assert result["step_id"] == "key_failed"
+    note = result["description_placeholders"]["note"]
+    assert "CONNACK rc=5" in note, f"the reason was not shown: {note!r}"
+    assert "GatewayError" in note
+    assert "report" in note.lower()
+
+
+async def test_a_timeout_is_explained_rather_than_quoted(hass: HomeAssistant, mock_uss) -> None:
+    """"timed out" alone tells someone nothing they can act on, so it says what times out."""
+    from custom_components.haismart.config_flow import _describe_key_failure
+
+    said = _describe_key_failure(TimeoutError("timed out"))
+    assert "timed out" in said
+    assert "firewall" in said and "key service" in said
+    # a missing field reads as a bare quoted name and explains nothing on its own
+    assert "was missing" in _describe_key_failure(KeyError("key"))
+    # anything else keeps its class, since the messages alone are thin
+    assert _describe_key_failure(OSError("no route to host")).startswith("OSError:")
+
+
+async def test_a_fetched_key_that_does_not_decrypt_is_not_reported_as_a_fetch_failure(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Two failures, opposite meanings: nothing came back, versus something came back and is wrong.
+
+    Reporting them alike would send someone to check their network when their key is simply stale.
+    """
+    from unittest.mock import patch
+
+    mock_uss.read.return_value = []          # handshake fine, nothing decrypts
+    result = await _drive_login_to_pick(hass, mock_uss, [
+        patch("custom_components.haismart.config_flow._async_fetch_localkey",
+              return_value=("cafe" * 8, 45)),
+        patch("custom_components.haismart.config_flow._async_resolve_host",
+              return_value="192.168.1.50"),
+    ])
+
+    assert result["step_id"] == "key_failed"
+    note = result["description_placeholders"]["note"]
+    assert "did not decrypt" in note
+    assert "the address is right" in note
+
+
+async def test_the_screen_stays_quiet_when_there_is_nothing_to_report(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """No failure recorded, no invented explanation -- the note is empty, as it always was."""
+    from unittest.mock import patch
+
+    from custom_components.haismart.config_flow import HaismartConfigFlow
+
+    flow = HaismartConfigFlow()
+    flow.hass = hass
+    with patch.object(HaismartConfigFlow, "_async_query_device", return_value=None):
+        result = await flow.async_step_key_failed()
+    assert result["description_placeholders"]["note"] == ""

@@ -240,6 +240,27 @@ async def _async_fetch_localkey(
     return local_key.key, local_key.version
 
 
+def _describe_key_failure(err: Exception) -> str:
+    """One line naming why the key could not be fetched, safe to put in front of a user.
+
+    The type is kept as well as the message because the messages alone are thin -- "timed out" says
+    nothing about which of the two hosts timed out, while the class does. Nothing here carries a
+    credential: these are timeouts, connection errors, and the gateway's own refusals (a return
+    code, a missing acknowledgement, a device that was not answered for).
+    """
+    text = str(err).strip() or err.__class__.__name__
+    if isinstance(err, TimeoutError) or "timed out" in text.lower():
+        return (
+            f"{err.__class__.__name__}: {text} — no answer from Haier's key service. It is "
+            "reachable from most networks but not all; a firewall, a DNS filter or an ISP block "
+            "will all look like this."
+        )
+    if isinstance(err, KeyError):
+        # a missing field in the reply, which reads as a bare quoted name and explains nothing
+        return f"the reply was missing {text}, so no key could be read from it"
+    return f"{err.__class__.__name__}: {text}"
+
+
 async def _async_resolve_host(hass, device_id: str, timeout: float = 1.5) -> str | None:
     """Best-effort: find the AC's current LAN IP so the user needn't type it.
 
@@ -335,6 +356,12 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         self._account_tried = False
         # set when a stored account turned out to be dead, so the sign-in form opens saying so
         self._login_error: str | None = None
+        # why the key fetch failed, shown on the step that reports it. A failure here is otherwise
+        # visible only in the log, and the people it happens to are the least likely to be able to
+        # produce one -- setup has not finished, so there is no device, no diagnostics download and
+        # nothing to point at. Two very different faults look identical without it: a setup that
+        # never got as far as asking for a key, and one that asked and was refused.
+        self._key_error: str | None = None
 
     def _stored_accounts(
         self, exclude_entry_id: str | None = None
@@ -780,6 +807,7 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
             # was silently swallowed, so neither the user nor the log knew anything had gone wrong
             _LOGGER.warning("could not fetch the localKey for %s: %s", device_id, err)
             self._local_key = None
+            self._key_error = _describe_key_failure(err)
         # resolve the LAN IP from mDNS so the user needn't type it either
         if not self._discovered.get(CONF_HOST):
             host = await _async_resolve_host(self.hass, device_id)
@@ -798,6 +826,10 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
             except InvalidAuth:
                 # The host answered; the KEY is what is wrong. Keep the resolved IP -- discarding it
                 # made the next form come up blank and look like discovery had failed too.
+                self._key_error = (
+                    "the key fetched from your account did not decrypt this appliance's replies "
+                    "(it answered, so the address is right)"
+                )
                 return await self.async_step_key_failed()
             except CannotConnect:
                 self._discovered.pop(CONF_HOST, None)  # that IP didn't validate -> ask for one
@@ -852,6 +884,14 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                     "unit from the internet on purpose, that is expected: use a key you saved "
                     "earlier. A blocked unit's key stops changing, so an old one keeps working."
                 )
+        if self._key_error:
+            note += (
+                "\n\n**When the key was requested, this came back:**\n\n"
+                f"```\n{self._key_error}\n```\n\n"
+                "That names the cause. Please quote it if you report this — setup has not "
+                "finished, so there are no diagnostics to attach, and it is the one thing that "
+                "would otherwise exist only in the log."
+            )
         return self.async_show_menu(
             step_id="key_failed",
             menu_options=["key_retry", "manual"],
@@ -870,6 +910,7 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         except (GatewayError, KeyError, OSError, RuntimeError, TimeoutError) as err:
             _LOGGER.warning("retrying the localKey fetch for %s failed: %s", device_id, err)
             self._local_key = None
+            self._key_error = _describe_key_failure(err)
             return await self.async_step_key_failed()
         return await self._async_finish_or_ask_host()
 

@@ -242,6 +242,10 @@ async def run(args: argparse.Namespace, password: str) -> int:
     else:
         _print_human(rows)
         if not args.no_keys:
+            # stdout is buffered and stderr is not, so without this the warning about the output
+            # appears ABOVE the output -- telling somebody not to share something they have not been
+            # shown yet, which is the one placement that wastes it.
+            sys.stdout.flush()
             print(
                 "\n  A local key is a SECRET: it controls the appliance from anywhere on your\n"
                 "  network. Do not paste this output into a bug report -- use --no-keys.",

@@ -745,7 +745,19 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         """After sign-in, stand up a device hands-off: pull its digital model + localKey from the
         cloud and resolve its LAN IP via mDNS — so nothing is pasted. Falls back gracefully (to the
         manual key form / a host prompt) if the cloud fetch or mDNS resolve can't complete."""
-        await self.async_set_unique_id(_clean_device_id(device_id))
+        # ⚠️ raise_on_progress=False, and the reason is the whole bug it fixes. These appliances are
+        # announced by DHCP, so Home Assistant creates a discovery flow for one the moment it sees
+        # it, and that flow sits in the Discovered box holding this very unique ID. Someone who
+        # then goes Add Integration -> sign in -> pick their air conditioner would have their
+        # sign-in aborted with "this air conditioner is already being set up", leaving the pending
+        # card -- which asks for a local key they have no way to obtain -- as the only route they
+        # can finish. The two symptoms look unrelated and are the same cause.
+        #
+        # A person deliberately adding this appliance outranks a card nobody has touched. Nothing
+        # is lost by yielding: on success Home Assistant aborts every other in-progress flow
+        # carrying the same unique ID, so the stale card clears itself. The discovery steps keep
+        # the default, which is what stops two announcements of one appliance racing each other.
+        await self.async_set_unique_id(_clean_device_id(device_id), raise_on_progress=False)
         self._abort_if_unique_id_configured()
         self._discovered[CONF_DEVICE_ID] = device_id
         if name:
@@ -1050,7 +1062,9 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                     data_schema=_manual_schema({**self._discovered, **user_input}),
                     errors=errors,
                 )
-            await self.async_set_unique_id(device_id)
+            # Same reasoning as the account path: a pending Discovered card holds this unique ID,
+            # and someone typing an address in deliberately must not be turned away by it.
+            await self.async_set_unique_id(device_id, raise_on_progress=False)
             self._abort_if_unique_id_configured(updates={CONF_HOST: host})
             try:
                 local_key = _clean_key(user_input[CONF_LOCAL_KEY])

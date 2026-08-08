@@ -2053,3 +2053,91 @@ async def test_re_authentication_offers_the_region_the_account_reported(
         f for f in form["data_schema"].schema if str(f) == CONF_ZONE_INFO
     )
     assert zone_field.default() == "66", "offered HA's country instead of the account's region"
+
+
+# --- a pending Discovered card must not block the person adding the appliance -------------------
+
+
+async def test_signing_in_works_while_a_discovery_card_is_pending(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Reported from a first-time setup: sign-in refused, and only a key prompt left.
+
+    These appliances announce themselves by DHCP, so Home Assistant raises a discovery flow the
+    moment it sees one and that flow sits in the Discovered box holding the appliance's unique ID.
+    Signing in and picking the same appliance then aborted with "this air conditioner is already
+    being set up" -- so the only route the owner could finish was the pending card, which asks for
+    a local key nobody can produce by hand. Two symptoms, one cause, and neither reads as the other.
+
+    Nothing about it is visible without a discovery flow open at the same time, which no test did.
+    """
+    from unittest.mock import patch
+
+    dhcp_mod = pytest.importorskip("homeassistant.components.dhcp")
+    info = dhcp_mod.DhcpServiceInfo(
+        ip="192.168.1.50", hostname="haier-ac", macaddress="a1b2c3d4e5f6"
+    )
+    card = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "dhcp"}, data=info
+    )
+    assert card["step_id"] == "manual", "no account configured, so the card asks for a key"
+    assert len(hass.config_entries.flow.async_progress_by_handler(DOMAIN)) == 1
+
+    result = await _drive_login_to_pick(hass, mock_uss, [
+        patch("custom_components.haismart.config_flow._async_fetch_localkey",
+              return_value=("beef" * 8, 46)),
+        patch("custom_components.haismart.config_flow._async_resolve_host",
+              return_value="192.168.1.50"),
+    ])
+
+    assert result["type"] != FlowResultType.ABORT, (
+        f"sign-in was turned away by the pending card: {result.get('reason')}"
+    )
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_LOCAL_KEY] == "beef" * 8
+    # ...and the card clears itself: Home Assistant aborts every other flow holding that unique id
+    # once an entry is created, so nobody is left staring at a stale prompt for a key.
+    assert not hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+
+
+async def test_the_offline_form_also_survives_a_pending_discovery_card(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The same collision, on the route someone with a saved key would take."""
+    dhcp_mod = pytest.importorskip("homeassistant.components.dhcp")
+    info = dhcp_mod.DhcpServiceInfo(
+        ip="192.168.1.50", hostname="haier-ac", macaddress="a1b2c3d4e5f6"
+    )
+    await hass.config_entries.flow.async_init(DOMAIN, context={"source": "dhcp"}, data=info)
+
+    flow_id = await _start_manual(hass)
+    result = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
+    result = await _past_model_step(hass, result)
+
+    assert result["type"] == FlowResultType.CREATE_ENTRY, (
+        f"the offline form was turned away by the pending card: {result.get('reason')}"
+    )
+
+
+async def test_two_announcements_of_one_appliance_still_collapse_to_one_card(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Yielding to the user must not cost the deduplication the default was there for.
+
+    The discovery steps keep `raise_on_progress`, so a second DHCP announcement of an appliance
+    already sitting in the Discovered box is refused rather than producing a second card.
+    """
+    dhcp_mod = pytest.importorskip("homeassistant.components.dhcp")
+    info = dhcp_mod.DhcpServiceInfo(
+        ip="192.168.1.50", hostname="haier-ac", macaddress="a1b2c3d4e5f6"
+    )
+    first = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "dhcp"}, data=info
+    )
+    assert first["type"] == FlowResultType.FORM
+    second = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "dhcp"}, data=info
+    )
+    assert second["type"] == FlowResultType.ABORT
+    assert second["reason"] == "already_in_progress"
+    assert len(hass.config_entries.flow.async_progress_by_handler(DOMAIN)) == 1

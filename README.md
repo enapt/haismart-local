@@ -36,6 +36,7 @@ English-only; the pages above cover install and setup._
 - [Going fully cloud-independent](#going-fully-cloud-independent)
 - [Troubleshooting](#troubleshooting)
 - [Why it keeps asking for a key](#why-it-keeps-asking-for-a-key)
+  - ["This air conditioner is already being set up"](#this-air-conditioner-is-already-being-set-up)
 - [Before you open an issue](#before-you-open-an-issue)
 - [Contributing](#contributing)
 - [Credits](#credits)
@@ -507,6 +508,27 @@ appliance, same key, same history — credentials added.
 the key you have stays valid indefinitely — see
 [going fully cloud-independent](#going-fully-cloud-independent). Local control is unaffected either
 way, and this is the configuration the integration is built for.
+
+### "This air conditioner is already being set up"
+
+Fixed in **v0.40.2** — if you are on an older version, this is what you are seeing.
+
+Your air conditioner announces itself on the network, so Home Assistant raises a **Discovered** card
+for it on its own. That card is a setup already in progress, and it used to block you from starting
+another one for the same unit — so signing in got as far as listing your air conditioners and was
+then turned away, and the only thing you could finish was the card itself, which asks for a local
+key you have no way to obtain.
+
+Nothing was wrong with your account, and nothing appears in the log, because sign-in succeeded and
+the refusal happens before a key is ever requested.
+
+On v0.40.2 and later, adding an appliance deliberately takes precedence and the card clears itself.
+If you are stuck on an older version, **restart Home Assistant** and then go straight to
+**Add Integration → Haismart → sign in** before the unit announces itself again.
+
+> Do **not** press *Ignore* on the Discovered card to get rid of it. That records the appliance as
+> one you have chosen not to add, and setup will then refuse with *"already configured"* instead,
+> which is harder to undo.
 
 ## Before you open an issue
 

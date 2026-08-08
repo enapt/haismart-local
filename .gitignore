@@ -19,3 +19,7 @@ CLAUDE.private.md
 .vscode/
 .idea/
 .DS_Store
+
+# Stray artefacts from local tooling — this repo is swept with `git add -A` at release,
+# so anything that lands in the working tree gets committed unless it is named here.
+*.wav

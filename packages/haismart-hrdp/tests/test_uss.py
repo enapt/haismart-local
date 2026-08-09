@@ -1008,6 +1008,13 @@ def test_extended46_decodes_the_real_reports():
         "mode": "cool", "layout": "extended46", "writable": True,
         # this family populates its cumulative register, unlike most (see the delta test below)
         "energy_wh": 751936,
+        # The five secondary toggles, which this family wrote and never read back until the audit
+        # in test_wire_models. They read the same across all three of these captures -- everything
+        # off, display lit -- which is plausible but, on its own, is also what reading the wrong
+        # zeroed bits would look like. What actually places them is a report from another owner's
+        # unit whose word 22 agrees bit for bit with the manufacturer's own record of the same six
+        # attributes, including the two that were set.
+        "health": False, "strong": False, "quiet": False, "sleep": False, "lamp": True,
     }
     cool = uss.parse_full_status(STATUS_209_COOL, prof)
     assert cool["power"] is True and cool["target_temperature"] == 22.0 and cool["mode"] == "cool"

@@ -774,6 +774,26 @@ EXTENDED46 = WireModel(
         "error_code": WireField(37, 8, 8, kind="raw"),
         "last_changed_by": WireField(37, 0, 2, kind="enum", enum=OPERATION_SOURCE),
         "operation_mode": WireField(21, 13, 3, kind="enum", enum=_EXT36_MODE),
+        # The five secondary toggles, which this family could WRITE and never read back -- so the
+        # switches were offered and then sat unavailable forever, having no state to show. The same
+        # defect extended-36 had, and the audit that was owed after it finally run across every
+        # family.
+        #
+        # Position is not inferred from a resemblance: the group-set frame IS a slice of the report
+        # beginning at `write_base_word`, so a written bit's report word is `write_base_word +
+        # write_word - 1`. That correspondence is already load-bearing here for three fields whose
+        # report positions were established independently -- targetTemperature (write w1 b8 ->
+        # report w20 b8), operationMode (w2 b13 -> w21 b13) and onOffStatus (w3 b0 -> w22 b0) -- and
+        # it places all five of these in write word 3, alongside the power bit, at report word 22.
+        #
+        # Confirmed against the appliance's own cloud record rather than left as arithmetic: on a
+        # report from a running unit, all six bits of that word agree with what the manufacturer
+        # separately reported for the same attributes, including the two that were set.
+        "health": WireField(22, 1, 1, kind="bool"),
+        "strong": WireField(22, 3, 1, kind="bool"),
+        "quiet": WireField(22, 4, 1, kind="bool"),
+        "sleep": WireField(22, 5, 1, kind="bool"),
+        "lamp": WireField(22, 9, 1, kind="bool"),
         "swing_vertical": WireField(25, 0, 4, kind="vane_v"),
         # Fan speed does NOT sit where every other family puts it. Word 21 bit 8 — the classic
         # position — reads 6 in every capture from this family, and 6 is not a code its own model

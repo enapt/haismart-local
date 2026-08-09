@@ -922,3 +922,33 @@ matcher is correct; what feeds it is not.
 ⇒ Because of this, **the dependable way to add a second appliance is
 Add Integration → use the account already added**, not waiting for a card to appear. That route
 asks for nothing and does not depend on ARP at all.
+
+## 27. One family's byte map is typed rather than generated
+
+`_CLASSIC_PROBE` and `EXTENDED36` are built from `canonical_map`. **extended-46 is not** — it keeps
+a hand-written table, because no single displacement fits it: it is the map plus a ten-word insert
+at w25, so six of nine fields disagree with any one offset.
+
+That exemption is the reason for three separate symptoms on the 209-byte family, all reported as
+different problems:
+
+* **Five switches that could be written and never read back**, so they sat unavailable. Fixed, by
+  deriving their positions from the family's own write frame — the group-set frame is a slice of
+  the report at `write_base_word`, so a written bit reads back at `write_base_word + write_word - 1`.
+  Confirmed bit for bit against the manufacturer's own record of the same attributes.
+* **`model_declared_fields` is empty**, because `canonical_displacement` is `None` — so nothing
+  reads the attributes the device itself declares.
+* **No optional-feature entities**, gated on the same missing displacement.
+
+The information was never missing. It was in that family's `write_fields` the whole time, and in
+`canonical_map` for everything either side of the insert. What was missing is that a typed table
+cannot be reviewed into correctness, and nothing compared it with what we already held.
+
+**What would settle it:** describe extended-46 as two displacements either side of the w25 insert
+rather than one, and generate its map like the others. All three symptoms close at once, and the
+next family is checked by construction instead of by hand.
+
+Guarding it in the meantime: `test_no_family_offers_a_control_it_cannot_read_back` asserts the rule
+across every family, and `test_the_write_frame_is_a_slice_of_the_report` asserts the relation the
+derived positions rest on.
+

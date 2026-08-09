@@ -14,6 +14,7 @@ from haismart_hrdp import (
     select_wire_model,
 )
 from haismart_hrdp.udiscovery import CLOUD_STATES
+from haismart_hrdp.uss import EXTENDED_STATUS_FRAME_TYPES
 from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.core import HomeAssistant
 
@@ -27,6 +28,7 @@ from .const import (
     CONF_PRODUCT_CODE,
     CONF_REFRESH_TOKEN,
     DEFAULT_PRODUCT_CODE,
+    EXTENDED_MISSES,
 )
 from .coordinator import HaismartConfigEntry
 
@@ -71,6 +73,22 @@ async def async_get_config_entry_diagnostics(
         "last_raw_extended": (
             coordinator.last_raw_extended.hex() if coordinator.last_raw_extended else None
         ),
+        # Whether this unit answers the telemetry query at all, and how the answer was reached.
+        # Without it, `last_raw_extended: null` has two very different causes that read alike: an
+        # appliance that does not carry those sensors, and one we stopped asking. A report of
+        # "the power and compressor sensors are empty" cannot be answered from the bytes, because
+        # the point is that there are none -- so it has to be stated here.
+        #   supported  true  -- it has answered, so the entities are real and the frame is simply
+        #                       absent from the most recent session
+        #              false -- written off after repeated silence; the entities will not appear
+        #              null  -- still being tried, or nothing asked yet
+        "extended_status": {
+            "supported": coordinator.supports_extended,
+            "consecutive_misses": coordinator._extended_misses,
+            "misses_before_giving_up": EXTENDED_MISSES,
+            "query_form": coordinator._extended_form,
+            "query_forms_available": len(EXTENDED_STATUS_FRAME_TYPES),
+        },
         # enum codes the device's OWN digital model authorizes for the write path — this is what
         # decides whether e.g. heat is usable on this unit (coordinator._model_authorized_codes)
         "model_authorized_codes": {

@@ -3705,3 +3705,40 @@ def test_the_published_model_states_which_features_a_unit_actually_has() -> None
     # and the presence of the key is itself the signal, so an all-visible model records an EMPTY
     # list rather than nothing -- "we checked" and "we do not know" must stay distinguishable
     assert sorted(invisible_attributes({"attributes": [{"name": "a", "invisible": False}]})) == []
+
+
+async def test_diagnostics_say_whether_the_telemetry_query_is_answered(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """`last_raw_extended: null` has two causes that read identically, and only one is a bug.
+
+    An appliance that does not carry the compressor and power sensors reports nothing, and so does
+    one we asked three times and gave up on. Both leave those entities empty, and neither can be
+    told from the other by looking at the bytes -- the point being that there are none. So the
+    answer has to be stated outright, and a report of "the power sensors are empty" was
+    unanswerable without it.
+    """
+    from custom_components.haismart.diagnostics import (
+        async_get_config_entry_diagnostics,
+    )
+
+    entry = await _setup(hass)
+    diag = await async_get_config_entry_diagnostics(hass, entry)
+    ext = diag["extended_status"]
+
+    assert set(ext) == {
+        "supported", "consecutive_misses", "misses_before_giving_up",
+        "query_form", "query_forms_available",
+    }
+    # tri-state, and the third state is the one that matters: not yet known is not "no"
+    assert ext["supported"] in (True, False, None)
+    assert ext["misses_before_giving_up"] >= 1
+    assert ext["query_forms_available"] >= 1
+    assert 0 <= ext["consecutive_misses"] <= ext["misses_before_giving_up"]
+
+    coordinator = entry.runtime_data
+    coordinator.supports_extended = False
+    coordinator._extended_misses = 3
+    diag = await async_get_config_entry_diagnostics(hass, entry)
+    assert diag["extended_status"]["supported"] is False
+    assert diag["extended_status"]["consecutive_misses"] == 3

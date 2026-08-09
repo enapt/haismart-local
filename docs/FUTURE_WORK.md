@@ -923,32 +923,37 @@ matcher is correct; what feeds it is not.
 Add Integration → use the account already added**, not waiting for a card to appear. That route
 asks for nothing and does not depend on ARP at all.
 
-## 27. One family's byte map is typed rather than generated
+## 27. One family's byte map is typed rather than generated — settled
 
-`_CLASSIC_PROBE` and `EXTENDED36` are built from `canonical_map`. **extended-46 is not** — it keeps
-a hand-written table, because no single displacement fits it: it is the map plus a ten-word insert
-at w25, so six of nine fields disagree with any one offset.
+`_CLASSIC_PROBE` and `EXTENDED36` are built from `canonical_map`; extended-46 was not, and kept a
+hand-written table. Eleven fields were typed into it, five the map already placed were left out, and
+the switches for those five were offered and then sat unavailable for want of anything to read. The
+same exemption emptied the family's declared-attribute list and withheld its optional-feature
+entities — three symptoms reported as separate faults, one cause.
 
-That exemption is the reason for three separate symptoms on the 209-byte family, all reported as
-different problems:
+**The mistake was in how the family was described, not in what was known about it.** It was recorded
+as having no displacement, on the grounds that no single offset fits. That is true and it is not the
+same as unplaceable: an insert is a **piecewise** displacement. `WireModel` now carries
+`canonical_insert=(pivot, words)` beside the offset, and `canonical_word()` applies both, so the map
+places everything either side of the inserted block and the block itself stays explicit.
 
-* **Five switches that could be written and never read back**, so they sat unavailable. Fixed, by
-  deriving their positions from the family's own write frame — the group-set frame is a slice of
-  the report at `write_base_word`, so a written bit reads back at `write_base_word + write_word - 1`.
-  Confirmed bit for bit against the manufacturer's own record of the same attributes.
-* **`model_declared_fields` is empty**, because `canonical_displacement` is `None` — so nothing
-  reads the attributes the device itself declares.
-* **No optional-feature entities**, gated on the same missing displacement.
+Outcome on the 209-byte family:
 
-The information was never missing. It was in that family's `write_fields` the whole time, and in
-`canonical_map` for everything either side of the insert. What was missing is that a typed table
-cannot be reviewed into correctness, and nothing compared it with what we already held.
+* its fields are **derived from the map** and reproduce every capture-verified position exactly,
+  field for field, asserted by a test;
+* its devices' declared attributes went from **0 to 54**, of which **53 agree with the
+  manufacturer's own record and none disagree**;
+* optional-feature entities work there for the first time.
 
-**What would settle it:** describe extended-46 as two displacements either side of the w25 insert
-rather than one, and generate its map like the others. All three symptoms close at once, and the
-next family is checked by construction instead of by hand.
+Two things stay explicit, and both are the point rather than an exception:
 
-Guarding it in the meantime: `test_no_family_offers_a_control_it_cannot_read_back` asserts the rule
-across every family, and `test_the_write_frame_is_a_slice_of_the_report` asserts the relation the
-derived positions rest on.
+* **The inserted block's own two fields** (per-tower vane and fan) are not in the published map,
+  because no bundled model has dual airflow. They came from captures and still do.
+* ⚠️ **The half-degree setpoint.** The map encodes a setpoint as degrees above 16; this family sends
+  half-degrees from zero. Taking the scaling from the map — on a field whose *position* the map gets
+  right — would read 24 °C as 40 °C. Position from the map, scaling from a reading. A test asserts
+  the departure so nobody restores it, and fails if the map ever agrees.
 
+Also settled in passing: `CANONICAL_WIRE_MAP` flagged that `write_base_word=20` for this family was
+inherited and never verified on it. It is now, from the other end — the five toggles derived through
+that base agree bit for bit with the manufacturer's record of the same attributes.

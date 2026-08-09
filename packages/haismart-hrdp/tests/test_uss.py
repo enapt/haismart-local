@@ -1660,13 +1660,20 @@ def test_declared_fields_reads_what_a_device_says_it_has():
 
 
 def test_declared_fields_refuse_a_family_with_no_confirmed_displacement():
-    """extended-46 carries a ten-word insert whose start is not pinned, and 6 of its 9 mapped
-    positions disagree with any single whole-word offset. Reading a device's other attributes off
-    the map there would place every one of them plausibly and wrongly, so the family declines --
-    keeping what captures established and inventing nothing."""
-    ext46 = uss.select_wire_model(209)
-    assert ext46.canonical_displacement is None
-    assert ext46.model_fields(["lockStatus", "freshAirStatus", "targetHumidity"], 209) == {}
+    """A family with no established relationship to the published map places nothing.
+
+    compact-12 is the genuine case: a different protocol generation packing one attribute per whole
+    word, so no displacement was ever going to fit it. Reading a device's other attributes off the
+    map there would place every one of them plausibly and wrongly.
+
+    ⚠️ This used to be asserted of extended-46, which was wrong about that family rather than about
+    the rule. An insert is not the absence of a relationship, it is a piecewise one -- and treating
+    the two alike cost that family every attribute its devices declare. See
+    ``test_an_inserted_block_no_longer_blocks_reading_declared_attributes``.
+    """
+    compact = uss.select_wire_model(117)
+    assert compact.canonical_displacement is None
+    assert compact.model_fields(["lockStatus", "freshAirStatus", "targetHumidity"], 117) == {}
 
 
 def test_declared_fields_read_a_code_as_the_device_publishes_it():
@@ -1797,7 +1804,7 @@ def test_declared_bool_features_reads_from_the_model_and_the_map():
     the device's model, position the map, value the bit -- confirmed 7/7 against the cloud on a real
     unit. Family with no confirmed displacement yields nothing (no guess)."""
     from haismart_hrdp import declared_bool_features, read_bool_features
-    from haismart_hrdp.wire_models import _CLASSIC_PROBE, EXTENDED46
+    from haismart_hrdp.wire_models import _CLASSIC_PROBE, COMPACT12, EXTENDED46
 
     # `invisible_attributes` present (even empty) is the signal that the unit's real feature set is
     # known; a model without it gets no optional-feature entities at all -- never a guess.
@@ -1823,15 +1830,19 @@ def test_declared_bool_features_reads_from_the_model_and_the_map():
     got = read_bool_features(_CLASSIC_PROBE, model, STATUS_125)
     assert set(got) == {"freshAirStatus", "electricHeatingStatus", "lightStatus"}
     assert all(isinstance(v, bool) for v in got.values())
-    # a family whose map is not pinned places nothing
-    assert read_bool_features(EXTENDED46, model, b"\x00" * 209) == {}
+    # a family with no established relationship to the map places nothing
+    assert read_bool_features(COMPACT12, model, b"\x00" * 117) == {}
+    # ...while one that displaces the map piecewise does place them, which is the whole point of
+    # describing an insert rather than giving up on the family
+    assert set(read_bool_features(EXTENDED46, model, b"\x00" * 209)) == {
+        "freshAirStatus", "electricHeatingStatus", "lightStatus"}
 
 
 def test_declared_enum_features_reads_labelled_state():
     """humanSensingStatus is a multi-state optional feature -- read read-only as its labelled state,
     at its published-map position, and only where the unit's feature set is known (invisible gate)."""
     from haismart_hrdp import declared_enum_features, read_enum_features
-    from haismart_hrdp.wire_models import _CLASSIC_PROBE, EXTENDED46
+    from haismart_hrdp.wire_models import _CLASSIC_PROBE, COMPACT12, EXTENDED46
 
     model = {"invisible_attributes": [], "attributes": [{"name": "humanSensingStatus"}]}
     assert declared_enum_features(model) == frozenset({"humanSensingStatus"})
@@ -1845,7 +1856,8 @@ def test_declared_enum_features_reads_labelled_state():
     assert set(got) == {"humanSensingStatus"}
     assert got["humanSensingStatus"] in {"off", "avoid", "follow", "on"}
     # a family with no confirmed displacement places nothing
-    assert read_enum_features(EXTENDED46, model, b"\x00" * 209) == {}
+    assert read_enum_features(COMPACT12, model, b"\x00" * 117) == {}
+    assert read_enum_features(EXTENDED46, model, b"\x00" * 209) == {"humanSensingStatus": "off"}
 
 
 def test_invisible_attributes_and_merge_records_them():

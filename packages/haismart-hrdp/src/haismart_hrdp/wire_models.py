@@ -33,7 +33,7 @@ monitoring-only.
 """
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 
 from .canonical_map import CANONICAL, PROFILE_DISPLACEMENTS
@@ -248,22 +248,47 @@ class WireModel:
     position_fields: frozenset[str] = frozenset()
     # This family's whole-word offset from the published map, when it HAS one. Set only where the
     # map has been checked against real reports field for field -- classic at -19 (9 of 9 positions
-    # reproduced) and extended-36 at 0 (12 of 12). It stays ``None`` for a family that is not a
-    # single displacement: extended-46 carries a ten-word insert whose start is not pinned, and 6 of
-    # its 9 mapped positions disagree with any single offset, so reading its device's other declared
-    # attributes off the map would place them plausibly and wrongly. See :func:`declared_fields`.
+    # reproduced) and extended-36 at 0 (12 of 12).
     canonical_displacement: int | None = None
+    # A block this family inserts that the published map does not describe, as
+    # ``(first inserted word, how many words)``. A family with an insert is still a displacement of
+    # the map -- just a piecewise one: everything below the pivot sits at ``canonical_displacement``
+    # and everything from it upward is pushed along by the insert.
+    #
+    # extended-46 is the case: canonical, with ten words inserted at w25 for a dual-airflow
+    # cabinet's per-tower vane and fan, which the published map does not carry because no bundled
+    # model has that hardware. This used to be expressed by leaving the displacement ``None``, which
+    # said "unplaceable" when the truth was "placeable, in two pieces" -- so nothing read the
+    # attributes this family's devices declare, and its optional-feature entities never appeared.
+    canonical_insert: tuple[int, int] | None = None
+
+    def canonical_word(self, word: int) -> int | None:
+        """Where a published map word lands in this family's report, or ``None`` if unplaceable.
+
+        The safe direction is ``None``: a family whose relationship to the map has not been checked
+        against real reports must place nothing, since a guessed offset puts every attribute
+        somewhere plausible and wrong.
+        """
+        if self.canonical_displacement is None:
+            return None
+        placed = word + self.canonical_displacement
+        if self.canonical_insert is not None:
+            pivot, count = self.canonical_insert
+            if word >= pivot:
+                placed += count
+        return placed
 
     def model_fields(self, declared: Iterable[str], report_length: int) -> dict[str, WireField]:
         """Fields for the attributes ``declared`` by this device that the family map does not carry.
 
-        Empty for a family with no confirmed displacement, which is the safe direction: the device
-        keeps the attributes that were established from captures and gains nothing invented.
+        Empty for a family whose relationship to the map is unknown, which is the safe direction:
+        the device keeps the attributes that were established from captures and gains nothing
+        invented.
         """
         if self.canonical_displacement is None:
             return {}
         return declared_fields(
-            self.canonical_displacement, declared,
+            self.canonical_word, declared,
             word_limit=(report_length - _ATTR_BASE) // 2,
         )
 
@@ -479,14 +504,25 @@ _CLIMATE_SPEC: Mapping[str, tuple] = {
 
 
 def canonical_fields(
-    displacement: int, keys: Sequence[str], spec: Mapping[str, tuple] = _CLIMATE_SPEC
+    displacement: int | Callable[[int], int | None],
+    keys: Sequence[str],
+    spec: Mapping[str, tuple] = _CLIMATE_SPEC,
 ) -> dict[str, WireField]:
-    """Our decode fields for ``keys``, taken from the published map at ``displacement`` words."""
+    """Our decode fields for ``keys``, taken from the published map.
+
+    ``displacement`` is a whole-word offset, or -- for a family that displaces the map piecewise --
+    the placement rule itself (:meth:`WireModel.canonical_word`). A key the rule cannot place is
+    omitted rather than guessed at.
+    """
+    place = (lambda w: w + displacement) if isinstance(displacement, int) else displacement
     out: dict[str, WireField] = {}
     for key in keys:
         name, kind, *rest = spec[key]
         c = CANONICAL[name]
-        out[key] = WireField(c.word + displacement, c.bit, c.length, kind=kind,
+        word = place(c.word)
+        if word is None:
+            continue
+        out[key] = WireField(word, c.bit, c.length, kind=kind,
                              k=c.k, c=c.c, enum=rest[0] if rest else None)
     return out
 
@@ -498,7 +534,10 @@ _DTYPE_KINDS = {"bool": "bool", "int": None, "double": None}
 
 
 def declared_fields(
-    displacement: int, declared: Iterable[str], *, word_limit: int
+    displacement: int | Callable[[int], int | None],
+    declared: Iterable[str],
+    *,
+    word_limit: int,
 ) -> dict[str, WireField]:
     """Decode fields for the attributes a DEVICE ITSELF declares, placed by the published map.
 
@@ -512,16 +551,16 @@ def declared_fields(
     here can collide with or silently redefine a hand-mapped field. Attributes already covered by
     :data:`_CLIMATE_SPEC` are skipped for the same reason.
 
-    ``displacement`` must be a family's *confirmed* whole-word displacement -- see
-    :attr:`WireModel.canonical_displacement`, which is set only for the families where the map has
-    been checked against real reports field for field, and is ``None`` for a family that carries an
-    insert. Passing a guessed displacement here would put every one of these attributes somewhere
-    plausible and wrong, which is exactly the failure the confirmed-displacement gate exists to
-    prevent.
+    ``displacement`` is a family's *confirmed* whole-word offset, or the placement rule of a family
+    that displaces the map piecewise (:meth:`WireModel.canonical_word`, which handles an inserted
+    block). Either way it must be confirmed against real reports: a guessed offset would put every
+    one of these attributes somewhere plausible and wrong, which is the failure this gate exists to
+    prevent, and a rule that cannot place a word returns ``None`` so the attribute is dropped.
 
     ``word_limit`` is the report's word count; an attribute the displacement would push past the end
     of the report is dropped rather than read off whatever follows.
     """
+    place = (lambda w: w + displacement) if isinstance(displacement, int) else displacement
     covered = {name for name, *_ in _CLIMATE_SPEC.values()}
     out: dict[str, WireField] = {}
     for name in declared:
@@ -530,7 +569,9 @@ def declared_fields(
             continue
         if c.dtype not in _DTYPE_KINDS:
             continue
-        word = c.word + displacement
+        word = place(c.word)
+        if word is None:
+            continue
         # The field's most significant end runs backwards from its word, so both ends must land
         # inside the array -- see WireField.read.
         span = (c.bit + c.length + 15) // 16
@@ -754,6 +795,20 @@ _EXT46_WRITE = {
 # and its fan speed answers from the inserted block. Written out, those read as what they are —
 # a family with three exceptions — where a displacement plus three overrides would read as a rule
 # with more exceptions than rule.
+_EXT46_PIVOT = 25
+_EXT46_INSERT_WORDS = 10
+
+
+def _ext46_word(word: int) -> int:
+    """Where a published map word lands in the 209-byte report: the map, ten words inserted at 25.
+
+    Kept beside the model because the fields are built while the model is being constructed. A test
+    asserts it agrees with ``EXTENDED46.canonical_word`` for every word, so the pivot cannot be
+    stated twice and drift.
+    """
+    return word + (_EXT46_INSERT_WORDS if word >= _EXT46_PIVOT else 0)
+
+
 EXTENDED46 = WireModel(
     family="extended46",
     report_lengths=frozenset({209}),
@@ -765,15 +820,23 @@ EXTENDED46 = WireModel(
     word_count=5,
     write_base_word=20,     # report word 20 == group-set word 1, as on extended-36
     write_fields=_EXT46_WRITE,
+    canonical_displacement=0,
+    # Ten words inserted at w25 for this cabinet's per-tower vane and fan. The published map does
+    # not describe them -- no bundled model has dual airflow -- so they are the two explicit fields
+    # below, and everything else is taken from the map either side of the pivot.
+    canonical_insert=(_EXT46_PIVOT, _EXT46_INSERT_WORDS),
     fields={
-        "power": WireField(22, 0, 1, kind="bool"),
-        "target_temperature": WireField(20, 8, 8, kind="int", k=0.5, c=0.0),
-        "current_temperature": WireField(35, 8, 8, kind="temp", k=0.5, c=0.0),
-        "outdoor_temperature": WireField(36, 8, 8, kind="temp", k=1.0, c=-64.0),
-        "heat_capable": WireField(36, 7, 1, kind="bool_inv"),
-        "error_code": WireField(37, 8, 8, kind="raw"),
-        "last_changed_by": WireField(37, 0, 2, kind="enum", enum=OPERATION_SOURCE),
-        "operation_mode": WireField(21, 13, 3, kind="enum", enum=_EXT36_MODE),
+        # Everything the published map describes, placed by the pivot: words below 25 where the map
+        # puts them, words from 25 up pushed along by the insert. Written out as a derivation rather
+        # than as a table, because the table was the bug: eleven fields were typed in, five that the
+        # map already placed were left out, and the switches for those five were offered and then
+        # sat unavailable for want of anything to read.
+        **canonical_fields(_ext46_word, [
+            "target_temperature", "operation_mode", "power",
+            "health", "strong", "quiet", "sleep", "lamp",
+            "current_temperature", "outdoor_temperature", "heat_capable",
+            "error_code", "last_changed_by", "energy_wh",
+        ]),
         # The five secondary toggles, which this family could WRITE and never read back -- so the
         # switches were offered and then sat unavailable forever, having no state to show. The same
         # defect extended-36 had, and the audit that was owed after it finally run across every
@@ -789,11 +852,15 @@ EXTENDED46 = WireModel(
         # Confirmed against the appliance's own cloud record rather than left as arithmetic: on a
         # report from a running unit, all six bits of that word agree with what the manufacturer
         # separately reported for the same attributes, including the two that were set.
-        "health": WireField(22, 1, 1, kind="bool"),
-        "strong": WireField(22, 3, 1, kind="bool"),
-        "quiet": WireField(22, 4, 1, kind="bool"),
-        "sleep": WireField(22, 5, 1, kind="bool"),
-        "lamp": WireField(22, 9, 1, kind="bool"),
+        # ⚠️ A measured departure from the map, not an oversight. The map encodes a setpoint the
+        # classic way -- degrees above 16 -- and this family sends HALF-DEGREES FROM ZERO. Taking
+        # the scaling from the map would read 24 °C as 40 °C, on a field whose position the map
+        # gets right. Position from the map, scaling from a reading: the same rule that applies to
+        # meaning applies here, and this is why the generation is field-wise rather than wholesale.
+        "target_temperature": WireField(_ext46_word(20), 8, 8, kind="int", k=0.5, c=0.0),
+        # The two fields the map cannot place, because they are not in it: they are the inserted
+        # block's own per-tower controls, and no bundled model has dual airflow. Both were
+        # established from captures taken in stated states.
         "swing_vertical": WireField(25, 0, 4, kind="vane_v"),
         # Fan speed does NOT sit where every other family puts it. Word 21 bit 8 — the classic
         # position — reads 6 in every capture from this family, and 6 is not a code its own model
@@ -816,7 +883,6 @@ EXTENDED46 = WireModel(
         # Absent when it reads zero, like every counter here: most of these appliances carry the
         # register and never populate it, and a permanent 0 kWh in someone's energy history is worse
         # than no sensor at all.
-        "energy_wh": WireField(45, 0, 32, kind="counter"),
     },
 )
 

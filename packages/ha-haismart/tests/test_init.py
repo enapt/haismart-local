@@ -3797,3 +3797,50 @@ async def test_a_rotation_with_no_way_to_re_key_says_so_and_raises_the_repair(
     # "could not send", never "does not accept that setting"
     assert caught.value.translation_key == "control_failed"
     assert "rotated" in str(caught.value.translation_placeholders["error"])
+
+
+async def test_diagnostics_capture_the_handshake_reply_without_decrypting_it(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The one frame nobody can ever supply is the one that decides whether a command can be sent.
+
+    When it will not decrypt there is nothing to inspect, because the failure *is* the decryption —
+    so the file has to carry it. Key-free, so it works precisely when the key does not.
+    """
+    from unittest.mock import patch
+
+    from custom_components.haismart.diagnostics import (
+        async_get_config_entry_diagnostics,
+    )
+
+    entry = await _setup(hass)
+    with patch("custom_components.haismart.diagnostics.probe_handshake_reply",
+               return_value=(46, 0, bytes(range(53)))):
+        diag = await async_get_config_entry_diagnostics(hass, entry)
+
+    hs = diag["handshake_reply"]
+    assert hs["localkey_version"] == 46
+    assert hs["payload_len"] == 53
+    assert hs["flag"] == 0          # every appliance reports 0 here, body encrypted regardless
+    assert hs["head"].startswith("000102")
+    # the two versions sit side by side, which is the comparison the file exists to allow
+    assert diag["localkey_version_reported"] == 46
+    assert "localkey_version" in diag
+
+
+async def test_diagnostics_survive_an_appliance_that_will_not_answer(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A file taken because something is wrong must download even when everything is wrong."""
+    from unittest.mock import patch
+
+    from custom_components.haismart.diagnostics import (
+        async_get_config_entry_diagnostics,
+    )
+
+    entry = await _setup(hass)
+    with patch("custom_components.haismart.diagnostics.probe_handshake_reply",
+               side_effect=OSError("no route to host")):
+        diag = await async_get_config_entry_diagnostics(hass, entry)
+    assert diag["handshake_reply"] is None
+    assert diag["localkey_version_reported"] is None

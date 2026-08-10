@@ -10,8 +10,8 @@ from haismart_hrdp import (
     declared_order,
     derive_status_layout,
     device_type_class,
+    probe_handshake_reply,
     probe_layout,
-    probe_localkey_version,
     rules_for_product,
     select_wire_model,
 )
@@ -56,22 +56,35 @@ TO_REDACT = {
 }
 
 
-async def _async_reported_key_version(hass: HomeAssistant, coordinator) -> int | None:
-    """The key version the appliance says it is on, asked directly. ``None`` if it did not answer.
+async def _async_handshake_reply(hass: HomeAssistant, coordinator) -> dict[str, Any] | None:
+    """The appliance's handshake reply, as it arrives, without decrypting it.
 
-    Key-free: the version is in the handshake reply, before anything is encrypted, so this works
-    even when the stored key is useless -- which is exactly when it is worth knowing.
+    The frame that decides whether a command can be sent, and the one nobody could ever supply when
+    it went wrong: when it will not decrypt there is nothing to inspect, because the failure IS the
+    decryption. Recording it here -- key-free, so it works precisely when the key does not -- means
+    the file answers the question instead of somebody being asked to reproduce a fault with debug
+    logging enabled.
+
+    ``version`` is what the appliance says its key is; ``flag`` is its header flag, which reads 0 on
+    every appliance seen even though the body is encrypted; ``head`` is the start of the payload, so
+    a body that is NOT encrypted is recognisable on sight rather than by inference.
     """
-    host = coordinator.host
-    if not host:
+    if not coordinator.host:
         return None
     try:
-        return await hass.async_add_executor_job(
-            partial(probe_localkey_version, host, coordinator.device_id, timeout=READ_TIMEOUT)
+        version, flag, payload = await hass.async_add_executor_job(
+            partial(probe_handshake_reply, coordinator.host, coordinator.device_id,
+                    timeout=READ_TIMEOUT)
         )
     except Exception as err:  # noqa: BLE001 - diagnostics must never fail to download
-        _LOGGER.debug("could not ask %s for its key version: %s", host, err)
+        _LOGGER.debug("could not collect a handshake reply from %s: %s", coordinator.host, err)
         return None
+    return {
+        "localkey_version": version,
+        "flag": flag,
+        "payload_len": len(payload),
+        "head": payload[:48].hex(),
+    }
 
 
 async def async_get_config_entry_diagnostics(
@@ -80,6 +93,12 @@ async def async_get_config_entry_diagnostics(
     coordinator = entry.runtime_data
     profile = coordinator.profile
     layout = await _async_layout_summary(hass, coordinator)
+    # ⚠️ Under the coordinator's session lock. These appliances accept ONE connection at a time, so
+    # a probe fired while a poll or a command is in flight makes one of them fail -- and a
+    # diagnostics download taken *because* something is wrong must not manufacture a second fault
+    # for the file to record.
+    async with coordinator._session:  # noqa: SLF001 - no public accessor, and the lock is the point
+        handshake = await _async_handshake_reply(hass, coordinator)
     return {
         "entry": async_redact_data(dict(entry.data), TO_REDACT),
         "options": dict(entry.options),
@@ -90,7 +109,8 @@ async def async_get_config_entry_diagnostics(
         # command, an empty reading, or a protocol bug, depending on which path hits it first.
         # Reporting only the stored one made a bug report unable to answer its own first question.
         "localkey_version": coordinator.localkey_version,
-        "localkey_version_reported": await _async_reported_key_version(hass, coordinator),
+        "localkey_version_reported": (handshake or {}).get("localkey_version"),
+        "handshake_reply": handshake,
         "last_update_success": coordinator.last_update_success,
         "state": coordinator.data,
         # raw report bytes (post-decrypt) — carries no secrets, invaluable for offset bugs

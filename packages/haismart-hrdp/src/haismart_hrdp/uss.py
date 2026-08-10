@@ -218,6 +218,36 @@ def parse_hello_resp(msg: Message) -> HelloResp:
     return HelloResp(msg.session, msg.sn, status, ver)
 
 
+def probe_handshake_reply(
+    ip: str, device_id: str, *, pro_ver: int = 2, timeout: float = 4.0
+) -> tuple[int, int, bytes]:
+    """Complete a handshake and hand back HELLO_DONE_RESP **as it arrived**, without decrypting it.
+
+    Returns ``(localkey_version, flag, payload)``.
+
+    This exists because the one frame nobody could ever produce on request is the one that decides
+    whether a command can be sent at all. Everything the appliance says afterwards is encrypted with
+    a key that may or may not be the one being held, and when it cannot be read there is nothing to
+    look at -- no capture, no bytes, only a complaint about a length. Asking the appliance directly,
+    needing no key to do it, means a diagnostics file carries the evidence instead of a person being
+    asked to reproduce a fault with debug logging on.
+
+    Read-only and key-free: the handshake is plaintext, and this stops before anything is decoded.
+    """
+    s = socket.create_connection((ip, USS_PORT), timeout=timeout)
+    try:
+        s.sendall(hello_message(device_id, sn=1, pro_ver=pro_ver))
+        resp = _recv_message(s)
+        version = check_hello_resp(resp).localkey_version
+        s.sendall(hello_done_message(sn=2, session=resp.session, pro_ver=pro_ver))
+        done = _recv_message(s)
+        if done.info_type != INFO_HELLO_DONE_RESP:
+            raise RuntimeError(f"expected HELLO_DONE_RESP, got {done.info_code:#x}")
+        return version, done.flag, done.payload
+    finally:
+        s.close()
+
+
 def probe_localkey_version(ip: str, device_id: str, *, pro_ver: int = 2, timeout: float = 4.0) -> int:
     """Handshake-only (NO localKey required): return the AC's current localKey version.
 

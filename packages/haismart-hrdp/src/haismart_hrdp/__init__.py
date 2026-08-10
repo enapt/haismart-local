@@ -108,6 +108,7 @@ from .uss import (
     parse_full_status,
     parse_hello_resp,
     parse_status_container,
+    probe_handshake_reply,
     probe_localkey_version,
     read_grsetdac_field,
     read_status,
@@ -182,6 +183,7 @@ __all__ = [
     "parse_hello_resp",
     "check_hello_resp",
     "HelloResp",
+    "probe_handshake_reply",
     "probe_localkey_version",
     "reply_refused",
     # CONTROL / write

@@ -2207,3 +2207,44 @@ def test_the_209_byte_counter_is_in_watt_hours_by_its_own_two_readings():
     hours_per_day_if_wh = (later - earlier) / 1000 / 5 / 1.1
     assert 2 < hours_per_day_if_wh < 12                      # an ordinary duty cycle
     assert hours_per_day_if_wh * 10 > 24                     # ...and ten times that is impossible
+
+
+def test_a_handshake_that_cannot_be_read_is_not_reported_as_a_rejected_setting():
+    """⚠️ The exception TYPE is the point, not the message.
+
+    The layer above maps ``ValueError`` to "does not accept that setting" and ``RuntimeError`` to
+    "could not send the command". An unreadable handshake reply used to raise the former, so an
+    owner whose appliance never received the setting was told the appliance had refused it -- which
+    sends them to check the setting, and sent us there too.
+    """
+    from haismart_hrdp.uss import (
+        FLAG_BIZ_ENCRYPTED,
+        Message,
+        session_sequence_base,
+    )
+
+    good = Message(uss.INFO_HELLO_DONE_RESP, 0, 1, FLAG_BIZ_ENCRYPTED, 0, 0,
+                   uss.biz_encrypt(0, (547).to_bytes(4, "big"), LOCALKEY))
+    assert session_sequence_base(good, LOCALKEY) == 547
+
+    # marked encrypted, and is not: what a wrong key or an unexpected reply looks like
+    noise = Message(uss.INFO_HELLO_DONE_RESP, 0, 1, FLAG_BIZ_ENCRYPTED, 0, 0, bytes(64))
+    with pytest.raises(RuntimeError, match="never sent"):
+        session_sequence_base(noise, LOCALKEY)
+
+    # a reply with nothing in it cannot carry a base either, and says so the same way
+    empty = Message(uss.INFO_HELLO_DONE_RESP, 0, 1, FLAG_BIZ_ENCRYPTED, 0, 0, b"")
+    with pytest.raises(RuntimeError, match="never sent"):
+        session_sequence_base(empty, LOCALKEY)
+
+
+def test_a_handshake_reply_that_is_not_marked_encrypted_is_not_decrypted():
+    """Decrypting something that was never encrypted yields noise, and noise reads as a refusal.
+
+    The flag is the protocol's own statement about the payload, so it decides. Every appliance seen
+    so far sets it, which is why this costs nothing and why it had never been noticed.
+    """
+    from haismart_hrdp.uss import Message, session_sequence_base
+
+    plain = Message(uss.INFO_HELLO_DONE_RESP, 0, 1, 0, 0, 0, (912).to_bytes(4, "big"))
+    assert session_sequence_base(plain, LOCALKEY) == 912

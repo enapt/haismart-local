@@ -1513,6 +1513,51 @@ async def _read_pushed_status(reader, leftover: bytes, local_key: str, timeout: 
     return None
 
 
+def session_sequence_base(done: Message, local_key: str) -> int:
+    """The op sequence base the AC assigns in HELLO_DONE_RESP. The op MUST use it as ``biz_sn``, or
+    the appliance drops the connection.
+
+    The body is the base as a big-endian 32-bit number. On every appliance seen so far the reply is
+    biz-encrypted and says so in its flag, so the flag is what decides whether to decrypt rather
+    than an assumption that it always is -- decrypting something that was never encrypted yields
+    noise, and noise here reads as a rejected setting.
+
+    ⚠️ Raises ``RuntimeError``, deliberately not ``ValueError``. The distinction is load-bearing at
+    the layer above: a ``ValueError`` means the encoder refused a value and is reported to the owner
+    as "does not accept that setting", which was said to somebody whose appliance never received
+    the setting at all. The handshake failing is a session problem, and it has to read as one.
+    """
+    body = done.payload
+    if done.flag == FLAG_BIZ_ENCRYPTED:
+        try:
+            _, body = biz_decrypt(done.payload, local_key)
+        except ValueError as err:
+            _LOGGER.debug(
+                "HELLO_DONE_RESP would not decrypt (flag=%d, %d bytes): %s -- first bytes %s",
+                done.flag, len(done.payload), err, done.payload[:48].hex(),
+            )
+            raise RuntimeError(
+                f"the appliance's handshake reply could not be read ({err}), so the command was "
+                "never sent"
+            ) from err
+    elif len(body) >= 4:
+        # Not marked encrypted. Nothing here has been seen to do this, so the reading is the
+        # obvious one -- the same body the encrypted form carries -- and it is logged, because if
+        # it is wrong the appliance simply drops the connection and the log is what says why.
+        _LOGGER.debug(
+            "HELLO_DONE_RESP is not marked encrypted (flag=%d, %d bytes); reading the sequence "
+            "base from it directly -- first bytes %s",
+            done.flag, len(body), body[:16].hex(),
+        )
+    if len(body) < 4:
+        _LOGGER.debug("HELLO_DONE_RESP body is %d bytes, too short for a sequence base", len(body))
+        raise RuntimeError(
+            "the appliance's handshake reply carried no session sequence number, so the command "
+            "was never sent"
+        )
+    return int.from_bytes(body[:4], "big")
+
+
 async def async_send_op(ip: str, device_id: str, local_key: str, epp_frame: bytes | None = None, *,
                         counter: int, biz_sn: int | None = None, uss_sn: int = 0,
                         info_type: int = 0x64, pro_ver: int = 2, timeout: float = 4.0,
@@ -1569,11 +1614,8 @@ async def async_send_op(ip: str, device_id: str, local_key: str, epp_frame: byte
             if not chunk:
                 raise RuntimeError("connection closed before HELLO_DONE_RESP")
             hbuf += chunk
-        # The AC assigns this session's op sequence base in HELLO_DONE_RESP (decrypted body = BE32 base).
-        # The op MUST use it as biz_sn or the AC drops the connection.
         if biz_sn is None:
-            _, seq_base = biz_decrypt(done_msg.payload, local_key)
-            biz_sn = int.from_bytes(seq_base, "big")
+            biz_sn = session_sequence_base(done_msg, local_key)
         if build_frame is not None:
             # Read-modify-write in ONE session: the AC pushes its current status right after the
             # handshake (like a read), so seed the group-set from that fresh in-session baseline —

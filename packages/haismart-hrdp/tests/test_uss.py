@@ -2335,3 +2335,36 @@ def test_the_session_speaks_the_version_the_appliance_answered_with():
     # sending a zero no appliance has ever been observed to accept
     silent = decode_message(encode_message(INFO_HELLO_RESP, 1, b"\x00" * 8, type_byte=0))
     assert negotiated_type_byte(silent, requested=TYPE_BYTE[2]) == TYPE_BYTE[2]
+
+
+def test_the_rawlen_bounds_are_the_manufacturers_own():
+    """Our reader must not be stricter than the client the appliance is built to talk to.
+
+    The vendor's decoder checks `0x28 < rawlen <= payload_len - 2` and `rawlen <= 0xE028`, bounding
+    against the payload as it arrived. Ours bounded against the 16-byte-aligned slice, which is up
+    to fifteen bytes shorter, and accepted `rawlen == 0x28` -- a frame carrying no data at all.
+    """
+    import hashlib
+    import struct as _s
+
+    from haismart_hrdp.uss import _cbc, biz_decrypt, localkey_aes_key
+
+    key = "a" * 32
+
+    def frame(rawlen: int, data: bytes = b"", pre4: bytes = b"1234") -> bytes:
+        pt = (_s.pack(">HI", rawlen, 7) + hashlib.md5(pre4 + data).digest()
+              + b"\x00" * 16 + pre4 + data)
+        pt += b"\x00" * (-len(pt) % 16)
+        return _cbc(localkey_aes_key(key), pt, decrypt=False) + b"12345"
+
+    # an empty frame is refused rather than returning an empty payload that reads as a valid report
+    with pytest.raises(ValueError, match="bad rawlen 40"):
+        biz_decrypt(frame(0x28), key)
+
+    # and the complaint states the figures, because a wrong key produces a random rawlen that is
+    # otherwise indistinguishable from a framing fault
+    with pytest.raises(ValueError, match=r"bad rawlen 60000 \(payload \d+ B, decrypted \d+ B\)"):
+        biz_decrypt(frame(60000, b"\x01" * 8), key)
+
+    # an ordinary frame still round-trips
+    assert biz_decrypt(frame(0x28 + 8, b"\x01" * 8), key) == (7, b"\x01" * 8)

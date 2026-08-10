@@ -303,8 +303,24 @@ def biz_decrypt(ciphertext: bytes, local_key: str) -> tuple[int, bytes]:
     rawlen = struct.unpack(">H", pt[0:2])[0]
     sn = struct.unpack(">I", pt[2:6])[0]
     datalen = rawlen - 0x28
-    if datalen < 0 or 0x2A + datalen > len(pt):
-        raise ValueError("bad rawlen")
+    # The manufacturer's own decoder checks `rawlen > 0x28`, `rawlen <= payload_len - 2` and
+    # `rawlen <= 0xE028`, bounding against the payload **as it arrived** -- these are its numbers,
+    # not ours. Two differences mattered enough to close: it rejects `rawlen == 0x28` (a frame
+    # carrying no data at all) where we accepted one, and it bounds against the whole payload where
+    # we used the 16-byte-aligned slice, which is up to fifteen bytes shorter. A well-formed frame
+    # satisfies both, so neither difference is a fault we have observed -- they are simply places
+    # our reader was stricter than the client the appliance is built to talk to.
+    #
+    # ⚠️ The message carries its numbers deliberately. This complaint is what a reporter sees when
+    # a command fails, and bare "bad rawlen" says nothing: a wrong key decrypts to noise whose
+    # first two bytes are a random 16-bit number, which looks exactly like a structural fault. A
+    # rawlen in the tens of thousands against a 200-byte payload is a key problem; one that misses
+    # by a few bytes is a framing problem. Same words, opposite causes, and only the figures separate
+    # them.
+    if not 0x28 < rawlen <= min(len(ciphertext) - 2, 0xE028) or 0x2A + datalen > len(pt):
+        raise ValueError(
+            f"bad rawlen {rawlen} (payload {len(ciphertext)} B, decrypted {len(pt)} B)"
+        )
     if hashlib.md5(pt[0x26:0x26 + datalen + 4]).digest() != pt[6:22]:
         raise ValueError("biz integrity (MD5) check failed — wrong/stale localKey?")
     # Unescape here, not at each call site: every caller wants canonical fixed-length blobs, and a

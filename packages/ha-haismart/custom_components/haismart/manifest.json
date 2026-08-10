@@ -91,7 +91,7 @@
     "haismart-hrdp==0.1.0",
     "haismart-extractor"
   ],
-  "version": "0.42.1",
+  "version": "0.42.2",
   "zeroconf": [
     "_cae._udp.local."
   ]

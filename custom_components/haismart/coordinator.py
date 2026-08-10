@@ -634,6 +634,25 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # to cope with it, so an unfamiliar model degrades to plain status instead of failing.
         try:
             blobs = await self._async_read()
+        except LocalKeyRotated as err:
+            # The appliance said so itself, in the handshake, before anything was decrypted. Fix it
+            # in this cycle rather than reporting an unreachable appliance: the alternative is two
+            # more failed polls and a probe that can only learn what we were just told.
+            _LOGGER.info("%s while reading; re-keying and retrying this cycle", err)
+            if not await self._async_gateway_refresh():
+                # No account, or the key service is unreachable. `_check_localkey_rotation` owns
+                # the repair notification and the reauth flow, and says which of the two it was.
+                await self._check_localkey_rotation()
+                raise UpdateFailed(str(err)) from err
+            self.clear_stale_localkey_issue()
+            try:
+                blobs = await self._async_read()
+            except (TimeoutError, OSError, RuntimeError) as again:
+                # Once. An appliance rotating faster than a key can be fetched must not turn every
+                # poll into a pair of cloud requests.
+                raise UpdateFailed(
+                    f"uSS read from {self.host} failed after re-keying: {again}"
+                ) from again
         except (TimeoutError, OSError, RuntimeError) as err:
             # Before giving up: the AC may simply have moved. Ask the LAN who is out there, and if
             # this unit answers from a new address, follow it and retry in the same cycle -- the
@@ -762,6 +781,14 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         async with self._session:
             return await async_read_status(
                 self.host, self.device_id, self._local_key, timeout=READ_TIMEOUT,
+                # The same guard the control path has always had. Without it a rotation is not
+                # recognised as one: every payload fails its checksum, the cycle reports "nothing
+                # decoded", and only after two more misses does a THIRD connection go and ask the
+                # appliance a question its handshake already answered. Appliances left on the
+                # cloud re-key roughly hourly, so that is a recurring outage on exactly the
+                # installs this code path can never be exercised against here -- ours are
+                # firewalled and their key has not moved in weeks.
+                expect_localkey_version=self.localkey_version or None,
                 extra_request=(
                     extended_status_epp_frame(EXTENDED_STATUS_FRAME_TYPES[self._extended_form])
                     if self._ask_extended else None

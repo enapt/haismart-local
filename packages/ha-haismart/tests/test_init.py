@@ -3849,3 +3849,51 @@ async def test_diagnostics_survive_an_appliance_that_will_not_answer(
         diag = await async_get_config_entry_diagnostics(hass, entry)
     assert diag["handshake_reply"] is None
     assert diag["localkey_version_reported"] is None
+
+
+async def test_a_rotation_is_recognised_on_the_read_too_not_only_on_a_command(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The appliance states its key version in the handshake. Both paths must act on it.
+
+    Control has always passed the held version down, so a rotation surfaces as a rotation. The poll
+    did not, so the same event presented as "nothing decoded" -- two more wasted cycles and then a
+    third connection to ask a question the handshake had already answered. Appliances left on the
+    cloud re-key roughly hourly; the ones here are firewalled and never do, so this is a path that
+    testing against our own hardware cannot reach.
+    """
+    from haismart_hrdp import LocalKeyRotated
+
+    entry = _entry(**{CONF_LOCALKEY_VERSION: 46})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    coordinator = entry.runtime_data
+
+    seen: list[int | None] = []
+    outcomes = [LocalKeyRotated(device_version=47, held_version=46), [make_status_frame()]]
+
+    async def read(*_a, expect_localkey_version=None, **_kw):
+        seen.append(expect_localkey_version)
+        got = outcomes.pop(0) if outcomes else [make_status_frame()]
+        if isinstance(got, Exception):
+            raise got
+        return got
+
+    async def refresh():
+        coordinator.localkey_version = 47
+        refresh.called = True
+        return True
+
+    refresh.called = False
+    mock_uss.read.side_effect = read
+    with (
+        patch.object(coordinator, "_async_gateway_refresh", refresh),
+        patch.object(coordinator, "_check_localkey_rotation", new=AsyncMock()) as probe,
+    ):
+        await coordinator.async_refresh()
+
+    assert coordinator.last_update_success, "the cycle must recover, not report an unreachable unit"
+    assert refresh.called, "the key must be re-fetched from the appliance's own statement"
+    assert probe.await_count == 0, "no extra connection: the handshake already gave the version"
+    assert seen[0] == 46, "the held version has to be handed down or nothing can notice"

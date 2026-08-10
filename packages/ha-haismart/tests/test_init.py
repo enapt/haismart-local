@@ -1998,6 +1998,11 @@ async def test_diagnostics_carry_cloud_reachability(
         "reported_host": "192.168.1.50",
         "reported_port": 56800,
         "host_matches": True,
+        # The protocol the appliance names for itself. `None` here because the fixture's reply
+        # carries no tail; real appliances say UWT and are still driven with the uss_pro adapter,
+        # so this selects nothing -- it is recorded so an appliance naming something else is
+        # visible rather than silently unusual.
+        "reported_protocol": None,
     }
 
 

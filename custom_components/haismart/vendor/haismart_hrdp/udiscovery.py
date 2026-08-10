@@ -78,6 +78,13 @@ _OFF_IP = 0xE5
 _OFF_PORT = 0xF5
 _OFF_SDK_VERSION = 0xFD
 _OFF_FIRMWARE = 0x105
+# The tail nobody had read. Our appliances put ``UDISCOVERY_UWT`` here, null-padded to the end of
+# the datagram. The library carries THREE local protocol adapters -- `adapter_uss_pro` (the one
+# implemented here), `adapter_local_dev_user_uwt` and `adapter_local_dev_user_coap` -- so a name
+# announced by the appliance is worth keeping even though it does not, on its own, say which one
+# applies: ours announce UWT and speak uss_pro regardless. Recorded so that an appliance announcing
+# something else is visible rather than invisible.
+_OFF_PROTOCOL_TAG = 0x115
 _MIN_REPLY = _OFF_TLV_AREA  # everything past the TLV area is optional (other families may differ)
 
 
@@ -97,6 +104,12 @@ class DeviceInfo:
     firmware: tuple[str, ...] = ()
     cloud_state: int | None = None
     """Raw TLV value; ``None`` when the device did not report one."""
+    protocol_tag: str = ""
+    """The protocol name in the reply's tail (``UDISCOVERY_UWT`` on every appliance seen).
+
+    ⚠️ NOT an adapter selector on the evidence available: appliances that announce it are driven
+    with ``adapter_uss_pro`` successfully. Carried because the library has three adapters and this
+    is the only place an appliance names a protocol at all."""
 
     @property
     def cloud_state_name(self) -> str | None:
@@ -210,6 +223,7 @@ def parse_reply(data: bytes) -> DeviceInfo | None:
         uplus_id=data[_OFF_UPLUS_ID:_OFF_TLV_COUNT].hex(),
         port=port,
         sdk_version=field(_OFF_SDK_VERSION, _OFF_SDK_VERSION + 5),
+        protocol_tag=field(_OFF_PROTOCOL_TAG, _OFF_PROTOCOL_TAG + 32),
         firmware=firmware,
         cloud_state=cloud_state,
     )

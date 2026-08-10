@@ -165,3 +165,31 @@ def test_state_names_cover_only_what_was_observed():
     info = ud.parse_reply(unknown)
     assert info.cloud_state_name is None      # unnamed, but still...
     assert info.cloud_connected is False      # ...not connected
+
+
+def test_the_reply_tail_names_a_protocol():
+    """The last 32 bytes of a reply were never parsed, and an appliance names a protocol there.
+
+    The manufacturer's library carries three local adapters — `adapter_uss_pro` (what this library
+    implements), `adapter_local_dev_user_uwt` and `adapter_local_dev_user_coap` — and this tail is
+    the only place an appliance names one at all.
+
+    ⚠️ It does NOT select the adapter, and must not be treated as if it did: real appliances
+    announce `UDISCOVERY_UWT` here and are driven with `uss_pro` successfully. It is parsed so that
+    one announcing something different can be seen, not acted upon.
+    """
+    from haismart_hrdp.udiscovery import parse_reply
+
+    reply = bytearray(0x135)
+    reply[0:5] = b"Haier"
+    struct.pack_into(">I", reply, 5, 0x684D)
+    reply[0x15:0x15 + 12] = b"ACB722AABBCC"
+    reply[0x115:0x115 + 14] = b"UDISCOVERY_UWT"
+    info = parse_reply(bytes(reply))
+    assert info is not None
+    assert info.protocol_tag == "UDISCOVERY_UWT"
+
+    # a reply that stops before the tail is not an appliance without a protocol, it is a shorter
+    # reply -- so the field is empty rather than the parse failing
+    short = parse_reply(bytes(reply[:0x110]))
+    assert short is not None and short.protocol_tag == ""

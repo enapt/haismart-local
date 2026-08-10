@@ -167,6 +167,12 @@ async def async_get_config_entry_diagnostics(
             "raw_state": coordinator.cloud_state,
             "state_name": CLOUD_STATES.get(coordinator.cloud_state or -1),
             "supported": coordinator.supports_udiscovery,
+            # The protocol the appliance names in its discovery reply. The manufacturer's library
+            # carries three local adapters -- uss_pro (implemented here), uwt and coap -- and this
+            # is the only place an appliance names one at all. It selects nothing: every appliance
+            # seen announces UWT and is driven with uss_pro regardless. Recorded so that one
+            # announcing something different is visible instead of silently unusual.
+            "reported_protocol": coordinator.reported_protocol,
             # Where the AC says it is, and whether that still agrees with the address this entry
             # uses. `host_matches: false` means the unit moved on DHCP and the entry is stale --
             # worth stating outright, because it presents as "the AC stopped responding" and is

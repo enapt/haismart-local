@@ -539,6 +539,10 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # otherwise presents as an AC that simply stopped answering.
         self.reported_host: str | None = None
         self.reported_port: int | None = None
+        # The protocol name the appliance announces in its discovery reply. Every one seen says
+        # UWT, yet is driven with the uss_pro adapter successfully -- so this selects nothing and
+        # is recorded only so that an appliance announcing something else stops being invisible.
+        self.reported_protocol: str | None = None
         self._rediscover_next = 0.0
         # Snapshot of the options this coordinator was built with, so the entry's update listener
         # can tell an options change (reload) from the runtime data writes below (do not reload).
@@ -883,6 +887,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.sdk_version = info.sdk_version
         self.reported_host = info.host or None
         self.reported_port = info.port or None
+        self.reported_protocol = getattr(info, "protocol_tag", "") or None
         self._sync_device_registry()
         uplus_id = info.uplus_id.strip("0")  # an all-zero field means "not reported"
         if not uplus_id or info.uplus_id == self.uplus_id:

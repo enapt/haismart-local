@@ -1023,23 +1023,36 @@ def test_extended46_decodes_the_real_reports():
     assert fan["current_temperature"] == 26.0 and fan["outdoor_temperature"] == 36.0
 
 
-def test_extended46_reads_fan_speed_from_the_inserted_block():
-    """Fan speed on this family is NOT where every other family keeps it.
+def test_extended46_publishes_no_fan_speed_despite_a_position_that_once_fitted():
+    """⛔ Retired, and the evidence on BOTH sides is kept so it is not adopted a third time.
 
-    Word 21 bit 8 -- the classic position -- reads 6 in all three captures, and 6 is not a code this
-    unit's own model lists, so that field is something else here. Word 26 bit 9, inside the inserted
-    block and next to the vane at word 25, reads the speeds the captures were taken at: low in the
-    one set to low, high in the one set to high, and nothing at all with the unit off.
+    For: word 26 bit 9 tracks these three captures exactly -- low where the capture was taken on
+    low, high where it was taken on high, nothing with the unit off -- while word 21 bit 8, the
+    classic position, reads a constant 6 in all three.
+
+    Against, and decisive: a fourth capture from a different appliance, running in cool, read 0
+    there while the appliance's own cloud record said the fan was 1. That document agreed with 53
+    other attributes and disagreed with none, so it was not stale.
+
+    Both are explained by what the inserted block is -- this cabinet's PER-TOWER vane and fan. Word
+    26 carries one tower's speed: equal to the setting when that tower is the one running, and zero
+    when it is idle. It fits until it does not, which is the worst way for a position to be wrong.
     """
     from haismart_hrdp import profile_for
 
     prof = profile_for("AAC1UKZ01")
-    assert uss.parse_full_status(STATUS_209_COOL, prof)["fan_mode"] == "low"
-    assert uss.parse_full_status(STATUS_209_FAN, prof)["fan_mode"] == "high"
-    # off: the word reads 0, which is not a speed, so the field is absent rather than invented
-    assert "fan_mode" not in uss.parse_full_status(STATUS_209_OFF, prof)
-    # the classic position would have reported a code the unit's model does not define
-    assert ((STATUS_209_COOL[92 + 20 * 2] << 8) >> 8) & 0x07 == 6
+    for capture in (STATUS_209_COOL, STATUS_209_FAN, STATUS_209_OFF):
+        assert "fan_mode" not in uss.parse_full_status(capture, prof)
+    # The observation that made it tempting, preserved rather than deleted -- read with the
+    # library's own reader, never hand-rolled arithmetic, which has produced a false reading twice.
+    from haismart_hrdp.wire_models import WireField
+
+    tower = WireField(26, 9, 3, kind="raw")
+    assert tower.read(STATUS_209_COOL) == 3      # capture taken on low
+    assert tower.read(STATUS_209_FAN) == 1       # capture taken on high
+    assert tower.read(STATUS_209_OFF) == 0       # unit off
+    # and the classic position, which reports a constant on this family
+    assert WireField(21, 8, 3, kind="raw").read(STATUS_209_COOL) == 6
 
     # The classic partial decode is what this family REPLACES: byte 92 is the media module's
     # `volume` (100), which reads as a 48 C setpoint, and the classic power bit lands elsewhere so

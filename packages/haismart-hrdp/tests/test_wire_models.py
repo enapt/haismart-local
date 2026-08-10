@@ -106,7 +106,7 @@ def test_the_generated_map_reproduces_every_verified_position() -> None:
         "target_temperature": (20, 8, 8), "operation_mode": (21, 13, 3), "power": (22, 0, 1),
         "health": (22, 1, 1), "strong": (22, 3, 1), "quiet": (22, 4, 1),
         "sleep": (22, 5, 1), "lamp": (22, 9, 1),
-        "swing_vertical": (25, 0, 4), "wind_speed": (26, 9, 3),
+        "swing_vertical": (25, 0, 4),
         "current_temperature": (35, 8, 8), "heat_capable": (36, 7, 1),
         "outdoor_temperature": (36, 8, 8), "last_changed_by": (37, 0, 2),
         "error_code": (37, 8, 8), "energy_wh": (45, 0, 32),
@@ -152,3 +152,26 @@ def test_an_inserted_block_no_longer_blocks_reading_declared_attributes() -> Non
     for name, field in placed.items():
         c = CANONICAL[name]
         assert field.word == c.word + (10 if c.word >= 25 else 0)
+
+
+def test_the_209_family_publishes_no_fan_speed() -> None:
+    """⛔ Deliberately absent. Do not restore it without a capture that settles the position.
+
+    Word 21 bit 8 -- where every other family keeps fan speed -- reads a constant 6 here. Word 26
+    bit 9 was adopted on three captures taken in stated states and retired by a fourth: on a unit
+    running in cool it read 0 while the appliance's own cloud record said 1, from a document that
+    agreed with 53 other attributes and disagreed with none.
+
+    The inserted block is this cabinet's PER-TOWER vane and fan, so word 26 carries one tower's
+    speed -- zero when that tower is idle -- and the appliance's windSpeed is the setting as a
+    whole. Publishing one as the other shows a wrong number whenever they differ and nothing when
+    the tower is still, which an automation can act on.
+
+    What would settle it: two captures from one appliance at DIFFERENT stated fan speeds, each with
+    its cloud-reported windSpeed beside it. Two at the same speed leave sixteen candidate positions.
+    """
+    from haismart_hrdp.wire_models import EXTENDED46
+
+    assert "wind_speed" not in EXTENDED46.fields
+    # ...and it was never writable there either, so no control is lost, only a wrong reading
+    assert "windSpeed" not in EXTENDED46.write_fields

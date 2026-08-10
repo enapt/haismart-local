@@ -862,14 +862,22 @@ EXTENDED46 = WireModel(
         # block's own per-tower controls, and no bundled model has dual airflow. Both were
         # established from captures taken in stated states.
         "swing_vertical": WireField(25, 0, 4, kind="vane_v"),
-        # Fan speed does NOT sit where every other family puts it. Word 21 bit 8 — the classic
-        # position — reads 6 in every capture from this family, and 6 is not a code its own model
-        # lists, so that field is something else here. It answers instead at word 26 bit 9, inside
-        # the inserted block, alongside the vane at word 25: three captures taken in stated states
-        # read 3 (stated low), 1 (stated high) and 0 with the unit off, which are that model's own
-        # codes for low and high. Read only — the settable word array runs 20..24, so this word is
-        # outside anything control can reach on this family.
-        "wind_speed": WireField(26, 9, 3, kind="enum", enum=_EXT36_FAN),
+# ⛔ Fan speed is NOT published on this family, and this is the second time that has been
+        # decided. Word 21 bit 8 -- where every other family keeps it -- reads a constant 6. Word 26
+        # bit 9 was adopted later on three captures taken in stated states, and a fourth capture
+        # retired it: on a unit running in cool, that position read 0 while the appliance's own
+        # cloud record said the fan was 1. The same document agreed with 53 other attributes and
+        # disagreed with none, so it was not stale.
+        #
+        # The explanation is in what the inserted block IS: this cabinet's per-tower vane and fan.
+        # Word 26 carries a TOWER's speed, which is 0 when that tower is idle, while the appliance's
+        # windSpeed is the setting as a whole. Publishing one as the other shows the wrong number
+        # whenever they differ and nothing at all when the tower is still -- worse than showing
+        # neither, because an automation can read it.
+        #
+        # What would settle it: two captures from one appliance at DIFFERENT stated fan speeds,
+        # each with its cloud-reported windSpeed. Two captures at the same speed leave 16 candidate
+        # positions, which is how few one value can eliminate.
         # Cumulative energy in watt-hours, 32 bits whose low half sits at word 45 and high half at
         # word 44 -- the published map states this register one word past the indoor temperature,
         # and both anchors land ten words later on this family, which puts it exactly here.

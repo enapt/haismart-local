@@ -6,7 +6,7 @@ Layers
 
      [0:4]   info_code BE32 = 0xEA60 + info_type   (hello=0, hello_resp=1, hello_done=2, done_resp=3)
      [4:6]   payload_len + 0x0a (BE16)
-     [6]     type byte   (pro_ver 2 -> 0x01, pro_ver 3 -> 0x6E)
+     [6]     protocol version (pro_ver 2 -> 0x01, pro_ver 3 -> 0x6E)
      [7]     flag        (0 plaintext / 1 encrypted biz-data)
      [8:12]  sn BE32     (client counter from 1; the AC echoes it)
      [12:14] code2 BE16  (0 for hello)
@@ -57,7 +57,23 @@ INFO_HELLO_RESP = 1
 INFO_HELLO_DONE = 2
 INFO_HELLO_DONE_RESP = 3
 
-TYPE_BYTE = {2: 0x01, 3: 0x6E}  # pro_ver -> header type byte
+TYPE_BYTE = {2: 0x01, 3: 0x6E}  # pro_ver -> header byte 6
+
+
+def negotiated_type_byte(resp: Message, *, requested: int = TYPE_BYTE[2]) -> int:
+    """The header version byte to speak for the rest of the session: the appliance's own.
+
+    Header byte 6 is the uSS protocol version, and the appliance's reader compares it against the
+    version it is running. On a mismatch it DISCARDS the packet -- no reply, no error, nothing to
+    observe from this side. Opening with a fixed value therefore risks a session that handshakes
+    perfectly and then swallows every command, which is the hardest kind of fault to diagnose and
+    exactly the shape of one already seen (see the flag note below).
+
+    Every appliance measured answers ``0x01``, which is what was always sent, so this changes
+    nothing observed and removes an assumption. A reply of ``0`` is treated as no answer and leaves
+    ``requested`` in place: a value known to work beats a value known to be empty.
+    """
+    return resp.type_byte or requested
 
 
 # --- key derivation -----------------------------------------------------------
@@ -239,7 +255,9 @@ def probe_handshake_reply(
         s.sendall(hello_message(device_id, sn=1, pro_ver=pro_ver))
         resp = _recv_message(s)
         version = check_hello_resp(resp).localkey_version
-        s.sendall(hello_done_message(sn=2, session=resp.session, pro_ver=pro_ver))
+        s.sendall(encode_message(INFO_HELLO_DONE, 2, b"",
+                                 type_byte=negotiated_type_byte(resp, requested=TYPE_BYTE[pro_ver]),
+                                 session=resp.session))
         done = _recv_message(s)
         if done.info_type != INFO_HELLO_DONE_RESP:
             raise RuntimeError(f"expected HELLO_DONE_RESP, got {done.info_code:#x}")
@@ -1369,7 +1387,9 @@ def read_status(ip: str, device_id: str, local_key: str, *,
         s.sendall(hello_message(device_id, sn=1, pro_ver=pro_ver))
         resp = _recv_message(s)
         check_hello_resp(resp)
-        s.sendall(hello_done_message(sn=2, session=resp.session, pro_ver=pro_ver))
+        s.sendall(encode_message(INFO_HELLO_DONE, 2, b"",
+                                 type_byte=negotiated_type_byte(resp, requested=TYPE_BYTE[pro_ver]),
+                                 session=resp.session))
         buf = b""
         deadline = time.monotonic() + timeout
         while len(buf) < 8192 and time.monotonic() < deadline:
@@ -1423,7 +1443,8 @@ async def async_read_status(ip: str, device_id: str, local_key: str, *,
             rbuf += chunk
         resp = decode_message(rbuf)
         check_hello_resp(resp, expect_localkey_version)
-        writer.write(hello_done_message(sn=2, session=resp.session, pro_ver=pro_ver))
+        speak = negotiated_type_byte(resp, requested=TYPE_BYTE[pro_ver])
+        writer.write(encode_message(INFO_HELLO_DONE, 2, b"", type_byte=speak, session=resp.session))
         await writer.drain()
         buf = b""
         deadline = time.monotonic() + timeout
@@ -1459,7 +1480,7 @@ async def async_read_status(ip: str, device_id: str, local_key: str, *,
                     envelope = build_cae_op_request(extra_request, device_id, 1)
                     writer.write(encode_message(
                         0x64, 0, biz_encrypt(int.from_bytes(seq_base, "big"), envelope, local_key),
-                        type_byte=TYPE_BYTE[pro_ver], flag=FLAG_BIZ_ENCRYPTED, session=resp.session))
+                        type_byte=speak, flag=FLAG_BIZ_ENCRYPTED, session=resp.session))
                     await writer.drain()
                     sent_extra = True
                     deadline = time.monotonic() + timeout
@@ -1647,7 +1668,8 @@ async def async_send_op(ip: str, device_id: str, local_key: str, epp_frame: byte
             rbuf += chunk
         resp = decode_message(rbuf)
         check_hello_resp(resp, expect_localkey_version)
-        writer.write(hello_done_message(sn=2, session=resp.session, pro_ver=pro_ver))
+        speak = negotiated_type_byte(resp, requested=TYPE_BYTE[pro_ver])
+        writer.write(encode_message(INFO_HELLO_DONE, 2, b"", type_byte=speak, session=resp.session))
         await writer.drain()
         # The AC only accepts an op once the session is fully established — i.e. AFTER it sends
         # HELLO_DONE_RESP (confirmed by the app's real choreography: it waits for HELLO_DONE_RESP before
@@ -1682,7 +1704,7 @@ async def async_send_op(ip: str, device_id: str, local_key: str, epp_frame: byte
             raise RuntimeError("async_send_op: neither epp_frame nor build_frame produced a frame")
         envelope = build_cae_op_request(epp_frame, device_id, counter)
         ciphertext = biz_encrypt(biz_sn, envelope, local_key)
-        writer.write(encode_message(info_type, uss_sn, ciphertext, type_byte=TYPE_BYTE[pro_ver],
+        writer.write(encode_message(info_type, uss_sn, ciphertext, type_byte=speak,
                                     flag=FLAG_BIZ_ENCRYPTED, session=resp.session))
         await writer.drain()
         if collect:

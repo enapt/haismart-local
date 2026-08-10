@@ -2309,3 +2309,29 @@ def test_the_status_refusal_still_outranks_the_version_check():
         uss.INFO_HELLO_RESP, 0xEA61, 1, 0, 1, 0x1234, struct.pack(">II", 0, 133))
     with pytest.raises(RuntimeError, match="rejected the handshake"):
         check_hello_resp(refused, 45)
+
+
+def test_the_session_speaks_the_version_the_appliance_answered_with():
+    """Header byte 6 is the protocol version, and a mismatch is discarded SILENTLY by the appliance.
+
+    Its reader compares the byte against the version it runs and drops the packet with no reply, so
+    a session can handshake perfectly and then swallow every command -- the same failure shape as
+    the flag bug, and just as invisible. Speak back what the appliance just said.
+    """
+    from haismart_hrdp.uss import (
+        INFO_HELLO_RESP,
+        TYPE_BYTE,
+        decode_message,
+        encode_message,
+        negotiated_type_byte,
+    )
+
+    for answered in (TYPE_BYTE[2], TYPE_BYTE[3]):
+        resp = decode_message(encode_message(INFO_HELLO_RESP, 1, b"\x00" * 8,
+                                             type_byte=answered, session=0x4636))
+        assert negotiated_type_byte(resp, requested=TYPE_BYTE[2]) == answered
+
+    # a reply carrying no version is no answer at all -- keep the value known to work rather than
+    # sending a zero no appliance has ever been observed to accept
+    silent = decode_message(encode_message(INFO_HELLO_RESP, 1, b"\x00" * 8, type_byte=0))
+    assert negotiated_type_byte(silent, requested=TYPE_BYTE[2]) == TYPE_BYTE[2]

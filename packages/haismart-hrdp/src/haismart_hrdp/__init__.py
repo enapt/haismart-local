@@ -77,6 +77,7 @@ from .uss import (
     GRSETDAC_MODEL_AUTHORIZED,
     STATUS_LAYOUTS,
     HelloResp,
+    LocalKeyRotated,
     Message,
     StatusContainer,
     StatusLayout,
@@ -133,6 +134,7 @@ from .wire_models import (
 __version__ = "0.1.0"
 
 __all__ = [
+    "LocalKeyRotated",
     # READ
     "read_status",
     "async_read_status",

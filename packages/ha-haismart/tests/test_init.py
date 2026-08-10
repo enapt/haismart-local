@@ -3742,3 +3742,58 @@ async def test_diagnostics_say_whether_the_telemetry_query_is_answered(
     diag = await async_get_config_entry_diagnostics(hass, entry)
     assert diag["extended_status"]["supported"] is False
     assert diag["extended_status"]["consecutive_misses"] == 3
+
+
+async def test_a_rotated_key_re_keys_and_retries_instead_of_blaming_the_setting(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The one failure this integration can fix by itself, so it should — silently and once.
+
+    The appliance states its key version in the handshake and encrypts everything after with it. A
+    rotation used to be discovered a step later, as noise, and reported as "does not accept that
+    setting" for a command the appliance never received.
+    """
+    from unittest.mock import AsyncMock, patch
+
+    from haismart_hrdp import LocalKeyRotated
+
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data
+    calls = []
+
+    async def send(*a, **kw):
+        calls.append(kw.get("expect_localkey_version"))
+        if len(calls) == 1:
+            raise LocalKeyRotated(99, 4)
+        return [b""]
+
+    with patch("custom_components.haismart.coordinator.async_send_op", new=AsyncMock(
+        side_effect=send)), patch.object(
+            type(coordinator), "_async_gateway_refresh", new=AsyncMock(return_value=True)):
+        await coordinator.async_send_control({"onOffStatus": 1})
+
+    assert len(calls) == 2, "it must re-key and try again, exactly once"
+    assert calls[0] is not None, "the held version has to be handed over, or nothing can detect it"
+
+
+async def test_a_rotation_with_no_way_to_re_key_says_so_and_raises_the_repair(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """No account, no self-heal — so it must name the key, not the setting, and offer the repair."""
+    from unittest.mock import AsyncMock, patch
+
+    from haismart_hrdp import LocalKeyRotated
+    from homeassistant.exceptions import HomeAssistantError
+
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data
+
+    with patch("custom_components.haismart.coordinator.async_send_op", new=AsyncMock(
+        side_effect=LocalKeyRotated(99, 4))), patch.object(
+            type(coordinator), "_async_gateway_refresh", new=AsyncMock(return_value=False)):
+        with pytest.raises(HomeAssistantError) as caught:
+            await coordinator.async_send_control({"onOffStatus": 1})
+
+    # "could not send", never "does not accept that setting"
+    assert caught.value.translation_key == "control_failed"
+    assert "rotated" in str(caught.value.translation_placeholders["error"])

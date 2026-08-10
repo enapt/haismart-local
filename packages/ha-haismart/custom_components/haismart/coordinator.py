@@ -43,6 +43,7 @@ from haismart_hrdp import (
     VANE_V_EPP_TO_MODEL,
     VANE_V_MODEL_TO_EPP,
     AttributeProfile,
+    LocalKeyRotated,
     WireModel,
     alarm_names,
     async_read_status,
@@ -1093,9 +1094,49 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 reply = await async_send_op(
                     self.host, self.device_id, self._local_key,
                     build_frame=_build, counter=1, timeout=WRITE_TIMEOUT,
+                    # The appliance states its current key version in the handshake, and
+                    # everything after that -- the handshake reply included -- is encrypted with
+                    # it. Handing over the version we hold makes a rotation say so, instead of
+                    # being discovered as noise one step later and reported as a refused setting.
+                    expect_localkey_version=self.localkey_version or None,
                 )
         except HomeAssistantError:
             raise
+        except LocalKeyRotated as err:
+            # Not a rejected setting and not a broken network: the key changed under us, which is
+            # the one failure this integration can fix by itself. Re-key and send again, rather
+            # than telling somebody their appliance would not accept something it never saw.
+            _LOGGER.info("%s while sending; re-keying and retrying once", err)
+            if await self._async_gateway_refresh():
+                try:
+                    async with self._session:
+                        reply = await async_send_op(
+                            self.host, self.device_id, self._local_key,
+                            build_frame=_build, counter=1, timeout=WRITE_TIMEOUT,
+                            expect_localkey_version=self.localkey_version or None,
+                        )
+                except (OSError, RuntimeError, TimeoutError, ValueError, KeyError) as again:
+                    # Once, and only once. A second failure is not worth another key: it would
+                    # loop against an appliance rotating faster than we can follow, and an
+                    # exception raised from inside an `except` block escapes the clauses below --
+                    # so it would leave this method by a route with no message for the owner.
+                    raise HomeAssistantError(
+                        translation_domain=DOMAIN,
+                        translation_key="control_failed",
+                        translation_placeholders={
+                            "name": self.config_entry.title,
+                            "error": f"{again} (after re-keying following {err})",
+                        },
+                    ) from again
+            else:
+                self._raise_stale_localkey_issue(err.held_version, err.device_version)
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="control_failed",
+                    translation_placeholders={
+                        "name": self.config_entry.title, "error": str(err),
+                    },
+                ) from err
         except (ValueError, KeyError) as err:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,

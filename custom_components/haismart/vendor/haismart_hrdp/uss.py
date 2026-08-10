@@ -162,7 +162,28 @@ class HelloResp:
     localkey_version: int   # the AC's CURRENT localKey version (payload[4:8])
 
 
-def check_hello_resp(msg: Message) -> HelloResp:
+class LocalKeyRotated(RuntimeError):
+    """The appliance is using a newer localKey than the one we hold.
+
+    Raised BEFORE anything is decrypted, which is the whole point. The appliance states its current
+    key version in its handshake reply, and everything after that reply -- the reply itself included
+    -- is encrypted with that key. Decrypting it with an older one yields noise, and noise fails a
+    structural check with a message about lengths, so a rotated key used to surface as
+    "does not accept that setting: bad rawlen" on a command the appliance never received.
+
+    The vendor's own client does exactly this comparison and fetches a fresh key when it fails.
+    """
+
+    def __init__(self, device_version: int, held_version: int) -> None:
+        super().__init__(
+            f"the appliance has rotated its local key to v{device_version} and this one is "
+            f"v{held_version}; a new key is needed before it will accept anything"
+        )
+        self.device_version = device_version
+        self.held_version = held_version
+
+
+def check_hello_resp(msg: Message, expect_localkey_version: int | None = None) -> HelloResp:
     """Validate a HELLO_RESP and return it, raising if the AC refused the session.
 
     ``status != 1`` means the AC answered but declined — the session is dead. Every call site used to
@@ -178,6 +199,16 @@ def check_hello_resp(msg: Message) -> HelloResp:
             f"AC rejected the handshake (status={resp.status}) - check the deviceId is this unit's "
             f"Wi-Fi MAC"
         )
+    # The version the appliance reports is the version everything after this point is encrypted
+    # with. Checking it here is what `probe_localkey_version` has always said to do -- "compare
+    # this against the cached key's version ... BEFORE ever attempting to decrypt" -- and the op
+    # path was the one place that read the number and dropped it.
+    if (
+        expect_localkey_version is not None
+        and resp.localkey_version
+        and resp.localkey_version != expect_localkey_version
+    ):
+        raise LocalKeyRotated(resp.localkey_version, expect_localkey_version)
     return resp
 
 
@@ -1338,7 +1369,9 @@ def read_status(ip: str, device_id: str, local_key: str, *,
 
 async def async_read_status(ip: str, device_id: str, local_key: str, *,
                             pro_ver: int = 2, timeout: float = 4.0,
-                            extra_request: bytes | None = None) -> list[bytes]:
+                            extra_request: bytes | None = None,
+    expect_localkey_version: int | None = None,
+) -> list[bytes]:
     """Async READ-ONLY handshake + status collect (for the HA coordinator).
 
     ``extra_request`` optionally sends ONE additional read-only query inside the same session, after
@@ -1359,7 +1392,7 @@ async def async_read_status(ip: str, device_id: str, local_key: str, *,
                 raise RuntimeError("connection closed before a complete reply")
             rbuf += chunk
         resp = decode_message(rbuf)
-        check_hello_resp(resp)
+        check_hello_resp(resp, expect_localkey_version)
         writer.write(hello_done_message(sn=2, session=resp.session, pro_ver=pro_ver))
         await writer.drain()
         buf = b""
@@ -1553,7 +1586,9 @@ async def async_send_op(ip: str, device_id: str, local_key: str, epp_frame: byte
                         counter: int, biz_sn: int | None = None, uss_sn: int = 0,
                         info_type: int = 0x64, pro_ver: int = 2, timeout: float = 4.0,
                         collect: bool = True,
-                        build_frame: Callable[[bytes | None], bytes] | None = None) -> list[bytes]:
+                        build_frame: Callable[[bytes | None], bytes] | None = None,
+    expect_localkey_version: int | None = None,
+) -> list[bytes]:
     """Handshake, then send ONE encrypted op (e.g. a grSetDAC control frame) and collect the AC's reply
     reports. **This WRITES to the AC** — only call it for a user-authorized control action.
 
@@ -1581,7 +1616,7 @@ async def async_send_op(ip: str, device_id: str, local_key: str, epp_frame: byte
                 raise RuntimeError("connection closed before a complete reply")
             rbuf += chunk
         resp = decode_message(rbuf)
-        check_hello_resp(resp)
+        check_hello_resp(resp, expect_localkey_version)
         writer.write(hello_done_message(sn=2, session=resp.session, pro_ver=pro_ver))
         await writer.drain()
         # The AC only accepts an op once the session is fully established — i.e. AFTER it sends

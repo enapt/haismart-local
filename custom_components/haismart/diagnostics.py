@@ -1,6 +1,7 @@
 """Diagnostics: a redacted snapshot for bug reports."""
 from __future__ import annotations
 
+import logging
 from functools import partial
 from typing import Any
 
@@ -10,6 +11,7 @@ from haismart_hrdp import (
     derive_status_layout,
     device_type_class,
     probe_layout,
+    probe_localkey_version,
     rules_for_product,
     select_wire_model,
 )
@@ -29,8 +31,11 @@ from .const import (
     CONF_REFRESH_TOKEN,
     DEFAULT_PRODUCT_CODE,
     EXTENDED_MISSES,
+    READ_TIMEOUT,
 )
 from .coordinator import HaismartConfigEntry
+
+_LOGGER = logging.getLogger(__name__)
 
 # Diagnostics is the artefact users are told to attach to GitHub issues, so this list has to cover
 # EVERY credential in `entry.data`. It once redacted only the localKey and the deviceId while
@@ -51,6 +56,24 @@ TO_REDACT = {
 }
 
 
+async def _async_reported_key_version(hass: HomeAssistant, coordinator) -> int | None:
+    """The key version the appliance says it is on, asked directly. ``None`` if it did not answer.
+
+    Key-free: the version is in the handshake reply, before anything is encrypted, so this works
+    even when the stored key is useless -- which is exactly when it is worth knowing.
+    """
+    host = coordinator.host
+    if not host:
+        return None
+    try:
+        return await hass.async_add_executor_job(
+            partial(probe_localkey_version, host, coordinator.device_id, timeout=READ_TIMEOUT)
+        )
+    except Exception as err:  # noqa: BLE001 - diagnostics must never fail to download
+        _LOGGER.debug("could not ask %s for its key version: %s", host, err)
+        return None
+
+
 async def async_get_config_entry_diagnostics(
     hass: HomeAssistant, entry: HaismartConfigEntry
 ) -> dict[str, Any]:
@@ -60,7 +83,14 @@ async def async_get_config_entry_diagnostics(
     return {
         "entry": async_redact_data(dict(entry.data), TO_REDACT),
         "options": dict(entry.options),
+        # ⚠️ Two numbers, and the pair is the point. This one is the version of the key this entry
+        # HOLDS; `localkey_version_reported` below is the version the appliance says it is using
+        # right now. Everything the appliance sends is encrypted with the latter, so if they differ
+        # the key is stale and nothing will decrypt -- a state that otherwise presents as a refused
+        # command, an empty reading, or a protocol bug, depending on which path hits it first.
+        # Reporting only the stored one made a bug report unable to answer its own first question.
         "localkey_version": coordinator.localkey_version,
+        "localkey_version_reported": await _async_reported_key_version(hass, coordinator),
         "last_update_success": coordinator.last_update_success,
         "state": coordinator.data,
         # raw report bytes (post-decrypt) — carries no secrets, invaluable for offset bugs

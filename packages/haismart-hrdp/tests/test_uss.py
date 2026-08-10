@@ -2251,3 +2251,48 @@ def test_the_handshake_reply_is_decrypted_even_though_its_flag_says_otherwise():
     body = uss.biz_encrypt(0, (912).to_bytes(4, "big"), LOCALKEY)
     unflagged = Message(uss.INFO_HELLO_DONE_RESP, 0, 1, 0, 0, 0, body)
     assert session_sequence_base(unflagged, LOCALKEY) == 912
+
+
+def test_a_rotated_key_is_named_before_anything_is_decrypted():
+    """The appliance states its key version in the handshake; everything after is encrypted with it.
+
+    Checking afterwards is too late: decrypting with an older key yields noise, and noise fails a
+    structural length check, so a rotated key surfaced as "does not accept that setting: bad rawlen"
+    on a command the appliance never received. `probe_localkey_version` has always documented the
+    rule -- compare "BEFORE ever attempting to decrypt" -- and the op path read the number and
+    dropped it.
+    """
+    import struct
+
+    from haismart_hrdp.uss import LocalKeyRotated, Message, check_hello_resp
+
+    reply = Message(uss.INFO_HELLO_RESP, 0xEA61, 1, 0, 1, 0x1234, struct.pack(">II", 1, 133))
+    assert check_hello_resp(reply, 133).localkey_version == 133
+
+    with pytest.raises(LocalKeyRotated) as caught:
+        check_hello_resp(reply, 45)
+    assert caught.value.device_version == 133 and caught.value.held_version == 45
+
+    # ⚠️ It must stay a RuntimeError subclass. The layer above maps ValueError to "does not accept
+    # that setting"; a key problem reported that way is what sent this whole investigation to the
+    # wrong layer in the first place.
+    assert isinstance(caught.value, RuntimeError)
+    assert not isinstance(caught.value, ValueError)
+
+    # No expectation supplied -> unchanged behaviour, so every existing caller is unaffected
+    assert check_hello_resp(reply).localkey_version == 133
+    # ...and an appliance that reports no version at all is not accused of rotating
+    silent = Message(uss.INFO_HELLO_RESP, 0xEA61, 1, 0, 1, 0x1234, struct.pack(">II", 1, 0))
+    assert check_hello_resp(silent, 45).localkey_version == 0
+
+
+def test_the_status_refusal_still_outranks_the_version_check():
+    """An appliance that declined the session is not a key problem, and says so first."""
+    import struct
+
+    from haismart_hrdp.uss import check_hello_resp
+
+    refused = uss.Message(
+        uss.INFO_HELLO_RESP, 0xEA61, 1, 0, 1, 0x1234, struct.pack(">II", 0, 133))
+    with pytest.raises(RuntimeError, match="rejected the handshake"):
+        check_hello_resp(refused, 45)

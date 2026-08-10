@@ -1515,40 +1515,31 @@ async def _read_pushed_status(reader, leftover: bytes, local_key: str, timeout: 
 
 def session_sequence_base(done: Message, local_key: str) -> int:
     """The op sequence base the AC assigns in HELLO_DONE_RESP. The op MUST use it as ``biz_sn``, or
-    the appliance drops the connection.
+    the appliance ignores the command.
 
-    The body is the base as a big-endian 32-bit number. On every appliance seen so far the reply is
-    biz-encrypted and says so in its flag, so the flag is what decides whether to decrypt rather
-    than an assumption that it always is -- decrypting something that was never encrypted yields
-    noise, and noise here reads as a rejected setting.
+    ⚠️ **The payload is biz-encrypted even though the header flag says it is not.** Real appliances
+    send this message with ``flag=0`` and an encrypted 53-byte body; the flag is simply not set on
+    it. Deciding whether to decrypt by reading the flag -- which sounds obviously right, and which
+    every other message on this connection does honour -- takes four bytes of ciphertext as the
+    sequence number instead. The appliance then discards the command **silently**: no error, no
+    reply, the setting simply never changes. Shipped once, caught on hardware within the hour, and
+    the reason this decrypts unconditionally.
 
-    ⚠️ Raises ``RuntimeError``, deliberately not ``ValueError``. The distinction is load-bearing at
-    the layer above: a ``ValueError`` means the encoder refused a value and is reported to the owner
-    as "does not accept that setting", which was said to somebody whose appliance never received
-    the setting at all. The handshake failing is a session problem, and it has to read as one.
+    ⚠️ Raises ``RuntimeError``, deliberately not ``ValueError``. The layer above maps ``ValueError``
+    to "does not accept that setting", which was said to somebody whose appliance never received
+    the setting. A handshake that cannot be read is a session problem and has to read as one.
     """
-    body = done.payload
-    if done.flag == FLAG_BIZ_ENCRYPTED:
-        try:
-            _, body = biz_decrypt(done.payload, local_key)
-        except ValueError as err:
-            _LOGGER.debug(
-                "HELLO_DONE_RESP would not decrypt (flag=%d, %d bytes): %s -- first bytes %s",
-                done.flag, len(done.payload), err, done.payload[:48].hex(),
-            )
-            raise RuntimeError(
-                f"the appliance's handshake reply could not be read ({err}), so the command was "
-                "never sent"
-            ) from err
-    elif len(body) >= 4:
-        # Not marked encrypted. Nothing here has been seen to do this, so the reading is the
-        # obvious one -- the same body the encrypted form carries -- and it is logged, because if
-        # it is wrong the appliance simply drops the connection and the log is what says why.
+    try:
+        _, body = biz_decrypt(done.payload, local_key)
+    except ValueError as err:
         _LOGGER.debug(
-            "HELLO_DONE_RESP is not marked encrypted (flag=%d, %d bytes); reading the sequence "
-            "base from it directly -- first bytes %s",
-            done.flag, len(body), body[:16].hex(),
+            "HELLO_DONE_RESP would not decrypt (flag=%d, %d bytes): %s -- first bytes %s",
+            done.flag, len(done.payload), err, done.payload[:48].hex(),
         )
+        raise RuntimeError(
+            f"the appliance's handshake reply could not be read ({err}), so the command was "
+            "never sent"
+        ) from err
     if len(body) < 4:
         _LOGGER.debug("HELLO_DONE_RESP body is %d bytes, too short for a sequence base", len(body))
         raise RuntimeError(

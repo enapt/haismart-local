@@ -2238,13 +2238,16 @@ def test_a_handshake_that_cannot_be_read_is_not_reported_as_a_rejected_setting()
         session_sequence_base(empty, LOCALKEY)
 
 
-def test_a_handshake_reply_that_is_not_marked_encrypted_is_not_decrypted():
-    """Decrypting something that was never encrypted yields noise, and noise reads as a refusal.
+def test_the_handshake_reply_is_decrypted_even_though_its_flag_says_otherwise():
+    """⚠️ Real appliances send HELLO_DONE_RESP with flag=0 and an ENCRYPTED body. Do not "fix" this.
 
-    The flag is the protocol's own statement about the payload, so it decides. Every appliance seen
-    so far sets it, which is why this costs nothing and why it had never been noticed.
+    Honouring the flag here -- which every other message on the connection does deserve -- takes
+    four bytes of ciphertext as the session sequence number. The appliance then discards the command
+    **silently**: no error, no reply, the setting never changes and nothing in the log says why.
+    That shipped once and was caught on hardware within the hour.
     """
     from haismart_hrdp.uss import Message, session_sequence_base
 
-    plain = Message(uss.INFO_HELLO_DONE_RESP, 0, 1, 0, 0, 0, (912).to_bytes(4, "big"))
-    assert session_sequence_base(plain, LOCALKEY) == 912
+    body = uss.biz_encrypt(0, (912).to_bytes(4, "big"), LOCALKEY)
+    unflagged = Message(uss.INFO_HELLO_DONE_RESP, 0, 1, 0, 0, 0, body)
+    assert session_sequence_base(unflagged, LOCALKEY) == 912

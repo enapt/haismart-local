@@ -1126,6 +1126,11 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 reply = await async_send_op(
                     self.host, self.device_id, self._local_key,
                     build_frame=_build, counter=1, timeout=WRITE_TIMEOUT,
+                    # So the appliance's own post-handshake push is recognised as this family's
+                    # status report and seeds the group-set. Without it only the classic lengths
+                    # are, and every other family quietly falls back to the cached blob -- the
+                    # stale baseline this single-session read-modify-write exists to avoid.
+                    uplus_id=self.uplus_id,
                     # The appliance states its current key version in the handshake, and
                     # everything after that -- the handshake reply included -- is encrypted with
                     # it. Handing over the version we hold makes a rotation say so, instead of
@@ -1145,6 +1150,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         reply = await async_send_op(
                             self.host, self.device_id, self._local_key,
                             build_frame=_build, counter=1, timeout=WRITE_TIMEOUT,
+                            uplus_id=self.uplus_id,
                             expect_localkey_version=self.localkey_version or None,
                         )
                 except (OSError, RuntimeError, TimeoutError, ValueError, KeyError) as again:

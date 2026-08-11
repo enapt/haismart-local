@@ -193,16 +193,23 @@ carry directly:
   already caught departing from the published map in three places, and the counter's position is
   itself derived from the inserted block, so inheriting an unverified unit into someone's energy
   history is not warranted. One reading off that owner's app against a capture settles it;
-- **fan speed answers at word 26 bit 9**, inside the inserted block and beside the vane at word 25 —
-  not at word 21 bit 8, where every other family keeps it and where these units read a constant 6
-  that their own model does not define. The three captures were taken in stated states, and word 26
-  reads that model's codes for exactly those: low in the capture set to low, high in the one set to
-  high, nothing with the unit off.
+- ⛔ **fan speed is not placed at all**, and this has now been decided twice. Word 21 bit 8, where
+  every other family keeps it, reads a constant 6 that these units' own model does not define. Word
+  26 bit 9 was adopted on three captures taken in stated states and **retired by a fourth**: on a
+  unit running in cool it read 0 while the manufacturer's own record of the same appliance said the
+  fan was 1 — and that record agreed with 53 other attributes and disagreed with none, so it was
+  not stale. The explanation is what the inserted block *is*: word 26 carries a **tower's** speed,
+  which is 0 while that tower is idle, where `windSpeed` is the setting as a whole. Publishing one
+  as the other shows the wrong number whenever they differ and nothing at all when the tower is
+  still — worse than showing neither, because an automation can read it.
 
-Fan speed is **read only** here. The settable word array runs 20..24, so word 26 is outside anything
-the group-set can reach on this family; a longer array may exist but nothing has shown one. The
-swings are still unsettled in both directions, so the encoder refuses them rather than writing to a
-guessed word.
+So this family reads **no** fan speed and writes neither it nor either vane. The settable word array
+runs 20..24: the vane *reads* at word 25, inside the inserted block, so the group-set's word 20 —
+where the other families keep their vane — is not where this family keeps its, and word 26 is
+outside anything the array can reach. The encoder refuses all three rather than write to a guessed
+word, and the climate entity **does not advertise the controls either**: the four-way
+swing moves both vanes in one group-set and could only ever raise here, and the fan dropdown had
+nothing to select. What would settle each is item 28 in `FUTURE_WORK.md`.
 
 ### 133 B — documented, not shipped
 

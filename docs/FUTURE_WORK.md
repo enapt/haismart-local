@@ -283,6 +283,40 @@ than failing. A single-parameter write cannot do that. The family deserves a saf
 from its own mechanics — probably narrower than the current allowlist, and certainly not the same
 rule copied across without examination.
 
+## 28. Fan speed and both vanes on the 209-byte family — the controls are withdrawn, not broken
+
+**Status: open. What it needs is captures, from one appliance, in stated states.**
+
+That family's group-set covers report words 20–24 and places neither the vanes nor the fan speed,
+which has been true and written down since the family was registered. What was not true was the
+climate entity, which offered both controls anyway: the four-way swing moves BOTH vanes in one
+group-set, so every press came back as
+
+> `'windDirectionVertical' is not a writable field on extended46`
+
+and the fan dropdown had nothing selected in it, because this family does not publish a speed to
+read either. A control whose field the family cannot place is a button that can only raise — the
+presets and the horizontal axis were already gated on exactly that and these two never were, so the
+gate now covers all four. **The controls disappear rather than fail.** Everything the family can
+write — setpoint, mode, on/off, and the five secondary toggles — is untouched.
+
+Why each is unplaced, and what settles it:
+
+* **The vanes.** On the 165/175-byte family the up-down vane both reads and writes at report word
+  20. On this one it *reads* at word 25 — inside the ten-word block this cabinet inserts for its
+  per-tower vane and fan — so the group-set's word 20 is not where this family keeps its vane, and
+  writing there is a guess in a frame that applies a whole word block. **Settled by:** one report
+  per stop, taken with the vane parked at each, as the classic family's table was.
+* **The fan speed.** Word 21 bit 8, where every other family keeps it, reads a constant 6 that this
+  family's own model does not define. Word 26 bit 9 was adopted on three captures and retired by a
+  fourth: it read 0 while the manufacturer's own record said the fan was 1, because word 26 carries
+  a *tower's* speed and goes to zero when that tower is idle. **Settled by:** two captures from one
+  appliance at **different** stated fan speeds, each with its cloud-reported `windSpeed`. Two at the
+  same speed leave sixteen candidate positions.
+
+Neither is a gap in the published map — the map does not describe this cabinet's inserted block at
+all, which is why the two fields it does place there came from captures in the first place.
+
 # Settled
 
 Not open items. They are here because each looks like something to "fix" until you know why it is
@@ -957,3 +991,40 @@ Two things stay explicit, and both are the point rather than an exception:
 Also settled in passing: `CANONICAL_WIRE_MAP` flagged that `write_base_word=20` for this family was
 inherited and never verified on it. It is now, from the other end — the five toggles derived through
 that base agree bit for bit with the manufacturer's record of the same attributes.
+
+## 29. A decode that reads nothing came back as a successful decode — settled
+
+An appliance names its own family on the discovery channel, key-free, so a uPlusId match beats the
+report length when a wire model is selected. That is deliberate and it stays. What it also did was
+let a frame of **any** length be claimed by that family — and a frame too short to reach the
+family's fields read nothing, vetoed nothing, and came back as a decode carrying only its `layout`
+and `writable` markers.
+
+A truthy decode is a full status report everywhere downstream. So one short frame — an ack, a reply
+to a query the unit does not implement — replaced the cached report, and the next command seeded its
+group-set from 93 bytes and failed with
+
+> `report too short (93) for extended46 baseline`
+
+until a later poll happened to overwrite the cache. Reported from a live 209-byte unit, alongside
+item 28's swing error; the two arrived together and were one report of two unrelated faults.
+
+**This is Rule 13 in its plainest form** — a plausibility check on a value that was never read
+passes — and the striking part is that it had already been found and fixed *once*, for the
+related-layout path (item 23), where the wrong relative reads past the end of a shorter report and
+comes back empty. The guard was put in that caller. Every registered family went on without it for
+another release. **Where a lesson gets written down decides how far it reaches:** in the caller it
+protected one path, in `WireModel.decode` it protects all of them.
+
+`decode` now requires both anchors — the indoor reading and the setpoint — to have actually arrived,
+for any family that declares them. A test asserts the anchor requirement is the stricter of the two
+bounds, so anything that decodes at all carries a complete settable word block and can seed its own
+group-set.
+
+**Found in passing, and worth as much:** the in-session baseline gate was table-only. It recognised
+the classic lengths and nothing else, having been written before the wire-model registry existed —
+so on every other family the appliance's own post-handshake push was not recognised as a baseline
+and control **always** fell back to the caller's cached blob. That is the stale seed the
+single-session read-modify-write exists to avoid, and it is why one poisoned cache entry could keep
+breaking commands rather than being corrected by the next one. `is_control_baseline` now asks the
+registry, and `async_send_op` takes the uPlusId so it can.

@@ -148,6 +148,21 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
         # handed a field it cannot place.
         if coordinator.supports_field("windDirectionHorizontal"):
             self._attr_supported_features |= ClimateEntityFeature.SWING_HORIZONTAL_MODE
+        # ...and the same gate for the two controls that were never given one, which is how a
+        # 209-byte unit came to offer a swing control that could only ever answer
+        # "'windDirectionVertical' is not a writable field on extended46". The four-way swing moves
+        # BOTH vanes in one group-set, so it needs both fields, and extended-46 has neither; the
+        # fan dropdown needs windSpeed, which that family does not place either (its report does
+        # not even publish a speed, so the control sat there with nothing selected). A feature whose
+        # field the family cannot place is a button that can only raise -- the same reasoning the
+        # presets and the horizontal axis above are already gated by, applied to the rest.
+        for field, flag in (
+            ("windSpeed", ClimateEntityFeature.FAN_MODE),
+            ("windDirectionVertical", ClimateEntityFeature.SWING_MODE),
+            ("windDirectionHorizontal", ClimateEntityFeature.SWING_MODE),
+        ):
+            if not coordinator.supports_field(field):
+                self._attr_supported_features &= ~flag
 
     @property
     def extra_state_attributes(self) -> dict[str, str] | None:

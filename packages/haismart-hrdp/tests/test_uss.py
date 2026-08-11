@@ -1101,6 +1101,65 @@ def test_extended46_control_reuses_the_extended36_group_set():
             wm.encode_control(base, {unsupported: 1})
 
 
+EXT46_UPLUS_ID = "2008610800820324021200118017740000000000000000000000000000000040"
+
+
+def test_a_short_frame_is_not_this_family_however_it_names_itself():
+    """A frame too short to carry the family's readings must NOT decode as that family's status.
+
+    Reported from a live 209-byte unit: every command failed with `report too short (93) for
+    extended46 baseline`. A uPlusId match beats the length in `WireModel.matches`, deliberately --
+    the appliance names its own family on the discovery channel, key-free. So a 93-byte frame from
+    that appliance was claimed by extended-46, read nothing (every field lies past its end),
+    vetoed nothing (a plausibility check on a value that was never read passes), and came back as a
+    successful decode holding only the `layout`/`writable` markers. The coordinator takes any
+    truthy decode as the full status report, caches the blob, and seeds the next group-set from
+    it -- so one short frame broke control until a later poll happened to overwrite the cache.
+    """
+    short = STATUS_209_COOL[:93]
+    assert uss.select_wire_model(len(short), EXT46_UPLUS_ID).family == "extended46"
+    assert uss.parse_full_status(short, uplus_id=EXT46_UPLUS_ID) == {}
+
+    # It is length, not content: the same appliance's real report still decodes as it always did.
+    assert uss.parse_full_status(
+        STATUS_209_COOL, uplus_id=EXT46_UPLUS_ID
+    )["layout"] == "extended46"
+
+
+def test_a_non_classic_family_can_seed_its_own_group_set_from_the_live_push():
+    """The op connection's own status push must be usable as the group-set baseline here too.
+
+    The gate was written before the wire-model registry existed and only ever recognised the
+    classic lengths, so on every other family the in-session baseline came back as "nothing
+    arrived" and control fell through to the caller's CACHED blob -- the stale seed that
+    single-session read-modify-write exists to avoid, and the reason one bad cache entry could
+    keep breaking commands.
+    """
+    assert uss.is_control_baseline(STATUS_209_COOL, EXT46_UPLUS_ID)
+    assert uss.is_control_baseline(STATUS_209_COOL)          # by length alone, as the poll does
+    assert uss.is_control_baseline(REAL_STATUS_DOWN)         # the classic table still answers
+
+    # what it must still refuse: a short frame, and a family with no confirmed group-set
+    assert not uss.is_control_baseline(STATUS_209_COOL[:93], EXT46_UPLUS_ID)
+    assert not uss.is_control_baseline(b"\x00\x00\x27\x15")
+
+
+def test_a_decode_that_reads_nothing_is_never_a_decode():
+    """The general form, across every registered family: a report cut short of the readings a
+    thermostat is made of is refused, whatever its length says. Both anchors have to arrive --
+    which is also what guarantees a decoded report can seed its own family's group-set."""
+    from haismart_hrdp.wire_models import _ATTR_BASE, WIRE_MODELS
+
+    for wm in WIRE_MODELS:
+        anchors = (wm.fields[wm.indoor_key], wm.fields[wm.target_key])
+        need = max(_ATTR_BASE + 2 * f.word for f in anchors)
+        assert wm.decode(bytes(need - 1)) is None
+        if wm.writable:
+            # the anchor requirement is the stricter of the two, so anything that decodes has a
+            # complete settable word block to seed from
+            assert need >= _ATTR_BASE + 2 * (wm.write_base_word - 1) + 2 * wm.word_count
+
+
 def test_probe_layout_proposes_the_209_family_unaided():
     """The prober is what should keep an unknown report from needing hand analysis: given the three
     reports and the device's own attribute values, it proposes the right map without the family

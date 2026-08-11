@@ -102,6 +102,7 @@ from .uss import (
     grsetdac_op_frame,
     hello_done_message,
     hello_message,
+    is_control_baseline,
     localkey_aes_key,
     parse_alarm_frame,
     parse_extended_status,
@@ -154,6 +155,7 @@ __all__ = [
     "parse_full_status",
     "status_layout",
     "derive_status_layout",
+    "is_control_baseline",
     "StatusLayout",
     "STATUS_LAYOUTS",
     # per-family wire models (non-classic report layouts)

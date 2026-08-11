@@ -3897,3 +3897,104 @@ async def test_a_rotation_is_recognised_on_the_read_too_not_only_on_a_command(
     assert refresh.called, "the key must be re-fetched from the appliance's own statement"
     assert probe.await_count == 0, "no extra connection: the handshake already gave the version"
     assert seen[0] == 46, "the held version has to be handed down or nothing can notice"
+
+
+#: The uPlusId the 209-byte reporter's appliance announces for itself.
+EXT46_UPLUS_ID = "2008610800820324021200118017740000000000000000000000000000000040"
+
+
+async def test_a_family_that_cannot_move_its_vanes_does_not_offer_a_swing_control(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A control whose field the report family cannot place must not be advertised at all.
+
+    Reported from a live 209-byte unit: every press of the swing control came back with
+    "'windDirectionVertical' is not a writable field on extended46". The four-way swing moves BOTH
+    vanes in one group-set and that family places neither; the fan dropdown needs windSpeed, which
+    it does not place either (and does not report, so the dropdown had nothing selected in it).
+    The presets and the horizontal axis were already gated this way -- these two never were.
+    """
+    from conftest import make_extended46_frame
+    from homeassistant.components.climate import ClimateEntityFeature
+
+    frame = make_extended46_frame(mode_code=1)
+    mock_uss.read.return_value = [frame]
+    mock_uss.send.baseline = frame
+    await _setup_with_model(hass, _UNWRITABLE_CO_COMMAND_MODEL)
+
+    features = ClimateEntityFeature(
+        hass.states.get(CLIMATE).attributes["supported_features"]
+    )
+    assert not features & ClimateEntityFeature.SWING_MODE
+    assert not features & ClimateEntityFeature.FAN_MODE
+    # what the family CAN write is still offered, so this is a gate and not a retreat
+    assert features & ClimateEntityFeature.TARGET_TEMPERATURE
+    assert features & ClimateEntityFeature.TURN_ON
+
+
+async def test_the_classic_family_keeps_both_controls(hass: HomeAssistant, mock_uss) -> None:
+    """The same gate, on a family that places every field: nothing is taken away."""
+    from homeassistant.components.climate import ClimateEntityFeature
+
+    await _setup(hass)
+    features = ClimateEntityFeature(
+        hass.states.get(CLIMATE).attributes["supported_features"]
+    )
+    assert features & ClimateEntityFeature.SWING_MODE
+    assert features & ClimateEntityFeature.FAN_MODE
+
+
+async def test_a_short_frame_never_becomes_the_control_baseline(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A frame too short to be a status report must not be cached as one.
+
+    This is what broke control on the 209-byte unit that reported the swing error: the appliance
+    names its own family, a uPlusId match beats the length, and so a 93-byte frame was claimed by
+    extended-46, read nothing, and came back as a successful decode carrying only its layout
+    markers. Any truthy decode is taken here as the full status report, so it replaced the cached
+    blob -- and the next command seeded its group-set from 93 bytes and failed with "report too
+    short (93) for extended46 baseline" until a later poll happened to overwrite the cache.
+    """
+    import json as _json
+
+    import pytest
+    from conftest import make_extended46_frame
+    from homeassistant.helpers.update_coordinator import UpdateFailed
+
+    from custom_components.haismart.const import CONF_DIGITAL_MODEL, CONF_UPLUS_ID
+
+    frame = make_extended46_frame(mode_code=1)
+    mock_uss.read.return_value = [frame]
+    mock_uss.send.baseline = frame
+    # The uPlusId is the whole point: a match on it beats the length in `WireModel.matches`, which
+    # is deliberate -- the appliance names its own family on the discovery channel, key-free -- and
+    # it is what let a frame of ANY length be claimed by this family.
+    entry = _entry(**{
+        CONF_DIGITAL_MODEL: _json.dumps(_UNWRITABLE_CO_COMMAND_MODEL),
+        CONF_UPLUS_ID: EXT46_UPLUS_ID,
+    })
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    coordinator = entry.runtime_data
+    assert coordinator.last_raw_status == frame
+
+    # the appliance answers a command with its status echo AND something short; the echo is read
+    # newest-first, so the short frame is the one that used to win
+    short = frame[:93]
+    mock_uss.send.return_value = [frame, short]
+    await coordinator.async_send_control({"targetTemperature": 23 - 16})
+    assert coordinator.last_raw_status == frame
+
+    # and the command after it still works, which is the whole point
+    await coordinator.async_send_control({"targetTemperature": 24 - 16})
+    assert coordinator.data["target_temperature"] == 22.0   # from the echo, not the short frame
+
+    # a cycle that yields ONLY the short frame is a failed cycle, not a decoded one (the poll
+    # itself then holds the previous reading, which is the intended answer to a dropped packet --
+    # what must not happen is the short frame being adopted as the state and the seed)
+    mock_uss.read.return_value = [short]
+    with pytest.raises(UpdateFailed, match="no decodable status"):
+        await coordinator._async_read_cycle()
+    assert coordinator.last_raw_status == frame

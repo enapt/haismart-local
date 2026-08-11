@@ -1581,7 +1581,27 @@ def _field_from_words(words: bytes, name: str) -> int:
     return (word >> shift) & ((1 << width) - 1)
 
 
-async def _read_pushed_status(reader, leftover: bytes, local_key: str, timeout: float) -> bytes | None:
+def is_control_baseline(blob: bytes, uplus_id: str | None = None) -> bool:
+    """Whether ``blob`` is a full-status report whose control-word block can seed a group-set.
+
+    The classic family answers from the confirmed :data:`STATUS_LAYOUTS` table. Every other family
+    answers from its own wire model, which is the part this used to miss: the gate was written
+    before the registry existed and stayed table-only, so a 209-byte report was not recognised as a
+    seed and control on those families ALWAYS fell back to the caller's cached blob -- the stale
+    baseline the single-session read-modify-write exists to avoid. A wire model's ``decode``
+    returning a value is the same guarantee the table gives: it only does so when the family's own
+    readings are actually present, so the word block is whole.
+
+    ``writable`` is required as well, since a family with no confirmed group-set has nothing to seed.
+    """
+    if status_layout(blob) is not None:
+        return True
+    wm = select_wire_model(len(blob), uplus_id)
+    return wm is not None and wm.writable and wm.decode(blob) is not None
+
+
+async def _read_pushed_status(reader, leftover: bytes, local_key: str, timeout: float,
+                              uplus_id: str | None = None) -> bytes | None:
     """Return the AC's post-handshake status push (a full-status blob) to seed a control op from, or
     ``None`` if none arrives in time. ``leftover`` is any bytes already read past HELLO_DONE_RESP. Waits
     up to ``timeout`` for the first bytes, then only a short idle window; returns on the first decodable
@@ -1596,10 +1616,10 @@ async def _read_pushed_status(reader, leftover: bytes, local_key: str, timeout: 
                     blob = biz_decrypt(m.payload, local_key)[1]
                 except ValueError:
                     continue
-                # A full-status report, i.e. a blob whose length maps to a known StatusLayout — so the
-                # grSetDAC baseline is a complete word block. A blob of any other size (e.g. a small ack
-                # that happens to decrypt) must not seed a truncated/malformed op frame.
-                if status_layout(blob) is not None:
+                # A full-status report of a family with a confirmed word block — so the group-set
+                # baseline is complete. A blob of any other size (e.g. a small ack that happens to
+                # decrypt) must not seed a truncated/malformed op frame.
+                if is_control_baseline(blob, uplus_id):
                     return blob
         read_to = timeout if first else min(timeout, _COLLECT_IDLE)
         try:
@@ -1655,6 +1675,7 @@ async def async_send_op(ip: str, device_id: str, local_key: str, epp_frame: byte
                         collect: bool = True,
                         build_frame: Callable[[bytes | None], bytes] | None = None,
     expect_localkey_version: int | None = None,
+    uplus_id: str | None = None,
 ) -> list[bytes]:
     """Handshake, then send ONE encrypted op (e.g. a grSetDAC control frame) and collect the AC's reply
     reports. **This WRITES to the AC** — only call it for a user-authorized control action.
@@ -1670,7 +1691,9 @@ async def async_send_op(ip: str, device_id: str, local_key: str, epp_frame: byte
     its current status right after the handshake (same as a read), so we hand that fresh in-session
     baseline blob (or ``None`` if none arrived) to ``build_frame`` to construct the op — no separate read
     connection, so control stays snappy and the AC isn't hit twice. Exactly one of ``epp_frame`` /
-    ``build_frame`` must yield a frame."""
+    ``build_frame`` must yield a frame. Pass ``uplus_id`` so a non-classic family's push is recognised
+    as a baseline (:func:`is_control_baseline`); without it only the classic lengths are, and those
+    families silently fall back to whatever the caller cached."""
     reader, writer = await asyncio.wait_for(asyncio.open_connection(ip, USS_PORT), timeout)
     blobs: list[bytes] = []
     try:
@@ -1714,7 +1737,8 @@ async def async_send_op(ip: str, device_id: str, local_key: str, epp_frame: byte
             # Read-modify-write in ONE session: the AC pushes its current status right after the
             # handshake (like a read), so seed the group-set from that fresh in-session baseline —
             # no second connection. ``build_frame`` gets None if no status arrived (caller falls back).
-            baseline = await _read_pushed_status(reader, hbuf[done_end:], local_key, timeout)
+            baseline = await _read_pushed_status(reader, hbuf[done_end:], local_key, timeout,
+                                                 uplus_id)
             epp_frame = build_frame(baseline)
         if epp_frame is None:
             raise RuntimeError("async_send_op: neither epp_frame nor build_frame produced a frame")

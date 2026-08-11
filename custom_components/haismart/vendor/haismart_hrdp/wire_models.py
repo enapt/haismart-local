@@ -385,6 +385,22 @@ class WireModel:
             if val is not None:
                 out[key] = val
 
+        # A report this family cannot actually read is NOT a report of this family. Both anchors
+        # have to arrive, or the checks below are asked about values that were never read -- and a
+        # check on a value that was never read passes, which is the whole of Rule 13. What made
+        # this reachable is that a uPlusId match wins over the length in `matches`, deliberately
+        # (the appliance names its own family on the discovery channel, key-free). So a SHORT frame
+        # from a known appliance -- an ack, a reply to a query the unit does not implement -- was
+        # claimed by its family, read nothing, vetoed nothing, and came back as a successful decode
+        # carrying only the two markers below. Downstream that is a full status report: it becomes
+        # the coordinator's cached blob, and the next control command seeds its group-set from a
+        # 93-byte "report" and fails with `report too short (93) for extended46 baseline` until a
+        # poll happens to overwrite it. Refusing here costs nothing -- the caller falls through to
+        # the related-layout and partial paths exactly as it does for any unclaimed report.
+        for anchor in (self.indoor_key, self.target_key):
+            if anchor in self.fields and anchor not in out:
+                return None
+
         indoor = out.get(self.indoor_key)
         if indoor is not None and not _PLAUSIBLE_INDOOR_C[0] <= indoor <= _PLAUSIBLE_INDOOR_C[1]:
             return None

@@ -71,10 +71,12 @@ def test_a_related_layout_reproduces_the_hardware_verified_decoder() -> None:
 def test_the_wrong_relative_is_refused_rather_than_returned_empty() -> None:
     """The offset that is wrong by nineteen words reads past the end of a shorter report, so every
     field comes back absent -- and a decode holding no readings passes a plausibility check on the
-    readings it does not have. Absence must not read as agreement."""
-    wrong = related_wire_model(len(STATUS_125), 0).decode(STATUS_125)
-    assert wrong is not None                      # nothing implausible was read...
-    assert "target_temperature" not in wrong      # ...because nothing was read at all
+    readings it does not have. Absence must not read as agreement.
+
+    The refusal now comes from ``WireModel.decode`` itself rather than from this caller, so every
+    family gets it: a registered one claimed by uPlusId used to accept any short frame the same way.
+    """
+    assert related_wire_model(len(STATUS_125), 0).decode(STATUS_125) is None
     assert decode_related(STATUS_125, OUR_UPLUS_ID)["layout"] == "related-19"
 
 

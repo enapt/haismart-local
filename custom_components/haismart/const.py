@@ -101,6 +101,34 @@ OUTDOOR_TEMP_MAX_AGE = 1800.0  # seconds an outdoor reading may stand while the 
 # discharge, compressor and fan entities for the rest of the run. Same reasoning as
 # UDISCOVERY_MISSES.
 EXTENDED_MISSES = 3
+# The readings an appliance has told us it does not produce, remembered on the entry so its
+# entities are not created again on the next restart.
+#
+# An entity that will read `unknown` for the life of the installation is worse than no entity: it
+# takes a row on the dashboard, it appears in every entity picker, and someone building an
+# automation cannot tell it apart from a sensor that is merely waiting for its first value. So once
+# an appliance has DECLINED a reading -- not "has not sent one yet", but declined -- the entities
+# for it are removed and not offered again.
+#
+# ⚠️ The bar is a refusal, never an absence. Entities are still created unconditionally at setup
+# and still stand at `unknown` while the answer is unknown, because gating creation on the first
+# poll is how a sensor that was briefly missing came to never appear at all. What is new is only
+# the end of the story: when the appliance has answered the question, the ones it answered "no" to
+# go away.
+CONF_ABSENT_READINGS = "absent_readings"
+# The state keys carried by the extended-status report, i.e. everything that goes when an appliance
+# answers none of the published forms of that query. Named here rather than in either platform
+# because both a sensor and a binary sensor read from this same frame, and a list that lived in one
+# of them would be half the answer.
+EXTENDED_READING_KEYS: tuple[str, ...] = (
+    "power_w",
+    "compressor_current_a",
+    "compressor_frequency_hz",
+    "coil_temperature",
+    "discharge_temperature",
+    "compressor_running",
+    "fan_running",
+)
 # A failed read cycle takes every entity of a unit to `unavailable` at once, and on a site with
 # rough Wi-Fi that reads as an integration erroring constantly rather than as a dropped packet
 # (issue #6: an AC and an unrelated Tuya device going quiet in the same windows). One miss is not

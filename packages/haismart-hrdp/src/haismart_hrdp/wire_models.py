@@ -752,10 +752,37 @@ EXTENDED36 = WireModel(
 # family, so the group-set is that family's: command `6001`, five words, seeded from report word 20.
 # What differs is only the setpoint's units (see below).
 #
-# Not offered here, deliberately: `windSpeed` and the swings. This family reports a wind-speed code
-# outside the set its own device model declares, and its vertical vane answers at a different word
-# from the one extended-36 uses — so neither position is settled, and the encoder must never emit a
-# field it cannot place. Both become available once a report is seen with those controls varied.
+# ⚠️ Not offered here: `windSpeed` and the two vanes. The reason has CHANGED, and the old one was
+# wrong -- read this before withholding them again, and before shipping them.
+#
+# ★ Their WRITE positions are published, and are not in doubt. `Operation[grSetDAC].variants` is
+# the write frame, and across every published air-conditioner device type (`02011`, `02012`,
+# `0201201G`, `02012036`, `03012`, `0301200L`, `0301200n`) it is ONE frame -- 39 attributes,
+# eppCmd `6001`, frameType 1, and **zero position disagreements between families**. It places
+# `windDirectionVertical` at w1.b0/4, `windSpeed` at w2.b8/3 and `windDirectionHorizontal` at
+# w4.b0/3, and the three positions this family confirmed on hardware (targetTemperature w1.b8,
+# operationMode w2.b13, onOffStatus w3.b0) reproduce it exactly.
+#
+# ⚠️ The old reason -- "its vertical vane answers at a different word, so the position is not
+# settled" -- conflated two different frames. A displacement in the REPORT says nothing about the
+# group-set: the report inserts ten words at w25 on this family, the write frame displaces nowhere.
+# That conflation is also why the vendor app can command one of these while misreading its sensors:
+# it resolves a profile by **deviceType** (a prefix hierarchy -- the class model `02012` covers this
+# whole class), and the class model's group-set needs no displacement at all.
+#
+# ⛔ What actually blocks them now is a genuine conflict, in the READ map, that only evidence
+# settles. `write_base_word + write_word - 1` is the report word a written bit reads back at --
+# asserted by a test, and load-bearing for the five toggles above. The published write frame puts
+# the vane at write w1, i.e. **report w20**. This family's read map puts `swing_vertical` at
+# **report w25**, established from captures taken in stated states. Both cannot be right:
+#   * if w20 is the appliance-level vane, then w25 is a PER-TOWER vane -- which this family's own
+#     devices declare (`windDirectionVerticalL`/`R`), and which is exactly the explanation already
+#     accepted for the per-tower fan speed at w26;
+#   * if w25 is right, then the group-set does not slice the report on this family, and the five
+#     toggles derived through that relation lose their support.
+# Every capture held reads 0 at both positions -- the vane was parked in each -- so nothing here can
+# choose. ONE report from this family with the up-down vane parked at a NON-ZERO position decides it
+# outright, and would ship all three controls at once.
 _EXT46_WRITE = {
     # 16..30 C. The wire value is °C × 2 on this family, not the classic °C − 16, so 16..30 C is
     # wire 32..60 — a range that would read as 48..76 C under the classic units.

@@ -71,8 +71,14 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator = entry.runtime_data
+    # Skipping the readings this appliance has told us it does not produce -- the compressor and
+    # fan states arrive in the same extended report as the power figures, so an appliance that does
+    # not answer that query has no state for them and never will. See `coordinator.absent_readings`.
+    absent = coordinator.absent_readings
     entities: list[BinarySensorEntity] = [
-        HaismartBinarySensor(coordinator, desc) for desc in BINARY_SENSORS
+        HaismartBinarySensor(coordinator, desc)
+        for desc in BINARY_SENSORS
+        if desc.key not in absent
     ]
     entities.append(HaismartCloudConnectionSensor(coordinator))
     # Read-only observability for the extra features a unit's own model declares -- fresh air,

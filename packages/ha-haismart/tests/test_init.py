@@ -23,6 +23,7 @@ from homeassistant.components.climate import ClimateEntityFeature
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     async_fire_time_changed,
@@ -161,8 +162,11 @@ async def test_unit_without_extended_status_stops_asking(
     must not be mistaken for silence to the command, since one generation publishes it under a
     different frame type.
 
-    The sensors are still created (so they appear if a firmware update ever answers) but report
-    unknown rather than a made-up zero.
+    The sensors exist while the answer is still unknown -- a dropped reply must not delete a
+    working entity -- and are REMOVED once the appliance has refused every form of the question.
+    An entity that will read `unknown` for the life of the installation is worse than no entity:
+    it fills a row, appears in every picker, and cannot be told apart from one still waiting for
+    its first reading.
     """
     mock_uss.read.return_value = [make_status_frame()]        # status only, no extended report
     entry = await _setup(hass)
@@ -184,6 +188,71 @@ async def test_unit_without_extended_status_stops_asking(
     await _tick(hass, freezer)
     for call in mock_uss.read.await_args_list:
         assert call.kwargs.get("extra_request") is None
+
+    # the entities the appliance refused are gone -- from the registry, so a rename or a dashboard
+    # placement does not keep a dead one alive -- and the refusal is remembered on the entry so
+    # they are not created again on the next restart
+    from custom_components.haismart.const import CONF_ABSENT_READINGS, EXTENDED_READING_KEYS
+
+    registry = er.async_get(hass)
+    for key in EXTENDED_READING_KEYS:
+        assert registry.async_get_entity_id("sensor", DOMAIN, f"A1B2C3D4E5F6_{key}") is None
+        assert registry.async_get_entity_id("binary_sensor", DOMAIN, f"A1B2C3D4E5F6_{key}") is None
+    assert hass.states.get("sensor.downstairs_ac_power") is None
+    assert set(entry.data[CONF_ABSENT_READINGS]) == set(EXTENDED_READING_KEYS)
+
+    # ...while everything the appliance DOES report is untouched
+    assert hass.states.get(CLIMATE).state == "cool"
+    assert hass.states.get("sensor.downstairs_ac_indoor_temperature").state not in (None, "unknown")
+
+
+async def test_a_refused_reading_is_not_offered_again_after_a_restart(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The verdict costs several polls to reach, so it is remembered rather than re-derived.
+
+    Without this the entities would be created on every restart, sit blank for a minute or two
+    while the query was asked in each of its forms, and vanish again -- which looks far more like a
+    fault than like an appliance that simply has no wattmeter.
+    """
+    from custom_components.haismart.const import CONF_ABSENT_READINGS, EXTENDED_READING_KEYS
+
+    mock_uss.read.return_value = [make_status_frame()]
+    entry = _entry(**{CONF_ABSENT_READINGS: list(EXTENDED_READING_KEYS)})
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("sensor.downstairs_ac_power") is None
+    assert hass.states.get("sensor.downstairs_ac_current") is None
+    assert hass.states.get("binary_sensor.downstairs_ac_compressor") is None
+    # and the appliance is otherwise entirely normal
+    assert hass.states.get(CLIMATE).state == "cool"
+
+
+async def test_an_appliance_that_starts_reporting_gets_its_entities_back(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A refusal must not be a one-way door.
+
+    Firmware updates add capabilities, and an entry carrying a verdict reached before one would
+    otherwise never offer those entities again. This is the half that makes removing them safe.
+    """
+    from custom_components.haismart.const import CONF_ABSENT_READINGS, EXTENDED_READING_KEYS
+
+    entry = _entry(**{CONF_ABSENT_READINGS: list(EXTENDED_READING_KEYS)})
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.downstairs_ac_power") is None
+
+    # the appliance now answers the extended query
+    mock_uss.read.return_value = [make_status_frame(), make_extended_frame()]
+    await entry.runtime_data.async_refresh()
+    await hass.async_block_till_done()
+
+    assert CONF_ABSENT_READINGS not in entry.data
+    assert hass.states.get("sensor.downstairs_ac_power") is not None
 
 
 def _honest_read(*, answer_from_ask: int = 1, empty: dict | None = None):

@@ -283,39 +283,51 @@ than failing. A single-parameter write cannot do that. The family deserves a saf
 from its own mechanics — probably narrower than the current allowlist, and certainly not the same
 rule copied across without examination.
 
-## 28. Fan speed and both vanes on the 209-byte family — the controls are withdrawn, not broken
+## 28. Fan speed and both vanes on the 209-byte family — one reading from settled
 
-**Status: open. What it needs is captures, from one appliance, in stated states.**
+**Status: open, and much smaller than it was. The positions are published; what is missing is one
+report.**
 
-That family's group-set covers report words 20–24 and places neither the vanes nor the fan speed,
-which has been true and written down since the family was registered. What was not true was the
-climate entity, which offered both controls anyway: the four-way swing moves BOTH vanes in one
-group-set, so every press came back as
+★ **Their write positions are not in doubt.** `Operation[grSetDAC].variants` — the published write
+frame — is ONE frame across every published air-conditioner device type (`02011`, `02012`,
+`0201201G`, `02012036`, `03012`, `0301200L`, `0301200n`): 39 attributes, eppCmd `6001`, frameType 1,
+29 of them common to all seven, and **zero position disagreements between families**. It places
+`windDirectionVertical` at w1.b0/4, `windSpeed` at w2.b8/3 and `windDirectionHorizontal` at w4.b0/3
+— and the three positions this family confirmed on hardware (`targetTemperature` w1.b8,
+`operationMode` w2.b13, `onOffStatus` w3.b0) reproduce that frame exactly.
 
-> `'windDirectionVertical' is not a writable field on extended46`
+⚠️ **These were withheld on a reason that conflated two frames, and it should not be repeated.** The
+stated reason was that this family's vane "answers at a different word, so the position is not
+settled". That is a fact about the **report**, which inserts ten words at word 25 here. The
+**group-set** displaces nowhere, between any two published families. A displacement in one frame
+says nothing about the other. It is also how the vendor app commands one of these while misreading
+its sensors: it resolves a profile by **device type**, whose class entry (`02012`) covers this whole
+class and carries the same undisplaced group-set.
 
-and the fan dropdown had nothing selected in it, because this family does not publish a speed to
-read either. A control whose field the family cannot place is a button that can only raise — the
-presets and the horizontal axis were already gated on exactly that and these two never were, so the
-gate now covers all four. **The controls disappear rather than fail.** Everything the family can
-write — setpoint, mode, on/off, and the five secondary toggles — is untouched.
+⛔ **What blocks it now is a genuine conflict in the READ map, and one report resolves it.**
+`write_base_word + write_word - 1` is the report word a written bit reads back at — asserted by a
+test, and load-bearing for this family's five secondary toggles. The published frame puts the vane
+at write word 1, i.e. **report word 20**. This family's read map puts the vane at **report word
+25**, established from captures taken in stated states. Both cannot be true:
 
-Why each is unplaced, and what settles it:
+* if word 20 is the appliance-level vane, then word 25 is a **per-tower** vane — which this
+  family's own devices declare (`windDirectionVerticalL`/`R`), and which is already the accepted
+  explanation for the per-tower fan speed at word 26;
+* if word 25 is right, the group-set does not slice the report on this family, and the toggles
+  derived through that relation lose their support.
 
-* **The vanes.** On the 165/175-byte family the up-down vane both reads and writes at report word
-  20. On this one it *reads* at word 25 — inside the ten-word block this cabinet inserts for its
-  per-tower vane and fan — so the group-set's word 20 is not where this family keeps its vane, and
-  writing there is a guess in a frame that applies a whole word block. **Settled by:** one report
-  per stop, taken with the vane parked at each, as the classic family's table was.
-* **The fan speed.** Word 21 bit 8, where every other family keeps it, reads a constant 6 that this
-  family's own model does not define. Word 26 bit 9 was adopted on three captures and retired by a
-  fourth: it read 0 while the manufacturer's own record said the fan was 1, because word 26 carries
-  a *tower's* speed and goes to zero when that tower is idle. **Settled by:** two captures from one
-  appliance at **different** stated fan speeds, each with its cloud-reported `windSpeed`. Two at the
-  same speed leave sixteen candidate positions.
+Every capture held reads **zero at both positions** — the vane was parked in each — so nothing on
+hand can choose between them.
 
-Neither is a gap in the published map — the map does not describe this cabinet's inserted block at
-all, which is why the two fields it does place there came from captures in the first place.
+**What settles it: one report from this family with the up-down vane parked at a NON-ZERO position.**
+Not four; one. Whichever word moves is the appliance-level vane, and all three controls ship
+together. A diagnostics download carries the report, so no capture tooling is involved.
+
+⚠️ **A `digital_model` in a diagnostics file cannot stand in for it.** That model is fetched once,
+when the appliance is added, and is never refreshed afterwards, so its values drift arbitrarily far
+from the report beside them — in the file that prompted this entry the model states the unit is off
+while the report in the same file decodes it as running. A model-versus-report disagreement is
+therefore not evidence about a position unless the model is independently shown to be fresh.
 
 # Settled
 

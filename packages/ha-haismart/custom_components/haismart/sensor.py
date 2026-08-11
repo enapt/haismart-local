@@ -172,7 +172,14 @@ async def async_setup_entry(
     # Gating creation on the FIRST poll's values meant a sensor missing at setup (a failed first
     # refresh, or a report whose layout we can only partially decode) never appeared until the entry
     # was reloaded.
-    entities: list[SensorEntity] = [HaismartSensor(coordinator, desc) for desc in SENSORS]
+    # ...with one exception: a reading the appliance has already told us it does not produce. That
+    # verdict is remembered on the entry, so those entities are not created here at all rather than
+    # being created and removed again on every restart. Absence is never enough for this -- only a
+    # refusal, which is what `absent_readings` records.
+    absent = coordinator.absent_readings
+    entities: list[SensorEntity] = [
+        HaismartSensor(coordinator, desc) for desc in SENSORS if desc.key not in absent
+    ]
     # opt-in backup entity: exposes the localKey so it rides along in HA backups / can be copied.
     # It's a secret, so it's diagnostic + DISABLED by default (enable it, back it up, done).
     entities.append(HaismartModelIdSensor(coordinator))

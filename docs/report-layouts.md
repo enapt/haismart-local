@@ -111,7 +111,8 @@ w33 and w34 all read zero in all three captures. Any capture with a w24-block fe
 **Vane positions** — a `select` offering the stops a vane can hold, rather than just sweeping or
 not — need a family that packs the vane as the multi-bit code it is. Classic and extended-36 do;
 compact-12 collapses each vane to a single bit, so a position sent there would arrive as "sweep",
-and extended-46 keeps its vane outside the block the rest of its control map follows. The positions
+and on extended-46 the vane's *read* position is unresolved between two candidates (see that
+family's section below — its write position is published and undisputed). The positions
 themselves come from the device's own model, so even on a family that can place them the entity
 appears only for a unit that publishes more than the two ends.
 
@@ -203,13 +204,31 @@ carry directly:
   as the other shows the wrong number whenever they differ and nothing at all when the tower is
   still — worse than showing neither, because an automation can read it.
 
-So this family reads **no** fan speed and writes neither it nor either vane. The settable word array
-runs 20..24: the vane *reads* at word 25, inside the inserted block, so the group-set's word 20 —
-where the other families keep their vane — is not where this family keeps its, and word 26 is
-outside anything the array can reach. The encoder refuses all three rather than write to a guessed
-word, and the climate entity **does not advertise the controls either**: the four-way
-swing moves both vanes in one group-set and could only ever raise here, and the fan dropdown had
-nothing to select. What would settle each is item 28 in `FUTURE_WORK.md`.
+So this family reads **no** fan speed and, for now, writes neither it nor either vane — but the
+reason is not the one this section used to give, and the correction matters.
+
+★ **The write positions are published and are not in doubt.** The published write frame is ONE frame
+across every air-conditioner device type — 39 attributes, `6001`, frameType 1, **zero position
+disagreements between families** — placing `windDirectionVertical` at w1.b0/4, `windSpeed` at
+w2.b8/3 and `windDirectionHorizontal` at w4.b0/3, and this family's three hardware-confirmed
+positions reproduce it exactly.
+
+⚠️ The old reason — "the vane *reads* at word 25, so the group-set's word 20 is not where this
+family keeps it" — **conflated the report with the group-set**. The report displaces (ten words
+inserted at w25); the write frame displaces nowhere. A displacement in one says nothing about the
+other, and this is exactly how the vendor app commands one of these while misreading its sensors: it
+resolves by device type, and the class entry's group-set is undisplaced.
+
+⛔ What blocks it now is a conflict inside the READ map. `write_base_word + write_word - 1` is the
+report word a written bit reads back at, so the published frame puts the vane at report word 20,
+while this family's read map puts it at word 25. Either word 25 is a **per-tower** vane — which
+these devices declare, and which already explains the per-tower fan speed at word 26 — or the
+group-set does not slice the report here. Every capture held reads zero at both, so nothing on hand
+decides. **One report with the up-down vane parked at a non-zero position settles it and ships all
+three controls.** See item 28 in `FUTURE_WORK.md`.
+
+Until then the climate entity does not advertise the controls: the four-way swing moves both vanes
+in one group-set and could only ever raise here, and the fan dropdown had nothing to select.
 
 ### 133 B — documented, not shipped
 

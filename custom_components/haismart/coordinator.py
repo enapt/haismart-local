@@ -18,7 +18,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from collections.abc import Callable, Collection
+from collections.abc import Callable, Collection, Iterable
 from dataclasses import replace
 from datetime import timedelta
 from functools import partial
@@ -77,14 +77,17 @@ from haismart_hrdp import (
     with_rules,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.const import Platform
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .cloud_transport import async_cloud_transport
 from .const import (
+    CONF_ABSENT_READINGS,
     CONF_ACCESS_TOKEN,
     CONF_CLOUD_CLIENT_ID,
     CONF_DEVICE_ID,
@@ -103,6 +106,7 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     EXTENDED_MISSES,
+    EXTENDED_READING_KEYS,
     ISSUE_KEY_REFRESH_FAILED,
     ISSUE_KEY_WILL_ROTATE,
     ISSUE_STALE_LOCALKEY,
@@ -702,6 +706,12 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 if telemetry:
                     self.supports_extended = True
                     self._extended_misses = 0
+                    # An appliance that answers after we had written it off gets its entities back.
+                    # A firmware update can add the extended report, and a refusal recorded before
+                    # that must not be the last word -- otherwise the removal below would be a
+                    # one-way door, which is exactly the objection the old "create everything
+                    # unconditionally" rule was built to avoid.
+                    self._async_reading_returned(EXTENDED_READING_KEYS)
                 elif self.supports_extended is True and not self._ask_extended:
                     # The query was paused by an empty cycle (see below), and reads are working
                     # again — so ask for the extended report again rather than leaving a unit that
@@ -731,10 +741,16 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                             self._ask_extended = False
                             _LOGGER.debug(
                                 "%s answered none of the %d published forms of the extended-status "
-                                "query; the power and compressor sensors will stay unavailable for "
-                                "this unit",
+                                "query; removing the power and compressor entities for this unit",
                                 self.host, len(EXTENDED_STATUS_FRAME_TYPES),
                             )
+                            # A refusal, not a silence: the status report arrived on every one of
+                            # these cycles and the extended one never did, in every published form
+                            # of the question. This appliance does not measure these things, so its
+                            # entities for them are removed and not offered again -- an entity that
+                            # will read `unknown` for the life of the installation is worse than no
+                            # entity at all.
+                            self._async_reading_refused(EXTENDED_READING_KEYS)
                 self._apply_telemetry(state, telemetry)
                 self._drop_stale_outdoor_temp(state)
                 state.update(alarms)
@@ -1430,6 +1446,83 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """The AC's current localKey (kept fresh across gateway auto-refresh). For the opt-in backup
         sensor — it's a secret, so that entity is diagnostic + disabled by default."""
         return self._local_key
+
+    @property
+    def absent_readings(self) -> frozenset[str]:
+        """State keys this appliance has told us it does not produce.
+
+        Read by the platforms at setup so the entities are never created again. Remembered on the
+        entry rather than in memory: the verdict costs several polls to reach, and without it every
+        restart would create the entities, show them blank for a minute or two, and take them away
+        again.
+        """
+        return frozenset(self.config_entry.data.get(CONF_ABSENT_READINGS) or ())
+
+    @callback
+    def _async_reading_refused(self, keys: Iterable[str]) -> None:
+        """Record that this appliance declines ``keys``, and take their entities away now.
+
+        Two halves, and both are needed. Remembering it on the entry stops the entities coming back
+        on the next restart; removing them from the registry means the owner does not have to
+        restart to see them go. Removal is by unique id, which is how every platform here builds
+        one -- ``<deviceId>_<key>`` -- so an entity a user has renamed or moved to a dashboard is
+        still found.
+
+        ⚠️ Only ever called where the appliance has ANSWERED. A reading that has merely not arrived
+        yet must keep its entity: that distinction is the whole safety property here, and getting
+        it wrong deletes a working sensor over a dropped packet.
+        """
+        already = self.absent_readings
+        fresh = {k for k in keys if k not in already}
+        if not fresh:
+            return
+        registry = er.async_get(self.hass)
+        for key in sorted(fresh):
+            entity_id = registry.async_get_entity_id(
+                Platform.SENSOR, DOMAIN, f"{self.device_id}_{key}"
+            ) or registry.async_get_entity_id(
+                Platform.BINARY_SENSOR, DOMAIN, f"{self.device_id}_{key}"
+            )
+            if entity_id:
+                registry.async_remove(entity_id)
+        self.hass.config_entries.async_update_entry(
+            self.config_entry,
+            data={
+                **self.config_entry.data,
+                CONF_ABSENT_READINGS: sorted(already | fresh),
+            },
+        )
+        _LOGGER.info(
+            "%s does not report %s; their entities have been removed",
+            self.device_id, ", ".join(sorted(fresh)),
+        )
+
+    @callback
+    def _async_reading_returned(self, keys: Iterable[str]) -> None:
+        """An appliance that had declined ``keys`` is producing them again: give the entities back.
+
+        Reloads the entry, because a platform's entities are created once at setup and there is no
+        supported way to add one afterwards from here. That costs a moment of unavailability and
+        happens at most once in an installation's life -- after a firmware update, or after the
+        appliance is replaced by one that measures more than the last did.
+        """
+        recorded = self.absent_readings
+        if not recorded & frozenset(keys):
+            return
+        remaining = sorted(recorded - frozenset(keys))
+        data = {**self.config_entry.data}
+        if remaining:
+            data[CONF_ABSENT_READINGS] = remaining
+        else:
+            data.pop(CONF_ABSENT_READINGS, None)
+        self.hass.config_entries.async_update_entry(self.config_entry, data=data)
+        _LOGGER.info(
+            "%s is reporting readings it previously declined; restoring their entities",
+            self.device_id,
+        )
+        self.hass.async_create_task(
+            self.hass.config_entries.async_reload(self.config_entry.entry_id)
+        )
 
     def supports_field(self, name: str) -> bool:
         """Whether a control field can be written on the family this unit actually reports.

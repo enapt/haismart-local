@@ -990,6 +990,33 @@ STATUS_209_FAN = bytes.fromhex(
     "343c6410000f000000000000000000000000000b794000000000000000000000"
     "0000000000000000000000000000000040"
 )
+#   A FOURTH report, from a DIFFERENT appliance of the same family, and the one that settles the
+#   vane and the fan. What makes it worth more than the three above is not the report: it is that
+#   its file carries a cloud record taken close enough to it to agree on everything else --
+#   setpoint 22.0, indoor 28.0, power on, and all six word-22 toggles bit for bit. Against that
+#   record, the map's own positions read wrong and the inserted block reads right:
+#       w20.b0 = 0  vs  windDirectionVertical = 2      w25    = 2
+#       w21.b8 = 6  vs  windSpeed             = 1      w26.b9 = 1
+#   ...while that same record publishes the per-tower attributes as 0 / 0 and 3 / 5.
+#   Cool, setpoint 22, room 28.0, vane parked at position 2, fan high, display light on.
+STATUS_209_RUNNING = bytes.fromhex(
+    "00002715000000004e5601000003020000040100000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "00000000000000000000000000000081ffff7e000000000000066d0120640000"
+    "0000000000000000000000000000000000000000000000000000000000000100"
+    "00002c00260f0201000000000002c20000000000000001000000000000000000"
+    "383c62100003000000000000000000000000000a584800000000000000000000"
+    "0000000000000000000000000000000033"
+)
+# The cloud record from that same file, for the attributes it can be checked against.
+STATUS_209_RUNNING_CLOUD = {
+    "targetTemperature": "22.0", "indoorTemperature": "28.0", "onOffStatus": "true",
+    "windDirectionVertical": "2", "windSpeed": "1",
+    "windDirectionVerticalL": "0", "windDirectionVerticalR": "0",
+    "windSpeedL": "3", "windSpeedR": "5",
+    "healthMode": "false", "rapidMode": "false", "muteStatus": "false",
+    "silentSleepStatus": "false", "screenDisplayStatus": "true",
+}
 
 
 def test_extended46_decodes_the_real_reports():
@@ -1023,36 +1050,79 @@ def test_extended46_decodes_the_real_reports():
     assert fan["current_temperature"] == 26.0 and fan["outdoor_temperature"] == 36.0
 
 
-def test_extended46_publishes_no_fan_speed_despite_a_position_that_once_fitted():
-    """⛔ Retired, and the evidence on BOTH sides is kept so it is not adopted a third time.
+def test_the_209_family_reads_its_fan_speed():
+    """★ Restored, and this is the THIRD decision about this position, so all of it is kept here.
 
-    For: word 26 bit 9 tracks these three captures exactly -- low where the capture was taken on
-    low, high where it was taken on high, nothing with the unit off -- while word 21 bit 8, the
-    classic position, reads a constant 6 in all three.
+    For: word 26 bit 9 tracks four captures from two appliances -- low where a capture was taken on
+    low, high where taken on high, nothing with the unit off, and 1 where a fresh cloud record for
+    that same report said 1. Word 21 bit 8, where every other family keeps fan speed, reads a
+    CONSTANT 6 in all of them, including between one owner's stated high and stated low.
 
-    Against, and decisive: a fourth capture from a different appliance, running in cool, read 0
-    there while the appliance's own cloud record said the fan was 1. That document agreed with 53
-    other attributes and disagreed with none, so it was not stale.
+    Against, and it was believed for two releases: a fourth capture read 0 here while "the
+    appliance's own cloud record said 1", from "a document that agreed with 53 other attributes and
+    disagreed with none, so it was not stale". Both halves of that fail:
 
-    Both are explained by what the inserted block is -- this cabinet's PER-TOWER vane and fan. Word
-    26 carries one tower's speed: equal to the setting when that tower is the one running, and zero
-    when it is idle. It fits until it does not, which is the worst way for a position to be wrong.
+      * The document was the SAME frozen record as the file before it -- diagnostics carry the
+        cloud model as fetched at onboarding -- and in that very file its setpoint said 22.0 while
+        the report it was compared against said 24.0.
+      * The agreement count runs over ``model_declared_fields``, which holds only the attributes no
+        field map reads: the voice module, probes these units do not have, tempUnit, volume. Not
+        one of them can change. It agrees by construction and can never detect staleness.
+
+    And the per-tower reading that explained it away is refuted by the same record, which publishes
+    the towers as 0 / 0 and 3 / 5 while the wire reads 2 and 1.
     """
     from haismart_hrdp import profile_for
-
-    prof = profile_for("AAC1UKZ01")
-    for capture in (STATUS_209_COOL, STATUS_209_FAN, STATUS_209_OFF):
-        assert "fan_mode" not in uss.parse_full_status(capture, prof)
-    # The observation that made it tempting, preserved rather than deleted -- read with the
-    # library's own reader, never hand-rolled arithmetic, which has produced a false reading twice.
     from haismart_hrdp.wire_models import WireField
 
-    tower = WireField(26, 9, 3, kind="raw")
-    assert tower.read(STATUS_209_COOL) == 3      # capture taken on low
-    assert tower.read(STATUS_209_FAN) == 1       # capture taken on high
-    assert tower.read(STATUS_209_OFF) == 0       # unit off
-    # and the classic position, which reports a constant on this family
-    assert WireField(21, 8, 3, kind="raw").read(STATUS_209_COOL) == 6
+    prof = profile_for("AAC1UKZ01")
+    speeds = {c: uss.parse_full_status(c, prof).get("fan_mode")
+              for c in (STATUS_209_COOL, STATUS_209_FAN, STATUS_209_OFF, STATUS_209_RUNNING)}
+    assert speeds[STATUS_209_COOL] == "low"        # capture taken on low
+    assert speeds[STATUS_209_FAN] == "high"        # capture taken on high
+    assert speeds[STATUS_209_RUNNING] == "high"    # cloud record for this report: windSpeed 1
+    # An idle or off appliance reads 0 there, which is not a code its model declares, so it
+    # surfaces as NO reading. That is the whole reason the field is an enum and not a raw int: the
+    # failure this position was withdrawn for -- showing a stopped fan as a speed -- cannot occur.
+    assert speeds[STATUS_209_OFF] is None
+    assert WireField(26, 9, 3, kind="raw").read(STATUS_209_OFF) == 0
+
+    # The map's own position, constant across every capture from both appliances.
+    for capture in (STATUS_209_COOL, STATUS_209_FAN, STATUS_209_OFF, STATUS_209_RUNNING):
+        assert WireField(21, 8, 3, kind="raw").read(capture) == 6
+
+
+def test_the_209_family_reads_the_appliance_vane_not_a_tower():
+    """The one file that could choose between report w20 and report w25, and does.
+
+    Its cloud record is fresh -- checked here rather than asserted, on the attributes that would
+    have moved if it were not -- so its ``windDirectionVertical`` of 2 belongs beside this report.
+    Word 25 reads 2. The map's w20 reads 0. And the per-tower attributes the withdrawal invoked are
+    published in the same record as 0 / 0, so they are not what w25 is showing.
+    """
+    from haismart_hrdp import profile_for
+    from haismart_hrdp.wire_models import WireField
+
+    cloud = STATUS_209_RUNNING_CLOUD
+    decoded = uss.parse_full_status(STATUS_209_RUNNING, profile_for("AAC1UKZ01"))
+    # Freshness, established from the file itself: the volatile attributes agree. This is the check
+    # the withdrawal needed and did not make.
+    assert decoded["target_temperature"] == float(cloud["targetTemperature"])
+    assert decoded["current_temperature"] == float(cloud["indoorTemperature"])
+    assert decoded["power"] is (cloud["onOffStatus"] == "true")
+    assert decoded["lamp"] is (cloud["screenDisplayStatus"] == "true")
+    for ours, theirs in (("health", "healthMode"), ("strong", "rapidMode"),
+                         ("quiet", "muteStatus"), ("sleep", "silentSleepStatus")):
+        assert decoded[ours] is (cloud[theirs] == "true")
+
+    assert WireField(25, 0, 4, kind="raw").read(STATUS_209_RUNNING) == int(
+        cloud["windDirectionVertical"]
+    )
+    assert WireField(20, 0, 4, kind="raw").read(STATUS_209_RUNNING) == 0
+    assert cloud["windDirectionVerticalL"] == cloud["windDirectionVerticalR"] == "0"
+    assert {cloud["windSpeedL"], cloud["windSpeedR"]} == {"3", "5"}  # neither is the wire's 1
+    # A parked position is not a sweep, and this one is parked.
+    assert decoded["swing_vertical"] is False
 
     # The classic partial decode is what this family REPLACES: byte 92 is the media module's
     # `volume` (100), which reads as a 48 C setpoint, and the classic power bit lands elsewhere so
@@ -1094,11 +1164,21 @@ def test_extended46_control_reuses_the_extended36_group_set():
     assert words[5] & 0x01 == 0                       # onOffStatus word3 b0 cleared
     assert words[0] == base[0]                        # setpoint untouched
 
-    # Fan speed and the swings are NOT settable on this family: their positions are not settled, and
-    # the encoder must refuse a field it cannot place rather than write to a guessed word.
-    for unsupported in ("windSpeed", "windDirectionVertical", "windDirectionHorizontal"):
-        with pytest.raises(KeyError):
-            wm.encode_control(base, {unsupported: 1})
+    # Fan speed and the up-down vane ARE settable, at the positions the published write frame gives
+    # every air-conditioner device type. Both read back -- at w25 and w26.b9, not where the map puts
+    # them -- which is what lets an owner check the write instead of taking it on trust.
+    fan = wm.encode_control(bytearray(base), {"windSpeed": 3})
+    assert (fan[2] << 8 | fan[3]) >> 8 & 0x07 == 3    # windSpeed word2 b8 -> low
+    assert (fan[2] << 8 | fan[3]) >> 13 == (base[2] << 8 | base[3]) >> 13   # mode untouched
+    vane = wm.encode_control(bytearray(base), {"windDirectionVertical": 0x0C})
+    assert (vane[0] << 8 | vane[1]) & 0x0F == 0x0C    # windDirectionVertical word1 b0 -> sweeping
+    assert vane[0] == base[0]                         # setpoint shares the word and is untouched
+
+    # The left-right vane is NOT settable here, and the reason is not its write position -- the same
+    # frame states that too. Nothing in this family's report reads it back, and a control that
+    # writes what it cannot read shows its owner a switch that never moves.
+    with pytest.raises(KeyError):
+        wm.encode_control(base, {"windDirectionHorizontal": 1})
 
 
 EXT46_UPLUS_ID = "2008610800820324021200118017740000000000000000000000000000000040"

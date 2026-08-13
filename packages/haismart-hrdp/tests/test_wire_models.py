@@ -57,23 +57,52 @@ def test_no_family_offers_a_control_it_cannot_read_back() -> None:
     )
 
 
+# Measured departures from the relation below: (family, field) pairs where a written bit does NOT
+# read back at `write_base_word + write_word - 1`, each with the evidence that put it elsewhere.
+#
+# Both are extended-46, both are in the ten-word block that family inserts, and both were checked
+# against one file whose cloud record is fresh (see `test_the_209_family_reads_the_appliance_vane`).
+# Neither weakens what the relation places elsewhere: on this family it holds for words 1..3 as
+# WORDS -- setpoint, mode and the entire boolean block -- and those toggles were separately
+# confirmed 6/6 against that same record.
+_WRITE_READ_EXCEPTIONS = {
+    ("extended46", "windDirectionVertical"),   # writes w1.b0, reads report w25 (map's w20 reads 0)
+    ("extended46", "windSpeed"),               # writes w2.b8, reads report w26.b9 (map's w21 = 6)
+}
+
+
 def test_the_write_frame_is_a_slice_of_the_report() -> None:
     """`write_base_word + write_word - 1` is the report word a written bit reads back at.
 
     This is what places the extended-46 toggles, so it is asserted rather than assumed. Checked on
     the fields whose report positions were established independently of it -- if the relation ever
     stops holding, the positions derived from it are no longer supported.
+
+    ⚠️ It is a HEURISTIC, not a law, and the exceptions above are why it is stated that way: an
+    appliance may take a setting in the group-set and report it somewhere else entirely. Reasoning
+    from this relation is what withheld two working controls for two releases.
     """
+    seen: set[tuple[str, str]] = set()
     for wm in WIRE_MODELS:
         for name, token in _WRITE_TO_READ.items():
             wf, rf = wm.write_fields.get(name), wm.fields.get(token)
             if wf is None or rf is None or wf.length != rf.length:
+                continue
+            if (wm.family, name) in _WRITE_READ_EXCEPTIONS:
+                seen.add((wm.family, name))
+                assert rf.word != wm.write_base_word + wf.word - 1, (
+                    f"{wm.family}: {name} now DOES follow the relation -- delete its exception "
+                    "rather than leaving a stale one here"
+                )
                 continue
             assert rf.word == wm.write_base_word + wf.word - 1, (
                 f"{wm.family}: {name} writes w{wf.word} but reads at w{rf.word}, which is not "
                 f"write_base_word ({wm.write_base_word}) + {wf.word} - 1"
             )
             assert rf.bit == wf.bit, f"{wm.family}: {name} bit moved between write and read"
+    assert seen == _WRITE_READ_EXCEPTIONS, (
+        f"exceptions listed for fields no family writes and reads: {_WRITE_READ_EXCEPTIONS - seen}"
+    )
 
 
 # --- the 209-byte family is a piecewise displacement, not a typed table -------------------------
@@ -106,7 +135,9 @@ def test_the_generated_map_reproduces_every_verified_position() -> None:
         "target_temperature": (20, 8, 8), "operation_mode": (21, 13, 3), "power": (22, 0, 1),
         "health": (22, 1, 1), "strong": (22, 3, 1), "quiet": (22, 4, 1),
         "sleep": (22, 5, 1), "lamp": (22, 9, 1),
-        "swing_vertical": (25, 0, 4),
+        # The two the published map names but does not place HERE: they answer from the inserted
+        # block, against a cloud record that agrees with this report on everything else.
+        "swing_vertical": (25, 0, 4), "wind_speed": (26, 9, 3),
         "current_temperature": (35, 8, 8), "heat_capable": (36, 7, 1),
         "outdoor_temperature": (36, 8, 8), "last_changed_by": (37, 0, 2),
         "error_code": (37, 8, 8), "energy_wh": (45, 0, 32),
@@ -154,24 +185,26 @@ def test_an_inserted_block_no_longer_blocks_reading_declared_attributes() -> Non
         assert field.word == c.word + (10 if c.word >= 25 else 0)
 
 
-def test_the_209_family_publishes_no_fan_speed() -> None:
-    """⛔ Deliberately absent. Do not restore it without a capture that settles the position.
+def test_the_209_family_reads_and_writes_its_fan_and_up_down_vane() -> None:
+    """The appliance's fan and vane answer from the INSERTED BLOCK, not from the map's own words.
 
-    Word 21 bit 8 -- where every other family keeps fan speed -- reads a constant 6 here. Word 26
-    bit 9 was adopted on three captures taken in stated states and retired by a fourth: on a unit
-    running in cool it read 0 while the appliance's own cloud record said 1, from a document that
-    agreed with 53 other attributes and disagreed with none.
+    Both were withdrawn once, on the reading that the block is a dual-airflow cabinet's per-tower
+    controls. The document that withdrew them refutes it: in the one file whose cloud record is
+    fresh -- setpoint, indoor temperature, power and all six word-22 toggles agreeing with the
+    report bit for bit -- w25 reads 2 and w26.b9 reads 1, which are that record's
+    ``windDirectionVertical`` and ``windSpeed``. Its per-tower attributes are published in the same
+    record as 0 / 0 and 3 / 5. A tower register cannot read the appliance's value.
 
-    The inserted block is this cabinet's PER-TOWER vane and fan, so word 26 carries one tower's
-    speed -- zero when that tower is idle -- and the appliance's windSpeed is the setting as a
-    whole. Publishing one as the other shows a wrong number whenever they differ and nothing when
-    the tower is still, which an automation can act on.
-
-    What would settle it: two captures from one appliance at DIFFERENT stated fan speeds, each with
-    its cloud-reported windSpeed beside it. Two at the same speed leave sixteen candidate positions.
+    Writes go at the published positions (w1.b0, w2.b8), which every air-conditioner device type
+    states identically. Whether the appliance acts on them there is a question only a write
+    answers -- and now can be answered by the owner, because the readback is restored.
     """
     from haismart_hrdp.wire_models import EXTENDED46
 
-    assert "wind_speed" not in EXTENDED46.fields
-    # ...and it was never writable there either, so no control is lost, only a wrong reading
-    assert "windSpeed" not in EXTENDED46.write_fields
+    assert "wind_speed" in EXTENDED46.fields
+    assert "swing_vertical" in EXTENDED46.fields
+    assert "windSpeed" in EXTENDED46.write_fields
+    assert "windDirectionVertical" in EXTENDED46.write_fields
+    # The horizontal axis stays out: nothing in this family's report reads it back, and a control
+    # that writes what it cannot read is the defect this suite already guards above.
+    assert "windDirectionHorizontal" not in EXTENDED46.write_fields

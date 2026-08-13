@@ -2526,9 +2526,9 @@ _UNWRITABLE_CO_COMMAND_MODEL = {
     "constraints": [
         {"pendingCondition": {"operator": "OR", "commands": {"operationMode": ["6"]}},
          "additionalCommands": {"commands": [
-             {"name": "generatorMode", "value": "0"},      # ecoMode: absent from extended-46
-             {"name": "windSpeed", "value": "3"},          # also absent from extended-46
-             {"name": "muteStatus", "value": "false"}]}},   # this one it can write
+             {"name": "generatorMode", "value": "0"},              # ecoMode: absent from ext-46
+             {"name": "windDirectionHorizontal", "value": "0"},    # also absent from ext-46
+             {"name": "muteStatus", "value": "false"}]}},          # this one it can write
     ],
 }
 
@@ -2564,19 +2564,23 @@ async def test_a_co_command_the_family_cannot_write_does_not_fail_the_command(
 
     assert field("operationMode") == 6      # what was asked for, and it reached the unit
     assert field("muteStatus") == 0         # the co-command that this family can place
-    assert "ecoMode" not in wm.write_fields and "windSpeed" not in wm.write_fields
+    assert "ecoMode" not in wm.write_fields
+    assert "windDirectionHorizontal" not in wm.write_fields
 
 
-async def test_fan_only_reaches_a_family_that_cannot_set_its_fan_speed(
+async def test_fan_only_substitutes_a_concrete_speed_on_the_209_family(
     hass: HomeAssistant, mock_uss
 ) -> None:
-    """Selecting fan-only through the entity works where the fan speed is read-only.
+    """Selecting fan-only through the entity carries a real speed with it.
 
     Our own hardware silently drops fan-only combined with fan=auto, so the entity substitutes a
-    concrete speed. On a family whose group-set has no fan speed in it that substitution could only
-    ever raise -- and it would fail the very mode change it exists to make work.
+    concrete speed. This family could not place a fan speed at all for two releases, and the test
+    then only asked that the mode change not raise. It can place one now, so the substitution is
+    checked for what it is FOR -- a speed the appliance will accept -- rather than for not
+    exploding.
     """
     from conftest import make_extended46_frame
+    from haismart_hrdp.wire_models import select_wire_model
 
     frame = make_extended46_frame(mode_code=1)
     mock_uss.read.return_value = [frame]
@@ -2587,6 +2591,12 @@ async def test_fan_only_reaches_a_family_that_cannot_set_its_fan_speed(
         "climate", "set_hvac_mode", {"entity_id": CLIMATE, "hvac_mode": "fan_only"}, blocking=True
     )
     assert mock_uss.send.await_count == 1
+    wm = select_wire_model(len(frame), None)
+    sent = mock_uss.send.last_frame[12:-1]
+    wf = wm.write_fields["windSpeed"]
+    off = (wf.word - 1) * 2
+    speed = ((sent[off] << 8) | sent[off + 1]) >> wf.bit & ((1 << wf.length) - 1)
+    assert speed == 3 and speed != 5      # low, and specifically not the auto the unit drops
 
 
 async def test_controls_the_unit_ignores_stay_readable_and_refuse_the_command(
@@ -3972,16 +3982,20 @@ async def test_a_rotation_is_recognised_on_the_read_too_not_only_on_a_command(
 EXT46_UPLUS_ID = "2008610800820324021200118017740000000000000000000000000000000040"
 
 
-async def test_a_family_that_cannot_move_its_vanes_does_not_offer_a_swing_control(
+async def test_a_family_offers_the_swing_axis_it_can_move(
     hass: HomeAssistant, mock_uss
 ) -> None:
-    """A control whose field the report family cannot place must not be advertised at all.
+    """⚠️ A regression, and the shape of it matters more than the fix.
 
-    Reported from a live 209-byte unit: every press of the swing control came back with
-    "'windDirectionVertical' is not a writable field on extended46". The four-way swing moves BOTH
-    vanes in one group-set and that family places neither; the fan dropdown needs windSpeed, which
-    it does not place either (and does not report, so the dropdown had nothing selected in it).
-    The presets and the horizontal axis were already gated this way -- these two never were.
+    A live 209-byte unit answered every swing press with "'windDirectionVertical' is not a writable
+    field on extended46", so both the swing and the fan controls were withdrawn from it. Then its
+    owner reported the loss (issue #6): the appliance moves its vane and its fan perfectly well,
+    and now so do we -- both fields are placed, and both read back.
+
+    What is asserted here is the part that was wrong independently of that. The gate dropped the
+    four-way swing when EITHER axis was unplaceable, where `supported_features` had always dropped
+    it only when NEITHER could move. This family has exactly one axis, so it lost a control it
+    could work. It keeps it, offering only the positions it can actually reach.
     """
     from conftest import make_extended46_frame
     from homeassistant.components.climate import ClimateEntityFeature
@@ -3991,14 +4005,52 @@ async def test_a_family_that_cannot_move_its_vanes_does_not_offer_a_swing_contro
     mock_uss.send.baseline = frame
     await _setup_with_model(hass, _UNWRITABLE_CO_COMMAND_MODEL)
 
-    features = ClimateEntityFeature(
-        hass.states.get(CLIMATE).attributes["supported_features"]
+    state = hass.states.get(CLIMATE)
+    features = ClimateEntityFeature(state.attributes["supported_features"])
+    assert features & ClimateEntityFeature.SWING_MODE
+    assert features & ClimateEntityFeature.FAN_MODE
+    assert state.attributes["fan_modes"]
+    # ...but only the axis it can place: no "both", no "horizontal", and no separate left-right
+    # control either, since nothing in this family's report reads that vane back.
+    assert state.attributes["swing_modes"] == ["off", "vertical"]
+    assert not features & ClimateEntityFeature.SWING_HORIZONTAL_MODE
+
+    # And the command sends only that axis -- handing the encoder the other one would raise and
+    # take the whole group-set with it, which is the failure this family was already bitten by.
+    await hass.services.async_call(
+        "climate", "set_swing_mode", {"entity_id": CLIMATE, "swing_mode": "vertical"}, blocking=True
     )
+    assert mock_uss.send.await_count == 1
+
+
+async def test_a_family_that_can_move_neither_vane_does_not_offer_a_swing_control(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The gate still exists, and no shipped family reaches it -- so it is reached on purpose.
+
+    A control whose field the family cannot place could only ever raise. Every registered family
+    now places at least the up-down vane, which is exactly when a guard quietly stops being
+    exercised and then stops working.
+    """
+    from homeassistant.components.climate import ClimateEntityFeature
+
+    from custom_components.haismart.coordinator import HaismartCoordinator
+
+    real = HaismartCoordinator.supports_field
+    with patch.object(
+        HaismartCoordinator,
+        "supports_field",
+        lambda self, name: False if name.startswith("windDirection") else real(self, name),
+    ):
+        await _setup(hass)
+        features = ClimateEntityFeature(
+            hass.states.get(CLIMATE).attributes["supported_features"]
+        )
     assert not features & ClimateEntityFeature.SWING_MODE
-    assert not features & ClimateEntityFeature.FAN_MODE
-    # what the family CAN write is still offered, so this is a gate and not a retreat
+    assert not features & ClimateEntityFeature.SWING_HORIZONTAL_MODE
+    # what it CAN write is still offered, so this is a gate and not a retreat
     assert features & ClimateEntityFeature.TARGET_TEMPERATURE
-    assert features & ClimateEntityFeature.TURN_ON
+    assert features & ClimateEntityFeature.FAN_MODE
 
 
 async def test_the_classic_family_keeps_both_controls(hass: HomeAssistant, mock_uss) -> None:

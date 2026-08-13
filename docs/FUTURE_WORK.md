@@ -283,52 +283,6 @@ than failing. A single-parameter write cannot do that. The family deserves a saf
 from its own mechanics — probably narrower than the current allowlist, and certainly not the same
 rule copied across without examination.
 
-## 28. Fan speed and both vanes on the 209-byte family — one reading from settled
-
-**Status: open, and much smaller than it was. The positions are published; what is missing is one
-report.**
-
-★ **Their write positions are not in doubt.** `Operation[grSetDAC].variants` — the published write
-frame — is ONE frame across every published air-conditioner device type (`02011`, `02012`,
-`0201201G`, `02012036`, `03012`, `0301200L`, `0301200n`): 39 attributes, eppCmd `6001`, frameType 1,
-29 of them common to all seven, and **zero position disagreements between families**. It places
-`windDirectionVertical` at w1.b0/4, `windSpeed` at w2.b8/3 and `windDirectionHorizontal` at w4.b0/3
-— and the three positions this family confirmed on hardware (`targetTemperature` w1.b8,
-`operationMode` w2.b13, `onOffStatus` w3.b0) reproduce that frame exactly.
-
-⚠️ **These were withheld on a reason that conflated two frames, and it should not be repeated.** The
-stated reason was that this family's vane "answers at a different word, so the position is not
-settled". That is a fact about the **report**, which inserts ten words at word 25 here. The
-**group-set** displaces nowhere, between any two published families. A displacement in one frame
-says nothing about the other. It is also how the vendor app commands one of these while misreading
-its sensors: it resolves a profile by **device type**, whose class entry (`02012`) covers this whole
-class and carries the same undisplaced group-set.
-
-⛔ **What blocks it now is a genuine conflict in the READ map, and one report resolves it.**
-`write_base_word + write_word - 1` is the report word a written bit reads back at — asserted by a
-test, and load-bearing for this family's five secondary toggles. The published frame puts the vane
-at write word 1, i.e. **report word 20**. This family's read map puts the vane at **report word
-25**, established from captures taken in stated states. Both cannot be true:
-
-* if word 20 is the appliance-level vane, then word 25 is a **per-tower** vane — which this
-  family's own devices declare (`windDirectionVerticalL`/`R`), and which is already the accepted
-  explanation for the per-tower fan speed at word 26;
-* if word 25 is right, the group-set does not slice the report on this family, and the toggles
-  derived through that relation lose their support.
-
-Every capture held reads **zero at both positions** — the vane was parked in each — so nothing on
-hand can choose between them.
-
-**What settles it: one report from this family with the up-down vane parked at a NON-ZERO position.**
-Not four; one. Whichever word moves is the appliance-level vane, and all three controls ship
-together. A diagnostics download carries the report, so no capture tooling is involved.
-
-⚠️ **A `digital_model` in a diagnostics file cannot stand in for it.** That model is fetched once,
-when the appliance is added, and is never refreshed afterwards, so its values drift arbitrarily far
-from the report beside them — in the file that prompted this entry the model states the unit is off
-while the report in the same file decodes it as running. A model-versus-report disagreement is
-therefore not evidence about a position unless the model is independently shown to be fresh.
-
 # Settled
 
 Not open items. They are here because each looks like something to "fix" until you know why it is
@@ -1040,3 +994,73 @@ and control **always** fell back to the caller's cached blob. That is the stale 
 single-session read-modify-write exists to avoid, and it is why one poisoned cache entry could keep
 breaking commands rather than being corrected by the next one. `is_control_baseline` now asks the
 registry, and `async_send_op` takes the uPlusId so it can.
+
+## 28. Fan speed and the up-down vane on the 209-byte family — settled
+
+**Both ship, as of v0.47.0.** The reading was restored and the controls with it, on evidence that
+had been sitting in a diagnostics file for a day. Reported as a *regression* by the owner of the
+first 209-byte appliance (issue #6): after v0.46.2 his climate entity dropped from `supported_features`
+441 to 401 — no fan dropdown, no swing — while his remote worked the fan and the vane perfectly well.
+
+★ **The write positions were never in doubt.** `Operation[grSetDAC].variants` — the published write
+frame — is ONE frame across every published air-conditioner device type (`02011`, `02012`,
+`0201201G`, `02012036`, `03012`, `0301200L`, `0301200n`): 39 attributes, eppCmd `6001`, frameType 1,
+and **zero position disagreements between families**. It places `windDirectionVertical` at w1.b0/4
+and `windSpeed` at w2.b8/3, and this family's three hardware-confirmed positions reproduce it exactly.
+
+### What settled it
+
+One diagnostics file carrying a report **and** a cloud record taken close enough together to be
+checked against each other. Its volatile attributes agree — setpoint 22.0, indoor 28.0, power on,
+and all six word-22 toggles bit for bit — so the record belongs beside that report:
+
+| the report | that same file's cloud record |
+|---|---|
+| w20.b0 (the map's vane) = **0** | `windDirectionVertical` = **2** |
+| w25 (inserted block) = **2** | `windDirectionVerticalL` / `R` = 0 / 0 |
+| w21.b8 (the map's fan) = **6** | `windSpeed` = **1** |
+| w26.b9 (inserted block) = **1** | `windSpeedL` / `R` = 3 / 5 |
+
+The inserted block holds the **appliance's** vane and fan. And the per-tower explanation the fan was
+withdrawn under is refuted by the very document that withdrew it: a tower register cannot read the
+appliance's value when the towers are published in the same record as 3 / 5 and 0 / 0.
+
+### Why it was wrong for two releases, which is the part worth keeping
+
+v0.43.2 retired `w26.b9` — a position that fitted three captures taken in stated states — on a
+fourth capture that read 0 there "while the appliance's own cloud record said 1", from "a document
+that agreed with 53 other attributes and disagreed with none, **so it was not stale**". Both halves
+of that fail, and both were checkable at the time:
+
+* **The document was the same frozen record as the file before it** — diagnostics carry the cloud
+  model as fetched at onboarding — and in that very file its setpoint said 22.0 while the report it
+  was being compared against said 24.0. It was stale by at least one setpoint change.
+* **The agreement count cannot detect staleness.** It runs over `model_declared_fields`, which by
+  construction holds only the attributes no field map reads: the voice module, air-quality probes
+  these units do not have, `tempUnit`, `volume`. Not one of them can change. It agrees whatever the
+  document's age, so "53 agreed" was measuring nothing.
+
+v0.46.1 then withdrew the **controls**, reasoning from that withdrawn reading plus the read-map
+conflict — a fact about the *report* spent on the *group-set*, which is the conflation this item
+already warned against in its previous form. One invalid retraction cascaded into a larger one.
+
+★ **The general lesson is Rule 14** (`METHOD.md` §10): a fact that is overturned takes its
+dependents with it, and nothing walks back to collect them. "A diagnostics `digital_model` is frozen
+at onboarding" was written down the day *after* v0.43.2 shipped and never applied to it.
+
+### What is still open, and it is small
+
+`write_base_word + write_word - 1` — the report word a written bit reads back at — **holds on this
+family for words 1..3 as words** (setpoint, mode and the whole boolean block, the last confirmed 6/6
+against that fresh record) and **fails for exactly two bit-fields inside the first two of them**.
+The relation is a heuristic, not a law; the two exceptions are listed in `_WRITE_READ_EXCEPTIONS`
+with their evidence.
+
+Which way the failure runs is not established: the appliance may ignore those bits in the group-set,
+or accept them and report the result only in the inserted block. **Only a write observes that**, and
+it is now the owner's to observe — the readback is restored, so setting the fan from Home Assistant
+and watching it follow is the whole test.
+
+`windDirectionHorizontal` stays out. Its write position is published like the others; nothing in
+this family's report reads it back, and a control that writes what it cannot read is the defect
+v0.31.0 already fixed once.

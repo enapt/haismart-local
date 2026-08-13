@@ -59,7 +59,7 @@ name, so diagnostics distinguish it from a family confirmed on hardware.
 | 109 / 121 / 125 / 127 B | **classic** | `°C − 16` @ w1.b8 | indoor w6.b8, outdoor w7.b8 | ✅ read + control |
 | 117 B | **compact-12** | whole °C @ w12 | indoor w1, outdoor w2 (not published) | ✅ read + control |
 | 165 / 175 B | **extended-36** | `°C − 16` @ w20.b8 | indoor w25.b8, outdoor w26.b8 | ✅ read + control |
-| 209 B | **extended-46** | **half-degrees** @ w20.b8 | indoor w35.b8, outdoor w36.b8 | ✅ read + control (no fan/swing yet) |
+| 209 B | **extended-46** | **half-degrees** @ w20.b8 | indoor w35.b8, outdoor w36.b8 | ✅ read + control (no left-right vane) |
 | 133 B | *unclaimed* — map below | `°C − 16` @ w1.b12 (4 bits) | indoor w5.b8, outdoor w6.b8 | ⏳ documented, not shipped |
 | 149 / 155 B | *unclaimed* — floor/heat-pump class | @ w25.b8 | — | ⏳ two conflicting maps at 149 B |
 
@@ -110,9 +110,11 @@ w33 and w34 all read zero in all three captures. Any capture with a w24-block fe
 
 **Vane positions** — a `select` offering the stops a vane can hold, rather than just sweeping or
 not — need a family that packs the vane as the multi-bit code it is. Classic and extended-36 do;
-compact-12 collapses each vane to a single bit, so a position sent there would arrive as "sweep",
-and on extended-46 the vane's *read* position is unresolved between two candidates (see that
-family's section below — its write position is published and undisputed). The positions
+compact-12 collapses each vane to a single bit, so a position sent there would arrive as "sweep".
+Extended-46 packs its up-down vane as a code and both reads and writes it as of v0.47.0, but is
+still left out here: no write to that field has been *observed* landing on the family yet, and the
+four-way swing already exercises the same field at its two ends, which is the cheaper way to find
+out. Its left-right vane is not written at all — nothing in its report reads one back. The positions
 themselves come from the device's own model, so even on a family that can place them the entity
 appears only for a unit that publishes more than the two ends.
 
@@ -179,8 +181,11 @@ the Energy dashboard is worse than no sensor at all.
 
 Extended-36 with a further **ten-word block inserted at word 25**. Words 1..24 are exactly where
 extended-36 puts them; everything from extended-36's word 25 upward moves ten words later. The
-inserted block belongs to a dual-airflow cabinet — these units describe a second, per-tower set of
-fan and vane attributes — and a single-flow unit leaves most of it at zero.
+inserted block was taken for a dual-airflow cabinet's second, per-tower set of fan and vane
+attributes — these units do describe one — and a single-flow unit leaves most of it at zero.
+
+⚠️ **That reading is wrong for the two words we read from it.** Word 25 and word 26 carry the
+**appliance's** vane and fan, not a tower's: see the fan entry below.
 
 Three things about it differ in kind rather than position, and each was fixed by values the reports
 carry directly:
@@ -194,41 +199,54 @@ carry directly:
   already caught departing from the published map in three places, and the counter's position is
   itself derived from the inserted block, so inheriting an unverified unit into someone's energy
   history is not warranted. One reading off that owner's app against a capture settles it;
-- ⛔ **fan speed is not placed at all**, and this has now been decided twice. Word 21 bit 8, where
-  every other family keeps it, reads a constant 6 that these units' own model does not define. Word
-  26 bit 9 was adopted on three captures taken in stated states and **retired by a fourth**: on a
-  unit running in cool it read 0 while the manufacturer's own record of the same appliance said the
-  fan was 1 — and that record agreed with 53 other attributes and disagreed with none, so it was
-  not stale. The explanation is what the inserted block *is*: word 26 carries a **tower's** speed,
-  which is 0 while that tower is idle, where `windSpeed` is the setting as a whole. Publishing one
-  as the other shows the wrong number whenever they differ and nothing at all when the tower is
-  still — worse than showing neither, because an automation can read it.
+- ★ **fan speed is placed at word 26 bit 9**, and this has now been decided three times, so the
+  evidence on every side is in the tests. Word 21 bit 8, where every other family keeps it, reads a
+  **constant 6** in all seven captures held from two different appliances — including between one
+  owner's stated *high* and stated *low*. Word 26 bit 9 reads 1 on high, 3 on low, 0 with the unit
+  off, and 1 where a fresh cloud record for that same report says `windSpeed` is 1. It is decoded as
+  an **enum**, so a code the model does not declare — the idle 0, the constant 6 — surfaces as *no
+  reading* rather than an invented speed.
 
-So this family reads **no** fan speed and, for now, writes neither it nor either vane — but the
-reason is not the one this section used to give, and the correction matters.
+So this family reads its fan speed and its up-down vane, and **writes both**, as of v0.47.0.
 
-★ **The write positions are published and are not in doubt.** The published write frame is ONE frame
-across every air-conditioner device type — 39 attributes, `6001`, frameType 1, **zero position
+★ **The write positions are published and were never in doubt.** The published write frame is ONE
+frame across every air-conditioner device type — 39 attributes, `6001`, frameType 1, **zero position
 disagreements between families** — placing `windDirectionVertical` at w1.b0/4, `windSpeed` at
 w2.b8/3 and `windDirectionHorizontal` at w4.b0/3, and this family's three hardware-confirmed
 positions reproduce it exactly.
 
-⚠️ The old reason — "the vane *reads* at word 25, so the group-set's word 20 is not where this
-family keeps it" — **conflated the report with the group-set**. The report displaces (ten words
-inserted at w25); the write frame displaces nowhere. A displacement in one says nothing about the
-other, and this is exactly how the vendor app commands one of these while misreading its sensors: it
-resolves by device type, and the class entry's group-set is undisplaced.
+### How the read positions were settled, and why they had been withdrawn
 
-⛔ What blocks it now is a conflict inside the READ map. `write_base_word + write_word - 1` is the
-report word a written bit reads back at, so the published frame puts the vane at report word 20,
-while this family's read map puts it at word 25. Either word 25 is a **per-tower** vane — which
-these devices declare, and which already explains the per-tower fan speed at word 26 — or the
-group-set does not slice the report here. Every capture held reads zero at both, so nothing on hand
-decides. **One report with the up-down vane parked at a non-zero position settles it and ships all
-three controls.** See item 28 in `FUTURE_WORK.md`.
+One diagnostics file carries a report **and** a cloud record taken close enough together to check
+against each other — setpoint 22.0, indoor 28.0, power on and all six word-22 toggles agreeing bit
+for bit. Against that record:
 
-Until then the climate entity does not advertise the controls: the four-way swing moves both vanes
-in one group-set and could only ever raise here, and the fan dropdown had nothing to select.
+| the report | the same file's cloud record |
+|---|---|
+| w20.b0 (the map's vane) = **0** | `windDirectionVertical` = **2** |
+| w25 (inserted block) = **2** | `windDirectionVerticalL` / `R` = 0 / 0 |
+| w21.b8 (the map's fan) = **6** | `windSpeed` = **1** |
+| w26.b9 (inserted block) = **1** | `windSpeedL` / `R` = 3 / 5 |
+
+The per-tower explanation the fan had been withdrawn under is refuted by that same document: a tower
+register cannot read the appliance's value when the towers are published beside it as 3 / 5 and 0 / 0.
+
+⚠️ **The retirement rested on a stale document, and on a freshness check that could not fail.** The
+capture that retired word 26 read 0 there "while the appliance's own cloud record said 1", from "a
+document that agreed with 53 other attributes and disagreed with none". That record was the **same
+frozen shadow** as the file before it — a diagnostics `digital_model` is fetched once, at
+onboarding — and its own setpoint disagreed with the report it was compared against, 22.0 against
+24.0. The 53 agreements run over `model_declared_fields`, which holds only attributes no field map
+reads (the voice module, probes these units lack, `tempUnit`), so none of them can change.
+
+⚠️ **`write_base_word + write_word - 1` is a heuristic, not a law.** On this family it holds for
+words 1..3 as *words* — setpoint, mode and the entire boolean block — and fails for exactly two
+bit-fields inside the first two. Which way that failure runs is unsettled: the appliance may ignore
+those bits in the group-set, or accept them and report the result only in the inserted block. Only a
+write observes it, and the readback now makes that something an owner can check.
+
+`windDirectionHorizontal` stays unwritten: its position is published like the others, but nothing in
+this family's report reads it back. See item 28 in `FUTURE_WORK.md`.
 
 ### 133 B — documented, not shipped
 

@@ -752,8 +752,8 @@ EXTENDED36 = WireModel(
 # family, so the group-set is that family's: command `6001`, five words, seeded from report word 20.
 # What differs is only the setpoint's units (see below).
 #
-# ⚠️ Not offered here: `windSpeed` and the two vanes. The reason has CHANGED, and the old one was
-# wrong -- read this before withholding them again, and before shipping them.
+# `windSpeed` and the up-down vane ARE offered here. `windDirectionHorizontal` is not, and the
+# reason is only that nothing in this family's report reads it back -- see the rule below.
 #
 # ★ Their WRITE positions are published, and are not in doubt. `Operation[grSetDAC].variants` is
 # the write frame, and across every published air-conditioner device type (`02011`, `02012`,
@@ -770,24 +770,46 @@ EXTENDED36 = WireModel(
 # it resolves a profile by **deviceType** (a prefix hierarchy -- the class model `02012` covers this
 # whole class), and the class model's group-set needs no displacement at all.
 #
-# ⛔ What actually blocks them now is a genuine conflict, in the READ map, that only evidence
-# settles. `write_base_word + write_word - 1` is the report word a written bit reads back at --
-# asserted by a test, and load-bearing for the five toggles above. The published write frame puts
-# the vane at write w1, i.e. **report w20**. This family's read map puts `swing_vertical` at
-# **report w25**, established from captures taken in stated states. Both cannot be right:
-#   * if w20 is the appliance-level vane, then w25 is a PER-TOWER vane -- which this family's own
-#     devices declare (`windDirectionVerticalL`/`R`), and which is exactly the explanation already
-#     accepted for the per-tower fan speed at w26;
-#   * if w25 is right, then the group-set does not slice the report on this family, and the five
-#     toggles derived through that relation lose their support.
-# Every capture held reads 0 at both positions -- the vane was parked in each -- so nothing here can
-# choose. ONE report from this family with the up-down vane parked at a NON-ZERO position decides it
-# outright, and would ship all three controls at once.
+# ★★ SETTLED, by one file that carries a report and a cloud record taken together. What had blocked
+# these was a conflict with the READ map: `write_base_word + write_word - 1` is the report word a
+# written bit reads back at, so the published write frame puts the vane at report w20, while this
+# family's captures put it at w25. Both could not be right, and every capture then held read 0 at
+# both, so nothing could choose. One could, and it had been on disc for a day:
+#
+#   | report                       | that same file's cloud record        |
+#   | w20.b0 (map's vane)     = 0  | windDirectionVertical  = 2           |
+#   | w25    (inserted block) = 2  | windDirectionVerticalL/R = 0 / 0     |
+#   | w21.b8 (map's fan)      = 6  | windSpeed              = 1           |
+#   | w26.b9 (inserted block) = 1  | windSpeedL/R           = 3 / 5       |
+#
+# That record is fresh, and provably so in its own file: its setpoint (22.0), indoor temperature
+# (28.0), power and all six word-22 toggles agree with the report bit for bit. So the inserted
+# block holds the APPLIANCE's vane and fan, and the map's own positions do not read them here.
+#
+# ⛔ It also falsifies the PER-TOWER explanation those two positions were withdrawn under -- using
+# the very document that withdrew them. A per-tower register cannot read the appliance value: the
+# towers are published in the same record as 3 / 5 and 0 / 0, and the wire reads 1 and 2.
+#
+# So the relation above holds on this family for words 1..3 as WORDS -- the setpoint, the mode and
+# the whole boolean block land at report w20/w21/w22 -- and fails for exactly two bit-fields inside
+# the first two of them. The five toggles keep their support regardless, having been confirmed 6/6
+# against that fresh record rather than by arithmetic alone.
+#
+# ⚠️ What is NOT established is which way that failure runs: whether the appliance ignores those
+# bits in the group-set, or accepts them and reports the result only in the inserted block. Only a
+# write observes that, which is why these two ship as a control the reporter can now verify himself
+# -- the readback is restored, so setting the fan from Home Assistant and watching w26.b9 follow is
+# the whole test. `windDirectionHorizontal` stays out until this family reads one back.
 _EXT46_WRITE = {
     # 16..30 C. The wire value is °C × 2 on this family, not the classic °C − 16, so 16..30 C is
     # wire 32..60 — a range that would read as 48..76 C under the classic units.
     "targetTemperature": WriteField(1, 8, 8, "celsius", scale=2.0, min_epp=32, max_epp=60),
+    # Both from the published write frame, at the positions every other air-conditioner device type
+    # states -- and both now READ BACK, at w25 and w26.b9, which is what makes offering them
+    # something the owner can check rather than something we assert.
+    "windDirectionVertical": WriteField(1, 0, 4, "passthrough", max_epp=0x0C),
     "operationMode": WriteField(2, 13, 3, "std_enum", std_to_epp={0: 0, 1: 1, 2: 2, 4: 4, 6: 6}),
+    "windSpeed": WriteField(2, 8, 3, "std_enum", std_to_epp={1: 1, 2: 2, 3: 3, 5: 5}),
     "onOffStatus": WriteField(3, 0, 1, "passthrough"),
     "healthMode": WriteField(3, 1, 1, "passthrough"),
     "rapidMode": WriteField(3, 3, 1, "passthrough"),
@@ -799,8 +821,13 @@ _EXT46_WRITE = {
 # The "extended-46" family: a 58-word report (209 B) that is the **extended-36 layout with a ten-word
 # block inserted around word 25**. The climate block at words 20..22 sits exactly where extended-36
 # puts it, and every attribute from extended-36's word 25 upward is found ten words later. The
-# inserted block belongs to a dual-airflow cabinet (the device model for these units carries a second
-# set of per-tower fan and vane attributes); a single-flow unit leaves most of it at zero.
+# inserted block was taken for a dual-airflow cabinet's second set of fan and vane attributes, which
+# these units' device models do declare; a single-flow unit leaves most of it at zero.
+#
+# ⚠️ That reading is WRONG for the two words we read from it. The block's w25 and w26 carry the
+# APPLIANCE's vane and fan, not a tower's: on a report whose cloud record was fresh, they read 2 and
+# 1, while the same record published `windDirectionVerticalL`/`R` as 0 / 0 and `windSpeedL`/`R` as
+# 3 / 5. Whatever the other eight words are, those two are not per-tower.
 #
 # ⚠️ **Where the block BEGINS is not pinned, and it matters for anything read from words 23..24.**
 # The captures confirm w20/w21/w22 unmoved, w35/w36 at +10, and a vane at w25 with the fan speed at
@@ -823,9 +850,10 @@ _EXT46_WRITE = {
 #   * the vertical vane answers at word 25 — inside the inserted block — where the classic vane
 #     encoding still applies (the "swinging" flag is bit 3 of the nibble).
 #
-# Deliberately omitted from the READ: `windSpeed` (this family reports a code its own device model
-# does not declare, so its position is not settled — the enum below would drop it anyway, leaving the
-# fan mode absent rather than wrong), horizontal swing, and the air-quality/humidity attributes.
+# Deliberately omitted from the READ: horizontal swing, and the air-quality/humidity attributes.
+# `windSpeed` WAS omitted, on the grounds that this family reports a code its own device model does
+# not declare — true of the map's position (a constant 6) and not of the appliance, which answers at
+# w26.b9 with codes its model does declare. See the field below.
 # Also left out: the cumulative-energy register at words 44+45, which works on this family (unlike
 # the classic one, where it reads zero). The register is now known to count watt-hours on
 # extended-36, and it is the same published attribute here — but this is the one family that has
@@ -864,9 +892,9 @@ EXTENDED46 = WireModel(
     write_base_word=20,     # report word 20 == group-set word 1, as on extended-36
     write_fields=_EXT46_WRITE,
     canonical_displacement=0,
-    # Ten words inserted at w25 for this cabinet's per-tower vane and fan. The published map does
-    # not describe them -- no bundled model has dual airflow -- so they are the two explicit fields
-    # below, and everything else is taken from the map either side of the pivot.
+    # Ten words inserted at w25, which no bundled model describes. Two of them are read explicitly
+    # below -- the appliance's own vane and fan, which answer here rather than where the map puts
+    # them -- and everything else is taken from the map either side of the pivot.
     canonical_insert=(_EXT46_PIVOT, _EXT46_INSERT_WORDS),
     fields={
         # Everything the published map describes, placed by the pivot: words below 25 where the map
@@ -901,26 +929,35 @@ EXTENDED46 = WireModel(
         # gets right. Position from the map, scaling from a reading: the same rule that applies to
         # meaning applies here, and this is why the generation is field-wise rather than wholesale.
         "target_temperature": WireField(_ext46_word(20), 8, 8, kind="int", k=0.5, c=0.0),
-        # The two fields the map cannot place, because they are not in it: they are the inserted
-        # block's own per-tower controls, and no bundled model has dual airflow. Both were
-        # established from captures taken in stated states.
+        # The two fields the published map cannot place HERE, though it names them both: they answer
+        # from the inserted block, not from the words the map assigns them. Established from
+        # captures taken in stated states on one appliance, and confirmed on a second against a
+        # cloud record fresh enough to agree with its own file on everything else.
+        #
+        # The vane: 0x0C with the owner's swing switched on, a parked position (2) where the record
+        # said 2, zero where the unit was off. The map's own w20.b0 reads 0 through all of it.
         "swing_vertical": WireField(25, 0, 4, kind="vane_v"),
-# ⛔ Fan speed is NOT published on this family, and this is the second time that has been
-        # decided. Word 21 bit 8 -- where every other family keeps it -- reads a constant 6. Word 26
-        # bit 9 was adopted later on three captures taken in stated states, and a fourth capture
-        # retired it: on a unit running in cool, that position read 0 while the appliance's own
-        # cloud record said the fan was 1. The same document agreed with 53 other attributes and
-        # disagreed with none, so it was not stale.
+        # ★ Fan speed, restored -- and this is the third decision about it, so the evidence is in
+        # the tests on both sides rather than only the winning one.
         #
-        # The explanation is in what the inserted block IS: this cabinet's per-tower vane and fan.
-        # Word 26 carries a TOWER's speed, which is 0 when that tower is idle, while the appliance's
-        # windSpeed is the setting as a whole. Publishing one as the other shows the wrong number
-        # whenever they differ and nothing at all when the tower is still -- worse than showing
-        # neither, because an automation can read it.
+        # Word 21 bit 8, where every other family keeps it, reads a CONSTANT 6 in all seven captures
+        # held from two different appliances -- including between one owner's stated high and stated
+        # low. Whatever that is, it is not this appliance's fan.
         #
-        # What would settle it: two captures from one appliance at DIFFERENT stated fan speeds,
-        # each with its cloud-reported windSpeed. Two captures at the same speed leave 16 candidate
-        # positions, which is how few one value can eliminate.
+        # Word 26 bit 9 reads 1 where a capture was taken on high, 3 where taken on low, 0 with the
+        # unit off, and 1 where a fresh cloud record for that same report said windSpeed was 1.
+        #
+        # It was withdrawn once on a fourth capture that read 0 here while "the appliance's own
+        # cloud record said 1". That record was STALE -- the same frozen document as the file
+        # before it, and its setpoint disagreed with the report it was compared against (22.0 vs
+        # 24.0) in that very file. The freshness test used ("agreed with 53 attributes, disagreed
+        # with none") runs over `model_declared_fields`, which holds only inert attributes -- the
+        # voice module, probes this unit does not have, tempUnit -- so it agrees by construction and
+        # can never detect staleness. See `test_the_209_family_reads_its_fan_speed`.
+        #
+        # `enum` and not `raw`: an unlisted code yields NO reading. So the idle-unit 0 and the
+        # constant 6 both surface as absence, never as an invented speed.
+        "wind_speed": WireField(26, 9, 3, kind="enum", enum=_EXT36_FAN),
         # Cumulative energy in watt-hours, 32 bits whose low half sits at word 45 and high half at
         # word 44 -- the published map states this register one word past the indoor temperature,
         # and both anchors land ten words later on this family, which puts it exactly here.

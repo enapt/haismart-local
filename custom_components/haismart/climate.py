@@ -148,21 +148,29 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
         # handed a field it cannot place.
         if coordinator.supports_field("windDirectionHorizontal"):
             self._attr_supported_features |= ClimateEntityFeature.SWING_HORIZONTAL_MODE
-        # ...and the same gate for the two controls that were never given one, which is how a
-        # 209-byte unit came to offer a swing control that could only ever answer
-        # "'windDirectionVertical' is not a writable field on extended46". The four-way swing moves
-        # BOTH vanes in one group-set, so it needs both fields, and extended-46 has neither; the
-        # fan dropdown needs windSpeed, which that family does not place either (its report does
-        # not even publish a speed, so the control sat there with nothing selected). A feature whose
-        # field the family cannot place is a button that can only raise -- the same reasoning the
-        # presets and the horizontal axis above are already gated by, applied to the rest.
-        for field, flag in (
-            ("windSpeed", ClimateEntityFeature.FAN_MODE),
-            ("windDirectionVertical", ClimateEntityFeature.SWING_MODE),
-            ("windDirectionHorizontal", ClimateEntityFeature.SWING_MODE),
-        ):
-            if not coordinator.supports_field(field):
-                self._attr_supported_features &= ~flag
+        # ...and the same gate for the fan dropdown, which was never given one: a feature whose
+        # field the family cannot place is a button that can only raise.
+        if not coordinator.supports_field("windSpeed"):
+            self._attr_supported_features &= ~ClimateEntityFeature.FAN_MODE
+        # The four-way swing goes only when NEITHER axis can move -- not when either cannot, which
+        # is what this gate said when it was written and is why a family that can work its up-down
+        # vane was left with no swing control at all. `supported_features` below has always had it
+        # the right way round for the locked case; the two now agree.
+        #
+        # A family that can move one axis keeps the control, offering only the positions it can
+        # actually reach, because `async_set_swing_mode` sends only the fields it has.
+        axes = [
+            field
+            for field in ("windDirectionVertical", "windDirectionHorizontal")
+            if coordinator.supports_field(field)
+        ]
+        if not axes:
+            self._attr_supported_features &= ~ClimateEntityFeature.SWING_MODE
+        elif len(axes) == 1:
+            self._attr_swing_modes = [
+                SWING_OFF,
+                SWING_VERTICAL if axes[0] == "windDirectionVertical" else SWING_HORIZONTAL,
+            ]
 
     @property
     def extra_state_attributes(self) -> dict[str, str] | None:
@@ -441,14 +449,19 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
     async def async_set_swing_mode(self, swing_mode: str) -> None:
         # Both axes travel in ONE grSetDAC group-set, so off -> both can never land as a
         # half-applied state, and picking one axis explicitly turns the other off.
-        vertical = swing_mode in (SWING_VERTICAL, SWING_BOTH)
-        horizontal = swing_mode in (SWING_HORIZONTAL, SWING_BOTH)
-        v_enum = GRSETDAC_ENUMS["windDirectionVertical"]
-        h_enum = GRSETDAC_ENUMS["windDirectionHorizontal"]
+        #
+        # A family that places only one of them gets only that one sent: the other would be handed
+        # to an encoder that cannot place it, and the whole command would raise rather than the
+        # half of it that this appliance can do.
+        wanted = {
+            "windDirectionVertical": swing_mode in (SWING_VERTICAL, SWING_BOTH),
+            "windDirectionHorizontal": swing_mode in (SWING_HORIZONTAL, SWING_BOTH),
+        }
         await self.coordinator.async_send_control(
             {
-                "windDirectionVertical": v_enum["on" if vertical else "off"],
-                "windDirectionHorizontal": h_enum["on" if horizontal else "off"],
+                field: GRSETDAC_ENUMS[field]["on" if on else "off"]
+                for field, on in wanted.items()
+                if self.coordinator.supports_field(field)
             }
         )
 

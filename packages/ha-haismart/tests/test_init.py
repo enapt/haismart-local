@@ -255,6 +255,72 @@ async def test_an_appliance_that_starts_reporting_gets_its_entities_back(
     assert hass.states.get("sensor.downstairs_ac_power") is not None
 
 
+async def test_a_reading_the_status_report_carries_survives_the_telemetry_refusal(
+    hass: HomeAssistant, mock_uss, freezer
+) -> None:
+    """Refusing the telemetry query must not take away a reading the status report itself answers.
+
+    The 175-byte family reads live input power out of its own status report (word 41) and never
+    answers the extended-status query -- both at once, on the same unit. Refusing the whole key set
+    when the query went unanswered deleted that unit's working power sensor (issue #8, the one
+    family with a measured wattage). The refusal may only reach the readings the report does not
+    carry.
+    """
+    frame = make_extended36_frame(
+        length=175, power=True, target_temp=24, indoor_temp=26.0, power_w=1432
+    )
+    mock_uss.read.return_value = [frame]
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data
+
+    from custom_components.haismart.const import CONF_ABSENT_READINGS, EXTENDED_READING_KEYS
+    from custom_components.haismart.coordinator import EXTENDED_STATUS_FRAME_TYPES
+
+    # run the telemetry question all the way to its verdict
+    for _ in range(EXTENDED_MISSES * len(EXTENDED_STATUS_FRAME_TYPES) - 1):
+        await _tick(hass, freezer)
+    await hass.async_block_till_done()
+    assert coordinator.supports_extended is False
+
+    # the readings only the telemetry frame carries are refused and removed...
+    registry = er.async_get(hass)
+    assert set(entry.data[CONF_ABSENT_READINGS]) == set(EXTENDED_READING_KEYS) - {"power_w"}
+    assert (
+        registry.async_get_entity_id("sensor", DOMAIN, "A1B2C3D4E5F6_compressor_current_a") is None
+    )
+    # ...while the power sensor, fed by the status report every cycle, stands and reads
+    assert registry.async_get_entity_id("sensor", DOMAIN, "A1B2C3D4E5F6_power_w") is not None
+    assert float(hass.states.get("sensor.downstairs_ac_power").state) == 1432
+
+
+async def test_a_wrongly_refused_status_reading_is_healed_on_the_next_poll(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """An entry that recorded `power_w` absent under the old whole-set refusal gets it back.
+
+    That is the state issue #8's installation was left in: the verdict is remembered on the entry,
+    so fixing the refusal alone would never return the sensor. The first decoded status that
+    carries the reading must clear the record and re-create the entity, unprompted.
+    """
+    from custom_components.haismart.const import CONF_ABSENT_READINGS, EXTENDED_READING_KEYS
+
+    frame = make_extended36_frame(
+        length=175, power=True, target_temp=24, indoor_temp=26.0, power_w=1318
+    )
+    mock_uss.read.return_value = [frame]
+    entry = _entry(**{CONF_ABSENT_READINGS: list(EXTENDED_READING_KEYS)})
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    # the record now holds only what the appliance genuinely does not report
+    assert set(entry.data[CONF_ABSENT_READINGS]) == set(EXTENDED_READING_KEYS) - {"power_w"}
+    power = hass.states.get("sensor.downstairs_ac_power")
+    assert power is not None and float(power.state) == 1318
+    # and the genuinely refused readings stay gone
+    assert hass.states.get("sensor.downstairs_ac_current") is None
+
+
 def _honest_read(*, answer_from_ask: int = 1, empty: dict | None = None):
     """A read side effect that returns an extended report ONLY on a cycle that asked for one.
 

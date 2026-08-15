@@ -703,6 +703,17 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 self.read_only_layout = (
                     len(blob) if state.get("writable") is False else None
                 )
+                # The readings the extended query answers that this family's own STATUS report
+                # already supplies -- the 175-byte family reads live input power straight out of
+                # its report, at word 41. Those are being answered every cycle, in the report
+                # itself, so they must never hang on whether the telemetry question gets a reply.
+                # Restoring them here also heals an entry that recorded one under the old rule,
+                # which refused the whole key set at once: that took issue #8's power sensor away
+                # from the one family with a measured wattage, because that unit ignores the
+                # telemetry query while reporting watts in every status frame.
+                in_status = [k for k in EXTENDED_READING_KEYS if k in state]
+                if in_status:
+                    self._async_reading_returned(in_status)
                 if telemetry:
                     self.supports_extended = True
                     self._extended_misses = 0
@@ -749,8 +760,12 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                             # of the question. This appliance does not measure these things, so its
                             # entities for them are removed and not offered again -- an entity that
                             # will read `unknown` for the life of the installation is worse than no
-                            # entity at all.
-                            self._async_reading_refused(EXTENDED_READING_KEYS)
+                            # entity at all. Except the readings the status report itself carries
+                            # (`in_status`): those the appliance IS answering, just not via this
+                            # query, and the refusal must not reach them.
+                            self._async_reading_refused(
+                                k for k in EXTENDED_READING_KEYS if k not in state
+                            )
                 self._apply_telemetry(state, telemetry)
                 self._drop_stale_outdoor_temp(state)
                 state.update(alarms)

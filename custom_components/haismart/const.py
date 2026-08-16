@@ -126,9 +126,6 @@ EXTENDED_READING_KEYS: tuple[str, ...] = (
     "compressor_frequency_hz",
     "coil_temperature",
     "discharge_temperature",
-    "outdoor_coil_temperature",
-    "outdoor_in_air_temperature",
-    "outdoor_defrost_temperature",
     "compressor_running",
     "fan_running",
 )

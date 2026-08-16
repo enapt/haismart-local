@@ -27,8 +27,6 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import (
-    CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
-    CONCENTRATION_PARTS_PER_MILLION,
     PERCENTAGE,
     STATE_UNAVAILABLE,
     STATE_UNKNOWN,
@@ -47,6 +45,20 @@ from homeassistant.util import dt as dt_util
 from .const import CONF_HOST, CONF_LOCALKEY_VERSION, CONF_PRODUCT_CODE, CONF_UPLUS_ID
 from .coordinator import HaismartConfigEntry, HaismartCoordinator
 from .entity import HaismartEntity
+
+# Newer Home Assistant renamed these two air-quality units. The old flat constants still work but
+# log a deprecation warning, while the new UnitOf* names do not exist on the version this
+# integration still supports (see hacs.json) -- so prefer the new, fall back to the old, both quiet.
+try:
+    from homeassistant.const import UnitOfDensity, UnitOfRatio
+
+    _UG_PER_M3 = UnitOfDensity.MICROGRAMS_PER_CUBIC_METER
+    _PPM = UnitOfRatio.PARTS_PER_MILLION
+except ImportError:
+    from homeassistant.const import (  # noqa: I001
+        CONCENTRATION_MICROGRAMS_PER_CUBIC_METER as _UG_PER_M3,
+        CONCENTRATION_PARTS_PER_MILLION as _PPM,
+    )
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -162,35 +174,11 @@ SENSORS: tuple[HaismartSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda s: s.get("discharge_temperature"),
     ),
-    # The outdoor unit's own probes, published in the same extended report. Like the two above they
-    # are absent (rather than 0 = -64 C) on units without the probe, so they stay unavailable there.
-    HaismartSensorDescription(
-        key="outdoor_coil_temperature",
-        translation_key="outdoor_coil_temperature",
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda s: s.get("outdoor_coil_temperature"),
-    ),
-    HaismartSensorDescription(
-        key="outdoor_in_air_temperature",
-        translation_key="outdoor_in_air_temperature",
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda s: s.get("outdoor_in_air_temperature"),
-    ),
-    HaismartSensorDescription(
-        key="outdoor_defrost_temperature",
-        translation_key="outdoor_defrost_temperature",
-        device_class=SensorDeviceClass.TEMPERATURE,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda s: s.get("outdoor_defrost_temperature"),
-    ),
+    # NB the outdoor unit's own coil / air-intake / defrost probes are decoded from this same report
+    # (see `parse_extended_status`) and reach a diagnostics download, but are deliberately NOT
+    # entities: they read a constant zero (absent) on the reference hardware, so as sensors they
+    # would sit at `unknown` for the life of the install -- worse than not existing. A unit that
+    # genuinely reports one is the evidence that would promote it, the bar every reading here meets.
 )
 
 
@@ -213,7 +201,7 @@ AIR_QUALITY_SENSORS: dict[str, HaismartSensorDescription] = {
         translation_key="indoor_pm25",
         device_class=SensorDeviceClass.PM25,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        native_unit_of_measurement=_UG_PER_M3,
         value_fn=_reading("indoorPM2p5Value"),
     ),
     "outdoorPM2p5Value": HaismartSensorDescription(
@@ -221,14 +209,14 @@ AIR_QUALITY_SENSORS: dict[str, HaismartSensorDescription] = {
         translation_key="outdoor_pm25",
         device_class=SensorDeviceClass.PM25,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        native_unit_of_measurement=_UG_PER_M3,
         value_fn=_reading("outdoorPM2p5Value"),
     ),
     "co2Value": HaismartSensorDescription(
         key="co2",
         device_class=SensorDeviceClass.CO2,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=CONCENTRATION_PARTS_PER_MILLION,
+        native_unit_of_measurement=_PPM,
         value_fn=_reading("co2Value"),
     ),
     "ch2oValue": HaismartSensorDescription(
@@ -236,7 +224,7 @@ AIR_QUALITY_SENSORS: dict[str, HaismartSensorDescription] = {
         translation_key="formaldehyde",
         # No formaldehyde device class exists; the unit is the published one (ug/m3).
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        native_unit_of_measurement=_UG_PER_M3,
         value_fn=_reading("ch2oValue"),
     ),
     "vocValue": HaismartSensorDescription(

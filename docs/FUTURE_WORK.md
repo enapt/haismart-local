@@ -592,11 +592,13 @@ The placement is now per-length where a family's members differ by an inserted w
 pins it to the layout table's own hardware-confirmed offsets rather than to constants: the map's
 humidity word must land on the byte the layout table says holds indoor temperature, per length.
 
-The **outdoor unit's three probe temperatures** (outdoor coil, air intake, defrost sensor) also
-became sensors — they were already decoded from the engineering report, reaching diagnostics only.
-Like the coil and discharge readings they are diagnostic-category, absent rather than −64 °C on
-units without the probe, and they join the set that is removed when an appliance refuses the
-engineering query in every published form.
+The **outdoor unit's three probe temperatures** (outdoor coil, air intake, defrost sensor) are
+decoded from the same engineering report but stay **diagnostics-only, not entities** — a live deploy
+settled it: they read a constant zero (absent) on the reference hardware, so as sensors they would
+sit at *unknown* for the life of the install, which is worse than not existing. Unlike the coil and
+discharge readings, which report real values there, nothing observed populates these three; a unit
+that genuinely reports one is the evidence that would promote it. (An earlier revision of this item
+shipped them as sensors; the deploy caught the six dead entities and they were withdrawn.)
 
 What would confirm the suite end to end is one diagnostics download from a unit that actually has
 the probes, read beside the vendor app's own air-quality page. If a reporter's readings disagree,

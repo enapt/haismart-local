@@ -219,15 +219,6 @@
       "local_key": {
         "name": "المفتاح المحلي"
       },
-      "outdoor_coil_temperature": {
-        "name": "Outdoor coil temperature"
-      },
-      "outdoor_defrost_temperature": {
-        "name": "Defrost sensor temperature"
-      },
-      "outdoor_in_air_temperature": {
-        "name": "Outdoor air intake temperature"
-      },
       "outdoor_pm25": {
         "name": "PM2.5 الخارجي"
       },

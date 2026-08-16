@@ -192,9 +192,6 @@ ISSUE_KEY_WILL_ROTATE = "key_will_rotate"
 # and control is refused rather than risking a sensor byte being written back as a control word.
 ISSUE_UNKNOWN_LAYOUT = "unknown_report_layout"
 
-# mDNS service the AC's wifi module announces (instance name = deviceId, e.g. A1B2C3D4E5F6).
-ZEROCONF_TYPE = "_cae._udp.local."
-
 # The appliance-maker's registered MAC prefixes, the same set the manifest's DHCP matchers
 # use. Kept here as well so the offline path can find appliances on the network by itself:
 # a device ID *is* one of these MACs, so a host whose MAC starts with one of them is worth

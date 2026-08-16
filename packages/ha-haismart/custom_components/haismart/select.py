@@ -27,10 +27,8 @@ from dataclasses import dataclass
 from haismart_hrdp import GRSETDAC_ENUMS, PANEL_ENUM_CONTROLS
 from homeassistant.components.select import SelectEntity
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
 from .coordinator import HaismartConfigEntry, HaismartCoordinator
 from .entity import HaismartEntity
 
@@ -110,15 +108,7 @@ class HaismartEcoSelect(HaismartEntity, SelectEntity):
         self.raise_if_locked("ecoMode")
         code = _ECO.get(option)
         if code is None:
-            raise ServiceValidationError(
-                translation_domain=DOMAIN,
-                translation_key="unsupported_value",
-                translation_placeholders={
-                    "name": self.name or "this air conditioner",
-                    "value": str(option),
-                    "field": "eco",
-                },
-            )
+            self.raise_unsupported_value(option, "eco")
         await self.coordinator.async_send_control({"ecoMode": code})
 
 
@@ -170,15 +160,7 @@ class HaismartVaneSelect(HaismartEntity, SelectEntity):
         self.raise_if_locked(self._vane.field)
         code = self._codes.get(option)
         if code is None:
-            raise ServiceValidationError(
-                translation_domain=DOMAIN,
-                translation_key="unsupported_value",
-                translation_placeholders={
-                    "name": self.name or "this air conditioner",
-                    "value": str(option),
-                    "field": self._vane.key,
-                },
-            )
+            self.raise_unsupported_value(option, self._vane.key)
         await self.coordinator.async_send_control({self._vane.field: code})
 
 
@@ -212,13 +194,5 @@ class HaismartPanelSelect(HaismartEntity, SelectEntity):
         self.raise_if_locked(self._field)
         value = self._to_value.get(option)
         if value is None:
-            raise ServiceValidationError(
-                translation_domain=DOMAIN,
-                translation_key="unsupported_value",
-                translation_placeholders={
-                    "name": self.name or "this air conditioner",
-                    "value": str(option),
-                    "field": self._attr_translation_key or self._field,
-                },
-            )
+            self.raise_unsupported_value(option, self._attr_translation_key or self._field)
         await self.coordinator.async_send_control({self._field: value})

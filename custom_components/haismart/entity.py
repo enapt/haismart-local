@@ -72,3 +72,20 @@ class HaismartEntity(CoordinatorEntity[HaismartCoordinator]):
                 or "not available in the unit's current state",
             },
         )
+
+    def raise_unsupported_value(self, value: object, field: str) -> None:
+        """Refuse a value this control cannot encode, naming the value and the control.
+
+        The climate and select platforms each reach this the same way -- a requested option, preset,
+        mode, fan speed or vane position that is not in the set the unit accepts -- so the message
+        is built here once rather than copied into every platform.
+        """
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="unsupported_value",
+            translation_placeholders={
+                "name": self.name or "this air conditioner",
+                "value": str(value),
+                "field": field,
+            },
+        )

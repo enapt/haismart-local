@@ -28,10 +28,8 @@ from homeassistant.components.climate.const import (
 )
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
 from .coordinator import HaismartConfigEntry, HaismartCoordinator
 from .entity import HaismartEntity
 
@@ -323,15 +321,7 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
         """
         offered = self.preset_modes or ()
         if preset_mode not in offered:
-            raise ServiceValidationError(
-                translation_domain=DOMAIN,
-                translation_key="unsupported_value",
-                translation_placeholders={
-                    "name": self.name or "this air conditioner",
-                    "value": str(preset_mode),
-                    "field": "preset",
-                },
-            )
+            self.raise_unsupported_value(preset_mode, "preset")
         await self.coordinator.async_send_control({
             field: (on if preset == preset_mode else 0)
             for preset, (field, on) in _PRESET_FIELDS.items()
@@ -391,15 +381,7 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
         token = _HVAC_TO_MODE.get(hvac_mode)
         mode_val = self._mode_code(token)
         if mode_val is None:
-            raise ServiceValidationError(
-                translation_domain=DOMAIN,
-                translation_key="unsupported_value",
-                translation_placeholders={
-                    "name": self.name or "this air conditioner",
-                    "value": str(hvac_mode),
-                    "field": "mode",
-                },
-            )
+            self.raise_unsupported_value(hvac_mode, "mode")
         # turning on and selecting the mode in one group-set
         changes: dict[str, int] = {"onOffStatus": 1, "operationMode": mode_val}
         # This unit SILENTLY REJECTS fan-only mode combined with fan=auto (verified on hardware: the
@@ -435,15 +417,7 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
             fan_mode = _FAN_ONLY_DEFAULT_SPEED
         fan_val = self._fan_code(fan_mode)
         if fan_val is None:
-            raise ServiceValidationError(
-                translation_domain=DOMAIN,
-                translation_key="unsupported_value",
-                translation_placeholders={
-                    "name": self.name or "this air conditioner",
-                    "value": str(fan_mode),
-                    "field": "fan speed",
-                },
-            )
+            self.raise_unsupported_value(fan_mode, "fan speed")
         await self.coordinator.async_send_control({"windSpeed": fan_val})
 
     async def async_set_swing_mode(self, swing_mode: str) -> None:

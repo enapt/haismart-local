@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "Strong"
-      },
-      "quiet": {
-        "name": "Quiet"
-      },
-      "health": {
-        "name": "Health"
-      },
-      "sleep": {
-        "name": "Sleep"
-      },
-      "lamp": {
-        "name": "Display light"
-      },
-      "electric_heating": {
-        "name": "Electric heating"
-      },
-      "fresh_air": {
-        "name": "Fresh air"
-      },
-      "keep_warm_10c": {
-        "name": "10°C keep-warm"
-      },
       "ambient_light": {
         "name": "Ambient light"
-      },
-      "mould_proof": {
-        "name": "Mould prevention"
       },
       "drying": {
         "name": "Dry-out"
       },
+      "electric_heating": {
+        "name": "Electric heating"
+      },
+      "energy_saving": {
+        "name": "Energy saving"
+      },
+      "fresh_air": {
+        "name": "Fresh air"
+      },
+      "health": {
+        "name": "Health"
+      },
+      "keep_warm_10c": {
+        "name": "10°C keep-warm"
+      },
+      "lamp": {
+        "name": "Display light"
+      },
+      "mould_proof": {
+        "name": "Mould prevention"
+      },
       "prevent_heatstroke": {
         "name": "Heatstroke prevention"
+      },
+      "quiet": {
+        "name": "Quiet"
+      },
+      "sleep": {
+        "name": "Sleep"
+      },
+      "strong": {
+        "name": "Strong"
       }
     },
     "select": {
@@ -346,6 +349,9 @@
       },
       "electric_heating": {
         "name": "Electric heating"
+      },
+      "energy_saving": {
+        "name": "Energy saving"
       },
       "fan": {
         "name": "Fan"

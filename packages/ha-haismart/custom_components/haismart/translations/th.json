@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "แรงสุด"
-      },
-      "quiet": {
-        "name": "เงียบ"
-      },
-      "health": {
-        "name": "สุขภาพ"
-      },
-      "sleep": {
-        "name": "โหมดนอน"
-      },
-      "lamp": {
-        "name": "ไฟหน้าจอ"
-      },
-      "electric_heating": {
-        "name": "ทำความร้อนไฟฟ้า"
-      },
-      "fresh_air": {
-        "name": "อากาศบริสุทธิ์"
-      },
-      "keep_warm_10c": {
-        "name": "รักษาอุณหภูมิ 10°C"
-      },
       "ambient_light": {
         "name": "ไฟบรรยากาศ"
-      },
-      "mould_proof": {
-        "name": "ป้องกันเชื้อรา"
       },
       "drying": {
         "name": "อบแห้ง"
       },
+      "electric_heating": {
+        "name": "ทำความร้อนไฟฟ้า"
+      },
+      "energy_saving": {
+        "name": "ประหยัดพลังงาน"
+      },
+      "fresh_air": {
+        "name": "อากาศบริสุทธิ์"
+      },
+      "health": {
+        "name": "สุขภาพ"
+      },
+      "keep_warm_10c": {
+        "name": "รักษาอุณหภูมิ 10°C"
+      },
+      "lamp": {
+        "name": "ไฟหน้าจอ"
+      },
+      "mould_proof": {
+        "name": "ป้องกันเชื้อรา"
+      },
       "prevent_heatstroke": {
         "name": "ป้องกันโรคลมแดด"
+      },
+      "quiet": {
+        "name": "เงียบ"
+      },
+      "sleep": {
+        "name": "โหมดนอน"
+      },
+      "strong": {
+        "name": "แรงสุด"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "การเชื่อมต่อคลาวด์"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "ข้อผิดพลาด"
-      },
-      "self_cleaning": {
-        "name": "ทำความสะอาดอัตโนมัติ"
-      },
       "ambient_light": {
         "name": "ไฟบรรยากาศ"
       },
       "buzzer_silent": {
         "name": "ปิดเสียงเตือน"
+      },
+      "cloud_connection": {
+        "name": "การเชื่อมต่อคลาวด์"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "ลดความชื้นต่อเนื่อง"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "ทำความร้อนไฟฟ้า"
+      },
+      "energy_saving": {
+        "name": "ประหยัดพลังงาน"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "ข้อผิดพลาด"
       },
       "fresh_air": {
         "name": "อากาศบริสุทธิ์"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "ประหยัดพลังงานแสงอาทิตย์"
+      },
+      "self_cleaning": {
+        "name": "ทำความสะอาดอัตโนมัติ"
       },
       "uv_sterilize": {
         "name": "ฆ่าเชื้อ UV"

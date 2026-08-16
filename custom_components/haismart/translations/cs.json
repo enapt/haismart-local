@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "Turbo"
-      },
-      "quiet": {
-        "name": "Tichý režim"
-      },
-      "health": {
-        "name": "Ionizace"
-      },
-      "sleep": {
-        "name": "Noční režim"
-      },
-      "lamp": {
-        "name": "Podsvícení displeje"
-      },
-      "electric_heating": {
-        "name": "Elektrické topení"
-      },
-      "fresh_air": {
-        "name": "Čerstvý vzduch"
-      },
-      "keep_warm_10c": {
-        "name": "Udržování 10 °C"
-      },
       "ambient_light": {
         "name": "Okolní osvětlení"
-      },
-      "mould_proof": {
-        "name": "Ochrana proti plísni"
       },
       "drying": {
         "name": "Sušení"
       },
+      "electric_heating": {
+        "name": "Elektrické topení"
+      },
+      "energy_saving": {
+        "name": "Úspora energie"
+      },
+      "fresh_air": {
+        "name": "Čerstvý vzduch"
+      },
+      "health": {
+        "name": "Ionizace"
+      },
+      "keep_warm_10c": {
+        "name": "Udržování 10 °C"
+      },
+      "lamp": {
+        "name": "Podsvícení displeje"
+      },
+      "mould_proof": {
+        "name": "Ochrana proti plísni"
+      },
       "prevent_heatstroke": {
         "name": "Ochrana proti úpalu"
+      },
+      "quiet": {
+        "name": "Tichý režim"
+      },
+      "sleep": {
+        "name": "Noční režim"
+      },
+      "strong": {
+        "name": "Turbo"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "Připojení ke cloudu"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "Porucha"
-      },
-      "self_cleaning": {
-        "name": "Samočištění"
-      },
       "ambient_light": {
         "name": "Okolní osvětlení"
       },
       "buzzer_silent": {
         "name": "Ztlumení signálu"
+      },
+      "cloud_connection": {
+        "name": "Připojení ke cloudu"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "Trvalé odvlhčování"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "Elektrické topení"
+      },
+      "energy_saving": {
+        "name": "Úspora energie"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "Porucha"
       },
       "fresh_air": {
         "name": "Čerstvý vzduch"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "Úspora solární energie"
+      },
+      "self_cleaning": {
+        "name": "Samočištění"
       },
       "uv_sterilize": {
         "name": "UV sterilizace"

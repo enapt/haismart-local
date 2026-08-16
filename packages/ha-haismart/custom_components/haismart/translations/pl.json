@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "Turbo"
-      },
-      "quiet": {
-        "name": "Cichy"
-      },
-      "health": {
-        "name": "Zdrowie"
-      },
-      "sleep": {
-        "name": "Tryb nocny"
-      },
-      "lamp": {
-        "name": "Podświetlenie wyświetlacza"
-      },
-      "electric_heating": {
-        "name": "Ogrzewanie elektryczne"
-      },
-      "fresh_air": {
-        "name": "Świeże powietrze"
-      },
-      "keep_warm_10c": {
-        "name": "Utrzymanie 10 °C"
-      },
       "ambient_light": {
         "name": "Światło otoczenia"
-      },
-      "mould_proof": {
-        "name": "Ochrona przed pleśnią"
       },
       "drying": {
         "name": "Suszenie"
       },
+      "electric_heating": {
+        "name": "Ogrzewanie elektryczne"
+      },
+      "energy_saving": {
+        "name": "Oszczędzanie energii"
+      },
+      "fresh_air": {
+        "name": "Świeże powietrze"
+      },
+      "health": {
+        "name": "Zdrowie"
+      },
+      "keep_warm_10c": {
+        "name": "Utrzymanie 10 °C"
+      },
+      "lamp": {
+        "name": "Podświetlenie wyświetlacza"
+      },
+      "mould_proof": {
+        "name": "Ochrona przed pleśnią"
+      },
       "prevent_heatstroke": {
         "name": "Ochrona przed udarem cieplnym"
+      },
+      "quiet": {
+        "name": "Cichy"
+      },
+      "sleep": {
+        "name": "Tryb nocny"
+      },
+      "strong": {
+        "name": "Turbo"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "Połączenie z chmurą"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "Usterka"
-      },
-      "self_cleaning": {
-        "name": "Samoczyszczenie"
-      },
       "ambient_light": {
         "name": "Światło otoczenia"
       },
       "buzzer_silent": {
         "name": "Wyciszony sygnał"
+      },
+      "cloud_connection": {
+        "name": "Połączenie z chmurą"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "Ciągłe osuszanie"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "Ogrzewanie elektryczne"
+      },
+      "energy_saving": {
+        "name": "Oszczędzanie energii"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "Usterka"
       },
       "fresh_air": {
         "name": "Świeże powietrze"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "Oszczędzanie energii słonecznej"
+      },
+      "self_cleaning": {
+        "name": "Samoczyszczenie"
       },
       "uv_sterilize": {
         "name": "Sterylizacja UV"

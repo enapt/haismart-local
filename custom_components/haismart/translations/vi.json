@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "Mạnh"
-      },
-      "quiet": {
-        "name": "Yên tĩnh"
-      },
-      "health": {
-        "name": "Sức khỏe"
-      },
-      "sleep": {
-        "name": "Ngủ"
-      },
-      "lamp": {
-        "name": "Đèn hiển thị"
-      },
-      "electric_heating": {
-        "name": "Sưởi điện"
-      },
-      "fresh_air": {
-        "name": "Không khí tươi"
-      },
-      "keep_warm_10c": {
-        "name": "Giữ ấm 10°C"
-      },
       "ambient_light": {
         "name": "Ánh sáng môi trường"
-      },
-      "mould_proof": {
-        "name": "Chống nấm mốc"
       },
       "drying": {
         "name": "Sấy khô"
       },
+      "electric_heating": {
+        "name": "Sưởi điện"
+      },
+      "energy_saving": {
+        "name": "Tiết kiệm năng lượng"
+      },
+      "fresh_air": {
+        "name": "Không khí tươi"
+      },
+      "health": {
+        "name": "Sức khỏe"
+      },
+      "keep_warm_10c": {
+        "name": "Giữ ấm 10°C"
+      },
+      "lamp": {
+        "name": "Đèn hiển thị"
+      },
+      "mould_proof": {
+        "name": "Chống nấm mốc"
+      },
       "prevent_heatstroke": {
         "name": "Chống sốc nhiệt"
+      },
+      "quiet": {
+        "name": "Yên tĩnh"
+      },
+      "sleep": {
+        "name": "Ngủ"
+      },
+      "strong": {
+        "name": "Mạnh"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "Kết nối đám mây"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "Lỗi"
-      },
-      "self_cleaning": {
-        "name": "Tự làm sạch"
-      },
       "ambient_light": {
         "name": "Ánh sáng môi trường"
       },
       "buzzer_silent": {
         "name": "Tắt tiếng bíp"
+      },
+      "cloud_connection": {
+        "name": "Kết nối đám mây"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "Hút ẩm liên tục"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "Sưởi điện"
+      },
+      "energy_saving": {
+        "name": "Tiết kiệm năng lượng"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "Lỗi"
       },
       "fresh_air": {
         "name": "Không khí tươi"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "Tiết kiệm điện mặt trời"
+      },
+      "self_cleaning": {
+        "name": "Tự làm sạch"
       },
       "uv_sterilize": {
         "name": "Khử trùng UV"

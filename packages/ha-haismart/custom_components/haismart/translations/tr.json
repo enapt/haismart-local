@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "Turbo"
-      },
-      "quiet": {
-        "name": "Sessiz"
-      },
-      "health": {
-        "name": "Sağlık"
-      },
-      "sleep": {
-        "name": "Uyku"
-      },
-      "lamp": {
-        "name": "Ekran ışığı"
-      },
-      "electric_heating": {
-        "name": "Elektrikli ısıtma"
-      },
-      "fresh_air": {
-        "name": "Temiz hava"
-      },
-      "keep_warm_10c": {
-        "name": "10 °C sıcak tutma"
-      },
       "ambient_light": {
         "name": "Ortam ışığı"
-      },
-      "mould_proof": {
-        "name": "Küf önleme"
       },
       "drying": {
         "name": "Kurutma"
       },
+      "electric_heating": {
+        "name": "Elektrikli ısıtma"
+      },
+      "energy_saving": {
+        "name": "Enerji tasarrufu"
+      },
+      "fresh_air": {
+        "name": "Temiz hava"
+      },
+      "health": {
+        "name": "Sağlık"
+      },
+      "keep_warm_10c": {
+        "name": "10 °C sıcak tutma"
+      },
+      "lamp": {
+        "name": "Ekran ışığı"
+      },
+      "mould_proof": {
+        "name": "Küf önleme"
+      },
       "prevent_heatstroke": {
         "name": "Sıcak çarpması önleme"
+      },
+      "quiet": {
+        "name": "Sessiz"
+      },
+      "sleep": {
+        "name": "Uyku"
+      },
+      "strong": {
+        "name": "Turbo"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "Bulut bağlantısı"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "Arıza"
-      },
-      "self_cleaning": {
-        "name": "Kendi kendini temizleme"
-      },
       "ambient_light": {
         "name": "Ortam ışığı"
       },
       "buzzer_silent": {
         "name": "Sesli uyarı kapalı"
+      },
+      "cloud_connection": {
+        "name": "Bulut bağlantısı"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "Sürekli nem alma"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "Elektrikli ısıtma"
+      },
+      "energy_saving": {
+        "name": "Enerji tasarrufu"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "Arıza"
       },
       "fresh_air": {
         "name": "Temiz hava"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "Güneş enerjisi tasarrufu"
+      },
+      "self_cleaning": {
+        "name": "Kendi kendini temizleme"
       },
       "uv_sterilize": {
         "name": "UV sterilizatör"

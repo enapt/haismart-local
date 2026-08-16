@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "Turbo"
-      },
-      "quiet": {
-        "name": "Leise"
-      },
-      "health": {
-        "name": "Health"
-      },
-      "sleep": {
-        "name": "Schlafmodus"
-      },
-      "lamp": {
-        "name": "Displaybeleuchtung"
-      },
-      "electric_heating": {
-        "name": "Elektroheizung"
-      },
-      "fresh_air": {
-        "name": "Frischluft"
-      },
-      "keep_warm_10c": {
-        "name": "Frostschutz 10 °C"
-      },
       "ambient_light": {
         "name": "Umgebungslicht"
-      },
-      "mould_proof": {
-        "name": "Schimmelschutz"
       },
       "drying": {
         "name": "Trocknung"
       },
+      "electric_heating": {
+        "name": "Elektroheizung"
+      },
+      "energy_saving": {
+        "name": "Energiesparen"
+      },
+      "fresh_air": {
+        "name": "Frischluft"
+      },
+      "health": {
+        "name": "Health"
+      },
+      "keep_warm_10c": {
+        "name": "Frostschutz 10 °C"
+      },
+      "lamp": {
+        "name": "Displaybeleuchtung"
+      },
+      "mould_proof": {
+        "name": "Schimmelschutz"
+      },
       "prevent_heatstroke": {
         "name": "Hitzschlagschutz"
+      },
+      "quiet": {
+        "name": "Leise"
+      },
+      "sleep": {
+        "name": "Schlafmodus"
+      },
+      "strong": {
+        "name": "Turbo"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "Cloud-Verbindung"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "Störung"
-      },
-      "self_cleaning": {
-        "name": "Selbstreinigung"
-      },
       "ambient_light": {
         "name": "Umgebungslicht"
       },
       "buzzer_silent": {
         "name": "Signalton stumm"
+      },
+      "cloud_connection": {
+        "name": "Cloud-Verbindung"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "Dauerentfeuchtung"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "Elektroheizung"
+      },
+      "energy_saving": {
+        "name": "Energiesparen"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "Störung"
       },
       "fresh_air": {
         "name": "Frischluft"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "Solarstrom sparen"
+      },
+      "self_cleaning": {
+        "name": "Selbstreinigung"
       },
       "uv_sterilize": {
         "name": "UV-Sterilisation"

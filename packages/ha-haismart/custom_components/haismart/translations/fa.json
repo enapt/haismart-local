@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "قوی"
-      },
-      "quiet": {
-        "name": "بی‌صدا"
-      },
-      "health": {
-        "name": "سلامت"
-      },
-      "sleep": {
-        "name": "خواب"
-      },
-      "lamp": {
-        "name": "نور نمایشگر"
-      },
-      "electric_heating": {
-        "name": "گرمایش برقی"
-      },
-      "fresh_air": {
-        "name": "هوای تازه"
-      },
-      "keep_warm_10c": {
-        "name": "گرمادهی ۱۰°C"
-      },
       "ambient_light": {
         "name": "نور محیطی"
-      },
-      "mould_proof": {
-        "name": "ضد کپک"
       },
       "drying": {
         "name": "خشک‌کردن"
       },
+      "electric_heating": {
+        "name": "گرمایش برقی"
+      },
+      "energy_saving": {
+        "name": "صرفه‌جویی در انرژی"
+      },
+      "fresh_air": {
+        "name": "هوای تازه"
+      },
+      "health": {
+        "name": "سلامت"
+      },
+      "keep_warm_10c": {
+        "name": "گرمادهی ۱۰°C"
+      },
+      "lamp": {
+        "name": "نور نمایشگر"
+      },
+      "mould_proof": {
+        "name": "ضد کپک"
+      },
       "prevent_heatstroke": {
         "name": "پیشگیری از گرمازدگی"
+      },
+      "quiet": {
+        "name": "بی‌صدا"
+      },
+      "sleep": {
+        "name": "خواب"
+      },
+      "strong": {
+        "name": "قوی"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "اتصال ابری"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "خطا"
-      },
-      "self_cleaning": {
-        "name": "خودتمیزشونده"
-      },
       "ambient_light": {
         "name": "نور محیطی"
       },
       "buzzer_silent": {
         "name": "بی‌صدا کردن بوق"
+      },
+      "cloud_connection": {
+        "name": "اتصال ابری"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "رطوبت‌زدایی پیوسته"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "گرمایش برقی"
+      },
+      "energy_saving": {
+        "name": "صرفه‌جویی در انرژی"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "خطا"
       },
       "fresh_air": {
         "name": "هوای تازه"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "صرفه‌جویی انرژی خورشیدی"
+      },
+      "self_cleaning": {
+        "name": "خودتمیزشونده"
       },
       "uv_sterilize": {
         "name": "استریل‌کننده UV"

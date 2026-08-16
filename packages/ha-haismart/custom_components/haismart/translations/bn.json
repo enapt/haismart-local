@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "শক্তিশালী"
-      },
-      "quiet": {
-        "name": "নীরব"
-      },
-      "health": {
-        "name": "হেলথ"
-      },
-      "sleep": {
-        "name": "স্লিপ"
-      },
-      "lamp": {
-        "name": "ডিসপ্লে লাইট"
-      },
-      "electric_heating": {
-        "name": "বৈদ্যুতিক গরম"
-      },
-      "fresh_air": {
-        "name": "তাজা বাতাস"
-      },
-      "keep_warm_10c": {
-        "name": "১০°সে উষ্ণতা রক্ষা"
-      },
       "ambient_light": {
         "name": "পরিবেশ আলো"
-      },
-      "mould_proof": {
-        "name": "ছত্রাক প্রতিরোধ"
       },
       "drying": {
         "name": "শুকানো"
       },
+      "electric_heating": {
+        "name": "বৈদ্যুতিক গরম"
+      },
+      "energy_saving": {
+        "name": "শক্তি সাশ্রয়"
+      },
+      "fresh_air": {
+        "name": "তাজা বাতাস"
+      },
+      "health": {
+        "name": "হেলথ"
+      },
+      "keep_warm_10c": {
+        "name": "১০°সে উষ্ণতা রক্ষা"
+      },
+      "lamp": {
+        "name": "ডিসপ্লে লাইট"
+      },
+      "mould_proof": {
+        "name": "ছত্রাক প্রতিরোধ"
+      },
       "prevent_heatstroke": {
         "name": "হিটস্ট্রোক প্রতিরোধ"
+      },
+      "quiet": {
+        "name": "নীরব"
+      },
+      "sleep": {
+        "name": "স্লিপ"
+      },
+      "strong": {
+        "name": "শক্তিশালী"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "ক্লাউড সংযোগ"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "ত্রুটি"
-      },
-      "self_cleaning": {
-        "name": "সেলফ-ক্লিন"
-      },
       "ambient_light": {
         "name": "পরিবেশ আলো"
       },
       "buzzer_silent": {
         "name": "বাজার নীরব"
+      },
+      "cloud_connection": {
+        "name": "ক্লাউড সংযোগ"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "নিরন্তর আর্দ্রতা হ্রাস"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "বৈদ্যুতিক গরম"
+      },
+      "energy_saving": {
+        "name": "শক্তি সাশ্রয়"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "ত্রুটি"
       },
       "fresh_air": {
         "name": "তাজা বাতাস"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "সৌর শক্তি সাশ্রয়"
+      },
+      "self_cleaning": {
+        "name": "সেলফ-ক্লিন"
       },
       "uv_sterilize": {
         "name": "UV জীবাণুমুক্তকরণ"

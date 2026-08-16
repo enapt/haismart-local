@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "Turbo"
-      },
-      "quiet": {
-        "name": "Tyst"
-      },
-      "health": {
-        "name": "Health"
-      },
-      "sleep": {
-        "name": "Nattläge"
-      },
-      "lamp": {
-        "name": "Displaybelysning"
-      },
-      "electric_heating": {
-        "name": "Elvärme"
-      },
-      "fresh_air": {
-        "name": "Frisk luft"
-      },
-      "keep_warm_10c": {
-        "name": "10 °C värmehållning"
-      },
       "ambient_light": {
         "name": "Omgivningsljus"
-      },
-      "mould_proof": {
-        "name": "Mögelskydd"
       },
       "drying": {
         "name": "Torkning"
       },
+      "electric_heating": {
+        "name": "Elvärme"
+      },
+      "energy_saving": {
+        "name": "Energibesparing"
+      },
+      "fresh_air": {
+        "name": "Frisk luft"
+      },
+      "health": {
+        "name": "Health"
+      },
+      "keep_warm_10c": {
+        "name": "10 °C värmehållning"
+      },
+      "lamp": {
+        "name": "Displaybelysning"
+      },
+      "mould_proof": {
+        "name": "Mögelskydd"
+      },
       "prevent_heatstroke": {
         "name": "Skydd mot värmeslag"
+      },
+      "quiet": {
+        "name": "Tyst"
+      },
+      "sleep": {
+        "name": "Nattläge"
+      },
+      "strong": {
+        "name": "Turbo"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "Molnanslutning"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "Fel"
-      },
-      "self_cleaning": {
-        "name": "Självrengöring"
-      },
       "ambient_light": {
         "name": "Omgivningsljus"
       },
       "buzzer_silent": {
         "name": "Ljudsignal av"
+      },
+      "cloud_connection": {
+        "name": "Molnanslutning"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "Konstant avfuktning"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "Elvärme"
+      },
+      "energy_saving": {
+        "name": "Energibesparing"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "Fel"
       },
       "fresh_air": {
         "name": "Frisk luft"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "Solelsbesparing"
+      },
+      "self_cleaning": {
+        "name": "Självrengöring"
       },
       "uv_sterilize": {
         "name": "UV-sterilisering"

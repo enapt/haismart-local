@@ -559,14 +559,22 @@ _COMPACT12_WRITE = {
 # Only the panel controls this family declares are enabled here. The controls offered through
 # `panel_switch_fields`/`panel_select_fields` are gated by the device DECLARING the attribute
 # (declared ∩ ¬invisible), so a compact unit without electric-heat is not offered it. The family's
-# other paired commands it publishes — `4d08`/`4d09` (health), `4d26` (self-clean, start-only),
-# `4d18`/`4d19` (lock), `4d1c`/`4d1d` (humidify) — are NOT added here yet: their entities (the
-# self-clean button, the health switch) gate on `supports_field` alone, which does not check
-# declaration, so adding them would offer a control on compact units that do not have the function.
-# That wants the button/switch gates made declaration-aware first (a follow-on).
+# health (`4d09`/`4d08`) and self-clean (`4d26`, start-only) are included now that a
+# single-parameter control is offered by declaration (see `coordinator.supports_field`), so a
+# compact unit without the function gets no control. The remaining published pairs — `4d18`/`4d19`
+# (child lock), `4d1c`/`4d1d` (humidify) — stay out on the documentary rule, not the gate: the
+# app's panel renders no widget for either, so neither do we.
 _COMPACT12_SINGLE_PARAM = {
     "electricHeatingStatus": SingleParam(b"\x4d\x05", b"\x4d\x04", WireField(9, 1, 1, kind="bool")),
     "freshAirStatus": SingleParam(b"\x4d\x1f", b"\x4d\x1e", WireField(10, 0, 1, kind="bool")),
+    # The health toggle and the self-clean trigger, from the family's own published records —
+    # paired on/off commands with the state bit each reads back from, same shape as the two above.
+    # Self-clean has no off command (the cycle runs to completion), hence the start-only form.
+    # These are OFFERED by declaration (`coordinator.supports_field` requires a single-parameter
+    # control's attribute to be declared and not invisible), so a compact unit without the function
+    # gets no control for it.
+    "healthMode": SingleParam(b"\x4d\x09", b"\x4d\x08", WireField(9, 3, 1, kind="bool")),
+    "selfCleaningStatus": SingleParam(b"\x4d\x26", None, WireField(9, 2, 1, kind="bool")),
 }
 
 COMPACT12 = WireModel(
@@ -611,7 +619,9 @@ COMPACT12 = WireModel(
         "target_humidity": WireField(11, 8, 8, kind="humidity"), # 设湿
         # word 9: the state bits beside power (b0)
         "electric_heat": WireField(9, 1, 1, kind="bool"),        # 电
-        "self_clean": WireField(9, 2, 1, kind="bool"),           # 自
+        # keyed the same as the canonical families' self-clean state so the running indicator and
+        # the "last self-clean" timestamp read it — the button this family now offers needs both
+        "self_cleaning": WireField(9, 2, 1, kind="bool"),        # 自
         "health": WireField(9, 3, 1, kind="bool"),               # 康
         "humidify": WireField(9, 6, 1, kind="bool"),             # 湿 (开湿/关湿 = moisture on/off)
         "temp_unit": WireField(9, 11, 1, kind="raw"),            # 单位切换 — °C/°F toggle

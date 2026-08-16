@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "Tehostus"
-      },
-      "quiet": {
-        "name": "Hiljainen"
-      },
-      "health": {
-        "name": "Health"
-      },
-      "sleep": {
-        "name": "Yötila"
-      },
-      "lamp": {
-        "name": "Näytön valo"
-      },
-      "electric_heating": {
-        "name": "Sähkölämmitys"
-      },
-      "fresh_air": {
-        "name": "Raitis ilma"
-      },
-      "keep_warm_10c": {
-        "name": "10 °C:n ylläpito"
-      },
       "ambient_light": {
         "name": "Tunnelmavalo"
-      },
-      "mould_proof": {
-        "name": "Homeenesto"
       },
       "drying": {
         "name": "Kuivaus"
       },
+      "electric_heating": {
+        "name": "Sähkölämmitys"
+      },
+      "energy_saving": {
+        "name": "Energiansäästö"
+      },
+      "fresh_air": {
+        "name": "Raitis ilma"
+      },
+      "health": {
+        "name": "Health"
+      },
+      "keep_warm_10c": {
+        "name": "10 °C:n ylläpito"
+      },
+      "lamp": {
+        "name": "Näytön valo"
+      },
+      "mould_proof": {
+        "name": "Homeenesto"
+      },
       "prevent_heatstroke": {
         "name": "Lämpöhalvauksen esto"
+      },
+      "quiet": {
+        "name": "Hiljainen"
+      },
+      "sleep": {
+        "name": "Yötila"
+      },
+      "strong": {
+        "name": "Tehostus"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "Pilviyhteys"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "Vika"
-      },
-      "self_cleaning": {
-        "name": "Itsepuhdistus"
-      },
       "ambient_light": {
         "name": "Tunnelmavalo"
       },
       "buzzer_silent": {
         "name": "Äänimerkki vaimennettu"
+      },
+      "cloud_connection": {
+        "name": "Pilviyhteys"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "Jatkuva kosteudenpoisto"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "Sähkölämmitys"
+      },
+      "energy_saving": {
+        "name": "Energiansäästö"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "Vika"
       },
       "fresh_air": {
         "name": "Raitis ilma"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "Aurinkosähkön säästö"
+      },
+      "self_cleaning": {
+        "name": "Itsepuhdistus"
       },
       "uv_sterilize": {
         "name": "UV-sterilointi"

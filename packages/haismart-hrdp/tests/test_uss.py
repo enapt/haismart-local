@@ -308,10 +308,11 @@ def test_set_grsetdac_field_reproduces_real_transitions(before, name, value, aft
 
 def test_set_grsetdac_field_refuses_unmapped_fields():
     words = bytes.fromhex("0c0422000201000708000000")
-    # NB windDirectionHorizontal (now confirmed) and lightStatus (now a panel control) used to be
-    # listed here; both are mapped now. `echoStatus` is the enduring example — in the frame,
-    # model-writable, but NOT a panel control (no widget), so the encoder refuses it.
-    for unmapped in ("echoStatus", "energySavingStatus", "notARealAttr"):
+    # NB windDirectionHorizontal (now confirmed), lightStatus and energySavingStatus (now panel
+    # controls) used to be listed here; all are mapped now. `echoStatus` is the enduring example —
+    # in the frame, model-writable, but NOT a panel control (no widget), so the encoder refuses it.
+    # `voiceStatus` is in the frame too, but no widget has been confirmed to bind to it.
+    for unmapped in ("echoStatus", "voiceStatus", "notARealAttr"):
         with pytest.raises(KeyError):
             uss.set_grsetdac_field(words, unmapped, 1)
 
@@ -693,7 +694,7 @@ def test_compact12_decodes_the_three_real_reports():
         "swing_horizontal": False, "mode": "fan_only", "fan_mode": "high",
         # the published description's remaining fields (meanings pending; see COMPACT12's note)
         "w2_low_raw": 59, "w2_high_raw": 0, "input_power_raw": 0, "pm_raw": 0,
-        "electric_heat": False, "self_clean": False, "health": False, "humidify": False,
+        "electric_heat": False, "self_cleaning": False, "health": False, "humidify": False,
         "temp_unit": 0, "human_sensing": False, "cloud_adaptive": False, "sleep_curve": False,
         "lock": False, "fresh_air": False, "healthy_wind_up": False, "healthy_wind_down": False,
         "cap_strong": False, "cap_quiet": False, "cap_display": False, "cap_energy_saving": False,
@@ -735,15 +736,20 @@ def test_compact12_power_and_outdoor_unit_temp_stay_diagnostic():
 
 def test_compact12_meaning_pending_fields_reach_no_entity():
     """No key of the newly-read block may collide with a key an entity consumes. The sensors read
-    `outdoor_temperature` / `power_w` / `energy_wh`, the self-clean binary sensor reads
-    `self_cleaning`, and the comfort switches read their classic names — a collision would light an
-    existing entity family-wide with a value whose meaning is unproven (the exact phantom-feature
-    shape of v0.32.0). Promotion to those keys is a deliberate, per-key act with evidence."""
+    `outdoor_temperature` / `power_w` / `energy_wh`, and the comfort switches read their classic
+    names — a collision would light an existing entity family-wide with a value whose meaning is
+    unproven (the exact phantom-feature shape of v0.32.0). Promotion to those keys is a deliberate,
+    per-key act with evidence — and `self_cleaning` IS that act: the family's own published record
+    ties the self-clean state to report w9.b2, the button this family offers needs the running
+    indicator and the completion timestamp to read it, so it is pinned here rather than listed."""
     from haismart_hrdp.wire_models import COMPACT12
 
-    entity_keys = {"outdoor_temperature", "power_w", "energy_wh", "self_cleaning",
+    entity_keys = {"outdoor_temperature", "power_w", "energy_wh",
                    "strong", "quiet", "sleep", "lamp", "eco", "fan_running", "alarm_count"}
     assert not entity_keys & set(COMPACT12.fields)
+    # the one deliberate promotion, at the position the family's own record states
+    f = COMPACT12.fields["self_cleaning"]
+    assert (f.word, f.bit, f.length, f.kind) == (9, 2, 1, "bool")
 
 
 def test_compact12_maps_heat_via_the_profile():
@@ -1766,9 +1772,14 @@ def test_extended36_reports_self_clean_from_its_flag_word():
 
 
 def test_self_clean_is_absent_where_the_flag_word_is_unconfirmed():
-    """Offered only where the position is supported by evidence -- absent beats wrong."""
-    for report in (STATUS_209_OFF, STATUS_117_OFF):
-        assert "self_cleaning" not in uss.parse_full_status(report)
+    """Offered only where the position is supported by evidence -- absent beats wrong.
+
+    The 209-byte family's flag word is still the open question, so it reads nothing. The compact
+    family used to be listed beside it, wrongly framed: its position was never unconfirmed -- the
+    family's own published record states the self-clean bit (report w9.b2) -- it simply had not been
+    promoted to the entity key. It has now, so a compact report reads a real state."""
+    assert "self_cleaning" not in uss.parse_full_status(STATUS_209_OFF)
+    assert uss.parse_full_status(STATUS_117_OFF)["self_cleaning"] is False
 
 
 # --- the canonical map ------------------------------------------------------------------------
@@ -2267,6 +2278,7 @@ def test_grsetdac_fields_match_their_confirmed_positions():
         "10degreeHeatingStatus": (3, 8, 1),
         "freshAirStatus": (5, 0, 1),
         "lightStatus": (5, 5, 1),
+        "energySavingStatus": (5, 6, 1),
         "humanSensingStatus": (4, 6, 2),
         # panel controls positioned by the published ORDER, not the frame (PANEL_EXTRA_POSITIONS) —
         # each unanimous across the 83 products that declare it.

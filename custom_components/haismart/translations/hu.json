@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "Turbó"
-      },
-      "quiet": {
-        "name": "Halk"
-      },
-      "health": {
-        "name": "Ionizálás"
-      },
-      "sleep": {
-        "name": "Éjszakai üzemmód"
-      },
-      "lamp": {
-        "name": "Kijelző világítása"
-      },
-      "electric_heating": {
-        "name": "Elektromos fűtés"
-      },
-      "fresh_air": {
-        "name": "Friss levegő"
-      },
-      "keep_warm_10c": {
-        "name": "10 °C-os temperálás"
-      },
       "ambient_light": {
         "name": "Környezeti fény"
-      },
-      "mould_proof": {
-        "name": "Penészvédelem"
       },
       "drying": {
         "name": "Szárítás"
       },
+      "electric_heating": {
+        "name": "Elektromos fűtés"
+      },
+      "energy_saving": {
+        "name": "Energiatakarékosság"
+      },
+      "fresh_air": {
+        "name": "Friss levegő"
+      },
+      "health": {
+        "name": "Ionizálás"
+      },
+      "keep_warm_10c": {
+        "name": "10 °C-os temperálás"
+      },
+      "lamp": {
+        "name": "Kijelző világítása"
+      },
+      "mould_proof": {
+        "name": "Penészvédelem"
+      },
       "prevent_heatstroke": {
         "name": "Hőgutavédelem"
+      },
+      "quiet": {
+        "name": "Halk"
+      },
+      "sleep": {
+        "name": "Éjszakai üzemmód"
+      },
+      "strong": {
+        "name": "Turbó"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "Felhőkapcsolat"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "Hiba"
-      },
-      "self_cleaning": {
-        "name": "Öntisztítás"
-      },
       "ambient_light": {
         "name": "Környezeti fény"
       },
       "buzzer_silent": {
         "name": "Hangjelzés némítva"
+      },
+      "cloud_connection": {
+        "name": "Felhőkapcsolat"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "Folyamatos páramentesítés"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "Elektromos fűtés"
+      },
+      "energy_saving": {
+        "name": "Energiatakarékosság"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "Hiba"
       },
       "fresh_air": {
         "name": "Friss levegő"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "Napenergia-megtakarítás"
+      },
+      "self_cleaning": {
+        "name": "Öntisztítás"
       },
       "uv_sterilize": {
         "name": "UV-sterilizálás"

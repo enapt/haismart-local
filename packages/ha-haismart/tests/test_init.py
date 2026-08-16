@@ -4268,6 +4268,7 @@ async def test_panel_controls_are_offered_the_way_the_app_offers_them(
     model["attributes"].extend([
         {"name": "electricHeatingStatus"},   # panel control, visible  -> switch
         {"name": "lightStatus"},             # panel control, visible  -> switch
+        {"name": "energySavingStatus"},      # panel control, visible  -> switch (the bool, not eco)
         {"name": "freshAirStatus"},          # panel control, INVISIBLE -> no switch
         {"name": "echoStatus"},              # writable, but NO panel widget -> no switch
         {"name": "humanSensingStatus",       # enum panel control, visible -> select
@@ -4283,6 +4284,7 @@ async def test_panel_controls_are_offered_the_way_the_app_offers_them(
     # offered — declared, visible, a panel control the frame positions on this (classic) family
     assert hass.states.get("switch.downstairs_ac_electric_heating") is not None
     assert hass.states.get("switch.downstairs_ac_ambient_light") is not None
+    assert hass.states.get("switch.downstairs_ac_energy_saving") is not None
     assert hass.states.get("select.downstairs_ac_presence_airflow") is not None
     # NOT offered
     assert hass.states.get("switch.downstairs_ac_fresh_air") is None        # invisible
@@ -4349,7 +4351,12 @@ async def test_compact_offers_panel_controls_via_single_parameter(
     from custom_components.haismart.const import CONF_DIGITAL_MODEL
 
     model = {
-        "attributes": [{"name": "electricHeatingStatus"}, {"name": "freshAirStatus"}],
+        "attributes": [
+            {"name": "electricHeatingStatus"},
+            {"name": "freshAirStatus"},
+            {"name": "healthMode"},
+            {"name": "selfCleaningStatus"},
+        ],
         "invisible_attributes": [],
     }
     mock_uss.read.return_value = [make_compact12_frame()]
@@ -4364,7 +4371,40 @@ async def test_compact_offers_panel_controls_via_single_parameter(
     # offered as switches (declared, and the family can write them one parameter at a time)
     assert hass.states.get("switch.downstairs_ac_electric_heating") is not None
     assert hass.states.get("switch.downstairs_ac_fresh_air") is not None
+    # ...and the hand-built health switch + self-clean button reach this family the same way
+    assert hass.states.get("switch.downstairs_ac_health") is not None
+    assert hass.states.get("button.downstairs_ac_start_self_clean") is not None
     # read state back from the toggle's own bit, and the write is the paired on/off command
     assert coord.current_field("electricHeatingStatus") in (0, 1)
+    assert coord.current_field("healthMode") in (0, 1)
     from haismart_hrdp.wire_models import COMPACT12
     assert COMPACT12.single_param_fields["electricHeatingStatus"].command(1) == b"\x4d\x05"
+
+
+async def test_compact_single_param_controls_are_gated_on_declaration(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A single-parameter control's table is family-wide while the function is per-product, so the
+    unit's own declaration is what tells one product from another: a compact unit whose model does
+    NOT declare health or self-clean gets neither control, even though the family can write both."""
+    import json as _json
+
+    from custom_components.haismart.const import CONF_DIGITAL_MODEL
+
+    model = {
+        "attributes": [{"name": "electricHeatingStatus"}],
+        "invisible_attributes": [],
+    }
+    mock_uss.read.return_value = [make_compact12_frame()]
+    entry = _entry(**{CONF_DIGITAL_MODEL: _json.dumps(model)})
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    coord = entry.runtime_data
+    assert coord.supports_field("electricHeatingStatus") is True     # declared
+    assert coord.supports_field("healthMode") is False               # not declared -> not offered
+    assert coord.supports_field("selfCleaningStatus") is False
+    assert hass.states.get("switch.downstairs_ac_electric_heating") is not None
+    assert hass.states.get("switch.downstairs_ac_health") is None
+    assert hass.states.get("button.downstairs_ac_start_self_clean") is None

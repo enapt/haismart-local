@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "வலிமையானது"
-      },
-      "quiet": {
-        "name": "அமைதி"
-      },
-      "health": {
-        "name": "ஹெல்த்"
-      },
-      "sleep": {
-        "name": "ஸ்லீப்"
-      },
-      "lamp": {
-        "name": "காட்சி விளக்கு"
-      },
-      "electric_heating": {
-        "name": "மின் வெப்பமூட்டல்"
-      },
-      "fresh_air": {
-        "name": "புத்தம் காற்று"
-      },
-      "keep_warm_10c": {
-        "name": "10°C வெப்பம் பேணல்"
-      },
       "ambient_light": {
         "name": "சுற்றுப்புற ஒளி"
-      },
-      "mould_proof": {
-        "name": "பூஞ்சை தடுப்பு"
       },
       "drying": {
         "name": "உலர்த்துதல்"
       },
+      "electric_heating": {
+        "name": "மின் வெப்பமூட்டல்"
+      },
+      "energy_saving": {
+        "name": "ஆற்றல் சேமிப்பு"
+      },
+      "fresh_air": {
+        "name": "புத்தம் காற்று"
+      },
+      "health": {
+        "name": "ஹெல்த்"
+      },
+      "keep_warm_10c": {
+        "name": "10°C வெப்பம் பேணல்"
+      },
+      "lamp": {
+        "name": "காட்சி விளக்கு"
+      },
+      "mould_proof": {
+        "name": "பூஞ்சை தடுப்பு"
+      },
       "prevent_heatstroke": {
         "name": "வெப்ப அதிர்ச்சி தடுப்பு"
+      },
+      "quiet": {
+        "name": "அமைதி"
+      },
+      "sleep": {
+        "name": "ஸ்லீப்"
+      },
+      "strong": {
+        "name": "வலிமையானது"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "கிளவுட் இணைப்பு"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "கோளாறு"
-      },
-      "self_cleaning": {
-        "name": "தானியங்கி சுத்தம்"
-      },
       "ambient_light": {
         "name": "சுற்றுப்புற ஒளி"
       },
       "buzzer_silent": {
         "name": "சமிக்ஞை அமைதி"
+      },
+      "cloud_connection": {
+        "name": "கிளவுட் இணைப்பு"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "தொடர் ஈரப்பதம் நீக்கம்"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "மின் வெப்பமூட்டல்"
+      },
+      "energy_saving": {
+        "name": "ஆற்றல் சேமிப்பு"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "கோளாறு"
       },
       "fresh_air": {
         "name": "புத்தம் காற்று"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "சூரிய மின் சேமிப்பு"
+      },
+      "self_cleaning": {
+        "name": "தானியங்கி சுத்தம்"
       },
       "uv_sterilize": {
         "name": "UV கிருமிநீக்கி"

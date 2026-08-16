@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "Turbo"
-      },
-      "quiet": {
-        "name": "Stil"
-      },
-      "health": {
-        "name": "Health"
-      },
-      "sleep": {
-        "name": "Slaapstand"
-      },
-      "lamp": {
-        "name": "Displayverlichting"
-      },
-      "electric_heating": {
-        "name": "Elektrische verwarming"
-      },
-      "fresh_air": {
-        "name": "Frisse lucht"
-      },
-      "keep_warm_10c": {
-        "name": "10 °C warmhouden"
-      },
       "ambient_light": {
         "name": "Sfeerverlichting"
-      },
-      "mould_proof": {
-        "name": "Schimmelpreventie"
       },
       "drying": {
         "name": "Drogen"
       },
+      "electric_heating": {
+        "name": "Elektrische verwarming"
+      },
+      "energy_saving": {
+        "name": "Energiebesparing"
+      },
+      "fresh_air": {
+        "name": "Frisse lucht"
+      },
+      "health": {
+        "name": "Health"
+      },
+      "keep_warm_10c": {
+        "name": "10 °C warmhouden"
+      },
+      "lamp": {
+        "name": "Displayverlichting"
+      },
+      "mould_proof": {
+        "name": "Schimmelpreventie"
+      },
       "prevent_heatstroke": {
         "name": "Preventie hittberoerte"
+      },
+      "quiet": {
+        "name": "Stil"
+      },
+      "sleep": {
+        "name": "Slaapstand"
+      },
+      "strong": {
+        "name": "Turbo"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "Cloudverbinding"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "Storing"
-      },
-      "self_cleaning": {
-        "name": "Zelfreiniging"
-      },
       "ambient_light": {
         "name": "Sfeerverlichting"
       },
       "buzzer_silent": {
         "name": "Zoemer gedempt"
+      },
+      "cloud_connection": {
+        "name": "Cloudverbinding"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "Continu ontvochtigen"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "Elektrische verwarming"
+      },
+      "energy_saving": {
+        "name": "Energiebesparing"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "Storing"
       },
       "fresh_air": {
         "name": "Frisse lucht"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "Zonne-energiebesparing"
+      },
+      "self_cleaning": {
+        "name": "Zelfreiniging"
       },
       "uv_sterilize": {
         "name": "UV-sterilisatie"

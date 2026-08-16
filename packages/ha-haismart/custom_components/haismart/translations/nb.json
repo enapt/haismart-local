@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "Turbo"
-      },
-      "quiet": {
-        "name": "Stille"
-      },
-      "health": {
-        "name": "Health"
-      },
-      "sleep": {
-        "name": "Nattmodus"
-      },
-      "lamp": {
-        "name": "Displaylys"
-      },
-      "electric_heating": {
-        "name": "Elektrisk oppvarming"
-      },
-      "fresh_air": {
-        "name": "Frisk luft"
-      },
-      "keep_warm_10c": {
-        "name": "10 °C varmeholding"
-      },
       "ambient_light": {
         "name": "Omgivelseslys"
-      },
-      "mould_proof": {
-        "name": "Muggbeskyttelse"
       },
       "drying": {
         "name": "Tørking"
       },
+      "electric_heating": {
+        "name": "Elektrisk oppvarming"
+      },
+      "energy_saving": {
+        "name": "Energisparing"
+      },
+      "fresh_air": {
+        "name": "Frisk luft"
+      },
+      "health": {
+        "name": "Health"
+      },
+      "keep_warm_10c": {
+        "name": "10 °C varmeholding"
+      },
+      "lamp": {
+        "name": "Displaylys"
+      },
+      "mould_proof": {
+        "name": "Muggbeskyttelse"
+      },
       "prevent_heatstroke": {
         "name": "Beskyttelse mot heteslag"
+      },
+      "quiet": {
+        "name": "Stille"
+      },
+      "sleep": {
+        "name": "Nattmodus"
+      },
+      "strong": {
+        "name": "Turbo"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "Skytilkobling"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "Feil"
-      },
-      "self_cleaning": {
-        "name": "Selvrens"
-      },
       "ambient_light": {
         "name": "Omgivelseslys"
       },
       "buzzer_silent": {
         "name": "Lydsignal av"
+      },
+      "cloud_connection": {
+        "name": "Skytilkobling"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "Konstant avfukting"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "Elektrisk oppvarming"
+      },
+      "energy_saving": {
+        "name": "Energisparing"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "Feil"
       },
       "fresh_air": {
         "name": "Frisk luft"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "Solstrømsparing"
+      },
+      "self_cleaning": {
+        "name": "Selvrens"
       },
       "uv_sterilize": {
         "name": "UV-sterilisering"

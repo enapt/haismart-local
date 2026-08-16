@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "Kuat"
-      },
-      "quiet": {
-        "name": "Senyap"
-      },
-      "health": {
-        "name": "Kesehatan"
-      },
-      "sleep": {
-        "name": "Tidur"
-      },
-      "lamp": {
-        "name": "Lampu layar"
-      },
-      "electric_heating": {
-        "name": "Pemanas listrik"
-      },
-      "fresh_air": {
-        "name": "Udara segar"
-      },
-      "keep_warm_10c": {
-        "name": "Jaga hangat 10°C"
-      },
       "ambient_light": {
         "name": "Lampu suasana"
-      },
-      "mould_proof": {
-        "name": "Anti jamur"
       },
       "drying": {
         "name": "Pengeringan"
       },
+      "electric_heating": {
+        "name": "Pemanas listrik"
+      },
+      "energy_saving": {
+        "name": "Hemat energi"
+      },
+      "fresh_air": {
+        "name": "Udara segar"
+      },
+      "health": {
+        "name": "Kesehatan"
+      },
+      "keep_warm_10c": {
+        "name": "Jaga hangat 10°C"
+      },
+      "lamp": {
+        "name": "Lampu layar"
+      },
+      "mould_proof": {
+        "name": "Anti jamur"
+      },
       "prevent_heatstroke": {
         "name": "Pencegahan sengatan panas"
+      },
+      "quiet": {
+        "name": "Senyap"
+      },
+      "sleep": {
+        "name": "Tidur"
+      },
+      "strong": {
+        "name": "Kuat"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "Koneksi cloud"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "Gangguan"
-      },
-      "self_cleaning": {
-        "name": "Bersih otomatis"
-      },
       "ambient_light": {
         "name": "Lampu suasana"
       },
       "buzzer_silent": {
         "name": "Bunyi bip senyap"
+      },
+      "cloud_connection": {
+        "name": "Koneksi cloud"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "Dehumidifikasi konstan"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "Pemanas listrik"
+      },
+      "energy_saving": {
+        "name": "Hemat energi"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "Gangguan"
       },
       "fresh_air": {
         "name": "Udara segar"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "Hemat daya surya"
+      },
+      "self_cleaning": {
+        "name": "Bersih otomatis"
       },
       "uv_sterilize": {
         "name": "Sterilisasi UV"

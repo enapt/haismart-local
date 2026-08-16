@@ -52,6 +52,7 @@ from haismart_hrdp import (
     async_send_op,
     build_epp_frame,
     constraint_commands,
+    declared_attribute_names,
     declared_order,
     declared_panel_controls,
     describe_epp_frame,
@@ -1633,7 +1634,18 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if name in displaced_write_fields(self.uplus_id):
             return False
         if (wm := self._wire_model) is not None:
-            return name in wm.write_fields or name in wm.single_param_fields
+            if name in wm.write_fields:
+                return True
+            # A single-parameter control (compact-12's paired on/off commands) is offered by
+            # DECLARATION, the way the app decides: the unit's own model must carry the attribute
+            # and not mark it invisible. The group-set fields above need no such check here because
+            # membership in a family's write map is already per-family, hand-confirmed; a
+            # single-parameter table is family-wide while the function (health, self-clean) is
+            # per-product, so the declaration is what tells one product from another. A unit with
+            # no model offers none of them, which is the safe direction.
+            if name in wm.single_param_fields:
+                return name in declared_attribute_names(self.digital_model)
+            return False
         return name in GRSETDAC_FIELDS
 
     def panel_switch_fields(self) -> list[str]:

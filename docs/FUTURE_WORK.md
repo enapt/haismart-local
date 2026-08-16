@@ -76,9 +76,9 @@ That is an assumption. One write from our side, with the report watched, settles
 
 ## 3. Self-clean reporting on the compact family
 
-Offered on the classic and 165/175-byte families, not on the 209-byte or 117-byte ones. The two
-remaining cases are no longer the same case, and the difference is worth stating before anyone
-picks this up.
+Offered on the classic and 165/175-byte families **and now the 117-byte one** (see the end of this
+item); still not on the 209-byte family. The two cases were never the same case, and the difference
+is worth stating before anyone picks up the one that remains.
 
 **The 209-byte family: the insert point is not pinned, so the flag has two candidate homes.** An
 earlier revision of this entry claimed the position was known and only confirmation was missing.
@@ -108,10 +108,12 @@ of a deduction.
 light, fresh air — pins the insert point, because exactly one of w24 / w34 will be non-zero. That
 places the whole flag block at once, self-clean included.
 
-**The 117-byte family no longer needs a capture to place the flag.** It is not a displacement of the
-published map, so nothing carries over from the shared frame — but that family's own published
-description places its self-clean bit (word 9, alongside the rest of that block; see item 31). What
-it waits on is the reads work item 31 describes, not a missing position.
+**The 117-byte family: ✅ shipped.** It is not a displacement of the published map, so nothing
+carries over from the shared frame — but that family's own published description places its
+self-clean bit (report word 9, alongside the rest of that block; see item 31), and its own paired
+command starts a cycle. Both now ship: the running indicator and the last-clean timestamp read the
+bit, and the start button sends the family's own start command — offered only to units whose model
+declares the function (item 36's declaration gate).
 
 ## 5. A timer, on units that publish one
 
@@ -498,7 +500,7 @@ reading is proven and its meaning is one a user won't misread, and a stale hot-s
 "outdoor" or a unit-less 15 in someone's dashboard is worse than
 its absence.
 
-## 36. ★ The full panel control surface — nine controls added across every grSetDAC family
+## 36. ★ The full panel control surface — the panel's controls added across every grSetDAC family
 
 **Status: shipped for every group-set family; what remains is blocked on captures or a second write
 mechanism, not on more analysis.**
@@ -511,9 +513,11 @@ rest as read-only sensors, on a per-attribute live-write bar the app never appli
 
 **Shipped, on EVERY grSetDAC family** (classic, extended-36, extended-46, related layouts):
 `haismart_hrdp/panel.py` (the widget table as data) + `coordinator.panel_switch_fields` /
-`panel_select_fields` (the app's gate) promote **eight** functions from read-only sensors to real
-controls — five positioned by the invariant frame (**electric-heat, fresh air, 10 °C keep-warm,
-ambient light** switches; **presence-based airflow** select, values read from the model enum), and
+`panel_select_fields` (the app's gate) promote **nine** functions from read-only sensors to real
+controls — six positioned by the invariant frame (**electric-heat, fresh air, 10 °C keep-warm,
+ambient light, energy saving** switches — the last being the boolean energy-save toggle, distinct
+from the multi-level eco ladder, at w5.b6, a position no family reuses; **presence-based airflow**
+select, values read from the model enum), and
 three by the published order, each unanimous across the 83 products that declare it (**mould
 prevention** w5.b14,
 **dry-out** w5.b13, **heatstroke prevention** w5.b15 — item 5's positions, re-derived). Each is
@@ -532,9 +536,12 @@ offered; that exclusion is the panel's, not a live write's.
 * **compact-12** — ✅ DONE. Its panel controls (electric-heat, fresh air) are written **one parameter
   at a time** (`4d05`/`4d04`, `4d1f`/`4d1e`) — the paired on/off command carries the value, no
   baseline — and read back from the toggle's own bit. `WireModel.single_param_fields` / `SingleParam`.
-  ⚠️ Only the two panel controls are enabled; the family's other paired commands (health, self-clean,
-  lock, humidify) wait on making the self-clean button / health switch gates declaration-aware (they
-  gate on `supports_field` alone today, which would over-offer on compact).
+  **Health (`4d09`/`4d08`) and the self-clean trigger (`4d26`, start-only) followed**: a
+  single-parameter control is now offered by DECLARATION (the unit's model must carry the attribute,
+  not invisible), which is the gate that was missing — the health switch and self-clean button reach
+  this family without over-offering on the products that lack the function. The remaining published
+  pairs (child lock, humidify) stay out on the documentary rule, not the gate: the app's panel
+  renders no widget for either.
 * **central-air (`0d`)** — the vendor publishes no panel for these, so the app renders no controls
   either; not in scope.
 * **`freshWindSpeed`** (fresh-air fan speed) is **withdrawn**, not shipped: its model enum has six

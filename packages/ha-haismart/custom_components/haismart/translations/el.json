@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "Turbo"
-      },
-      "quiet": {
-        "name": "Αθόρυβο"
-      },
-      "health": {
-        "name": "Ιονισμός"
-      },
-      "sleep": {
-        "name": "Λειτουργία ύπνου"
-      },
-      "lamp": {
-        "name": "Φωτισμός οθόνης"
-      },
-      "electric_heating": {
-        "name": "Ηλεκτρική θέρμανση"
-      },
-      "fresh_air": {
-        "name": "Φρέσκος αέρας"
-      },
-      "keep_warm_10c": {
-        "name": "Διατήρηση 10°C"
-      },
       "ambient_light": {
         "name": "Φωτισμός περιβάλλοντος"
-      },
-      "mould_proof": {
-        "name": "Προστασία από μούχλα"
       },
       "drying": {
         "name": "Στέγνωμα"
       },
+      "electric_heating": {
+        "name": "Ηλεκτρική θέρμανση"
+      },
+      "energy_saving": {
+        "name": "Εξοικονόμηση ενέργειας"
+      },
+      "fresh_air": {
+        "name": "Φρέσκος αέρας"
+      },
+      "health": {
+        "name": "Ιονισμός"
+      },
+      "keep_warm_10c": {
+        "name": "Διατήρηση 10°C"
+      },
+      "lamp": {
+        "name": "Φωτισμός οθόνης"
+      },
+      "mould_proof": {
+        "name": "Προστασία από μούχλα"
+      },
       "prevent_heatstroke": {
         "name": "Προστασία από θερμοπληξία"
+      },
+      "quiet": {
+        "name": "Αθόρυβο"
+      },
+      "sleep": {
+        "name": "Λειτουργία ύπνου"
+      },
+      "strong": {
+        "name": "Turbo"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "Σύνδεση cloud"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "Βλάβη"
-      },
-      "self_cleaning": {
-        "name": "Αυτοκαθαρισμός"
-      },
       "ambient_light": {
         "name": "Φωτισμός περιβάλλοντος"
       },
       "buzzer_silent": {
         "name": "Σίγαση βομβητή"
+      },
+      "cloud_connection": {
+        "name": "Σύνδεση cloud"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "Συνεχής αφύγρανση"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "Ηλεκτρική θέρμανση"
+      },
+      "energy_saving": {
+        "name": "Εξοικονόμηση ενέργειας"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "Βλάβη"
       },
       "fresh_air": {
         "name": "Φρέσκος αέρας"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "Εξοικονόμηση ηλιακής ενέργειας"
+      },
+      "self_cleaning": {
+        "name": "Αυτοκαθαρισμός"
       },
       "uv_sterilize": {
         "name": "Αποστείρωση UV"

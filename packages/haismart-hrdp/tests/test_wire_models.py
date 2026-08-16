@@ -379,6 +379,11 @@ def test_compact_single_parameter_controls_write_by_command_and_read_back():
     assert sp["electricHeatingStatus"].command(1) == b"\x4d\x05"   # 开电 (on)
     assert sp["electricHeatingStatus"].command(0) == b"\x4d\x04"   # 关电 (off)
     assert sp["freshAirStatus"].command(1) == b"\x4d\x1f"
+    # health and self-clean, from the same published records
+    assert sp["healthMode"].command(1) == b"\x4d\x09"              # 开康 (on)
+    assert sp["healthMode"].command(0) == b"\x4d\x08"              # 关康 (off)
+    assert sp["selfCleaningStatus"].command(1) == b"\x4d\x26"      # 开自 (start)
+    assert sp["selfCleaningStatus"].command(0) is None             # start-only: no off command
 
     # read-back: set electric-heat's bit (w9.b1) in a report and confirm single_param_value sees it
     report = bytearray(117)
@@ -387,6 +392,11 @@ def test_compact_single_parameter_controls_write_by_command_and_read_back():
     assert COMPACT12.single_param_value(bytes(report), "electricHeatingStatus") == 1
     report[off + 1] = 0
     assert COMPACT12.single_param_value(bytes(report), "electricHeatingStatus") == 0
+    # health reads back from w9.b3, self-clean from w9.b2 — the bits their records state
+    report[off + 1] = 0b1000
+    assert COMPACT12.single_param_value(bytes(report), "healthMode") == 1
+    report[off + 1] = 0b0100
+    assert COMPACT12.single_param_value(bytes(report), "selfCleaningStatus") == 1
 
 
 def test_compact_single_param_frame_is_a_bare_command_no_payload():

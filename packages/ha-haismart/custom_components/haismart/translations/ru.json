@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "Турбо"
-      },
-      "quiet": {
-        "name": "Тихий режим"
-      },
-      "health": {
-        "name": "Ионизация"
-      },
-      "sleep": {
-        "name": "Ночной режим"
-      },
-      "lamp": {
-        "name": "Подсветка дисплея"
-      },
-      "electric_heating": {
-        "name": "Электронагрев"
-      },
-      "fresh_air": {
-        "name": "Свежий воздух"
-      },
-      "keep_warm_10c": {
-        "name": "Поддержание 10 °C"
-      },
       "ambient_light": {
         "name": "Окружающая подсветка"
-      },
-      "mould_proof": {
-        "name": "Защита от плесени"
       },
       "drying": {
         "name": "Сушка"
       },
+      "electric_heating": {
+        "name": "Электронагрев"
+      },
+      "energy_saving": {
+        "name": "Энергосбережение"
+      },
+      "fresh_air": {
+        "name": "Свежий воздух"
+      },
+      "health": {
+        "name": "Ионизация"
+      },
+      "keep_warm_10c": {
+        "name": "Поддержание 10 °C"
+      },
+      "lamp": {
+        "name": "Подсветка дисплея"
+      },
+      "mould_proof": {
+        "name": "Защита от плесени"
+      },
       "prevent_heatstroke": {
         "name": "Защита от теплового удара"
+      },
+      "quiet": {
+        "name": "Тихий режим"
+      },
+      "sleep": {
+        "name": "Ночной режим"
+      },
+      "strong": {
+        "name": "Турбо"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "Облачное подключение"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "Неисправность"
-      },
-      "self_cleaning": {
-        "name": "Самоочистка"
-      },
       "ambient_light": {
         "name": "Окружающая подсветка"
       },
       "buzzer_silent": {
         "name": "Звук выключен"
+      },
+      "cloud_connection": {
+        "name": "Облачное подключение"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "Постоянное осушение"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "Электронагрев"
+      },
+      "energy_saving": {
+        "name": "Энергосбережение"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "Неисправность"
       },
       "fresh_air": {
         "name": "Свежий воздух"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "Экономия солнечной энергии"
+      },
+      "self_cleaning": {
+        "name": "Самоочистка"
       },
       "uv_sterilize": {
         "name": "УФ-стерилизация"

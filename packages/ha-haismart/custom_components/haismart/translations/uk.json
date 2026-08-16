@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "Турбо"
-      },
-      "quiet": {
-        "name": "Тихий режим"
-      },
-      "health": {
-        "name": "Іонізація"
-      },
-      "sleep": {
-        "name": "Нічний режим"
-      },
-      "lamp": {
-        "name": "Підсвічування дисплея"
-      },
-      "electric_heating": {
-        "name": "Електричний нагрів"
-      },
-      "fresh_air": {
-        "name": "Свіже повітря"
-      },
-      "keep_warm_10c": {
-        "name": "Підтримання 10 °C"
-      },
       "ambient_light": {
         "name": "Навколишнє підсвічування"
-      },
-      "mould_proof": {
-        "name": "Захист від цвілі"
       },
       "drying": {
         "name": "Сушіння"
       },
+      "electric_heating": {
+        "name": "Електричний нагрів"
+      },
+      "energy_saving": {
+        "name": "Енергозбереження"
+      },
+      "fresh_air": {
+        "name": "Свіже повітря"
+      },
+      "health": {
+        "name": "Іонізація"
+      },
+      "keep_warm_10c": {
+        "name": "Підтримання 10 °C"
+      },
+      "lamp": {
+        "name": "Підсвічування дисплея"
+      },
+      "mould_proof": {
+        "name": "Захист від цвілі"
+      },
       "prevent_heatstroke": {
         "name": "Захист від теплового удару"
+      },
+      "quiet": {
+        "name": "Тихий режим"
+      },
+      "sleep": {
+        "name": "Нічний режим"
+      },
+      "strong": {
+        "name": "Турбо"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "Хмарне з'єднання"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "Несправність"
-      },
-      "self_cleaning": {
-        "name": "Самоочищення"
-      },
       "ambient_light": {
         "name": "Навколишнє підсвічування"
       },
       "buzzer_silent": {
         "name": "Звук вимкнено"
+      },
+      "cloud_connection": {
+        "name": "Хмарне з'єднання"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "Постійне осушення"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "Електричний нагрів"
+      },
+      "energy_saving": {
+        "name": "Енергозбереження"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "Несправність"
       },
       "fresh_air": {
         "name": "Свіже повітря"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "Економія сонячної енергії"
+      },
+      "self_cleaning": {
+        "name": "Самоочищення"
       },
       "uv_sterilize": {
         "name": "УФ-стерилізація"

@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "Turbo"
-      },
-      "quiet": {
-        "name": "Silencieux"
-      },
-      "health": {
-        "name": "Santé"
-      },
-      "sleep": {
-        "name": "Nuit"
-      },
-      "lamp": {
-        "name": "Éclairage de l'afficheur"
-      },
-      "electric_heating": {
-        "name": "Chauffage électrique"
-      },
-      "fresh_air": {
-        "name": "Air frais"
-      },
-      "keep_warm_10c": {
-        "name": "Maintien à 10 °C"
-      },
       "ambient_light": {
         "name": "Lumière d'ambiance"
-      },
-      "mould_proof": {
-        "name": "Anti-moisissure"
       },
       "drying": {
         "name": "Séchage"
       },
+      "electric_heating": {
+        "name": "Chauffage électrique"
+      },
+      "energy_saving": {
+        "name": "Économie d'énergie"
+      },
+      "fresh_air": {
+        "name": "Air frais"
+      },
+      "health": {
+        "name": "Santé"
+      },
+      "keep_warm_10c": {
+        "name": "Maintien à 10 °C"
+      },
+      "lamp": {
+        "name": "Éclairage de l'afficheur"
+      },
+      "mould_proof": {
+        "name": "Anti-moisissure"
+      },
       "prevent_heatstroke": {
         "name": "Prévention des coups de chaleur"
+      },
+      "quiet": {
+        "name": "Silencieux"
+      },
+      "sleep": {
+        "name": "Nuit"
+      },
+      "strong": {
+        "name": "Turbo"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "Connexion au cloud"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "Défaut"
-      },
-      "self_cleaning": {
-        "name": "Autonettoyage"
-      },
       "ambient_light": {
         "name": "Lumière d'ambiance"
       },
       "buzzer_silent": {
         "name": "Bip silencieux"
+      },
+      "cloud_connection": {
+        "name": "Connexion au cloud"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "Déshumidification continue"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "Chauffage électrique"
+      },
+      "energy_saving": {
+        "name": "Économie d'énergie"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "Défaut"
       },
       "fresh_air": {
         "name": "Air frais"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "Économie d'énergie solaire"
+      },
+      "self_cleaning": {
+        "name": "Autonettoyage"
       },
       "uv_sterilize": {
         "name": "Stérilisateur UV"

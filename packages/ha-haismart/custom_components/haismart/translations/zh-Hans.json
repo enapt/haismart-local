@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "强劲"
-      },
-      "quiet": {
-        "name": "静音"
-      },
-      "health": {
-        "name": "健康"
-      },
-      "sleep": {
-        "name": "睡眠"
-      },
-      "lamp": {
-        "name": "显示灯"
-      },
-      "electric_heating": {
-        "name": "电辅热"
-      },
-      "fresh_air": {
-        "name": "新风"
-      },
-      "keep_warm_10c": {
-        "name": "10°C保暖"
-      },
       "ambient_light": {
         "name": "氛围灯"
-      },
-      "mould_proof": {
-        "name": "防霉"
       },
       "drying": {
         "name": "干燥"
       },
+      "electric_heating": {
+        "name": "电辅热"
+      },
+      "energy_saving": {
+        "name": "节能"
+      },
+      "fresh_air": {
+        "name": "新风"
+      },
+      "health": {
+        "name": "健康"
+      },
+      "keep_warm_10c": {
+        "name": "10°C保暖"
+      },
+      "lamp": {
+        "name": "显示灯"
+      },
+      "mould_proof": {
+        "name": "防霉"
+      },
       "prevent_heatstroke": {
         "name": "防中暑"
+      },
+      "quiet": {
+        "name": "静音"
+      },
+      "sleep": {
+        "name": "睡眠"
+      },
+      "strong": {
+        "name": "强劲"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "云端连接"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "故障"
-      },
-      "self_cleaning": {
-        "name": "自清洁"
-      },
       "ambient_light": {
         "name": "氛围灯"
       },
       "buzzer_silent": {
         "name": "蜂鸣器静音"
+      },
+      "cloud_connection": {
+        "name": "云端连接"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "连续除湿"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "电辅热"
+      },
+      "energy_saving": {
+        "name": "节能"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "故障"
       },
       "fresh_air": {
         "name": "新风"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "太阳能省电"
+      },
+      "self_cleaning": {
+        "name": "自清洁"
       },
       "uv_sterilize": {
         "name": "UV杀菌"

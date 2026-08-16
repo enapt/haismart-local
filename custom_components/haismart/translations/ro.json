@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "Turbo"
-      },
-      "quiet": {
-        "name": "Silențios"
-      },
-      "health": {
-        "name": "Ionizare"
-      },
-      "sleep": {
-        "name": "Mod nocturn"
-      },
-      "lamp": {
-        "name": "Lumina afișajului"
-      },
-      "electric_heating": {
-        "name": "Încălzire electrică"
-      },
-      "fresh_air": {
-        "name": "Aer proaspăt"
-      },
-      "keep_warm_10c": {
-        "name": "Menținere 10 °C"
-      },
       "ambient_light": {
         "name": "Lumină ambientală"
-      },
-      "mould_proof": {
-        "name": "Protecție anti-mucegai"
       },
       "drying": {
         "name": "Uscare"
       },
+      "electric_heating": {
+        "name": "Încălzire electrică"
+      },
+      "energy_saving": {
+        "name": "Economisire de energie"
+      },
+      "fresh_air": {
+        "name": "Aer proaspăt"
+      },
+      "health": {
+        "name": "Ionizare"
+      },
+      "keep_warm_10c": {
+        "name": "Menținere 10 °C"
+      },
+      "lamp": {
+        "name": "Lumina afișajului"
+      },
+      "mould_proof": {
+        "name": "Protecție anti-mucegai"
+      },
       "prevent_heatstroke": {
         "name": "Prevenirea insolației"
+      },
+      "quiet": {
+        "name": "Silențios"
+      },
+      "sleep": {
+        "name": "Mod nocturn"
+      },
+      "strong": {
+        "name": "Turbo"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "Conexiune cloud"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "Defecțiune"
-      },
-      "self_cleaning": {
-        "name": "Autocurățare"
-      },
       "ambient_light": {
         "name": "Lumină ambientală"
       },
       "buzzer_silent": {
         "name": "Semnal sonor oprit"
+      },
+      "cloud_connection": {
+        "name": "Conexiune cloud"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "Dezumidificare continuă"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "Încălzire electrică"
+      },
+      "energy_saving": {
+        "name": "Economisire de energie"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "Defecțiune"
       },
       "fresh_air": {
         "name": "Aer proaspăt"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "Economisire energie solară"
+      },
+      "self_cleaning": {
+        "name": "Autocurățare"
       },
       "uv_sterilize": {
         "name": "Sterilizare UV"

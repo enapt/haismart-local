@@ -34,6 +34,10 @@ PANEL_BOOL_CONTROLS: Mapping[str, str] = {
     "freshAirStatus": "fresh_air",
     "10degreeHeatingStatus": "keep_warm_10c",
     "lightStatus": "ambient_light",
+    # The boolean energy-save toggle (distinct from the multi-level `generatorMode` "eco" ladder,
+    # which keeps its own select). The panel renders it with the plain declared-and-not-invisible
+    # gate, and the invariant frame positions it at w5.b6 — a position no family reuses.
+    "energySavingStatus": "energy_saving",
     # Positioned not by the invariant frame but by the published group-set ORDER — each placed
     # unanimously across the 83 products that declare it (exact-fit against the full frame as
     # anchors), reproducing the positions in ``PANEL_EXTRA_POSITIONS``. See item 5 of FUTURE_WORK.

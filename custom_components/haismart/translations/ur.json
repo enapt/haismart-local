@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "طاقتور"
-      },
-      "quiet": {
-        "name": "خاموش"
-      },
-      "health": {
-        "name": "ہیلتھ"
-      },
-      "sleep": {
-        "name": "سلیپ"
-      },
-      "lamp": {
-        "name": "ڈسپلے لائٹ"
-      },
-      "electric_heating": {
-        "name": "برقی حرارت"
-      },
-      "fresh_air": {
-        "name": "تازہ ہوا"
-      },
-      "keep_warm_10c": {
-        "name": "10°C گرم رکھنا"
-      },
       "ambient_light": {
         "name": "ماحولیاتی روشنی"
-      },
-      "mould_proof": {
-        "name": "پھپھوندی سے بچاؤ"
       },
       "drying": {
         "name": "خشک کرنا"
       },
+      "electric_heating": {
+        "name": "برقی حرارت"
+      },
+      "energy_saving": {
+        "name": "توانائی کی بچت"
+      },
+      "fresh_air": {
+        "name": "تازہ ہوا"
+      },
+      "health": {
+        "name": "ہیلتھ"
+      },
+      "keep_warm_10c": {
+        "name": "10°C گرم رکھنا"
+      },
+      "lamp": {
+        "name": "ڈسپلے لائٹ"
+      },
+      "mould_proof": {
+        "name": "پھپھوندی سے بچاؤ"
+      },
       "prevent_heatstroke": {
         "name": "لُو سے بچاؤ"
+      },
+      "quiet": {
+        "name": "خاموش"
+      },
+      "sleep": {
+        "name": "سلیپ"
+      },
+      "strong": {
+        "name": "طاقتور"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "کلاؤڈ کنکشن"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "خرابی"
-      },
-      "self_cleaning": {
-        "name": "خود صفائی"
-      },
       "ambient_light": {
         "name": "ماحولیاتی روشنی"
       },
       "buzzer_silent": {
         "name": "بزر خاموش"
+      },
+      "cloud_connection": {
+        "name": "کلاؤڈ کنکشن"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "مسلسل نمی کمی"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "برقی حرارت"
+      },
+      "energy_saving": {
+        "name": "توانائی کی بچت"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "خرابی"
       },
       "fresh_air": {
         "name": "تازہ ہوا"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "شمسی توانائی کی بچت"
+      },
+      "self_cleaning": {
+        "name": "خود صفائی"
       },
       "uv_sterilize": {
         "name": "UV جراثیم کش"

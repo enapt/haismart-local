@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "قوي"
-      },
-      "quiet": {
-        "name": "هادئ"
-      },
-      "health": {
-        "name": "صحي"
-      },
-      "sleep": {
-        "name": "نوم"
-      },
-      "lamp": {
-        "name": "ضوء الشاشة"
-      },
-      "electric_heating": {
-        "name": "تسخين كهربائي"
-      },
-      "fresh_air": {
-        "name": "هواء نقي"
-      },
-      "keep_warm_10c": {
-        "name": "تدفئة 10°م"
-      },
       "ambient_light": {
         "name": "إضاءة محيطة"
-      },
-      "mould_proof": {
-        "name": "منع العفن"
       },
       "drying": {
         "name": "تجفيف"
       },
+      "electric_heating": {
+        "name": "تسخين كهربائي"
+      },
+      "energy_saving": {
+        "name": "توفير الطاقة"
+      },
+      "fresh_air": {
+        "name": "هواء نقي"
+      },
+      "health": {
+        "name": "صحي"
+      },
+      "keep_warm_10c": {
+        "name": "تدفئة 10°م"
+      },
+      "lamp": {
+        "name": "ضوء الشاشة"
+      },
+      "mould_proof": {
+        "name": "منع العفن"
+      },
       "prevent_heatstroke": {
         "name": "الوقاية من ضربة الشمس"
+      },
+      "quiet": {
+        "name": "هادئ"
+      },
+      "sleep": {
+        "name": "نوم"
+      },
+      "strong": {
+        "name": "قوي"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "اتصال السحابة"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "عطل"
-      },
-      "self_cleaning": {
-        "name": "التنظيف الذاتي"
-      },
       "ambient_light": {
         "name": "إضاءة محيطة"
       },
       "buzzer_silent": {
         "name": "كتم الجرس"
+      },
+      "cloud_connection": {
+        "name": "اتصال السحابة"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "إزالة رطوبة مستمرة"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "تسخين كهربائي"
+      },
+      "energy_saving": {
+        "name": "توفير الطاقة"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "عطل"
       },
       "fresh_air": {
         "name": "هواء نقي"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "توفير الطاقة الشمسية"
+      },
+      "self_cleaning": {
+        "name": "التنظيف الذاتي"
       },
       "uv_sterilize": {
         "name": "معقم UV"

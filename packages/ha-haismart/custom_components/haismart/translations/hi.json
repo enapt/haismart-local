@@ -242,41 +242,44 @@
       }
     },
     "switch": {
-      "strong": {
-        "name": "तेज़"
-      },
-      "quiet": {
-        "name": "शांत"
-      },
-      "health": {
-        "name": "हेल्थ"
-      },
-      "sleep": {
-        "name": "स्लीप"
-      },
-      "lamp": {
-        "name": "डिस्प्ले लाइट"
-      },
-      "electric_heating": {
-        "name": "विद्युत तापन"
-      },
-      "fresh_air": {
-        "name": "ताज़ी हवा"
-      },
-      "keep_warm_10c": {
-        "name": "10°C गर्म रखना"
-      },
       "ambient_light": {
         "name": "परिवेश प्रकाश"
-      },
-      "mould_proof": {
-        "name": "फफूंद रोधी"
       },
       "drying": {
         "name": "सुखाना"
       },
+      "electric_heating": {
+        "name": "विद्युत तापन"
+      },
+      "energy_saving": {
+        "name": "ऊर्जा बचत"
+      },
+      "fresh_air": {
+        "name": "ताज़ी हवा"
+      },
+      "health": {
+        "name": "हेल्थ"
+      },
+      "keep_warm_10c": {
+        "name": "10°C गर्म रखना"
+      },
+      "lamp": {
+        "name": "डिस्प्ले लाइट"
+      },
+      "mould_proof": {
+        "name": "फफूंद रोधी"
+      },
       "prevent_heatstroke": {
         "name": "लू से बचाव"
+      },
+      "quiet": {
+        "name": "शांत"
+      },
+      "sleep": {
+        "name": "स्लीप"
+      },
+      "strong": {
+        "name": "तेज़"
       }
     },
     "select": {
@@ -326,26 +329,17 @@
       }
     },
     "binary_sensor": {
-      "cloud_connection": {
-        "name": "क्लाउड कनेक्शन"
-      },
-      "compressor": {
-        "name": "Compressor"
-      },
-      "fan": {
-        "name": "Fan"
-      },
-      "fault": {
-        "name": "खराबी"
-      },
-      "self_cleaning": {
-        "name": "सेल्फ-क्लीन"
-      },
       "ambient_light": {
         "name": "परिवेश प्रकाश"
       },
       "buzzer_silent": {
         "name": "बजर मौन"
+      },
+      "cloud_connection": {
+        "name": "क्लाउड कनेक्शन"
+      },
+      "compressor": {
+        "name": "Compressor"
       },
       "constant_dehumidify": {
         "name": "सतत नमी हटाना"
@@ -355,6 +349,15 @@
       },
       "electric_heating": {
         "name": "विद्युत तापन"
+      },
+      "energy_saving": {
+        "name": "ऊर्जा बचत"
+      },
+      "fan": {
+        "name": "Fan"
+      },
+      "fault": {
+        "name": "खराबी"
       },
       "fresh_air": {
         "name": "ताज़ी हवा"
@@ -382,6 +385,9 @@
       },
       "pv_saving": {
         "name": "सौर ऊर्जा बचत"
+      },
+      "self_cleaning": {
+        "name": "सेल्फ-क्लीन"
       },
       "uv_sterilize": {
         "name": "UV स्टरलाइज़र"

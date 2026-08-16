@@ -24,6 +24,7 @@ OPTIONAL_BOOL_FEATURES: Mapping[str, str] = {
     "freshAirStatus": "fresh_air",
     "10degreeHeatingStatus": "keep_warm_10c",
     "lightStatus": "ambient_light",
+    "energySavingStatus": "energy_saving",
     "intelligenceStatus": "intelligent",
     "echoStatus": "buzzer_silent",           # set = buzzer stays silent (per the device model)
     "mouldProof": "mould_proof",
@@ -110,6 +111,16 @@ def _known_feature_set(model) -> bool:
     are offered rather than risk surfacing ones the generic model over-declares. A bare list/set of
     names (no digital model) is treated as known -- the caller vouched for it (tests, direct use)."""
     return not isinstance(model, Mapping) or "invisible_attributes" in model
+
+
+def declared_attribute_names(model) -> frozenset[str]:
+    """Every attribute the model declares and does not mark ``invisible`` — empty when the unit's
+    real feature set is unknown (see :func:`_known_feature_set`), never a guess. The generic form
+    of the gates below, for callers deciding about attributes outside the curated tables (a
+    single-parameter control is offered only to units that declare its attribute)."""
+    if not _known_feature_set(model):
+        return frozenset()
+    return frozenset(_attribute_names(model))
 
 
 def declared_bool_features(model) -> frozenset[str]:

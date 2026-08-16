@@ -235,6 +235,27 @@
       },
       "lamp": {
         "name": "Displaybelysning"
+      },
+      "electric_heating": {
+        "name": "Elvärme"
+      },
+      "fresh_air": {
+        "name": "Frisk luft"
+      },
+      "keep_warm_10c": {
+        "name": "10 °C värmehållning"
+      },
+      "ambient_light": {
+        "name": "Omgivningsljus"
+      },
+      "mould_proof": {
+        "name": "Mögelskydd"
+      },
+      "drying": {
+        "name": "Torkning"
+      },
+      "prevent_heatstroke": {
+        "name": "Skydd mot värmeslag"
       }
     },
     "select": {
@@ -271,6 +292,15 @@
           "position_5": "Position 5",
           "position_6": "Position 6",
           "auto": "Automatiskt (svep)"
+        }
+      },
+      "human_sensing": {
+        "name": "Luftflöde vid närvaro",
+        "state": {
+          "avoid": "Undvik",
+          "follow": "Följ",
+          "off": "Av",
+          "on": "På"
         }
       }
     },

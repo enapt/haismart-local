@@ -81,13 +81,13 @@ async def async_setup_entry(
         if desc.key not in absent
     ]
     entities.append(HaismartCloudConnectionSensor(coordinator))
-    # Read-only observability for the extra features a unit's own model declares -- fresh air,
-    # electric-heat, ambient light, and the rest a unit may declare. Which ones exist comes
-    # from the device model; where each sits comes from the published map; the value is the bit at
-    # that position. Only families with a confirmed map displacement produce any, so a device on an
-    # unpinned family simply gets none. Not controls: a group-set write of one of these applies the
-    # whole word block, which needs its own confirmation -- these are state, not switches.
-    for name in sorted(coordinator.declared_features):
+    # Read-only observability for the extra features a unit's own model declares -- the ones the app
+    # shows no control for (a status, not a switch). The functions the app DOES render a control for
+    # (and this unit can write) become switches/selects instead, so they are excluded here to avoid
+    # a switch and a sensor for the same thing. Which ones exist comes from the device model; where
+    # each sits comes from the published map; only a confirmed-displacement family produces any.
+    promoted = set(coordinator.panel_switch_fields())
+    for name in sorted(coordinator.declared_features - promoted):
         entities.append(HaismartFeatureSensor(coordinator, name))
     async_add_entities(entities)
 

@@ -235,6 +235,27 @@
       },
       "lamp": {
         "name": "Podsvícení displeje"
+      },
+      "electric_heating": {
+        "name": "Elektrické topení"
+      },
+      "fresh_air": {
+        "name": "Čerstvý vzduch"
+      },
+      "keep_warm_10c": {
+        "name": "Udržování 10 °C"
+      },
+      "ambient_light": {
+        "name": "Okolní osvětlení"
+      },
+      "mould_proof": {
+        "name": "Ochrana proti plísni"
+      },
+      "drying": {
+        "name": "Sušení"
+      },
+      "prevent_heatstroke": {
+        "name": "Ochrana proti úpalu"
       }
     },
     "select": {
@@ -271,6 +292,15 @@
           "position_5": "Poloha 5",
           "position_6": "Poloha 6",
           "auto": "Automaticky (kývání)"
+        }
+      },
+      "human_sensing": {
+        "name": "Proudění vzduchu dle přítomnosti",
+        "state": {
+          "avoid": "Vyhýbat se",
+          "follow": "Sledovat",
+          "off": "Vypnuto",
+          "on": "Zapnuto"
         }
       }
     },

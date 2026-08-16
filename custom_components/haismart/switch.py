@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from haismart_hrdp import PANEL_BOOL_CONTROLS
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -48,11 +49,26 @@ async def async_setup_entry(
     # five; compact-12 has none of them, and creating a switch there produced a control that read
     # `unknown` forever and raised the moment it was touched. Same rule the readings follow: expose
     # what the unit really has, not a button that does nothing.
-    async_add_entities(
+    entities = [
         HaismartSwitch(coordinator, desc)
         for desc in SWITCHES
         if coordinator.supports_field(desc.field)
+    ]
+    # The rest of the panel's boolean control surface: functions the app renders a switch for and
+    # this unit declares (not invisible), positioned by the invariant frame. Offered the way the app
+    # offers them -- declaration, not a capture apiece -- rather than left as read-only sensors.
+    entities.extend(
+        HaismartSwitch(
+            coordinator,
+            HaismartSwitchDescription(
+                key=PANEL_BOOL_CONTROLS[field],
+                field=field,
+                translation_key=PANEL_BOOL_CONTROLS[field],
+            ),
+        )
+        for field in coordinator.panel_switch_fields()
     )
+    async_add_entities(entities)
 
 
 class HaismartSwitch(HaismartEntity, SwitchEntity):

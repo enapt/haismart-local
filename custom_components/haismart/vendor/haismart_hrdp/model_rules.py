@@ -90,11 +90,26 @@ def rules_for_product(product_code: str | None) -> dict[str, Any] | None:
     ``alarms``, ``invalid_reasons``, ``invisible_attributes`` -- in the same shape the cloud path
     returns, so it drops straight into ``merge_rules`` with nothing downstream needing to know which
     source it came from.
+
+    ★ That includes the **group-set order**, which the bundle stores flat as ``group_set_order`` and
+    which is handed back here in the ``groupCommands`` shape the rest of this library already reads
+    (:func:`~haismart_hrdp.device_rules.declared_order`). It is the ordered list of settings a
+    product's group-set command carries, and the order *is* the wire order -- so a unit with no
+    account still gets the one thing that positions the settings no shared map places.
+
+    ⚠️ Storing it and not translating it would have been a fix in a path that never runs: the
+    merge copies ``groupCommands`` and nothing else, so a flat key would sit in the bundle unread.
     """
     if not product_code:
         return None
     entry = _bundle()["models"].get(product_code)
-    return dict(entry) if entry is not None else None
+    if entry is None:
+        return None
+    out = dict(entry)
+    order = out.pop("group_set_order", None)
+    if order and not out.get("groupCommands"):
+        out["groupCommands"] = [{"name": "grSetDAC", "attrNameList": list(order)}]
+    return out
 
 
 def products_for_uplus_id(uplus_id: str | None) -> list[str]:

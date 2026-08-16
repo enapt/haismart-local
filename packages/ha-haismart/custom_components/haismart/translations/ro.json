@@ -235,6 +235,27 @@
       },
       "lamp": {
         "name": "Lumina afișajului"
+      },
+      "electric_heating": {
+        "name": "Încălzire electrică"
+      },
+      "fresh_air": {
+        "name": "Aer proaspăt"
+      },
+      "keep_warm_10c": {
+        "name": "Menținere 10 °C"
+      },
+      "ambient_light": {
+        "name": "Lumină ambientală"
+      },
+      "mould_proof": {
+        "name": "Protecție anti-mucegai"
+      },
+      "drying": {
+        "name": "Uscare"
+      },
+      "prevent_heatstroke": {
+        "name": "Prevenirea insolației"
       }
     },
     "select": {
@@ -271,6 +292,15 @@
           "position_5": "Poziția 5",
           "position_6": "Poziția 6",
           "auto": "Automat (baleiaj)"
+        }
+      },
+      "human_sensing": {
+        "name": "Flux de aer în funcție de prezență",
+        "state": {
+          "avoid": "Evită",
+          "follow": "Urmărește",
+          "off": "Oprit",
+          "on": "Pornit"
         }
       }
     },

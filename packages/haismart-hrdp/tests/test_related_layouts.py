@@ -109,3 +109,83 @@ def test_a_registered_family_is_not_displaced_by_a_relative() -> None:
 @pytest.mark.parametrize("junk", [b"", b"\x00" * 40, b"\xff" * 200])
 def test_junk_resolves_to_nothing(junk: bytes) -> None:
     assert decode_related(junk, OUR_UPLUS_ID) is None
+
+
+# --- control on a layout resolved from a relative -------------------------------------------------
+
+# The settings a real appliance publishes its group-set as carrying, in the order it publishes them.
+OUR_ORDER = (
+    "targetTemperature", "windDirectionVertical", "operationMode", "specialMode", "windSpeed",
+    "energySavePeriod", "selfCleaning56Status", "tempUnit", "pmvStatus", "intelligenceStatus",
+    "halfDegreeSettingStatus", "screenDisplayStatus", "10degreeHeatingStatus", "echoStatus",
+    "lockStatus", "silentSleepStatus", "muteStatus", "rapidMode", "electricHeatingStatus",
+    "healthMode", "onOffStatus", "targetHumidity", "humanSensingStatus", "windDirectionHorizontal",
+    "cloudFilterChangeFlag", "cleaningTimeStatus", "energySavingStatus", "lightStatus",
+    "selfCleaningStatus", "ch2oCleaningStatus", "pm2p5CleaningStatus", "humidificationStatus",
+    "freshAirStatus",
+)
+TWIN_TOWER = "2008610800820324021200118017740000000000000000000000000000000040"
+
+
+def test_a_related_layout_stays_read_only_without_the_appliances_own_group_set_list():
+    """No list, no control. The frame says where a setting goes; only the appliance's own published
+    list says whether it HAS that setting, and writing one it does not carry puts a value in a word
+    its firmware uses for something else."""
+    model = related_wire_model(127, -19)
+    assert model.writable is False
+    assert model.group_cmd is None
+    assert model.write_fields == {}
+
+
+def test_a_related_layout_becomes_commandable_once_the_list_is_known():
+    model = related_wire_model(127, -19, order=OUR_ORDER)
+    assert model.writable is True
+    assert model.group_cmd == b"\x60\x01"
+    assert "targetTemperature" in model.write_fields
+    assert "onOffStatus" in model.write_fields
+
+
+@pytest.mark.parametrize("displacement,length", [(-19, 127), (0, 165)])
+def test_the_base_word_is_twenty_plus_the_displacement(displacement, length):
+    """Not a per-family constant anyone fitted: the climate block begins at map word 20 and the
+    group-set is those words lifted out, so the report word its first word lands on is 20 + the
+    displacement. Checked against both offsets the published models use."""
+    model = related_wire_model(length, displacement, order=OUR_ORDER)
+    assert model.write_base_word == 20 + displacement
+
+
+def test_a_family_that_reuses_the_frames_bits_loses_exactly_those_controls():
+    """The three the twin-tower families keep a different attribute at -- and nothing else."""
+    plain = set(related_wire_model(209, 0, order=OUR_ORDER).write_fields)
+    twin = set(related_wire_model(209, 0, order=OUR_ORDER, uplus_id=TWIN_TOWER).write_fields)
+    assert plain - twin == {"windDirectionVertical", "windSpeed", "selfCleaningStatus"}
+    # everything else survives, so this is a gate and not a retreat
+    assert {"targetTemperature", "operationMode", "onOffStatus", "muteStatus"} <= twin
+
+
+def test_a_setpoint_encoded_on_a_related_layout_lands_where_the_frame_says():
+    """End to end on a REAL report: seed the group-set from it, change one setting, and check the
+    bytes moved at the position the published frame gives -- and nowhere else."""
+    model = related_wire_model(len(STATUS_125), -19, order=OUR_ORDER)
+    baseline = model.baseline_words(STATUS_125)
+    assert len(baseline) == 10                      # five 16-bit words
+
+    encoded = model.encode_control(baseline, {"targetTemperature": 25 - 16})
+    assert len(encoded) == len(baseline)
+    differing = [i for i, (a, b) in enumerate(zip(baseline, encoded, strict=True)) if a != b]
+    # targetTemperature is the frame's word 1 bit 8, i.e. the HIGH byte of the first word
+    assert differing == [0]
+    assert encoded[0] == 25 - 16
+
+    # and the value reads back through the family's own accessor
+    assert model.current_write_value(STATUS_125[:92] + bytes(encoded) + STATUS_125[102:],
+                                     "targetTemperature") == 25 - 16
+
+
+def test_the_encoder_still_refuses_a_setting_the_appliance_does_not_publish():
+    """The list is a gate in both directions: a frame position is not a licence to write it."""
+    short = tuple(n for n in OUR_ORDER if n != "windDirectionHorizontal")
+    model = related_wire_model(127, -19, order=short)
+    assert "windDirectionHorizontal" not in model.write_fields
+    with pytest.raises(KeyError):
+        model.encode_control(model.baseline_words(STATUS_125), {"windDirectionHorizontal": 7})

@@ -235,6 +235,27 @@
       },
       "lamp": {
         "name": "Luce del display"
+      },
+      "electric_heating": {
+        "name": "Riscaldamento elettrico"
+      },
+      "fresh_air": {
+        "name": "Aria fresca"
+      },
+      "keep_warm_10c": {
+        "name": "Mantenimento 10 °C"
+      },
+      "ambient_light": {
+        "name": "Luce ambientale"
+      },
+      "mould_proof": {
+        "name": "Antimuffa"
+      },
+      "drying": {
+        "name": "Asciugatura"
+      },
+      "prevent_heatstroke": {
+        "name": "Prevenzione colpo di calore"
       }
     },
     "select": {
@@ -271,6 +292,15 @@
           "position_5": "Posizione 5",
           "position_6": "Posizione 6",
           "auto": "Automatico (oscillazione)"
+        }
+      },
+      "human_sensing": {
+        "name": "Flusso d'aria in base alla presenza",
+        "state": {
+          "avoid": "Evita",
+          "follow": "Segui",
+          "off": "Spento",
+          "on": "Acceso"
         }
       }
     },

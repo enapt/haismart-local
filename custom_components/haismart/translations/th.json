@@ -235,6 +235,27 @@
       },
       "lamp": {
         "name": "ไฟหน้าจอ"
+      },
+      "electric_heating": {
+        "name": "ทำความร้อนไฟฟ้า"
+      },
+      "fresh_air": {
+        "name": "อากาศบริสุทธิ์"
+      },
+      "keep_warm_10c": {
+        "name": "รักษาอุณหภูมิ 10°C"
+      },
+      "ambient_light": {
+        "name": "ไฟบรรยากาศ"
+      },
+      "mould_proof": {
+        "name": "ป้องกันเชื้อรา"
+      },
+      "drying": {
+        "name": "อบแห้ง"
+      },
+      "prevent_heatstroke": {
+        "name": "ป้องกันโรคลมแดด"
       }
     },
     "select": {
@@ -271,6 +292,15 @@
           "position_5": "ตำแหน่ง 5",
           "position_6": "ตำแหน่ง 6",
           "auto": "อัตโนมัติ (ส่าย)"
+        }
+      },
+      "human_sensing": {
+        "name": "ลมตามการมีอยู่",
+        "state": {
+          "avoid": "หลีกเลี่ยง",
+          "follow": "ติดตาม",
+          "off": "ปิด",
+          "on": "เปิด"
         }
       }
     },

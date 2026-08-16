@@ -4185,3 +4185,140 @@ async def test_a_short_frame_never_becomes_the_control_baseline(
     with pytest.raises(UpdateFailed, match="no decodable status"):
         await coordinator._async_read_cycle()
     assert coordinator.last_raw_status == frame
+
+
+async def test_a_family_that_reuses_a_shared_bit_is_refused_that_control(
+    hass: HomeAssistant,
+) -> None:
+    """A control must not be offered where this family keeps a DIFFERENT attribute at that bit.
+
+    The group-set is packed by position and is otherwise identical across every published air
+    conditioner -- so a field being placeable is not the same as it being the right field. On the
+    twin-tower families the shared vane and fan positions belong to the LEFT TOWER, and the
+    self-clean bit belongs to `sterilizationSwitch`. Sending the shared attribute there starts the
+    wrong function rather than failing, which is the one failure mode a write gate exists to stop.
+    """
+    from types import SimpleNamespace
+
+    from custom_components.haismart.coordinator import HaismartCoordinator
+
+    twin = SimpleNamespace(
+        uplus_id="2008610800820324021200118017740000000000000000000000000000000040",
+        _wire_model=None,
+    )
+    plain = SimpleNamespace(
+        uplus_id="2008610800820324021200118012560000000000000000000000000000000040",
+        _wire_model=None,
+    )
+    supports = HaismartCoordinator.supports_field
+
+    for field in ("windDirectionVertical", "windSpeed", "selfCleaningStatus"):
+        assert supports(twin, field) is False, field
+        assert supports(plain, field) is True, field
+
+    for field in ("targetTemperature", "operationMode", "onOffStatus", "muteStatus"):
+        assert supports(twin, field) is True, field
+
+
+async def test_a_layout_resolved_from_a_relative_is_commanded_with_ITS_field_map(
+    hass: HomeAssistant,
+) -> None:
+    """The model a related decode chose must be the one the controls are built from.
+
+    A related layout decodes under a name (`related-19`) and nothing else; if the coordinator does
+    not rebuild the model from that name it falls back to the CLASSIC field map, which is a
+    different frame on every family but one — so the appliance would read correctly and then be
+    written through the wrong map. This pins the rebuild, and that the appliance's own published
+    group-set list is what decides which controls exist.
+    """
+    from types import SimpleNamespace
+
+    from haismart_hrdp import related_model_named
+
+    from custom_components.haismart.coordinator import HaismartCoordinator
+
+    order = ("targetTemperature", "operationMode", "windSpeed", "onOffStatus", "muteStatus")
+    model = related_model_named("related+0", 165, order=order)
+    assert model is not None
+    assert model.writable is True
+    assert model.write_base_word == 20
+
+    unit = SimpleNamespace(uplus_id=None, _wire_model=model)
+    supports = HaismartCoordinator.supports_field
+    for field in order:
+        assert supports(unit, field) is True, field
+    # a setting this appliance does not publish is not offered, even though the frame places it
+    assert supports(unit, "windDirectionHorizontal") is False
+    assert supports(unit, "selfCleaningStatus") is False
+
+    # and an unrecognised layout name can never become writable
+    assert related_model_named("unknown", 165, order=order) is None
+    assert related_model_named("classic", 127, order=order) is None
+
+
+async def test_panel_controls_are_offered_the_way_the_app_offers_them(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The panel control surface: a function the app renders a switch/select for, that this unit
+    declares and does not mark invisible, becomes a control here too -- no capture apiece, the way
+    the app itself decides. The load-bearing exclusions are checked in the same breath: an invisible
+    attribute, and one the app shows no widget for (echoStatus), get no control.
+    """
+    model = heat_capable_digital_model()
+    model["attributes"].extend([
+        {"name": "electricHeatingStatus"},   # panel control, visible  -> switch
+        {"name": "lightStatus"},             # panel control, visible  -> switch
+        {"name": "freshAirStatus"},          # panel control, INVISIBLE -> no switch
+        {"name": "echoStatus"},              # writable, but NO panel widget -> no switch
+        {"name": "humanSensingStatus",       # enum panel control, visible -> select
+         "valueRange": {"type": "LIST", "dataList": [
+             {"data": "0", "desc": "关"}, {"data": "1", "desc": "避人"},
+             {"data": "2", "desc": "迎人"}, {"data": "3", "desc": "开"}]}},
+    ])
+    model["invisible_attributes"] = ["freshAirStatus"]
+
+    entry = await _setup_with_model(hass, model)
+    assert entry.state is ConfigEntryState.LOADED
+
+    # offered — declared, visible, a panel control the frame positions on this (classic) family
+    assert hass.states.get("switch.downstairs_ac_electric_heating") is not None
+    assert hass.states.get("switch.downstairs_ac_ambient_light") is not None
+    assert hass.states.get("select.downstairs_ac_presence_airflow") is not None
+    # NOT offered
+    assert hass.states.get("switch.downstairs_ac_fresh_air") is None        # invisible
+    assert "echo" not in {e for e in hass.states.async_entity_ids("switch")}  # no widget
+    # and not duplicated as a read-only sensor (promoted, not both)
+    assert hass.states.get("binary_sensor.downstairs_ac_electric_heating") is None
+    assert hass.states.get("sensor.downstairs_ac_presence_airflow") is None
+
+
+async def test_compact_offers_panel_controls_via_single_parameter(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Compact-12 controls its optional toggles one parameter at a time, not through its group set.
+    A compact unit that declares electric-heat / fresh air (not invisible) gets those switches — the
+    app's control surface reaching this family too — and they read their state back."""
+    import json as _json
+
+    from custom_components.haismart.const import CONF_DIGITAL_MODEL
+
+    model = {
+        "attributes": [{"name": "electricHeatingStatus"}, {"name": "freshAirStatus"}],
+        "invisible_attributes": [],
+    }
+    mock_uss.read.return_value = [make_compact12_frame()]
+    entry = _entry(**{CONF_DIGITAL_MODEL: _json.dumps(model)})
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is ConfigEntryState.LOADED
+
+    coord = entry.runtime_data
+    assert coord._wire_model is not None and coord._wire_model.family == "compact12"
+    # offered as switches (declared, and the family can write them one parameter at a time)
+    assert hass.states.get("switch.downstairs_ac_electric_heating") is not None
+    assert hass.states.get("switch.downstairs_ac_fresh_air") is not None
+    # read state back from the toggle's own bit, and the write is the paired on/off command
+    assert coord.current_field("electricHeatingStatus") in (0, 1)
+    from haismart_hrdp.wire_models import COMPACT12
+    assert COMPACT12.single_param_fields["electricHeatingStatus"].command(1) == b"\x4d\x05"

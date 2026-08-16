@@ -235,6 +235,27 @@
       },
       "lamp": {
         "name": "Ekran ışığı"
+      },
+      "electric_heating": {
+        "name": "Elektrikli ısıtma"
+      },
+      "fresh_air": {
+        "name": "Temiz hava"
+      },
+      "keep_warm_10c": {
+        "name": "10 °C sıcak tutma"
+      },
+      "ambient_light": {
+        "name": "Ortam ışığı"
+      },
+      "mould_proof": {
+        "name": "Küf önleme"
+      },
+      "drying": {
+        "name": "Kurutma"
+      },
+      "prevent_heatstroke": {
+        "name": "Sıcak çarpması önleme"
       }
     },
     "select": {
@@ -271,6 +292,15 @@
           "position_5": "Konum 5",
           "position_6": "Konum 6",
           "auto": "Otomatik (salınım)"
+        }
+      },
+      "human_sensing": {
+        "name": "Varlığa göre hava akışı",
+        "state": {
+          "avoid": "Kaçın",
+          "follow": "Takip et",
+          "off": "Kapalı",
+          "on": "Açık"
         }
       }
     },

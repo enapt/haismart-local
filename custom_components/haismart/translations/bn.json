@@ -235,6 +235,27 @@
       },
       "lamp": {
         "name": "ডিসপ্লে লাইট"
+      },
+      "electric_heating": {
+        "name": "বৈদ্যুতিক গরম"
+      },
+      "fresh_air": {
+        "name": "তাজা বাতাস"
+      },
+      "keep_warm_10c": {
+        "name": "১০°সে উষ্ণতা রক্ষা"
+      },
+      "ambient_light": {
+        "name": "পরিবেশ আলো"
+      },
+      "mould_proof": {
+        "name": "ছত্রাক প্রতিরোধ"
+      },
+      "drying": {
+        "name": "শুকানো"
+      },
+      "prevent_heatstroke": {
+        "name": "হিটস্ট্রোক প্রতিরোধ"
       }
     },
     "select": {
@@ -271,6 +292,15 @@
           "position_5": "অবস্থান 5",
           "position_6": "অবস্থান 6",
           "auto": "স্বয়ংক্রিয় (দোলানো)"
+        }
+      },
+      "human_sensing": {
+        "name": "উপস্থিতি বায়ুপ্রবাহ",
+        "state": {
+          "avoid": "এড়ানো",
+          "follow": "অনুসরণ",
+          "off": "বন্ধ",
+          "on": "চালু"
         }
       }
     },

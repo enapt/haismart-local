@@ -60,15 +60,13 @@ def test_no_family_offers_a_control_it_cannot_read_back() -> None:
 # Measured departures from the relation below: (family, field) pairs where a written bit does NOT
 # read back at `write_base_word + write_word - 1`, each with the evidence that put it elsewhere.
 #
-# Both are extended-46, both are in the ten-word block that family inserts, and both were checked
-# against one file whose cloud record is fresh (see `test_the_209_family_reads_the_appliance_vane`).
-# Neither weakens what the relation places elsewhere: on this family it holds for words 1..3 as
-# WORDS -- setpoint, mode and the entire boolean block -- and those toggles were separately
-# confirmed 6/6 against that same record.
-_WRITE_READ_EXCEPTIONS = {
-    ("extended46", "windDirectionVertical"),   # writes w1.b0, reads report w25 (map's w20 reads 0)
-    ("extended46", "windSpeed"),               # writes w2.b8, reads report w26.b9 (map's w21 = 6)
-}
+# Empty as of the ext46 write retarget: the two former exceptions (extended-46
+# windDirectionVertical/windSpeed) used to write the shared-frame slots at group-set w1/w2 -- which
+# on this twin-tower family are the LEFT TOWER -- and read back at report w25/w26. They now write
+# group-set words 6/7, the appliance's own fields in the inserted block, which DO satisfy the
+# relation (write w6 -> report w25, write w7 -> report w26). See
+# `test_ext46_writes_the_appliance_vane_not_the_tower`.
+_WRITE_READ_EXCEPTIONS: set[tuple[str, str]] = set()
 
 
 def test_the_write_frame_is_a_slice_of_the_report() -> None:
@@ -195,9 +193,11 @@ def test_the_209_family_reads_and_writes_its_fan_and_up_down_vane() -> None:
     ``windDirectionVertical`` and ``windSpeed``. Its per-tower attributes are published in the same
     record as 0 / 0 and 3 / 5. A tower register cannot read the appliance's value.
 
-    Writes go at the published positions (w1.b0, w2.b8), which every air-conditioner device type
-    states identically. Whether the appliance acts on them there is a question only a write
-    answers -- and now can be answered by the owner, because the readback is restored.
+    Writes now go at the appliance's own positions in the inserted block (group-set words 6/7 =
+    report w25/w26), not the shared-frame slots -- see
+    ``test_ext46_writes_the_appliance_vane_not_the_tower`` for why. Whether the appliance acts on
+    them is a question only a write answers, but the readback is at the same position, so it is
+    checkable.
     """
     from haismart_hrdp.wire_models import EXTENDED46
 
@@ -208,3 +208,192 @@ def test_the_209_family_reads_and_writes_its_fan_and_up_down_vane() -> None:
     # The horizontal axis stays out: nothing in this family's report reads it back, and a control
     # that writes what it cannot read is the defect this suite already guards above.
     assert "windDirectionHorizontal" not in EXTENDED46.write_fields
+
+
+def test_ext46_writes_the_appliance_vane_not_the_tower() -> None:
+    """The vane/fan writes target the appliance's own fields, in the inserted block -- not the
+    shared-frame slots, which on this twin-tower family are the LEFT TOWER.
+
+    Three independent lines settle where they go, none needing hardware:
+
+    * the write positions satisfy the universal write<->read relation against the capture-confirmed
+      read map: group-set word 6 -> report w25 (where ``swing_vertical`` reads), word 7 -> report
+      w26 (where ``wind_speed`` reads). Bits match too.
+    * the frame reaches them: ``word_count`` covers group-set word 7.
+    * they are NOT at the shared single-flow slots (w1.b0 / w2.b8), because on this family the
+      vendor's own group-set order puts ``windDirectionVerticalL`` / ``windSpeedL`` (the towers)
+      there -- see ``test_ext46_shared_slots_are_the_towers_in_the_published_order``.
+    """
+    from haismart_hrdp.wire_models import EXTENDED46 as m
+
+    v, f = m.write_fields["windDirectionVertical"], m.write_fields["windSpeed"]
+    # frame is long enough to hold the fan at group-set word 7
+    assert m.word_count >= 7
+    # write word -> report word, against the capture-confirmed read positions
+    assert m.write_base_word + v.word - 1 == m.fields["swing_vertical"].word == 25
+    assert m.write_base_word + f.word - 1 == m.fields["wind_speed"].word == 26
+    assert (v.bit, v.length) == (m.fields["swing_vertical"].bit, m.fields["swing_vertical"].length)
+    assert (f.bit, f.length) == (m.fields["wind_speed"].bit, m.fields["wind_speed"].length)
+    # and NOT the shared-frame slots (those are the towers here)
+    assert (v.word, v.bit) != (1, 0) and (f.word, f.bit) != (2, 8)
+
+
+# --- families that keep a different attribute at a shared-frame position -------------------------
+
+TWIN_TOWER = "2008610800820324021200118017740000000000000000000000000000000040"
+CLASSIC = "2008610800820324021200118012560000000000000000000000000000000040"
+
+
+def test_a_twin_tower_family_refuses_the_fields_whose_bits_it_reuses():
+    """The group-set is packed by POSITION, so a family that keeps a different attribute at one of
+    the shared frame's positions must not be sent the shared attribute -- it would start the wrong
+    function rather than fail.
+
+    Measured across every published product: these families put their LEFT TOWER's vane and fan
+    where a single-flow unit puts the appliance's, and `sterilizationSwitch` where the shared frame
+    puts `selfCleaningStatus`. Unanimous across every member of each family.
+    """
+    from haismart_hrdp.family_write import displaced_write_fields, write_overrides
+
+    displaced = displaced_write_fields(TWIN_TOWER)
+    assert "windDirectionVertical" in displaced
+    assert "windSpeed" in displaced
+    # the one that matters most: our self-clean button would command sterilization
+    assert "selfCleaningStatus" in displaced
+
+    overrides = write_overrides(TWIN_TOWER)
+    assert overrides["windDirectionVerticalL"] == (1, 0, 4)
+    assert overrides["windDirectionVerticalR"] == (1, 4, 4)
+    assert overrides["windSpeedL"] == (2, 8, 3)
+    assert overrides["sterilizationSwitch"] == (5, 4, 1)
+
+
+def test_a_family_with_no_departure_refuses_nothing():
+    """Almost every family uses the shared frame unchanged, and must lose no control over this."""
+    from haismart_hrdp.family_write import displaced_write_fields
+
+    assert displaced_write_fields(CLASSIC) == frozenset()
+    assert displaced_write_fields(None) == frozenset()
+    assert displaced_write_fields("an appliance we have never met") == frozenset()
+
+
+def test_the_same_function_under_a_newer_spelling_is_not_a_displacement():
+    """`tenDegreeHeatingStatus` sits exactly where the shared frame puts `10degreeHeatingStatus`.
+
+    That is one attribute with two spellings, not a reused bit, so nothing may be refused for it --
+    otherwise a rename would silently cost those units a control.
+    """
+    from haismart_hrdp.family_write import ALIASES, WRITE_OVERRIDES, displaced_write_fields
+
+    renamed = [u for u, o in WRITE_OVERRIDES.items() if "tenDegreeHeatingStatus" in o]
+    assert renamed, "expected at least one family using the newer spelling"
+    assert ALIASES["tenDegreeHeatingStatus"] == "10degreeHeatingStatus"
+    for uplus in renamed:
+        assert "10degreeHeatingStatus" not in displaced_write_fields(uplus)
+
+
+def test_every_recorded_departure_is_a_real_departure():
+    """No entry may merely restate the shared frame -- that would be noise carrying risk."""
+    from haismart_hrdp.canonical_map import CANONICAL_WRITE
+    from haismart_hrdp.family_write import WRITE_OVERRIDES
+
+    shared = {n: (f.word, f.bit, f.length) for n, f in CANONICAL_WRITE.items()}
+    for uplus, overrides in WRITE_OVERRIDES.items():
+        assert overrides, f"{uplus} has an empty override map"
+        for name, pos in overrides.items():
+            assert shared.get(name) != pos, f"{uplus}:{name} restates the shared frame"
+
+
+def test_ext36_write_table_restates_the_published_frame():
+    """`_EXT36_WRITE` is typed by hand (it predates `CANONICAL_WRITE`), but every position in it is
+    a claim about the published group-set frame, which does not displace between families. Pin the
+    two together so a regenerated map cannot silently diverge from the table.
+
+    `ecoMode` is the one exemption: no published model positions it (its place came from cycling a
+    real unit through its levels), so the frame has nothing to pin it to. The order-derived panel
+    controls (``PANEL_EXTRA_POSITIONS``) are pinned to their own source instead of the frame."""
+    from haismart_hrdp.canonical_map import CANONICAL_WRITE
+    from haismart_hrdp.panel import PANEL_EXTRA_POSITIONS
+    from haismart_hrdp.wire_models import _EXT36_WRITE
+
+    for name, wf in _EXT36_WRITE.items():
+        if name == "ecoMode":
+            assert name not in CANONICAL_WRITE
+            continue
+        if name in PANEL_EXTRA_POSITIONS:                       # order-derived, not in the frame
+            assert (wf.word, wf.bit, wf.length) == PANEL_EXTRA_POSITIONS[name], name
+            continue
+        cf = CANONICAL_WRITE[name]
+        assert (wf.word, wf.bit, wf.length) == (cf.word, cf.bit, cf.length), name
+
+
+def test_compact_family_resolves_by_the_identifier_all_its_products_share():
+    """The compact family's 509 catalogue products all carry one 32-character identifier — the
+    family itself — and the registration must match what the shipped bundle says, so an appliance
+    announcing it resolves before its first report instead of waiting for a 117-byte length match."""
+    import gzip
+    import json
+    from pathlib import Path
+
+    from haismart_hrdp import model_rules
+    from haismart_hrdp.wire_models import COMPACT12, select_wire_model
+
+    (family_id,) = COMPACT12.uplus_ids
+    assert select_wire_model(0, family_id) is COMPACT12   # id alone, no plausible length
+    bundle = json.loads(gzip.decompress(Path(model_rules.RULES_PATH).read_bytes()))
+    members = bundle["by_uplus_id"][family_id]
+    assert len(members) >= 509
+    assert all(bundle["models"][code]["uplus_id"] == family_id for code in members)
+
+
+def test_grsetdac_families_carry_the_frame_panel_controls():
+    """Every grSetDAC family (extended-36, extended-46) offers the panel's frame-positioned controls
+    at the same invariant positions, so the app's control surface reaches them too — not just the
+    classic family. Compact-12 uses a different group command and layout, so it does NOT get them
+    from the frame (its own controls come from its own map)."""
+    from haismart_hrdp.canonical_map import CANONICAL_WRITE
+    from haismart_hrdp.panel import PANEL_CONTROLS
+    from haismart_hrdp.wire_models import COMPACT12, EXTENDED36, EXTENDED46
+
+    frame_panel = {n for n in PANEL_CONTROLS if n in CANONICAL_WRITE}
+    assert frame_panel, "expected some panel controls positioned by the frame"
+    for wm in (EXTENDED36, EXTENDED46):
+        for name in frame_panel:
+            assert name in wm.write_fields, f"{wm.family} missing panel control {name}"
+            wf = wm.write_fields[name]
+            cf = CANONICAL_WRITE[name]
+            assert (wf.word, wf.bit, wf.length) == (cf.word, cf.bit, cf.length), name
+    # compact-12 is a different group command / layout — not extended by the shared frame
+    assert not (frame_panel & set(COMPACT12.write_fields))
+
+
+def test_compact_single_parameter_controls_write_by_command_and_read_back():
+    """Compact-12 controls its optional toggles one parameter at a time (not through the group set):
+    the on/off EPP command carries the value, and state reads back from the toggle's own bit. This
+    is how the app reaches electric-heat and fresh air on that family."""
+    from haismart_hrdp.wire_models import COMPACT12
+
+    sp = COMPACT12.single_param_fields
+    assert "electricHeatingStatus" in sp and "freshAirStatus" in sp
+    # the command carries the value; there is no data payload
+    assert sp["electricHeatingStatus"].command(1) == b"\x4d\x05"   # 开电 (on)
+    assert sp["electricHeatingStatus"].command(0) == b"\x4d\x04"   # 关电 (off)
+    assert sp["freshAirStatus"].command(1) == b"\x4d\x1f"
+
+    # read-back: set electric-heat's bit (w9.b1) in a report and confirm single_param_value sees it
+    report = bytearray(117)
+    off = 92 + (9 - 1) * 2                                          # word 9
+    report[off + 1] = 0b10                                         # low byte, bit 1 set
+    assert COMPACT12.single_param_value(bytes(report), "electricHeatingStatus") == 1
+    report[off + 1] = 0
+    assert COMPACT12.single_param_value(bytes(report), "electricHeatingStatus") == 0
+
+
+def test_compact_single_param_frame_is_a_bare_command_no_payload():
+    """The single-parameter frame is the on/off command with no data — like smartair2's 4d02/4d03
+    power. Distinct from the group-set frame (4d5f + a full word block)."""
+    from haismart_hrdp.uss import build_epp_frame
+
+    frame = build_epp_frame(0x01, b"\x4d\x05", b"")
+    assert frame[:2] == b"\xff\xff" and frame[10:12] == b"\x4d\x05"
+    assert (frame[2] + sum(frame[3:-1])) & 0xFF == frame[-1]       # checksum holds

@@ -29,7 +29,7 @@ yang tepat.
 
 Unit yang sudah dipastikan bekerja ada di [`DEVICES.md`](../../DEVICES.md). Model Anda tidak
 tercantum? Kemungkinan besar tetap berfungsi, dan bukan karena kebetulan: integrasi ini sudah
-membawa deskripsi resmi **seluruh 1.400 nomor model** dalam katalog pabrikan — setelan apa yang dimiliki tiap
+membawa deskripsi resmi **seluruh 1.416 nomor model** dalam katalog pabrikan — setelan apa yang dimiliki tiap
 model, nama tiap kerusakan, dan kontrol mana yang diabaikan dalam kondisi tertentu — sehingga ia
 menyiapkan dirinya sendiri untuk unit yang belum pernah kami lihat. Jika akun Anda juga bisa
 menjelaskan unit tersebut, keduanya digabungkan, bukan dipilih salah satu.

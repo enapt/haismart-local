@@ -27,13 +27,14 @@ import random
 import socket
 import struct
 import time
-from collections.abc import Callable, Collection, Iterable
+from collections.abc import Callable, Collection, Iterable, Sequence
 from dataclasses import dataclass
 from typing import Any
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .canonical_map import CANONICAL_WRITE
+from .panel import PANEL_BOOL_CONTROLS, PANEL_ENUM_CONTROLS, PANEL_EXTRA_POSITIONS
 from .wire_models import (
     OPERATION_SOURCE,
     decode_related,
@@ -702,6 +703,22 @@ _DEVICE_SPECIFIC_WRITES = {
 # the same case — the panel *does* offer self-clean, and a live write of it DID land (the panel
 # showed "CL"). So it is confirmed above. The lesson stands: presence in the map is not grounds to
 # add a field — an observed write is; the panel reference predicts the outcome but the write settles it.
+# The panel's own control set (`haismart_hrdp.panel`), positioned by the invariant frame. These are
+# authorised the way the vendor app authorises them — the device declares the attribute, it is not
+# invisible, and the panel renders a widget for it — not by a capture apiece. The app controls these
+# without probing hardware, and the frame positions them identically on every device type, so they
+# are as safe to encode as the confirmed set. Only the ones the frame actually places are taken here;
+# the caller still gates on the device declaring the attribute (see `coordinator.panel_*_fields`).
+_PANEL_FRAME_WRITES = {
+    **{
+        name: (CANONICAL_WRITE[name].word, CANONICAL_WRITE[name].bit, CANONICAL_WRITE[name].length)
+        for name in (*PANEL_BOOL_CONTROLS, *PANEL_ENUM_CONTROLS)
+        if name in CANONICAL_WRITE
+    },
+    # order-derived controls the invariant frame does not carry (unanimous, see PANEL_EXTRA_POSITIONS)
+    **PANEL_EXTRA_POSITIONS,
+}
+
 GRSETDAC_FIELDS = {
     **{
         name: (
@@ -712,6 +729,7 @@ GRSETDAC_FIELDS = {
         for name in _CONFIRMED_WRITE_FIELDS
     },
     **_DEVICE_SPECIFIC_WRITES,
+    **_PANEL_FRAME_WRITES,
 }
 
 # Allowed raw EPP values per field — the encoder REFUSES anything else, so we never fire a code the app
@@ -727,6 +745,8 @@ GRSETDAC_ALLOWED_VALUES = {
                                              # model — see GRSETDAC_MODEL_AUTHORIZED.
     "ecoMode":               {0, 5, 6, 7},   # off / three levels (5/6/7)
     "selfCleaningStatus":    {1},            # START only — the cycle runs to completion, no OFF command
+    # panel enum controls (bools are handled by the width==1 path): the wire values their state maps use
+    "humanSensingStatus":    {0, 1, 2, 3},   # off / avoid / follow / on
 }
 
 # Fields whose value space the DEVICE'S OWN digital model may extend beyond the observed set above
@@ -1029,7 +1049,12 @@ _STATUS_TOGGLE_FIELDS = {
 
 
 def parse_full_status(
-    data: bytes, profile=None, digital_model: dict | None = None, *, uplus_id: str | None = None
+    data: bytes,
+    profile=None,
+    digital_model: dict | None = None,
+    *,
+    uplus_id: str | None = None,
+    order: Sequence[str] | None = None,
 ) -> dict:
     """Decode the CONFIRMED fields of a full-status report (see :data:`STATUS_LAYOUTS`).
 
@@ -1089,7 +1114,9 @@ def parse_full_status(
         # agrees with; relatives normally disagree by exactly one offset, so this is the step that
         # decides between them. Anything that fails falls through to the partial decode below,
         # exactly as before.
-        if wm is None and (decoded := decode_related(data, uplus_id, profile)) is not None:
+        if wm is None and (
+            decoded := decode_related(data, uplus_id, profile, order=order)
+        ) is not None:
             return decoded
     layout = derive_status_layout(data, digital_model)
     if layout is None and len(data) <= _OFF_ONOFF:

@@ -11,15 +11,21 @@ Since **v0.35.0** an air conditioner whose exact layout we have never seen can o
 by matching it to the published models closest to it and checking the result against what the unit
 actually sent. So before capturing anything, look at what you have:
 
-- **Readings look right, and you can control it.** Nothing to do — your model is recognised.
-- **Readings look right, but the thermostat and switches won't change anything.** This is the new
-  path doing its job. It reads, and deliberately never commands: sending a command writes a whole
-  block of settings at once, so it stays reserved for layouts confirmed on real hardware. **The
-  captures below are exactly what turns your model into a controllable one** — and because the
-  readings already work, they are easy to take.
+- **Readings look right, and you can control it.** Nothing to do — your model is recognised. (Since
+  v0.48.0 this includes most units on the matched-relatives path: the core controls come from your
+  product's own published list of group-set settings, no capture required.)
+- **Readings look right, but the thermostat and switches won't change anything.** Your product is one
+  of the few that publishes no group-set list, so commands stay withheld — the safe default, since a
+  command writes a whole block of settings at once. **The captures below are exactly what turns your
+  model into a controllable one** — and because the readings already work, they are easy to take.
 - **Only power, setpoint, mode and fan appear, or values are clearly wrong.** No published model was
   close enough, or none of the candidates agreed with your report. The captures below are the way
   forward, and they are the whole job.
+
+Captures are also what unlock the **readings beyond the core climate block** (power telemetry,
+per-model extras) on a matched-relatives layout, and — on twin-airflow tower units — what verifies
+which airflow the fan and vane commands address. So even a unit that reads *and* controls is worth
+capturing.
 
 In every case, please open an issue either way — a model that now works without any capture is worth
 recording just as much as one that doesn't.
@@ -103,11 +109,12 @@ Japan's lists 30 — while a region it does not recognise gets the complete set.
 shipped here before **v0.38.0** was one region's 171, so an appliance published elsewhere could not
 be named at all.
 
-v0.38.0 ships **every published air conditioner: 1,435 product codes covering 1,400 model numbers**
-— which reduce to 1,245 once colour and market suffixes are ignored, and to 161 distinct sets of
-declared features, so the count is catalogue entries rather than distinct machines. (21 model numbers
-are carried by more than one product, and where those disagree about their rules the integration
-declines to guess between them and falls back to what their family agrees on.) Of the 100 countries the setup
+The shipped catalogue now covers **every published air conditioner: 1,451 product codes covering
+1,416 model numbers**, collapsing to 26 hardware families — so the count is catalogue entries rather
+than distinct machines. (The v0.38.0 listing was later found to be filtered by product category as
+well as by region, which had hidden the window air conditioners; every air-conditioner category now
+ships. 21 model numbers are carried by more than one product, and where those disagree about their
+rules the integration declines to guess between them and falls back to what their family agrees on.) Of the 100 countries the setup
 form offers, 94 publish at least one air conditioner and six publish none — Myanmar, Nigeria, Kenya,
 Cambodia, Laos and Nepal — where the model shortlist simply is not narrowed by region.
 

@@ -235,6 +235,27 @@
       },
       "lamp": {
         "name": "Đèn hiển thị"
+      },
+      "electric_heating": {
+        "name": "Sưởi điện"
+      },
+      "fresh_air": {
+        "name": "Không khí tươi"
+      },
+      "keep_warm_10c": {
+        "name": "Giữ ấm 10°C"
+      },
+      "ambient_light": {
+        "name": "Ánh sáng môi trường"
+      },
+      "mould_proof": {
+        "name": "Chống nấm mốc"
+      },
+      "drying": {
+        "name": "Sấy khô"
+      },
+      "prevent_heatstroke": {
+        "name": "Chống sốc nhiệt"
       }
     },
     "select": {
@@ -271,6 +292,15 @@
           "position_5": "Vị trí 5",
           "position_6": "Vị trí 6",
           "auto": "Tự động (đảo gió)"
+        }
+      },
+      "human_sensing": {
+        "name": "Luồng gió theo hiện diện",
+        "state": {
+          "avoid": "Tránh",
+          "follow": "Theo",
+          "off": "Tắt",
+          "on": "Bật"
         }
       }
     },

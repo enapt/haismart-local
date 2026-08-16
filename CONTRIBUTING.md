@@ -99,9 +99,10 @@ you, that is the fastest path to a correct layout.
 
 You rarely have to find the layout by hand. Since v0.35.0 an unrecognised report is first matched
 against the published models nearest its Model ID, and if one of their offsets explains what the unit
-sent, it is decoded with that — read-only, since control needs a family confirmed on hardware. A
-reporter arriving with working temperatures and a dead thermostat has hit that path, and their
-captures are what promote it to a real family.
+sent, it is decoded with that — and commanded too, when the product publishes the attribute list of
+its own group-set command (nearly all do). A unit on that path that stays read-only has a product
+whose published description carries no such list; captures from it are what promote the layout to a
+real family, and they also unlock the readings beyond the core climate block.
 
 When nothing fits at all, diagnostics runs a search over the known families — see
 [`docs/report-layouts.md`](docs/report-layouts.md) — and attaches ranked candidates, because every

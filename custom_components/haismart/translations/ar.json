@@ -235,6 +235,27 @@
       },
       "lamp": {
         "name": "ضوء الشاشة"
+      },
+      "electric_heating": {
+        "name": "تسخين كهربائي"
+      },
+      "fresh_air": {
+        "name": "هواء نقي"
+      },
+      "keep_warm_10c": {
+        "name": "تدفئة 10°م"
+      },
+      "ambient_light": {
+        "name": "إضاءة محيطة"
+      },
+      "mould_proof": {
+        "name": "منع العفن"
+      },
+      "drying": {
+        "name": "تجفيف"
+      },
+      "prevent_heatstroke": {
+        "name": "الوقاية من ضربة الشمس"
       }
     },
     "select": {
@@ -271,6 +292,15 @@
           "position_5": "الوضع 5",
           "position_6": "الوضع 6",
           "auto": "تلقائي (تأرجح)"
+        }
+      },
+      "human_sensing": {
+        "name": "تدفق هواء الحضور",
+        "state": {
+          "avoid": "تجنّب",
+          "follow": "تتبّع",
+          "off": "إيقاف",
+          "on": "تشغيل"
         }
       }
     },

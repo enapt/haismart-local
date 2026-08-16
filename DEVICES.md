@@ -19,20 +19,27 @@ model missing from this table will very likely still work. The table records wha
 
 Since **v0.35.0** that holds even for a report layout nobody has ever sent in: a unit whose Model ID
 resembles published models close to it is read using the offsets those relatives use, provided the
-report agrees with the result. Such a unit **reads but does not command** — control still needs a
-layout confirmed on real hardware, which is what the capture procedure in
-[`docs/new-model.md`](docs/new-model.md) provides. So an absence from this table increasingly means
+report agrees with the result. Such a unit **reads and commands**: the group-set command is packed
+identically across the published air-conditioner descriptions, and the product's own published
+attribute list says which settings its version of that command carries, so the core controls are
+offered without anyone having captured that model. (A unit on this path stays read-only only when
+its product publishes no such list.) The capture procedure in
+[`docs/new-model.md`](docs/new-model.md) is what promotes such a layout to a confirmed family and
+unlocks the readings beyond the core climate block. So an absence from this table increasingly means
 "nobody has told us", not "it will not work".
 
 Since **v0.38.0** the integration also ships the published description of **every air conditioner in
-the manufacturer's catalogue — 1,435 product codes, covering 1,400 model numbers** — so it can name
+the manufacturer's catalogue — 1,451 product codes, covering 1,416 model numbers** — so it can name
 your unit, apply its own fault names and availability rules, and offer it in the setup list, with no
 account and no internet. (Those are catalogue entries, not distinct machines: many are the same unit
-in another colour or for another market, and there are 161 distinct feature sets among them.) Earlier
-releases carried 171, which turned out to be one region's catalogue rather than the whole of it: the
-catalogue answers according to the country code an account registered with, and that code was being
-collected at setup and used for nothing else. If a previous version could not identify your air
-conditioner, this one very likely can.
+in another colour or for another market, and the 1,451 products collapse to **26 hardware families**.
+21 model names are shared by more than one product — 56 products between them — so a model number
+alone no longer always identifies the product.) Earlier releases carried 171, which turned out to be
+one region's catalogue rather than the whole of it: the catalogue answers according to the country
+code an account registered with, and that code was being collected at setup and used for nothing
+else. The listing was later found to be filtered by product category as well, which had hidden the
+window air conditioners; every air-conditioner category now ships. If a previous version could not
+identify your air conditioner, this one very likely can.
 
 A diagnostics download from a unit on a recognised layout now reads **every attribute that unit
 declares** and prints it beside the values the unit publishes through its cloud profile — two
@@ -48,7 +55,7 @@ table without anyone here owning one.
 | `AAC1UKZ01` | HSU-12HFMF/013WUSDC(W) | 117-byte compact-12 | ✅ | OUI `04:E2:29`. A **different wire family** — all attributes (sensors included) are packed into one word array. Reading and control both confirmed on real hardware. |
 | `AAD180E00` | HSU-12KCROC(IN)-R32 | 165-byte extended-36 | ✅ | `deviceType 02012036`. The classic bit map **displaced by 19 words**: the report carries a voice/media block first, so the climate attributes start at word 20. **Confirmed on hardware by the reporter** (2026-07-29): reading and full control — temperature, modes, fan speed, health, display light. |
 | `AAC1UKZ01` | HS-25VRB03 | 175-byte extended-36 | ❌ | Module `MK-QTWiFi3.1S`, firmware `e.4.3.00` / `R_6.0.01`, Malaysia. The extended-36 map with five further words of counters on the end. **Confirmed on hardware by the reporter** (2026-07-31): reading and full control — power, mode, temperature, fan speed, both swings, no snap-back. Its report carries **live power in watts**, which no other family here reports directly, plus a working **cumulative energy total in watt-hours** — the only unit here with both, so it feeds the Energy dashboard with no helper — and it publishes both vanes' positions. **Self-clean confirmed on hardware by the reporter** (2026-08-05): the button starts a cycle and the unit's own panel shows `CL`. That control had shipped for this family on the strength of the write command being shared across layouts rather than on an observation, so this is the first time it has been *seen* to work outside the classic family. |
-| `AAC1UKZ01` | HSU-24HFAB/013WUSDC(W)-T3 | 209-byte extended-46 | ✅ | OUI `5C:24:1F`. Extended-36 with a further ten-word block inserted at word 25, and a **half-degree setpoint**. Reading confirmed against three captured states, fan speed included — it answers from the inserted block rather than the usual word. Control covers power, mode and temperature; fan speed is read-only here and the swings are not settled. |
+| `AAC1UKZ01` | HSU-24HFAB/013WUSDC(W)-T3 | 209-byte extended-46 | ✅ | OUI `5C:24:1F`. Extended-36 with a further ten-word block inserted at word 25, and a **half-degree setpoint**. Reading confirmed against three captured states, fan speed included — it answers from the inserted block rather than the usual word. Control covers power, mode, temperature, and (since v0.47.0) fan speed and the up-down vane. ⚠️ On twin-airflow hardware the published description assigns the corresponding command bits to the **left tower's** vane and fan, so which unit those two controls address is under live verification — if you have one of these, setting the fan from Home Assistant and reporting whether it holds is the ten-second test that settles it. |
 
 > **"Report" is the status layout, not just a length.** Most models share the *classic* family (the
 > setpoint/mode/fan/power in a leading control-word block, sensors after it); the length only varies

@@ -3,6 +3,44 @@
 Each is written to be picked up cold: what it is, why it is not done, and what would settle it.
 Anything genuinely settled belongs at the bottom, under **Settled**, not here.
 
+> ## ★★★ 2026-08-15 — a published field this list assumed did not exist
+>
+> Several items below say a thing "cannot be placed", "is not derivable", or "needs hardware that
+> declares it". Those were written against a **published model set one region wide**, and against a
+> reading of the published data that omitted one section.
+>
+> **Every product publishes the ordered attribute list of its group-set command**, and the order is
+> the wire order — word ascending, then bit descending within a word. Two published serialisations
+> carry the same list under different names, and only one of them was being read. Checked against a
+> unit whose list is available both ways: 38 entries, same order, no differences in either direction.
+> Across the whole published set, better than nine in ten products carry such a list; the ones that
+> do not are the central-air family, which has no group-set command at all.
+>
+> That does not place everything — a list is in wire order only up to a boundary, after which later
+> additions are appended out of order — but it places some things this file records as unplaceable,
+> and it brackets many more. Three positions it derives were already known from hardware and were not
+> used to derive them, which is the check that it works: the economy setting, the cloud-control flag,
+> and the rental timer.
+>
+> **Recount before trusting any figure here — and count per lineage.** These appliances fall into
+> three families that describe themselves in different ways, and a coverage figure computed against
+> one family's map understates the others badly. Counted against the map each actually uses:
+>
+> | lineage | products | attributes it declares | placed | unplaced |
+> |---|---|---|---|---|
+> | the compact 12-word family | 509 | 31 | **28** | 3 — and all three are the query commands, not readings, so this family is **complete** |
+> | the central-air family | 175 | 17 | 11 | 6 — the four cassette vanes, and two supply readings |
+> | the wall/floor family | 751 | 185 | 77 | **101** unplaced — but ~49 are NOT controls (rental, telemetry, commands, RGB lighting); only **~52 genuine AC controls**, most already handled (see below) |
+>
+> ★ The compact family's own published description places four of the most widely declared settings
+> that the shared map cannot see at all — a sleep curve, a cloud-adaptive flag, and two healthy-airflow
+> settings — because that family is described in a different format the shared map is not built from.
+> Its description also carries a **live input-power register**, humidity readings, and roughly twenty
+> other positioned fields this integration does not read. See item 31.
+>
+> Items 5, 8 and 9 are revised below; items 29–31 are new. Item 30 has since shipped; item 31 is
+> the largest piece of work remaining.
+
 The numbers are **identifiers, not positions** — items refer to each other by number, so an item
 keeps its own when it moves between the two sections. Expect the sequence to have gaps in both.
 
@@ -70,8 +108,10 @@ of a deduction.
 light, fresh air — pins the insert point, because exactly one of w24 / w34 will be non-zero. That
 places the whole flag block at once, self-clean included.
 
-**The 117-byte family is separately open.** It is not a displacement of the published map at all, so
-nothing carries over: it needs its own report taken while a cycle runs.
+**The 117-byte family no longer needs a capture to place the flag.** It is not a displacement of the
+published map, so nothing carries over from the shared frame — but that family's own published
+description places its self-clean bit (word 9, alongside the rest of that block; see item 31). What
+it waits on is the reads work item 31 describes, not a missing position.
 
 ## 5. A timer, on units that publish one
 
@@ -88,6 +128,17 @@ item still waits on hardware that declares `timingPowerOn`/`timingPowerOff`.
 The published map cannot answer this one either way, and its silence is not evidence: it carries no
 timer attribute, but it is built from the single richest model and keeps only that model's
 attributes, so anything another model declares alone never appears in it.
+
+★ **REVISED 2026-08-15 — "needs hardware that declares them" is no longer the blocker.** Counted
+across every published air conditioner rather than one region's share of them, **161 products declare
+`timingPowerOn`, `timingPowerOff` and `timingStatus`.** So the attributes are common, and a reporter
+carrying them is likely rather than hypothetical.
+
+⚠️ What *is* still missing is their position, and the published order does not supply it: on every
+model that declares them they sit in the appended tail of the group-set list, past the point where
+the list stops being in wire order. So this item stays open, but for a different and narrower
+reason — not "no such hardware" but "the order does not reach them". A single report from a unit with
+a timer set, against one with it clear, places all three at once.
 
 ## 6. The energy total, on the family whose map already has exceptions
 
@@ -159,6 +210,30 @@ canonical map does not yet place (`mouldProof`, `drying`, `uvSterilizationSwitch
 the dual-airflow `*L`/`*R` set, ...) wait on a position; they are declared but cannot be read off any
 report.
 
+★ **REVISED 2026-08-15 — four of those now have positions, from the published order.** Where a run of
+unknown attributes sits between two attributes the shared map already places, and their widths add up
+to exactly the room between them, there is only one way to lay them out. Booleans are the easy case,
+because a boolean is one bit and needs no assumption. Unanimous across every model that declares
+them, with no conflicts:
+
+| attribute | position | declared by |
+|---|---|---|
+| `preventHeatstroke` | word 5, bit 15 | 113 products |
+| `mouldProof` | word 5, bit 14 | 114 products |
+| `drying` | word 5, bit 13 | 113 products |
+| `manualDefrosting` | word 5, bit 12 | 83 products |
+| `sterilizationSwitch` | word 5, bit 4 | alternates with `selfCleaningStatus` |
+
+(positions in the group-set frame; the report word follows from the family's own base word.)
+
+Those four bits alternate with `humidityCtrlStatus`: of every published air conditioner, exactly
+**one** declares both, so a model declares either that attribute or this block, never both. The
+dual-airflow `*L`/`*R` set is a separate case and is now item 29 below.
+
+⚠️ Where the fit is *not* exact the run is left unplaced rather than guessed at — a wrong position
+does not fail loudly, it decodes. Attributes in the appended tail of a list (see the banner at the
+top) get no position this way at all.
+
 **Codes are included, and were not always.** An unscaled number is a code, and for a while every one
 of them was dropped on the grounds that the wire numbering need not be the published numbering.
 That is true of exactly two attributes in the whole map, and the map carries the correspondence for
@@ -170,10 +245,10 @@ They stop at diagnostics on purpose. A wrong value there costs nothing; the same
 someone's dashboard is a fault report. What would move them further is the ordinary evidence: a
 capture of a unit with one of them switched on.
 
-Two families cannot have them at all, and that is correct rather than missing. **extended-46** has
-no single whole-word displacement — 6 of its 9 mapped positions disagree with any offset, because of
-the ten-word insert whose start is still not pinned (item 3) — and **compact-12** is not this
-lineage. Both decline rather than place attributes plausibly and wrongly.
+**compact-12** cannot have them at all, and that is correct rather than missing — it is not this
+lineage, and its own published description is what item 31 covers. **extended-46** was once the
+second exclusion, when no single whole-word displacement fit; the piecewise insert (item 27) reads
+its declared attributes now, with item 3's caveat about where the flag block lands still standing.
 
 
 ## 9. Eco, on the families that publish the setting but not its place
@@ -211,8 +286,21 @@ overlapping a shared one, and the control is offered only where the device's own
 setting — a unit without it would otherwise have something else written over. The classic family is
 exempt: its field was established from its own captures, in a place no shared map describes.
 
-**Still open on other families.** The published map carries no `generatorMode` at all, so nothing
-places it on the 209- or 117-byte families; they need the same four captures this one got.
+**Still open on the 209-byte family.** The published map carries no `generatorMode` at all, so
+nothing places it there; that family needs the same four captures this one got. The 117-byte family
+is no longer in that position: its own published description carries its energy-saving field at word
+9 (item 31), so it waits on the reads work, not on a capture.
+
+★ **REVISED 2026-08-15 — the published order brackets it, and agrees with the hardware answer.**
+`generatorMode` is declared by **564 products**, and on every model that lists it in the group-set it
+falls between two attributes the shared map places — narrowing it to **word 4, bits 1–5**. The
+classic family's position, established from captures, is word 4 bits 3–5. So the bracket contains the
+measured answer without having been told it, which is the check that the method is sound.
+
+That is a bracket, not a placement: bits 1 and 2 are unaccounted for, and a run with spare bits can
+be packed against either end. It is enough to make the captures cheaper — a reporter now needs to
+distinguish five candidate bit positions rather than search a word — and not enough to ship. The
+four-state capture set remains what settles it.
 
 ⚠️ **Off and L1 are only 18 W apart**, which is not the separation the other steps show. Either L1
 caps above what the unit was drawing, or it had not finished ramping. Worth one more reading before
@@ -235,21 +323,24 @@ in `model_declared_fields` on any unit that declares the attribute, so the evide
 on its own.
 
 
-## 11. Reads for the central-air-conditioner family — one report unlocks 79 products
+## 11. Reads for the central-air-conditioner family — one report unlocks 175 products
 
 **Status: open, and the cheapest high-value item on this list.**
 
-Seventy-nine of the published air conditioners are central/ducted units. Between them they declare
-fourteen attributes, and **ten already have positions** in the shared map — `onOffStatus`,
-`operationMode`, `targetTemperature`, `windSpeed`, both vane fields, `muteStatus`, `rapidMode`,
-`indoorTemperature`, `tempUnit`. Nothing about their layout is unknown except **which displacement
-applies**, and that is what the layout prober scores from a report length plus a few stated states.
+Counted across every region, **175** of the published air conditioners are central/ducted units —
+they are 207 of the 215 products no published data places in advance (item 35). Between them they
+declare seventeen attributes, and **eleven already have positions** in the shared map —
+`onOffStatus`, `operationMode`, `targetTemperature`, `windSpeed`, both vane fields, `muteStatus`,
+`rapidMode`, `indoorTemperature`, `tempUnit` among them. Nothing about their layout is unknown
+except **which displacement applies**, and that is what the layout prober scores from a report
+length plus a few stated states.
 
 **The displacement is derived, not awaited.** A model omits the leading media block or it does not,
-and the offset is exactly the span it omits. These seventy-nine declare no media attribute at all —
-checked against every attribute the shared map places below the climate block — which is the same
-thing the classic family does, and the classic family reads nineteen words earlier. Their attributes
-occupy the shared map's words twenty through twenty-five, so they occupy their own report's first six.
+and the offset is exactly the span it omits. The regional seventy-nine first swept declare no media
+attribute at all — checked against every attribute the shared map places below the climate block —
+which is the same thing the classic family does, and the classic family reads nineteen words
+earlier. Their attributes occupy the shared map's words twenty through twenty-five, so they occupy
+their own report's first six.
 
 Nothing further is needed to read them. What has not happened is a unit of that shape being seen,
 which would confirm the derivation rather than produce it.
@@ -257,17 +348,18 @@ which would confirm the derivation rather than produce it.
 **⚠️ Re-scoped 2026-08-03 — expect no reporter, and do not treat this as a coverage gap.** The
 manufacturer ships **no phone-app interface for this device class in this region**: the app carries
 panels for refrigeration, air conditioning (wall and cabinet) and laundry, and none for the class
-these seventy-nine belong to. So an owner here has no vendor app to pair or control them with, and
+these products belong to. So an owner here has no vendor app to pair or control them with, and
 is correspondingly unlikely to arrive with a report. Two consequences worth stating plainly:
 
-* These products should **not** sit in a coverage denominator for this integration. Quoting "79
+* These products should **not** sit in a coverage denominator for this integration. Quoting "175
   products unsupported" overstates the gap — they are outside what the vendor supports here too.
 * The derivation above still stands and costs nothing to keep. If a unit ever does appear, it is
-  one report away. **Also useful:** of the seventy-nine, **thirty-six publish their attribute list
-  in wire order** (word ascending, bit descending — verified against the shared map's anchors with
-  zero violations), so their positions can be solved without a capture at all. The other
-  forty-three show one consistent disagreement, which means either their list is not ordered or
-  their layout genuinely differs — untestable without hardware.
+  one report away. **Also useful** (measured on the regional seventy-nine; not yet recounted over
+  all 175): **thirty-six publish their attribute list in wire order** (word ascending, bit
+  descending — verified against the shared map's anchors with zero violations), so their positions
+  can be solved without a capture at all. The other forty-three show one consistent disagreement,
+  which means either their list is not ordered or their layout genuinely differs — untestable
+  without hardware.
 
 ## 12. Control for the central family — a parameter at a time, not a group
 
@@ -282,6 +374,240 @@ seen written because a group-set applies a whole word block, so a mistake change
 than failing. A single-parameter write cannot do that. The family deserves a safety property argued
 from its own mechanics — probably narrower than the current allowlist, and certainly not the same
 rule copied across without examination.
+
+## 29. ✅ SETTLED FROM SOURCE, AND FIXED — the 209-byte family's group-set writes its own vane/fan, not the tower
+
+**Status: settled without a reporter, and corrected in code.** Three independent lines converge, so
+the ten-second reporter test that used to headline this item is now confirmation, not the gate.
+
+Every published model in that family — all of them, identically — lists its group-set attributes in
+this order:
+
+    targetTemperature, windDirectionVerticalR, windDirectionVerticalL,
+    operationMode, specialMode, windSpeedL, energySavePeriod, … (74 in all)
+
+Packed by the vendor's own rule (word ascending, bit descending), the first 43 entries fill the first
+five words **exactly** — eighty bits, nothing spare — which forces the positions:
+
+| position | what the shared single-flow frame puts there | what THIS family publishes there |
+|---|---|---|
+| word 1, bits 0–3 | `windDirectionVertical` | **`windDirectionVerticalL`** (left tower) |
+| word 1, bits 4–7 | *(nothing)* | **`windDirectionVerticalR`** (right tower) |
+| word 2, bits 8–10 | `windSpeed` | **`windSpeedL`** (left tower) |
+
+So the shared-frame vane/fan slots are the **towers** on this twin-tower cabinet. The appliance's own
+vane and fan fall in the appended tail — group-set **words 6 and 7** — and those map, by the
+`write_base_word + write_word − 1` relation, to report words **25 and 26**: exactly where the read map
+(established independently from captures) reads `swing_vertical` (w25.b0) and `wind_speed` (w26.b9).
+The same shape appears on a second, larger family, so **152 products** are affected.
+
+**Three independent lines, all pointing at the same answer, none needing hardware:**
+1. the vendor's published order + packing rule → towers at w1/w2.b8, appliance vane/fan at word 6/7;
+2. the captures → appliance vane/fan read back at report w25/w26;
+3. the universal write↔read relation → group-set word 6 → report w25, word 7 → report w26.
+
+★ **The fix:** `windDirectionVertical` now writes group-set word 6 (report w25.b0), `windSpeed`
+group-set word 7 (report w26.b9), and `word_count` is **7** so the frame reaches them (it was 5,
+stopping at w24 — the appliance's own fields were unreachable *and* the code was writing the left
+tower at w1/w2.b8). This makes the family OBEY the write↔read relation instead of needing an
+exception for it. Read-modify-write seeds words 6–7 from the live report, so nothing else in the
+inserted block is disturbed.
+
+⚠️ **The one thing source cannot supply (Rule 8):** confirmation that the appliance *honours* a
+7-word frame. The read side is capture-confirmed at these positions and the relation holds, so this
+is strictly more correct than the previous behaviour (which wrote the wrong field, the left tower,
+and could not reach the appliance's own). A live setpoint/fan change-and-hold would be the final tick;
+it is no longer the blocker.
+
+## 30. ✅ SHIPPED — control for the families that were read-only only because nothing confirmed a capture
+
+**Status: SHIPPED.** Control went from 590 products to **1,236** — every appliance whose layout
+resolves now commands as well as reads, and nothing is left read-only.
+
+**What made it safe, and none of it needed a capture:**
+
+* the group-set command is **one frame** across every published air conditioner — same settings, same
+  words, same bits, and no shift between families;
+* the report word that frame starts at is **20 + the layout's own offset**, which is the definition
+  restated rather than a constant anyone fitted, and it matches all three families that were
+  confirmed on hardware;
+* **which** of the frame's settings a given appliance actually has comes from its own published
+  group-set list, now shipped for every product that publishes one;
+* and where a family keeps a *different* setting at one of those positions, those controls are
+  refused (item 32).
+
+**Three gates, each removing a different way of being wrong.** A layout whose appliance has published
+no list stays read-only — the frame says where a setting goes, only the appliance says whether it has
+one. Two properties carried over unchanged: the seed for every command still comes from a report the
+same layout decoded, and whether the appliance honours the write is still only the appliance's to
+answer — that bar has not moved. Values are still gated by the model's own declared ranges. What
+each unit gets: 502 products all twelve controls, 30 eleven, 114 nine (the twin-tower cabinets,
+correctly minus the three they reuse).
+
+Those per-unit counts describe the **646** products reached through published relatives. The 1,236
+total is that 646, plus **81** whose family carries its own registered layout, plus **509** of the
+compact family — which resolve by report length on first contact and carry their own write command.
+
+⚠️ The old reasoning — *"no capture has confirmed these positions on that appliance"* — was written
+before the frame was known to be published and unshifted. It stayed in place after that stopped being
+true, which is why one flag held back 44 % of the product line. The read half — resolving an
+unfamiliar appliance's layout from its nearest published relatives — had shipped back in v0.35.0
+(item 23); this item is what let those layouts command as well.
+
+## 31. ★★ The 117-byte family is described in full — now decoded in full, and awaiting evidence to promote three registers
+
+**Status: the decode is DONE; three fields are held back from becoming entities until a reporter
+supplies the evidence that fixes their meaning. Control is unchanged and correctly sourced.**
+
+That family — the largest of the three by product count, **509 products** — has a **complete
+published description**: thirty-eight positioned fields, each with its word, bit, width, scaling, the
+report it appears in, and the command that writes it. The integration used to read **seven**; it now
+reads **all thirty-eight**. Every one of the original seven still sits exactly where the description
+says, so the additions are unused capacity taken up, not a correction to what was there.
+
+**But reading a field is not the same as surfacing it as an entity**, and three of the additions are
+held in the decode (visible in diagnostics) rather than promoted to a sensor, because position is
+settled and *meaning* is not — checked against the three real reports from the issue #4 unit:
+
+| field | where | why it is not an entity yet |
+|---|---|---|
+| **input power** | word 3, low + high byte | LIVE — it moves with the compressor (0 off, 15 cooling, 0 fan-only) — but 15 is not watts while cooling, so the description's unit cannot be taken at face value. Same bar as the 209-family's counter: no confirmed unit, no sensor. One reporter reading their meter or app beside a capture settles the scale. |
+| **word 2 low byte** — outdoor-UNIT temp (not ambient) | word 2, low byte | the description labels it outdoor temperature (`外温`) and that is right: it reads 59/60/60 across off/cool/fan, which is a temperature of the **outdoor unit** (coil/condenser/discharge side), not ambient. ~60 °C off the condenser while cooling is ordinary — the telemetry family's outdoor-air byte runs 60–85 °C for the same reason — and it holds ~59 when off because the outdoor probe is dormant/stale then (the parked-outdoor-temperature behaviour). ⚠️ It is NOT surfaced as an "outdoor temperature" sensor: a user reads that as ambient, and it is stale-when-off besides. Stays `w2_low_raw`, diagnostics-only. (An earlier note here called it humidity — that was a convenient fit not checked against the fact that 60 °C outdoor-unit air is normal; retracted.) |
+| the toggles & flags | words 9–10 | positions published; every capture reads them 0, so there is no positive confirmation of the bit. They read back for diagnostics and for the day a capture exercises one. |
+
+The humidity registers (word 11) read 0 on the issue #4 unit — no probe — so they decode as **absent**
+rather than a fabricated 0 %, and appear only on a unit that actually has the sensor.
+
+The description also names a per-attribute write command against most fields, alongside the group
+command this integration already uses. Both are published; the per-attribute mechanism is what item
+12 describes for the central-air family, and this family marks **thirteen of sixteen** settings as
+individually writable where ours marks one. The control path stays the group command — it works — so
+this is not needed; recorded so the option is known.
+
+★ **So the reads are taken up in full and cost nothing, and the promotion bar is intact:** no new
+user-facing entity ships for the 509 products this round. The w2 low byte is an **outdoor-unit**
+temperature (hot, stale-when-off) — real, but wrong to surface as an "outdoor temperature" a user
+would read as ambient. The power register is live but its **scale** is unproven (only a meter settles
+it). That is the v0.32.0 phantom-feature rule holding: a decoded position is not a sensor until its
+reading is proven and its meaning is one a user won't misread, and a stale hot-side 60 °C labelled
+"outdoor" or a unit-less 15 in someone's dashboard is worse than
+its absence.
+
+## 36. ★ The full panel control surface — nine controls added across every grSetDAC family
+
+**Status: shipped for every group-set family; what remains is blocked on captures or a second write
+mechanism, not on more analysis.**
+
+The app renders a control for a function iff `the device declares the attribute ∧ it is not
+invisible ∧ the panel has a widget for it` — a documentary rule, no per-unit probing. So the whole
+set of controls the app offers is computable from data we already hold (the device model, the
+invisible flags, the panel widget table). The integration used to surface ~12 controls and hold the
+rest as read-only sensors, on a per-attribute live-write bar the app never applied. This lifts that.
+
+**Shipped, on EVERY grSetDAC family** (classic, extended-36, extended-46, related layouts):
+`haismart_hrdp/panel.py` (the widget table as data) + `coordinator.panel_switch_fields` /
+`panel_select_fields` (the app's gate) promote **eight** functions from read-only sensors to real
+controls — five positioned by the invariant frame (**electric-heat, fresh air, 10 °C keep-warm,
+ambient light** switches; **presence-based airflow** select, values read from the model enum), and
+three by the published order, each unanimous across the 83 products that declare it (**mould
+prevention** w5.b14,
+**dry-out** w5.b13, **heatstroke prevention** w5.b15 — item 5's positions, re-derived). Each is
+offered only where the device declares it and does not mark it invisible, dropped from the read-only
+platforms so nothing duplicates. A function the app shows no widget for (`echoStatus`) is still not
+offered; that exclusion is the panel's, not a live write's.
+
+**What remains, and why each is BLOCKED rather than merely undone:**
+* **five of the eight order booleans** — `constDehumidificationStatus`, `preventSupercooling`,
+  `pvPowerSavingMode`, `uvSterilizationSwitch`, `windAvoidance` — place NOWHERE even against the full
+  frame (they fall in the append region, which the order does not order). No derivable position, so
+  not shipped: a wrong write position decodes silently. One capture per family settles them.
+* **dual-airflow** (`windDirectionVerticalL/R`, `windSpeedL/R`) — the twin-tower write positions are
+  known (ext46, w1/w2), but **no report we hold reads a tower back**, so they would be write-only
+  controls. Blocked on one capture with a tower vane parked non-zero (the same capture item 29 wants).
+* **compact-12** — ✅ DONE. Its panel controls (electric-heat, fresh air) are written **one parameter
+  at a time** (`4d05`/`4d04`, `4d1f`/`4d1e`) — the paired on/off command carries the value, no
+  baseline — and read back from the toggle's own bit. `WireModel.single_param_fields` / `SingleParam`.
+  ⚠️ Only the two panel controls are enabled; the family's other paired commands (health, self-clean,
+  lock, humidify) wait on making the self-clean button / health switch gates declaration-aware (they
+  gate on `supports_field` alone today, which would over-offer on compact).
+* **central-air (`0d`)** — the vendor publishes no panel for these, so the app renders no controls
+  either; not in scope.
+* **`freshWindSpeed`** (fresh-air fan speed) is **withdrawn**, not shipped: its model enum has six
+  values (off / low / high / rated / medium / strong, read from the enum descriptions) but the frame
+  gives it a **2-bit** slot (holds 0..3), so medium/strong do not fit and it cannot be written
+  faithfully. Needs its real width, or the group-set's supported subset, established first. (All
+  shipped controls now carry real translations — this was the last piece of English-interim debt.)
+
+⚠️ Rule 8 unchanged: these ship the way the app ships — documentary — and are verified on hardware
+the way any control change is (deploy, change-and-hold), never by a per-attribute capture in advance.
+
+## 32. ✅ SHIPPED — a control must not be sent to a bit this family uses for something else
+
+**Status: fixed. This was a live hazard on 248 published products, one of them a cycle nobody would
+want started by accident.**
+
+The group-set command is packed by **position**, and across every published air conditioner it is
+otherwise identical: the same 39 settings at the same word, bit and width, with no shift between
+families. Eleven families nonetheless keep a **different setting** at one of those positions:
+
+| position | what the shared frame puts there | what these families put there |
+|---|---|---|
+| word 5, bit 4 | self-clean | **sterilization** |
+| word 1, bits 0–3 | the up-down vane | the **left tower's** up-down vane |
+| word 1, bits 4–7 | *(nothing)* | the **right tower's** up-down vane |
+| word 2, bits 8–10 | fan speed | the **left tower's** fan speed |
+| word 5, bit 12 | humidity control | manual defrost |
+| word 3, bit 8 | 10 °C keep-warm | the same setting under a newer name — *not* a reuse |
+
+So on those appliances the self-clean button would have started a **sterilization cycle**, and the
+swing and fan controls would have moved one tower. Neither fails — a group-set is accepted whole and
+the wrong function runs, which is precisely what a write gate exists to prevent.
+
+**The fix:** a control whose position this family gives to a different setting is **not offered**.
+Everything else is untouched, so this is a gate and not a retreat — setpoint, mode, on/off and the
+comfort settings stay available on every affected unit. A family that has not published such a
+departure loses nothing, which is almost all of them.
+
+**How it was established, and why it can be trusted without a capture:** every product that publishes
+a group-set command also publishes the ordered list of settings that command carries, and that order
+is the wire order. Anchoring on the shared frame and solving the gaps by exact fit — never by
+guessing, and refusing wherever the fit is not exact — places those settings. **Every departure is
+unanimous across every member of its family**, with no family disagreeing with itself; and the same
+method independently rediscovered a position that was already known from hardware, which is the check
+that it works.
+
+⚠️ It does **not** follow that these appliances cannot swing or change fan speed — only that the
+shared position is the wrong way to ask. Reaching the appliance-level setting means writing both
+towers, and only the up-down vane publishes both; the right tower's fan speed is in the unordered
+tail of the list and has no position yet. That is item 29's remaining half.
+
+## 33. ✅ SHIPPED — a whole category of air conditioner was invisible
+
+**Status: fixed. Window air conditioners were never in the product list at all.**
+
+The shipped product list is built by asking the manufacturer's catalogue for air conditioners. It
+asked for **three** appliance categories — central, wall mounted and floor standing — because those
+are the three someone wrote down. The app's own model picker asks for **no category** and lets the
+owner narrow afterwards.
+
+Asked without a category filter, the catalogue answers with **1,999 products across 38 categories**,
+and among them is a fourth air-conditioner category: **window air conditioners**. Those four
+products publish the ordinary air-conditioner command set — including the group-set command, with
+**thirty of its thirty-three settings landing exactly where the shared frame puts them and no
+ordering contradictions at all** — so they were fully supportable and simply absent. Twelve central
+units from one brand were missing for the same reason.
+
+**Sixteen products added.** The list now holds **1,451**.
+
+★ **The general lesson, and it is the second time:** an earlier release found this list was scoped by
+the *country* an account signs in with, and swept every region. This one was scoped by *category*
+as well. Both times a parameter **we chose** was mistaken for a property of the data. The list is now
+built by asking with no category and no recognised region, which returns everything in one pass —
+verified by re-asking region by region and getting nothing new.
+
+⚠️ Two neighbouring categories were checked and deliberately left out: **dehumidifiers** publish a
+*different* group command, and **air purifiers** publish none at all. Same transport, different
+contract — they would need their own work, not an entry in this list.
 
 # Settled
 
@@ -442,16 +768,20 @@ rather than an accident, but says nothing about which word they live in.
 
 Four identical fields with identical encodings are symmetric, and no amount of published description
 separates them: it would take a reading in which they differ. Nothing published contains one. This is
-therefore a closed item rather than an open one, and it costs nothing, because no model of this shape
-is served by this integration.
+therefore a closed item rather than an open one. ⚠️ It is no longer true that no model of this shape
+is carried at all — the shipped list now includes the central-air family these belong to, the
+AQUA-branded units among them, with identities and rules; but none has a placed layout yet (item
+11), so the cost of leaving this closed is still nothing.
 
 ## 14. Deploy and verify the shipped rules — done
 
 **Status: closed 2026-08-04. Deployed and cross-checked on hardware.**
 
-The rules for all 171 published air conditioners travel with the integration, and the coordinator
-consults them when the catalogue cannot be reached. On a firewalled installation — which is the
-configuration this integration is for — that is the ordinary path rather than the fallback.
+The rules for every published air conditioner travel with the integration — all 1,451 products in
+26 families as of the full-catalogue sweep; the bundle held the regional 171 when this check was
+run — and the coordinator consults them when the catalogue cannot be reached. On a firewalled
+installation — which is the configuration this integration is for — that is the ordinary path
+rather than the fallback.
 
 It changes startup behaviour, and this project has twice shipped decode work that passed every test
 and was only caught by deploying, so the check asked for here was: deploy, diff
@@ -469,8 +799,8 @@ unchanged on a unit whose rules previously came from the cloud. All three were r
   those commands are refused. (At the time this was checked those entities went *unavailable*; item
   24 changed that to a refusal, without changing which fields lock.)
 
-⚠️ **Verified on one unit of one family.** The shipped rules cover 171 products; this exercises the
-path, not the table.
+⚠️ **Verified on one unit of one family.** The shipped rules now cover 1,451 products (171 when
+this check ran); this exercises the path, not the table.
 
 ✅ **Found while running that check, and fixed: diagnostics did not print the `invisible` flags.**
 The model summary kept value ranges only, so "does this install know the unit's real feature set?"
@@ -484,30 +814,34 @@ nothing", absent is "we do not know, so nothing optional is offered" — and an 
 collapse them. Confirmed on hardware: `feature_set_known: true`, **28 of 42 attributes invisible**,
 which is why exactly one optional feature (`buzzer_silent`) appears and no phantoms do.
 
-## 15. The compact family, resolved as far as it can be
+## 15. The compact family, resolved as far as it can be — superseded; see item 31
 
-**Status: closed on layout and naming. What remains is not obtainable from anything published.**
+**Status: superseded on its central claim.** This item closed on "what remains is not obtainable
+from anything published", and that verdict did not survive a fuller reading: the family's **own raw
+description** states thirty-eight positioned fields — word, bit, width, scaling, and the command
+that writes each — where the derived extract this item was measured against keeps thirty. Item 31
+carries the current state. What follows is kept for the naming work, which stands, and for the
+lesson in how the gap was mis-measured.
 
 Its twelve-word report is fully described. Every position this project already decoded agrees with
 that description, and two separate published descriptions of the family agree with each other on
-every position and identifier they share. Of the thirty positions stated, twenty-five now carry a
-standard attribute name: eighteen joined through the identifiers the catalogue publishes, seven more
-read directly from their labels onto names the family declares.
+every position and identifier they share. Of the thirty positions in the extract, twenty-five carry
+a standard attribute name: eighteen joined through the identifiers the catalogue publishes, seven
+more read directly from their labels onto names the family declares.
 
-The five that stay unnamed are the interesting part, because they are not a gap. They describe an air
-quality figure, a two-byte power reading, a particulate value and a room humidity — and **the family
-declares none of those attributes**. These products do not have that hardware, which is exactly why
-every one of them reads zero in every report available. A position stated for a sensor a product
-lacks is not a mystery; it is the shared description of a product line being wider than any one
-member of it.
+The slots that stayed unnamed here describe an air quality figure, a two-byte power reading, a
+particulate value and a room humidity. This item read them as hardware the product line has and
+these particular products lack — every one reads zero in every report available here — and that
+remains the right reading of a zero on *these* units. What it is not is grounds to close the
+layout: the positions are published, item 31 names them, and a unit that has one of those probes is
+one report away from being read.
 
-One attribute the family does declare, `cloudControlStatus`, has no stated position anywhere.
-
-⚠️ **Corrected 2026-08-03 — that is not the whole remaining gap; there are two.** A second declared
-attribute, **`sleepCurveStatus`**, is likewise stated nowhere: it is real (not marked absent) on six
-of this family's models, is a writable boolean, and appears in no published position — neither in
-the shared map nor in this family's own description, whose unnamed slots were enumerated one by one
-and contain nothing resembling it.
+This item then recorded — corrected once already on 2026-08-03 — that `cloudControlStatus` and
+`sleepCurveStatus` had no stated position anywhere. ✅ **Both are placed: word 9 of the family's own
+raw description**, beside its lock, electric-heat, self-clean and energy-saving bits (item 31). The
+enumeration that reported them absent was run over the **derived extract**, which keeps the
+per-attribute records and drops other lines — an adapter mistaken for its source, the same shape of
+error the banner at the top of this file records for the group-set order.
 
 ★ **Why it was missed is the more useful part.** Every coverage figure this project has quoted was
 computed against the shared map, and that map is generated from **one of the two published formats
@@ -517,19 +851,22 @@ shared map alone.** A companion false positive to expect in the other direction:
 read as "unplaced" merely because it is published nowhere while being perfectly well known from
 hardware, which is the case for the eco setting.
 
-What is still unresolved is not the layout but two readings within it, and neither can be settled from
-published material:
+This item last recorded two readings as unresolvable, "neither settleable from published material".
+The published description **positions** both, and both are now decoded (item 31):
 
-* one byte is an outdoor temperature — the catalogue decides that, since these products declare an
-  outdoor sensor and declare no room humidity sensor at all — but read as its own description states
-  it puts the outdoors near sixty degrees while the room is at twenty-seven with cooling running. Two
-  encodings survive, and they agree to within half a degree in mild weather and diverge sharply in
-  cold. Nothing published distinguishes them.
-* the power reading is a byte, extended to two on richer models, and shows fifteen while cooling. No
-  published material states its unit.
+* the **word 2 low byte** is a single byte, not half of a 16-bit word — reading the two bytes together
+  is what put the reading near sixty as one number. As a byte it is ~60, and that IS a sensible
+  reading: the vendor's `外温` is a temperature of the **outdoor unit** (coil/condenser/discharge
+  side), which runs ~60 °C while cooling — the same reason the telemetry family's outdoor-air byte
+  reads 60–85 °C — and holds stale ~59 when off. It is not ambient outdoor air (that would be
+  impossible at 60), so it is diagnostics-only (`w2_low_raw`), never an "outdoor temperature" sensor.
+  ⚠️ An earlier revision of this line called it humidity; that was a convenient fit not checked
+  against the outdoor-unit-air fact already in the corpus. Retracted (see item 31).
+* the power reading is a **live input-power register** — word 3, low and high bytes — now decoded, but
+  it reads 15 while cooling, so its unit is unproven and it stays in diagnostics until a known draw
+  fixes the scale. Item 31.
 
-Neither prevents anything shipping, because neither field is surfaced. They are recorded so that a
-future reading is recognised for what it settles rather than re-derived.
+Neither is surfaced yet; item 31 is where that happens.
 
 ## 16. A layout that is not a displacement
 
@@ -568,9 +905,9 @@ discovered, decoded, gated and controlled now resolves without any per-model clo
 | device id | it is the MAC | no |
 | the wire-model key | the LAN discovery reply, no key and no account | no |
 | the byte map | ships with the integration | no |
-| rules — locks, faults, co-commands | ship with the integration, all 171 published models | no |
+| rules — locks, faults, co-commands | ship with the integration, all 1,451 published products | no |
 | which features a unit actually has | derived from those same shipped rules | no |
-| the product code that keys them | the model number printed on the unit — 171/171 are unique | no |
+| the product code that keys them | the model number printed on the unit — 1,416 of 1,451 name exactly one product; the 21 shared names (56 products) fall back to the rules their whole family agrees on | no |
 | live readings | read from the unit | no |
 | **the local key** | the manufacturer's gateway | **yes — the only one** |
 
@@ -591,17 +928,21 @@ the discovery call later would silently reintroduce that window.
 **Status: settled. Recorded because "does it do everything the app does?" keeps being asked, and the
 honest answer is neither yes nor no.**
 
-**On which units are supported, it is exact parity.** Of the 171 published air conditioners, this
-integration reaches a byte map for 92 — and those 92 are precisely the ones the manufacturer
-publishes a phone-app interface for. The 79 it cannot map are the central/ducted family, for which
-the app carries no interface either. The same product-lineage split drives both, which is why the
-two sets coincide rather than merely being the same size.
+**On which units are supported, it is exact parity — measured on the regional catalogue as it then
+stood.** Of those 171 air conditioners, this integration reached a byte map for 92 — precisely the
+ones the manufacturer publishes a phone-app interface for. The 79 it could not map are the
+central/ducted family, for which the app carries no interface either. The same product-lineage split
+drives both, which is why the two sets coincide rather than merely being the same size. ★ The
+full-catalogue recount is in the section below ("Why the coverage is as wide as it is"): **1,236 of
+1,451 placed**, and the unplaced remainder is still almost exactly that same central-air class
+(item 35).
 
 **Three things the app does that this does not:**
 
 * **It can display an attribute it cannot decode.** Where the app has no usable layout for a unit it
   falls back to values reported by the manufacturer's servers. That is how it can show settings this
-  integration cannot place — including the handful still unpositioned. This integration reads only
+  integration cannot place — including the settings still unpositioned, 108 of them on the
+  wall/floor family alone (item 19). This integration reads only
   what it can decode from the unit itself, so an attribute it cannot place is simply absent rather
   than filled in from elsewhere. **That is a deliberate choice, not a defect**: a value that did not
   come from the appliance is a value that can be stale, wrong, or unavailable exactly when the
@@ -609,15 +950,20 @@ two sets coincide rather than merely being the same size.
 
   ⚠️ **This is not the app having a better description of these appliances — it reads the same
   published descriptions this does.** Wherever a setting is unplaced here it is unplaced for the app
-  too. Of the models declaring one of the still-unpositioned settings, **six have an exact published
-  description for their own model and the setting is still not in it**; the rest reach one only
-  through a close relative, or not at all. A description that fits a model exactly and still omits a
-  setting means the setting was **added after that description was published** — these are recent
-  features on recent hardware, not omissions. So the difference is not the map; it is that the app
-  has a server to ask when the map runs out, and this integration deliberately does not.
-* **Timers and scheduling are server-side.** A reporter's app timer turned out not to be a local
-  setting at all. No timer entity ships here because there is nothing local to drive one — use Home
-  Assistant's own automations, which do not depend on anyone's cloud.
+  too. Of the models declaring one of the still-unpositioned settings (measured when that set was
+  the regional nine; the full-catalogue recount widens the set, not the argument), **six have an
+  exact published description for their own model and the setting is still not in it**; the rest
+  reach one only through a close relative, or not at all. A description that fits a model exactly
+  and still omits a setting means the setting was **added after that description was published** —
+  these are recent features on recent hardware, not omissions. So the difference is not the map; it
+  is that the app has a server to ask when the map runs out, and this integration deliberately does
+  not.
+* **Timers are family-dependent, and no entity ships yet either way.** The one family checked (a
+  reporter's) declares no timer attribute at all — its app timer is server-side scheduling, and for
+  that family there is genuinely nothing local to drive an entity with. But **161 products do
+  declare the local timer attributes**; nothing ships for them either, because their position is
+  past the point where the published order stops being wire order (item 5). Home Assistant's own
+  automations are the dependable answer in both cases, and depend on nobody's cloud.
 * Pairing, firmware updates, sharing and push notifications are all server functions and out of
   scope.
 
@@ -634,31 +980,74 @@ two sets coincide rather than merely being the same size.
 So the accurate claim is **parity with what the app can do locally, on every model it supports**, and
 a deliberate decline of what it does through the cloud.
 
-## 19. The settings nobody's hardware has reported yet — parked
+### ★ Why the coverage is as wide as it is — a close relative counts
 
-**Status: parked, not open. Nothing is waiting on it and nothing can go wrong because of it.**
+**Added 2026-08-15.** The manufacturer publishes only a **handful** of byte-level descriptions for
+air conditioners — eight, across a line of 1,451 products. An approach that required each appliance
+to have a description bearing *its own* identifier would reach **518 of them**.
 
-Nine settings across the published air conditioners have no position in any description this project
-can reach: the four vane fields on four-sided cassettes, mains and solar input metering, a cleaning
-mode, a language list, and a sleep-curve flag.
+This integration does not require that. Identifiers in this line are **hierarchical**: an appliance
+shares a long leading run with its close relatives — the same specification a revision or two apart —
+and every published air conditioner is the *same map at a whole-word offset* (§27, §23). So a model
+with no description of its own is matched to its nearest published relative, which takes coverage to
+**1,236 of 1,451 (85 %)** from the very same eight descriptions.
 
-They are parked rather than open because **they cannot be derived**. Every one of them postdates the
-published descriptions that carry positions — for six of the affected models the description matches
-their model exactly and still omits the setting — so no amount of reading published material will
-place them. The vendor app is in the same position and covers it by asking a server, which this
-integration deliberately does not do.
+★ **The similarity threshold is not a tuning knob.** Sorted by how much each family shares with the
+nearest published description, the ones that match share **26–32 characters** and the ones that do
+not share **19 or fewer**. **Nothing falls in between.** The cut-off sits in an empty gap, so it is
+not trading false matches against missed ones — anywhere in that gap gives the identical answer.
+That is also why it is **not** loosened to reach the last handful (§35): they differ *inside* the
+appliance-type field, which is a real boundary rather than a near miss.
 
-What would settle any of them is one thing only: **a report from a unit that actually has the
-feature, taken with the feature in a known state**. Until then:
+⚠️ **Your own appliance is very likely a sub-variant, not an unknown.** "There is no description
+published under this exact model" and "this model cannot be decoded" are different statements, and
+only the first is usually true.
 
-* None is surfaced, so none can be mis-read. There is no wrong value to show, only an absent one.
-* Everything else about those models decodes normally — a unit missing one of these is otherwise
-  fully supported.
-* If a capture does arrive, the layout prober already scores against written-down states, so a
-  single report with the feature on and off is enough to place it.
+## 19. The settings nobody's hardware has reported yet — recounted, and no longer nine
 
-Treat the map as complete for everything locally derivable. This item exists so that a capture, if
-one ever turns up, is recognised for what it settles rather than re-investigated from scratch.
+**Status: open on the wall/floor family, parked elsewhere. Nothing is waiting on it and nothing can
+go wrong because of it — none of these is surfaced, so none can be mis-read.**
+
+This item used to say **nine** settings lacked a position, that they **could not be derived**, and
+that the map should be treated as complete for everything locally derivable. All three were measured
+against one region's catalogue and one family's map, and the 2026-08-15 recount (the banner at the
+top) replaces them. Counted per family, against the description each family actually uses:
+
+* the **compact family is complete** — its three unplaced entries are query commands, not readings
+  (item 31);
+* the **central-air family** has six unplaced: the four cassette vanes (item 13) and two supply
+  readings;
+* the **wall/floor family has ~101 unplaced attributes — but that number is not the missing-control
+  gap.** Filtered by what the attribute actually is: **~49 are not controls at all** — rental /
+  shared-AC management (`useMode`, `localCtrValid`, `rentTimingStatus`, `targetRentTime`), energy and
+  power **telemetry** — sensors, never controls, and mostly **already surfaced** (`acInput` reads as
+  the power sensor, `totalElectricityUsed`/`accumulatedUseMainsPower` as the energy sensor; they only
+  look "unplaced" because that was measured against the shared map, which does not carry the
+  family-specific energy reads — only the solar/storage registers `pvInput` / photovoltaic /
+  storage-supply are genuinely unsurfaced, and those are niche PV telemetry), **query-command
+  pseudo-attributes** (`getAllAlarm`,
+  `getAllProperty`, `stopCurrentAlarm`), **system / config / identity** (`irCode`, `vboxId`,
+  `languageTypes`, `securityStatus`, `privateDataTransStatus`, `installationPosition`, …) and **RGB
+  scenario-lighting** effects (twenty `scenarioLight*` keys, on a single product). That leaves **~52
+  genuine AC control/feature attributes**, and most of THOSE are already handled — `generatorMode`
+  is eco (placed), the dual-airflow `*L`/`*R` set is blocked on read-back, the timer trio on
+  position, and `mouldProof`/`drying`/`preventHeatstroke` shipped this session. **Quote the filtered
+  figure, not 101** — counting rental fields, sensors, commands and lighting effects as "missing AC
+  controls" is what inflates it.
+
+"They cannot be derived" also fell. The published group-set order places settings wherever a run of
+unknowns fits exactly between two known positions — five were placed that way in one pass (item 8)
+— and brackets more (item 9). What derivation genuinely cannot reach is the **appended tail**: a
+list is in wire order only up to a boundary, and later additions land past it, unordered. The
+handful of genuine controls that remain are open-but-blocked on exactly that — not nonexistent, and
+not beyond evidence. The vendor app is in the same position locally and covers it by asking a server,
+which this integration deliberately does not do.
+
+What settles any single one of them is unchanged: **a report from a unit that actually has the
+feature, taken with the feature in a known state.** The layout prober already scores against
+written-down states, so one report with the feature on and one with it off places it. Until then,
+everything else about those models decodes normally — a unit missing one of these is otherwise
+fully supported.
 
 ## 20. Which model this is — why it is asked, and what happens if you skip
 
@@ -789,10 +1178,13 @@ the declared attributes break that tie:
 So the report is the only thing that settles it, and it costs nothing: it arrives on the first
 successful read, with no capture and nobody asked for anything.
 
-**Three refusals, all deliberate.** It reports and never commands, because a control writes a whole
-block of words at once and no capture has confirmed these positions on that appliance. It places only
-the core readings, leaving the rest unplaced until an offset is confirmed field by field. And it
-declines rather than guesses — a Model ID resembling nothing published yields no candidates at all.
+**Three refusals as shipped in v0.35.0, all deliberate — and the first has since been lifted.** It
+reported and never commanded, on the grounds that a control writes a whole block of words at once
+and no capture had confirmed these positions on that appliance; item 30 retired that reasoning, and
+these layouts now command wherever the appliance's own published group-set list is known. The other
+two stand: it places only the core readings, leaving the rest unplaced until an offset is confirmed
+field by field, and it declines rather than guesses — a Model ID resembling nothing published
+yields no candidates at all.
 
 ⚠️ **The failure this nearly shipped is worth keeping.** The candidate that is wrong by nineteen
 words reads *past the end* of a shorter report, so every field comes back absent — and a decode
@@ -958,7 +1350,7 @@ Also settled in passing: `CANONICAL_WIRE_MAP` flagged that `write_base_word=20` 
 inherited and never verified on it. It is now, from the other end — the five toggles derived through
 that base agree bit for bit with the manufacturer's record of the same attributes.
 
-## 29. A decode that reads nothing came back as a successful decode — settled
+## 34. A decode that reads nothing came back as a successful decode — settled
 
 An appliance names its own family on the discovery channel, key-free, so a uPlusId match beats the
 report length when a wire model is selected. That is deliberate and it stays. What it also did was
@@ -1002,11 +1394,17 @@ had been sitting in a diagnostics file for a day. Reported as a *regression* by 
 first 209-byte appliance (issue #6): after v0.46.2 his climate entity dropped from `supported_features`
 441 to 401 — no fan dropdown, no swing — while his remote worked the fan and the vane perfectly well.
 
-★ **The write positions were never in doubt.** `Operation[grSetDAC].variants` — the published write
-frame — is ONE frame across every published air-conditioner device type (`02011`, `02012`,
-`0201201G`, `02012036`, `03012`, `0301200L`, `0301200n`): 39 attributes, eppCmd `6001`, frameType 1,
-and **zero position disagreements between families**. It places `windDirectionVertical` at w1.b0/4
-and `windSpeed` at w2.b8/3, and this family's three hardware-confirmed positions reproduce it exactly.
+★ **The write positions were never in doubt — across the byte-level descriptions.** The published
+write frame is ONE frame across every air-conditioner device type that carries such a description
+(`02011`, `02012`, `0201201G`, `02012036`, `03012`, `0301200L`, `0301200n`): 39 attributes, eppCmd
+`6001`, frameType 1, the same words and bits, with no disagreement among those seven. It places
+`windDirectionVertical` at w1.b0/4 and `windSpeed` at w2.b8/3, and this family's three
+hardware-confirmed positions reproduce it exactly. ⚠️ What that must **not** be read as saying is
+that every *family* keeps those positions — this very family's published group-set list assigns w1
+and w2.b8–10 to the per-tower vane and fan (item 29, now settled from source and the controls
+retargeted to the appliance's own positions at group-set words 6/7), and eleven families keep some
+other setting at a shared position (item 32). Both are handled; this item is only about the
+seven bundled profiles agreeing among themselves.
 
 ### What settled it
 
@@ -1064,3 +1462,40 @@ and watching it follow is the whole test.
 `windDirectionHorizontal` stays out. Its write position is published like the others; nothing in
 this family's report reads it back, and a control that writes what it cannot read is the defect
 v0.31.0 already fixed once.
+
+---
+
+## 35. Which air conditioners this integration can place before it has seen one — measured
+
+A model is placed **offline** when the published data alone says where its readings sit. Across
+every air conditioner published in every region:
+
+| | products | share |
+|---|---|---|
+| placed offline | **1,236** | 85 % |
+| not placed offline | 215 | 15 % |
+
+★ **The 215 are almost exactly one product class.** Grouping by the class digits every appliance
+announces, one class accounts for **207 of the 215, and not one of its members is placed** — and it
+is the same class the manufacturer's own phone app publishes no control panel for. Those are units
+this product line does not cover, rather than a hole in the map.
+
+★ **That leaves eight**, in four families: four wall/floor units and four window air conditioners.
+All eight **publish their group-set order**, so the settings and the order they are written in are
+known; what is missing is where their *reports* sit. They fall just below the similarity threshold
+that decides whether one published model may stand in for another — ⚠️ and **the threshold should
+not be lowered to reach them**: they differ inside the appliance-type field itself, which is the
+boundary that check exists to respect.
+
+**A single report settles all eight**, because the report's own length identifies the layout. So
+this is not blocked on analysis; it is waiting for one of these units to appear.
+
+### ⚠️ "Placed offline" is not "will not work"
+
+Layout selection has a second chance the table above cannot count: when an appliance's identifier is
+unrecognised, its **report length** is tried, and each known length belongs to exactly one layout.
+An appliance nobody has ever seen therefore still decodes if it reports a familiar length. **1,236
+is what the published data settles in advance** — the set that works on first contact is larger, and
+how much larger is genuinely unknown until such a unit connects.
+
+If you own one of the unplaced models, a diagnostics download is the entire contribution needed.

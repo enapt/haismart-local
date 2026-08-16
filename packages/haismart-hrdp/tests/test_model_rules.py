@@ -3,6 +3,7 @@
 import json
 
 from haismart_hrdp.model_rules import (
+    _bundle,
     known_products,
     products_for_uplus_id,
     rules_for_product,
@@ -36,12 +37,51 @@ def test_our_own_model_carries_the_counts_the_published_model_states() -> None:
 
 
 def test_bundle_covers_the_published_line_and_refuses_the_unknown() -> None:
-    # Every air conditioner published in any of the 100 regions the setup form offers. It was 171
-    # for a long time -- which was one region's catalogue, the endpoint being scoped by the country
-    # code an account signed in with, and every sweep here having used the same account.
-    assert len(known_products()) == 1435
+    # Every air conditioner published in any region, in any of the four categories the manufacturer
+    # files them under. The count has been wrong twice, each time because a sweep parameter was
+    # mistaken for a property of the data: 171 was ONE REGION's catalogue (the listing is scoped by
+    # the country code an account signs in with), and 1435 was three CATEGORY codes chosen by hand,
+    # which omitted window air conditioners entirely.
+    #
+    # So this asserts a floor and the two things that were actually wrong, not an exact number --
+    # a number that only a re-sweep can change is a test of the sweep, not of the bundle.
+    products = known_products()
+    assert len(products) >= 1451
+    # window air conditioners: the category the hand-written filter missed
+    assert "AD0RF0E00" in products
+    # a central unit from the brand the same filter dropped
+    assert "AE2S01Q00" in products
     assert rules_for_product("NOSUCHCODE") is None
     assert rules_for_product(None) is None
+
+
+def test_every_product_is_reachable_through_its_own_family() -> None:
+    """The family index is derived from the products, so it must never lag behind them.
+
+    It did. The index is stored alongside the entries rather than computed from them, and a merge
+    that added products rewrote the entries while leaving the index as it was -- so sixteen
+    products carried a `uplus_id` that led nowhere. Two of the resulting families were absent
+    entirely, window air conditioners among them.
+
+    That is worse than a missing lookup in two ways. The model shortlist is narrowed by family, so
+    those products could never be offered to the owner of one; and `family_rules` keeps what every
+    member agrees on, which means an unindexed member's disagreement was not counted -- the index
+    going stale quietly loosens a check whose whole purpose is to be conservative.
+    """
+    bundle = _bundle()
+    indexed = {code for codes in bundle["by_uplus_id"].values() for code in codes}
+    expected = {c for c, e in bundle["models"].items() if e.get("uplus_id")}
+    assert indexed == expected, "the family index disagrees with the entries it is built from"
+
+    # and every entry is filed under the family it actually names
+    for uplus, codes in bundle["by_uplus_id"].items():
+        for code in codes:
+            assert bundle["models"][code]["uplus_id"] == uplus
+
+    # the two families the stale index had lost, named so a regression is legible
+    assert products_for_uplus_id(
+        "2008610800820324391200118019024500000000000000000000000000000040"
+    ) == ["AD0RF0E00", "AD0RG0E00"]
 
 
 def test_uplus_id_narrows_to_a_family_but_cannot_choose_within_it() -> None:
@@ -168,3 +208,39 @@ def test_a_model_number_shared_by_products_that_disagree_resolves_to_nothing() -
 
     # an unambiguous number still resolves, which is the ordinary case
     assert product_for_model("HSU-24VRRA03TF") == "AAC1UKZ01"
+
+
+def test_the_bundle_hands_back_the_group_set_order_in_the_shape_that_is_read():
+    """The order positions the settings no shared map places, so it has to REACH `declared_order`.
+
+    The bundle stores it flat (`group_set_order`); everything downstream reads `groupCommands`. A
+    flat key would sit in the bundle unread -- a fix in a path that never runs -- so the lookup
+    translates it, and this asserts the translation rather than the storage.
+    """
+    from haismart_hrdp import declared_order, rules_for_product
+
+    rules = rules_for_product("AAC1UKZ01")
+    assert rules is not None
+    assert "group_set_order" not in rules, "the flat key must not leak downstream"
+    order = declared_order(rules)
+    assert order, "declared_order must see the bundled order"
+    assert order[0] == "targetTemperature"
+    assert "onOffStatus" in order
+
+
+def test_the_bundled_order_is_shipped_for_every_product_that_publishes_one():
+    """Coverage, asserted -- it was 18 of 1435 while the section carrying it was being discarded."""
+    from haismart_hrdp import declared_order, known_products, rules_for_product
+
+    with_order = sum(1 for pc in known_products() if declared_order(rules_for_product(pc)))
+    assert with_order > 1200, f"only {with_order} products carry a group-set order"
+
+
+def test_a_product_with_no_group_set_reports_no_order():
+    """The families that publish no group-set command must not acquire a phantom one."""
+    from haismart_hrdp import declared_order, known_products, rules_for_product
+
+    without = [pc for pc in known_products() if not declared_order(rules_for_product(pc))]
+    assert without, "expected the single-parameter lineage to have no group-set order"
+    for pc in without[:20]:
+        assert declared_order(rules_for_product(pc)) == ()

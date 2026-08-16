@@ -235,6 +235,27 @@
       },
       "lamp": {
         "name": "Lampu layar"
+      },
+      "electric_heating": {
+        "name": "Pemanas listrik"
+      },
+      "fresh_air": {
+        "name": "Udara segar"
+      },
+      "keep_warm_10c": {
+        "name": "Jaga hangat 10°C"
+      },
+      "ambient_light": {
+        "name": "Lampu suasana"
+      },
+      "mould_proof": {
+        "name": "Anti jamur"
+      },
+      "drying": {
+        "name": "Pengeringan"
+      },
+      "prevent_heatstroke": {
+        "name": "Pencegahan sengatan panas"
       }
     },
     "select": {
@@ -271,6 +292,15 @@
           "position_5": "Posisi 5",
           "position_6": "Posisi 6",
           "auto": "Otomatis (ayun)"
+        }
+      },
+      "human_sensing": {
+        "name": "Aliran udara kehadiran",
+        "state": {
+          "avoid": "Hindari",
+          "follow": "Ikuti",
+          "off": "Mati",
+          "on": "Nyala"
         }
       }
     },

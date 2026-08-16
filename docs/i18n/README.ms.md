@@ -31,7 +31,7 @@ mendengar.
 
 Unit yang disahkan berfungsi disenaraikan dalam [`DEVICES.md`](../../DEVICES.md). Model anda tiada di
 situ? Besar kemungkinan ia tetap berfungsi, dan bukan secara kebetulan: integrasi ini sudah membawa
-perihalan rasmi **kesemua 1,400 nombor model** dalam katalog pengeluar — tetapan yang ada pada setiap
+perihalan rasmi **kesemua 1,416 nombor model** dalam katalog pengeluar — tetapan yang ada pada setiap
 model, nama bagi setiap kerosakan, dan kawalan mana yang diabaikan dalam keadaan tertentu — jadi ia
 menyediakan dirinya sendiri untuk unit yang belum pernah kami lihat. Jika akaun anda turut boleh
 memerihalkan unit itu, kedua-duanya digabungkan, bukan salah satu dipilih.

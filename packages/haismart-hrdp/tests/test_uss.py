@@ -308,9 +308,10 @@ def test_set_grsetdac_field_reproduces_real_transitions(before, name, value, aft
 
 def test_set_grsetdac_field_refuses_unmapped_fields():
     words = bytes.fromhex("0c0422000201000708000000")
-    # NB windDirectionHorizontal used to be listed here; it is now a confirmed field (word4 bits
-    # 0-2), so an invalid VALUE for it raises ValueError instead — see the test below.
-    for unmapped in ("energySavingStatus", "lightStatus", "notARealAttr"):
+    # NB windDirectionHorizontal (now confirmed) and lightStatus (now a panel control) used to be
+    # listed here; both are mapped now. `echoStatus` is the enduring example — in the frame,
+    # model-writable, but NOT a panel control (no widget), so the encoder refuses it.
+    for unmapped in ("echoStatus", "energySavingStatus", "notARealAttr"):
         with pytest.raises(KeyError):
             uss.set_grsetdac_field(words, unmapped, 1)
 
@@ -676,7 +677,12 @@ def test_parse_full_status_decodes_the_125_byte_variant():
 def test_compact12_decodes_the_three_real_reports():
     """The 117-byte family decodes via the wire-model registry (issue #4), matching the reporter's
     stated state on all three captures. Sensors live in the word array, so mode/fan use the STD codes
-    the wire model maps from raw EPP indices (epp 2 -> STD "4" = heat, etc.)."""
+    the wire model maps from raw EPP indices (epp 2 -> STD "4" = heat, etc.).
+
+    Since the family's full published description was taken up, the decode also carries every other
+    positioned field. On these captures the toggles all read false and the meaning-pending registers
+    read their raw values — 59 in the outdoor byte against a 29 C room, which is exactly why that
+    register ships raw rather than as a temperature."""
     from haismart_hrdp import profile_for
 
     prof = profile_for("AAC1UKZ01")
@@ -685,6 +691,12 @@ def test_compact12_decodes_the_three_real_reports():
         "power": False, "target_temperature": 27.0, "current_temperature": 29.0,
         "operation_mode": "6", "wind_speed": "1", "swing_vertical": False,
         "swing_horizontal": False, "mode": "fan_only", "fan_mode": "high",
+        # the published description's remaining fields (meanings pending; see COMPACT12's note)
+        "w2_low_raw": 59, "w2_high_raw": 0, "input_power_raw": 0, "pm_raw": 0,
+        "electric_heat": False, "self_clean": False, "health": False, "humidify": False,
+        "temp_unit": 0, "human_sensing": False, "cloud_adaptive": False, "sleep_curve": False,
+        "lock": False, "fresh_air": False, "healthy_wind_up": False, "healthy_wind_down": False,
+        "cap_strong": False, "cap_quiet": False, "cap_display": False, "cap_energy_saving": False,
         "layout": "compact12", "writable": True,
     }
     cool = uss.parse_full_status(STATUS_117_COOL22, prof)
@@ -693,9 +705,45 @@ def test_compact12_decodes_the_three_real_reports():
     fan = uss.parse_full_status(STATUS_117_FANHI_SWING, prof)
     assert fan["mode"] == "fan_only" and fan["fan_mode"] == "high"
     assert fan["swing_vertical"] is True and fan["swing_horizontal"] is True
-    # a compact-12 decode never fabricates the fields we deliberately left out
-    for absent in ("outdoor_temperature", "health", "strong", "quiet", "sleep", "lamp", "eco"):
-        assert absent not in off
+    # the humidity registers read 0 on this unit = no probe, so the keys are ABSENT, not 0 %
+    for report in (off, cool, fan):
+        assert "indoor_humidity" not in report and "target_humidity" not in report
+
+
+def test_compact12_power_and_outdoor_unit_temp_stay_diagnostic():
+    """The two registers held out of entities on unproven SCALE/meaning, pinned to the real captures:
+
+    * the input-power register MOVES with the compressor (0 off, 15 cooling, 0 fan-only) — the
+      position is right — but 15 of anything is not watts while cooling, so its UNIT is unproven
+      (~1.5 kW at 0.1 kW steps is plausible; only a meter settles it);
+    * the w2 low byte (vendor `外温`) reads 59/60/60 across off/cool/fan. That is a temperature of the
+      OUTDOOR UNIT, not ambient: ~60 °C off the condenser while cooling is ordinary (the telemetry
+      family's outdoor-air byte runs 60-85 °C for the same reason), and it holds ~59 when off because
+      the outdoor probe is dormant/stale. It is NOT surfaced as an "outdoor temperature" sensor
+      because a user reads that as ambient, and it is stale-when-off besides.
+
+    Neither ships as an entity; a meter settles the power scale, and the outdoor-unit reading is
+    correctly a hot-side temperature that should not masquerade as ambient outdoor air."""
+    off = uss.parse_full_status(STATUS_117_OFF, None)
+    cool = uss.parse_full_status(STATUS_117_COOL22, None)
+    fan = uss.parse_full_status(STATUS_117_FANHI_SWING, None)
+    assert (off["input_power_raw"], cool["input_power_raw"], fan["input_power_raw"]) == (0, 15, 0)
+    # ~60 while running, holding ~59 when off — consistent with a stale-when-off outdoor-unit temp
+    assert (off["w2_low_raw"], cool["w2_low_raw"], fan["w2_low_raw"]) == (59, 60, 60)
+    assert STATUS_117_OFF[92 + 2] == 0     # word 2 high byte (air quality): zero across all three
+
+
+def test_compact12_meaning_pending_fields_reach_no_entity():
+    """No key of the newly-read block may collide with a key an entity consumes. The sensors read
+    `outdoor_temperature` / `power_w` / `energy_wh`, the self-clean binary sensor reads
+    `self_cleaning`, and the comfort switches read their classic names — a collision would light an
+    existing entity family-wide with a value whose meaning is unproven (the exact phantom-feature
+    shape of v0.32.0). Promotion to those keys is a deliberate, per-key act with evidence."""
+    from haismart_hrdp.wire_models import COMPACT12
+
+    entity_keys = {"outdoor_temperature", "power_w", "energy_wh", "self_cleaning",
+                   "strong", "quiet", "sleep", "lamp", "eco", "fan_running", "alarm_count"}
+    assert not entity_keys & set(COMPACT12.fields)
 
 
 def test_compact12_maps_heat_via_the_profile():
@@ -1148,13 +1196,15 @@ def test_extended46_setpoint_is_half_degrees_both_ways():
         wm.encode_control(base, {"targetTemperature": 99 - 16})
 
 
-def test_extended46_control_reuses_the_extended36_group_set():
-    """Words 20..24 — the whole settable block — sit where extended-36 puts them, so control is that
-    family's `6001` group-set seeded from report word 20."""
+def test_extended46_control_extends_the_group_set_to_the_appliance_vane():
+    """Control is the `6001` group-set seeded from report word 20 -- but SEVEN words, not five, so
+    it reaches the appliance's own vane and fan in the inserted block (group-set words 6/7 = report
+    w25/w26). The shared five-word frame stops at w24 and never touches them; worse, its w1/w2 slots
+    are the LEFT TOWER on this family. See `test_ext46_writes_the_appliance_vane_not_the_tower`."""
     wm = uss.select_wire_model(209)
-    assert wm.group_cmd == b"\x60\x01" and wm.write_base_word == 20 and wm.word_count == 5
+    assert wm.group_cmd == b"\x60\x01" and wm.write_base_word == 20 and wm.word_count == 7
     base = wm.baseline_words(STATUS_209_COOL)
-    assert bytes(base) == STATUS_209_COOL[130:140]
+    assert bytes(base) == STATUS_209_COOL[130:144]    # report words 20..26
 
     words = wm.encode_control(base, {"operationMode": 6, "onOffStatus": 0})
     frame = uss.build_epp_frame(0x01, wm.group_cmd, words)
@@ -1164,19 +1214,17 @@ def test_extended46_control_reuses_the_extended36_group_set():
     assert words[5] & 0x01 == 0                       # onOffStatus word3 b0 cleared
     assert words[0] == base[0]                        # setpoint untouched
 
-    # Fan speed and the up-down vane ARE settable, at the positions the published write frame gives
-    # every air-conditioner device type. Both read back -- at w25 and w26.b9, not where the map puts
-    # them -- which is what lets an owner check the write instead of taking it on trust.
+    # Fan speed and the up-down vane at the APPLIANCE's own positions: group-set word 7 (report
+    # w26.b9) and word 6 (report w25.b0) -- where the read map reads them back, not the shared slots.
     fan = wm.encode_control(bytearray(base), {"windSpeed": 3})
-    assert (fan[2] << 8 | fan[3]) >> 8 & 0x07 == 3    # windSpeed word2 b8 -> low
-    assert (fan[2] << 8 | fan[3]) >> 13 == (base[2] << 8 | base[3]) >> 13   # mode untouched
+    assert (fan[12] << 8 | fan[13]) >> 9 & 0x07 == 3  # windSpeed group-set word7 b9 -> low
+    assert fan[2] == base[2] and fan[3] == base[3]    # word 2 (the tower fan slot) untouched
     vane = wm.encode_control(bytearray(base), {"windDirectionVertical": 0x0C})
-    assert (vane[0] << 8 | vane[1]) & 0x0F == 0x0C    # windDirectionVertical word1 b0 -> sweeping
-    assert vane[0] == base[0]                         # setpoint shares the word and is untouched
+    assert (vane[10] << 8 | vane[11]) & 0x0F == 0x0C  # windDirectionVertical group-set word6 b0
+    assert vane[0] == base[0] and vane[1] == base[1]  # word 1 (setpoint + tower vane slot) untouched
 
-    # The left-right vane is NOT settable here, and the reason is not its write position -- the same
-    # frame states that too. Nothing in this family's report reads it back, and a control that
-    # writes what it cannot read shows its owner a switch that never moves.
+    # The left-right vane is NOT settable here: nothing in this family's report reads it back, and a
+    # control that writes what it cannot read shows its owner a switch that never moves.
     with pytest.raises(KeyError):
         wm.encode_control(base, {"windDirectionHorizontal": 1})
 
@@ -1736,9 +1784,10 @@ def test_canonical_map_reproduces_every_family_we_ship():
     assert set(DISPLACEMENTS) == {0, -19}
 
     # the classic family: the canonical map 19 words earlier
+    from haismart_hrdp.panel import PANEL_EXTRA_POSITIONS
     for name, (word, bit, length) in uss.GRSETDAC_FIELDS.items():
-        if name == "ecoMode":
-            continue          # this unit repurposes a 3-bit field the map does not describe
+        if name == "ecoMode" or name in PANEL_EXTRA_POSITIONS:
+            continue          # not described by the read map (repurposed / order-derived)
         c = CANONICAL[name]
         assert (c.word - 19, c.bit, c.length) == (word, bit, length), name
 
@@ -2045,9 +2094,11 @@ def test_published_write_map_reproduces_every_confirmed_field():
     arrived at independently, so this pins them against each other: if either moves, this fails.
     """
     from haismart_hrdp.canonical_map import CANONICAL_WRITE
-
+    from haismart_hrdp.panel import PANEL_EXTRA_POSITIONS
     checked = 0
     for name, (word, bit, width) in uss.GRSETDAC_FIELDS.items():
+        if name in PANEL_EXTRA_POSITIONS:
+            continue          # order-derived panel control, not in the frame (pinned in test_panel)
         if name == "ecoMode":
             # Device-specific: this unit repurposes word 4 bits 3-5, which the shared map assigns to
             # other attributes. It is established from captures on the units that have it, and is
@@ -2071,7 +2122,12 @@ def test_published_write_map_is_the_reports_writable_words():
     """
     from haismart_hrdp.canonical_map import CANONICAL, CANONICAL_WRITE
 
-    assert len(CANONICAL_WRITE) > 2 * len(uss.GRSETDAC_FIELDS)
+    # The encoder is still a subset of the published frame, plus the handful of fields the frame does
+    # not carry (ecoMode + the order-derived panel controls). It is no longer "half the size" — the
+    # panel surface deliberately widened it — so the check is subset-hood, not a ratio.
+    from haismart_hrdp.panel import PANEL_EXTRA_POSITIONS
+    off_frame = {"ecoMode", *PANEL_EXTRA_POSITIONS}
+    assert set(uss.GRSETDAC_FIELDS) - off_frame <= set(CANONICAL_WRITE)
     for name, w in CANONICAL_WRITE.items():
         c = CANONICAL.get(name)
         if c is None:
@@ -2106,14 +2162,16 @@ def test_published_commands_match_the_ones_we_speak():
 
 
 def test_grsetdac_fields_match_their_confirmed_positions():
-    """The encoder's field map, pinned to the exact positions confirmed on hardware.
+    """The encoder's field map, pinned to exact positions.
 
-    Positions are now looked up in the published map rather than transcribed, which is safe only
-    because the two agree. This freezes the resulting values so that a change in the map -- a
+    Two categories: hardware-confirmed, and panel-authorised (the app renders a control for the
+    attribute and the invariant frame positions it — offered per device by declaration, the way the
+    app decides, not by a capture apiece). Positions are looked up in the published frame rather than
+    transcribed, safe because the two agree. This freezes the values so a change in the map -- a
     regenerated file, a new model, a bad merge -- cannot quietly move the bit a live control writes.
-    Every pair below is confirmed on hardware.
     """
     assert uss.GRSETDAC_FIELDS == {
+        # hardware-confirmed
         "targetTemperature": (1, 8, 8),
         "windDirectionVertical": (1, 0, 4),
         "operationMode": (2, 13, 3),
@@ -2127,23 +2185,43 @@ def test_grsetdac_fields_match_their_confirmed_positions():
         "windDirectionHorizontal": (4, 0, 3),
         "ecoMode": (4, 3, 3),
         "selfCleaningStatus": (5, 4, 1),  # start-only; live-confirmed (panel showed "CL")
+        # panel-authorised (`haismart_hrdp.panel`) — the app renders these and the frame positions
+        # them; offered per device by declaration, not by a capture apiece. Positions from the frame.
+        "electricHeatingStatus": (3, 2, 1),
+        "10degreeHeatingStatus": (3, 8, 1),
+        "freshAirStatus": (5, 0, 1),
+        "lightStatus": (5, 5, 1),
+        "humanSensingStatus": (4, 6, 2),
+        # panel controls positioned by the published ORDER, not the frame (PANEL_EXTRA_POSITIONS) —
+        # each unanimous across the 83 products that declare it.
+        "mouldProof": (5, 14, 1),
+        "drying": (5, 13, 1),
+        "preventHeatstroke": (5, 15, 1),
     }
 
 
 def test_encoder_membership_is_not_widened_by_the_published_map():
-    """The map describes far more fields than the encoder may write, and must never widen it.
+    """The map describes more fields than the encoder writes, and widens ONLY by the panel.
 
-    This is the property the write path's safety rests on: a group-set applies the whole word block,
-    so a field reaches the unit only once a write of it is confirmed on hardware. `echoStatus` is the
-    standing counter-example -- published in the write frame, marked writable by the device model,
-    and silently discarded by real hardware.
+    The encoder's membership is now hardware-confirmed ∪ panel-authorised — the second being what the
+    app itself uses (the attribute is a panel control). It must NOT widen to every map field: an
+    attribute in the frame but with no panel widget stays out. `echoStatus` is the standing example --
+    in the write frame, model-writable, no panel widget, and silently discarded by real hardware; the
+    app does not offer it and neither do we.
     """
     from haismart_hrdp.canonical_map import CANONICAL_WRITE
+    from haismart_hrdp.panel import PANEL_CONTROLS
 
     assert len(CANONICAL_WRITE) > len(uss.GRSETDAC_FIELDS)
+    # in the frame, but not a panel control -> not writable
     for withheld in ("echoStatus", "lockStatus", "targetHumidity"):
         assert withheld in CANONICAL_WRITE, "expected the map to describe it"
+        assert withheld not in PANEL_CONTROLS, f"{withheld} is not a panel control"
         assert withheld not in uss.GRSETDAC_FIELDS, f"{withheld} must not be writable"
+    # every panel control the frame positions IS writable (the widening, and exactly it)
+    for name in PANEL_CONTROLS:
+        if name in CANONICAL_WRITE:
+            assert name in uss.GRSETDAC_FIELDS, f"{name} is a panel control the frame places"
     # selfCleaningStatus looked identical to echoStatus on paper (both published, both model-writable)
     # and was withheld the same way -- until a live write of it landed (the panel showed "CL") while
     # echoStatus's was silently discarded. So it, and only it, moved into the encoder.

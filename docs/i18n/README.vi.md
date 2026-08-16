@@ -28,7 +28,7 @@ với ứng dụng **Haier / Haismart** (còn có tên *Haier U+* hoặc *uHome*
 
 Các máy đã xác nhận hoạt động được liệt kê trong [`DEVICES.md`](../../DEVICES.md). Không thấy model
 của bạn? Rất có thể nó vẫn chạy được, và không phải nhờ may mắn: tích hợp mang sẵn mô tả chính thức
-của **toàn bộ 1.400 số model** trong danh mục của nhà sản xuất — mỗi model có những thiết lập nào, mỗi lỗi
+của **toàn bộ 1.416 số model** trong danh mục của nhà sản xuất — mỗi model có những thiết lập nào, mỗi lỗi
 tên là gì, và điều khiển nào bị bỏ qua trong trạng thái nào — nên nó tự cấu hình cho cả máy chưa ai
 ở đây từng thấy. Nếu tài khoản của bạn cũng mô tả được máy đó, cả hai nguồn được kết hợp chứ không
 chọn một.

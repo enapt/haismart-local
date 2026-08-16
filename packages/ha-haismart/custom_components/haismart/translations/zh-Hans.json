@@ -235,6 +235,27 @@
       },
       "lamp": {
         "name": "显示灯"
+      },
+      "electric_heating": {
+        "name": "电辅热"
+      },
+      "fresh_air": {
+        "name": "新风"
+      },
+      "keep_warm_10c": {
+        "name": "10°C保暖"
+      },
+      "ambient_light": {
+        "name": "氛围灯"
+      },
+      "mould_proof": {
+        "name": "防霉"
+      },
+      "drying": {
+        "name": "干燥"
+      },
+      "prevent_heatstroke": {
+        "name": "防中暑"
       }
     },
     "select": {
@@ -271,6 +292,15 @@
           "position_5": "位置5",
           "position_6": "位置6",
           "auto": "自动（摆动）"
+        }
+      },
+      "human_sensing": {
+        "name": "人感气流",
+        "state": {
+          "avoid": "避开",
+          "follow": "跟随",
+          "off": "关",
+          "on": "开"
         }
       }
     },

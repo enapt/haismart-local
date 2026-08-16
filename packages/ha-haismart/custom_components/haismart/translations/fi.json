@@ -235,6 +235,27 @@
       },
       "lamp": {
         "name": "Näytön valo"
+      },
+      "electric_heating": {
+        "name": "Sähkölämmitys"
+      },
+      "fresh_air": {
+        "name": "Raitis ilma"
+      },
+      "keep_warm_10c": {
+        "name": "10 °C:n ylläpito"
+      },
+      "ambient_light": {
+        "name": "Tunnelmavalo"
+      },
+      "mould_proof": {
+        "name": "Homeenesto"
+      },
+      "drying": {
+        "name": "Kuivaus"
+      },
+      "prevent_heatstroke": {
+        "name": "Lämpöhalvauksen esto"
       }
     },
     "select": {
@@ -271,6 +292,15 @@
           "position_5": "Asento 5",
           "position_6": "Asento 6",
           "auto": "Automaattinen (huojunta)"
+        }
+      },
+      "human_sensing": {
+        "name": "Läsnäolon ilmavirta",
+        "state": {
+          "avoid": "Väistä",
+          "follow": "Seuraa",
+          "off": "Pois",
+          "on": "Päällä"
         }
       }
     },

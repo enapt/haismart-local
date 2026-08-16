@@ -184,10 +184,11 @@ async def async_setup_entry(
     # It's a secret, so it's diagnostic + DISABLED by default (enable it, back it up, done).
     entities.append(HaismartModelIdSensor(coordinator))
     entities.append(HaismartLocalKeySensor(coordinator))
-    # Read-only enum state for the multi-state optional features a unit declares (presence-based
-    # airflow and the like). Membership from the model, position from the map -- same safe basis as
-    # the feature binary sensors, and read-only for the same reason.
-    for name in sorted(coordinator.declared_enum_features):
+    # Read-only enum state for the multi-state optional features a unit declares that the app shows
+    # no control for. The ones it renders a select for (and this unit can write) become select
+    # entities instead, so they are excluded here to avoid a select and a sensor for the same thing.
+    promoted = set(coordinator.panel_select_fields())
+    for name in sorted(coordinator.declared_enum_features - promoted):
         entities.append(HaismartFeatureEnumSensor(coordinator, name))
     # "Last self-clean" — only where self-clean is a real control (same gate as the button).
     if coordinator.supports_field("selfCleaningStatus"):

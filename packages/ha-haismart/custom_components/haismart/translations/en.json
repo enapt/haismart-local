@@ -235,9 +235,39 @@
       },
       "lamp": {
         "name": "Display light"
+      },
+      "electric_heating": {
+        "name": "Electric heating"
+      },
+      "fresh_air": {
+        "name": "Fresh air"
+      },
+      "keep_warm_10c": {
+        "name": "10°C keep-warm"
+      },
+      "ambient_light": {
+        "name": "Ambient light"
+      },
+      "mould_proof": {
+        "name": "Mould prevention"
+      },
+      "drying": {
+        "name": "Dry-out"
+      },
+      "prevent_heatstroke": {
+        "name": "Heatstroke prevention"
       }
     },
     "select": {
+      "human_sensing": {
+        "name": "Presence airflow",
+        "state": {
+          "off": "Off",
+          "avoid": "Avoid",
+          "follow": "Follow",
+          "on": "On"
+        }
+      },
       "eco": {
         "name": "Eco",
         "state": {

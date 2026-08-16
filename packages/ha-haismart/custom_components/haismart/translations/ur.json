@@ -235,6 +235,27 @@
       },
       "lamp": {
         "name": "ڈسپلے لائٹ"
+      },
+      "electric_heating": {
+        "name": "برقی حرارت"
+      },
+      "fresh_air": {
+        "name": "تازہ ہوا"
+      },
+      "keep_warm_10c": {
+        "name": "10°C گرم رکھنا"
+      },
+      "ambient_light": {
+        "name": "ماحولیاتی روشنی"
+      },
+      "mould_proof": {
+        "name": "پھپھوندی سے بچاؤ"
+      },
+      "drying": {
+        "name": "خشک کرنا"
+      },
+      "prevent_heatstroke": {
+        "name": "لُو سے بچاؤ"
       }
     },
     "select": {
@@ -271,6 +292,15 @@
           "position_5": "پوزیشن 5",
           "position_6": "پوزیشن 6",
           "auto": "خودکار (جھولنا)"
+        }
+      },
+      "human_sensing": {
+        "name": "موجودگی کے مطابق ہوا",
+        "state": {
+          "avoid": "گریز",
+          "follow": "پیروی",
+          "off": "بند",
+          "on": "آن"
         }
       }
     },

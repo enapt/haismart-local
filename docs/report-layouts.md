@@ -40,8 +40,12 @@ rather than ranked.
 
 Three limits, all deliberate:
 
-- **Read-only.** A control command writes a whole block of words at once, so a layout arrived at this
-  way drives readings and never commands. Control still needs a family confirmed on real hardware.
+- **Control is gated on the product's own published list.** A control command writes a whole block of
+  words at once, so a layout arrived at this way commands only through three gates: the group-set
+  command's packing (identical across the published air-conditioner descriptions), the product's own
+  published list of which settings its group-set carries, and the per-family refusals for positions a
+  family gives to a different attribute. A product publishing no list stays read-only — the safe
+  default.
 - **Core readings only.** Power, setpoint, room and outdoor temperature, mode, fan, vertical swing,
   fault code and who last changed the unit. The further attributes a device declares stay unplaced
   until the offset has been checked field by field against a real report.
@@ -57,7 +61,7 @@ name, so diagnostics distinguish it from a family confirmed on hardware.
 | Report | Family | Setpoint | Sensors | Status |
 |---|---|---|---|---|
 | 109 / 121 / 125 / 127 B | **classic** | `°C − 16` @ w1.b8 | indoor w6.b8, outdoor w7.b8 | ✅ read + control |
-| 117 B | **compact-12** | whole °C @ w12 | indoor w1, outdoor w2 (not published) | ✅ read + control |
+| 117 B | **compact-12** | whole °C @ w12 | indoor w1; w2 low byte is the outdoor-UNIT temp (hot, ~60 °C cooling; not ambient) — diagnostics only | ✅ read + control |
 | 165 / 175 B | **extended-36** | `°C − 16` @ w20.b8 | indoor w25.b8, outdoor w26.b8 | ✅ read + control |
 | 209 B | **extended-46** | **half-degrees** @ w20.b8 | indoor w35.b8, outdoor w36.b8 | ✅ read + control (no left-right vane) |
 | 133 B | *unclaimed* — map below | `°C − 16` @ w1.b12 (4 bits) | indoor w5.b8, outdoor w6.b8 | ⏳ documented, not shipped |
@@ -76,7 +80,7 @@ a confident but invented value.
 | fault bitmap | ✅ (its own frame, family-independent) | ✅ | ✅ | ✅ |
 | self-clean | ✅ | ❌ | ✅ | ❌ |
 | vane positions (both axes) | ✅ | ❌ | ✅ | ❌ |
-| live power, from the report itself | ❌ | ❌ | ✅ (175 B only) | ❌ |
+| live power, from the report itself | ❌ | ⚠️ (decoded at w3, diagnostics only — unit unproven, so no sensor) | ✅ (175 B only) | ❌ |
 | cumulative energy total | ❌ (register present, never populated) | ❌ | ✅ (where populated) | ❌ (works, unit unsettled) |
 
 Heat capability, the fault code and last-changed-by all sit in the sensor block, one and two words
@@ -97,8 +101,14 @@ be declared, validate, and still be discarded by the hardware.
 
 It is **not offered** on the other two, for different reasons.
 
-On **compact-12** nothing carries over: its map differs throughout, so the flag needs its own
-evidence — a report taken while a cycle runs, where the bit that changes is the answer.
+On **compact-12** the shared map does not carry over — its packing differs throughout — but the
+family's own published description places self-clean, in word 9 alongside its other toggles, and that
+whole description is now decoded (all 38 fields; the decode grew from seven to the full set). Self-clean
+is read from word 9 **into diagnostics, not the self-clean sensor**: every capture reads the bit 0, so
+there is no positive confirmation to promote it on, and a report taken while a cycle runs would both
+confirm the bit and license the entity in one step. (Two other newly-decoded registers — a live
+input-power figure at w3 and the outdoor byte at w2 — are held back the same way, on unit/meaning
+rather than the bit; see `FUTURE_WORK.md` item 31.)
 
 On **extended-46** the flag has two candidate homes and the captures cannot choose between them.
 That family confirms w20/w21/w22 unmoved, w35/w36 at +10, and a vane at w25 with fan speed at
@@ -207,13 +217,21 @@ carry directly:
   an **enum**, so a code the model does not declare — the idle 0, the constant 6 — surfaces as *no
   reading* rather than an invented speed.
 
-So this family reads its fan speed and its up-down vane, and **writes both**, as of v0.47.0.
+So this family reads its fan speed and its up-down vane, and **writes both** — at the appliance's own
+positions, settled from the published data (`FUTURE_WORK.md` item 29).
 
-★ **The write positions are published and were never in doubt.** The published write frame is ONE
-frame across every air-conditioner device type — 39 attributes, `6001`, frameType 1, **zero position
-disagreements between families** — placing `windDirectionVertical` at w1.b0/4, `windSpeed` at
-w2.b8/3 and `windDirectionHorizontal` at w4.b0/3, and this family's three hardware-confirmed
-positions reproduce it exactly.
+★ **The write positions are settled — the appliance's own vane/fan are in the inserted block.**
+This family's **own** published group-set list assigns the shared-frame vane/fan slots — w1.b0–3,
+w1.b4–7 and w2.b8–10 — to the **per-tower** vanes and fan (`…VerticalL` / `…VerticalR` / `windSpeedL`),
+not to the appliance. The appliance's own vane and fan sit in the appended tail of the list, at
+group-set **words 6 and 7**, which map (by `write_base_word + write_word − 1`) to report **w25 and
+w26** — exactly where the read map reads them back. So the controls now write group-set word 6
+(report w25.b0) for the vane and word 7 (report w26.b9) for the fan, with the frame extended to seven
+words to reach them. Three independent lines agree (the published order, the captures, and the
+write↔read relation), so no reporter test is needed to place them; the only thing a live write would
+add is confirmation the appliance honours a seven-word frame (Rule 8). Until v0.47.x the controls
+wrote the shared slots — i.e. the **left tower** — and could not reach the appliance's own fields at
+all.
 
 ### How the read positions were settled, and why they had been withdrawn
 
@@ -365,8 +383,11 @@ ranking it prints is the one the diagnostics file already carries, plus the stat
 
 They were each worked out separately, from captured reports, and they turn out to be the same
 published attribute map at different displacements. `haismart_hrdp.canonical_map` carries it: 84
-attributes with their word, bit, width and scaling, agreed on by every published air-conditioner
-model — same widths, same bits, same order, one whole-word displacement each.
+attributes with their word, bit, width and scaling, agreed on by the bundled air-conditioner
+descriptions — same widths, same bits, same order, one whole-word displacement each. (Across the
+full published catalogue, eleven families keep a *different* attribute at a handful of the shared
+positions — the twin-tower vane/fan and the sterilization-for-self-clean swap — which is why those
+specific controls are refused per family rather than assumed universal.)
 
 | family | is |
 |---|---|

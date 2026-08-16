@@ -348,10 +348,15 @@ rule, confirmed on hardware.
 ## The families are one map
 
 Every air conditioner packs the same attributes into the same words, at the same bits, with the same
-widths and scaling. What differs is only **where the block starts**. The published device models
-agree on it completely — same widths, same bits, same order, one whole-word displacement each — and
+widths and scaling. What differs is mainly **where the block starts**. The bundled device
+descriptions agree on it completely — same widths, same bits, same order, one whole-word displacement
+each — and
 [`canonical_map.py`](packages/haismart-hrdp/src/haismart_hrdp/canonical_map.py) carries that map,
-85 attributes of it.
+85 attributes of it. Across the full published catalogue there is one further wrinkle: **eleven
+families (248 products) keep a *different* attribute at a handful of the shared positions** — a
+twin-tower cabinet's left vane and fan where a single-flow unit's own sit, sterilization where
+self-clean sits. Every such departure is unanimous within its family, and the integration refuses
+exactly those controls for exactly those families rather than commanding the wrong function.
 
 | family | is |
 |---|---|

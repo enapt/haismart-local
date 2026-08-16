@@ -235,6 +235,27 @@
       },
       "lamp": {
         "name": "Kijelző világítása"
+      },
+      "electric_heating": {
+        "name": "Elektromos fűtés"
+      },
+      "fresh_air": {
+        "name": "Friss levegő"
+      },
+      "keep_warm_10c": {
+        "name": "10 °C-os temperálás"
+      },
+      "ambient_light": {
+        "name": "Környezeti fény"
+      },
+      "mould_proof": {
+        "name": "Penészvédelem"
+      },
+      "drying": {
+        "name": "Szárítás"
+      },
+      "prevent_heatstroke": {
+        "name": "Hőgutavédelem"
       }
     },
     "select": {
@@ -271,6 +292,15 @@
           "position_5": "5. pozíció",
           "position_6": "6. pozíció",
           "auto": "Automatikus (lengés)"
+        }
+      },
+      "human_sensing": {
+        "name": "Jelenlét szerinti légáram",
+        "state": {
+          "avoid": "Elkerülés",
+          "follow": "Követés",
+          "off": "Ki",
+          "on": "Be"
         }
       }
     },

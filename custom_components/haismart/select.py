@@ -24,7 +24,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from haismart_hrdp import GRSETDAC_ENUMS
+from haismart_hrdp import GRSETDAC_ENUMS, PANEL_ENUM_CONTROLS
 from homeassistant.components.select import SelectEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
@@ -81,6 +81,10 @@ async def async_setup_entry(
         codes = coordinator.field_codes(vane.field)
         if codes - {vane.fixed, vane.auto}:
             entities.append(HaismartVaneSelect(coordinator, vane, codes))
+    # The panel's multi-state controls (presence-based airflow, fresh-air fan level): functions the
+    # app renders a select for and this unit declares. Offered the way the app offers them.
+    for field in coordinator.panel_select_fields():
+        entities.append(HaismartPanelSelect(coordinator, field))
     async_add_entities(entities)
 
 
@@ -176,3 +180,45 @@ class HaismartVaneSelect(HaismartEntity, SelectEntity):
                 },
             )
         await self.coordinator.async_send_control({self._vane.field: code})
+
+
+class HaismartPanelSelect(HaismartEntity, SelectEntity):
+    """A multi-state panel control (presence-based airflow, fresh-air fan level).
+
+    Options are the vendor's own state tokens for the attribute (:data:`PANEL_ENUM_CONTROLS`); the
+    raw wire value maps to and from them. Read back from the same position it writes (the
+    write<->read relation), so it shows the unit's real state and the command can be checked.
+    """
+
+    def __init__(self, coordinator: HaismartCoordinator, field: str) -> None:
+        super().__init__(coordinator)
+        self._field = field
+        slug, states = PANEL_ENUM_CONTROLS[field]
+        self._to_token = dict(states)               # wire value -> token
+        self._to_value = {t: v for v, t in states.items()}  # token -> wire value
+        self._attr_translation_key = slug
+        self._attr_unique_id = f"{coordinator.device_id}_{slug}"
+        self._attr_options = [states[v] for v in sorted(states)]
+
+    # No `available` override: a setting the unit currently ignores is not a fault (see the vane
+    # select above); the command is refused with the model's reason instead.
+
+    @property
+    def current_option(self) -> str | None:
+        value = self.coordinator.current_field(self._field)
+        return None if value is None else self._to_token.get(value)
+
+    async def async_select_option(self, option: str) -> None:
+        self.raise_if_locked(self._field)
+        value = self._to_value.get(option)
+        if value is None:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="unsupported_value",
+                translation_placeholders={
+                    "name": self.name or "this air conditioner",
+                    "value": str(option),
+                    "field": self._attr_translation_key or self._field,
+                },
+            )
+        await self.coordinator.async_send_control({self._field: value})

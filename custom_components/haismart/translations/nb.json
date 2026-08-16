@@ -235,6 +235,27 @@
       },
       "lamp": {
         "name": "Displaylys"
+      },
+      "electric_heating": {
+        "name": "Elektrisk oppvarming"
+      },
+      "fresh_air": {
+        "name": "Frisk luft"
+      },
+      "keep_warm_10c": {
+        "name": "10 °C varmeholding"
+      },
+      "ambient_light": {
+        "name": "Omgivelseslys"
+      },
+      "mould_proof": {
+        "name": "Muggbeskyttelse"
+      },
+      "drying": {
+        "name": "Tørking"
+      },
+      "prevent_heatstroke": {
+        "name": "Beskyttelse mot heteslag"
       }
     },
     "select": {
@@ -271,6 +292,15 @@
           "position_5": "Posisjon 5",
           "position_6": "Posisjon 6",
           "auto": "Automatisk (sving)"
+        }
+      },
+      "human_sensing": {
+        "name": "Luftstrøm ved tilstedeværelse",
+        "state": {
+          "avoid": "Unngå",
+          "follow": "Følg",
+          "off": "Av",
+          "on": "På"
         }
       }
     },

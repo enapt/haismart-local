@@ -235,6 +235,27 @@
       },
       "lamp": {
         "name": "Displayverlichting"
+      },
+      "electric_heating": {
+        "name": "Elektrische verwarming"
+      },
+      "fresh_air": {
+        "name": "Frisse lucht"
+      },
+      "keep_warm_10c": {
+        "name": "10 °C warmhouden"
+      },
+      "ambient_light": {
+        "name": "Sfeerverlichting"
+      },
+      "mould_proof": {
+        "name": "Schimmelpreventie"
+      },
+      "drying": {
+        "name": "Drogen"
+      },
+      "prevent_heatstroke": {
+        "name": "Preventie hittberoerte"
       }
     },
     "select": {
@@ -271,6 +292,15 @@
           "position_5": "Positie 5",
           "position_6": "Positie 6",
           "auto": "Automatisch (zwenken)"
+        }
+      },
+      "human_sensing": {
+        "name": "Luchtstroom bij aanwezigheid",
+        "state": {
+          "avoid": "Vermijden",
+          "follow": "Volgen",
+          "off": "Uit",
+          "on": "Aan"
         }
       }
     },

@@ -235,6 +235,27 @@
       },
       "lamp": {
         "name": "نور نمایشگر"
+      },
+      "electric_heating": {
+        "name": "گرمایش برقی"
+      },
+      "fresh_air": {
+        "name": "هوای تازه"
+      },
+      "keep_warm_10c": {
+        "name": "گرمادهی ۱۰°C"
+      },
+      "ambient_light": {
+        "name": "نور محیطی"
+      },
+      "mould_proof": {
+        "name": "ضد کپک"
+      },
+      "drying": {
+        "name": "خشک‌کردن"
+      },
+      "prevent_heatstroke": {
+        "name": "پیشگیری از گرمازدگی"
       }
     },
     "select": {
@@ -271,6 +292,15 @@
           "position_5": "موقعیت 5",
           "position_6": "موقعیت 6",
           "auto": "خودکار (نوسان)"
+        }
+      },
+      "human_sensing": {
+        "name": "جریان هوای حضور",
+        "state": {
+          "avoid": "اجتناب",
+          "follow": "دنبال‌کردن",
+          "off": "خاموش",
+          "on": "روشن"
         }
       }
     },

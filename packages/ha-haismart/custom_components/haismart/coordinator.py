@@ -39,6 +39,8 @@ from haismart_hrdp import (
     EXTENDED_STATUS_FRAME_TYPES,
     GRSETDAC_FIELDS,
     GRSETDAC_MODEL_AUTHORIZED,
+    PANEL_BOOL_CONTROLS,
+    PANEL_ENUM_CONTROLS,
     STATUS_LAYOUTS,
     VANE_V_EPP_TO_MODEL,
     VANE_V_MODEL_TO_EPP,
@@ -50,7 +52,10 @@ from haismart_hrdp import (
     async_send_op,
     build_epp_frame,
     constraint_commands,
+    declared_order,
+    declared_panel_controls,
     describe_epp_frame,
+    displaced_write_fields,
     extended_status_epp_frame,
     family_rules,
     grsetdac_baseline_from_status,
@@ -68,6 +73,7 @@ from haismart_hrdp import (
     read_bool_features,
     read_enum_features,
     read_grsetdac_field,
+    related_model_named,
     reply_refused,
     rules_for_product,
     select_wire_model,
@@ -682,7 +688,11 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         for blob in blobs:
             if state := parse_full_status(
-                blob, self.profile, self.digital_model, uplus_id=self.uplus_id
+                blob,
+                self.profile,
+                self.digital_model,
+                uplus_id=self.uplus_id,
+                order=self.declared_group_order,
             ):
                 self._misses = 0
                 self.last_raw_status = blob
@@ -696,9 +706,20 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 # A known non-classic family decodes fully. Track its wire model (drives the
                 # family-specific control encoder) and, if it has no confirmed write path, flag it
                 # read-only so control returns a clear message instead of a wrong-family group-set.
+                # A related layout is chosen by trying each published relative's offset and
+                # keeping the one the report agreed with, and the decode reports that choice only
+                # by name -- so rebuild the model from the name rather than repeating the search.
+                # Without this the layout would decode fine and then be commanded through the
+                # CLASSIC field map, which is a different frame on every family but one.
                 self._wire_model = (
                     None if len(blob) in STATUS_LAYOUTS
                     else select_wire_model(len(blob), self.uplus_id)
+                    or related_model_named(
+                        str(state.get("layout") or ""),
+                        len(blob),
+                        order=self.declared_group_order,
+                        uplus_id=self.uplus_id,
+                    )
                 )
                 self.read_only_layout = (
                     len(blob) if state.get("writable") is False else None
@@ -1132,6 +1153,37 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 self._misses = 0
                 self.last_raw_status = baseline
             wm = self._wire_model
+            # Single-parameter path: a family (compact-12) that writes a toggle one at a time by
+            # command, not through the group-set. The command carries the value, so there is no
+            # baseline to seed and no word block to pack — just the two-byte on/off command.
+            if wm is not None and any(n in wm.single_param_fields for n in changes):
+                if not all(n in wm.single_param_fields for n in changes):
+                    raise HomeAssistantError(
+                        translation_domain=DOMAIN, translation_key="control_rejected",
+                        translation_placeholders={
+                            "name": self.config_entry.title,
+                            "error": "cannot mix single-parameter and group-set writes",
+                        },
+                    )
+                if len(changes) != 1:
+                    raise HomeAssistantError(
+                        translation_domain=DOMAIN, translation_key="control_rejected",
+                        translation_placeholders={
+                            "name": self.config_entry.title,
+                            "error": "single-parameter controls are written one at a time",
+                        },
+                    )
+                (name, value), = changes.items()
+                cmd = wm.single_param_fields[name].command(value)
+                if cmd is None:                       # start-only trigger asked to turn off
+                    raise HomeAssistantError(
+                        translation_domain=DOMAIN, translation_key="control_rejected",
+                        translation_placeholders={
+                            "name": self.config_entry.title,
+                            "error": f"{name} has no 'off' command (it is a start-only trigger)",
+                        },
+                    )
+                return build_epp_frame(0x01, cmd, b"")
             if wm is not None and wm.group_cmd is not None:
                 # Non-classic family: pack via its own wire model + group-set command. The encoder
                 # translates the classic-shaped change values (STD codes / setpoint) to this
@@ -1248,7 +1300,11 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.last_raw_extended = extended_blob
         for blob in reversed(reply):
             if state := parse_full_status(
-                blob, self.profile, self.digital_model, uplus_id=self.uplus_id
+                blob,
+                self.profile,
+                self.digital_model,
+                uplus_id=self.uplus_id,
+                order=self.declared_group_order,
             ):
                 self.last_raw_status = blob
                 self._misses = 0
@@ -1539,6 +1595,18 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.hass.config_entries.async_reload(self.config_entry.entry_id)
         )
 
+    @property
+    def declared_group_order(self) -> tuple[str, ...]:
+        """The settings this appliance's group-set command carries, in wire order.
+
+        Published per product and shipped in the rules bundle, so it needs no account. It is what
+        lets a layout resolved from a published *relative* be commanded rather than only read: the
+        frame is invariant, the base word follows from the displacement, and this says which of the
+        frame's settings this particular appliance actually has. Empty for a unit whose model was
+        never merged, which keeps that layout read-only.
+        """
+        return declared_order(self.digital_model)
+
     def supports_field(self, name: str) -> bool:
         """Whether a control field can be written on the family this unit actually reports.
 
@@ -1547,10 +1615,33 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         no swing, and neither has this unit's multi-level ``ecoMode``. A control that advertises a
         field its family cannot place could only ever raise, so the entities that group several
         fields into one control ask here before offering themselves.
+
+        ⚠️ **A field can be placeable and still be the wrong field.** The group-set frame is
+        otherwise identical across every published air conditioner, but a few families keep a
+        *different attribute* at one of its positions — a twin-tower cabinet's **left tower** vane
+        and fan sit where a single-flow unit's appliance-level ones do, and some later models reuse
+        the self-clean bit for **sterilization**. Packing by position would then start the wrong
+        function rather than fail, so those fields are refused here for the families that publish
+        the departure. See :func:`haismart_hrdp.displaced_write_fields`.
         """
+        if name in displaced_write_fields(self.uplus_id):
+            return False
         if (wm := self._wire_model) is not None:
-            return name in wm.write_fields
+            return name in wm.write_fields or name in wm.single_param_fields
         return name in GRSETDAC_FIELDS
+
+    def panel_switch_fields(self) -> list[str]:
+        """The panel BOOLEAN controls this device offers, the app's own way: the device declares
+        the attribute, it is not invisible, and the family can write its position. That is the
+        app's gate for rendering a switch, without the per-attribute live-write this project used
+        to require and the app never did. A field the family cannot write is not offered."""
+        declared = declared_panel_controls(self.digital_model)
+        return [a for a in PANEL_BOOL_CONTROLS if a in declared and self.supports_field(a)]
+
+    def panel_select_fields(self) -> list[str]:
+        """The panel MULTI-STATE controls this device offers; same gate as the switches above."""
+        declared = declared_panel_controls(self.digital_model)
+        return [a for a in PANEL_ENUM_CONTROLS if a in declared and self.supports_field(a)]
 
     def _feature_wire_model(self, length: int) -> WireModel | None:
         """The family map to read declared features with -- the classic probe for the lengths
@@ -1738,6 +1829,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if self.last_raw_status is None:
             return None
         if (wm := self._wire_model) is not None:
+            if name in wm.single_param_fields:
+                return wm.single_param_value(self.last_raw_status, name)
             return wm.current_write_value(self.last_raw_status, name)
         try:
             return read_grsetdac_field(self.last_raw_status, name)

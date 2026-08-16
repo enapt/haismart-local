@@ -69,7 +69,7 @@ work fine — this is used daily on an account registered outside South-East Asi
 
 **Confirmed working units** are listed in [`DEVICES.md`](DEVICES.md). Yours not there? It will very
 likely still work, and not by luck: the integration carries the published description of **every air
-conditioner in the manufacturer's catalogue — 1,435 product codes, covering 1,400 model numbers** —
+conditioner in the manufacturer's catalogue — 1,451 product codes, covering 1,416 model numbers** —
 which settings each has, what its faults are called, and which controls it ignores in which state, so
 it configures itself for a unit nobody here has ever seen. Where your own account can describe your
 appliance, that is used too, and the two are combined rather than one being preferred. If something
@@ -77,9 +77,11 @@ decodes oddly, that's a [great issue to open](#before-you-open-an-issue), and us
 
 Those figures are entries in a catalogue rather than distinct appliances, and it is worth being
 straight about the difference: many are the same unit in another colour or for another market
-(`…(W)-T3` and `…(GREY)-T3` are one air conditioner), and by the settings they actually declare there
-are **161 distinct feature sets** among them. What the count means is that no published air
-conditioner is unknown to the integration — not that Haier sells 1,435 different machines.
+(`…(W)-T3` and `…(GREY)-T3` are one air conditioner), and the 1,451 products collapse to just
+**26 hardware families**. 21 model names are even shared by more than one product — 56 products
+between them — which is why setup asks which product yours is rather than trusting the label alone.
+What the count means is that no published air conditioner is unknown to the integration — not that
+Haier sells 1,451 different machines.
 
 ### Every region, not just one
 
@@ -89,10 +91,12 @@ Before **v0.38.0** what shipped here was a single region's 171, so an air condit
 anywhere else could not be named, could not be offered by the number on its label, and could reach
 its own fault names only while Home Assistant had internet.
 
-All of them now ship, and every region's list has been checked against what ships: **no product in
-any region is missing**. Your country is also used at setup — to shorten the model list to what is
-sold where you are, and to look up a model number the shipped list has not heard of. If an older
-version could not identify your unit, this one very likely can.
+All of them now ship. The listing also turned out to be filtered by product **category**, which had
+hidden the window air conditioners — the complete catalogue is 1,999 products across 38 appliance
+categories, and every air-conditioner category among them now ships, window units included. Your
+country is also used at setup — to shorten the model list to what is sold where you are, and to look
+up a model number the shipped list has not heard of. If an older version could not identify your
+unit, this one very likely can.
 
 **Quick check:** if `nc -z <your-ac-ip> 56800` succeeds, the local protocol is listening.
 
@@ -602,14 +606,19 @@ comparable readings.
 The one thing worth typing is the model number **if your unit will not connect at all**, since none
 of the above exists until it does.
 
-**A model we have never seen usually reads anyway.** Every published air conditioner is the same
-attribute map at one of a few offsets, and a unit's Model ID names its closest relatives — so when no
-known layout claims a report, the integration tries the offsets those relatives use and keeps
-whichever one the report itself agrees with. That is **read-only**: a control command writes a whole
-block of settings at once, so commanding still needs a layout confirmed on real hardware.
+**A model we have never seen usually reads — and commands — anyway.** Every published air conditioner
+is the same attribute map at one of a few offsets, and a unit's Model ID names its closest relatives —
+so when no known layout claims a report, the integration tries the offsets those relatives use and
+keeps whichever one the report itself agrees with. Control is offered through three gates, each
+removing a different way of being wrong: the group-set command is packed identically across the
+published air-conditioner descriptions; **which** of its settings your product carries comes from the
+product's own published attribute list, shipped for every product that publishes one; and the handful
+of families that keep a *different* setting at one of those positions have exactly those controls
+refused. A product that publishes no list stays read-only — the safe default.
 
-**Adding that confirmation** is the most valuable contribution here, and it doesn't require writing
-any code — see [`docs/new-model.md`](docs/new-model.md) for a short capture procedure. When nothing
+**A capture is still the most valuable contribution** for such a unit, and it doesn't require writing
+any code — see [`docs/new-model.md`](docs/new-model.md) for the short procedure. It is what promotes
+the layout to a confirmed family and unlocks the readings beyond the core climate block. When nothing
 fits at all, the diagnostics file proposes candidate layouts itself;
 [`docs/report-layouts.md`](docs/report-layouts.md) is the inventory of every known one.
 

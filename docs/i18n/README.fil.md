@@ -31,7 +31,7 @@ protocol.
 
 Nakalista sa [`DEVICES.md`](../../DEVICES.md) ang mga unit na kumpirmadong gumagana. Wala roon ang
 modelo ninyo? Malamang gumana pa rin ito, at hindi ito swerte lamang: dala na ng integration ang
-opisyal na paglalarawan ng **lahat ng 1,400 numero ng modelo** sa katalogo ng gumawa — kung anong mga setting mayroon
+opisyal na paglalarawan ng **lahat ng 1,416 numero ng modelo** sa katalogo ng gumawa — kung anong mga setting mayroon
 ang bawat modelo, ano ang tawag sa bawat depekto, at aling mga kontrol ang binabalewala sa aling
 kalagayan — kaya kaya nitong i-configure ang sarili para sa unit na hindi pa namin nakikita. Kung
 kayang ilarawan din ng inyong account ang unit, pinagsasama ang dalawa sa halip na pumili ng isa.

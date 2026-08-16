@@ -235,6 +235,27 @@
       },
       "lamp": {
         "name": "डिस्प्ले लाइट"
+      },
+      "electric_heating": {
+        "name": "विद्युत तापन"
+      },
+      "fresh_air": {
+        "name": "ताज़ी हवा"
+      },
+      "keep_warm_10c": {
+        "name": "10°C गर्म रखना"
+      },
+      "ambient_light": {
+        "name": "परिवेश प्रकाश"
+      },
+      "mould_proof": {
+        "name": "फफूंद रोधी"
+      },
+      "drying": {
+        "name": "सुखाना"
+      },
+      "prevent_heatstroke": {
+        "name": "लू से बचाव"
       }
     },
     "select": {
@@ -271,6 +292,15 @@
           "position_5": "स्थिति 5",
           "position_6": "स्थिति 6",
           "auto": "स्वचालित (स्विंग)"
+        }
+      },
+      "human_sensing": {
+        "name": "उपस्थिति वायु प्रवाह",
+        "state": {
+          "avoid": "बचें",
+          "follow": "अनुसरण",
+          "off": "बंद",
+          "on": "चालू"
         }
       }
     },

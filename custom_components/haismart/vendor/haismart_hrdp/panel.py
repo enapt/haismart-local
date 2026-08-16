@@ -13,7 +13,10 @@ the write frame, model-writable, and the app shows no widget for it, so we don't
 
 Deliberately NOT here, though the device model declares them writable: ``echoStatus`` (no widget;
 hardware discards it), ``heatAccumulationStatus``, ``humidificationStatus``, ``intelligenceStatus``
-(no widget in the panel action set). Presence in the model is not a control; a panel widget is.
+(no widget in the panel action set), and ``10degreeHeatingStatus`` (the 10 °C keep-warm — the
+authoritative panel renders NO widget for it, confirmed against the current SEA panel bundle; it was
+briefly offered here on the same misreading the gate exists to prevent, and is now read-only, as the
+app leaves it). Presence in the model is not a control; a panel widget is.
 
 Positions come from :data:`~haismart_hrdp.canonical_map.CANONICAL_WRITE` (the invariant group-set
 frame, identical across every published air-conditioner device type). The controls listed here are
@@ -32,7 +35,6 @@ from collections.abc import Mapping
 PANEL_BOOL_CONTROLS: Mapping[str, str] = {
     "electricHeatingStatus": "electric_heating",
     "freshAirStatus": "fresh_air",
-    "10degreeHeatingStatus": "keep_warm_10c",
     "lightStatus": "ambient_light",
     # The boolean energy-save toggle (distinct from the multi-level `generatorMode` "eco" ladder,
     # which keeps its own select). The panel renders it with the plain declared-and-not-invisible
@@ -62,13 +64,14 @@ PANEL_EXTRA_POSITIONS: Mapping[str, tuple[int, int, int]] = {
 #: The state tokens and their wire values are the vendor's own, read from the model's enum
 #: descriptions (NOT guessed); a wire value not in the map is dropped rather than shown as a code.
 #:
-#: ⚠️ ``freshWindSpeed`` is deliberately NOT here. Its model enum has SIX values (0=off 1=low 2=high
-#: 3=rated 4=medium 5=strong) but the invariant frame gives it a **2-bit** slot (w4.b4/2, holds only
-#: 0..3), so it cannot be written faithfully through the group-set — medium(4)/strong(5) do not fit,
-#: and the value order is not the level order. Its real width, or the subset the group-set actually
-#: supports, needs settling before it can ship. (An earlier version guessed {0:off,1:low,2:medium,
-#: 3:high}, which is wrong on value 2 = HIGH and invents 3 = high — exactly the "read the listed enum,
-#: don't guess" lesson.)
+#: ⚠️ ``freshWindSpeed`` is deliberately NOT here. The authoritative panel offers FIVE values —
+#: close(0), low(1), high(2), rated(3), mid(4) — and writes them by NAMED ATTRIBUTE, not through the
+#: group set; the invariant frame gives it only a **2-bit** slot (w4.b4/2, holds 0..3), which cannot
+#: hold value 4 (mid). So it cannot be written faithfully through our group-set path, and it stays
+#: withdrawn until either its real frame width or a named-attribute write channel is available. (An
+#: earlier version guessed {0:off,1:low,2:medium,3:high}; the panel's own value list settles it —
+#: value 2 is HIGH, value 4 is mid, and there is no "off/medium/high" ordering to assume. Read the
+#: listed enum, don't guess.)
 PANEL_ENUM_CONTROLS: Mapping[str, tuple[str, Mapping[int, str]]] = {
     "humanSensingStatus": ("human_sensing", {0: "off", 1: "avoid", 2: "follow", 3: "on"}),
 }

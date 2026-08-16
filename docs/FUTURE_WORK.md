@@ -513,17 +513,25 @@ rest as read-only sensors, on a per-attribute live-write bar the app never appli
 
 **Shipped, on EVERY grSetDAC family** (classic, extended-36, extended-46, related layouts):
 `haismart_hrdp/panel.py` (the widget table as data) + `coordinator.panel_switch_fields` /
-`panel_select_fields` (the app's gate) promote **nine** functions from read-only sensors to real
-controls — six positioned by the invariant frame (**electric-heat, fresh air, 10 °C keep-warm,
-ambient light, energy saving** switches — the last being the boolean energy-save toggle, distinct
-from the multi-level eco ladder, at w5.b6, a position no family reuses; **presence-based airflow**
-select, values read from the model enum), and
+`panel_select_fields` (the app's gate) promote **eight** functions from read-only sensors to real
+controls — five positioned by the invariant frame (**electric-heat, fresh air, ambient light,
+energy saving** switches — the last being the boolean energy-save toggle, distinct from the
+multi-level eco ladder, at w5.b6, a position no family reuses; **presence-based airflow** select,
+values read from the model enum), and
 three by the published order, each unanimous across the 83 products that declare it (**mould
 prevention** w5.b14,
 **dry-out** w5.b13, **heatstroke prevention** w5.b15 — item 5's positions, re-derived). Each is
 offered only where the device declares it and does not mark it invisible, dropped from the read-only
 platforms so nothing duplicates. A function the app shows no widget for (`echoStatus`) is still not
 offered; that exclusion is the panel's, not a live write's.
+
+⚠️ **Corrected against the authoritative panel: the 10 °C keep-warm is NOT a control.** It was
+briefly offered here (it is in the write frame, so it looked encodable), but the current panel
+renders no widget for it — the exact `echoStatus` shape, and a violation of this item's own gate.
+Confirmed by fetching the panel and enumerating its full control table: `10degreeHeatingStatus`
+appears nowhere in it. It is now read-only, as the app leaves it. The check that a panel control has
+a widget is the one this item is built on; it now runs against the panel rather than against an
+assumption.
 
 **What remains, and why each is BLOCKED rather than merely undone:**
 * **five of the eight order booleans** — `constDehumidificationStatus`, `preventSupercooling`,
@@ -544,11 +552,12 @@ offered; that exclusion is the panel's, not a live write's.
   renders no widget for either.
 * **central-air (`0d`)** — the vendor publishes no panel for these, so the app renders no controls
   either; not in scope.
-* **`freshWindSpeed`** (fresh-air fan speed) is **withdrawn**, not shipped: its model enum has six
-  values (off / low / high / rated / medium / strong, read from the enum descriptions) but the frame
-  gives it a **2-bit** slot (holds 0..3), so medium/strong do not fit and it cannot be written
-  faithfully. Needs its real width, or the group-set's supported subset, established first. (All
-  shipped controls now carry real translations — this was the last piece of English-interim debt.)
+* **`freshWindSpeed`** (fresh-air fan speed) is **withdrawn**, not shipped. The authoritative panel
+  offers five values — close(0) / low(1) / high(2) / rated(3) / mid(4) — and writes them by **named
+  attribute**, not through the group set; the frame gives it only a **2-bit** slot (holds 0..3), so
+  value 4 (mid) does not fit and it cannot be written faithfully through our path. Needs its real
+  frame width, or a named-attribute write channel, established first. (All shipped controls carry
+  real translations — no English-interim debt.)
 
 ⚠️ Rule 8 unchanged: these ship the way the app ships — documentary — and are verified on hardware
 the way any control change is (deploy, change-and-hold), never by a per-attribute capture in advance.

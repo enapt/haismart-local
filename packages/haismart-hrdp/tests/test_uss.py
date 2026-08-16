@@ -2275,7 +2275,6 @@ def test_grsetdac_fields_match_their_confirmed_positions():
         # panel-authorised (`haismart_hrdp.panel`) — the app renders these and the frame positions
         # them; offered per device by declaration, not by a capture apiece. Positions from the frame.
         "electricHeatingStatus": (3, 2, 1),
-        "10degreeHeatingStatus": (3, 8, 1),
         "freshAirStatus": (5, 0, 1),
         "lightStatus": (5, 5, 1),
         "energySavingStatus": (5, 6, 1),

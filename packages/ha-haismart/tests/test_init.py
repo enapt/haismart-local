@@ -4340,6 +4340,26 @@ async def test_air_quality_readings_become_sensors_for_units_that_declare_them(
     assert entity("formaldehyde") is None
 
 
+async def test_ten_degree_keep_warm_is_read_only_not_a_switch(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The 10 C keep-warm is a status, not a control. It IS in the write frame (so it looks
+    encodable) and a unit declares it, but the vendor panel renders no widget for it -- so, like
+    echoStatus, it must be a read-only sensor and never a switch. Guards the withdrawal.
+    """
+    model = heat_capable_digital_model()
+    model["attributes"].append({"name": "10degreeHeatingStatus"})
+    model["invisible_attributes"] = []                     # declared and visible
+    await _setup_with_model(hass, model)
+
+    registry = er.async_get(hass)
+    # read-only: it exists as a binary sensor (keyed keep_warm_10c), and there is NO switch for it
+    assert registry.async_get_entity_id(
+        "binary_sensor", DOMAIN, "A1B2C3D4E5F6_keep_warm_10c") is not None
+    assert registry.async_get_entity_id(
+        "switch", DOMAIN, "A1B2C3D4E5F6_keep_warm_10c") is None
+
+
 async def test_compact_offers_panel_controls_via_single_parameter(
     hass: HomeAssistant, mock_uss
 ) -> None:

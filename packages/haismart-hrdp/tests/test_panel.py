@@ -50,6 +50,8 @@ def test_declared_panel_controls_is_declared_minus_invisible():
 def test_panel_bool_controls_exclude_the_read_only_features():
     """Attributes the model marks writable but the app shows no widget for stay read-only, never
     switches: echoStatus, and the status-only ones."""
+    # 10degreeHeatingStatus is the notable one: it IS in the write frame (so it looks encodable) but
+    # the authoritative panel renders no widget for it, so it is read-only like echoStatus.
     for read_only in ("echoStatus", "heatAccumulationStatus", "humidificationStatus",
-                      "intelligenceStatus"):
+                      "intelligenceStatus", "10degreeHeatingStatus"):
         assert read_only not in PANEL_BOOL_CONTROLS

@@ -116,7 +116,6 @@ One device per air conditioner, with:
 | **Energy** | A running kWh total, on the units that keep one themselves. Goes straight on the Energy dashboard — no helper needed. Most units carry the register but never fill it in, and there the sensor reads *unknown*; see [Energy monitoring](#energy-monitoring) |
 | **Compressor current / frequency** *(diagnostic)* | What the outdoor unit is actually doing |
 | **Coil / discharge temperature** *(diagnostic)* | Evaporator and compressor-discharge temperatures |
-| **Outdoor coil / air intake / defrost temperature** *(diagnostic)* | The outdoor unit's own probes, on units that report them |
 | **Air quality** | Indoor and outdoor PM2.5, CO₂, formaldehyde, a VOC index, and indoor humidity — on units that carry the probes. A unit without a given probe gets no entity for it, and a probe reading nothing shows *unknown* rather than a fake zero |
 | **Compressor / Fan** *(diagnostic, on/off)* | Whether the compressor and indoor fan are actually running |
 | **Self-clean** | Start a cycle with the **Start self-clean** button — a one-shot trigger: it runs to completion and can't be cancelled, so it's a button, not a switch. A binary sensor shows whether a cycle is running, and a **Last self-clean** timestamp records when the last one finished, so a "days since"-style reminder is a one-line automation. Only on units whose model has it, and the button greys out when a clean can't be started — off, auto mode, sleep, or a fault |

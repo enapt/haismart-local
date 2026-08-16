@@ -186,6 +186,21 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "Формальдегід"
+      },
+      "human_sensing": {
+        "name": "Потік повітря за присутністю",
+        "state": {
+          "avoid": "Уникати",
+          "follow": "Стежити",
+          "off": "Вимк.",
+          "on": "Увімк."
+        }
+      },
+      "indoor_pm25": {
+        "name": "PM2.5 у приміщенні"
+      },
       "indoor_temperature": {
         "name": "Температура в приміщенні"
       },
@@ -198,8 +213,23 @@
           "network": "Застосунок або Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "Останнє самоочищення"
+      },
       "local_key": {
         "name": "Локальний ключ"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "PM2.5 надворі"
       },
       "outdoor_temperature": {
         "name": "Температура надворі"
@@ -207,17 +237,8 @@
       "uplus_id": {
         "name": "Ідентифікатор моделі"
       },
-      "human_sensing": {
-        "name": "Потік повітря за присутністю",
-        "state": {
-          "avoid": "Уникати",
-          "follow": "Стежити",
-          "off": "Вимк.",
-          "on": "Увімк."
-        }
-      },
-      "last_self_clean": {
-        "name": "Останнє самоочищення"
+      "voc_level": {
+        "name": "Рівень ЛОС"
       }
     },
     "switch": {

@@ -186,6 +186,21 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "فرمالدئید"
+      },
+      "human_sensing": {
+        "name": "جریان هوای حضور",
+        "state": {
+          "avoid": "اجتناب",
+          "follow": "دنبال‌کردن",
+          "off": "خاموش",
+          "on": "روشن"
+        }
+      },
+      "indoor_pm25": {
+        "name": "PM2.5 داخل"
+      },
       "indoor_temperature": {
         "name": "دمای داخل"
       },
@@ -198,8 +213,23 @@
           "network": "برنامه یا Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "آخرین خودتمیزشوندگی"
+      },
       "local_key": {
         "name": "کلید محلی"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "PM2.5 بیرون"
       },
       "outdoor_temperature": {
         "name": "دمای بیرون"
@@ -207,17 +237,8 @@
       "uplus_id": {
         "name": "شناسه مدل"
       },
-      "human_sensing": {
-        "name": "جریان هوای حضور",
-        "state": {
-          "avoid": "اجتناب",
-          "follow": "دنبال‌کردن",
-          "off": "خاموش",
-          "on": "روشن"
-        }
-      },
-      "last_self_clean": {
-        "name": "آخرین خودتمیزشوندگی"
+      "voc_level": {
+        "name": "سطح VOC"
       }
     },
     "switch": {

@@ -186,6 +186,21 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "甲醛"
+      },
+      "human_sensing": {
+        "name": "人感气流",
+        "state": {
+          "avoid": "避开",
+          "follow": "跟随",
+          "off": "关",
+          "on": "开"
+        }
+      },
+      "indoor_pm25": {
+        "name": "室内 PM2.5"
+      },
       "indoor_temperature": {
         "name": "室内温度"
       },
@@ -198,8 +213,23 @@
           "network": "应用或 Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "上次自清洁"
+      },
       "local_key": {
         "name": "本地密钥"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "室外 PM2.5"
       },
       "outdoor_temperature": {
         "name": "室外温度"
@@ -207,17 +237,8 @@
       "uplus_id": {
         "name": "型号 ID"
       },
-      "human_sensing": {
-        "name": "人感气流",
-        "state": {
-          "avoid": "避开",
-          "follow": "跟随",
-          "off": "关",
-          "on": "开"
-        }
-      },
-      "last_self_clean": {
-        "name": "上次自清洁"
+      "voc_level": {
+        "name": "VOC 水平"
       }
     },
     "switch": {

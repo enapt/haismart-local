@@ -186,6 +186,21 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "Formaldehid"
+      },
+      "human_sensing": {
+        "name": "Jelenlét szerinti légáram",
+        "state": {
+          "avoid": "Elkerülés",
+          "follow": "Követés",
+          "off": "Ki",
+          "on": "Be"
+        }
+      },
+      "indoor_pm25": {
+        "name": "Beltéri PM2.5"
+      },
       "indoor_temperature": {
         "name": "Beltéri hőmérséklet"
       },
@@ -198,8 +213,23 @@
           "network": "Alkalmazás vagy Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "Utolsó öntisztítás"
+      },
       "local_key": {
         "name": "Helyi kulcs"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "Kültéri PM2.5"
       },
       "outdoor_temperature": {
         "name": "Kültéri hőmérséklet"
@@ -207,17 +237,8 @@
       "uplus_id": {
         "name": "Modellazonosító"
       },
-      "human_sensing": {
-        "name": "Jelenlét szerinti légáram",
-        "state": {
-          "avoid": "Elkerülés",
-          "follow": "Követés",
-          "off": "Ki",
-          "on": "Be"
-        }
-      },
-      "last_self_clean": {
-        "name": "Utolsó öntisztítás"
+      "voc_level": {
+        "name": "VOC-szint"
       }
     },
     "switch": {

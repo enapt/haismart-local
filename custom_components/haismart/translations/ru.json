@@ -186,6 +186,21 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "Формальдегид"
+      },
+      "human_sensing": {
+        "name": "Поток воздуха по присутствию",
+        "state": {
+          "avoid": "Избегать",
+          "follow": "Следовать",
+          "off": "Выкл.",
+          "on": "Вкл."
+        }
+      },
+      "indoor_pm25": {
+        "name": "PM2.5 в помещении"
+      },
       "indoor_temperature": {
         "name": "Температура в помещении"
       },
@@ -198,8 +213,23 @@
           "network": "Приложение или Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "Последняя самоочистка"
+      },
       "local_key": {
         "name": "Локальный ключ"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "PM2.5 на улице"
       },
       "outdoor_temperature": {
         "name": "Температура на улице"
@@ -207,17 +237,8 @@
       "uplus_id": {
         "name": "Идентификатор модели"
       },
-      "human_sensing": {
-        "name": "Поток воздуха по присутствию",
-        "state": {
-          "avoid": "Избегать",
-          "follow": "Следовать",
-          "off": "Выкл.",
-          "on": "Вкл."
-        }
-      },
-      "last_self_clean": {
-        "name": "Последняя самоочистка"
+      "voc_level": {
+        "name": "Уровень ЛОС"
       }
     },
     "switch": {

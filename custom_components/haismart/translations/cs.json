@@ -186,6 +186,21 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "Formaldehyd"
+      },
+      "human_sensing": {
+        "name": "Proudění vzduchu dle přítomnosti",
+        "state": {
+          "avoid": "Vyhýbat se",
+          "follow": "Sledovat",
+          "off": "Vypnuto",
+          "on": "Zapnuto"
+        }
+      },
+      "indoor_pm25": {
+        "name": "PM2.5 v místnosti"
+      },
       "indoor_temperature": {
         "name": "Vnitřní teplota"
       },
@@ -198,8 +213,23 @@
           "network": "Aplikace nebo Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "Poslední samočištění"
+      },
       "local_key": {
         "name": "Lokální klíč"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "PM2.5 venku"
       },
       "outdoor_temperature": {
         "name": "Venkovní teplota"
@@ -207,17 +237,8 @@
       "uplus_id": {
         "name": "ID modelu"
       },
-      "human_sensing": {
-        "name": "Proudění vzduchu dle přítomnosti",
-        "state": {
-          "avoid": "Vyhýbat se",
-          "follow": "Sledovat",
-          "off": "Vypnuto",
-          "on": "Zapnuto"
-        }
-      },
-      "last_self_clean": {
-        "name": "Poslední samočištění"
+      "voc_level": {
+        "name": "Úroveň VOC"
       }
     },
     "switch": {

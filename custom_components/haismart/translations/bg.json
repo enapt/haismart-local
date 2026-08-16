@@ -186,6 +186,21 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "Формалдехид"
+      },
+      "human_sensing": {
+        "name": "Въздушен поток при присъствие",
+        "state": {
+          "avoid": "Избягване",
+          "follow": "Следване",
+          "off": "Изкл.",
+          "on": "Вкл."
+        }
+      },
+      "indoor_pm25": {
+        "name": "PM2.5 в помещението"
+      },
       "indoor_temperature": {
         "name": "Температура на закрито"
       },
@@ -198,8 +213,23 @@
           "network": "Приложение или Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "Последно самопочистване"
+      },
       "local_key": {
         "name": "Локален ключ"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "PM2.5 навън"
       },
       "outdoor_temperature": {
         "name": "Външна температура"
@@ -207,17 +237,8 @@
       "uplus_id": {
         "name": "Идентификатор на модела"
       },
-      "human_sensing": {
-        "name": "Въздушен поток при присъствие",
-        "state": {
-          "avoid": "Избягване",
-          "follow": "Следване",
-          "off": "Изкл.",
-          "on": "Вкл."
-        }
-      },
-      "last_self_clean": {
-        "name": "Последно самопочистване"
+      "voc_level": {
+        "name": "Ниво на ЛОС"
       }
     },
     "switch": {

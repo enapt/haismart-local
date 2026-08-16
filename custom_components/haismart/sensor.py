@@ -1,7 +1,8 @@
 """Sensors decoded from the AC's status reports.
 
-Only fields the read path actually decodes become entities (a basic cooling unit reports no
-humidity/air-quality hardware — those attributes read 0 in the report and are skipped).
+Only fields the read path actually decodes become entities. The air-quality/humidity suite exists
+only on units whose own model declares the probe (a basic cooling unit reports no such hardware —
+those attributes read a constant 0 in its report, and it gets no entity for them).
 
 Units that answer the extended-status query also expose the running power draw, compressor current
 and compressor frequency. `power` is published as a MEASUREMENT in watts.
@@ -26,6 +27,9 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import (
+    CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+    CONCENTRATION_PARTS_PER_MILLION,
+    PERCENTAGE,
     STATE_UNAVAILABLE,
     STATE_UNKNOWN,
     EntityCategory,
@@ -158,7 +162,99 @@ SENSORS: tuple[HaismartSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda s: s.get("discharge_temperature"),
     ),
+    # The outdoor unit's own probes, published in the same extended report. Like the two above they
+    # are absent (rather than 0 = -64 C) on units without the probe, so they stay unavailable there.
+    HaismartSensorDescription(
+        key="outdoor_coil_temperature",
+        translation_key="outdoor_coil_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda s: s.get("outdoor_coil_temperature"),
+    ),
+    HaismartSensorDescription(
+        key="outdoor_in_air_temperature",
+        translation_key="outdoor_in_air_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda s: s.get("outdoor_in_air_temperature"),
+    ),
+    HaismartSensorDescription(
+        key="outdoor_defrost_temperature",
+        translation_key="outdoor_defrost_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda s: s.get("outdoor_defrost_temperature"),
+    ),
 )
+
+
+def _reading(attribute: str) -> Callable[[dict[str, Any]], float | None]:
+    return lambda s: (s.get("readings") or {}).get(attribute)
+
+
+# The air-quality/humidity readings a unit's own model may declare (PM2.5 probes, CO2, formaldehyde,
+# VOC, the humidity probe), decoded from the status report at the published-map positions. Created
+# only for the attributes the device declares and does not mark invisible — most units carry none of
+# these, and an entity for a probe the hardware lacks would read a permanent unknown.
+#
+# CO2 and humidity carry no name on purpose: with `has_entity_name`, an unnamed entity takes its
+# name from its device class, which Home Assistant already translates. The rest are named because
+# their device-class name alone would be wrong (two PM2.5 sensors would collide) or does not exist
+# (formaldehyde, a unitless VOC index).
+AIR_QUALITY_SENSORS: dict[str, HaismartSensorDescription] = {
+    "indoorPM2p5Value": HaismartSensorDescription(
+        key="indoor_pm25",
+        translation_key="indoor_pm25",
+        device_class=SensorDeviceClass.PM25,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        value_fn=_reading("indoorPM2p5Value"),
+    ),
+    "outdoorPM2p5Value": HaismartSensorDescription(
+        key="outdoor_pm25",
+        translation_key="outdoor_pm25",
+        device_class=SensorDeviceClass.PM25,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        value_fn=_reading("outdoorPM2p5Value"),
+    ),
+    "co2Value": HaismartSensorDescription(
+        key="co2",
+        device_class=SensorDeviceClass.CO2,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=CONCENTRATION_PARTS_PER_MILLION,
+        value_fn=_reading("co2Value"),
+    ),
+    "ch2oValue": HaismartSensorDescription(
+        key="formaldehyde",
+        translation_key="formaldehyde",
+        # No formaldehyde device class exists; the unit is the published one (ug/m3).
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        value_fn=_reading("ch2oValue"),
+    ),
+    "vocValue": HaismartSensorDescription(
+        key="voc_level",
+        translation_key="voc_level",
+        # A unitless 0..1023 index — the models publish no unit for it, so neither VOC device class
+        # (both of which prescribe a concentration unit) may be claimed for it.
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=_reading("vocValue"),
+    ),
+    "indoorHumidity": HaismartSensorDescription(
+        key="humidity",
+        device_class=SensorDeviceClass.HUMIDITY,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=PERCENTAGE,
+        value_fn=_reading("indoorHumidity"),
+    ),
+}
 
 
 async def async_setup_entry(
@@ -190,6 +286,12 @@ async def async_setup_entry(
     promoted = set(coordinator.panel_select_fields())
     for name in sorted(coordinator.declared_enum_features - promoted):
         entities.append(HaismartFeatureEnumSensor(coordinator, name))
+    # Air-quality/humidity readings, for the probes this unit's own model declares (and its family
+    # can place). Not read-backed: zero means "absent" for these values, so existence comes from the
+    # declaration and the value handles its own absence.
+    for name in sorted(coordinator.declared_numeric_readings):
+        if desc := AIR_QUALITY_SENSORS.get(name):
+            entities.append(HaismartSensor(coordinator, desc))
     # "Last self-clean" — only where self-clean is a real control (same gate as the button).
     if coordinator.supports_field("selfCleaningStatus"):
         entities.append(HaismartLastSelfCleanSensor(coordinator))

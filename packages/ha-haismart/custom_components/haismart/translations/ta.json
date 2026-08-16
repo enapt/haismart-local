@@ -186,6 +186,21 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "பார்மால்டிகைடு"
+      },
+      "human_sensing": {
+        "name": "இருப்பு காற்றோட்டம்",
+        "state": {
+          "avoid": "தவிர்",
+          "follow": "பின்தொடர்",
+          "off": "ஆஃப்",
+          "on": "ஆன்"
+        }
+      },
+      "indoor_pm25": {
+        "name": "உட்புற PM2.5"
+      },
       "indoor_temperature": {
         "name": "உட்புற வெப்பநிலை"
       },
@@ -198,8 +213,23 @@
           "network": "ஆப் அல்லது Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "கடைசி சுய-சுத்தம்"
+      },
       "local_key": {
         "name": "லோக்கல் கீ"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "வெளிப்புற PM2.5"
       },
       "outdoor_temperature": {
         "name": "வெளிப்புற வெப்பநிலை"
@@ -207,17 +237,8 @@
       "uplus_id": {
         "name": "மாடல் ஐடி"
       },
-      "human_sensing": {
-        "name": "இருப்பு காற்றோட்டம்",
-        "state": {
-          "avoid": "தவிர்",
-          "follow": "பின்தொடர்",
-          "off": "ஆஃப்",
-          "on": "ஆன்"
-        }
-      },
-      "last_self_clean": {
-        "name": "கடைசி சுய-சுத்தம்"
+      "voc_level": {
+        "name": "VOC அளவு"
       }
     },
     "switch": {

@@ -34,10 +34,13 @@ from .family_write import (
 from .features import (
     OPTIONAL_BOOL_FEATURES,
     OPTIONAL_ENUM_FEATURES,
+    OPTIONAL_NUMERIC_READINGS,
     declared_bool_features,
     declared_enum_features,
+    declared_numeric_readings,
     read_bool_features,
     read_enum_features,
+    read_numeric_readings,
 )
 from .model_rules import (
     family_rules,
@@ -193,6 +196,9 @@ __all__ = [
     "OPTIONAL_ENUM_FEATURES",
     "declared_enum_features",
     "read_enum_features",
+    "OPTIONAL_NUMERIC_READINGS",
+    "declared_numeric_readings",
+    "read_numeric_readings",
     "probe_layout",
     "StatedState",
     "VANE_V_MODEL_TO_EPP",

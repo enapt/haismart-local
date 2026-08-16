@@ -186,6 +186,21 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "फॉर्मेल्डिहाइड"
+      },
+      "human_sensing": {
+        "name": "उपस्थिति वायु प्रवाह",
+        "state": {
+          "avoid": "बचें",
+          "follow": "अनुसरण",
+          "off": "बंद",
+          "on": "चालू"
+        }
+      },
+      "indoor_pm25": {
+        "name": "भीतरी PM2.5"
+      },
       "indoor_temperature": {
         "name": "अंदरूनी तापमान"
       },
@@ -198,8 +213,23 @@
           "network": "ऐप या Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "पिछली सेल्फ-क्लीन"
+      },
       "local_key": {
         "name": "लोकल की"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "बाहरी PM2.5"
       },
       "outdoor_temperature": {
         "name": "बाहरी तापमान"
@@ -207,17 +237,8 @@
       "uplus_id": {
         "name": "मॉडल आईडी"
       },
-      "human_sensing": {
-        "name": "उपस्थिति वायु प्रवाह",
-        "state": {
-          "avoid": "बचें",
-          "follow": "अनुसरण",
-          "off": "बंद",
-          "on": "चालू"
-        }
-      },
-      "last_self_clean": {
-        "name": "पिछली सेल्फ-क्लीन"
+      "voc_level": {
+        "name": "VOC स्तर"
       }
     },
     "switch": {

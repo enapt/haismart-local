@@ -186,6 +186,9 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "Formaldehyde"
+      },
       "human_sensing": {
         "name": "Presence airflow",
         "state": {
@@ -194,6 +197,9 @@
           "follow": "Follow",
           "on": "On"
         }
+      },
+      "indoor_pm25": {
+        "name": "Indoor PM2.5"
       },
       "indoor_temperature": {
         "name": "Indoor temperature"
@@ -207,8 +213,23 @@
           "network": "App or Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "Last self-clean"
+      },
       "local_key": {
         "name": "Local key"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "Outdoor PM2.5"
       },
       "outdoor_temperature": {
         "name": "Outdoor temperature"
@@ -216,8 +237,8 @@
       "uplus_id": {
         "name": "Model ID"
       },
-      "last_self_clean": {
-        "name": "Last self-clean"
+      "voc_level": {
+        "name": "VOC level"
       }
     },
     "switch": {

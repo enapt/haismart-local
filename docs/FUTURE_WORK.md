@@ -241,9 +241,13 @@ both — so the rest were being withheld for want of an answer already given. Th
 code the map translates is translated, and one it does not is already the published value. This is
 also what finally made the indoor-humidity reading in item 10 appear.
 
-They stop at diagnostics on purpose. A wrong value there costs nothing; the same value wired into
-someone's dashboard is a fault report. What would move them further is the ordinary evidence: a
-capture of a unit with one of them switched on.
+Most of them stop at diagnostics on purpose. A wrong value there costs nothing; the same value wired
+into someone's dashboard is a fault report. What would move one further is the ordinary evidence: a
+capture of a unit with it switched on. **The numeric environment readings are the exception as of
+item 37** — PM2.5, CO₂, formaldehyde, VOC and indoor humidity are surfaced as sensors on units that
+declare the probe (and do not mark it invisible), because for those a zero is "no probe" rather than
+a state, the published models bound every one of them, and a value outside the bound is dropped as a
+sentinel rather than shown.
 
 **compact-12** cannot have them at all, and that is correct rather than missing — it is not this
 lineage, and its own published description is what item 31 covers. **extended-46** was once the
@@ -306,21 +310,22 @@ four-state capture set remains what settles it.
 caps above what the unit was drawing, or it had not finished ramping. Worth one more reading before
 anyone describes what L1 *does*; it does not affect where the field is.
 
-## 10. Indoor humidity, on the units that have the probe
+## 10. ✅ SHIPPED — indoor humidity, on the units that have the probe
 
 The published map gives the position — the low byte of the word carrying indoor temperature — and it
-has been read as zero on every unit here, which is why no sensor is offered.
+was long read as zero on every unit here, which is why no sensor was offered.
 
-**That reason is no longer quite true.** A real 125-byte capture reads **55** there, a thoroughly
-plausible humidity, and the map that places it is the same one verified field for field against that
-very report. So the honest statement is not "every unit reads zero" but "every unit *here* reads
-zero, and one unit elsewhere does not".
+**That reason stopped being true, and the sensor now ships** (with the air-quality suite, item 37).
+A real 125-byte capture reads **55** there, a thoroughly plausible humidity, and the map that places
+it is the same one verified field for field against that very report. The gates that make offering
+it safe are the ones the optional features already use, plus two of its own: the unit's model must
+declare the attribute and not mark it invisible (a probe the hardware lacks gets no entity), a zero
+reads as *absent* rather than 0 % (no unit's statistics gain a fabricated bone-dry reading), and
+anything above 100 is dropped as a sentinel.
 
-What is missing is the same thing item 6 is missing for the same capture: nothing has compared it
-against what that unit reports through any other channel. A diagnostics download from a unit with a
-humidity probe, taken with the room's actual humidity noted, settles it. The reading already appears
-in `model_declared_fields` on any unit that declares the attribute, so the evidence may well arrive
-on its own.
+What would still be welcome is the cross-check this item originally asked for: a diagnostics
+download from a unit with the probe, taken with the room's actual humidity noted. If a reporter's
+reading disagrees with their hygrometer, the sensor comes back out rather than being defended.
 
 
 ## 11. Reads for the central-air-conditioner family — one report unlocks 175 products
@@ -540,6 +545,46 @@ offered; that exclusion is the panel's, not a live write's.
 
 ⚠️ Rule 8 unchanged: these ship the way the app ships — documentary — and are verified on hardware
 the way any control change is (deploy, change-and-hold), never by a per-attribute capture in advance.
+
+## 37. ✅ SHIPPED — the air-quality suite, and the one-word correction it forced
+
+**The environment readings a unit's own model declares are now sensors**: indoor and outdoor PM2.5,
+CO₂, formaldehyde, a VOC index, and indoor humidity (item 10). They sit in the ordinary status
+report — the published map has carried their positions all along (PM2.5 at map words 29–30, CH₂O/VOC/
+CO₂ at 31–33, the level codes at 26) — so no new query, no new frame, and no per-family work beyond
+the placement rule each family already has. The gates are the optional-feature ones plus two of
+their own: the unit must **declare** the attribute and not mark it `invisible` (a probe the hardware
+lacks gets no entity at all); a **zero is absent**, not a reading (a unit without the probe leaves
+the register at 0 for its whole service life, and none of these quantities rests at exactly zero in
+habitable air — CO₂ never reads below ~400 ppm anywhere near a building); and a value **above the
+published maximum** (4095 µg/m³ for PM2.5, 10 000 for CH₂O and CO₂, 1023 for the VOC index, 100 %
+for humidity — every published model agrees on each) is a sentinel and is dropped. PM2.5 and CO₂
+carry their native Home Assistant device classes; the two level codes (`pm2p5Level`, `airQuality`)
+stay in diagnostics, because no published model states what their four values mean and a guessed
+label is how the fresh-air fan speed went wrong (item 36).
+
+★ **The correction: the 127-byte layout reads canonical words 25+ one word later, and the declared-
+attribute reads were not doing so.** The 127-byte member of the classic family carries one word the
+published map does not describe (`targetRentTime`, its report word 6), so everything from the map's
+word 25 up sits one further along than the flat displacement says. The confirmed layout table always
+knew this — its indoor-temperature offset for the 127-byte report is two bytes past the 125-byte
+one — but the declared-attribute placement used the flat rule for both lengths, which put every
+declared reading above the flag word (humidity, this whole suite) **one word early on 127-byte
+reports: plausible garbage, not zeros.** Nothing user-facing ever showed those values (they reached
+diagnostics only, and the reference units carry none of these probes), which is why it survived.
+The placement is now per-length where a family's members differ by an inserted word, and the test
+pins it to the layout table's own hardware-confirmed offsets rather than to constants: the map's
+humidity word must land on the byte the layout table says holds indoor temperature, per length.
+
+The **outdoor unit's three probe temperatures** (outdoor coil, air intake, defrost sensor) also
+became sensors — they were already decoded from the engineering report, reaching diagnostics only.
+Like the coil and discharge readings they are diagnostic-category, absent rather than −64 °C on
+units without the probe, and they join the set that is removed when an appliance refuses the
+engineering query in every published form.
+
+What would confirm the suite end to end is one diagnostics download from a unit that actually has
+the probes, read beside the vendor app's own air-quality page. If a reporter's readings disagree,
+the sensors come back out rather than being defended.
 
 ## 32. ✅ SHIPPED — a control must not be sent to a bit this family uses for something else
 

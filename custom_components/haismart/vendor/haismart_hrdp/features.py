@@ -46,6 +46,27 @@ OPTIONAL_ENUM_FEATURES: Mapping[str, tuple[str, Mapping[int, str]]] = {
 }
 
 
+# Optional NUMERIC readings: attribute -> (slug, largest valid value). The air-quality suite a unit
+# may carry (PM2.5 probes, CO2/formaldehyde/VOC sensing) plus the humidity probe, read from the
+# status report at the published-map positions, gated exactly like the booleans: the device declares
+# the attribute and does not mark it invisible.
+#
+# The bound is the maximum the published models themselves state for the attribute (every AC profile
+# agrees on each), and a raw value above it is a sentinel or a misread, never a measurement.
+# **Zero is absent, not a reading**: a unit without the probe leaves the register at 0 for its whole
+# service life (every capture of every family so far), and a permanent 0 ug/m3 in someone's
+# statistics is a fabricated number. A real probe in habitable air does not rest at exactly 0 for
+# any of these quantities -- CO2 in particular never reads below ~400 ppm anywhere near a building.
+OPTIONAL_NUMERIC_READINGS: Mapping[str, tuple[str, int]] = {
+    "indoorPM2p5Value": ("indoor_pm25", 4095),
+    "outdoorPM2p5Value": ("outdoor_pm25", 4095),
+    "ch2oValue": ("formaldehyde", 10_000),
+    "vocValue": ("voc_level", 1023),      # a unitless index (the models publish no unit for it)
+    "co2Value": ("co2", 10_000),
+    "indoorHumidity": ("humidity", 100),
+}
+
+
 def _attribute_names(model) -> set[str]:
     """The attribute names a device actually has: the ones it declares, minus the ones its model
     marks ``invisible``.
@@ -80,6 +101,7 @@ def _attribute_names(model) -> set[str]:
 # of the boolean set; the rest (mould-proof, drying, UV, PV, ...) wait on a position.
 _PLACEABLE_BOOL = frozenset(n for n in OPTIONAL_BOOL_FEATURES if n in CANONICAL)
 _PLACEABLE_ENUM = frozenset(n for n in OPTIONAL_ENUM_FEATURES if n in CANONICAL)
+_PLACEABLE_NUMERIC = frozenset(n for n in OPTIONAL_NUMERIC_READINGS if n in CANONICAL)
 
 
 def _known_feature_set(model) -> bool:
@@ -103,6 +125,32 @@ def declared_enum_features(model) -> frozenset[str]:
     if not _known_feature_set(model):
         return frozenset()
     return _PLACEABLE_ENUM & _attribute_names(model)
+
+
+def declared_numeric_readings(model) -> frozenset[str]:
+    """The optional numeric readings a device declares AND the map can place -- same gate."""
+    if not _known_feature_set(model):
+        return frozenset()
+    return _PLACEABLE_NUMERIC & _attribute_names(model)
+
+
+def read_numeric_readings(wire_model, declared, blob: bytes) -> dict[str, int]:
+    """Read the declared numeric air-quality/humidity values out of ``blob``.
+
+    Same map-and-position basis as :func:`read_bool_features`. A value of zero is the register of a
+    probe the unit does not have (absent, not a measurement), and one above the published maximum is
+    a sentinel; both are dropped rather than reported.
+    """
+    names = declared_numeric_readings(declared)
+    if not names:
+        return {}
+    out: dict[str, int] = {}
+    for name, field in wire_model.model_fields(sorted(names), len(blob)).items():
+        _slug, bound = OPTIONAL_NUMERIC_READINGS[name]
+        value = field.read(blob)
+        if isinstance(value, int) and not isinstance(value, bool) and 0 < value <= bound:
+            out[name] = value
+    return out
 
 
 def read_enum_features(wire_model, declared, blob: bytes) -> dict[str, str]:

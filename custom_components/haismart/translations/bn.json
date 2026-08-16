@@ -186,6 +186,21 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "ফরমালডিহাইড"
+      },
+      "human_sensing": {
+        "name": "উপস্থিতি বায়ুপ্রবাহ",
+        "state": {
+          "avoid": "এড়ানো",
+          "follow": "অনুসরণ",
+          "off": "বন্ধ",
+          "on": "চালু"
+        }
+      },
+      "indoor_pm25": {
+        "name": "অভ্যন্তরীণ PM2.5"
+      },
       "indoor_temperature": {
         "name": "অভ্যন্তরীণ তাপমাত্রা"
       },
@@ -198,8 +213,23 @@
           "network": "অ্যাপ বা Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "সর্বশেষ সেলফ-ক্লিন"
+      },
       "local_key": {
         "name": "লোকাল কী"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "বাইরের PM2.5"
       },
       "outdoor_temperature": {
         "name": "বাইরের তাপমাত্রা"
@@ -207,17 +237,8 @@
       "uplus_id": {
         "name": "মডেল আইডি"
       },
-      "human_sensing": {
-        "name": "উপস্থিতি বায়ুপ্রবাহ",
-        "state": {
-          "avoid": "এড়ানো",
-          "follow": "অনুসরণ",
-          "off": "বন্ধ",
-          "on": "চালু"
-        }
-      },
-      "last_self_clean": {
-        "name": "সর্বশেষ সেলফ-ক্লিন"
+      "voc_level": {
+        "name": "VOC মাত্রা"
       }
     },
     "switch": {

@@ -73,6 +73,7 @@ from haismart_hrdp import (
     read_bool_features,
     read_enum_features,
     read_grsetdac_field,
+    read_numeric_readings,
     related_model_named,
     reply_refused,
     rules_for_product,
@@ -81,6 +82,9 @@ from haismart_hrdp import (
     udiscovery,
     validate_write,
     with_rules,
+)
+from haismart_hrdp import (
+    declared_numeric_readings as numeric_reading_names,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -792,6 +796,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 state.update(alarms)
                 state["features"] = self._feature_states(blob)
                 state["features_enum"] = self._feature_enum_states(blob)
+                state["readings"] = self._numeric_reading_states(blob)
                 return state
 
         # Connected fine but nothing decoded — either the AC pushed no full report this
@@ -1318,6 +1323,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 state.update(self._held_alarms({}))
                 state["features"] = self._feature_states(blob)
                 state["features_enum"] = self._feature_enum_states(blob)
+                state["readings"] = self._numeric_reading_states(blob)
                 return state
         return None
 
@@ -1673,6 +1679,14 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return {}
         return read_enum_features(wm, self.digital_model, blob)
 
+    def _numeric_reading_states(self, blob: bytes) -> dict[str, int]:
+        """The declared air-quality/humidity values read out of this report, or ``{}``.
+        Same basis and gate as :meth:`_feature_states`; zero and out-of-range raws are absent."""
+        wm = self._feature_wire_model(len(blob))
+        if wm is None or not self.digital_model:
+            return {}
+        return read_numeric_readings(wm, self.digital_model, blob)
+
     @property
     def needs_invisible_topup(self) -> bool:
         """Whether the stored model predates carrying its ``invisible_attributes`` and a refresh
@@ -1705,6 +1719,25 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return frozenset()
         wm = self._feature_wire_model(len(blob))
         return frozenset(read_enum_features(wm, self.digital_model, blob)) if wm else frozenset()
+
+    @property
+    def declared_numeric_readings(self) -> frozenset[str]:
+        """The air-quality/humidity readings to create sensors for: declared, not invisible, and
+        placeable by the family map.
+
+        Deliberately NOT read-backed like the feature gates above: zero means "absent" for these
+        values, and clean air (or a paused probe) reads zero legitimately -- gating creation on a
+        nonzero first poll would make the entity's existence depend on the weather. Declaration is
+        the evidence the probe exists; the value's own absence handling covers the rest.
+        """
+        blob = self.last_raw_status
+        if not blob or not self.digital_model:
+            return frozenset()
+        wm = self._feature_wire_model(len(blob))
+        if wm is None:
+            return frozenset()
+        names = numeric_reading_names(self.digital_model)
+        return frozenset(wm.model_fields(sorted(names), len(blob)))
 
     @property
     def supports_eco(self) -> bool:

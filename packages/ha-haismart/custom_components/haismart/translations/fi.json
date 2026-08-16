@@ -186,6 +186,21 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "Formaldehydi"
+      },
+      "human_sensing": {
+        "name": "Läsnäolon ilmavirta",
+        "state": {
+          "avoid": "Väistä",
+          "follow": "Seuraa",
+          "off": "Pois",
+          "on": "Päällä"
+        }
+      },
+      "indoor_pm25": {
+        "name": "PM2.5 sisällä"
+      },
       "indoor_temperature": {
         "name": "Sisälämpötila"
       },
@@ -198,8 +213,23 @@
           "network": "Sovellus tai Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "Viimeisin itsepuhdistus"
+      },
       "local_key": {
         "name": "Paikallinen avain"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "PM2.5 ulkona"
       },
       "outdoor_temperature": {
         "name": "Ulkolämpötila"
@@ -207,17 +237,8 @@
       "uplus_id": {
         "name": "Mallitunnus"
       },
-      "human_sensing": {
-        "name": "Läsnäolon ilmavirta",
-        "state": {
-          "avoid": "Väistä",
-          "follow": "Seuraa",
-          "off": "Pois",
-          "on": "Päällä"
-        }
-      },
-      "last_self_clean": {
-        "name": "Viimeisin itsepuhdistus"
+      "voc_level": {
+        "name": "VOC-taso"
       }
     },
     "switch": {

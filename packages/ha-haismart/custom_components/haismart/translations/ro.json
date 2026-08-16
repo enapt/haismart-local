@@ -186,6 +186,21 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "Formaldehidă"
+      },
+      "human_sensing": {
+        "name": "Flux de aer în funcție de prezență",
+        "state": {
+          "avoid": "Evită",
+          "follow": "Urmărește",
+          "off": "Oprit",
+          "on": "Pornit"
+        }
+      },
+      "indoor_pm25": {
+        "name": "PM2.5 interior"
+      },
       "indoor_temperature": {
         "name": "Temperatură interioară"
       },
@@ -198,8 +213,23 @@
           "network": "Aplicație sau Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "Ultima autocurățare"
+      },
       "local_key": {
         "name": "Cheie locală"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "PM2.5 exterior"
       },
       "outdoor_temperature": {
         "name": "Temperatură exterioară"
@@ -207,17 +237,8 @@
       "uplus_id": {
         "name": "ID model"
       },
-      "human_sensing": {
-        "name": "Flux de aer în funcție de prezență",
-        "state": {
-          "avoid": "Evită",
-          "follow": "Urmărește",
-          "off": "Oprit",
-          "on": "Pornit"
-        }
-      },
-      "last_self_clean": {
-        "name": "Ultima autocurățare"
+      "voc_level": {
+        "name": "Nivel COV"
       }
     },
     "switch": {

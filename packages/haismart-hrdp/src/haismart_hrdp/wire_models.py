@@ -288,6 +288,15 @@ class WireModel:
     # said "unplaceable" when the truth was "placeable, in two pieces" -- so nothing read the
     # attributes this family's devices declare, and its optional-feature entities never appeared.
     canonical_insert: tuple[int, int] | None = None
+    # Like ``canonical_insert``, but applying only to reports of a given LENGTH, for a family whose
+    # members differ by one inserted word. The classic family is the case: its 125-byte members are
+    # the flat map at -19, while the 127-byte rental SKU carries one extra word (``targetRentTime``,
+    # its report word 6) that the published map does not describe, pushing everything from canonical
+    # word 25 up along by one. The report length is the evidence for the insert -- the 127-byte
+    # layout's hardware-confirmed sensor offsets (indoor temperature at byte 104, outdoor at 106,
+    # the energy counter's low word at 124) are each exactly one word past where the flat map puts
+    # them, and each reproduces under the insert.
+    length_inserts: Mapping[int, tuple[int, int]] = field(default_factory=dict)
     # Controls written ONE PARAMETER AT A TIME rather than through the group-set, for families that
     # publish per-attribute write commands (compact-12 does: `4d04`/`4d05` electric-heat, …). Maps an
     # attribute name to ``SingleParam`` — its off/on EPP command bytes and the WireField to read its
@@ -320,8 +329,18 @@ class WireModel:
         """
         if self.canonical_displacement is None:
             return {}
+        place = self.canonical_word
+        if insert := self.length_inserts.get(report_length):
+            pivot, count = insert
+
+            def place(word: int, _base=self.canonical_word) -> int | None:
+                placed = _base(word)
+                if placed is None:
+                    return None
+                return placed + count if word >= pivot else placed
+
         return declared_fields(
-            self.canonical_word, declared,
+            place, declared,
             word_limit=(report_length - _ATTR_BASE) // 2,
         )
 
@@ -1185,6 +1204,14 @@ _CLASSIC_PROBE = WireModel(
         "heat_capable", "error_code", "last_changed_by", "operation_mode", "wind_speed",
         "swing_vertical",
     ]),
+    # The 127-byte member (the rental SKU) carries one word the map does not describe --
+    # `targetRentTime`, its report word 6 -- so canonical words 25 and up sit one further along than
+    # the flat -19 says. Confirmed three ways against that layout's hardware-verified offsets:
+    # indoorTemperature w25 lands at byte 104 (= STATUS_LAYOUTS[127].indoor_temp), outdoorTemperature
+    # w26 at byte 106, and the 32-bit energy counter's low word (w35) at byte 124 -- each of which
+    # the flat map misses by exactly one word. Without this, every declared attribute above the flag
+    # word (humidity, the air-quality suite) read one word early on 127-byte reports.
+    length_inserts={127: (25, 1)},
 )
 
 # The probe list. The classic and extended families are one map at two displacements, so the search

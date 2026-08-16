@@ -186,6 +186,21 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "فارملڈیہائیڈ"
+      },
+      "human_sensing": {
+        "name": "موجودگی کے مطابق ہوا",
+        "state": {
+          "avoid": "گریز",
+          "follow": "پیروی",
+          "off": "بند",
+          "on": "آن"
+        }
+      },
+      "indoor_pm25": {
+        "name": "اندرونی PM2.5"
+      },
       "indoor_temperature": {
         "name": "اندرونی درجہ حرارت"
       },
@@ -198,8 +213,23 @@
           "network": "ایپ یا Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "آخری سیلف کلین"
+      },
       "local_key": {
         "name": "لوکل کی"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "بیرونی PM2.5"
       },
       "outdoor_temperature": {
         "name": "بیرونی درجہ حرارت"
@@ -207,17 +237,8 @@
       "uplus_id": {
         "name": "ماڈل آئی ڈی"
       },
-      "human_sensing": {
-        "name": "موجودگی کے مطابق ہوا",
-        "state": {
-          "avoid": "گریز",
-          "follow": "پیروی",
-          "off": "بند",
-          "on": "آن"
-        }
-      },
-      "last_self_clean": {
-        "name": "آخری سیلف کلین"
+      "voc_level": {
+        "name": "VOC کی سطح"
       }
     },
     "switch": {

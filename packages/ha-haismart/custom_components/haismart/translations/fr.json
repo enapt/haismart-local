@@ -186,6 +186,21 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "Formaldéhyde"
+      },
+      "human_sensing": {
+        "name": "Flux d'air selon présence",
+        "state": {
+          "avoid": "Éviter",
+          "follow": "Suivre",
+          "off": "Désactivé",
+          "on": "Activé"
+        }
+      },
+      "indoor_pm25": {
+        "name": "PM2.5 intérieur"
+      },
       "indoor_temperature": {
         "name": "Température intérieure"
       },
@@ -198,8 +213,23 @@
           "network": "Application ou Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "Dernier auto-nettoyage"
+      },
       "local_key": {
         "name": "Clé locale"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "PM2.5 extérieur"
       },
       "outdoor_temperature": {
         "name": "Température extérieure"
@@ -207,17 +237,8 @@
       "uplus_id": {
         "name": "Identifiant du modèle"
       },
-      "human_sensing": {
-        "name": "Flux d'air selon présence",
-        "state": {
-          "avoid": "Éviter",
-          "follow": "Suivre",
-          "off": "Désactivé",
-          "on": "Activé"
-        }
-      },
-      "last_self_clean": {
-        "name": "Dernier auto-nettoyage"
+      "voc_level": {
+        "name": "Niveau de COV"
       }
     },
     "switch": {

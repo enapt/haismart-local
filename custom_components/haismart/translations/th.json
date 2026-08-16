@@ -186,6 +186,21 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "ฟอร์มาลดีไฮด์"
+      },
+      "human_sensing": {
+        "name": "ลมตามการมีอยู่",
+        "state": {
+          "avoid": "หลีกเลี่ยง",
+          "follow": "ติดตาม",
+          "off": "ปิด",
+          "on": "เปิด"
+        }
+      },
+      "indoor_pm25": {
+        "name": "PM2.5 ภายใน"
+      },
       "indoor_temperature": {
         "name": "อุณหภูมิภายในห้อง"
       },
@@ -198,8 +213,23 @@
           "network": "แอปหรือ Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "การทำความสะอาดตัวเองครั้งล่าสุด"
+      },
       "local_key": {
         "name": "คีย์ภายใน"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "PM2.5 ภายนอก"
       },
       "outdoor_temperature": {
         "name": "อุณหภูมิภายนอก"
@@ -207,17 +237,8 @@
       "uplus_id": {
         "name": "รหัสรุ่น"
       },
-      "human_sensing": {
-        "name": "ลมตามการมีอยู่",
-        "state": {
-          "avoid": "หลีกเลี่ยง",
-          "follow": "ติดตาม",
-          "off": "ปิด",
-          "on": "เปิด"
-        }
-      },
-      "last_self_clean": {
-        "name": "การทำความสะอาดตัวเองครั้งล่าสุด"
+      "voc_level": {
+        "name": "ระดับ VOC"
       }
     },
     "switch": {

@@ -2061,6 +2061,82 @@ def test_declared_enum_features_reads_labelled_state():
     assert read_enum_features(EXTENDED46, model, b"\x00" * 209) == {"humanSensingStatus": "off"}
 
 
+def test_the_127_byte_layout_shifts_canonical_words_25_and_up_by_one():
+    """The rental SKU's 127-byte report carries one word the published map does not describe
+    (`targetRentTime`, its report word 6), so canonical words 25+ sit one further along than the
+    flat -19 -- exactly the difference between the two confirmed STATUS_LAYOUTS. Reading the map
+    flat on a 127-byte report put every attribute above the flag word (humidity, the whole
+    air-quality suite) one word early: not zeros, plausible garbage.
+
+    Pinned against the hardware-confirmed layout table rather than magic numbers: canonical
+    `indoorHumidity` shares its word with `indoorTemperature`, whose byte offset per report length
+    is STATUS_LAYOUTS' own (capture-verified) `indoor_temp`.
+    """
+    from haismart_hrdp.canonical_map import CANONICAL
+    from haismart_hrdp.wire_models import _CLASSIC_PROBE
+
+    names = ["indoorHumidity", "indoorPM2p5Value", "co2Value", "freshAirStatus"]
+    for length in (125, 127):
+        placed = _CLASSIC_PROBE.model_fields(names, length)
+        # indoorHumidity is the low byte of the word whose high byte is the indoor temperature,
+        # and THAT byte is confirmed per length by the layout table itself.
+        expected_word = (uss.STATUS_LAYOUTS[length].indoor_temp - 92) // 2 + 1
+        assert placed["indoorHumidity"].word == expected_word, length
+        # the air-quality block keeps its distance from the humidity word in both layouts
+        assert placed["indoorPM2p5Value"].word == expected_word + (
+            CANONICAL["indoorPM2p5Value"].word - CANONICAL["indoorHumidity"].word)
+        assert placed["co2Value"].word == expected_word + (
+            CANONICAL["co2Value"].word - CANONICAL["indoorHumidity"].word)
+        # below the pivot nothing moves: the flag word is w5 on both members
+        assert placed["freshAirStatus"].word == 5, length
+    # and the two layouts differ by exactly the one inserted word
+    assert (_CLASSIC_PROBE.model_fields(names, 127)["co2Value"].word
+            == _CLASSIC_PROBE.model_fields(names, 125)["co2Value"].word + 1)
+
+
+def test_declared_numeric_readings_read_the_air_quality_suite():
+    """The PM2.5/CO2/formaldehyde/VOC/humidity values a unit's own model declares, read from the
+    status report at the published positions. Zero is the register of a probe the unit does not
+    have and a value above the published maximum is a sentinel -- both absent, never a reading."""
+    from haismart_hrdp import declared_numeric_readings, read_numeric_readings
+    from haismart_hrdp.wire_models import _CLASSIC_PROBE, COMPACT12
+
+    model = {"invisible_attributes": [], "attributes": [
+        {"name": "co2Value"}, {"name": "indoorPM2p5Value"}, {"name": "indoorHumidity"},
+        {"name": "vocValue"},
+        {"name": "onOffStatus"},           # not a numeric reading -- ignored
+    ]}
+    assert declared_numeric_readings(model) == frozenset(
+        {"co2Value", "indoorPM2p5Value", "indoorHumidity", "vocValue"})
+    # unknown feature set -> nothing; invisible -> the unit does not have the probe -> dropped
+    assert declared_numeric_readings({"attributes": [{"name": "co2Value"}]}) == frozenset()
+    assert declared_numeric_readings(
+        dict(model, invisible_attributes=["co2Value"]))== frozenset(
+        {"indoorPM2p5Value", "indoorHumidity", "vocValue"})
+
+    # a 127-byte report with CO2 650 ppm, indoor PM2.5 23 ug/m3, humidity 55 %, VOC 0
+    blob = bytearray(127)
+    blob[2:4] = b"\x27\x15"
+    placed = _CLASSIC_PROBE.model_fields(sorted(declared_numeric_readings(model)), 127)
+    def put(name, value):
+        f = placed[name]
+        end = 92 + f.word * 2
+        span = (f.bit + f.length + 15) // 16
+        blob[end - span * 2:end] = value.to_bytes(span * 2, "big")
+    put("co2Value", 650)
+    put("indoorPM2p5Value", 23)
+    put("indoorHumidity", 55)
+    got = read_numeric_readings(_CLASSIC_PROBE, model, bytes(blob))
+    # VOC reads 0 -> absent, not a reading of 0
+    assert got == {"co2Value": 650, "indoorPM2p5Value": 23, "indoorHumidity": 55}
+    # a raw value above the published maximum is a sentinel, not a measurement
+    put("indoorPM2p5Value", 5000)          # published max is 4095
+    got = read_numeric_readings(_CLASSIC_PROBE, model, bytes(blob))
+    assert "indoorPM2p5Value" not in got and got["co2Value"] == 650
+    # a family with no confirmed placement reads nothing
+    assert read_numeric_readings(COMPACT12, model, b"\x00" * 117) == {}
+
+
 def test_invisible_attributes_and_merge_records_them():
     """The published constraintfile marks attributes a generic model lists but this unit lacks
     `invisible`; merge_rules records that set (always, even empty) so the feature entities can tell a

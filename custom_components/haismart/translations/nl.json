@@ -186,6 +186,21 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "Formaldehyde"
+      },
+      "human_sensing": {
+        "name": "Luchtstroom bij aanwezigheid",
+        "state": {
+          "avoid": "Vermijden",
+          "follow": "Volgen",
+          "off": "Uit",
+          "on": "Aan"
+        }
+      },
+      "indoor_pm25": {
+        "name": "PM2.5 binnen"
+      },
       "indoor_temperature": {
         "name": "Binnentemperatuur"
       },
@@ -198,8 +213,23 @@
           "network": "App of Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "Laatste zelfreiniging"
+      },
       "local_key": {
         "name": "Lokale sleutel"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "PM2.5 buiten"
       },
       "outdoor_temperature": {
         "name": "Buitentemperatuur"
@@ -207,17 +237,8 @@
       "uplus_id": {
         "name": "Model-ID"
       },
-      "human_sensing": {
-        "name": "Luchtstroom bij aanwezigheid",
-        "state": {
-          "avoid": "Vermijden",
-          "follow": "Volgen",
-          "off": "Uit",
-          "on": "Aan"
-        }
-      },
-      "last_self_clean": {
-        "name": "Laatste zelfreiniging"
+      "voc_level": {
+        "name": "VOC-niveau"
       }
     },
     "switch": {

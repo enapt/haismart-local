@@ -186,6 +186,21 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "Formaldehyd"
+      },
+      "human_sensing": {
+        "name": "Luftstrøm ved tilstedeværelse",
+        "state": {
+          "avoid": "Unngå",
+          "follow": "Følg",
+          "off": "Av",
+          "on": "På"
+        }
+      },
+      "indoor_pm25": {
+        "name": "PM2.5 innendørs"
+      },
       "indoor_temperature": {
         "name": "Innetemperatur"
       },
@@ -198,8 +213,23 @@
           "network": "App eller Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "Siste selvrensing"
+      },
       "local_key": {
         "name": "Lokal nøkkel"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "PM2.5 utendørs"
       },
       "outdoor_temperature": {
         "name": "Utetemperatur"
@@ -207,17 +237,8 @@
       "uplus_id": {
         "name": "Modell-ID"
       },
-      "human_sensing": {
-        "name": "Luftstrøm ved tilstedeværelse",
-        "state": {
-          "avoid": "Unngå",
-          "follow": "Følg",
-          "off": "Av",
-          "on": "På"
-        }
-      },
-      "last_self_clean": {
-        "name": "Siste selvrensing"
+      "voc_level": {
+        "name": "VOC-nivå"
       }
     },
     "switch": {

@@ -441,9 +441,19 @@ worse than no value:
   published 1 — is one of the two, behaving exactly as its entry describes.
 
 The readings land in a diagnostics download (`model_declared_fields`), beside the device's own
-published values (`digital_model.reported_values`) so the two can be compared directly. They are not
+published values (`digital_model.reported_values`) so the two can be compared directly. Most are not
 entities: their placement rests on the published map rather than on a capture apiece, and a wrong
 value in a diagnostics file costs nothing where the same value on a dashboard is a fault report.
+The exception is the numeric environment suite — PM2.5, CO₂, formaldehyde, VOC, indoor humidity —
+which does become sensors on units that declare the probe, because those values carry their own
+guards: zero is "no probe" rather than a state, and every one of them is bounded by the published
+models, with anything outside the bound dropped as a sentinel (`FUTURE_WORK` item 37).
+
+One placement detail matters here and is easy to get wrong: the reference hardware's 127-byte
+report keeps one extra word ahead of its sensor block, so the map's words 25 and up sit one word
+later there than on the 125-byte member of the same family. The layout table always encoded this
+(its per-length sensor offsets differ by one word); the declared-attribute placement now follows it
+per report length as well, pinned by a test to the layout table's own confirmed offsets.
 
 ## Why the registry still exists
 

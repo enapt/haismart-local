@@ -186,6 +186,21 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "الفورمالديهايد"
+      },
+      "human_sensing": {
+        "name": "تدفق هواء الحضور",
+        "state": {
+          "avoid": "تجنّب",
+          "follow": "تتبّع",
+          "off": "إيقاف",
+          "on": "تشغيل"
+        }
+      },
+      "indoor_pm25": {
+        "name": "PM2.5 الداخلي"
+      },
       "indoor_temperature": {
         "name": "درجة الحرارة الداخلية"
       },
@@ -198,8 +213,23 @@
           "network": "التطبيق أو Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "آخر تنظيف ذاتي"
+      },
       "local_key": {
         "name": "المفتاح المحلي"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "PM2.5 الخارجي"
       },
       "outdoor_temperature": {
         "name": "درجة الحرارة الخارجية"
@@ -207,17 +237,8 @@
       "uplus_id": {
         "name": "معرّف الطراز"
       },
-      "human_sensing": {
-        "name": "تدفق هواء الحضور",
-        "state": {
-          "avoid": "تجنّب",
-          "follow": "تتبّع",
-          "off": "إيقاف",
-          "on": "تشغيل"
-        }
-      },
-      "last_self_clean": {
-        "name": "آخر تنظيف ذاتي"
+      "voc_level": {
+        "name": "مستوى VOC"
       }
     },
     "switch": {

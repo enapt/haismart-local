@@ -186,6 +186,21 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "Φορμαλδεΰδη"
+      },
+      "human_sensing": {
+        "name": "Ροή αέρα παρουσίας",
+        "state": {
+          "avoid": "Αποφυγή",
+          "follow": "Παρακολούθηση",
+          "off": "Ανενεργό",
+          "on": "Ενεργό"
+        }
+      },
+      "indoor_pm25": {
+        "name": "PM2.5 εσωτερικού χώρου"
+      },
       "indoor_temperature": {
         "name": "Εσωτερική θερμοκρασία"
       },
@@ -198,8 +213,23 @@
           "network": "Εφαρμογή ή Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "Τελευταίος αυτοκαθαρισμός"
+      },
       "local_key": {
         "name": "Τοπικό κλειδί"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "PM2.5 εξωτερικού χώρου"
       },
       "outdoor_temperature": {
         "name": "Εξωτερική θερμοκρασία"
@@ -207,17 +237,8 @@
       "uplus_id": {
         "name": "Αναγνωριστικό μοντέλου"
       },
-      "human_sensing": {
-        "name": "Ροή αέρα παρουσίας",
-        "state": {
-          "avoid": "Αποφυγή",
-          "follow": "Παρακολούθηση",
-          "off": "Ανενεργό",
-          "on": "Ενεργό"
-        }
-      },
-      "last_self_clean": {
-        "name": "Τελευταίος αυτοκαθαρισμός"
+      "voc_level": {
+        "name": "Επίπεδο VOC"
       }
     },
     "switch": {

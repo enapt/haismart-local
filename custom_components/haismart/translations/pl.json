@@ -186,6 +186,21 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "Formaldehyd"
+      },
+      "human_sensing": {
+        "name": "Nawiew wg obecności",
+        "state": {
+          "avoid": "Unikaj",
+          "follow": "Podążaj",
+          "off": "Wył.",
+          "on": "Wł."
+        }
+      },
+      "indoor_pm25": {
+        "name": "PM2.5 w pomieszczeniu"
+      },
       "indoor_temperature": {
         "name": "Temperatura wewnętrzna"
       },
@@ -198,8 +213,23 @@
           "network": "Aplikacja lub Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "Ostatnie samoczyszczenie"
+      },
       "local_key": {
         "name": "Klucz lokalny"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "PM2.5 na zewnątrz"
       },
       "outdoor_temperature": {
         "name": "Temperatura zewnętrzna"
@@ -207,17 +237,8 @@
       "uplus_id": {
         "name": "Identyfikator modelu"
       },
-      "human_sensing": {
-        "name": "Nawiew wg obecności",
-        "state": {
-          "avoid": "Unikaj",
-          "follow": "Podążaj",
-          "off": "Wył.",
-          "on": "Wł."
-        }
-      },
-      "last_self_clean": {
-        "name": "Ostatnie samoczyszczenie"
+      "voc_level": {
+        "name": "Poziom LZO"
       }
     },
     "switch": {

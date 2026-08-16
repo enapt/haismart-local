@@ -4292,6 +4292,52 @@ async def test_panel_controls_are_offered_the_way_the_app_offers_them(
     assert hass.states.get("sensor.downstairs_ac_presence_airflow") is None
 
 
+async def test_air_quality_readings_become_sensors_for_units_that_declare_them(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The PM2.5/CO2/formaldehyde/VOC/humidity values a unit's own model declares become sensors,
+    read from the status report at the published-map positions -- and only those units get them.
+    Zero is a probe reading nothing (the entity stands at unknown, it does not report 0 ug/m3), and
+    an attribute the model marks invisible is a probe this unit does not have (no entity at all).
+    """
+    # A 127-byte report carrying CO2 650 ppm and indoor PM2.5 23 ug/m3. On this layout the map
+    # places co2Value at bytes 120-121 and indoorPM2p5Value at 112-113 -- one word PAST the flat
+    # -19 placement, because this report keeps an extra word (targetRentTime) ahead of the sensors.
+    frame = bytearray(make_status_frame())
+    frame[120:122] = (650).to_bytes(2, "big")
+    frame[112:114] = (23).to_bytes(2, "big")
+    mock_uss.read.return_value = [bytes(frame)]
+
+    model = heat_capable_digital_model()
+    model["attributes"].extend([
+        {"name": "co2Value"},
+        {"name": "indoorPM2p5Value"},
+        {"name": "vocValue"},              # declared, but its register reads 0 -> unknown
+        {"name": "outdoorPM2p5Value"},     # declared but INVISIBLE -> no entity
+    ])
+    model["invisible_attributes"] = ["outdoorPM2p5Value"]
+    await _setup_with_model(hass, model)
+
+    registry = er.async_get(hass)
+
+    def entity(slug: str) -> str | None:
+        return registry.async_get_entity_id("sensor", DOMAIN, f"A1B2C3D4E5F6_{slug}")
+
+    co2 = entity("co2")
+    assert co2 is not None and hass.states.get(co2).state == "650"
+    assert hass.states.get(co2).attributes["device_class"] == "carbon_dioxide"
+    pm = entity("indoor_pm25")
+    assert pm is not None and hass.states.get(pm).state == "23"
+    assert hass.states.get(pm).attributes["device_class"] == "pm25"
+    voc = entity("voc_level")
+    assert voc is not None and hass.states.get(voc).state == "unknown"
+    # invisible -> the unit does not carry the probe -> no phantom entity
+    assert entity("outdoor_pm25") is None
+    # and a unit that declares none of these (every other test's model) gets none: the reference
+    # model in this very test declares no formaldehyde probe
+    assert entity("formaldehyde") is None
+
+
 async def test_compact_offers_panel_controls_via_single_parameter(
     hass: HomeAssistant, mock_uss
 ) -> None:

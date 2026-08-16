@@ -186,6 +186,21 @@
       "discharge_temperature": {
         "name": "Discharge temperature"
       },
+      "formaldehyde": {
+        "name": "Formaldehyd"
+      },
+      "human_sensing": {
+        "name": "Präsenz-Luftstrom",
+        "state": {
+          "avoid": "Ausweichen",
+          "follow": "Folgen",
+          "off": "Aus",
+          "on": "An"
+        }
+      },
+      "indoor_pm25": {
+        "name": "PM2.5 innen"
+      },
       "indoor_temperature": {
         "name": "Innentemperatur"
       },
@@ -198,8 +213,23 @@
           "network": "App oder Home Assistant"
         }
       },
+      "last_self_clean": {
+        "name": "Letzte Selbstreinigung"
+      },
       "local_key": {
         "name": "Lokaler Schlüssel"
+      },
+      "outdoor_coil_temperature": {
+        "name": "Outdoor coil temperature"
+      },
+      "outdoor_defrost_temperature": {
+        "name": "Defrost sensor temperature"
+      },
+      "outdoor_in_air_temperature": {
+        "name": "Outdoor air intake temperature"
+      },
+      "outdoor_pm25": {
+        "name": "PM2.5 außen"
       },
       "outdoor_temperature": {
         "name": "Außentemperatur"
@@ -207,17 +237,8 @@
       "uplus_id": {
         "name": "Modell-ID"
       },
-      "human_sensing": {
-        "name": "Präsenz-Luftstrom",
-        "state": {
-          "avoid": "Ausweichen",
-          "follow": "Folgen",
-          "off": "Aus",
-          "on": "An"
-        }
-      },
-      "last_self_clean": {
-        "name": "Letzte Selbstreinigung"
+      "voc_level": {
+        "name": "VOC-Wert"
       }
     },
     "switch": {

@@ -289,3 +289,95 @@ def test_a_reserved_bit_stops_the_solver_recovering_the_run() -> None:
     assert "b" not in solved
     assert [a.name for a in ambiguous] == ["b"]
     assert ambiguous[0].spare_bits == 4
+
+
+def test_an_order_corroborates_the_frame_or_refutes_it() -> None:
+    """`consistent_with_frame` separates the two real shapes of order-vs-frame disagreement.
+
+    The published order is positional, so it can contradict the shared frame for an attribute
+    under its own name -- a departure the bit-reuse table is blind to, because that table only
+    records positions where a *different* attribute was placed. Every twin-tower family lists the
+    appliance's vane, fan and horizontal vane in an appended tail past the frame's words; offering
+    the frame position for those wrote the left tower (the shipped extended-46 bug, and the same
+    hole was still open for `windDirectionHorizontal` on the related twin-tower families). And two
+    families publish an order the frame cannot be reconciled with anywhere, where no frame position
+    deserves trust at all.
+    """
+    from haismart_hrdp.wire_order import consistent_with_frame
+
+    frame = {"a": (1, 8), "b": (1, 0), "c": (2, 13), "d": (3, 0), "e": (5, 0)}
+
+    # a clean order corroborates everything
+    assert consistent_with_frame(["a", "b", "c", "d", "e"], frame) == frozenset("abcde")
+
+    # an appended tail: the head is corroborated, the moved names are dropped -- and names with no
+    # known position (x, y) neither anchor nor disturb anything
+    assert consistent_with_frame(["a", "c", "d", "e", "x", "b", "y"], frame) == frozenset("acde")
+
+    # an ambiguous inversion drops BOTH sides: either could be the misplaced one, and a guessed
+    # write position runs the wrong function instead of failing
+    tail_pair = consistent_with_frame(["a", "c", "e", "d"], frame)
+    assert tail_pair is not None
+    assert "a" in tail_pair and "c" in tail_pair
+    assert "d" not in tail_pair and "e" not in tail_pair
+
+    # a structural disagreement -- inversions not confined to an appended tail -- refutes the frame
+    assert consistent_with_frame(["e", "a", "d", "b", "c"], frame) is None
+
+    # nothing known: nothing corroborated, nothing refuted
+    assert consistent_with_frame(["x", "y"], frame) == frozenset()
+    assert consistent_with_frame([], frame) == frozenset()
+
+
+def test_every_bundled_order_is_reconciled_with_the_frame_or_recorded() -> None:
+    """The audit that would have caught the twin-tower horizontal-vane hole, run for good.
+
+    Every product the bundle ships an order for is checked against the shared frame. The allowed
+    verdicts are a closed list -- fully clean, the twin-tower appended-tail drops, or the two
+    families whose order refutes the frame outright -- so a future bundle regeneration that brings
+    in a new departure fails here and gets a decision made about it, instead of quietly being
+    offered frame positions its own contract contradicts.
+    """
+    from haismart_hrdp.canonical_map import CANONICAL_WRITE
+    from haismart_hrdp.device_rules import declared_order
+    from haismart_hrdp.family_write import ALIASES
+    from haismart_hrdp.model_rules import known_products, rules_for_product
+    from haismart_hrdp.panel import PANEL_EXTRA_POSITIONS
+    from haismart_hrdp.wire_order import consistent_with_frame
+
+    spelled_as = dict(ALIASES) | {v: k for k, v in ALIASES.items()}
+    positions = {n: (f.word, f.bit) for n, f in CANONICAL_WRITE.items()}
+    positions.update({n: (w, b) for n, (w, b, ln) in PANEL_EXTRA_POSITIONS.items()})
+
+    # the only families allowed to depart, and how
+    TWIN_TOWER_DROPS = {"windDirectionHorizontal", "windDirectionVertical", "windSpeed",
+                        "mouldProof"}
+    IRRECONCILABLE = {
+        "2008610800820324021200118018500000000000000000000000000000000040",
+        "2008610800820324021200118018504200000000000000000000000000000040",
+    }
+
+    checked = 0
+    for code in known_products():
+        entry = rules_for_product(code)
+        order = list(declared_order(entry))
+        uplus = entry.get("uplus_id") or ""
+        if not order or len(uplus) != 64:
+            continue    # compact-12's group set is its own coordinate space, audited separately
+        known = {}
+        for name in order:
+            pos = positions.get(name) or positions.get(spelled_as.get(name, ""))
+            if pos is not None:
+                known[name] = pos
+        verdict = consistent_with_frame(order, known)
+        checked += 1
+        if verdict is None:
+            assert uplus in IRRECONCILABLE, (
+                f"{code} ({uplus}): order refutes the frame and is not a recorded exception"
+            )
+            continue
+        dropped = {n for n in known if n not in verdict}
+        assert dropped <= TWIN_TOWER_DROPS, (
+            f"{code} ({uplus}): order contradicts the frame for {sorted(dropped)}"
+        )
+    assert checked > 600, "expected to audit the frame-path products, not a handful"

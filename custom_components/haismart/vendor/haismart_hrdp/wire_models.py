@@ -1624,7 +1624,7 @@ def frame_write_fields(
 ) -> dict[str, WriteField]:
     """The group-set fields a product can be commanded on, from the frame it publishes.
 
-    Three gates, and each removes a different way of being wrong:
+    Four gates, and each removes a different way of being wrong:
 
     * **the frame** -- a field is packed where `CANONICAL_WRITE` says, which is one frame across
       every published air-conditioner device type with no displacement between families;
@@ -1633,23 +1633,51 @@ def frame_write_fields(
     * **:func:`~haismart_hrdp.family_write.displaced_write_fields`** -- a handful of families keep a
       *different attribute* at one of the frame's positions (a twin-tower cabinet's left-hand vane
       and fan, and sterilization where the frame puts self-clean). Those are refused outright: a
-      group-set is packed by position, so the wrong function would run rather than the write failing.
+      group-set is packed by position, so the wrong function would run rather than the write failing;
+    * **:func:`~haismart_hrdp.wire_order.consistent_with_frame`** -- the order is positional (word
+      ascending, bit descending), so it can also contradict the frame for an attribute under its
+      *own name*: every twin-tower family lists the appliance's vane, fan and horizontal vane in
+      its appended tail, past the words the shared frame reaches, which the reuse table cannot see
+      because nothing else was ever placed at those slots. A field the product's own order places
+      elsewhere is not offered; an order the frame cannot be reconciled with at all offers nothing.
 
     Returns ``{}`` when ``order`` is unknown, which keeps a layout read-only rather than commanding
     an appliance whose own published contract has not been seen.
     """
-    from .family_write import displaced_write_fields
+    from .family_write import ALIASES, displaced_write_fields
+    from .wire_order import consistent_with_frame
 
     if not order:
         return {}
     refused = displaced_write_fields(uplus_id)
+    spelled_as = dict(ALIASES) | {v: k for k, v in ALIASES.items()}
+
+    def position(name: str) -> tuple[int, int, int] | None:
+        cf = CANONICAL_WRITE.get(name) or CANONICAL_WRITE.get(spelled_as.get(name, ""))
+        if cf is not None:
+            return (cf.word, cf.bit, cf.length)
+        return PANEL_EXTRA_POSITIONS.get(name) or PANEL_EXTRA_POSITIONS.get(
+            spelled_as.get(name, "")
+        )
+
+    known = {}
+    for name in order:
+        pos = position(name)
+        if pos is not None:
+            known[name] = pos[:2]
+    corroborated = consistent_with_frame(order, known)
+    if corroborated is None:
+        return {}
+
     carried = set(order)
     out: dict[str, WriteField] = {}
     for name, spec in _FRAME_WRITE_SPEC.items():
-        if name in refused or name not in carried:
+        spelled = name if name in carried else spelled_as.get(name, name)
+        if name in refused or spelled not in carried:
             continue
-        cf = CANONICAL_WRITE.get(name)
-        pos = (cf.word, cf.bit, cf.length) if cf else PANEL_EXTRA_POSITIONS.get(name)
+        if spelled in known and spelled not in corroborated:
+            continue
+        pos = position(name)
         if pos is None:
             continue
         out[name] = WriteField(*pos, **spec)  # type: ignore[arg-type]

@@ -33,6 +33,7 @@ __all__ = [
     "Position",
     "order_key",
     "order_violations",
+    "consistent_with_frame",
     "bracket_unplaced",
     "nearest_bundled_profile",
     "solve_positions",
@@ -64,6 +65,65 @@ def order_violations(
         for i in range(len(placed) - 1)
         if order_key(placed[i][1]) > order_key(placed[i + 1][1])
     ]
+
+
+def consistent_with_frame(
+    attr_names: Sequence[str], known: Mapping[str, Position]
+) -> frozenset[str] | None:
+    """The known-position names this order corroborates -- or ``None`` when it refutes the frame.
+
+    :func:`order_violations` reports that a contradiction exists; this decides what to do about
+    each name, because the two realistic shapes of contradiction call for different answers:
+
+    * **An appended tail.** A family that moved a handful of attributes lists them *after* the
+      original frame -- extended-46 and its twin-tower relatives put the appliance's own vane, fan
+      and horizontal vane past the towers, in words the shared frame does not reach. The head of
+      the order still matches the frame exactly, so the head's names are corroborated and only the
+      moved names are dropped.
+    * **No relation at all.** A family whose order cannot be reconciled with the frame anywhere is
+      not an instance of it, and no position taken from the frame can be trusted there. That is
+      ``None``: the caller must offer nothing rather than pick survivors from a premise the order
+      as a whole has refuted.
+
+    Mechanically: the longest run of names whose positions are monotonic in published order
+    (:func:`order_key`) is the frame-consistent backbone. A name is corroborated only when **every**
+    such longest run keeps it -- two names that could each be the misplaced one of a pair are both
+    dropped, because choosing between them would be a guess and a guessed write position runs the
+    wrong function instead of failing. And the appended-tail shape is required for partial trust:
+    if any dropped name sits *before* the last corroborated one, the disagreement is structural,
+    not appended, and the whole order refutes the frame.
+
+    An empty ``known`` yields an empty set -- nothing corroborated, nothing refuted.
+    """
+    placed = [(name, known[name]) for name in attr_names if name in known]
+    if not placed:
+        return frozenset()
+    keys = [order_key(pos) for _, pos in placed]
+    n = len(placed)
+    ending = [1] * n      # longest monotonic run ending at i
+    starting = [1] * n    # longest monotonic run starting at i
+    for i in range(n):
+        for j in range(i):
+            if keys[j] <= keys[i]:
+                ending[i] = max(ending[i], ending[j] + 1)
+    for i in reversed(range(n)):
+        for j in range(i + 1, n):
+            if keys[i] <= keys[j]:
+                starting[i] = max(starting[i], starting[j] + 1)
+    longest = max(ending[i] + starting[i] - 1 for i in range(n))
+    on_backbone = [i for i in range(n) if ending[i] + starting[i] - 1 == longest]
+    at_rank: dict[int, int] = {}
+    for i in on_backbone:
+        at_rank[ending[i]] = at_rank.get(ending[i], 0) + 1
+    corroborated = {i for i in on_backbone if at_rank[ending[i]] == 1}
+    dropped = [i for i in range(n) if i not in corroborated]
+    if dropped and corroborated:
+        last = max(corroborated)
+        if any(i < last for i in dropped):
+            return None
+    elif dropped:
+        return None
+    return frozenset(placed[i][0] for i in corroborated)
 
 
 def bracket_unplaced(

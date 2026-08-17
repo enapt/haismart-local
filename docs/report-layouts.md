@@ -387,7 +387,12 @@ attributes with their word, bit, width and scaling, agreed on by the bundled air
 descriptions — same widths, same bits, same order, one whole-word displacement each. (Across the
 full published catalogue, eleven families keep a *different* attribute at a handful of the shared
 positions — the twin-tower vane/fan and the sterilization-for-self-clean swap — which is why those
-specific controls are refused per family rather than assumed universal.)
+specific controls are refused per family rather than assumed universal. A family can also move a
+setting under its *own name*: every twin-tower family lists the appliance's vane, fan and horizontal
+vane in the appended tail of its group-set order, past the shared frame's words, so the frame-path
+controls are additionally gated on the product's own order corroborating each position — and two
+families, the AQUA/JAA wall units, publish an order the frame cannot be reconciled with at all and
+are kept read-only.)
 
 | family | is |
 |---|---|

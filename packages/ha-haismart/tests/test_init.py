@@ -4275,7 +4275,10 @@ async def test_a_layout_resolved_from_a_relative_is_commanded_with_ITS_field_map
 
     from custom_components.haismart.coordinator import HaismartCoordinator
 
-    order = ("targetTemperature", "operationMode", "windSpeed", "onOffStatus", "muteStatus")
+    # In real wire order (word ascending, bit descending): mute (w3.b4) precedes on/off (w3.b0).
+    # This fixture used to list them the other way round -- an order no product could publish --
+    # and the order-consistency gate now (correctly) refuses controls from such a list.
+    order = ("targetTemperature", "operationMode", "windSpeed", "muteStatus", "onOffStatus")
     model = related_model_named("related+0", 165, order=order)
     assert model is not None
     assert model.writable is True

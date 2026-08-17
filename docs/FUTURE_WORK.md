@@ -229,6 +229,35 @@ remains open is the residue that no source can place or read:
   by named attribute, not the group set; the frame gives it a **2-bit** slot that cannot hold the
   "mid" value. Withdrawn until its real frame width, or a named-attribute write channel, is settled.
 
+### 38. Two families publish a group-set order the shared frame cannot explain (30 products)
+
+A catalogue-wide audit — every product's published group-set order checked against the shared
+frame's positions — found two families (12 + 18 products, the **AQUA `AQA-AX*` and `JAA-MX*` wall
+units**) whose order has essentially **zero rank-correlation with the frame** (τ ≈ 0.06, against
+1.0 for every confirmed family). That is not the frame with a few settings moved; it is some other
+layout, or a list published in some other discipline. Nothing anchors it, so nothing can be derived
+from it.
+
+Until v0.51.0 these products were offered the full frame-position control set; every one of those
+writes was a guess with substantial counter-evidence, and a guessed group-set runs wrong functions
+silently rather than failing. They are now **read-only** (their report decode is unaffected — report
+layouts are verified against the report itself, and the read frame is not the write frame). What
+settles it: a diagnostics file or capture from any of these units, which would show whether their
+reports resolve to a known family and give the first anchor for whatever their write layout is.
+
+### 39. The appended-tail settings on the other twin-tower families
+
+The same audit showed extended-46's structure is not unique to it: **every twin-tower family** (six
+families, 161 products) lists the appliance's own `windDirectionVertical`, `windDirectionHorizontal`
+and `windSpeed` in the appended tail of its order, past the words the shared frame reaches. For
+extended-46 the packing arithmetic plus capture-confirmed read-back settled the vane and fan at
+group-set words 6/7 (item 29). The same derivation could in principle restore fan and swing on the
+other five families' ~117 products — but each family's tail packs differently and **no report from
+any of them has ever been seen**, so there is no read-back and no verification. Blocked on a first
+report per family; until then those controls are correctly absent (and the horizontal vane, which
+the frame position would have written into tower/auxiliary bits, is refused by the order gate —
+item 40 below).
+
 ## Reference — not open items
 
 Kept because each looks like something to "fix" until you know why it is the way it is.
@@ -381,12 +410,14 @@ the published packed order all converge). `word_count` is now 7 so the frame rea
 family obeys the write↔read relation instead of needing an exception. The only hardware residue is
 confirmation that the appliance honours a 7-word frame.
 
-**30. Control for read-only related layouts — shipped.** Control went from 590 to **1,236** products,
-nothing left read-only. Safe without a capture because the group-set is one frame across every
-published air conditioner, its report base word is `20 + the layout's own offset` (a definition, not a
-fitted constant), and *which* settings a unit has comes from its own published group-set list;
-families reusing a shared position have those controls refused (item 32). A layout that publishes no
-list stays read-only — the safe default.
+**30. Control for read-only related layouts — shipped.** Control went from 590 to **1,236** products.
+Safe without a capture because the group-set is one frame across every published air conditioner, its
+report base word is `20 + the layout's own offset` (a definition, not a fitted constant), and *which*
+settings a unit has comes from its own published group-set list; families reusing a shared position
+have those controls refused (item 32). A layout that publishes no list stays read-only — the safe
+default. ⚠️ *"Nothing left read-only" was true as shipped and is no longer:* the v0.51.0 audit found
+two families whose published order refutes the frame outright, and they went back to read-only on that
+evidence — **1,206 read + write, 30 read-only, 215 no layout** (items 38, 40).
 
 **32. A control must not be sent to a bit a family reuses — fixed.** Eleven families keep a different
 setting at a shared group-set position (self-clean↔sterilization; the twin towers at the vane/fan
@@ -427,3 +458,16 @@ declared-attribute placement now follows the layout table per report length (a t
 table's own confirmed offsets). The outdoor coil/air-intake/defrost probes stay diagnostics-only —
 zero-for-life on the reference hardware, so as entities they would read `unknown` forever (a live
 deploy caught and withdrew six such dead entities).
+
+**40. A frame write must be corroborated by the product's own published order — shipped (v0.51.0).**
+The order is positional, so it can contradict the frame for a setting under its *own name* — a
+departure the bit-reuse table (item 32) is structurally blind to, because that table only records
+positions where a *different* attribute was placed. The audit that found it ran every one of the
+1,238 published orders against the frame: every twin-tower family lists the appliance's vane, fan
+**and horizontal vane** in its appended tail, and the horizontal vane — unlike the other two — was
+still being offered at the frame position, where those cabinets keep tower/auxiliary bits. The
+frame-path controls are now gated by `consistent_with_frame`: an order corroborates a position, or
+drops the moved names (the appended-tail shape), or refutes the frame outright and offers nothing
+(item 38). The audit itself ships as a test over the full bundle, so a future catalogue regeneration
+that introduces a new departure fails the suite instead of quietly being offered frame positions its
+own contract contradicts.

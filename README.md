@@ -611,12 +611,15 @@ of the above exists until it does.
 **A model we have never seen usually reads — and commands — anyway.** Every published air conditioner
 is the same attribute map at one of a few offsets, and a unit's Model ID names its closest relatives —
 so when no known layout claims a report, the integration tries the offsets those relatives use and
-keeps whichever one the report itself agrees with. Control is offered through three gates, each
+keeps whichever one the report itself agrees with. Control is offered through four gates, each
 removing a different way of being wrong: the group-set command is packed identically across the
 published air-conditioner descriptions; **which** of its settings your product carries comes from the
-product's own published attribute list, shipped for every product that publishes one; and the handful
+product's own published attribute list, shipped for every product that publishes one; the handful
 of families that keep a *different* setting at one of those positions have exactly those controls
-refused. A product that publishes no list stays read-only — the safe default.
+refused; and a setting the product's own list places somewhere the shared packing cannot explain is
+refused too — including, for two families, the whole write path, when the list as a whole cannot be
+reconciled with the shared packing. A product that publishes no list stays read-only — the safe
+default.
 
 **A capture is still the most valuable contribution** for such a unit, and it doesn't require writing
 any code — see [`docs/new-model.md`](docs/new-model.md) for the short procedure. It is what promotes

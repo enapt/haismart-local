@@ -463,3 +463,65 @@ def test_compact_single_param_frame_is_a_bare_command_no_payload():
     frame = build_epp_frame(0x01, b"\x4d\x05", b"")
     assert frame[:2] == b"\xff\xff" and frame[10:12] == b"\x4d\x05"
     assert (frame[2] + sum(frame[3:-1])) & 0xFF == frame[-1]       # checksum holds
+
+
+def test_a_twin_tower_order_is_not_offered_the_horizontal_vane_frame_position() -> None:
+    """The order gate closes the hole the bit-reuse table cannot see: same name, moved position.
+
+    Every twin-tower family publishes the appliance's own vane, fan AND horizontal vane in the
+    appended tail of its group-set order, past the frame's words. The vane and fan were already
+    refused (their frame slots hold the towers, which the reuse table records) -- but nothing else
+    was ever placed at the horizontal vane's slot, so the reuse table is structurally blind there
+    and the frame position was still offered. On that hardware it writes tower/auxiliary bits.
+    The product's own order is the evidence: a name it lists after the frame's last word is not at
+    the frame's position, whatever the name.
+    """
+    from haismart_hrdp.wire_models import frame_write_fields
+
+    # the head of a real 108-product twin-tower family's order (condensed), with the appliance's
+    # vane / horizontal vane / fan in the appended tail exactly as published
+    order = (
+        "targetTemperature", "windDirectionVerticalR", "windDirectionVerticalL",
+        "operationMode", "windSpeedL", "screenDisplayStatus", "silentSleepStatus",
+        "muteStatus", "rapidMode", "electricHeatingStatus", "healthMode", "onOffStatus",
+        "humanSensingStatus", "energySavingStatus", "lightStatus", "sterilizationSwitch",
+        "freshAirStatus",
+        # -- appended tail --
+        "windSpeedR", "windDirectionHorizontalR",
+        "windDirectionVertical", "windDirectionHorizontal", "windSpeed",
+    )
+    fields = frame_write_fields(order, TWIN_TOWER)
+
+    # the moved trio is refused -- horizontal by the order gate, vane and fan doubly (reuse + order)
+    assert "windDirectionHorizontal" not in fields
+    assert "windDirectionVertical" not in fields
+    assert "windSpeed" not in fields
+    # the corroborated head keeps its controls: this is a gate, not a retreat
+    for kept in ("targetTemperature", "operationMode", "onOffStatus", "muteStatus",
+                 "freshAirStatus", "lightStatus", "energySavingStatus"):
+        assert kept in fields, kept
+
+
+def test_an_order_the_frame_cannot_explain_offers_no_writes_at_all() -> None:
+    """Two families (30 products) publish a group-set order unrelated to the shared frame --
+    rank-correlation with the frame's positions is near zero, so it is not the frame with a few
+    moved names, it is some other layout. Writing any frame position there is a guess, and a
+    guessed group-set runs wrong functions silently. The whole write path must stay closed until
+    someone with the hardware supplies evidence; the read path is unaffected (report layouts are
+    verified against the report itself, and the read frame is not the write frame)."""
+    from haismart_hrdp.wire_models import frame_write_fields
+
+    # the published order of the 12-product 1850 family, verbatim
+    order = (
+        "targetTemperature", "windDirectionHorizontal", "windAvoidance",
+        "windDirectionVertical", "healthMode", "electricHeatingStatus", "onOffStatus",
+        "aiSwitch", "energySavingStatus", "operationMode", "silentSleepStatus", "lightStatus",
+        "humanSensingStatus", "uvSterilizationSwitch", "mouldProof", "preventHeatstroke",
+        "preventSupercooling", "freshAirStatus", "freshWindSpeed", "selfSweepingStatus",
+        "cleanningMode", "targetHumidity", "windSpeed", "rapidMode", "muteStatus",
+        "screenDisplayStatus", "echoStatus", "drying", "constDehumidificationStatus",
+        "warnStatus",
+    )
+    assert frame_write_fields(order, "2008610800820324021200118018500000000000000000000000000000000040") == {}
+    # and with no uPlusId at all, the order alone still refuses -- the evidence is the order
+    assert frame_write_fields(order, None) == {}

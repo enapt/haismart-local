@@ -373,7 +373,13 @@ def lock_reasons(
     # Chinese. The CODE is the fact and the sentence is presentation, so for codes we recognise the
     # English wording wins; anything we do not know falls back to whatever the model said, which is
     # better than nothing.
-    meanings = {str(k): str(v) for k, v in (model.get("invalid_reasons") or {}).items()}
+    raw = model.get("invalid_reasons") or {}
+    if not isinstance(raw, Mapping):
+        # A family-agreed model once shipped this section as a bare list of codes, and entries
+        # merged under those releases persisted it. The code is still the fact, so recover the
+        # codes and let the recognised-code table below supply the wording.
+        raw = {code: "" for code in raw}
+    meanings = {str(k): str(v) for k, v in raw.items()}
     meanings.update({k: v for k, v in INVALID_REASONS.items() if k in meanings})
     reasons: dict[str, str] = {}
     for rule in model.get("modifiers") or ():

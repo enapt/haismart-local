@@ -1625,12 +1625,12 @@ _LOCKED_MODEL = {"attributes": [
 ]}
 
 
-async def _setup_with_model(hass: HomeAssistant, model: dict):
+async def _setup_with_model(hass: HomeAssistant, model: dict, **extra):
     import json as _json
 
     from custom_components.haismart.const import CONF_DIGITAL_MODEL
 
-    entry = _entry(**{CONF_DIGITAL_MODEL: _json.dumps(model)})
+    entry = _entry(**{CONF_DIGITAL_MODEL: _json.dumps(model), **extra})
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
@@ -4062,6 +4062,13 @@ async def test_a_family_offers_the_swing_axis_it_can_move(
     four-way swing when EITHER axis was unplaceable, where `supported_features` had always dropped
     it only when NEITHER could move. This family has exactly one axis, so it lost a control it
     could work. It keeps it, offering only the positions it can actually reach.
+
+    ⚠️ Then the SAME family lost the SAME two controls a second time (v0.48.0, the same issue #6
+    unit), and this test did not notice -- because its fixture carried no uPlusId, and the second
+    withdrawal was keyed on exactly that: the bit-reuse gate refused `windSpeed` and
+    `windDirectionVertical` by NAME for the twin-tower family, blind to this family's own map
+    having moved both fields clear of the reused tower slots. The entry now announces the
+    reporter's real uPlusId, so this test exercises the gate the way the appliance does.
     """
     from conftest import make_extended46_frame
     from homeassistant.components.climate import ClimateEntityFeature
@@ -4069,7 +4076,9 @@ async def test_a_family_offers_the_swing_axis_it_can_move(
     frame = make_extended46_frame(mode_code=1)
     mock_uss.read.return_value = [frame]
     mock_uss.send.baseline = frame
-    await _setup_with_model(hass, _UNWRITABLE_CO_COMMAND_MODEL)
+    await _setup_with_model(
+        hass, _UNWRITABLE_CO_COMMAND_MODEL, **{CONF_UPLUS_ID: EXT46_UPLUS_ID}
+    )
 
     state = hass.states.get(CLIMATE)
     features = ClimateEntityFeature(state.attributes["supported_features"])
@@ -4218,6 +4227,35 @@ async def test_a_family_that_reuses_a_shared_bit_is_refused_that_control(
 
     for field in ("targetTemperature", "operationMode", "onOffStatus", "muteStatus"):
         assert supports(twin, field) is True, field
+
+
+async def test_the_registered_twin_tower_family_keeps_its_retargeted_controls(
+    hass: HomeAssistant,
+) -> None:
+    """The bit-reuse refusal is about a POSITION, and must not outlive a retarget away from it.
+
+    extended-46's family is one of the twin-tower families above -- its shared vane/fan slots
+    belong to the left tower -- but its own registered write map places the appliance's vane and
+    fan in the append region (group-set words 6 and 7), clear of every reused bit. Refusing those
+    fields by NAME is what v0.48.0 shipped, and it silently withdrew this family's fan and swing
+    for the third time (issue #6, reported against v0.50.0) right after v0.47.0 had restored them.
+    The refusal must key on the bits the family's own map would actually write.
+    """
+    from types import SimpleNamespace
+
+    from haismart_hrdp.wire_models import EXTENDED46
+
+    from custom_components.haismart.coordinator import HaismartCoordinator
+
+    assert EXT46_UPLUS_ID in EXTENDED46.uplus_ids  # the reporter's appliance IS this family
+    unit = SimpleNamespace(uplus_id=EXT46_UPLUS_ID, _wire_model=EXTENDED46)
+    supports = HaismartCoordinator.supports_field
+
+    # the retargeted fields are offered: their bits touch nothing the family reuses
+    assert supports(unit, "windSpeed") is True
+    assert supports(unit, "windDirectionVertical") is True
+    # the reused self-clean bit stays refused -- the family's map carries no such field at all
+    assert supports(unit, "selfCleaningStatus") is False
 
 
 async def test_a_layout_resolved_from_a_relative_is_commanded_with_ITS_field_map(

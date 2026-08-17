@@ -56,6 +56,7 @@ from haismart_hrdp import (
     declared_order,
     declared_panel_controls,
     describe_epp_frame,
+    displaced_at,
     displaced_write_fields,
     extended_status_epp_frame,
     family_rules,
@@ -1618,24 +1619,26 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Whether a control field can be written on the family this unit actually reports.
 
         The classic family's write map is :data:`GRSETDAC_FIELDS`; a non-classic family carries its
-        own, which is generally smaller — compact-12 has none of the secondary toggles, extended-46
-        no swing, and neither has this unit's multi-level ``ecoMode``. A control that advertises a
-        field its family cannot place could only ever raise, so the entities that group several
-        fields into one control ask here before offering themselves.
+        own, which is generally smaller — compact-12 has none of the secondary toggles, and neither
+        has this unit's multi-level ``ecoMode``. A control that advertises a field its family
+        cannot place could only ever raise, so the entities that group several fields into one
+        control ask here before offering themselves.
 
         ⚠️ **A field can be placeable and still be the wrong field.** The group-set frame is
         otherwise identical across every published air conditioner, but a few families keep a
         *different attribute* at one of its positions — a twin-tower cabinet's **left tower** vane
         and fan sit where a single-flow unit's appliance-level ones do, and some later models reuse
         the self-clean bit for **sterilization**. Packing by position would then start the wrong
-        function rather than fail, so those fields are refused here for the families that publish
-        the departure. See :func:`haismart_hrdp.displaced_write_fields`.
+        function rather than fail, so those positions are refused for the families that publish the
+        departure. The refusal is keyed on the **position the write would land on, not the name**:
+        a registered family whose own map has moved a field away from the reused slot (extended-46
+        writes the appliance's vane and fan in its append region, past the towers) keeps that
+        control — refusing by name there re-withdrew extended-46's fan and swing in v0.48.0, the
+        regression issue #6 reported. See :func:`haismart_hrdp.displaced_at`.
         """
-        if name in displaced_write_fields(self.uplus_id):
-            return False
         if (wm := self._wire_model) is not None:
-            if name in wm.write_fields:
-                return True
+            if (wf := wm.write_fields.get(name)) is not None:
+                return not displaced_at(self.uplus_id, name, wf.word, wf.bit, wf.length)
             # A single-parameter control (compact-12's paired on/off commands) is offered by
             # DECLARATION, the way the app decides: the unit's own model must carry the attribute
             # and not mark it invisible. The group-set fields above need no such check here because
@@ -1645,6 +1648,10 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # no model offers none of them, which is the safe direction.
             if name in wm.single_param_fields:
                 return name in declared_attribute_names(self.digital_model)
+            return False
+        # The classic fallback and the frame both pack at the shared positions, so the name IS the
+        # position there and the set-valued refusal still applies.
+        if name in displaced_write_fields(self.uplus_id):
             return False
         return name in GRSETDAC_FIELDS
 

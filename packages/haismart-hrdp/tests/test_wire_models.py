@@ -277,6 +277,62 @@ def test_a_family_with_no_departure_refuses_nothing():
     assert displaced_write_fields("an appliance we have never met") == frozenset()
 
 
+def test_a_field_retargeted_away_from_the_reused_slot_is_not_displaced():
+    """A reuse is a fact about a POSITION, not a name -- the check must be against the bits the
+    write would actually land on.
+
+    extended-46 is the family this distinguishes: its shared vane/fan slots belong to the towers,
+    but its own write map moved the appliance's vane and fan into the append region (words 6/7),
+    which touches no reused bit. Refusing those by NAME is what silently re-withdrew that family's
+    fan and swing in v0.48.0 (issue #6) after v0.47.0 had restored them.
+    """
+    from haismart_hrdp.family_write import displaced_at
+
+    # the retargeted positions touch nothing the family reuses
+    assert displaced_at(TWIN_TOWER, "windDirectionVertical", 6, 0, 4) is False
+    assert displaced_at(TWIN_TOWER, "windSpeed", 7, 9, 3) is False
+    # a write that WOULD land on a reused slot is still refused
+    assert displaced_at(TWIN_TOWER, "windDirectionVertical", 1, 0, 4) is True
+    assert displaced_at(TWIN_TOWER, "windSpeed", 2, 8, 3) is True
+    assert displaced_at(TWIN_TOWER, "selfCleaningStatus", 5, 4, 1) is True
+    # overlap counts, not just an identical start -- one shared bit runs the wrong function
+    assert displaced_at(TWIN_TOWER, "windDirectionVertical", 1, 2, 1) is True
+    # a family with no departure refuses nothing, wherever the write lands
+    assert displaced_at(CLASSIC, "windSpeed", 2, 8, 3) is False
+    assert displaced_at(None, "windSpeed", 2, 8, 3) is False
+
+
+def test_the_newer_spelling_at_the_older_names_position_is_not_displaced_at_that_position():
+    """The alias rule carries over to the position-aware check: `tenDegreeHeatingStatus` at
+    (3, 8, 1) is `10degreeHeatingStatus` under another name, so writing the older name there is the
+    same function, not a collision."""
+    from haismart_hrdp.family_write import WRITE_OVERRIDES, displaced_at
+
+    renamed = [u for u, o in WRITE_OVERRIDES.items() if "tenDegreeHeatingStatus" in o]
+    assert renamed
+    for uplus in renamed:
+        assert displaced_at(uplus, "10degreeHeatingStatus", 3, 8, 1) is False
+
+
+def test_no_registered_family_write_map_lands_on_a_bit_its_family_reuses():
+    """Registry-wide invariant: a registered family's own write map must never drive a bit its
+    published family gives to a different attribute. This is what licenses offering a control on a
+    registered family whenever its map carries the field -- the map has already been kept clear of
+    the family's reused positions (extended-46's retarget to words 6/7 being the case in point)."""
+    from haismart_hrdp.family_write import displaced_at
+    from haismart_hrdp.wire_models import WIRE_MODELS
+
+    checked = 0
+    for wm in WIRE_MODELS:
+        for uplus in wm.uplus_ids:
+            for name, wf in wm.write_fields.items():
+                assert not displaced_at(uplus, name, wf.word, wf.bit, wf.length), (
+                    f"{wm.family}: {name} at w{wf.word}.b{wf.bit} collides with a reused bit"
+                )
+                checked += 1
+    assert checked, "expected at least one registered write field to check"
+
+
 def test_the_same_function_under_a_newer_spelling_is_not_a_displacement():
     """`tenDegreeHeatingStatus` sits exactly where the shared frame puts `10degreeHeatingStatus`.
 

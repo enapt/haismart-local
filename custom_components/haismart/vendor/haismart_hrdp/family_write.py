@@ -24,7 +24,13 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
-__all__ = ["WRITE_OVERRIDES", "ALIASES", "write_overrides", "displaced_write_fields"]
+__all__ = [
+    "WRITE_OVERRIDES",
+    "ALIASES",
+    "write_overrides",
+    "displaced_write_fields",
+    "displaced_at",
+]
 
 #: ``{uPlusId: {attribute: (word, bit, length)}}`` -- group-set positions this family uses that the
 #: shared frame does not give that attribute.
@@ -112,9 +118,13 @@ WRITE_OVERRIDES: Mapping[str, Mapping[str, tuple[int, int, int]]] = {
 }
 
 #: Pairs that are the same function under two spellings. A family using the newer name at the older
-#: name's position has not moved anything, so nothing is refused.
+#: name's position has not moved anything, so nothing is refused. ``generatorMode`` is the published
+#: name of the multi-level economy control the write maps carry as ``ecoMode`` -- one ladder, two
+#: names, settled by cycling a unit through its levels -- so a family publishing it at the eco
+#: position displaces nothing either.
 ALIASES: Mapping[str, str] = {
     "tenDegreeHeatingStatus": "10degreeHeatingStatus",
+    "generatorMode": "ecoMode",
 }
 
 
@@ -147,3 +157,24 @@ def displaced_write_fields(uplus_id: str | None) -> frozenset[str]:
             continue                      # same function, newer spelling
         out.add(name)
     return frozenset(out)
+
+
+def displaced_at(uplus_id: str | None, name: str, word: int, bit: int, length: int) -> bool:
+    """Whether writing ``name`` onto bits ``bit..bit+length`` of group-set ``word`` would drive a
+    **different** attribute on this family.
+
+    The position-aware form of :func:`displaced_write_fields`, for a family that carries its own
+    write map. A reuse is a fact about a *position*, not about a name: a family whose map places
+    the field somewhere else entirely is not displaced there. The case that makes this distinction
+    load-bearing is extended-46, whose shared-frame vane and fan slots belong to the left tower —
+    its map writes the appliance's own vane and fan in the append region (words 6 and 7), which
+    touches no reused bit, so those controls are offered while a frame-derived write at the shared
+    slots stays refused. Overlap counts, not just an identical start: any shared bit runs the wrong
+    function. An alias pair is the same function and displaces nothing.
+    """
+    for other, (w, b, ln) in write_overrides(uplus_id).items():
+        if other == name or ALIASES.get(other) == name:
+            continue
+        if w == word and b < bit + length and bit < b + ln:
+            return True
+    return False

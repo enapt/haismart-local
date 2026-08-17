@@ -231,6 +231,16 @@ def family_rules(uplus_id: str | None) -> dict[str, Any] | None:
         ]
         return [json.loads(item) for item in sorted(set.intersection(*sets))] if sets else []
 
+    def agreed_reasons() -> dict[str, str]:
+        # ``invalid_reasons`` is a MAPPING (code -> sentence), unlike the list sections above, and
+        # iterating a mapping yields bare keys -- which is how this section once shipped as a list
+        # of codes with every sentence dropped, and ``lock_reasons`` crashes on a list. The code is
+        # the fact and the sentence is presentation, so agreement is on the codes; the wording
+        # comes from the first rulebook that carries each one.
+        maps = [dict(r.get("invalid_reasons") or {}) for r in rules]
+        common = set.intersection(*(set(m) for m in maps)) if maps else set()
+        return {code: next(m[code] for m in maps if code in m) for code in sorted(common)}
+
     invisible = {
         a["name"]
         for r in rules
@@ -245,7 +255,7 @@ def family_rules(uplus_id: str | None) -> dict[str, Any] | None:
         "uplus_id": uplus_id,
         "attributes": attributes,
         "alarms": agreed("alarms"),
-        "invalid_reasons": agreed("invalid_reasons"),
+        "invalid_reasons": agreed_reasons(),
         "constraints": agreed("constraints"),
         "modifiers": agreed("modifiers"),
     }

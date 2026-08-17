@@ -28,6 +28,7 @@ from .device_rules import (
 )
 from .family_write import (
     WRITE_OVERRIDES,
+    displaced_at,
     displaced_write_fields,
     write_overrides,
 )
@@ -269,6 +270,7 @@ __all__ = [
     "RULE_SECTIONS",
     "MERGED_SECTIONS",
     "declared_order",
+    "displaced_at",
     "displaced_write_fields",
     "write_overrides",
     "WRITE_OVERRIDES",

@@ -159,6 +159,31 @@ def test_family_rules_are_correct_whichever_model_it_turns_out_to_be() -> None:
                 assert attr["name"] in invisible
 
 
+def test_family_agreed_lock_explanations_keep_their_sentences() -> None:
+    """``invalid_reasons`` is a mapping (code -> sentence), and the family floor must stay one.
+
+    The intersection helper iterates each section, and iterating a mapping yields bare keys -- so
+    the agreed rules once shipped this section as a **list of codes** with every sentence dropped,
+    and ``lock_reasons`` (which formats the mapping) crashed at entity setup on any install that
+    fell back to family rules. Agreement is on the codes -- the code is the fact, the sentence is
+    presentation -- and the wording comes from the first rulebook that carries it.
+    """
+    from haismart_hrdp.model_rules import (
+        family_rules,
+        products_for_uplus_id,
+        rules_for_product,
+    )
+
+    uplus = "2008610800820324021200118017740000000000000000000000000000000040"
+    agreed = family_rules(uplus)
+    reasons = agreed["invalid_reasons"]
+    assert isinstance(reasons, dict) and reasons
+    members = [rules_for_product(p) for p in products_for_uplus_id(uplus)]
+    for code, sentence in reasons.items():
+        assert sentence, f"code {code} kept with its sentence dropped"
+        assert all(code in (m.get("invalid_reasons") or {}) for m in members)
+
+
 def test_family_rules_gives_a_single_model_family_its_own_rules() -> None:
     """No intersection to take when there is nothing to intersect with."""
     from haismart_hrdp.model_rules import (

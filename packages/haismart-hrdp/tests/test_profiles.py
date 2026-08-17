@@ -288,6 +288,31 @@ def test_a_missing_explanation_still_locks():
     assert lock_reasons(model, state) == {"targetTemperature": ""}
 
 
+def test_a_persisted_list_of_reason_codes_still_locks_and_still_explains():
+    """A stored model may carry ``invalid_reasons`` as a bare LIST of codes, and must not crash.
+
+    The family-agreed rules shipped that shape for several releases (the intersection helper
+    iterated the mapping, keeping keys and dropping sentences), and what a config entry persisted
+    then is what it loads now -- so this is a shape in the wild, not a hypothetical. The codes are
+    still the fact: the lock must hold, and a code the recognised-code table explains gets its
+    wording back.
+    """
+    from haismart_hrdp import lock_reasons, locked_attributes
+
+    model = {
+        "modifiers": [{
+            "trigger": {"operator": "AND", "conditions": {"operationMode": ["6"]}},
+            "invalid_code": "50009",
+            "actions": [{"name": "targetTemperature", "writable": False}],
+        }],
+        "invalid_reasons": ["50001", "50009"],    # the degraded persisted shape
+    }
+    state = {"operationMode": "6"}
+    assert locked_attributes(model, state) == frozenset({"targetTemperature"})
+    # 50009 is in the recognised-code table, so the sentence comes back despite the list
+    assert lock_reasons(model, state)["targetTemperature"] == "not available in fan-only mode"
+
+
 def test_the_recorded_fallback_carries_the_co_commands_too():
     """A device with no cloud credentials gets the settings that must travel together, not just
     the locks -- otherwise a write silently drops half of what it asked for."""

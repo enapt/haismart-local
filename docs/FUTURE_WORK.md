@@ -313,16 +313,32 @@ published:
 | 7 | 快速风 (fast) | 20 (a further 31 publish 中高风 at 7, which already resolves) |
 | 9 | 静音风 (silent) | 3 |
 
-Two things have to be settled before any of it ships, and neither can be from published data alone:
+⚠️ **Re-examined 2026-08-23 against the shipped bundle, and the blocker recorded here was wrong.**
+It said codes 8 and 9 "do not fit" the frame's 3-bit `windSpeed` field and therefore risked offering
+a speed the encoder must refuse. **That hazard cannot occur on any affected product:**
 
-* **Codes 8 and 9 do not fit.** The frame gives `windSpeed` a **3-bit** field (values 0..7), so a
-  unit declaring 中低风 (8) or 静音风 (9) could be offered a speed the encoder must refuse — a button
-  that can only raise. Either those units carry a wider field or their group set takes a different
-  subset; a report from one would say which. This is the `freshWindSpeed` situation exactly.
-* **The token collides.** 中低风 (8) resolves to the same `medium` as 中 (2) through the description
-  keywords, so two codes would map to one token and the reverse lookup would pick whichever came
-  first. That is a pre-existing rough edge on 31 products, and widening around it without fixing it
-  would make it reachable.
+* **All 31 products declaring 中低风 (8) already have `windSpeed` withheld from control.** Thirty are
+  the AQUA/JAA families whose published order refutes the frame outright, so they are offered no
+  frame controls at all (item 38); the thirty-first is a twin-tower cabinet whose vane and fan the
+  bit-reuse gate refuses. Nothing was ever going to pack an 8 into three bits.
+* **静音风 (9) is never offered either** — its description matches no keyword, so no token is
+  produced and it cannot reach a fan list; the encoder would refuse it explicitly in any case.
+* **The token collision is unreachable for the same reason as the first bullet.**
+
+★ **What the products' own rules DO say is worth keeping**, and it is the same shape as the finding
+that closed issue #11: on all 31, their `constraints` and `modifiers` reference `windSpeed` values
+**7 and 8 directly**, so the vendor documents those speeds as real states. The vendor-side question
+is settled; no report is needed to establish that they exist.
+
+**What is actually open is coverage, not safety.** On roughly two dozen products a unit switched to
+超强风 / 微风 / 静音风 / 快速风 reports **no fan speed at all** — the code resolves to no token and
+the reading vanishes, the same silent-absence shape as the window units' energy-saving mode. Closing
+it needs two decisions rather than new evidence:
+
+1. **names for the four speeds**, which become user-visible fan-mode strings (静音风 wants one that
+   does not read as the existing Quiet switch); and
+2. **whether to name 中高风 / 中低风 at all**, since they occur only on families whose layout is not
+   the shared map — so a reading our map places is not trustworthy there regardless.
 
 ⚠️ Note also that **code 6 and code 7 each carry two different meanings** across products, so the
 code alone never determines the speed — the description does. Any fix must key on the description,

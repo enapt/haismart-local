@@ -486,8 +486,25 @@ report base word is `20 + the layout's own offset` (a definition, not a fitted c
 settings a unit has comes from its own published group-set list; families reusing a shared position
 have those controls refused (item 32). A layout that publishes no list stays read-only — the safe
 default. ⚠️ *"Nothing left read-only" was true as shipped and is no longer:* the v0.51.0 audit found
-two families whose published order refutes the frame outright, and they went back to read-only on that
-evidence — **1,206 read + write, 30 read-only, 215 no layout** (items 38, 40).
+two families whose published order refutes the frame outright, and they went back to read-only on
+that evidence.
+
+★ **Figures, recomputed for v0.53.0 — 1,451 = 1,234 read + write · 217 read-only · 0 without a
+layout.** Every published product can now resolve a layout; none is refused for want of published
+data. The read-only 217 are the 30 whose order refutes the frame (item 38) and the 187 central-air
+cabinets that publish no order at all (item 11) — read-only being exactly right for both, since
+control needs a frame and neither has a usable one. Supersedes *1,206 / 30 / 215*, and supersedes
+"1,236 products" everywhere it appears.
+
+| how the layout is reached | products | control |
+|---|---|---|
+| registered family (compact-12 · extended-46 · extended-36) | 590 | yes |
+| the shared frame, corroborated by the product's own order | 644 | yes |
+| resolved, but the order refutes the frame | 30 | no |
+| resolved, but no order is published | 187 | no |
+
+⚠️ "Can resolve a layout" is not "will decode": the report still has to agree with exactly one
+offset. What changed is that nothing is turned away before its report is even looked at.
 
 **32. A control must not be sent to a bit a family reuses — fixed.** Eleven families keep a different
 setting at a shared group-set position (self-clean↔sterilization; the twin towers at the vane/fan
@@ -522,9 +539,19 @@ became reachable on first report in **v0.52.0**; only the 187 are genuinely with
 positions. Nor is the *category* out of scope: 28 further central-air products are a registered
 family that has read and controlled since the compact map shipped. The similarity threshold still
 must not be lowered to reach any of them (they differ inside the appliance-type field) — v0.52.0
-measures the displacement from the report instead. ⚠️ "Placed offline"
-is not "will work": an unrecognised identifier falls back to report length, so the set that works on
-first contact is larger.
+measures the displacement from the report instead.
+
+★ **And in v0.53.0 the 187 are read too.** They were still being refused a decode because they
+publish no group-set order — a gate that turned out to be evidence about the *write* frame standing
+in for evidence about the *read* frame (Rule 22). They now resolve from their own report like any
+other appliance and are **read-only**, control being the thing that actually needs a frame. So the
+honest current statement is: **1,451 = 1,234 read + write · 217 read-only · 0 refused**, and the
+open question for the 187 is no longer "will we read them" but "will one of their owners appear" —
+two reports, one per identifier, would place the class.
+
+⚠️ "Placed offline" is not "will work": an unrecognised identifier falls back to report length, so
+the set that works on first contact is larger; and a resolved layout still needs its report to agree
+with exactly one offset.
 
 **37. The air-quality suite — shipped.** PM2.5, CO₂, formaldehyde, a VOC index and indoor humidity are
 sensors where the unit declares the probe and does not mark it invisible; zero is absent and a value

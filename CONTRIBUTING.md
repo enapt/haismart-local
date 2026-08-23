@@ -104,6 +104,12 @@ its own group-set command (nearly all do). A unit on that path that stays read-o
 whose published description carries no such list; captures from it are what promote the layout to a
 real family, and they also unlock the readings beyond the core climate block.
 
+Since **v0.52.0** a unit that resembles *no* published model is handled too — the window air
+conditioners are the case, whose Model IDs diverge from everything published inside the appliance-type
+field. Having no relative to inherit an offset from, they are tried against every offset in use, and
+the report itself has to single one out. Since **v0.53.0** that no longer requires the product to
+publish a group-set list either: without one the unit is read and not commanded.
+
 When nothing fits at all, diagnostics runs a search over the known families — see
 [`docs/report-layouts.md`](docs/report-layouts.md) — and attaches ranked candidates, because every
 layout met so far has been a known map displaced from some word onward. That search runs unaided,

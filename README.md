@@ -618,8 +618,12 @@ product's own published attribute list, shipped for every product that publishes
 of families that keep a *different* setting at one of those positions have exactly those controls
 refused; and a setting the product's own list places somewhere the shared packing cannot explain is
 refused too — including, for two families, the whole write path, when the list as a whole cannot be
-reconciled with the shared packing. A product that publishes no list stays read-only — the safe
-default.
+reconciled with the shared packing. A product that publishes no list is **read** all the same, and
+simply not commanded: reading and commanding are gated separately, because a group-set list
+describes how a unit is *written*, which says nothing about where its report puts things.
+
+Of the 1,451 published air conditioners, **1,234 read and control, 217 read and report only, and
+none is turned away before its report is looked at.**
 
 **A capture is still the most valuable contribution** for such a unit, and it doesn't require writing
 any code — see [`docs/new-model.md`](docs/new-model.md) for the short procedure. It is what promotes

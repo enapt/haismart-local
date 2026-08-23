@@ -343,6 +343,28 @@ other), and neither declares a wind speed — this is a floor-standing / heat-pu
 split AC. Length alone cannot pick between them, so a report of this size must be resolved by Model
 ID, not by size.
 
+## Coverage, and what "no layout" now means
+
+Of the **1,451** published air conditioners:
+
+| | products | |
+|---|---|---|
+| read **and** control | **1,234** | 590 through a registered family, 644 through the shared frame corroborated by the product's own group-set order |
+| read only | **217** | 30 whose order refutes the frame outright (so nothing is commanded), 187 central-air cabinets that publish no order at all |
+| turned away before their report is looked at | **0** | — |
+
+⚠️ **"Can resolve a layout" is not "will decode".** The report still has to agree with exactly one
+offset; a unit whose report agrees with neither, or with both, stays on the partial decode. What
+changed in v0.53.0 is that nothing is refused for want of *published* data — the report gets its
+chance in every case where the appliance names itself.
+
+★ The 187 read-only are worth a note, because these docs previously wrote them off. They are
+central-air cabinets on two Model IDs, and the shared map already places **thirteen of their
+seventeen** attributes — only the displacement is open, and one report from either identifier would
+settle it for every product sharing it. They are ordinary appliances that answer on the LAN like any
+other; it is the *vendor's own app* that drives them through the cloud, for want of a byte map that
+this project largely has.
+
 ## When a unit reports a layout that is not here
 
 **The diagnostics file proposes the answer itself.** When no known layout claims a report, the

@@ -9,7 +9,12 @@ and no protocol knowledge**, just three captures from you.
 
 Since **v0.35.0** an air conditioner whose exact layout we have never seen can often still be read,
 by matching it to the published models closest to it and checking the result against what the unit
-actually sent. So before capturing anything, look at what you have:
+actually sent. Since **v0.52.0** that no longer needs a close match at all: a unit that resembles
+nothing published is tried against every layout offset in use, and its own report decides which one
+fits. Since **v0.53.0** it does not need to publish a group-set list either — without one it is read
+and simply not commanded.
+
+So before capturing anything, look at what you have:
 
 - **Readings look right, and you can control it.** Nothing to do — your model is recognised. (Since
   v0.48.0 this includes most units on the matched-relatives path: the core controls come from your
@@ -18,8 +23,8 @@ actually sent. So before capturing anything, look at what you have:
   of the few that publishes no group-set list, so commands stay withheld — the safe default, since a
   command writes a whole block of settings at once. **The captures below are exactly what turns your
   model into a controllable one** — and because the readings already work, they are easy to take.
-- **Only power, setpoint, mode and fan appear, or values are clearly wrong.** No published model was
-  close enough, or none of the candidates agreed with your report. The captures below are the way
+- **Only power, setpoint, mode and fan appear, or values are clearly wrong.** Either your unit did not
+  tell us which model it is, or no offset agreed with its report. The captures below are the way
   forward, and they are the whole job.
 
 Captures are also what unlock the **readings beyond the core climate block** (power telemetry,

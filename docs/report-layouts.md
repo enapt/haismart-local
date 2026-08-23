@@ -88,6 +88,16 @@ unknown` flag — and that flag is how an unsupported model gets reported and th
 not spent on a guess. In the published catalogue that is the difference between 28 products that
 state a frame and the 187 central-air models that state none.
 
+★ Those 28 are **not** all window units. Four are, four are twin-tower wall units, and **twenty are
+central-air cabinets** — which is worth saying plainly, because these docs previously recorded the
+central-air models as out of scope. The category is 235 published products in three architectures:
+28 are the compact family and have read and controlled for a long time, 20 publish the ordinary
+shared frame and are reached here, and 187 publish no group-set command under any name. Only that
+last group is genuinely unplaced, and it is just **two identifiers** — two reports would place all
+187. What they cannot be given is a *derived* layout: the product catalogue publishes an appliance's
+semantics but never its byte positions, and with no published frame there is nothing to corroborate
+a displacement against.
+
 A resolved layout is reported as `related-19` / `related+0` (the offset it used) rather than a family
 name, so diagnostics distinguish it from a family confirmed on hardware.
 

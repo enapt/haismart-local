@@ -136,27 +136,49 @@ each level, one download per state) settle it. (⚠️ Off and L1 were only 18 W
 capture; worth one more reading before anyone describes what L1 *does*, though it does not affect
 where the field is.)
 
-### 11. Reads for the central-air family — one report unlocks 175 products
+### 11. Reads for the central-air family — two reports, and only for one of its three classes
 
-175 published air conditioners are central/ducted units (207 of the 215 not placed offline, item 35).
-They declare seventeen attributes, eleven already positioned in the shared map; nothing about their
-layout is unknown except **which displacement applies**, and that is derivable — a model omits the
-leading media block or it does not, and the offset is exactly the span it omits, which for these is
-the same 19-word shift the classic family uses.
+⚠️ **Recounted 2026-08-23, and the previous version of this item was wrong in both directions.** It
+described "the central-air family" as one thing needing "one report to unlock 175 products". The
+category is **235 published products in three architectures**, established by enumerating the raw
+published models rather than our own extract of them:
 
-⚠️ **Expect no reporter, and do not treat this as a coverage gap.** The manufacturer ships **no
-phone-app interface for this device class in this region**, so an owner here has no vendor app to
-pair or control them with and is unlikely to arrive with a report. These products should **not** sit
-in a coverage denominator — quoting "175 unsupported" overstates the gap. The derivation costs
-nothing to keep, and thirty-six of the class publish their attribute list in wire order (verified
-against the shared map's anchors with zero violations), so their positions solve without a capture if
-a unit ever appears.
+| device class | products | group-set command | status |
+|---|---|---|---|
+| `8080` | **28** | yes (16–24 names) | **already a registered family — reads and controls today** |
+| `0d21` | **20** | yes (49–78 names, frame-corroborated) | reachable on first report since v0.52.0 |
+| `0d12` | **187** | **none, under any name** | needs a report — see below |
+
+So a third of the category already works, and `0d` is **not one device class**: `0d21` publishes the
+ordinary shared frame while `0d12` publishes no group command at all. Conflating them is what
+produced the old figure.
+
+**What `0d12` still needs.** Its 187 products declare seventeen attributes, thirteen of them already
+positioned in the shared map (the four cassette vanes are item 13, plus `powerSource`/`ampereControl`).
+Nothing about their layout is unknown except **which displacement applies** — and the whole 187
+collapse to just **two identifiers**, so *two* reports would place all of them. What we cannot do is
+place them from published data: the catalogue publishes semantics but never positions, no shipped
+byte map covers either identifier, and with no group-set order there is no published frame to
+corroborate a displacement against. That is why v0.52.0's fallback deliberately does not reach them —
+they keep the partial decode and its `layout: unknown` flag, which is how a report gets asked for.
+
+⚠️ **Expect few reporters.** The manufacturer ships no phone-app interface for the `0d12` class in
+this region — consistent with everything above, and with the vendor client's own behaviour: its
+control API is `writeAttribute(name, value)` over whichever channel a device has, and a device whose
+local channel has no byte map simply runs through the cloud. Being listed in the product catalogue
+therefore means the app can *operate* a unit, not that it can operate it *locally*.
 
 ### 12. Control for the central family — a parameter at a time
 
-Those models publish **no group-set command** — their operations are read/alarm queries only. They
-are written one parameter at a time, a method the vendor ships and prior art documents (and that the
-117-byte family already uses, item 36).
+The `0d12` models publish **no group-set command** — their operations are read/alarm queries only
+(`getAllProperty`, `getAllAlarm`, `stopCurrentAlarm`, `getBigDataFrame`), enumerated from the raw
+published models. ★ And the models say so a second way, per attribute: **all 640 of their published
+attributes carry `writeType: "I"` (individual) and not one carries `G`**, against 2,582 `G` on the
+split-AC class. They are written one parameter at a time, a method the vendor ships and prior art
+documents (and that the 117-byte family already uses, item 36).
+
+⚠️ The `0d21` twenty are **not** in this bucket — they publish the ordinary group set and are
+written through the shared frame like any other cabinet.
 
 ⚠️ **Do not reuse the group-set safety argument here.** The encoder refuses any field it has not seen
 written because a group-set applies a whole word block, so a mistake changes a neighbour rather than
@@ -478,10 +500,16 @@ was classic-only, so every other family fell back to a cached blob; `is_control_
 registry.
 
 **35. Which units are placed offline — measured.** 1,236 of 1,451 (85 %) placed from published data
-alone; the 215 unplaced are almost exactly one central-air class (207 of them) that the app publishes
-no panel for either — out of scope, not a hole. The remaining eight (four wall/floor, four window)
-publish their group-set order but need one report to place their *layout*; the similarity threshold
-must not be lowered to reach them (they differ inside the appliance-type field). ⚠️ "Placed offline"
+alone. ⚠️ **The original wording of this item — "the 215 unplaced are almost exactly one central-air
+class that the app publishes no panel for either — out of scope, not a hole" — was too broad, and is
+withdrawn (2026-08-23).** The 215 are **two** central-air classes plus eight others: `0d12` (187, no
+group command — item 11), `0d21` (**20, which publish the ordinary shared frame**), four wall and
+four window. **Twenty-eight of the 215 therefore publish a frame**, are corroborated against it, and
+became reachable on first report in **v0.52.0**; only the 187 are genuinely without published
+positions. Nor is the *category* out of scope: 28 further central-air products are a registered
+family that has read and controlled since the compact map shipped. The similarity threshold still
+must not be lowered to reach any of them (they differ inside the appliance-type field) — v0.52.0
+measures the displacement from the report instead. ⚠️ "Placed offline"
 is not "will work": an unrecognised identifier falls back to report length, so the set that works on
 first contact is larger.
 

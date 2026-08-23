@@ -344,3 +344,71 @@ def test_every_published_operation_mode_code_is_decodable():
     assert all(k == v for k, v in writable.items())
     # ...and every one of them fits the frame's 3-bit operationMode field.
     assert max(writable.values()) < 8
+
+
+def test_every_product_with_no_relative_but_a_published_frame_is_reachable():
+    """The set v0.52.0 exists for, pinned against the shipped bundle.
+
+    Twenty-eight published products have no registered family and no relative close enough to rank —
+    four window units (issue #11), four twin-tower wall units, and **twenty central-air cabinets**.
+    Every one of them publishes a group-set order, and every one of those orders is corroborated by
+    the shared frame, so every one is reachable the moment its first report arrives.
+
+    This is a guard, not a discovery: tightening any of the four write gates would take these
+    products back to read-only without a single existing test noticing.
+    """
+    import gzip
+    import json
+
+    from haismart_hrdp.model_rules import RULES_PATH
+    from haismart_hrdp.wire_models import WIRE_MODELS, frame_write_fields
+
+    models = json.loads(gzip.open(RULES_PATH, "rt").read())["models"]
+    registered = {u for wm in WIRE_MODELS for u in wm.uplus_ids}
+
+    unreachable_before = [
+        (pc, r) for pc, r in models.items()
+        if r.get("uplus_id") not in registered
+        and not displacement_candidates(r.get("uplus_id"))
+        and r.get("group_set_order")
+    ]
+    assert len(unreachable_before) == 28
+    for pc, r in unreachable_before:
+        assert frame_write_fields(r["group_set_order"], r["uplus_id"]), pc
+
+    # ...and they are three device classes, not one. `0d` in particular is NOT one thing: the
+    # central-air category splits into `0d12` (no group command at all) and `0d21` (the ordinary
+    # shared frame), and a third of the category is already a registered family.
+    classes = {r["uplus_id"][16:20] for _, r in unreachable_before}
+    assert classes == {"3912", "0214", "0d21"}
+
+
+def test_the_central_air_category_is_three_architectures_not_one():
+    """`docs/FUTURE_WORK.md` used to record the central-air models as "out of scope, not a hole",
+    which was true of one device class and read as if it were true of the category. It is not:
+    of 235 published central-air products, 28 are a registered family that reads and controls
+    today, and 20 more publish the ordinary shared frame."""
+    import gzip
+    import json
+
+    from haismart_hrdp.model_rules import RULES_PATH
+    from haismart_hrdp.wire_models import WIRE_MODELS
+
+    models = json.loads(gzip.open(RULES_PATH, "rt").read())["models"]
+    registered = {u for wm in WIRE_MODELS for u in wm.uplus_ids}
+    by_class: dict[str, list[str]] = {}
+    for pc, r in models.items():
+        by_class.setdefault(r["uplus_id"][16:20], []).append(pc)
+
+    # `0d12` — no group command of any name, so no frame and no control path from published data.
+    assert len(by_class["0d12"]) == 187
+    assert not any(models[pc].get("group_set_order") for pc in by_class["0d12"])
+    # ...and they are only TWO identifiers, so two reports would place all 187.
+    assert len({models[pc]["uplus_id"] for pc in by_class["0d12"]}) == 2
+
+    # `0d21` — the ordinary group set, and a different device type despite the shared `0d`.
+    assert len(by_class["0d21"]) == 20
+    assert all(models[pc].get("group_set_order") for pc in by_class["0d21"])
+
+    # `8080` — already registered (the compact family), i.e. central-air that works today.
+    assert all(models[pc]["uplus_id"] in registered for pc in by_class["8080"])

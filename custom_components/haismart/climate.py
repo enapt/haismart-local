@@ -46,13 +46,19 @@ _MODE_TO_HVAC = {
     # cooling, with the compressor cycled to save power. So it DISPLAYS as Cool and is chosen
     # through the eco preset (`_mode_eco_preset`) -- the only vocabulary Home Assistant has for it.
     "eco": HVACMode.COOL,
+    # Likewise `健康除湿` -- the vendor's own "Healthy Dry" -- which is dehumidifying and shows as
+    # Dry. Naming it apart from plain `dry` is what stops two codes sharing one token, where the
+    # reverse lookup a write uses would return whichever the model happened to list first.
+    "health_dry": HVACMode.DRY,
 }
-# Deliberately NOT the plain inverse: two tokens map to COOL, and picking Cool on the card must
-# write plain cooling rather than the energy-saving variant. Excluding the eco token is what keeps
-# that true no matter where it sits in the mapping above.
+#: Tokens that DISPLAY as an HVACMode without being what selecting that mode writes. Each is a
+#: vendor variant of a standard mode — energy-saving cooling, healthy dehumidifying — that Home
+#: Assistant has no separate mode for. Excluding them from the inverse is what keeps "pick Cool"
+#: meaning plain cooling, wherever they sit in the mapping above.
+_DISPLAY_ONLY_MODES = frozenset({"eco", "health_dry"})
 _ECO_MODE_TOKEN = "eco"
 _HVAC_TO_MODE = {
-    hvac: token for token, hvac in _MODE_TO_HVAC.items() if token != _ECO_MODE_TOKEN
+    hvac: token for token, hvac in _MODE_TO_HVAC.items() if token not in _DISPLAY_ONLY_MODES
 }
 
 # Fan-only mode on this unit won't accept fan=auto; when entering it (or if the user picks auto

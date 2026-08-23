@@ -667,13 +667,36 @@ _EXT36_MODE = {
     5: "5",   # 节能模式(窗机)  energy-saving, window units only (3 published products)
     6: "6",   # 送风            fan only
 }
-# ⚠️ NOT widened, deliberately -- see `docs/FUTURE_WORK.md`. Five further fan codes are published
-# (0 超强风, 4 微风, 6 静音风/快速风, 7 快速风, 9 静音风) across ~50 products, and two of them cannot
-# be shipped as they stand: codes 8 and 9 do not FIT the frame's 3-bit windSpeed field, and 中低风
-# (8) already resolves to the same "medium" token as 中 (2). Neither is settled without a report
-# from one of those units, and offering a fan speed the encoder must refuse is a button that can
-# only raise.
-_EXT36_FAN = {1: "1", 2: "2", 3: "3", 5: "5"}            # high / medium / low / auto
+# Every fan code that FITS this field. `windSpeed` is three bits wide in the shared frame, so
+# 0..7 is the whole of what a report can carry here -- and the published catalogue uses eight of
+# those eight values across the product line. Enumerated, not assumed; `test_published_enum_codes…`
+# holds it to the catalogue.
+#
+# Widening cannot invent a speed for an appliance that does not have one: the raw value is only a
+# *code* at this layer, and what it MEANS comes from the device's own published enum through
+# `AttributeProfile`, which returns nothing for a code its model does not declare. So a unit that
+# declares only 1/2/3/5 is unaffected by the presence of 0, 4, 6 and 7 here.
+#
+# ⚠️ **Codes 8 (中低风) and 9 (静音风) are absent because they cannot be represented**, not because
+# they are doubted -- eight and nine do not fit three bits. Every product declaring one is already
+# refused `windSpeed` control on other grounds (its order refutes the frame, or the bit-reuse gate
+# takes its fan), so nothing is lost that was otherwise reachable. See `docs/FUTURE_WORK.md` item 41.
+_EXT36_FAN = {
+    # ⚠️ **0 is deliberately absent, and so is 超强风 / "Boost" with it.** 0 is what the fan field
+    # reads on a real 209-byte report from a unit that is switched OFF -- so at this layer a raw 0
+    # is "no speed reported", and it is indistinguishable from the Boost code that 23 other products
+    # declare. No capture from any of those products exists to separate the two, and a fan speed
+    # that cannot be read back must not be offered (a control whose state never moves looks to its
+    # owner like a command that did nothing). `profiles._FAN_KEYWORDS` therefore does not name
+    # 超强风 either, so it never reaches a fan list. `docs/FUTURE_WORK.md` item 41.
+    1: "1",   # 高风    high
+    2: "2",   # 中风    medium
+    3: "3",   # 低风    low
+    4: "4",   # 微风    breeze -- the gentlest
+    5: "5",   # 自动    auto
+    6: "6",   # 静音风 OR 快速风 -- ⚠️ the code does NOT determine the speed on this attribute; the
+    7: "7",   # 中高风 OR 快速风 -- product's own description does. See `profiles._FAN_KEYWORDS`.
+}
 
 # --- fields from the published map ------------------------------------------
 # The families below are the same published attribute map at different displacements (see
@@ -1644,7 +1667,12 @@ _FRAME_WRITE_SPEC: Mapping[str, Mapping[str, object]] = {
     # the device itself declares.
     "operationMode": {"kind": "std_enum",
                       "std_to_epp": {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6}},
-    "windSpeed": {"kind": "std_enum", "std_to_epp": {1: 1, 2: 2, 3: 3, 5: 5}},
+    # Identity, and every code the three-bit field can hold. Which of them a given appliance may be
+    # SENT is not this map's job -- the climate entity builds its fan list from the device's own
+    # declared enum, so a unit that does not publish a speed is never asked to accept it. What this
+    # must not do is refuse a speed the device itself declares.
+    "windSpeed": {"kind": "std_enum",
+                  "std_to_epp": {1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7}},
     "onOffStatus": {"kind": "passthrough", "max_epp": 1},
     "healthMode": {"kind": "passthrough", "max_epp": 1},
     "rapidMode": {"kind": "passthrough", "max_epp": 1},

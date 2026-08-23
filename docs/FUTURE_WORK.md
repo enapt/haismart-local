@@ -293,56 +293,51 @@ report per family; until then those controls are correctly absent (and the horiz
 the frame position would have written into tower/auxiliary bits, is refused by the order gate —
 item 40 below).
 
-### 41. The fan speeds five published codes name, and the two that do not fit
+### 41. The fan speeds — SHIPPED v0.54.0, under the manufacturer's own names
 
 Issue #11 exposed the shape of a defect worth stating once: the wire map's mode and fan **code sets
-are the identity** — on every family that is the published map at a displacement, the EPP value *is*
-the Haier STD code — so their only job is to say which codes exist, and a code missing from one does
+are the identity** — on every family that is the published map at a displacement, the wire value *is*
+the standard code — so their only job is to say which codes exist, and a code missing from one does
 not decode wrong, it **vanishes**. Downstream that reads as "the appliance did not report a fan
 speed", not as "we do not know this code", which is why nobody noticed.
 
-`operationMode` is now enumerated from the catalogue and complete (0, 1, 2, 3, 4, 5, 6 — code 5 was
-the missing one, `节能模式(窗机)`). `windSpeed` is **not**, deliberately. Five further codes are
-published:
+Both enums are now complete against the published catalogue, and — this is the part that took the
+longest to get right — **named by the manufacturer, not by us.** Its app ships an offline language
+bundle whose `seasia_home.AC_*` keys are exactly this vocabulary in 18 locales, so the English for
+each Chinese description is the vendor's own word. See **[`VENDOR_LABELS.md`](VENDOR_LABELS.md)**.
 
-| code | description | products |
-|---|---|---|
-| 0 | 超强风 (strongest) | 23 |
-| 4 | 微风 (gentlest) | 24 |
-| 6 | 静音风 (silent) · 快速风 (fast) | 20 · 4 |
-| 7 | 快速风 (fast) | 20 (a further 31 publish 中高风 at 7, which already resolves) |
-| 9 | 静音风 (silent) | 3 |
+| code | description | vendor English | our token |
+|---|---|---|---|
+| 4 | 微风 | Breeze | `breeze` |
+| 6 | 静音风 · 快速风 | Silent · Quick | `silent` · `quick` |
+| 7 | 中高风 · 快速风 | Mid-high · Quick | `mid_high` · `quick` |
+| 8 | 中低风 | Mid-low | `mid_low` |
+| 3 (mode) | 健康除湿 | Healthy Dry | `health_dry` |
 
-⚠️ **Re-examined 2026-08-23 against the shipped bundle, and the blocker recorded here was wrong.**
-It said codes 8 and 9 "do not fit" the frame's 3-bit `windSpeed` field and therefore risked offering
-a speed the encoder must refuse. **That hazard cannot occur on any affected product:**
+★ **Naming them fixed three silent collisions**, which is the half that mattered: `中高风` and `高风`
+both resolved to `high` on **51 products**; `中低风` and `中风` both to `medium` on **31**; and
+`健康除湿` and `除湿` both to `dry` on **20**. Two codes on one token means the reverse lookup a write
+resolves through returns whichever the model happened to list first.
 
-* **All 31 products declaring 中低风 (8) already have `windSpeed` withheld from control.** Thirty are
-  the AQUA/JAA families whose published order refutes the frame outright, so they are offered no
-  frame controls at all (item 38); the thirty-first is a twin-tower cabinet whose vane and fan the
-  bit-reuse gate refuses. Nothing was ever going to pack an 8 into three bits.
-* **静音风 (9) is never offered either** — its description matches no keyword, so no token is
-  produced and it cannot reach a fan list; the encoder would refuse it explicitly in any case.
-* **The token collision is unreachable for the same reason as the first bullet.**
+⚠️ **Codes 6 and 7 each carry two different meanings across products**, so the code never determines
+the speed — the description does, which is how `_enum_from_datalist` already worked. Nothing here is
+a code table.
 
-★ **What the products' own rules DO say is worth keeping**, and it is the same shape as the finding
-that closed issue #11: on all 31, their `constraints` and `modifiers` reference `windSpeed` values
-**7 and 8 directly**, so the vendor documents those speeds as real states. The vendor-side question
-is settled; no report is needed to establish that they exist.
+**What is deliberately still out, and why each:**
 
-**What is actually open is coverage, not safety.** On roughly two dozen products a unit switched to
-超强风 / 微风 / 静音风 / 快速风 reports **no fan speed at all** — the code resolves to no token and
-the reading vanishes, the same silent-absence shape as the window units' energy-saving mode. Closing
-it needs two decisions rather than new evidence:
-
-1. **names for the four speeds**, which become user-visible fan-mode strings (静音风 wants one that
-   does not read as the existing Quiet switch); and
-2. **whether to name 中高风 / 中低风 at all**, since they occur only on families whose layout is not
-   the shared map — so a reading our map places is not trustworthy there regardless.
-
-⚠️ Note also that **code 6 and code 7 each carry two different meanings** across products, so the
-code alone never determines the speed — the description does. Any fix must key on the description,
-which is what `_enum_from_datalist` already does; nothing here should be turned into a code table.
+* ⛔ **超强风 / "Boost" (code 0, 23 products).** Its wire value is 0, and 0 is what the fan field
+  reads on a real 209-byte report from a unit that is switched **off** — so it cannot be told apart
+  from "no speed reported". No report from any Boost-declaring product exists to separate them.
+  Withheld in **both** layers (no wire code, no keyword), because offering a speed in one layer and
+  not the other is the actual hazard. **What settles it:** one report from a unit declaring 超强风,
+  taken while it is running at that speed.
+* **中低风 (8) and 静音风 (9) do not fit** the frame's 3-bit `windSpeed` field. They are named, so a
+  unit reporting one shows it wherever the field is wide enough; the frame simply cannot carry them.
+  Every product declaring either is already refused `windSpeed` control on other grounds, so nothing
+  reachable is lost.
+* **`medium` stays `medium`** although the vendor says "Mid" — it is in users' automations.
+* **`健康除湿` is display-only**, like the window units' ECO: it shows as Dry and is not separately
+  selectable, because Home Assistant has no mode for it. Reported correctly, which it was not before.
 
 ## Reference — not open items
 

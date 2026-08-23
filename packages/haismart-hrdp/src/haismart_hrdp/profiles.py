@@ -70,16 +70,40 @@ AAC1UKZ01 = AttributeProfile(
 _MODE_KEYWORDS: tuple[tuple[str, str], ...] = tuple(sorted((
     ("制冷", "cool"), ("制热", "heat"), ("除湿", "dry"), ("送风", "fan_only"),
     ("通风", "fan_only"), ("智能", "auto"), ("自动", "auto"), ("舒适", "auto"),
-    ("节能", "eco"),
+    ("节能", "eco"), ("健康除湿", "health_dry"),
     ("cool", "cool"), ("heat", "heat"), ("dry", "dry"), ("dehumidif", "dry"),
     ("fan only", "fan_only"), ("fan_only", "fan_only"), ("fanonly", "fan_only"),
     ("ventilat", "fan_only"), ("auto", "auto"), ("comfort", "auto"), ("smart", "auto"),
     ("intelligent", "auto"), ("energy sav", "eco"), ("energy-sav", "eco"), ("eco", "eco"),
+    ("healthy dry", "health_dry"), ("health dry", "health_dry"),
 ), key=lambda kv: -len(kv[0])))
+# ★ The six names below are the MANUFACTURER'S OWN, not translations of ours. The app ships a
+# language bundle (`assets/PresetResPkg/mPaaS@uplanguage@…zip`, 18 locales) whose `seasia_home.AC_*`
+# keys are exactly this vocabulary — `AC_small` = 微风 = **Breeze**, `AC_quite` = 静音风 =
+# **Silent** (the vendor's own spelling of the key), `AC_quick` = 快速风 = **Quick**,
+# `AC_mid_high` = 中高风 = **Mid-high**, `AC_mid_low` = 中低风 = **Mid-low**.
+# ⚠️ `AC_super_high` = 超强风 = "Boost" is deliberately NOT named: its wire code is 0, which a real
+# report from a switched-off unit also reads, so it cannot be told apart from "no speed reported".
+# See `_EXT36_FAN` in `wire_models`, and `docs/FUTURE_WORK.md` item 41.
+# Taking the vendor's word for what its own speeds are called is the same principle that kept the
+# eco select named after what the handset displays. See `docs/VENDOR_LABELS.md`.
+#
+# ⚠️ Naming them is not cosmetic — it removes two collisions that were silently mapping two
+# different speeds onto one token: **中高风 (7) and 高风 (1) both became `high` on 51 products**, and
+# **中低风 (8) and 中风 (2) both became `medium` on 31**. With two codes on one token the reverse
+# lookup a write uses returns whichever came first in the model's enum.
+#
+# ⚠️ `medium` deliberately stays `medium` although the vendor says "Mid": it has shipped for a long
+# time and is in users' automations. The divergence is one word and renaming it would break them.
 _FAN_KEYWORDS: tuple[tuple[str, str], ...] = tuple(sorted((
     ("高", "high"), ("中", "medium"), ("低", "low"), ("自动", "auto"),
+    ("微风", "breeze"), ("静音风", "silent"), ("快速风", "quick"),
+    ("中高风", "mid_high"), ("中低风", "mid_low"),
     ("high", "high"), ("medium", "medium"), ("middle", "medium"), ("low", "low"),
     ("auto", "auto"),
+    ("mid-high", "mid_high"), ("mid high", "mid_high"), ("midhigh", "mid_high"),
+    ("mid-low", "mid_low"), ("mid low", "mid_low"), ("midlow", "mid_low"),
+    ("breeze", "breeze"), ("silent", "silent"), ("quick", "quick"),
 ), key=lambda kv: -len(kv[0])))
 
 

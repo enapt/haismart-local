@@ -629,7 +629,10 @@ none is turned away before its report is looked at.**
 any code — see [`docs/new-model.md`](docs/new-model.md) for the short procedure. It is what promotes
 the layout to a confirmed family and unlocks the readings beyond the core climate block. When nothing
 fits at all, the diagnostics file proposes candidate layouts itself;
-[`docs/report-layouts.md`](docs/report-layouts.md) is the inventory of every known one.
+[`docs/report-layouts.md`](docs/report-layouts.md) is the inventory of every known one, and
+[`docs/VENDOR_LABELS.md`](docs/VENDOR_LABELS.md) records where the names of modes and fan
+speeds come from — they are the manufacturer's own, read from the language bundle its app
+ships, rather than translated by us.
 
 ## Contributing
 

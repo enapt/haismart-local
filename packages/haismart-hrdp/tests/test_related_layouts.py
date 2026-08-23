@@ -351,6 +351,65 @@ def test_the_window_unit_can_be_commanded_through_its_published_frame():
     assert (out[2] >> 5) & 0x07 == 5
 
 
+def test_every_published_fan_code_is_decodable_and_uniquely_named():
+    """Every fan speed the catalogue publishes must resolve, and no two may share a token.
+
+    Enumerated from the published catalogue (1,451 products); the English is the manufacturer's own,
+    from the language bundle its app ships (see `docs/VENDOR_LABELS.md`):
+
+        0 超强风 Boost · 1 高风 High · 2 中风 Mid · 3 低风 Low · 4 微风 Breeze
+        5 自动 Auto · 6 静音风 Silent | 快速风 Quick · 7 中高风 Mid-high | 快速风 Quick
+        8 中低风 Mid-low · 9 静音风 Silent
+
+    ⚠️ Codes 6 and 7 each carry TWO meanings across products, which is why the token comes from the
+    description and never from the code. A test that keyed on the code would encode the bug.
+
+    Uniqueness is the half that matters for writes: a write resolves a token back to a code, so two
+    speeds sharing one token means the wrong speed can be sent. 中高风/高风 and 中低风/中风 did
+    exactly that, on 51 and 31 products.
+    """
+    from haismart_hrdp.models import STD_WIND_SPEED
+    from haismart_hrdp.profiles import _FAN_KEYWORDS
+    from haismart_hrdp.wire_models import _EXT36_FAN, _FRAME_WRITE_SPEC
+
+    published = {
+        "1": ("高风", "high"), "2": ("中风", "medium"), "3": ("低风", "low"),
+        "4": ("微风", "breeze"), "5": ("自动", "auto"), "6": ("静音风", "silent"),
+        "7": ("中高风", "mid_high"), "8": ("中低风", "mid_low"), "9": ("静音风", "silent"),
+    }
+    extra = {"6": ("快速风", "quick"), "7": ("快速风", "quick")}   # the same codes, other products
+
+    def resolve(code: str, desc: str) -> str | None:
+        if code in STD_WIND_SPEED:
+            return STD_WIND_SPEED[code]
+        low = desc.casefold()
+        return next((tok for kw, tok in _FAN_KEYWORDS if kw.casefold() in low), None)
+
+    for code, (desc, token) in {**published, **extra}.items():
+        assert resolve(code, desc) == token, f"{desc} ({code}) resolved wrongly"
+
+    # ...and no two descriptions a single product can publish share a token.
+    seen: dict[str, str] = {}
+    for desc, token in published.values():
+        assert token not in seen or seen[token] == desc, (
+            f"{desc} and {seen[token]} both resolve to {token!r}"
+        )
+        seen[token] = desc
+
+    # 超强风 / "Boost" is NOT named, and must not be: its code is 0, which a real report from a
+    # switched-off 209-byte unit also reads, so it cannot be told from "no speed reported". Both
+    # halves are asserted, because offering it in one layer and not the other is the actual hazard.
+    assert resolve("0", "超强风") is None
+    assert 0 not in _EXT36_FAN
+
+    # The wire layer carries every remaining code its field can hold; 8 and 9 do not fit three bits.
+    assert set(_EXT36_FAN) == {1, 2, 3, 4, 5, 6, 7}
+    assert all(int(k) == int(v) for k, v in _EXT36_FAN.items())     # identity
+    writable = _FRAME_WRITE_SPEC["windSpeed"]["std_to_epp"]
+    assert set(writable) == set(_EXT36_FAN), "a speed the frame can read but never write back"
+    assert max(writable.values()) < 8, "a value that does not fit the 3-bit field"
+
+
 def test_every_published_operation_mode_code_is_decodable():
     """The wire map's code set is a FILTER, not a translation -- it is the identity -- so a code
     missing from it does not decode wrong, it vanishes. Enumerated from the published catalogue

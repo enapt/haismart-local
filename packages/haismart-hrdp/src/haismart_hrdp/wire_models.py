@@ -644,7 +644,35 @@ COMPACT12 = WireModel(
 
 # operationMode / windSpeed are plain STD enums here: the model maps stdValue -> eppValue 1:1 for
 # both, so the raw wire value IS the STD code the digital model and the profile already speak.
-_EXT36_MODE = {0: "0", 1: "1", 2: "2", 4: "4", 6: "6"}   # auto / cool / dry / heat / fan_only
+# The mode/fan codes these families put on the wire. Both are the IDENTITY -- on every family that
+# is the published map at a displacement the EPP value *is* the Haier STD code -- so their only job
+# is to say which codes exist; a raw value absent from them is dropped rather than published.
+#
+# ⚠️ That makes an omission invisible: the reading simply disappears, which reads downstream as "the
+# unit did not report a mode" rather than as "we do not know this code" (Rule 13's shape). Code 5
+# was omitted, and it is a real published mode -- ``节能模式(窗机)``, energy-saving, on the window air
+# conditioners -- so a window unit sitting in it decoded with NO operationMode at all (issue #11,
+# capture 1). The sets below are therefore ENUMERATED from the published catalogue rather than
+# written from memory, and `test_published_enum_codes_are_all_decodable` holds them to it.
+#
+# Widening cannot mislabel an appliance that does not have the code: the raw value is only a *code*
+# here, and what it MEANS comes from the device's own published enum via `AttributeProfile`, which
+# returns nothing for a code its model does not declare.
+_EXT36_MODE = {
+    0: "0",   # 智能/自动/舒适  auto
+    1: "1",   # 制冷            cool
+    2: "2",   # 除湿            dry
+    3: "3",   # 健康除湿        healthy dehumidify -- named by its description, not by this table
+    4: "4",   # 制热            heat
+    5: "5",   # 节能模式(窗机)  energy-saving, window units only (3 published products)
+    6: "6",   # 送风            fan only
+}
+# ⚠️ NOT widened, deliberately -- see `docs/FUTURE_WORK.md`. Five further fan codes are published
+# (0 超强风, 4 微风, 6 静音风/快速风, 7 快速风, 9 静音风) across ~50 products, and two of them cannot
+# be shipped as they stand: codes 8 and 9 do not FIT the frame's 3-bit windSpeed field, and 中低风
+# (8) already resolves to the same "medium" token as 中 (2). Neither is settled without a report
+# from one of those units, and offering a fan speed the encoder must refuse is a button that can
+# only raise.
 _EXT36_FAN = {1: "1", 2: "2", 3: "3", 5: "5"}            # high / medium / low / auto
 
 # --- fields from the published map ------------------------------------------
@@ -1550,6 +1578,20 @@ _RELATED_KEYS: tuple[str, ...] = (
 #: leading characters below it are a product class, which is explicitly not a layout.
 _RELATED_PREFIX_MIN = 20
 
+#: Every whole-word offset a published air conditioner is known to report at. This is the shortlist
+#: for an appliance that is related to no published model closely enough to inherit one -- the
+#: window air conditioners, whose identifiers diverge at character 16, and the handful of split
+#: units that diverge at 19. Both diverge *inside* the device type, which is exactly the boundary
+#: :data:`_RELATED_PREFIX_MIN` exists to refuse, so their offset cannot be inherited and must be
+#: measured.
+#:
+#: Using it is not a new assumption. :func:`~haismart_hrdp.uss.parse_full_status` already decodes
+#: the head of *any* unrecognised report at fixed bytes 92/93/94/97 -- which is this map at -19 --
+#: and publishes power, setpoint, mode, fan and vane from it with no check of any kind. What this
+#: adds is the rest of the block and, unlike that path, a verdict: the report has to agree, and
+#: with no relative to rank the candidates it has to single one out (see :func:`decode_related`).
+PUBLISHED_DISPLACEMENTS: tuple[int, ...] = tuple(sorted(set(PROFILE_DISPLACEMENTS.values())))
+
 
 def displacement_candidates(uplus_id: str | None) -> tuple[int, ...]:
     """Displacements used by the published models most closely related to ``uplus_id``.
@@ -1595,7 +1637,13 @@ def displacement_candidates(uplus_id: str | None) -> tuple[int, ...]:
 _FRAME_WRITE_SPEC: Mapping[str, Mapping[str, object]] = {
     "targetTemperature": {"kind": "passthrough", "min_epp": 0, "max_epp": 14},   # 16..30 C
     "windDirectionVertical": {"kind": "passthrough", "max_epp": 0x0C},
-    "operationMode": {"kind": "std_enum", "std_to_epp": {0: 0, 1: 1, 2: 2, 4: 4, 6: 6}},
+    # Identity, and every code the published catalogue carries -- including 5, the window units'
+    # 节能模式(窗机). The set of codes a given appliance may be SENT is not this map's job: the
+    # climate entity builds its mode list from the device's own declared enum, so a unit that does
+    # not publish a code is never asked to accept it. What this map must not do is refuse a code
+    # the device itself declares.
+    "operationMode": {"kind": "std_enum",
+                      "std_to_epp": {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6}},
     "windSpeed": {"kind": "std_enum", "std_to_epp": {1: 1, 2: 2, 3: 3, 5: 5}},
     "onOffStatus": {"kind": "passthrough", "max_epp": 1},
     "healthMode": {"kind": "passthrough", "max_epp": 1},
@@ -1734,11 +1782,51 @@ def related_wire_models(
     *,
     order: Sequence[str] | None = None,
 ) -> tuple[WireModel, ...]:
-    """Candidate layouts for a report no registered family claims, best-related first."""
+    """Candidate layouts for a report no registered family claims.
+
+    The closest published relatives' offsets, best-related first -- or, when the appliance names
+    itself but nothing is related closely enough to rank, every offset a published model reports at
+    (:data:`PUBLISHED_DISPLACEMENTS`). ⚠️ In that second case the order carries **no evidence**, so a
+    caller must not simply take the first that fits; :func:`decode_related` requires the report to
+    single one out instead. :func:`related_shortlist_is_ranked` says which case a uPlusId is in.
+
+    The unranked case needs **two** things a ranked one does not, because it has no relative
+    vouching for it:
+
+    * the appliance must have named itself (``uplus_id``), and
+    * its product must publish a group-set ``order``.
+
+    The order is the corroboration. It is that product's own statement that it is a grSetDAC
+    appliance whose settings are packed by the shared frame -- word ascending, bit descending -- so
+    it is independent evidence that the published map describes this appliance at all. Without it
+    there is nothing but the offsets themselves, and the right answer is the one this already
+    falls through to: the partial decode, which flags itself ``layout: unknown``. That flag is the
+    whole mechanism by which an unsupported model gets reported and then supported -- this family
+    map exists because those reports arrive -- so it must not be spent on a guess.
+
+    In practice that is the difference between the 28 published products that state a frame and
+    the 187 central-air models that state none; the latter keep exactly the behaviour they have.
+    """
+    ranked = displacement_candidates(uplus_id)
+    if ranked:
+        candidates: Sequence[int] = ranked
+    elif uplus_id and order:
+        candidates = PUBLISHED_DISPLACEMENTS
+    else:
+        candidates = ()
     return tuple(
-        related_wire_model(length, d, order=order, uplus_id=uplus_id)
-        for d in displacement_candidates(uplus_id)
+        related_wire_model(length, d, order=order, uplus_id=uplus_id) for d in candidates
     )
+
+
+def related_shortlist_is_ranked(uplus_id: str | None) -> bool:
+    """Whether :func:`related_wire_models` ordered its candidates on evidence for ``uplus_id``.
+
+    True when at least one published model shares enough of the identifier to be treated as a
+    relative, so the shortlist runs closest-first and the first fit is the best-supported answer.
+    False when the shortlist is the unranked published set.
+    """
+    return bool(displacement_candidates(uplus_id))
 
 
 #: What a related layout must actually produce before it is believed. The plausibility check alone
@@ -1784,15 +1872,30 @@ def decode_related(
 ) -> dict | None:
     """Decode ``data`` with the layout of the closest published relative that the report agrees with.
 
-    Tries each candidate offset in turn and keeps the first that both places the core readings and
-    finds them plausible. ``None`` when no relative fits, which leaves the caller on the partial
-    decode it would have used anyway -- an unfamiliar appliance is never made worse off by this.
+    Tries each candidate offset in turn and keeps the one that both places the core readings and
+    finds them plausible. ``None`` when none fits, which leaves the caller on the partial decode it
+    would have used anyway -- an unfamiliar appliance is never made worse off by this.
+
+    **How the winner is chosen depends on whether the shortlist means anything.** With a relative,
+    the candidates are ranked by how much of the identifier they share, so the first that fits is
+    the best-supported answer and later ones are worse candidates for the same report. With no
+    relative the shortlist is just every published offset in numeric order, which is not evidence
+    about *this* appliance -- so the report has to pick one out on its own, and two offsets that
+    both fit is an unresolved question rather than a coin toss. Two rarely both fit: the offsets
+    are nineteen words apart, so on a short report the wrong one reads past the end and places
+    nothing (a window air conditioner's 109-byte report is 8 words long, and the climate block
+    starts at map word 20).
     """
+    ranked = related_shortlist_is_ranked(uplus_id)
+    fits = []
     for wm in related_wire_models(len(data), uplus_id, order=order):
         decoded = wm.decode(data, profile)
-        if decoded is not None and all(k in decoded for k in _RELATED_REQUIRED):
+        if decoded is None or not all(k in decoded for k in _RELATED_REQUIRED):
+            continue
+        if ranked:
             return decoded
-    return None
+        fits.append(decoded)
+    return fits[0] if len(fits) == 1 else None
 
 
 def device_type_class(uplus_id: str | None) -> str | None:

@@ -258,6 +258,41 @@ report per family; until then those controls are correctly absent (and the horiz
 the frame position would have written into tower/auxiliary bits, is refused by the order gate —
 item 40 below).
 
+### 41. The fan speeds five published codes name, and the two that do not fit
+
+Issue #11 exposed the shape of a defect worth stating once: the wire map's mode and fan **code sets
+are the identity** — on every family that is the published map at a displacement, the EPP value *is*
+the Haier STD code — so their only job is to say which codes exist, and a code missing from one does
+not decode wrong, it **vanishes**. Downstream that reads as "the appliance did not report a fan
+speed", not as "we do not know this code", which is why nobody noticed.
+
+`operationMode` is now enumerated from the catalogue and complete (0, 1, 2, 3, 4, 5, 6 — code 5 was
+the missing one, `节能模式(窗机)`). `windSpeed` is **not**, deliberately. Five further codes are
+published:
+
+| code | description | products |
+|---|---|---|
+| 0 | 超强风 (strongest) | 23 |
+| 4 | 微风 (gentlest) | 24 |
+| 6 | 静音风 (silent) · 快速风 (fast) | 20 · 4 |
+| 7 | 快速风 (fast) | 20 (a further 31 publish 中高风 at 7, which already resolves) |
+| 9 | 静音风 (silent) | 3 |
+
+Two things have to be settled before any of it ships, and neither can be from published data alone:
+
+* **Codes 8 and 9 do not fit.** The frame gives `windSpeed` a **3-bit** field (values 0..7), so a
+  unit declaring 中低风 (8) or 静音风 (9) could be offered a speed the encoder must refuse — a button
+  that can only raise. Either those units carry a wider field or their group set takes a different
+  subset; a report from one would say which. This is the `freshWindSpeed` situation exactly.
+* **The token collides.** 中低风 (8) resolves to the same `medium` as 中 (2) through the description
+  keywords, so two codes would map to one token and the reverse lookup would pick whichever came
+  first. That is a pre-existing rough edge on 31 products, and widening around it without fixing it
+  would make it reachable.
+
+⚠️ Note also that **code 6 and code 7 each carry two different meanings** across products, so the
+code alone never determines the speed — the description does. Any fix must key on the description,
+which is what `_enum_from_datalist` already does; nothing here should be turned into a code table.
+
 ## Reference — not open items
 
 Kept because each looks like something to "fix" until you know why it is the way it is.

@@ -49,9 +49,44 @@ Three limits, all deliberate:
 - **Core readings only.** Power, setpoint, room and outdoor temperature, mode, fan, vertical swing,
   fault code and who last changed the unit. The further attributes a device declares stay unplaced
   until the offset has been checked field by field against a real report.
-- **It refuses rather than guesses.** A Model ID resembling nothing published produces no candidates,
-  and a candidate that "fits" only because it read past the end of a shorter report — every field
-  absent, nothing implausible because nothing is there — is rejected rather than believed.
+- **It refuses rather than guesses.** A candidate that "fits" only because it read past the end of a
+  shorter report — every field absent, nothing implausible because nothing is there — is rejected
+  rather than believed.
+
+### When the unit resembles nothing published (v0.52.0)
+
+Until v0.52.0, a Model ID resembling nothing published produced **no candidates at all**, and the
+unit fell through to the partial decode. That is what the window air conditioners hit (issue #11):
+their identifiers diverge at character 16, *inside* the device type, which is exactly the boundary
+the relatedness threshold exists to refuse — so they had no relative to inherit an offset from and
+reported "no decodable status" despite being an ordinary grSetDAC appliance.
+
+They do not need a relative. The offsets are only two, and the shortlist was never the evidence —
+the report was. So a unit with no relative is now tried against **every offset a published model
+reports at**, on two conditions:
+
+- **the unit must have named itself** (it announces its Model ID on the discovery channel, key-free);
+  and
+- **its product must publish a group-set list.** That list is the product's own statement that it is
+  a grSetDAC appliance packed by the shared frame, so it is independent evidence that the published
+  map describes this appliance at all.
+
+and with one extra rule: because the shortlist now carries no ranking, **the report has to single one
+offset out**. Two that both fit is an unresolved question, not a coin toss, and falls back to the
+partial decode. In practice they rarely both fit — the offsets are nineteen words apart, so on a
+short report the wrong one reads past the end and places nothing. A window unit's 109-byte report is
+eight words long and the climate block starts at map word 20, so only one offset places anything at
+all.
+
+This is deliberately **not** a new assumption. The partial decode already reads the head of *any*
+unrecognised report at fixed byte positions — which is this map at −19 — and publishes power,
+setpoint, mode, fan and vane from it with no check at all. What the fallback adds is the rest of the
+block and, unlike that path, a verdict.
+
+Units with no group-set list keep exactly their previous behaviour, including their `layout:
+unknown` flag — and that flag is how an unsupported model gets reported and then supported, so it is
+not spent on a guess. In the published catalogue that is the difference between 28 products that
+state a frame and the 187 central-air models that state none.
 
 A resolved layout is reported as `related-19` / `related+0` (the offset it used) rather than a family
 name, so diagnostics distinguish it from a family confirmed on hardware.
@@ -61,6 +96,7 @@ name, so diagnostics distinguish it from a family confirmed on hardware.
 | Report | Family | Setpoint | Sensors | Status |
 |---|---|---|---|---|
 | 109 / 121 / 125 / 127 B | **classic** | `°C − 16` @ w1.b8 | indoor w6.b8, outdoor w7.b8 | ✅ read + control |
+| 109 B (window units) | classic map, resolved as `related-19` | as above | indoor w6.b8; **no outdoor probe** | ✅ read + control since v0.52.0 |
 | 117 B | **compact-12** | whole °C @ w12 | indoor w1; w2 low byte is the outdoor-UNIT temp (hot, ~60 °C cooling; not ambient) — diagnostics only | ✅ read + control |
 | 165 / 175 B | **extended-36** | `°C − 16` @ w20.b8 | indoor w25.b8, outdoor w26.b8 | ✅ read + control |
 | 209 B | **extended-46** | **half-degrees** @ w20.b8 | indoor w35.b8, outdoor w36.b8 | ✅ read + control (no left-right vane) |

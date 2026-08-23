@@ -4469,3 +4469,120 @@ async def test_compact_single_param_controls_are_gated_on_declaration(
     assert hass.states.get("switch.downstairs_ac_electric_heating") is not None
     assert hass.states.get("switch.downstairs_ac_health") is None
     assert hass.states.get("button.downstairs_ac_start_self_clean") is None
+
+
+# --- issue #11: a window air conditioner, related to no published model ----------------------
+
+_WINDOW_UPLUS_ID = "201c120024000810391286e28c62e450083e48910b475b0921da284d3b25e440"
+#: The reporter's own capture: cool, 22 C, fan low. 109 bytes -- the published map's words 20..27
+#: and the checksum, and nothing else.
+_WINDOW_REPORT = bytes.fromhex(
+    "00002715000000004e560100000302000004010000000000000000000000000000000000000000000000000000"
+    "000000000000000000000000000000000000000000000000000000000000000000001dffff1a00000000000006"
+    "6d010600233c000114000000380000800000c0"
+)
+
+
+def _window_model() -> dict:
+    """HW-10VCQ33-W's published model: six real attributes, and three modes -- one of which is the
+    window units' own ``节能模式(窗机)``, energy-saving, which has no HVACMode of its own."""
+    return {
+        "attributes": [
+            {"name": "onOffStatus", "writable": True,
+             "valueRange": {"type": "LIST", "dataList": [{"data": "true"}, {"data": "false"}]}},
+            {"name": "targetTemperature", "writable": True,
+             "valueRange": {"type": "STEP",
+                            "dataStep": {"minValue": "16", "maxValue": "30", "step": "1"}}},
+            {"name": "indoorTemperature",
+             "valueRange": {"type": "STEP",
+                            "dataStep": {"minValue": "0", "maxValue": "55", "step": "0.5"}}},
+            {"name": "operationMode", "writable": True, "valueRange": {"type": "LIST", "dataList": [
+                {"data": "1", "desc": "制冷"},
+                {"data": "5", "desc": "节能模式(窗机)"},
+                {"data": "6", "desc": "送风"},
+            ]}},
+            {"name": "windSpeed", "writable": True, "valueRange": {"type": "LIST", "dataList": [
+                {"data": "1", "desc": "高风"}, {"data": "2", "desc": "中风"},
+                {"data": "3", "desc": "低风"}, {"data": "5", "desc": "自动"},
+            ]}},
+            {"name": "muteStatus", "writable": True,
+             "valueRange": {"type": "LIST", "dataList": [{"data": "true"}, {"data": "false"}]}},
+        ],
+        "groupCommands": [{"name": "grSetDAC", "attrNameList": [
+            "targetTemperature", "windDirectionVertical", "operationMode", "specialMode",
+            "windSpeed", "energySavePeriod", "energySave", "tempUnit", "pmvStatus",
+            "intelligenceStatus", "halfDegreeSettingStatus", "screenDisplayStatus",
+            "10degreeHeatingStatus", "echoStatus", "lockStatus", "silentSleepStatus", "muteStatus",
+            "rapidMode", "electricHeatingStatus", "healthMode", "onOffStatus", "targetHumidity",
+            "humanSensingStatus", "windDirectionHorizontal", "trdlSeting", "sabbathStatus",
+            "energySavingStatus", "lightStatus", "selfCleaningStatus", "ch2oCleaningStatus",
+            "pm2p5CleaningStatus", "humidificationStatus", "freshAirStatus",
+        ]}],
+    }
+
+
+async def _setup_window(hass: HomeAssistant, mock_uss):
+    mock_uss.read.return_value = [_WINDOW_REPORT]
+    return await _setup_with_model(
+        hass, _window_model(), **{CONF_UPLUS_ID: _WINDOW_UPLUS_ID, CONF_PRODUCT_CODE: "AD0P34E00"}
+    )
+
+
+async def test_a_window_unit_with_no_relative_gets_a_working_thermostat(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Issue #11. This appliance shares only sixteen characters with the nearest published model, so
+    it had no relative to inherit a word offset from and reported "no decodable status". Its own
+    published frame corroborates the offset the report then singles out."""
+    await _setup_window(hass, mock_uss)
+
+    climate = hass.states.get(CLIMATE)
+    assert climate is not None
+    assert climate.state == "cool"
+    assert climate.attributes["temperature"] == 22.0          # the reporter's stated setpoint
+    assert climate.attributes["current_temperature"] == 28.0
+    assert climate.attributes["fan_mode"] == "low"            # 低风, as stated
+    assert climate.attributes["fan_modes"] == ["high", "medium", "low", "auto"]
+    # Three published modes, but only two have an HVACMode: energy-saving is a preset, below.
+    assert climate.attributes["hvac_modes"] == ["off", "cool", "fan_only"]
+    # It declares no outdoor probe at all and reports the sentinel zero for one. That must stay
+    # unknown, not become the confident -64 C the raw formula would make of it.
+    assert hass.states.get("sensor.downstairs_ac_outdoor_temperature").state == "unknown"
+
+
+async def test_the_window_energy_saving_mode_is_reachable_as_the_eco_preset(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """`节能模式(窗机)` is cooling with the compressor cycled, and HA has no eco HVAC mode. So it
+    reads back as Cool, and is selected -- and cleared -- through the eco preset."""
+    await _setup_window(hass, mock_uss)
+    climate = hass.states.get(CLIMATE)
+    assert "eco" in climate.attributes["preset_modes"]
+    assert climate.attributes["preset_mode"] == "none"    # the report is in plain cool (code 1)
+
+    mock_uss.send.baseline = _WINDOW_REPORT
+    await hass.services.async_call(
+        "climate", "set_preset_mode", {"entity_id": CLIMATE, "preset_mode": "eco"}, blocking=True
+    )
+    await hass.async_block_till_done()
+    # the group-set now carries the unit's own energy-saving code, and preserves everything else
+    assert _sent_field(mock_uss.send, "operationMode") == 5
+    assert _sent_field(mock_uss.send, "onOffStatus") == 1
+    assert _sent_field(mock_uss.send, "targetTemperature") == 22 - 16
+
+
+async def test_a_unit_in_its_energy_saving_mode_still_reports_a_mode(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The code was absent from the wire map's set, so the reading was DROPPED -- and a dropped
+    reading is indistinguishable from an appliance that reported nothing. The reporter's first
+    capture is exactly that state."""
+    report = bytearray(_WINDOW_REPORT)
+    report[94] = (report[94] & 0x1F) | (5 << 5)          # operationMode := 5
+    mock_uss.read.return_value = [bytes(report)]
+    await _setup_with_model(
+        hass, _window_model(), **{CONF_UPLUS_ID: _WINDOW_UPLUS_ID, CONF_PRODUCT_CODE: "AD0P34E00"}
+    )
+    climate = hass.states.get(CLIMATE)
+    assert climate.state == "cool"                       # displayed as the cooling it is
+    assert climate.attributes["preset_mode"] == "eco"

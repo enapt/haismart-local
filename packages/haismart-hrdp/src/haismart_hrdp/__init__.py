@@ -147,6 +147,7 @@ from .wire_models import (
     frame_write_fields,
     probe_layout,
     related_model_named,
+    related_shortlist_is_ranked,
     related_wire_models,
     select_wire_model,
 )
@@ -184,6 +185,7 @@ __all__ = [
     "decode_related",
     "frame_write_fields",
     "related_model_named",
+    "related_shortlist_is_ranked",
     "related_wire_models",
     "select_wire_model",
     "declared_fields",

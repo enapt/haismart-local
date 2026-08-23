@@ -6,6 +6,7 @@ allowlist.
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 from haismart_hrdp import GRSETDAC_ENUMS
@@ -40,8 +41,19 @@ _MODE_TO_HVAC = {
     "dry": HVACMode.DRY,
     "fan_only": HVACMode.FAN_ONLY,
     "auto": HVACMode.AUTO,
+    # A published mode with no HVACMode of its own. The window air conditioners carry
+    # `节能模式(窗机)` -- energy-saving -- as an operationMode beside cool and fan, and it IS
+    # cooling, with the compressor cycled to save power. So it DISPLAYS as Cool and is chosen
+    # through the eco preset (`_mode_eco_preset`) -- the only vocabulary Home Assistant has for it.
+    "eco": HVACMode.COOL,
 }
-_HVAC_TO_MODE = {v: k for k, v in _MODE_TO_HVAC.items()}
+# Deliberately NOT the plain inverse: two tokens map to COOL, and picking Cool on the card must
+# write plain cooling rather than the energy-saving variant. Excluding the eco token is what keeps
+# that true no matter where it sits in the mapping above.
+_ECO_MODE_TOKEN = "eco"
+_HVAC_TO_MODE = {
+    hvac: token for token, hvac in _MODE_TO_HVAC.items() if token != _ECO_MODE_TOKEN
+}
 
 # Fan-only mode on this unit won't accept fan=auto; when entering it (or if the user picks auto
 # while in it) we fall back to this concrete speed. "medium" is a neutral default airflow.
@@ -59,11 +71,52 @@ _FAN_ONLY_DEFAULT_SPEED = "low"
 # and the two agree because both read the same field. The unit's "quiet" (muteStatus) is
 # deliberately not a preset: it is a fan-noise setting that composes with any of these, and folding
 # it in would mean turning it off whenever a preset changes.
-_PRESET_FIELDS: dict[str, tuple[str, int]] = {
-    PRESET_ECO: ("ecoMode", GRSETDAC_ENUMS["ecoMode"]["level1"]),
-    PRESET_SLEEP: ("silentSleepStatus", 1),
-    PRESET_BOOST: ("rapidMode", 1),
+@dataclass(frozen=True)
+class _Preset:
+    """One comfort preset: the field it writes and the values that turn it on and off.
+
+    ``off`` is not always zero. Most presets are a bit or a level on a field of their own, so
+    clearing them means writing 0. The window units express their energy-saving setting as an
+    ``operationMode`` CODE instead, and that field's zero is a different mode (auto) which those
+    units do not even have -- so clearing it means selecting plain cooling.
+
+    ``exact`` says how to read the field back. A level field is "on" at any non-zero value, because
+    its other values are the same setting turned up (eco level 2 is still eco). A field whose other
+    values are OTHER SETTINGS is on only at ``on`` itself -- ``operationMode`` 1 is cooling, not
+    "eco, off", and treating it as truthy would report eco whenever the unit was cooling at all.
+    """
+
+    field: str
+    on: int
+    off: int = 0
+    exact: bool = False
+
+    def is_on(self, value: int | None) -> bool:
+        return value == self.on if self.exact else bool(value)
+
+
+_PRESET_FIELDS: dict[str, _Preset] = {
+    PRESET_ECO: _Preset("ecoMode", GRSETDAC_ENUMS["ecoMode"]["level1"]),
+    PRESET_SLEEP: _Preset("silentSleepStatus", 1),
+    PRESET_BOOST: _Preset("rapidMode", 1),
 }
+
+
+def _mode_eco_preset(profile) -> _Preset | None:
+    """The eco preset for a unit whose energy-saving setting is an ``operationMode`` code.
+
+    The window air conditioners publish three modes -- cool, ``节能模式(窗机)`` and fan -- with no
+    ``ecoMode`` ladder at all, so their energy-saving setting is reachable only by writing the mode.
+    Both codes come from the device's own published enum: nothing here assumes what they are, and a
+    unit whose model names no eco mode (or no plain cooling to return to) gets no preset.
+    """
+    eco, cool = profile.std_mode(_ECO_MODE_TOKEN), profile.std_mode("cool")
+    if eco is None or cool is None:
+        return None
+    try:
+        return _Preset("operationMode", int(eco), off=int(cool), exact=True)
+    except (TypeError, ValueError):
+        return None
 # Read-back order. These fields are independent on the wire and the switches/select write them one
 # at a time, so a unit can genuinely have two of them on; Home Assistant needs a single answer, so
 # the most assertive setting wins — boost is doing the most to the unit, eco the least.
@@ -130,11 +183,18 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
         self._attr_target_temperature_step = profile.temp_step
         # Only offer the presets whose field this unit's report family can actually write: a family
         # without the secondary toggles would otherwise get a control that always raises.
-        presets = [
-            preset
-            for preset, (field, _) in _PRESET_FIELDS.items()
-            if coordinator.supports_field(field)
-        ]
+        self._presets: dict[str, _Preset] = {
+            preset: spec
+            for preset, spec in _PRESET_FIELDS.items()
+            if coordinator.supports_field(spec.field)
+        }
+        # A unit with no eco LADDER may still have an energy-saving MODE -- the window air
+        # conditioners do, and it is the only way to reach it. Only ever added when the ladder is
+        # absent, so a unit carrying both keeps the ladder (which is the finer control of the two).
+        if PRESET_ECO not in self._presets and coordinator.supports_field("operationMode"):
+            if (eco := _mode_eco_preset(profile)) is not None:
+                self._presets[PRESET_ECO] = eco
+        presets = [preset for preset in _PRESET_FIELDS if preset in self._presets]
         # Always assign the attribute — the preset_modes property reads it directly, and HA's
         # ClimateEntity gives it no class default, so leaving it unset crashes entity setup on a
         # family with no writable presets (e.g. the 117-byte family — issue #4).
@@ -225,12 +285,12 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
         # What does apply is a mode or a fault that locks the field regardless — boost stays out
         # while the unit is dehumidifying, whatever the other presets are doing.
         locked = self.coordinator.locked_fields_excluding(
-            [field for field, _ in _PRESET_FIELDS.values()]
+            [spec.field for spec in self._presets.values()]
         )
         available = [
             preset
             for preset in offered
-            if preset == PRESET_NONE or _PRESET_FIELDS[preset][0] not in locked
+            if preset == PRESET_NONE or self._presets[preset].field not in locked
         ]
         return available if len(available) > 1 else None
 
@@ -306,8 +366,9 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
         for preset in _PRESET_PRECEDENCE:
             if preset not in offered:
                 continue
-            value = self.coordinator.current_field(_PRESET_FIELDS[preset][0])
-            if value:
+            spec = self._presets[preset]
+            value = self.coordinator.current_field(spec.field)
+            if spec.is_on(value):
                 return preset
             known = known or value is not None
         return PRESET_NONE if known else None
@@ -322,11 +383,18 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
         offered = self.preset_modes or ()
         if preset_mode not in offered:
             self.raise_unsupported_value(preset_mode, "preset")
-        await self.coordinator.async_send_control({
-            field: (on if preset == preset_mode else 0)
-            for preset, (field, on) in _PRESET_FIELDS.items()
-            if preset in offered
-        })
+        changes: dict[str, int] = {}
+        for preset, spec in self._presets.items():
+            if preset not in offered:
+                continue
+            if preset == preset_mode:
+                changes[spec.field] = spec.on
+            elif not spec.exact or spec.is_on(self.coordinator.current_field(spec.field)):
+                # A preset that shares its field with other settings is only cleared when it is
+                # actually on: writing its "off" unconditionally would drag a unit out of fan-only
+                # into cooling merely because someone selected a different preset, or none.
+                changes[spec.field] = spec.off
+        await self.coordinator.async_send_control(changes)
 
     @property
     def swing_horizontal_mode(self) -> str | None:

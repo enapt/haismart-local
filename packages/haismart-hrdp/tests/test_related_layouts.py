@@ -14,6 +14,7 @@ from haismart_hrdp.canonical_map import DISPLACEMENTS, PROFILE_DISPLACEMENTS
 from haismart_hrdp.wire_models import (
     _RELATED_PREFIX_MIN,
     displacement_candidates,
+    related_model_named,
     related_wire_model,
     related_wire_models,
 )
@@ -189,3 +190,157 @@ def test_the_encoder_still_refuses_a_setting_the_appliance_does_not_publish():
     assert "windDirectionHorizontal" not in model.write_fields
     with pytest.raises(KeyError):
         model.encode_control(model.baseline_words(STATUS_125), {"windDirectionHorizontal": 7})
+
+
+# --- an appliance related to nothing (issue #11, the window air conditioners) ----------------
+
+#: HW-10VCQ33-W, product AD0P34E00 -- a Philippine window unit, uPlusId class 3912. It shares only
+#: SIXTEEN characters with the nearest published model, diverging inside the device type, which is
+#: the boundary `_RELATED_PREFIX_MIN` exists to refuse. So it has no relative to inherit an offset
+#: from and, before this, decoded to nothing at all.
+WINDOW_UPLUS_ID = "201c120024000810391286e28c62e450083e48910b475b0921da284d3b25e440"
+
+#: Its published group-set order, from the shipped rules bundle (33 names).
+WINDOW_ORDER = (
+    "targetTemperature", "windDirectionVertical", "operationMode", "specialMode", "windSpeed",
+    "energySavePeriod", "energySave", "tempUnit", "pmvStatus", "intelligenceStatus",
+    "halfDegreeSettingStatus", "screenDisplayStatus", "10degreeHeatingStatus", "echoStatus",
+    "lockStatus", "silentSleepStatus", "muteStatus", "rapidMode", "electricHeatingStatus",
+    "healthMode", "onOffStatus", "targetHumidity", "humanSensingStatus", "windDirectionHorizontal",
+    "trdlSeting", "sabbathStatus", "energySavingStatus", "lightStatus", "selfCleaningStatus",
+    "ch2oCleaningStatus", "pm2p5CleaningStatus", "humidificationStatus", "freshAirStatus",
+)
+
+#: The three reports attached to issue #11. 109 bytes: eight attribute words and the checksum, i.e.
+#: the published map's words 20..27 and nothing after them.
+WINDOW_OFF = bytes.fromhex(
+    "00002715000000004e5601000003020000040100000000000000000000000000000000000000000000000000"
+    "00000000000000000000000000000000000000000000000000000000000000000000001dffff1a0000000000"
+    "00066d010800a33c0000140000003600008000003f"
+)
+WINDOW_COOL_22_LOW = bytes.fromhex(
+    "00002715000000004e5601000003020000040100000000000000000000000000000000000000000000000000"
+    "00000000000000000000000000000000000000000000000000000000000000000000001dffff1a0000000000"
+    "00066d010600233c000114000000380000800000c0"
+)
+WINDOW_COOL_22_HIGH = bytes.fromhex(
+    "00002715000000004e5601000003020000040100000000000000000000000000000000000000000000000000"
+    "00000000000000000000000000000000000000000000000000000000000000000000001dffff1a0000000000"
+    "00066d010600213c000114000000380000800000be"
+)
+
+
+def test_an_appliance_with_no_relative_resolves_its_offset_from_the_report():
+    """Issue #11. No published model shares enough of this identifier to rank as a relative, so the
+    old shortlist was EMPTY and the report decoded to nothing. The offsets are still only two, and
+    the report itself tells them apart: at 0 every climate word lies past the end of a 109-byte
+    report, so nothing is placed at all."""
+    from haismart_hrdp.wire_models import displacement_candidates, related_shortlist_is_ranked
+
+    assert displacement_candidates(WINDOW_UPLUS_ID) == ()      # no relative, as before
+    assert related_shortlist_is_ranked(WINDOW_UPLUS_ID) is False
+
+    state = decode_related(WINDOW_COOL_22_LOW, WINDOW_UPLUS_ID, order=WINDOW_ORDER)
+    assert state is not None
+    assert state["layout"] == "related-19"
+    assert state["power"] is True
+    assert state["target_temperature"] == 22.0     # the stated setpoint
+    assert state["current_temperature"] == 28.0
+    assert state["wind_speed"] == "3"              # 低风 low, the stated fan speed
+    assert state["operation_mode"] == "1"          # 制冷 cool, the stated mode
+
+
+def test_the_window_reports_agree_with_every_state_their_reporter_stated():
+    off = decode_related(WINDOW_OFF, WINDOW_UPLUS_ID, order=WINDOW_ORDER)
+    high = decode_related(WINDOW_COOL_22_HIGH, WINDOW_UPLUS_ID, order=WINDOW_ORDER)
+    assert off is not None and high is not None
+    assert off["power"] is False and high["power"] is True
+    assert high["wind_speed"] == "1"               # 高风 high
+    # This unit declares no outdoor probe at all, and reads its sentinel zero rather than -64 C.
+    assert off.get("outdoor_temperature") is None
+    # It cannot heat, and says so itself -- which agrees with its published mode list (cool /
+    # energy-saving / fan, no 制热). Two independent sources, so the offset is not merely plausible.
+    assert off["heat_capable"] is False
+
+
+def test_the_energy_saving_mode_the_window_units_publish_is_decoded():
+    """`节能模式(窗机)` is operationMode 5. It was absent from the wire map's code set, so a unit
+    sitting in it decoded with NO operationMode -- which reads downstream as "the appliance did not
+    report a mode" rather than "we do not know this code"."""
+    off = decode_related(WINDOW_OFF, WINDOW_UPLUS_ID, order=WINDOW_ORDER)
+    assert off is not None
+    assert off["operation_mode"] == "5"
+
+
+def test_an_unidentified_or_frameless_appliance_keeps_the_partial_decode():
+    """The fallback is not a free-for-all: it needs the appliance's own name AND its product's
+    published frame. Without either, the report must fall through to the partial decode, whose
+    `layout: unknown` flag is how an unsupported model gets reported in the first place."""
+    assert decode_related(WINDOW_COOL_22_LOW, None, order=WINDOW_ORDER) is None
+    assert decode_related(WINDOW_COOL_22_LOW, WINDOW_UPLUS_ID, order=None) is None
+    assert decode_related(WINDOW_COOL_22_LOW, WINDOW_UPLUS_ID, order=()) is None
+
+
+def test_a_relatives_ranking_still_wins_where_there_is_one():
+    """The fallback must not disturb an appliance that HAS a relative: the shortlist is still the
+    ranked one, and its first fit is still the answer."""
+    from haismart_hrdp.wire_models import (
+        displacement_candidates,
+        related_shortlist_is_ranked,
+        related_wire_models,
+    )
+
+    assert related_shortlist_is_ranked(OUR_UPLUS_ID) is True
+    ranked = displacement_candidates(OUR_UPLUS_ID)
+    assert ranked                       # relatives found -- the ranked shortlist, not the fallback
+    assert tuple(wm.family for wm in related_wire_models(125, OUR_UPLUS_ID)) == tuple(
+        f"related{d:+d}" for d in ranked
+    )
+
+
+def test_the_window_unit_can_be_commanded_through_its_published_frame():
+    """Reading it is half the job. Its order is published, so the frame places every setting it
+    carries -- and a control must land in the right byte and touch nothing else."""
+    wm = related_model_named(
+        "related-19", len(WINDOW_COOL_22_LOW), order=WINDOW_ORDER, uplus_id=WINDOW_UPLUS_ID
+    )
+    assert wm is not None and wm.writable
+    assert wm.write_base_word == 1        # 20 + (-19)
+    base = wm.baseline_words(WINDOW_COOL_22_LOW)
+
+    def changed(**kw):
+        out = wm.encode_control(base, kw)
+        return [i for i, (a, b) in enumerate(zip(base, out, strict=True)) if a != b], out
+
+    where, out = changed(targetTemperature=24 - 16)
+    assert where == [0] and out[0] == 8
+    where, _ = changed(windSpeed=5)
+    assert where == [2]
+    where, _ = changed(onOffStatus=0)
+    assert where == [5]
+    # ...including the energy-saving mode, which the frame's code set used to refuse outright.
+    out = wm.encode_control(base, {"operationMode": 5})
+    assert wm.current_write_value(WINDOW_COOL_22_LOW, "operationMode") == 1
+    assert (out[2] >> 5) & 0x07 == 5
+
+
+def test_every_published_operation_mode_code_is_decodable():
+    """The wire map's code set is a FILTER, not a translation -- it is the identity -- so a code
+    missing from it does not decode wrong, it vanishes. Enumerated from the published catalogue
+    (1,451 products) so it cannot drift back:
+
+        0 智能/自动/舒适 · 1 制冷 · 2 除湿 · 3 健康除湿 · 4 制热 · 5 节能模式(窗机) · 6 送风
+
+    Code 5 is the one that was missing, and it is the whole of issue #11's second half.
+    """
+    from haismart_hrdp.wire_models import _EXT36_MODE, _FRAME_WRITE_SPEC
+
+    published = {0, 1, 2, 3, 4, 5, 6}
+    assert published <= set(_EXT36_MODE), "a published mode code that would decode to nothing"
+    # identity: on every family that is the published map at a displacement, EPP value == STD code
+    assert all(int(k) == int(v) for k, v in _EXT36_MODE.items())
+    writable = _FRAME_WRITE_SPEC["operationMode"]["std_to_epp"]
+    assert published <= set(writable), "a mode the frame could read but never write back"
+    assert all(k == v for k, v in writable.items())
+    # ...and every one of them fits the frame's 3-bit operationMode field.
+    assert max(writable.values()) < 8

@@ -62,13 +62,19 @@ AAC1UKZ01 = AttributeProfile(
 #
 # Sorted longest-first at import so a specific description wins over a substring of it ("制热" before
 # "热", "fan only" before "fan"). The old tuple claimed this ordering in its comment but never did it.
+# ``eco`` is the one token here with no HVACMode of its own: the window air conditioners publish
+# ``节能模式(窗机)`` as an operationMode alongside cool and fan, and it is cooling with the compressor
+# cycled to save energy. The climate entity shows it as Cool and offers it as the eco PRESET -- see
+# `climate._MODE_TO_HVAC`. It is only ever reached for a code the STD table does not name (5), so it
+# cannot capture a description that already resolves.
 _MODE_KEYWORDS: tuple[tuple[str, str], ...] = tuple(sorted((
     ("制冷", "cool"), ("制热", "heat"), ("除湿", "dry"), ("送风", "fan_only"),
     ("通风", "fan_only"), ("智能", "auto"), ("自动", "auto"), ("舒适", "auto"),
+    ("节能", "eco"),
     ("cool", "cool"), ("heat", "heat"), ("dry", "dry"), ("dehumidif", "dry"),
     ("fan only", "fan_only"), ("fan_only", "fan_only"), ("fanonly", "fan_only"),
     ("ventilat", "fan_only"), ("auto", "auto"), ("comfort", "auto"), ("smart", "auto"),
-    ("intelligent", "auto"),
+    ("intelligent", "auto"), ("energy sav", "eco"), ("energy-sav", "eco"), ("eco", "eco"),
 ), key=lambda kv: -len(kv[0])))
 _FAN_KEYWORDS: tuple[tuple[str, str], ...] = tuple(sorted((
     ("高", "high"), ("中", "medium"), ("低", "low"), ("自动", "auto"),

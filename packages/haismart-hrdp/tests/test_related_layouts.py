@@ -272,13 +272,40 @@ def test_the_energy_saving_mode_the_window_units_publish_is_decoded():
     assert off["operation_mode"] == "5"
 
 
-def test_an_unidentified_or_frameless_appliance_keeps_the_partial_decode():
-    """The fallback is not a free-for-all: it needs the appliance's own name AND its product's
-    published frame. Without either, the report must fall through to the partial decode, whose
-    `layout: unknown` flag is how an unsupported model gets reported in the first place."""
+def test_an_unidentified_appliance_keeps_the_partial_decode():
+    """The fallback needs the appliance's own name. Without it the report falls through to the
+    partial decode, whose `layout: unknown` flag is how an unsupported model gets reported in the
+    first place -- and that flag must not be spent on a report we cannot attribute to a model."""
     assert decode_related(WINDOW_COOL_22_LOW, None, order=WINDOW_ORDER) is None
-    assert decode_related(WINDOW_COOL_22_LOW, WINDOW_UPLUS_ID, order=None) is None
-    assert decode_related(WINDOW_COOL_22_LOW, WINDOW_UPLUS_ID, order=()) is None
+    assert decode_related(WINDOW_COOL_22_LOW, None, order=None) is None
+
+
+def test_an_appliance_with_no_published_frame_still_READS_but_cannot_be_commanded():
+    """A product that publishes no group-set order gets a **read-only** layout, not nothing.
+
+    v0.52.0 refused to decode these at all, on the grounds that the order was the corroboration.
+    That was a category error: an order describes the WRITE frame, and the read frame is a
+    different frame -- so it says nothing about where a report's fields sit, while excluding 187
+    central-air cabinets whose attributes this map already places. What corroborates a read
+    displacement is the report, and that gate is untouched.
+
+    Control is not loosened by this, because the order gates control on its own: no order means no
+    write fields means read-only. Both halves are asserted here, because it is their *separation*
+    that makes reading safe.
+    """
+    for order in (None, ()):
+        state = decode_related(WINDOW_COOL_22_LOW, WINDOW_UPLUS_ID, order=order)
+        assert state is not None, "an identified appliance's report must still be read"
+        assert state["layout"] == "related-19"
+        assert state["target_temperature"] == 22.0 and state["current_temperature"] == 28.0
+        assert state["writable"] is False, "no published frame => must not be commandable"
+
+    model = related_model_named(
+        "related-19", len(WINDOW_COOL_22_LOW), order=None, uplus_id=WINDOW_UPLUS_ID
+    )
+    assert model is not None and not model.writable and not model.write_fields
+    with pytest.raises(ValueError):
+        model.encode_control(b"\x00" * 10, {"onOffStatus": 1})
 
 
 def test_a_relatives_ranking_still_wins_where_there_is_one():

@@ -153,20 +153,33 @@ So a third of the category already works, and `0d` is **not one device class**: 
 ordinary shared frame while `0d12` publishes no group command at all. Conflating them is what
 produced the old figure.
 
-**What `0d12` still needs.** Its 187 products declare seventeen attributes, thirteen of them already
-positioned in the shared map (the four cassette vanes are item 13, plus `powerSource`/`ampereControl`).
-Nothing about their layout is unknown except **which displacement applies** — and the whole 187
-collapse to just **two identifiers**, so *two* reports would place all of them. What we cannot do is
-place them from published data: the catalogue publishes semantics but never positions, no shipped
-byte map covers either identifier, and with no group-set order there is no published frame to
-corroborate a displacement against. That is why v0.52.0's fallback deliberately does not reach them —
-they keep the partial decode and its `layout: unknown` flag, which is how a report gets asked for.
+**What `0d12` still needs — and what it does not.** Its 187 products declare seventeen attributes,
+**thirteen of them already positioned in the shared map** (the four cassette vanes are item 13, plus
+`powerSource`/`ampereControl`). Nothing about their layout is unknown except **which displacement
+applies**, and the whole 187 collapse to just **two identifiers** — so *two* reports would place all
+of them, and a single owner could settle it for the entire class.
 
-⚠️ **Expect few reporters.** The manufacturer ships no phone-app interface for the `0d12` class in
-this region — consistent with everything above, and with the vendor client's own behaviour: its
-control API is `writeAttribute(name, value)` over whichever channel a device has, and a device whose
-local channel has no byte map simply runs through the cloud. Being listed in the product catalogue
-therefore means the app can *operate* a unit, not that it can operate it *locally*.
+★ **They are no longer refused.** v0.53.0 reads them: a report from one of these is tried against
+both published offsets, and if it places the three anchors plausibly at exactly one of them, it is
+decoded — **read-only**, because control needs the published frame they do not have. v0.52.0 had
+required a group-set order before reading at all, which was a category error (an order describes the
+*write* frame) and is withdrawn.
+
+★ **Corroboration exists on the read side too, for about half of them.** The published `property`
+list is served in one of several orderings depending on the product, and for **100 of the 187** it
+is the **wire order** — word ascending, bit descending, agreeing with the shared read map with zero
+or one violation (76 clean, 24 with one). ⚠️ The rest carry no positional information rather than
+contradicting it: 52 are plain **alphabetical**, and the remainder are in some third order. So a
+list that fails the wire-order test is *silent*, never evidence against — do not gate on it.
+
+⚠️ **Expect few reporters, but for the right reason.** The manufacturer ships no phone-app interface
+for the `0d12` class in this region: the vendor client's control API is `writeAttribute(name, value)`
+over whichever channel a device has, and a device whose *local* channel has no byte map is driven
+through the cloud instead. ★ **That is a limitation of the app, not of the appliance.** These units
+are ordinary HRDP appliances — they answer `getAllProperty` on the LAN to anything holding their
+local key, exactly as every other family here does, and they would keep working with no internet at
+all. The byte map the vendor app lacks for them is one we largely have. So being listed in the
+product catalogue means the app can *operate* a unit; it does not mean the unit needs the cloud.
 
 ### 12. Control for the central family — a parameter at a time
 

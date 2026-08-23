@@ -53,50 +53,51 @@ Three limits, all deliberate:
   shorter report — every field absent, nothing implausible because nothing is there — is rejected
   rather than believed.
 
-### When the unit resembles nothing published (v0.52.0)
+### When the unit resembles nothing published (v0.52.0, corrected in v0.53.0)
 
 Until v0.52.0, a Model ID resembling nothing published produced **no candidates at all**, and the
 unit fell through to the partial decode. That is what the window air conditioners hit (issue #11):
 their identifiers diverge at character 16, *inside* the device type, which is exactly the boundary
 the relatedness threshold exists to refuse — so they had no relative to inherit an offset from and
-reported "no decodable status" despite being an ordinary grSetDAC appliance.
+reported "no decodable status" despite being an ordinary appliance.
 
 They do not need a relative. The offsets are only two, and the shortlist was never the evidence —
-the report was. So a unit with no relative is now tried against **every offset a published model
-reports at**, on two conditions:
+the report was. So a unit that **names itself** is now tried against every offset a published model
+reports at, and because that shortlist carries no ranking, **the report has to single one offset
+out**. Two that both fit is an unresolved question, not a coin toss, and falls back to the partial
+decode. In practice they rarely both fit — the offsets are nineteen words apart, so on a short
+report the wrong one reads past the end and places nothing. A window unit's 109-byte report is eight
+words long and the climate block starts at map word 20, so only one offset places anything at all.
 
-- **the unit must have named itself** (it announces its Model ID on the discovery channel, key-free);
-  and
-- **its product must publish a group-set list.** That list is the product's own statement that it is
-  a grSetDAC appliance packed by the shared frame, so it is independent evidence that the published
-  map describes this appliance at all.
-
-and with one extra rule: because the shortlist now carries no ranking, **the report has to single one
-offset out**. Two that both fit is an unresolved question, not a coin toss, and falls back to the
-partial decode. In practice they rarely both fit — the offsets are nineteen words apart, so on a
-short report the wrong one reads past the end and places nothing. A window unit's 109-byte report is
-eight words long and the climate block starts at map word 20, so only one offset places anything at
-all.
+An appliance that has **not** named itself is left on the partial decode, whose `layout: unknown`
+flag is how an unsupported model gets reported and then supported. That flag should not be spent on
+a report that cannot even be attributed to a model.
 
 This is deliberately **not** a new assumption. The partial decode already reads the head of *any*
 unrecognised report at fixed byte positions — which is this map at −19 — and publishes power,
 setpoint, mode, fan and vane from it with no check at all. What the fallback adds is the rest of the
 block and, unlike that path, a verdict.
 
-Units with no group-set list keep exactly their previous behaviour, including their `layout:
-unknown` flag — and that flag is how an unsupported model gets reported and then supported, so it is
-not spent on a guess. In the published catalogue that is the difference between 28 products that
-state a frame and the 187 central-air models that state none.
+#### Reading and commanding are gated separately
 
-★ Those 28 are **not** all window units. Four are, four are twin-tower wall units, and **twenty are
-central-air cabinets** — which is worth saying plainly, because these docs previously recorded the
-central-air models as out of scope. The category is 235 published products in three architectures:
-28 are the compact family and have read and controlled for a long time, 20 publish the ordinary
-shared frame and are reached here, and 187 publish no group-set command under any name. Only that
-last group is genuinely unplaced, and it is just **two identifiers** — two reports would place all
-187. What they cannot be given is a *derived* layout: the product catalogue publishes an appliance's
-semantics but never its byte positions, and with no published frame there is nothing to corroborate
-a displacement against.
+⚠️ v0.52.0 also required the product to publish a **group-set order** before it would read a report
+this way. That was withdrawn in v0.53.0, because it confused the two frames this page is otherwise
+careful about: **a group-set order describes the write frame**, and the read frame is a different
+frame. It says nothing about where a report's fields sit, and requiring it excluded 187 central-air
+cabinets whose attributes this map already places.
+
+The order does gate **control**, and always did — a layout resolved this way is commandable only
+through the published frame, which needs the product's own list of which settings its group-set
+carries. A product that publishes none therefore gets a **read-only** layout. That is the right
+answer for it, and not a reason to decline to read it.
+
+So, for a report from an appliance no family claims:
+
+| the appliance | its product | result |
+|---|---|---|
+| names itself | publishes a group-set order | read **and** control, once the report picks an offset |
+| names itself | publishes none | **read-only**, once the report picks an offset |
+| does not name itself | — | partial decode, flagged `layout: unknown` |
 
 A resolved layout is reported as `related-19` / `related+0` (the offset it used) rather than a family
 name, so diagnostics distinguish it from a family confirmed on hardware.

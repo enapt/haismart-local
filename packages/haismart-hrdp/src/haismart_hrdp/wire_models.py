@@ -1790,30 +1790,30 @@ def related_wire_models(
     caller must not simply take the first that fits; :func:`decode_related` requires the report to
     single one out instead. :func:`related_shortlist_is_ranked` says which case a uPlusId is in.
 
-    The unranked case needs **two** things a ranked one does not, because it has no relative
-    vouching for it:
+    The unranked case needs one thing a ranked one does not: the appliance must have **named
+    itself**. One that has not is left on the partial decode, whose ``layout: unknown`` flag is how
+    an unsupported model gets reported and then supported -- and that flag must not be spent on a
+    report we cannot even attribute to a model.
 
-    * the appliance must have named itself (``uplus_id``), and
-    * its product must publish a group-set ``order``.
+    ⚠️ **It deliberately does NOT also require the product to publish a group-set order.** v0.52.0
+    did require one, and that was a category error: a group-set order is a statement about the
+    **write** frame, and the first thing established about these appliances is that *the read frame
+    and the write frame are different frames*. It is not evidence about a report's layout, and
+    requiring it excluded 187 central-air cabinets whose attributes this very map already places --
+    an appliance that answers on the LAN like any other, and that only the vendor's own app has to
+    operate through the cloud, for want of a byte map we have.
 
-    The order is the corroboration. It is that product's own statement that it is a grSetDAC
-    appliance whose settings are packed by the shared frame -- word ascending, bit descending -- so
-    it is independent evidence that the published map describes this appliance at all. Without it
-    there is nothing but the offsets themselves, and the right answer is the one this already
-    falls through to: the partial decode, which flags itself ``layout: unknown``. That flag is the
-    whole mechanism by which an unsupported model gets reported and then supported -- this family
-    map exists because those reports arrive -- so it must not be spent on a guess.
+    What actually corroborates a read displacement is the **report**: all three anchors present,
+    each plausible, and exactly one offset that manages it. That gate is unchanged, and it is
+    strictly more than the partial decode this falls through to -- which reads the same map's first
+    words at fixed positions with no check at all.
 
-    In practice that is the difference between the 28 published products that state a frame and
-    the 187 central-air models that state none; the latter keep exactly the behaviour they have.
+    Control is unaffected, because the order already gates control: :func:`frame_write_fields`
+    returns nothing without one, so a product publishing no frame gets a **read-only** layout --
+    the correct outcome, and not a reason to refuse to read it.
     """
     ranked = displacement_candidates(uplus_id)
-    if ranked:
-        candidates: Sequence[int] = ranked
-    elif uplus_id and order:
-        candidates = PUBLISHED_DISPLACEMENTS
-    else:
-        candidates = ()
+    candidates: Sequence[int] = ranked or (PUBLISHED_DISPLACEMENTS if uplus_id else ())
     return tuple(
         related_wire_model(length, d, order=order, uplus_id=uplus_id) for d in candidates
     )

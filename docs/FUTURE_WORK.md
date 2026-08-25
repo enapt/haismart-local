@@ -38,6 +38,30 @@ Verified on hardware 2026-08-25: a refused `5d0f` on the owner's unit returns ex
 from the fresh push. Regression test `test_a_refusal_is_not_masked_by_the_routine_status_push`,
 confirmed to fail against the old ordering.
 
+## 45. A multi-attribute write command exists on paper — it would collapse item 42's several ops into one
+
+Item 42 sends one op per setting, because the class it serves has no group-set command. The protocol
+documents a **third** shape between the two: a *set-parameters* command carrying a list of
+`parameter id + value` pairs in one frame — the same per-attribute addressing item 42 uses, but
+several at a time, with no packed word block and so none of the group set's whole-block hazard.
+
+**Why it is not shipped:** nothing we hold says any appliance implements it. It appears in the
+published command enumeration and in prior art's reference, and in **zero** of the 174 bundled
+device descriptions — where the read-side counterpart (*get specific parameters*) is equally absent.
+Prior art documents it without using it.
+
+**What would settle it, cheaply and safely:** send one carrying an attribute's **current** value.
+That is a no-op by construction, and the appliance answers every command with an accept or a refuse,
+so the reply says whether the command is implemented without anything moving. It needs no reporter —
+any unit here will answer.
+
+**Why it is worth the ten minutes:** a cabinet that takes it would apply "turn on, cool, fan low" in
+one op instead of three, which is fewer connections, no partial application if one op fails, and no
+question about the order settings are applied in (item 42 currently fixes that order by choice).
+
+⚠️ Not a blocker for item 42 — several ops is correct behaviour, just not the tidiest. And a refusal
+here costs nothing: an unimplemented command is declined, which is the answer.
+
 ## 43. ⛔ NOT A DEFECT — `invisible` is NOT a reliable hardware signal for CONTROLS
 
 **Investigated and closed 2026-08-25. The fix was written, it broke a test, and the test was right.**
@@ -76,43 +100,40 @@ have a concrete case of it firing wrongly. **Leave the controls ungated.**
   (a hidden sensor) is mild and no case of it is known.
 * The tree is unchanged; the suite (586) is green.
 
-## 42. Control for the `0d12` central cabinets — mechanism solved, 8 constants missing
+## 42. ✅ SHIPPED — control for the `0d12` central cabinets, one parameter at a time
 
-**187 products** (two uPlusIds, 162 + 25) publish **no group command at all**; every attribute is
-`writeType: I`, i.e. individually settable. The write is `SET_SINGLE_PARAMETER`: `frameType 1`,
-eppCmd `0x5D00 | paramID`, big-endian 16-bit value, data size exactly 4 — **confirmed on real Haier
-hardware 2026-08-25** (a published `5D01` accepted, a reserved command nacked).
+**187 products** publish **no group command at all**. Every attribute is marked individually
+settable, and their firmware **refuses the group-set frame outright** — so the group set is not
+merely undeclared for these cabinets, it is unavailable. Each setting is its own command, with the
+value in the payload.
 
-✅ **Both remaining unknowns now derive from source** (parent `docs/SINGLE_PARAMETER_WRITE.md` §6o,
-§6p): the **parameter ids** from prior art for this protocol generation, which maps 8/8 of the
-declared attributes with no gaps and is contradicted by no AC class we hold; and the **value
-encoding** from the per-attribute `variants` table the vendor's own encoder reads — seven of the
-eight are identity and the eighth is the setpoint at `°C − 16`. A complete control frame can be
-written down before touching hardware; one confirming run settles both.
+**What ships:** seven controls — power, setpoint, mode, fan speed, health, quiet and boost — offered
+where the cabinet's own model declares the attribute, and each read back from its own position in
+the report so it shows real state rather than an echo of the request.
 
-Previously recorded as missing: the **per-class parameter ids**. They are a registry with no derivable rule
-(`onOffStatus` is `5D00` on eleven classes, `5D01` on thirteen), and no `0d` profile exists in
-anything we hold — searched exhaustively across all 174 bundled profiles in both formats, 15
-containers, every dex, four native libs and all four relocation types.
+* **The command bytes** are the ones these appliances are observed to exchange, and the values need
+  no translation: mode `0/1/2/4/6`, fan `1/2/3/5`, setpoint `°C − 16`, booleans `0`/`1` — the same
+  encodings every other family here uses.
+* **Several settings become several commands.** There is no word block to pack, so a change that
+  touches three settings sends three ops, each separately accepted or refused by the appliance —
+  which also means a refusal names the setting that was actually refused. Power leads when switching
+  on and trails when switching off, so a unit is configured while it runs and stopped only after the
+  rest has been applied. ⚠️ That order is a choice, not a measurement; it is fixed so it is at least
+  predictable.
+* **Reads were already right** from v0.53.0, and are now corroborated against reports from an
+  appliance of this exact identifier: setpoint, mode, fan and power all land where the published map
+  puts them. Anyone seeing wrong sensor values on one of these is on ≤ v0.52.x and needs to update.
 
-★★ **Try grSetDAC FIRST.** All 8 of the declared attributes are in the published group-set frame
-(`CANONICAL_WRITE`) inside 4 words, and `write_base_word = 20 + (−19) = 1`. The absence of a
-`grSetDAC` *operation* in the published model describes the vendor's app — which is cloud-only for
-these — not the appliance. `probe_single_param.py --groupset 4 --arm` sends the unit its own report
-words back **unchanged**, so nothing can move, and the reply frame type says whether `6001` is
-implemented. If it is, these 187 products are controllable with the map we already hold and the
-parameter ids stop mattering.
+⚠️ **The two vane commands are deliberately withheld.** This generation defines one for each axis,
+but no cabinet of this class has been seen to accept either — the appliance the rest were read from
+has no vane at all. A command that is simply unimplemented is refused and harmless; one that is
+implemented and means something else would move a setting nobody asked for. They wait for a single
+observation, on the same bar as every other control here. **One report from a cabinet with a working
+vane closes it.**
 
-**Route in:** one owner runs `tools/re/probe_single_param.py --sweep 0x00 0x1f --arm`, which is
-unattended, non-destructive (an unimplemented id is *refused*), and reports accept/refuse per id.
-`--identify` first is **key-free** and needs no account or diagnostics.
-
-⚠️ Reads are already correct for this family from v0.53.0 — the layout resolves at −19, the only
-displacement a 133-byte report can carry. Anyone reporting wrong sensors on a `0d12` is on ≤ v0.52.x
-and needs to update.
-
-Full map, including every negative and what each search covered: the parent repo's
-`docs/SINGLE_PARAMETER_WRITE.md`.
+⚠️ **`invisible` is not used as the gate** — see item 43. Membership is the attribute being declared
+at all, because the parameter table is per device class while the function is per product: a cabinet
+with no health module must not be offered health merely because its class defines a command for it.
 
 ## Open items
 
@@ -256,9 +277,16 @@ of them, and a single owner could settle it for the entire class.
 
 ★ **They are no longer refused.** v0.53.0 reads them: a report from one of these is tried against
 both published offsets, and if it places the three anchors plausibly at exactly one of them, it is
-decoded — **read-only**, because control needs the published frame they do not have. v0.52.0 had
-required a group-set order before reading at all, which was a category error (an order describes the
-*write* frame) and is withdrawn.
+decoded. v0.52.0 had required a group-set order before reading at all, which was a category error
+(an order describes the *write* frame) and is withdrawn.
+
+✅ **The decode is now corroborated against real reports from a `0d12` cabinet** — setpoint, mode,
+fan speed and power all read exactly where the published map puts them at this offset, agreeing with
+an independent decode of the same bytes. It is no longer resting on "this is the only offset a
+report of that length can carry".
+⚠️ *Superseded above:* this item used to add **"read-only, because control needs the published frame
+they do not have"**. Control ships from v0.55.0 — see item 42. These cabinets do not use a frame at
+all, so needing one was never the right test.
 
 ★ **Corroboration exists on the read side too, for about half of them.** The published `property`
 list is served in one of several orderings depending on the product, and for **100 of the 187** it
@@ -276,7 +304,7 @@ local key, exactly as every other family here does, and they would keep working 
 all. The byte map the vendor app lacks for them is one we largely have. So being listed in the
 product catalogue means the app can *operate* a unit; it does not mean the unit needs the cloud.
 
-### 12. Control for the central family — a parameter at a time
+### 12. ✅ Control for the central family — a parameter at a time — SHIPPED, see item 42
 
 The `0d12` models publish **no group-set command** — their operations are read/alarm queries only
 (`getAllProperty`, `getAllAlarm`, `stopCurrentAlarm`, `getBigDataFrame`), enumerated from the raw
@@ -293,6 +321,12 @@ written because a group-set applies a whole word block, so a mistake changes a n
 failing. A single-parameter write cannot do that, so this family deserves a safety property argued
 from its own mechanics — probably narrower than the current allowlist, and certainly not the same
 rule copied across without examination.
+
+★ **How that was settled, and it is the shipped rule:** a command either names an attribute this
+class publishes or it does not, so the guard is *which commands exist* rather than *which bits may
+move*. Each one is also separately accepted or refused by the appliance, so a command it does not
+implement is declined rather than misapplied — which is why the two vane commands can safely be left
+out and added later. Shipped in **item 42**; this item stays as the reasoning that got there.
 
 ### 13. The four-sided cassette vanes — parked, not a request
 
@@ -595,19 +629,22 @@ default. ⚠️ *"Nothing left read-only" was true as shipped and is no longer:*
 two families whose published order refutes the frame outright, and they went back to read-only on
 that evidence.
 
-★ **Figures, recomputed for v0.53.0 — 1,451 = 1,234 read + write · 217 read-only · 0 without a
-layout.** Every published product can now resolve a layout; none is refused for want of published
-data. The read-only 217 are the 30 whose order refutes the frame (item 38) and the 187 central-air
-cabinets that publish no order at all (item 11) — read-only being exactly right for both, since
-control needs a frame and neither has a usable one. Supersedes *1,206 / 30 / 215*, and supersedes
-"1,236 products" everywhere it appears.
+★ **Figures — 1,451 = 1,421 read + write · 30 read-only · 0 without a layout.** Every published
+product can resolve a layout; none is refused for want of published data. The read-only 30 are the
+families whose order refutes the frame (item 38). Supersedes *1,206 / 30 / 215*, *1,234 / 217 / 0*,
+and "1,236 products" everywhere either appears.
 
 | how the layout is reached | products | control |
 |---|---|---|
 | registered family (compact-12 · extended-46 · extended-36) | 590 | yes |
 | the shared frame, corroborated by the product's own order | 644 | yes |
+| no group command at all — written one parameter at a time (item 42) | 187 | yes |
 | resolved, but the order refutes the frame | 30 | no |
-| resolved, but no order is published | 187 | no |
+
+⚠️ **The 187 were read-only until v0.55.0**, on the reasoning that "control needs a frame and neither
+has a usable one". That was right about the frame and wrong about control: these cabinets do not use
+a frame at all, and the mechanism they do use needs no order and no packing. A gate written for one
+mechanism had been quietly deciding for a class that uses another.
 
 ⚠️ "Can resolve a layout" is not "will decode": the report still has to agree with exactly one
 offset. What changed is that nothing is turned away before its report is even looked at.
@@ -651,9 +688,11 @@ measures the displacement from the report instead.
 publish no group-set order — a gate that turned out to be evidence about the *write* frame standing
 in for evidence about the *read* frame (Rule 22). They now resolve from their own report like any
 other appliance and are **read-only**, control being the thing that actually needs a frame. So the
-honest current statement is: **1,451 = 1,234 read + write · 217 read-only · 0 refused**, and the
-open question for the 187 is no longer "will we read them" but "will one of their owners appear" —
-two reports, one per identifier, would place the class.
+honest current statement is: **1,451 = 1,421 read + write · 30 read-only · 0 refused**.
+⚠️ *Superseded here:* this used to end "the open question for the 187 is no longer *will we read
+them* but *will one of their owners appear*". Both halves are answered — they read correctly from
+v0.53.0 and they are controllable from v0.55.0 (item 42), neither of which needed an owner to
+appear.
 
 ⚠️ "Placed offline" is not "will work": an unrecognised identifier falls back to report length, so
 the set that works on first contact is larger; and a resolved layout still needs its report to agree

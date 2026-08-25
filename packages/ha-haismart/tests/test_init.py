@@ -4616,3 +4616,139 @@ async def test_a_unit_in_its_energy_saving_mode_still_reports_a_mode(
     climate = hass.states.get(CLIMATE)
     assert climate.state == "cool"                       # displayed as the cooling it is
     assert climate.attributes["preset_mode"] == "eco"
+
+
+# ---------------------------------------------------------------------------
+# Control for a device class whose firmware has no group set at all.
+# ---------------------------------------------------------------------------
+
+#: What a central cabinet of that class announces.
+_CENTRAL_UPLUS_ID = "201c10c7088081000d1205464544850000009cd68e692c104e2a333eab95d140"
+
+_CENTRAL_MODEL = {"attributes": [
+    {"name": "onOffStatus", "writable": True, "valueRange": {
+        "type": "LIST", "dataList": [{"data": "false"}, {"data": "true"}]}},
+    {"name": "targetTemperature", "writable": True, "valueRange": {
+        "type": "STEP", "dataStep": {"minValue": "16", "maxValue": "30", "step": "1"}}},
+    {"name": "operationMode", "writable": True, "valueRange": {
+        "type": "LIST", "dataList": [{"data": c} for c in ("0", "1", "2", "4", "6")]}},
+    {"name": "windSpeed", "writable": True, "valueRange": {
+        "type": "LIST", "dataList": [{"data": c} for c in ("1", "2", "3", "5")]}},
+    # deliberately NOT declared: healthMode, muteStatus, rapidMode
+]}
+
+
+def _central_report() -> bytes:
+    """A 133-byte report whose attribute area is one observed on an appliance of this class:
+    28 C, cool, fan low, switched off."""
+    body = bytes.fromhex("0C00230002001400000000000100000309032E3258")
+    blob = bytearray(133)
+    blob[92:92 + len(body)] = body
+    return bytes(blob)
+
+
+async def _central_coordinator(hass: HomeAssistant, mock_uss):
+    """An entry driven onto the central-cabinet layout, with its own report as the baseline."""
+    from haismart_hrdp.wire_models import related_wire_model
+
+    entry = await _setup_with_model(hass, _CENTRAL_MODEL)
+    coord = entry.runtime_data
+    coord.uplus_id = _CENTRAL_UPLUS_ID
+    coord._wire_model = related_wire_model(
+        133, -19, order=None, uplus_id=_CENTRAL_UPLUS_ID
+    )
+    coord.read_only_layout = None
+    coord.last_raw_status = _central_report()
+    mock_uss.send.reset_mock()
+    mock_uss.send.baseline = _central_report()
+    # This appliance reports 133 bytes, so every later read must too -- otherwise the classic
+    # default frame the fixture hands back would resolve the entry onto a different family
+    # between two ops of the same command.
+    mock_uss.send.return_value = [_central_report()]
+    mock_uss.read.return_value = [_central_report()]
+
+    # The fixture cannot resolve a synthetic 133-byte report the way a real appliance's own reports
+    # are resolved each poll, so the layout is held across ops here rather than re-derived. In
+    # production nothing pins it: a cabinet reports 133 bytes every cycle and the layout is
+    # recomputed from that. What these tests exercise is the split, its order, the exact bytes each
+    # op carries, the declaration gate and the read-back -- none of which the pin supplies.
+    def _keep_layout(*args, **kwargs):
+        coord._wire_model = wm
+        coord.read_only_layout = None
+        build = kwargs.get("build_frame")
+        if build is not None:
+            frames.append(build(mock_uss.send.baseline))
+        return mock_uss.send.return_value
+
+    wm = coord._wire_model
+    frames: list[bytes] = []
+    mock_uss.send.side_effect = _keep_layout
+    coord.sent_frames = frames
+    return coord
+
+
+def _sent_frames(coord) -> list[bytes]:
+    return coord.sent_frames
+
+
+async def test_a_class_with_no_group_set_sends_one_op_per_setting(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A group set packs several settings into one op. A class that has none cannot, so each
+    setting has to become its own command -- and each is separately accepted or refused, which is
+    the point: a refusal then names the setting that was actually refused."""
+    coord = await _central_coordinator(hass, mock_uss)
+    await coord.async_send_control({"operationMode": 1, "onOffStatus": 1})
+
+    assert mock_uss.send.await_count == 2
+    frames = _sent_frames(coord)
+    # Power leads when switching ON -- configure a running unit, not a stopped one.
+    assert b"\x5d\x01\x00\x01" in frames[0]
+    assert b"\x5d\x04\x00\x01" in frames[1]
+
+
+async def test_power_off_is_sent_last(hass: HomeAssistant, mock_uss) -> None:
+    """...and trails when switching OFF, so the other settings are applied before the unit stops.
+    The order is a choice rather than a measurement, but it must be a STABLE one."""
+    coord = await _central_coordinator(hass, mock_uss)
+    await coord.async_send_control({"onOffStatus": 0, "windSpeed": 3})
+
+    frames = _sent_frames(coord)
+    assert mock_uss.send.await_count == 2
+    assert b"\x5d\x05\x00\x03" in frames[0]
+    assert b"\x5d\x01\x00\x00" in frames[1]
+
+
+async def test_a_single_setting_still_sends_exactly_one_op(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The split must not turn an ordinary one-field change into extra connections."""
+    coord = await _central_coordinator(hass, mock_uss)
+    await coord.async_send_control({"targetTemperature": 25 - 16})
+
+    assert mock_uss.send.await_count == 1
+    assert b"\x5d\x02\x00\x09" in _sent_frames(coord)[0]
+
+
+async def test_a_control_the_cabinet_does_not_declare_is_not_offered(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The parameter table is per device CLASS while the function is per product, so declaration is
+    what tells one cabinet from another. A unit that never mentions a health module must not be
+    offered health merely because its class defines an id for it."""
+    coord = await _central_coordinator(hass, mock_uss)
+    assert coord.supports_field("onOffStatus") is True
+    assert coord.supports_field("operationMode") is True
+    assert coord.supports_field("healthMode") is False
+    assert coord.supports_field("rapidMode") is False
+
+
+async def test_the_cabinet_reads_its_settings_back_from_its_own_report(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A control written one parameter at a time still shows real state."""
+    coord = await _central_coordinator(hass, mock_uss)
+    assert coord.current_field("targetTemperature") == 12   # 28 C
+    assert coord.current_field("operationMode") == 1        # cool
+    assert coord.current_field("windSpeed") == 3            # low
+    assert coord.current_field("onOffStatus") == 0

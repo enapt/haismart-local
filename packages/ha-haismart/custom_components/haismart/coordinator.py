@@ -1099,7 +1099,9 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             ),
         )
 
-    async def async_send_control(self, changes: dict[str, int]) -> None:
+    async def async_send_control(
+        self, changes: dict[str, int], *, _already_expanded: bool = False
+    ) -> None:
         """Apply ``{field_name: raw_epp_value}`` to the state and send it as one grSetDAC op.
 
         grSetDAC is a group-set: it must be seeded from the AC's TRUE current state so every
@@ -1116,8 +1118,36 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # product constraints reject an out-of-range temperature or an unsupported enum. Only
         # fields mapping 1:1 to a model attribute are checked; device-specific ones (swing/eco) stay
         # gated by the encoder allowlist alone.
-        changes = self._with_required_co_commands(changes)
+        if not _already_expanded:
+            # Only on the way in. A change this method splits into several ops re-enters here, and
+            # re-expanding an already-expanded set would keep producing the same several fields for
+            # ever -- so the split below hands its parts back with the expansion already done.
+            changes = self._with_required_co_commands(changes)
         self._validate_against_model(changes)
+
+        # A device class written one parameter at a time has no group set, so several changes
+        # cannot be packed into one op: each attribute is its own command, separately accepted or
+        # refused by the appliance. Send them in turn through this same method, so every one keeps
+        # the session lock, the re-key retry and the acceptance check a single change gets -- and so
+        # a refusal names the setting that was actually refused.
+        #
+        # ⚠️ The order is a CHOICE, not a measurement: power ON leads and power OFF trails, which is
+        # the least surprising reading of "turn it on and set it to cool" and of "set it to cool and
+        # turn it off". Everything else keeps insertion order.
+        wm = self._wire_model
+        if (
+            wm is not None
+            and len(changes) > 1
+            and all(n in wm.value_param_fields for n in changes)
+        ):
+            rest = [n for n in changes if n != "onOffStatus"]
+            power = changes.get("onOffStatus")
+            names = rest if power is None else (
+                ["onOffStatus", *rest] if power else [*rest, "onOffStatus"]
+            )
+            for name in names:
+                await self.async_send_control({name: changes[name]}, _already_expanded=True)
+            return
 
         if self.read_only_layout is not None:
             # A recognised family, but its wire model (word map + group-set command) isn't
@@ -1191,6 +1221,14 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         },
                     )
                 return build_epp_frame(0x01, cmd, b"")
+            # Value-carrying single parameter: one command per attribute, the value in the
+            # payload. Used by a class whose firmware has no group set at all, so there is no word
+            # block and nothing to seed -- the baseline above is still refreshed, because the reply
+            # confirmation and the next command's state both read from it.
+            if wm is not None and changes and all(n in wm.value_param_fields for n in changes):
+                (name, value), = changes.items()
+                cmd, payload = wm.encode_value_param(name, value)
+                return build_epp_frame(0x01, cmd, payload)
             if wm is not None and wm.group_cmd is not None:
                 # Non-classic family: pack via its own wire model + group-set command. The encoder
                 # translates the classic-shaped change values (STD codes / setpoint) to this
@@ -1658,6 +1696,12 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # no model offers none of them, which is the safe direction.
             if name in wm.single_param_fields:
                 return name in declared_attribute_names(self.digital_model)
+            # A value-carrying single-parameter control, on a class that publishes no group command
+            # at all. Same declaration gate and same reason: the parameter table is per device
+            # CLASS while the function is per product, so a cabinet without a health module must not
+            # be offered health merely because its class defines an id for it.
+            if name in wm.value_param_fields:
+                return name in declared_attribute_names(self.digital_model)
             return False
         # The classic fallback and the frame both pack at the shared positions, so the name IS the
         # position there and the set-valued refusal still applies.
@@ -1893,6 +1937,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if (wm := self._wire_model) is not None:
             if name in wm.single_param_fields:
                 return wm.single_param_value(self.last_raw_status, name)
+            if name in wm.value_param_fields:
+                return wm.value_param_value(self.last_raw_status, name)
             return wm.current_write_value(self.last_raw_status, name)
         try:
             return read_grsetdac_field(self.last_raw_status, name)

@@ -237,6 +237,36 @@ class SingleParam:
 
 
 @dataclass(frozen=True)
+class ValueParam:
+    """A control written one parameter at a time, where the COMMAND names the attribute and the
+    PAYLOAD carries the value.
+
+    This is the other single-parameter form. :class:`SingleParam` covers the paired-command shape,
+    where the command *is* the value (``4d05`` = electric-heat on, ``4d04`` = off) and there is no
+    payload; here one command per attribute takes a **big-endian 16-bit** value, so an enum or a
+    setpoint can be written without a group-set and without knowing where the attribute sits in a
+    packed word block.
+
+    The command is ``0x5D00 | param_id``. ``spec`` supplies the value semantics only -- the same
+    :class:`WriteField` kinds the group-set path uses, so a caller hands control values in one
+    representation whatever mechanism the family turns out to need; its ``word``/``bit`` are unused
+    and its ``length`` bounds the payload. ``read`` is where the written value reads back in this
+    family's report, so a control written this way still shows real state rather than an echo of
+    what we sent.
+    """
+
+    param_id: int
+    spec: WriteField
+    read: WireField
+
+    @property
+    def command(self) -> bytes:
+        """The two EPP command bytes that select this attribute."""
+        cmd = 0x5D00 | self.param_id
+        return bytes(((cmd >> 8) & 0xFF, cmd & 0xFF))
+
+
+@dataclass(frozen=True)
 class WireModel:
     """A decoder (and, when ``group_cmd`` is set, a control encoder) for one AC family, selected by
     uPlusId or report length.
@@ -303,6 +333,11 @@ class WireModel:
     # state back with. This is a different mechanism from ``group_cmd``: each write is its own op with
     # no baseline, and a boolean's command IS its value (the on-command sets on, the off-command off).
     single_param_fields: Mapping[str, SingleParam] = field(default_factory=dict)
+    # Controls written one parameter at a time where the command names the attribute and the payload
+    # carries the value (``0x5D00 | param_id``, big-endian 16-bit). This is the mechanism for a class
+    # that publishes NO group command at all -- every attribute ``writeType: I`` -- so there is no
+    # word block to seed and each change is its own op. Maps an attribute name to :class:`ValueParam`.
+    value_param_fields: Mapping[str, ValueParam] = field(default_factory=dict)
 
     def canonical_word(self, word: int) -> int | None:
         """Where a published map word lands in this family's report, or ``None`` if unplaceable.
@@ -394,6 +429,30 @@ class WireModel:
         if wf.kind == "celsius":
             return round(raw / wf.scale) - 16
         return raw
+
+    def encode_value_param(self, name: str, value: int) -> tuple[bytes, bytes]:
+        """The EPP command and 2-byte big-endian payload that set ``name`` to ``value``.
+
+        Refuses any attribute this family does not publish a parameter id for, and any value the
+        attribute's own spec rejects -- the same encoder guard the group-set path applies, for the
+        same reason: control may only ever emit a mapped attribute with a supported value.
+        """
+        vp = self.value_param_fields.get(name)
+        if vp is None:
+            raise KeyError(f"{name!r} has no single-parameter command on {self.family}")
+        epp = self._to_epp(vp.spec, name, int(value))
+        return vp.command, bytes(((epp >> 8) & 0xFF, epp & 0xFF))
+
+    def value_param_value(self, report: bytes, name: str) -> int | None:
+        """The live raw value of a single-parameter control, read out of ``report``.
+
+        Read back from the attribute's own position in the report rather than from anything the
+        write path holds, so a command the appliance declined shows as unchanged.
+        """
+        vp = self.value_param_fields.get(name)
+        if vp is None:
+            return None
+        return vp.read.read(report)
 
     def encode_control(self, baseline: bytes, changes: Mapping[str, int]) -> bytes:
         """Pack ``changes`` ({classic field name: classic value}) into a copy of ``baseline`` (the
@@ -1760,6 +1819,70 @@ def frame_write_fields(
     return out
 
 
+#: Per-attribute write commands, keyed by the four uPlusId characters that name a device class, for
+#: classes that publish **no group command at all**.
+#:
+#: ``0d12`` -- the central cabinets -- declare every attribute ``writeType: I`` (individually
+#: settable), and their firmware **refuses** ``6001``: the group set is genuinely unavailable here
+#: rather than merely undeclared, so this is not an optimisation but the only way to command one.
+#: The ids below were observed on the wire of an appliance carrying this exact identifier, and the
+#: value encodings need no translation because they are the published map's already -- mode
+#: ``0/1/2/4/6``, fan ``1/2/3/5``, setpoint ``°C − 16``, booleans ``0``/``1``.
+#:
+#: ⚠️ The two vane ids this generation also defines (``0x03`` up-down, ``0x0C`` left-right) are
+#: deliberately absent. The appliance these were read from has no vane, so those two alone have
+#: never been seen accepted by anything of this class. An id that is simply unimplemented is refused
+#: and harmless; one that is implemented and means something else would move a setting nobody asked
+#: for. They wait for a single observation, on the same bar as every other control here.
+SINGLE_PARAM_IDS: Mapping[str, Mapping[str, int]] = {
+    "0d12": {
+        "onOffStatus": 0x01,
+        "targetTemperature": 0x02,
+        "operationMode": 0x04,
+        "windSpeed": 0x05,
+        "healthMode": 0x0B,
+        "muteStatus": 0x19,
+        "rapidMode": 0x1A,
+    },
+}
+
+
+def _uplus_class(uplus_id: str | None) -> str:
+    """The four identifier characters that name a device class, or ``""``."""
+    return uplus_id[16:20].lower() if uplus_id and len(uplus_id) >= 20 else ""
+
+
+def value_param_write_fields(displacement: int, uplus_id: str | None) -> dict[str, ValueParam]:
+    """The single-parameter controls this appliance's device class publishes, positioned for reads.
+
+    Membership comes from :data:`SINGLE_PARAM_IDS`; the read-back position comes from the published
+    map at ``displacement`` -- the same offset the report itself was decoded at, so a control is only
+    offered where its state can also be read. An attribute the map cannot place is dropped rather
+    than offered write-only, which is the rule this project applies everywhere: a control that cannot
+    be read back is worse than a missing one.
+    """
+    ids = SINGLE_PARAM_IDS.get(_uplus_class(uplus_id))
+    if not ids:
+        return {}
+    out: dict[str, ValueParam] = {}
+    for name, pid in ids.items():
+        spec = _FRAME_WRITE_SPEC.get(name)
+        c = CANONICAL.get(name)
+        if spec is None or c is None:
+            continue
+        word = c.word + displacement
+        if word < 1:
+            continue
+        out[name] = ValueParam(
+            param_id=pid,
+            # The payload is a full 16 bits whatever the attribute's packed width is, so the value
+            # bound has to come from the attribute's own spec rather than from a bit field.
+            spec=WriteField(0, 0, 16, **spec),  # type: ignore[arg-type]
+            read=WireField(word, c.bit, c.length, kind="raw"),
+        )
+    return out
+
+
 def related_wire_model(
     length: int,
     displacement: int,
@@ -1789,11 +1912,16 @@ def related_wire_model(
     one has only been checked against the core block.
     """
     write = frame_write_fields(order, uplus_id)
+    params = value_param_write_fields(displacement, uplus_id)
     return WireModel(
         family=f"related{displacement:+d}",
         report_lengths=frozenset({length}),
         fields=canonical_fields(displacement, list(_RELATED_KEYS)),
-        writable=bool(write),
+        # Either mechanism makes an appliance commandable. A class that publishes no group-set order
+        # gets no ``group_cmd`` and no ``write_fields``, so the group-set encoder still refuses it --
+        # what it gets instead is one op per attribute.
+        writable=bool(write or params),
+        value_param_fields=params,
         group_cmd=b"\x60\x01" if write else None,
         word_count=5 if write else 0,
         write_base_word=20 + displacement,

@@ -22,8 +22,14 @@ resembles published models close to it is read using the offsets those relatives
 report agrees with the result. Such a unit **reads and commands**: the group-set command is packed
 identically across the published air-conditioner descriptions, and the product's own published
 attribute list says which settings its version of that command carries, so the core controls are
-offered without anyone having captured that model. (A unit on this path stays read-only only when
-its product publishes no such list.) The capture procedure in
+offered without anyone having captured that model.
+
+Since **v0.55.0** that extends to a class of central cabinets that publishes **no group-set command
+at all** — their firmware does not accept one. Those are commanded a setting at a time instead, with
+power, setpoint, mode, fan speed, health, quiet and boost offered where the unit's own description
+declares them; a change touching several settings simply sends several commands. (A unit stays
+read-only now only when its published attribute list disagrees with the shared command layout, which
+is two families.) The capture procedure in
 [`docs/new-model.md`](docs/new-model.md) is what promotes such a layout to a confirmed family and
 unlocks the readings beyond the core climate block. So an absence from this table increasingly means
 "nobody has told us", not "it will not work".

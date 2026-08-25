@@ -44,8 +44,9 @@ Three limits, all deliberate:
   words at once, so a layout arrived at this way commands only through three gates: the group-set
   command's packing (identical across the published air-conditioner descriptions), the product's own
   published list of which settings its group-set carries, and the per-family refusals for positions a
-  family gives to a different attribute. A product publishing no list stays read-only — the safe
-  default.
+  family gives to a different attribute. A product publishing no list gets no frame-path control —
+  though since v0.55.0 that no longer means read-only, because a class with per-attribute commands is
+  commanded without a frame at all.
 - **Core readings only.** Power, setpoint, room and outdoor temperature, mode, fan, vertical swing,
   fault code and who last changed the unit. The further attributes a device declares stay unplaced
   until the offset has been checked field by field against a real report.
@@ -86,17 +87,22 @@ careful about: **a group-set order describes the write frame**, and the read fra
 frame. It says nothing about where a report's fields sit, and requiring it excluded 187 central-air
 cabinets whose attributes this map already places.
 
-The order does gate **control**, and always did — a layout resolved this way is commandable only
-through the published frame, which needs the product's own list of which settings its group-set
-carries. A product that publishes none therefore gets a **read-only** layout. That is the right
-answer for it, and not a reason to decline to read it.
+The order gates **control through the published frame**: commanding a layout that way needs the
+product's own list of which settings its group-set carries.
+
+⚠️ **Until v0.55.0 that made a product publishing no order read-only, and this page said so. It is no
+longer true.** The frame is not the only way to command an appliance. A device class that publishes
+no group command *and* whose firmware refuses that frame is commanded **one setting at a time** — one
+command names the attribute, the value travels in the payload, and no order and no packing are
+involved. The 187 central-air cabinets are exactly that case, and they control from v0.55.0.
 
 So, for a report from an appliance no family claims:
 
 | the appliance | its product | result |
 |---|---|---|
-| names itself | publishes a group-set order | read **and** control, once the report picks an offset |
-| names itself | publishes none | **read-only**, once the report picks an offset |
+| names itself | publishes a group-set order | read **and** control through the frame, once the report picks an offset |
+| names itself | publishes none, but its class has per-attribute commands | read **and** control, one setting at a time |
+| names itself | publishes none, and its order refutes the frame | **read-only** |
 | does not name itself | — | partial decode, flagged `layout: unknown` |
 
 A resolved layout is reported as `related-19` / `related+0` (the offset it used) rather than a family
@@ -349,8 +355,8 @@ Of the **1,451** published air conditioners:
 
 | | products | |
 |---|---|---|
-| read **and** control | **1,234** | 590 through a registered family, 644 through the shared frame corroborated by the product's own group-set order |
-| read only | **217** | 30 whose order refutes the frame outright (so nothing is commanded), 187 central-air cabinets that publish no order at all |
+| read **and** control | **1,421** | 590 through a registered family, 644 through the shared frame corroborated by the product's own group-set order, 187 central-air cabinets one setting at a time |
+| read only | **30** | their published order refutes the frame outright, so nothing is commanded |
 | turned away before their report is looked at | **0** | — |
 
 ⚠️ **"Can resolve a layout" is not "will decode".** The report still has to agree with exactly one
@@ -358,12 +364,13 @@ offset; a unit whose report agrees with neither, or with both, stays on the part
 changed in v0.53.0 is that nothing is refused for want of *published* data — the report gets its
 chance in every case where the appliance names itself.
 
-★ The 187 read-only are worth a note, because these docs previously wrote them off. They are
-central-air cabinets on two Model IDs, and the shared map already places **thirteen of their
-seventeen** attributes — only the displacement is open, and one report from either identifier would
-settle it for every product sharing it. They are ordinary appliances that answer on the LAN like any
-other; it is the *vendor's own app* that drives them through the cloud, for want of a byte map that
-this project largely has.
+★ The 187 central-air cabinets are worth a note, because these docs wrote them off twice. First as
+out of scope; then as read-only, on the reasoning that control needs a frame they do not publish.
+Both are withdrawn. They are cabinets on two Model IDs, the shared map places **thirteen of their
+seventeen** attributes, their displacement is settled and corroborated against real reports, and they
+are commanded a setting at a time from v0.55.0. They are ordinary appliances that answer on the LAN
+like any other; it is the *vendor's own app* that drives them through the cloud, for want of a byte
+map that this project largely has.
 
 ## When a unit reports a layout that is not here
 

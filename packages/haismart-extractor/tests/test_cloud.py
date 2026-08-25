@@ -601,6 +601,48 @@ def test_adapted_rules_drop_anything_that_would_match_nothing() -> None:
     assert _adapt_logic_limit([{"trigger": {"condition": [{"name": "x", "value": ["1"]}]},
                                 "action": []}]) == []
     assert _adapt_logic_patch([{"actionType": "APPEND", "action": [], "trigger": {}}]) == []
+    # ...and a trigger whose values cannot be expressed drops the rule rather than shipping it with
+    # an empty value list. `pendingCondition.commands` holds exact values, so a STEP-valued trigger
+    # (a range) has nowhere to go; enumerating it would be a guess about which values were meant.
+    assert _adapt_logic_patch([{
+        "actionType": "APPEND",
+        "action": [{"param": [{"name": "muteStatus", "value": "false"}]}],
+        "trigger": {"relation": "AND", "requestParam": {"property": [
+            {"name": "targetTemperature",
+             "variants": {"intStep": {"minValue": "16", "maxValue": "30", "step": "1"}}}]}},
+    }]) == []
+
+
+def test_a_boolean_trigger_keeps_the_values_it_was_published_with() -> None:
+    """A co-command rule triggered by a BOOLEAN condition must carry that boolean's values.
+
+    The catalogue spells a trigger's permitted values with whichever variant kind the attribute
+    uses: ``enumList`` for an enum, ``boolList`` for a bool. Reading only ``enumList`` leaves a bool
+    trigger with an **empty** list -- a set of accepted values with nothing in it, which no pending
+    value can be a member of. The rule then exists, parses, validates, and never fires; 3,139 of the
+    8,239 published rules across 847 products were in that state until 2026-08-25. Two rules that
+    differ ONLY in the boolean's value (power on vs power off, each with its own follow-up commands)
+    also collapse into indistinguishable twins.
+    """
+    from haismart_extractor.cloud import _adapt_logic_patch
+
+    def rule(std_value: str) -> dict:
+        return {"actionType": "PREPEND",
+                "action": [{"operation": "grSetDAC",
+                            "param": [{"name": "selfCleaningStatus", "value": "false"}]}],
+                "trigger": {"relation": "OR", "requestParam": {"property": [
+                    {"name": "onOffStatus", "dataType": "bool",
+                     "variants": {"boolList": [{"stdValue": std_value,
+                                                "description": "x"}]}}]}}}
+
+    off, on = _adapt_logic_patch([rule("false")]), _adapt_logic_patch([rule("true")])
+    assert off[0]["pendingCondition"]["commands"] == {"onOffStatus": ["false"]}
+    assert on[0]["pendingCondition"]["commands"] == {"onOffStatus": ["true"]}
+    # the point of the previous two lines: the rules must not be indistinguishable
+    assert off[0]["pendingCondition"] != on[0]["pendingCondition"]
+
+    # What an empty list would have cost is asserted where the engine lives:
+    # haismart-hrdp's test_profiles.py::test_a_condition_with_no_values_can_never_fire
 
 
 async def test_search_products_sends_the_paging_parameters_and_reads_the_rows() -> None:

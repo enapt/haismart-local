@@ -362,9 +362,17 @@ def _adapt_logic_patch(entries: Any) -> list[dict]:
     """The catalogue's co-command rules, in the shape the co-command engine reads.
 
     Catalogue: ``{actionType, trigger:{relation, requestParam:{property:[{name, variants:
-    {enumList:[{stdValue}]}}]}}, action:[{param:[{name, value}]}]}``. The engine wants
+    {<listKind>:[{stdValue}]}}]}}, action:[{param:[{name, value}]}]}``. The engine wants
     ``{pendingCondition:{operator, commands:{name: [values]}}, additionalCommands:{mergeType,
     commands:[{name, value}]}}``.
+
+    ⚠️ The trigger's permitted values are spelled with **whichever** variant kind the attribute uses
+    -- ``boolList`` for a bool, ``enumList`` for an enum -- exactly as :data:`_VARIANT_LIST_KINDS`
+    below records. This function read ``enumList`` alone until 2026-08-25, so every rule whose
+    trigger was a boolean condition arrived with an **empty** value list. An empty list is not how
+    this format spells "any value" -- it is a set of accepted values with nothing in it, so the
+    condition can never be satisfied. The rules were present, well-formed and dead: 3,139 of the
+    8,239 carried, across 847 of the 1,451 products.
     """
     out: list[dict] = []
     for e in entries or ():
@@ -376,9 +384,14 @@ def _adapt_logic_patch(entries: Any) -> list[dict]:
         for prop in req:
             if not isinstance(prop, Mapping) or not prop.get("name"):
                 continue
-            values = [str(v["stdValue"]) for v in
-                      ((prop.get("variants") or {}).get("enumList") or ())
-                      if isinstance(v, Mapping) and v.get("stdValue") is not None]
+            values = _trigger_values(prop.get("variants"))
+            if values is None:
+                # A condition we cannot express drops the WHOLE rule, rather than being left out of
+                # it: omitting one term of an AND makes the rule fire in states its author excluded,
+                # which is worse than not having it. Dropping matches what the old empty list did in
+                # practice, and says so instead of shipping a rule that silently never matches.
+                commands = {}
+                break
             commands[str(prop["name"])] = values
         params: list[dict] = []
         for act in (e.get("action") or ()):
@@ -413,6 +426,23 @@ def _adapt_logic_patch(entries: Any) -> list[dict]:
 #   double -> doubleStep {minValue, maxValue, step, unit} -> STEP
 _VARIANT_LIST_KINDS = ("enumList", "boolList")
 _VARIANT_STEP_KINDS = (("doubleStep", "Double"), ("intStep", "Int"))
+
+
+def _trigger_values(variants: Any) -> list[str] | None:
+    """The values a co-command rule's trigger accepts, or ``None`` when they cannot be expressed.
+
+    ``None`` is returned for a STEP-valued trigger: ``pendingCondition.commands`` is a list of exact
+    values in the vendor's own model (``Map<String, String[]>``), so a range has nowhere to go, and
+    inventing an enumeration of it would be a guess about which values the author meant.
+    """
+    if not isinstance(variants, Mapping):
+        return None
+    for kind in _VARIANT_LIST_KINDS:
+        items = variants.get(kind)
+        if isinstance(items, list):
+            return [str(i["stdValue"]) for i in items
+                    if isinstance(i, Mapping) and i.get("stdValue") is not None]
+    return None
 
 
 def _value_range_from_variants(variants: Any) -> dict | None:
@@ -553,11 +583,16 @@ async def get_public_device_config(
     ranges, the ``alarms``, and -- the part that matters most -- the ``invisible`` flags that say
     which of a generic model's attributes a given unit actually has.
 
-    ⚠️ It does **not** carry the conditional rules. Its rule sections use a different inner schema
-    from the account-scoped model's, and renaming them without adapting them yields rules that parse
-    to nothing, so they are dropped instead (see :data:`PUBLIC_CONFIG_UNADAPTED`). A device fetched
-    this way therefore gets its feature set but no conditional availability, which locks nothing --
-    the safe direction.
+    ⚠️ **Stale until 2026-08-25, corrected here:** this used to say the conditional rules were
+    dropped. They are not -- they are **adapted**. Their inner schema differs from the account-scoped
+    model's, so renaming alone would yield rules that parse to nothing;
+    :data:`PUBLIC_CONFIG_ADAPTERS` translates them instead, and :data:`PUBLIC_CONFIG_UNADAPTED` now
+    holds only ``operation``. A device fetched this way gets its feature set **and** its conditional
+    availability.
+
+    ⚠️ What it returns is therefore **already adapted**. Anything sweeping this endpoint to build a
+    corpus should keep :func:`strip_signed_config`'s output alongside it -- an adapter that turns out
+    to be lossy cannot be undone after the fact, and one of them was.
 
     ⚠️ It carries **no wire positions** -- there is no ``startWord``/``startBit`` anywhere in it. It
     is the semantic model, never the byte map.

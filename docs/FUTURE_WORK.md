@@ -393,6 +393,45 @@ if a central cabinet is ever on the other end of a probe, the same two commands 
 
 **Not a blocker for item 42.** Several ops is correct behaviour, just not the tidiest.
 
+### 46. The co-command rules that could never fire — fixed, and every one of them is back
+
+**What was wrong.** Products publish *co-command* rules: "when the request sets X, also send Y".
+Turning the unit off clears self-clean; asking for boost clears quiet; asking for quiet clears boost.
+The published rule states which values of X it applies to, and it states them using whichever
+vocabulary the setting has — one for a list of named modes, a different one for a plain on/off.
+**Our reader knew only the first**, so every rule triggered by an on/off setting arrived with an
+*empty* list of values to match, and an empty list matches nothing. Those rules parsed, validated,
+shipped, and never once fired. **3,139 of the 8,239 rules carried, across 847 of the 1,451
+products** — including the product this integration was first built against, where 4 of its 10 rules
+were inert.
+
+Two rules that differ only in the on/off value also collapsed into indistinguishable twins: power-on
+and power-off each carry their own follow-up commands, and both became the same empty condition.
+
+**What is fixed.** The reader now reads every vocabulary the catalogue uses, and a trigger it cannot
+express drops its whole rule rather than shipping one that silently never matches — omitting one term
+of an AND would make a rule fire in states its author excluded, which is worse than not having it.
+Both regression tests were confirmed to fail against the previous behaviour.
+
+**What is repaired.** All of it. The shipped bundle had been built from data that was already
+through the faulty reader, so the original values were gone from it — but the published models can
+be asked for again, and were: **1,451 of 1,451 fetched, no failures**, and every product's rules
+re-derived from what its maker actually published. **3,139 rules across 847 products are live again,
+and no rule in the bundle now carries a condition that accepts no value** — asserted as a property
+rather than a count, so it keeps holding as the bundle grows.
+
+**Everything else was checked with the same instrument.** Finding one lossy reader is a reason to
+distrust its neighbours, so every section the bundle adapts was re-derived and compared: attributes,
+conditional-availability rules, fault names and reason codes. **The co-command rules were the only
+real loss.** The remaining differences are the bundle deliberately being smaller — it ships names and
+codes without the maker's description text — plus one product whose attributes are merely listed in a
+different order, and three reason codes no rule ever fires with.
+
+⚠️ **It was never visible as a fault.** Nothing displayed a wrong value and no command was refused;
+the unit simply did not receive the follow-up commands its maker pairs with a setting, so something
+expected to be cleared alongside another could stay on. Worth knowing when reading an old report of
+two comfort settings that would not release each other.
+
 ## Reference — not open items
 
 Kept because each looks like something to "fix" until you know why it is the way it is.

@@ -336,3 +336,53 @@ def test_the_recorded_fallback_carries_the_co_commands_too():
     assert "windSpeed" not in constraint_commands(
         model, {"operationMode": "6", "windSpeed": "1"}
     )
+
+
+def test_a_condition_with_no_values_can_never_fire() -> None:
+    """A co-command rule whose trigger lists no accepted values matches nothing -- ever.
+
+    This is why the empty value lists that `_adapt_logic_patch` used to produce were not a cosmetic
+    defect: the rules parsed, validated and shipped, and then sat inert. An empty list is not how
+    this format spells "any value" -- it is a set of accepted values with nothing in it, and no
+    pending value can be a member of it. There is nothing here to work around; the values simply
+    have to be read.
+    """
+    from haismart_hrdp.profiles import constraint_commands
+
+    effects = {"mergeType": "PREPEND",
+               "commands": [{"name": "selfCleaningStatus", "value": "false"}]}
+    live = {"constraints": [{"pendingCondition": {"operator": "OR",
+                                                  "commands": {"onOffStatus": ["true"]}},
+                             "additionalCommands": effects}]}
+    dead = {"constraints": [{"pendingCondition": {"operator": "OR",
+                                                  "commands": {"onOffStatus": []}},
+                             "additionalCommands": effects}]}
+
+    assert constraint_commands(live, {"onOffStatus": "true"}) == {"selfCleaningStatus": "false"}
+    for pending in ({"onOffStatus": "true"}, {"onOffStatus": "false"}, {}):
+        assert constraint_commands(dead, pending) == {}
+
+
+def test_no_shipped_rule_can_never_fire() -> None:
+    """Every co-command rule in the shipped bundle names at least one accepted value per condition.
+
+    A condition with no accepted values is satisfiable by nothing, so the rule is inert -- and
+    inertness is invisible: it parses, it validates, and it simply never happens. 3,139 rules across
+    847 of the 1,451 products shipped in that state, because the reader that built them knew one of
+    the two ways a published trigger spells its values.
+
+    This asserts the property rather than a count, so it keeps holding as the bundle grows.
+    """
+    from haismart_hrdp.model_rules import _bundle, known_products, rules_for_product
+
+    assert known_products(), "the bundle did not load"
+    inert = [
+        (code, name)
+        for code in known_products()
+        for entry in (rules_for_product(code) or {},)
+        for rule in entry.get("constraints") or ()
+        for name, values in ((rule.get("pendingCondition") or {}).get("commands") or {}).items()
+        if not values
+    ]
+    assert _bundle()["models"], "the bundle carries no models"
+    assert not inert, f"{len(inert)} conditions accept no value, e.g. {inert[:5]}"

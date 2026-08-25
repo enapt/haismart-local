@@ -120,5 +120,5 @@ berfungsi:
 ## Perlukan bantuan?
 
 Laporkan masalah di [GitHub Issues](https://github.com/enapt/haismart-local/issues) — **dalam bahasa
-Inggeris jika boleh**. Sila baca [bahagian "Before you open an issue"](../../README.md#before-you-open-an-issue)
+Inggeris jika boleh**. Sila baca [bahagian "Before you open an issue"](../TROUBLESHOOTING.md#before-you-open-an-issue)
 dalam README utama dahulu.

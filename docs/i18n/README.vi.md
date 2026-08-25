@@ -106,5 +106,5 @@ Hai cách xử lý dứt điểm, nên làm ngay khi mọi thứ còn chạy t�
 ## Cần trợ giúp?
 
 Báo lỗi tại [GitHub Issues](https://github.com/enapt/haismart-local/issues) — **bằng tiếng Anh nếu
-có thể**. Vui lòng đọc [mục "Before you open an issue"](../../README.md#before-you-open-an-issue)
+có thể**. Vui lòng đọc [mục "Before you open an issue"](../TROUBLESHOOTING.md#before-you-open-an-issue)
 trong README chính trước.

@@ -122,5 +122,5 @@ Dalawang paraan para tuluyang matapos ito, at mabuting gawin habang gumagana pa 
 ## Kailangan ng tulong?
 
 Mag-ulat ng isyu sa [GitHub Issues](https://github.com/enapt/haismart-local/issues) — **sa Ingles
-kung maaari**. Basahin muna ang [bahaging "Before you open an issue"](../../README.md#before-you-open-an-issue)
+kung maaari**. Basahin muna ang [bahaging "Before you open an issue"](../TROUBLESHOOTING.md#before-you-open-an-issue)
 sa pangunahing README.

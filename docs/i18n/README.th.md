@@ -101,5 +101,5 @@
 ## ต้องการความช่วยเหลือ
 
 แจ้งปัญหาได้ที่ [GitHub Issues](https://github.com/enapt/haismart-local/issues) — **เป็นภาษาอังกฤษ
-หากทำได้** กรุณาอ่าน [หัวข้อ "Before you open an issue"](../../README.md#before-you-open-an-issue)
+หากทำได้** กรุณาอ่าน [หัวข้อ "Before you open an issue"](../TROUBLESHOOTING.md#before-you-open-an-issue)
 ใน README หลักก่อน

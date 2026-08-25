@@ -1040,6 +1040,36 @@ async def test_control_falls_back_to_read_when_reply_has_no_status(
     assert mock_uss.read.await_count == reads_after_setup + 1
 
 
+async def test_a_refusal_is_not_masked_by_the_routine_status_push(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A refused command must raise, even though the reply also carries a decodable status.
+
+    Every op connection opens with the unit's routine status push (frameType 0x06) and alarm push
+    (0x04) *before* the answer to our own frame arrives (0x02 accepted / 0x03 refused). So a refusal
+    always travels alongside a perfectly decodable status blob. Taking that blob as "the unit
+    answered with its updated state" reported the refusal as SUCCESS and showed the pre-command
+    state as though it were the result — the user changes a setting, Home Assistant says fine, and
+    nothing happened.
+
+    Verified against real hardware 2026-08-25: a refused `5d0f` on the owner's unit returns exactly
+    [0x06 127 B, 0x04 101 B, 0x03 93 B], and the 127-byte push decodes cleanly.
+    """
+    from haismart_hrdp.uss import EPP_FRAME_TYPE_REFUSED, build_epp_frame
+
+    await _setup(hass)
+    refusal = build_epp_frame(EPP_FRAME_TYPE_REFUSED, b"\x00\x00")
+    # the real shape: the routine push FIRST, the refusal last
+    mock_uss.send.return_value = [make_status_frame(target_temp=21), refusal]
+    with pytest.raises(HomeAssistantError):
+        await hass.services.async_call(
+            "climate", "set_temperature", {"entity_id": CLIMATE, "temperature": 26}, blocking=True
+        )
+    await hass.async_block_till_done()
+    # and the pre-command push must not be presented as the new state
+    assert hass.states.get(CLIMATE).attributes["temperature"] != 26.0
+
+
 async def test_concurrent_commands_never_share_the_session(
     hass: HomeAssistant, mock_uss
 ) -> None:

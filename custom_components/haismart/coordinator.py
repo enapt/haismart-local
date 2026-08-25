@@ -1280,9 +1280,17 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # The AC echoes its UPDATED state on the op's own connection (the protocol), so confirm
         # from that reply directly — instant, one fewer connection. Fall back to a read cycle only
         # if the reply carried no decodable full-status report.
-        if (state := self._state_from_reply(reply)) is not None:
-            self.async_set_updated_data(state)
-        elif reply_refused(reply):
+        # ⚠️ ORDER MATTERS, and it used to be the other way round. Every op connection begins with
+        # the unit's routine status push (frameType 0x06) and alarm push (0x04) before the answer to
+        # *our* frame arrives (0x02 accepted / 0x03 refused). So a REFUSED command still carries a
+        # perfectly decodable status blob -- the push -- and taking that as "the unit answered with
+        # its updated state" reported a refusal as success, showing the pre-command state as though
+        # it were the result. Verified on hardware 2026-08-25: a refused `5d0f` returns
+        # [0x06 127 B, 0x04 101 B, 0x03 93 B] and the push decodes fine.
+        # The refusal is therefore checked FIRST. `_state_from_reply` still runs, because refreshing
+        # the seed baseline from a fresh push is worth having either way.
+        state = self._state_from_reply(reply)
+        if reply_refused(reply):
             # The unit answered, and what it answered was a refusal. Distinct from the silence
             # below on purpose: silence is a connection that missed and is worth retrying, a
             # refusal is the unit declining this setting in its current state and will keep
@@ -1295,6 +1303,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     "error": "the air conditioner refused the command",
                 },
             )
+        if state is not None:
+            self.async_set_updated_data(state)
         else:
             await self.async_request_refresh()
 

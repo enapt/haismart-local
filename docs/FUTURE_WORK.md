@@ -19,6 +19,101 @@ keeps its own when it moves between the two sections. Expect the sequence to hav
 > themselves in different formats), never against the shared map alone, or the count understates the
 > other families badly.
 
+## 44. ✅ FIXED in v0.54.1 — a refused command was reported as SUCCESS
+
+Every op connection opens with the unit's routine status push (frameType `0x06`) and alarm push
+(`0x04`) **before** the answer to our own frame arrives (`0x02` accepted / `0x03` refused). The
+coordinator took the newest decodable status as *"the unit answered with its updated state"* and only
+consulted `reply_refused` when nothing decoded — but a refusal always travels alongside the push,
+which decodes perfectly.
+
+⇒ **A refused command raised nothing.** Home Assistant reported success and displayed the
+*pre-command* state as the result, so the entity did not even look stale. The user changes a setting,
+is told it worked, and nothing happened.
+
+Verified on hardware 2026-08-25: a refused `5d0f` on the owner's unit returns exactly
+`[0x06 127 B, 0x04 101 B, 0x03 93 B]`, and the 127-byte push decodes cleanly.
+
+**Fix:** check the refusal **first**; keep decoding the reply so the seed baseline is still refreshed
+from the fresh push. Regression test `test_a_refusal_is_not_masked_by_the_routine_status_push`,
+confirmed to fail against the old ordering.
+
+## 43. ⛔ NOT A DEFECT — `invisible` is NOT a reliable hardware signal for CONTROLS
+
+**Investigated and closed 2026-08-25. The fix was written, it broke a test, and the test was right.**
+
+**The observation that started it, which stands:** `switch.py` creates the five core toggles
+(strong/quiet/health/sleep/lamp) gated only by `supports_field`, which never consults `invisible` —
+while the panel controls ten lines below it *do*. `button.py`, `sensor.py` and `climate.py` share the
+ungated pattern. On paper that is the v0.32.0 phantom-feature bug on the control side.
+
+**The counter-example that closes it.** Gating `supports_field` on an explicit `invisible` mark
+immediately withdrew **left-right swing** from the owner's own unit. Its product `AAC1UKZ01` marks
+**`windDirectionHorizontal` invisible** (one of 25 invisible attributes of 39) — yet that control was
+**shipped in v0.24.0 and live-verified on that exact hardware**, tracking the handset through
+auto → position_4 → fixed.
+
+⇒ **The vendor's `invisible` flag says the unit has no horizontal vane. The unit has one.**
+
+★★ **So the flag is not "this hardware is absent" in the sense a control gate needs.** The asymmetry
+decides it:
+
+| | trusting `invisible` | not trusting it |
+|---|---|---|
+| **sensor** | may hide a real reading | a phantom sensor reading a constant zero |
+| **control** | **removes a working control** — demonstrated | offers a control that may do nothing |
+
+For a sensor the flag is worth trusting; for a control it is not, because the failure is worse and we
+have a concrete case of it firing wrongly. **Leave the controls ungated.**
+
+★ **What genuinely came out of this, and is worth keeping:**
+* **`invisible` and group-set order membership are independent** — measured across the published
+  models: **2,156** attribute slots are invisible *and still in their product's order*, **0** are
+  invisible and absent from it. Order describes packing, `invisible` describes hardware. Never
+  substitute one for the other (this is why the F6 order gate filters no absent hardware, by design).
+* **`invisible` is unreliable per-attribute**, at least for `windDirectionHorizontal` on `AAC1UKZ01`.
+  ⚠️ That should temper how far the v0.32.0 optional-feature gate is trusted, though the risk there
+  (a hidden sensor) is mild and no case of it is known.
+* The tree is unchanged; the suite (586) is green.
+
+## 42. Control for the `0d12` central cabinets — mechanism solved, 8 constants missing
+
+**187 products** (two uPlusIds, 162 + 25) publish **no group command at all**; every attribute is
+`writeType: I`, i.e. individually settable. The write is `SET_SINGLE_PARAMETER`: `frameType 1`,
+eppCmd `0x5D00 | paramID`, big-endian 16-bit value, data size exactly 4 — **confirmed on real Haier
+hardware 2026-08-25** (a published `5D01` accepted, a reserved command nacked).
+
+✅ **Both remaining unknowns now derive from source** (parent `docs/SINGLE_PARAMETER_WRITE.md` §6o,
+§6p): the **parameter ids** from prior art for this protocol generation, which maps 8/8 of the
+declared attributes with no gaps and is contradicted by no AC class we hold; and the **value
+encoding** from the per-attribute `variants` table the vendor's own encoder reads — seven of the
+eight are identity and the eighth is the setpoint at `°C − 16`. A complete control frame can be
+written down before touching hardware; one confirming run settles both.
+
+Previously recorded as missing: the **per-class parameter ids**. They are a registry with no derivable rule
+(`onOffStatus` is `5D00` on eleven classes, `5D01` on thirteen), and no `0d` profile exists in
+anything we hold — searched exhaustively across all 174 bundled profiles in both formats, 15
+containers, every dex, four native libs and all four relocation types.
+
+★★ **Try grSetDAC FIRST.** All 8 of the declared attributes are in the published group-set frame
+(`CANONICAL_WRITE`) inside 4 words, and `write_base_word = 20 + (−19) = 1`. The absence of a
+`grSetDAC` *operation* in the published model describes the vendor's app — which is cloud-only for
+these — not the appliance. `probe_single_param.py --groupset 4 --arm` sends the unit its own report
+words back **unchanged**, so nothing can move, and the reply frame type says whether `6001` is
+implemented. If it is, these 187 products are controllable with the map we already hold and the
+parameter ids stop mattering.
+
+**Route in:** one owner runs `tools/re/probe_single_param.py --sweep 0x00 0x1f --arm`, which is
+unattended, non-destructive (an unimplemented id is *refused*), and reports accept/refuse per id.
+`--identify` first is **key-free** and needs no account or diagnostics.
+
+⚠️ Reads are already correct for this family from v0.53.0 — the layout resolves at −19, the only
+displacement a 133-byte report can carry. Anyone reporting wrong sensors on a `0d12` is on ≤ v0.52.x
+and needs to update.
+
+Full map, including every negative and what each search covered: the parent repo's
+`docs/SINGLE_PARAMETER_WRITE.md`.
+
 ## Open items
 
 ### 1. Vane positions on a unit whose model understates it

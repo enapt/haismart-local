@@ -213,8 +213,25 @@ The panel control surface **shipped** across every group-set family, and across 
 via its per-attribute commands. What remains open is the residue that no source can place or read:
 
 * **five append-region booleans** — `constDehumidificationStatus`, `preventSupercooling`,
-  `pvPowerSavingMode`, `uvSterilizationSwitch`, `windAvoidance` — place NOWHERE even against the full
-  frame (they fall in the append region the order does not order). One capture per family settles them.
+  `pvPowerSavingMode`, `uvSterilizationSwitch`, `windAvoidance`. ⚠️ **Re-attacked 2026-08-25 against
+  every published model, and the result is four-and-a-bit rather than five.** With each setting's
+  width taken from its own published value set instead of guessed, **`constDehumidificationStatus`
+  derives a position, and the same position on all 159 products that publish it** — together with
+  four neighbours that fall out of the same run. **Not shipped**, because the arithmetic only closes
+  once one neighbouring setting is taken to be one bit wide rather than two; that is strongly
+  precedented (exactly three settings in the whole catalogue publish that value pattern, and one of
+  them is already recorded as one bit) but it is inferred, and a wrong write position fails silently.
+  One report from a unit that has this setting confirms or refutes it outright.
+  The other four stay unplaced, and now with a stated reason each: two sit **past the last setting the
+  frame pins**, so nothing bounds them from above and no ordering information ever will; two sit in a
+  run with **seventeen spare bits**, where the frame reserves space the order cannot locate. Those
+  need a capture, not more analysis.
+
+  ⚠️ **Their positions are REUSED between product families** — one family keeps mould-proof, drying
+  and heatstroke-prevention where another keeps humidity-control, display-mode and balanced-wind.
+  Exactly one product declares both sets, and there the published order separates them and every one
+  is marked as hardware the unit lacks, so nothing is mis-offered today. Anything shipped here must be
+  family-gated the way the existing bit-reuse guard is.
 * **dual-airflow** (`windDirectionVerticalL/R`, `windSpeedL/R`) — the twin-tower write positions are
   known (ext46, w1/w2), but **no report we hold reads a tower back**, so they would be write-only
   controls. Blocked on one capture with a tower vane parked non-zero (the same capture item 3 wants).

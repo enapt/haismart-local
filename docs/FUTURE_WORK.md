@@ -357,29 +357,41 @@ vane closes it.**
 at all, because the parameter table is per device class while the function is per product: a cabinet
 with no health module must not be offered health merely because its class defines a command for it.
 
-### 45. A multi-attribute write command exists on paper — it would collapse item 42's several ops into one
+### 45. A multi-attribute write command exists on paper — and this generation refuses it
 
 Item 42 sends one op per setting, because the class it serves has no group-set command. The protocol
 documents a **third** shape between the two: a *set-parameters* command carrying a list of
 `parameter id + value` pairs in one frame — the same per-attribute addressing item 42 uses, but
 several at a time, with no packed word block and so none of the group set's whole-block hazard.
+A cabinet that took it would apply "turn on, cool, fan low" in one op instead of three.
 
-**Why it is not shipped:** nothing we hold says any appliance implements it. It appears in the
-published command enumeration and in prior art's reference, and in **zero** of the 174 bundled
-device descriptions — where the read-side counterpart (*get specific parameters*) is equally absent.
-Prior art documents it without using it.
+**Tested here on 2026-08-25, and refused.** Both halves were sent to a wall unit as no-ops — the
+*get* form carries attribute ids and no values at all, and the *set* form carried an attribute's own
+current value — and the appliance **refused both**. In between, the per-attribute command it does
+publish was sent identically and **accepted**. Nothing moved on any of the three.
 
-**What would settle it, cheaply and safely:** send one carrying an attribute's **current** value.
-That is a no-op by construction, and the appliance answers every command with an accept or a refuse,
-so the reply says whether the command is implemented without anything moving. It needs no reporter —
-any unit here will answer.
+**Why the bracketing matters.** A refusal on its own says only that the unit declined *something*.
+A refusal either side of an acceptance, from the same state, over the same connection, minutes
+apart, says it declined **that command** — the difference between an appliance that is fussy today
+and a command this firmware does not implement.
 
-**Why it is worth the ten minutes:** a cabinet that takes it would apply "turn on, cool, fan low" in
-one op instead of three, which is fewer connections, no partial application if one op fails, and no
-question about the order settings are applied in (item 42 currently fixes that order by choice).
+**The unit says the same thing out loud.** These appliances chirp when they accept a command. Re-run
+as a listening test with someone standing beside it, three commands inside twenty seconds: both
+refused forms were **silent** and the one it implements **beeped**. That is a second signal, owing
+nothing to how we decode a reply, and it agrees.
 
-⚠️ Not a blocker for item 42 — several ops is correct behaviour, just not the tidiest. And a refusal
-here costs nothing: an unimplemented command is declined, which is the answer.
+**And the refusal of the *get* form is the one that settles it.** That form carries no value, so it
+cannot be explained away by the value's width, its encoding, or which of the two number spaces a
+value travels in — the three loose ends a set-only test would have left. It was refused anyway.
+
+⚠️ **What it does not settle.** One appliance, of the wall generation — **not** the central cabinets
+that item 42 actually serves, which are the ones sending several ops. They have answered nothing.
+The evidence against is now strong (nothing in any of the 174 published device descriptions declares
+either half, the reference implementation documents the pair without using it, and hardware of a
+neighbouring generation refuses both), so this is no longer worth a reporter's time on its own — but
+if a central cabinet is ever on the other end of a probe, the same two commands cost ten seconds.
+
+**Not a blocker for item 42.** Several ops is correct behaviour, just not the tidiest.
 
 ## Reference — not open items
 

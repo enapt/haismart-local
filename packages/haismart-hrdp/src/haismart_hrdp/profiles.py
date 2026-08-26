@@ -323,19 +323,30 @@ def constraint_commands(
 ) -> dict[str, str]:
     """The extra commands the model requires alongside ``pending``.
 
-    ``pending`` and the result are ``{attribute: model value}``. A rule fires when *every* attribute
-    it names is being set to one of the values it lists. Anything already in ``pending`` is left
-    alone -- an explicit request outranks a rule's default.
+    ``pending`` and the result are ``{attribute: model value}``. A rule fires when the attributes it
+    names are being set to the values it lists, combined by **its own operator** -- ``AND`` on most,
+    ``OR`` on the ones that say so. Anything already in ``pending`` is left alone -- an explicit
+    request outranks a rule's default.
+
+    ⚠️ The operator used to be ignored here and every rule was ANDed, while :func:`lock_reasons` --
+    the same shape of computation, thirty lines down -- honoured it. An ``OR`` rule ANDed can only
+    fire when *both* settings travel in one command, which is to say almost never: **496 rules across
+    489 products** were parsed, valid and inert, this appliance's own among them ("setting sleep or
+    quiet also clears boost", which it did not do).
     """
     if not model:
         return {}
     extra: dict[str, str] = {}
     for rule in model.get("constraints") or ():
-        condition = ((rule.get("pendingCondition") or {}).get("commands")) or {}
+        pending_condition = (rule.get("pendingCondition") or {})
+        condition = pending_condition.get("commands") or {}
         if not condition:
             continue
-        if not all(str(pending.get(name)) in [str(v) for v in values]
-                   for name, values in condition.items()):
+        matched = [str(pending.get(name)) in [str(v) for v in values]
+                   for name, values in condition.items()]
+        fired = (any(matched) if str(pending_condition.get("operator")).upper() == "OR"
+                 else all(matched))
+        if not fired:
             continue
         for command in ((rule.get("additionalCommands") or {}).get("commands")) or ():
             name, value = command.get("name"), command.get("value")

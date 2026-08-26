@@ -386,3 +386,38 @@ def test_no_shipped_rule_can_never_fire() -> None:
     ]
     assert _bundle()["models"], "the bundle carries no models"
     assert not inert, f"{len(inert)} conditions accept no value, e.g. {inert[:5]}"
+
+
+def test_an_or_rule_fires_on_either_of_its_settings() -> None:
+    """A co-command rule states its own operator, and ``OR`` means either setting is enough.
+
+    This computation ignored the operator and ANDed every rule, while :func:`lock_reasons` -- the
+    same shape of computation in the same module -- honoured it. An ``OR`` rule ANDed can only fire
+    when both of its settings travel in one command, which is to say almost never: **495 published
+    rules across 488 products** were parsed, valid and inert. One of them is this appliance's own,
+    and it is the reason boost stayed on when quiet or sleep was switched on.
+    """
+    from haismart_hrdp import constraint_commands
+
+    model = {"constraints": [{
+        "pendingCondition": {"operator": "OR", "commands": {
+            "silentSleepStatus": ["true"], "muteStatus": ["true"]}},
+        "additionalCommands": {"mergeType": "APPEND",
+                               "commands": [{"name": "rapidMode", "value": "false"}]},
+    }]}
+    assert constraint_commands(model, {"silentSleepStatus": "true"}) == {"rapidMode": "false"}
+    assert constraint_commands(model, {"muteStatus": "true"}) == {"rapidMode": "false"}
+    # ...and neither being set is still no reason to fire
+    assert constraint_commands(model, {"operationMode": "1"}) == {}
+
+    # An AND rule keeps needing all of its settings -- the operator is read, not ignored the other
+    # way round.
+    both = {"constraints": [{
+        "pendingCondition": {"operator": "AND", "commands": {
+            "silentSleepStatus": ["true"], "muteStatus": ["true"]}},
+        "additionalCommands": {"mergeType": "APPEND",
+                               "commands": [{"name": "rapidMode", "value": "false"}]},
+    }]}
+    assert constraint_commands(both, {"silentSleepStatus": "true"}) == {}
+    assert constraint_commands(
+        both, {"silentSleepStatus": "true", "muteStatus": "true"}) == {"rapidMode": "false"}

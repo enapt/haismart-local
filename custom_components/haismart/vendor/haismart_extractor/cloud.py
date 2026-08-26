@@ -311,6 +311,35 @@ PUBLIC_CONFIG_REASONS_SECTION = "invalidInfo"
 PUBLIC_CONFIG_UNADAPTED = ("operation",)
 
 
+def _limit_action(action: Mapping[str, Any]) -> dict | None:
+    """One `logicLimit` action -- what a rule does to an attribute while it holds.
+
+    ⚠️ **An action does not always take a setting away.** `rewriteFields` names which of the
+    attribute's fields the rule rewrites: **W** its writability, **V** its permitted values, **WV**
+    both. Only a ``W`` action is a lock; a ``V`` action says *"in this state this setting may take
+    these values"* and carries **no ``writable`` key at all**.
+
+    Reading that absent key as ``False`` -- which is what ``a.get("writable", False)`` did until
+    2026-08-26 -- turned every narrowing into a lock. **611 products** publish at least one, most of
+    them on ``windDirectionVertical`` and ``windSpeed`` in an ordinary running mode, so the swing or
+    fan-speed control went *unavailable* while the unit was merely cooling. `METHOD.md` Rule 28: a
+    missing record announces itself, a missing value inside a record does not.
+
+    The vendor's other serialisation states the same thing outright -- there a ``WV`` action is
+    ``writable: true`` **with** a ``valueRange`` -- which is why writability is reported here only
+    when the action actually rewrites it, and the narrowed set is carried under the name that
+    spelling already uses.
+    """
+    out: dict[str, Any] = {"name": str(action["name"])}
+    if "writable" in action:
+        out["writable"] = action["writable"]
+    if (value_range := _value_range_from_variants(action.get("variants"))) is not None:
+        out["valueRange"] = value_range
+    # An action that rewrites nothing we can express is not carried: it would read as a rule with
+    # actions, and `_adapt_logic_limit` keeps a rule only because it has some.
+    return out if len(out) > 1 else None
+
+
 def _adapt_logic_limit(entries: Any) -> list[dict]:
     """The catalogue's conditional-writability rules, in the shape the rules engine reads.
 
@@ -339,8 +368,9 @@ def _adapt_logic_limit(entries: Any) -> list[dict]:
                 if isinstance(item, Mapping) and item.get("invalidCode"):
                     code = str(item["invalidCode"])
                     break
-        actions = [{"name": str(a["name"]), "writable": a.get("writable", False)}
-                   for a in (e.get("action") or ()) if isinstance(a, Mapping) and a.get("name")]
+        actions = [act for a in (e.get("action") or ())
+                   if isinstance(a, Mapping) and a.get("name")
+                   for act in (_limit_action(a),) if act]
         if not actions or not (conditions or alarms):
             continue
         rule: dict[str, Any] = {
@@ -379,7 +409,8 @@ def _adapt_logic_patch(entries: Any) -> list[dict]:
         if not isinstance(e, Mapping):
             continue
         trigger = e.get("trigger") or {}
-        req = (trigger.get("requestParam") or {}).get("property") or ()
+        request = trigger.get("requestParam") or {}
+        req = request.get("property") or ()
         commands: dict[str, list[str]] = {}
         for prop in req:
             if not isinstance(prop, Mapping) or not prop.get("name"):
@@ -403,7 +434,20 @@ def _adapt_logic_patch(entries: Any) -> list[dict]:
             continue
         out.append({
             "pendingCondition": {
-                "operator": str(trigger.get("relation") or "AND").upper(),
+                # ⚠️ The operator over these conditions is the one INSIDE ``requestParam``, not the
+                # one on the trigger. A trigger holds up to two groups -- ``requestParam`` (what the
+                # write asks for) and ``reportValue`` (what the unit currently reports) -- each with
+                # its own relation, and ``trigger.relation`` combines the two GROUPS. Calibrated
+                # against the account-scoped copy of the same product's rules, which states the
+                # operator outright: on all ten it equals the inner relation, and on nine of the ten
+                # it differs from the outer one.
+                # ...and over a SINGLE condition an operator states nothing at all -- `any` and
+                # `all` of one term are the same rule -- so it is canonicalised. Left as published,
+                # the one model in a family of 108 that spells it `OR` makes a rule the whole family
+                # agrees on look like a disagreement, and `family_rules` (a strict intersection over
+                # the serialised rule) then drops it for every one of them.
+                "operator": ("AND" if len(commands) < 2 else
+                             str(request.get("relation") or trigger.get("relation") or "AND").upper()),
                 "commands": commands,
             },
             "additionalCommands": {

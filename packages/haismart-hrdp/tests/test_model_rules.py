@@ -318,3 +318,37 @@ def test_a_reason_code_is_not_a_global_key() -> None:
     multi = {k: v for k, v in meanings.items() if len(v) > 1}
     assert multi, "expected at least one reason code to carry more than one meaning"
     assert "1" in multi, f"code 1 should be ambiguous across products, got {meanings.get('1')}"
+
+
+def test_no_shipped_rule_locks_a_setting_it_only_narrows() -> None:
+    """A published rule that limits an attribute's VALUES must never make it unavailable.
+
+    The catalogue's rule action names the field it rewrites -- ``W`` writability, ``V`` permitted
+    values -- and a ``V`` action states no writability at all. Read as a lock, it withdrew the swing
+    or fan-speed control from **611 products** in ordinary running modes: the worst of them made the
+    up-down vane unavailable while the unit was simply cooling.
+
+    Asserted over the shipped bundle, in each rule's OWN trigger state, because that is the only
+    state that can fire it.
+    """
+    from haismart_hrdp.model_rules import _bundle
+    from haismart_hrdp.profiles import locked_attributes
+
+    narrowing = 0
+    for code, entry in _bundle()["models"].items():
+        for rule in entry.get("modifiers") or ():
+            narrowed = [a["name"] for a in rule.get("actions") or ()
+                        if a.get("valueRange") and a.get("writable") is not False]
+            if not narrowed:
+                continue
+            narrowing += 1
+            conditions = (rule.get("trigger") or {}).get("conditions") or {}
+            alarms = (rule.get("trigger") or {}).get("alarms") or []
+            state = {name: str(values[0]) for name, values in conditions.items() if values}
+            locked = locked_attributes({"modifiers": [rule]}, state, alarms)
+            assert not (set(narrowed) & locked), (
+                f"{code}: {sorted(set(narrowed) & locked)} is unavailable in {state} because a rule "
+                "that only limits its values was read as taking it away"
+            )
+    # ...and the rules are really there to be got wrong: a guard over an empty set proves nothing.
+    assert narrowing > 500, f"only {narrowing} narrowing rules found -- has the bundle lost them?"

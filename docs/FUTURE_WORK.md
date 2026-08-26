@@ -484,6 +484,46 @@ text for any of these (see `VENDOR_LABELS.md`), so unlike mode and fan-speed nam
 attributes rather than through Home Assistant's string catalogue, so localising them is hand work.
 **7 products still show none**, correctly: their published models declare no reasons.
 
+### 48. The rules that locked what they only limited — fixed, and the operator with it
+
+**Every published rule was re-read against the vendor's own bytes, and two faults came out of it.**
+Both had been shipping since the rules engine existed, and both were invisible to the tests because
+every fixture was written from the same understanding as the code.
+
+**A rule that limits a setting's VALUES was making it unavailable.** A rule's action names which of
+the attribute's fields it rewrites — `W` its writability, `V` its permitted values, `WV` both — and a
+`V` action carries no writability at all. Read as a lock, it withdrew the control: **611 products**,
+almost all of them on the up-down vane or the fan speed, triggered by an ordinary running mode. The
+worst of them made **the swing control unavailable while the unit was simply cooling**, with the
+explanation "not available in the unit's current state" — a sentence the model never said. The other
+serialisation of the same model states the answer outright: there a `WV` action is *writable* **and**
+carries the narrowed set. **1,451 attribute-state locks removed, 0 added.**
+
+**And a rule's conditions were being combined with the wrong operator.** A trigger holds two groups —
+what the write asks for, and what the unit currently reports — each with its own relation, and the
+relation on the trigger combines the *groups*. It was being read as the operator over the conditions.
+Calibrated against the account-scoped copy of one product's ten rules, which states the operator
+plainly: it matches the inner relation on all ten and the outer on one.
+
+**Then the engine ignored the operator anyway.** Two functions in one file evaluate a rule's trigger;
+one honoured `OR` and the other, thirty lines above it, ANDed everything. An `OR` rule ANDed fires
+only when both its settings travel in one command, which is to say never: **495 rules across 488
+products** were parsed, valid and permanently inert — this project's own appliance among them, whose
+model says switching on quiet or sleep also clears boost, and which did not.
+
+The shipped rule bundle was built from the adapted output, so it was re-derived from the published
+models for all 1,451 products; re-running that repair is now a no-op. A test over the whole bundle
+refuses any rule that locks a setting it only narrows, and asserts there are more than 500 such rules
+to get wrong — a guard over an empty set proves nothing.
+
+⚠️ **What is still not read, and is not a defect.** A trigger's *reported-state* term is dropped, as
+the vendor's own account serialisation drops it: two rules that differ only by it arrive
+indistinguishable there too, and the integration already handles the one case that matters (it
+substitutes a fan speed when fan-only is selected on auto) more precisely than the rule would. And
+**four products** publish two rules that set the same attribute to different values under the same
+condition (`windAvoidance` and the vane positions); the model orders them by a priority nothing here
+reads, so one of the two wins by list order. One report from such a unit would settle which.
+
 ## Reference — not open items
 
 Kept because each looks like something to "fix" until you know why it is the way it is.

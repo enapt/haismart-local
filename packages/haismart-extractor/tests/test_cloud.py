@@ -903,3 +903,72 @@ def test_a_model_already_in_the_account_spelling_is_left_exactly_alone() -> None
                "valueRange": {"type": "LIST", "dataList": [{"data": "true", "desc": "on"}]}}
     cfg = normalize_public_config({"attributes": [dict(already)]})
     assert cfg["attributes"] == [already]
+
+
+def test_a_value_set_narrowing_is_not_a_lock() -> None:
+    """A rule that limits an attribute's VALUES must not be read as taking it away.
+
+    ``logicLimit``'s action names the field it rewrites: ``W`` its writability, ``V`` its permitted
+    values, ``WV`` both. Only ``W`` is a lock -- and a ``V`` action carries **no ``writable`` key at
+    all**, so the old ``a.get("writable", False)`` turned every narrowing into a lock. 611 published
+    products carry at least one, almost all of them on ``windDirectionVertical`` or ``windSpeed`` in
+    an ordinary running mode, so the swing or fan-speed control went unavailable while the unit was
+    merely cooling.
+
+    The vendor's other serialisation states it outright: there a ``WV`` action is ``writable: true``
+    **with** a ``valueRange``, which is the shape asserted below.
+    """
+    from haismart_extractor.cloud import _adapt_logic_limit
+
+    adapted = _adapt_logic_limit([{
+        "priority": 7,
+        "trigger": {"relation": "AND", "invalidCode": "50002",
+                    "condition": [{"name": "operationMode", "value": ["1"]}]},
+        "action": [
+            {"name": "windDirectionVertical", "dataType": "enum", "rewriteFields": "V",
+             "variants": {"enumList": [{"stdValue": "0", "description": "fixed"},
+                                       {"stdValue": "8", "description": "auto"}]}},
+            {"name": "rapidMode", "dataType": "bool", "rewriteFields": "W", "writable": False},
+        ],
+    }])
+    narrowed, locked = adapted[0]["actions"]
+    # the narrowing says nothing about writability, and `lock_reasons` locks on `writable is False`
+    assert "writable" not in narrowed
+    assert narrowed["valueRange"]["dataList"] == [{"data": "0", "desc": "fixed"},
+                                                  {"data": "8", "desc": "auto"}]
+    # ...while a real lock in the same rule is untouched
+    assert locked == {"name": "rapidMode", "writable": False}
+
+
+def test_the_co_command_operator_comes_from_the_request_group() -> None:
+    """The operator over a co-command's conditions is the INNER relation, not the trigger's.
+
+    A ``logicPatch`` trigger holds up to two groups -- ``requestParam`` (what the write asks for) and
+    ``reportValue`` (what the unit currently reports) -- each with its own ``relation``, and
+    ``trigger.relation`` combines the two GROUPS. Calibrated against the account-scoped copy of one
+    product's ten rules, which states the operator outright: it equals the inner relation on all ten
+    and differs from the outer on nine.
+    """
+    from haismart_extractor.cloud import _adapt_logic_limit, _adapt_logic_patch
+
+    def rule(outer: str, inner: str) -> dict:
+        return {"actionType": "PREPEND",
+                "action": [{"param": [{"name": "rapidMode", "value": "false"}]}],
+                "trigger": {"relation": outer, "requestParam": {"relation": inner, "property": [
+                    {"name": "silentSleepStatus",
+                     "variants": {"boolList": [{"stdValue": "true"}]}},
+                    {"name": "muteStatus",
+                     "variants": {"boolList": [{"stdValue": "true"}]}}]}}}
+
+    assert _adapt_logic_patch([rule("OR", "AND")])[0]["pendingCondition"]["operator"] == "AND"
+    assert _adapt_logic_patch([rule("AND", "OR")])[0]["pendingCondition"]["operator"] == "OR"
+
+    # `logicLimit`'s trigger has no such nesting -- its conditions and alarms sit directly under the
+    # one relation -- so that section is read from the trigger, and stays that way.
+    limit = _adapt_logic_limit([{
+        "trigger": {"relation": "OR",
+                    "condition": [{"name": "onOffStatus", "value": ["false"]},
+                                  {"name": "selfCleaningStatus", "value": ["true"]}]},
+        "action": [{"name": "targetTemperature", "rewriteFields": "W", "writable": False}],
+    }])
+    assert limit[0]["trigger"]["operator"] == "OR"

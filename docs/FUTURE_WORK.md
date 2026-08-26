@@ -114,6 +114,13 @@ no unit here has reported a fault. `errCode` gives a free cross-check when one o
 single fault where the frame carries the set, so the bit that is set must be `errCode - 1`. Nothing
 to do but keep the diagnostic in place and check the first report that arrives.
 
+★ **Narrowed 2026-08-26 — the table itself is no longer in question.** Every published
+air-conditioner model declares **the same 51 faults at the same 51 positions**, with **zero**
+disagreements about a name, so the one shared table this integration applies to every family is
+justified by measurement rather than assumption. What remains untested is only the **bit ordering**
+of the frame — which byte carries positions 0..7 — and none of the 43 status reports held here
+carries a non-zero fault code, so it still takes one report from a unit that is actually faulted.
+
 ### 8. The declared attributes that are still unreachable
 
 A unit declares three or four times the attributes any family map carries, and every one sits where
@@ -448,6 +455,34 @@ different order, and three reason codes no rule ever fires with.
 the unit simply did not receive the follow-up commands its maker pairs with a setting, so something
 expected to be cleared alongside another could stay on. Worth knowing when reading an old report of
 two comfort settings that would not release each other.
+
+### 47. The lock explanations — restored and translated, with one residue
+
+When a rule makes a control unavailable, the integration shows the reason the device's own published
+model gives for it. Two faults meant most owners never saw one.
+
+**A published model spells that record two ways**, one per serialisation — `code`/`description` on
+1,423 products and **`name`/`desc`** on the 28 that arrive in the other shape. Only the first was
+read, so **21 products shipped with no explanations at all** (189 sentences), and 96 more were
+missing some of theirs. Twenty of the twenty-one are the compact central cabinets — `HCFI-*`,
+`HCSI-*`. **477 sentences restored.**
+
+**And 52% of the sentences that did ship were in the source language.** The English wording only ever
+covered one of the two reason-code spaces, so the 700 products whose codes live in the other one
+showed their owners text they could not read — worse than showing nothing, because it looks like a
+fault in the integration rather than a message from the appliance. **7,261 sentences translated;
+31 published wordings collapse to 20.**
+
+Both are guarded now: a test refuses any shipped reason left in the source language, and a second
+pins the fact that **a reason code is not a global key** — code `1` means "not allowed in the current
+state" on 509 products and "this function is not supported" on 300, so nothing may carry a sentence
+between products on the code alone.
+
+⚠️ **What is left.** The wording is **ours**, not the manufacturer's: its own language bundle has no
+text for any of these (see `VENDOR_LABELS.md`), so unlike mode and fan-speed names — which arrive in
+18 locales — these twenty are English wherever they appear. They surface as free-text entity
+attributes rather than through Home Assistant's string catalogue, so localising them is hand work.
+**7 products still show none**, correctly: their published models declare no reasons.
 
 ## Reference — not open items
 

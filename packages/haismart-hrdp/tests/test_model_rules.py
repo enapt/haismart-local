@@ -269,3 +269,52 @@ def test_a_product_with_no_group_set_reports_no_order():
     assert without, "expected the single-parameter lineage to have no group-set order"
     for pc in without[:20]:
         assert declared_order(rules_for_product(pc)) == ()
+
+
+def test_no_shipped_lock_reason_is_left_in_the_source_language() -> None:
+    """Every explanation a user can be shown is in English.
+
+    52% of them were not: the wording only ever covered the `500xx` reason-code space, so the 700
+    products whose codes live in the low space (`0`..`21`) shipped the vendor's Chinese straight
+    through. An untranslated sentence is worse than a missing one -- a missing reason shows nothing,
+    an untranslated one shows a user text they cannot read and looks like a bug in the integration.
+
+    ⚠️ There is no vendor English to fall back on: these sentences appear nowhere in the app (checked
+    across the fully-unpacked APK with a positive control), so the wording is this project's own and
+    a newly swept product can reintroduce the source language. That is what this guards.
+    """
+    from haismart_hrdp.model_rules import known_products, rules_for_product
+
+    def cjk(text: str) -> bool:
+        return any("一" <= ch <= "鿿" for ch in str(text))
+
+    offenders = {
+        code: [v for v in (rules_for_product(code) or {}).get("invalid_reasons", {}).values()
+               if cjk(v)]
+        for code in known_products()
+    }
+    offenders = {c: v for c, v in offenders.items() if v}
+    assert not offenders, (
+        f"{len(offenders)} product(s) ship an untranslated lock reason, e.g. "
+        f"{next(iter(offenders.items()))}"
+    )
+
+
+def test_a_reason_code_is_not_a_global_key() -> None:
+    """The same code means different things on different products, so nothing may key on it alone.
+
+    Measured on the published corpus: code `1` is "not allowed in the current state" on 509 products
+    and "this function is not supported" on 300; code `2` is "cannot adjust temperature" or "the
+    control command failed"; code `4` is "not allowed in intelligent mode" or "device fault". Any
+    code that carries an English sentence across products would show a wrong explanation -- this
+    pins the fact so the shortcut is never taken.
+    """
+    from haismart_hrdp.model_rules import known_products, rules_for_product
+
+    meanings: dict[str, set[str]] = {}
+    for code in known_products():
+        for key, text in ((rules_for_product(code) or {}).get("invalid_reasons") or {}).items():
+            meanings.setdefault(key, set()).add(text)
+    multi = {k: v for k, v in meanings.items() if len(v) > 1}
+    assert multi, "expected at least one reason code to carry more than one meaning"
+    assert "1" in multi, f"code 1 should be ambiguous across products, got {meanings.get('1')}"

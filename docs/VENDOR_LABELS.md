@@ -84,6 +84,34 @@ speed a unit publishes is offered under the manufacturer's own name for it.
 different things — the first is a fan speed, the second is the appliance's rapid mode. The names
 collide because both are the vendor's own; three published products carry both.
 
+## The one set of words that are ours — and why
+
+Everything above is the manufacturer's. **The sentences explaining why a control is unavailable are
+not**, and this is the page to say so.
+
+When a rule locks a control, the integration shows the reason the device's own published model gives
+for it — "not available while the unit reports a fault", "the fan speed cannot be adjusted in the
+unit's current state", and eighteen others. Those models describe the reason in **Chinese only**, and
+**the vendor's language bundle has no wording for any of them**: of its 27 air-conditioner keys
+exactly one is even close — `AC_cannot_handle` / `当前无法操作` / "Unable to operate now" — and it does
+not correspond to any sentence the models actually publish. The app displays the model's own Chinese.
+
+So there is nothing to copy, and the English is this project's, written against the source sentence.
+Two things were done to keep that honest:
+
+* **The source sentence is the key, never the reason code.** Codes are per-product: code `1` means
+  "not allowed in the current state" on 509 products and **"this function is not supported"** on 300;
+  code `2` is "the temperature cannot be adjusted" or **"the control command failed"**. Anything that
+  carried a sentence between products on a code alone would show a *wrong* explanation, so nothing
+  does, and a test pins the ambiguity.
+* **Paraphrases share one wording deliberately.** The models spell the same meaning several ways
+  (`故障状态无法操作` and `故障状态下无法执行此操作`); a reader should not have to wonder whether the
+  difference is meaningful. **31 published sentences become 20.**
+
+⚠️ **This is the part a translator would have to do by hand.** Mode and fan-speed names come with 18
+locales from the vendor; these twenty do not, and they surface as free-text entity attributes rather
+than through Home Assistant's own string catalogue, so they are English wherever they appear.
+
 ## Reproducing this
 
 ```bash

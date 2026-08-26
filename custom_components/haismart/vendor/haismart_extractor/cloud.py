@@ -525,6 +525,31 @@ PUBLIC_CONFIG_ADAPTERS = {
 }
 
 # Field renames INSIDE a carried section, where the two schemas differ only by name.
+def _reason_entry(item: Mapping[str, Any]) -> tuple[str, str] | None:
+    """One `invalidInfo` record as ``(code, sentence)``, or ``None`` when it is not usable.
+
+    A reason is for display, so a malformed one is skipped rather than half-carried: it must never
+    reach a user, and it never affects whether a control is locked.
+
+    ⚠️ **The catalogue spells this record two ways**, one per serialisation: `code`/`description` on
+    the 1,423 products that arrive in the standard shape, and **`name`/`desc`** on the 28 that arrive
+    in the other one. Reading a single spelling produced an EMPTY mapping for 21 of them — every lock
+    explanation those products publish, 189 sentences — and an empty section is indistinguishable
+    from a product that simply declares no reasons. That is `METHOD.md` Rule 28, and it is why both
+    spellings are read here rather than the one this code happened to meet first.
+
+    ⚠️ **`0` is a real code** ("cannot operate while the unit reports a fault"), so the code is tested
+    for PRESENCE, never for truthiness.
+    """
+    code = item.get("code")
+    if code is None:
+        code = item.get("name")
+    text = item.get("description") or item.get("desc")
+    if code is None or not text:
+        return None
+    return str(code), str(text)
+
+
 PUBLIC_CONFIG_FIELD_RENAMES = {"alarms": {"description": "desc"}}
 
 
@@ -543,13 +568,10 @@ def normalize_public_config(doc: Mapping[str, Any]) -> dict:
         if key in PUBLIC_CONFIG_UNADAPTED:
             continue
         if key == PUBLIC_CONFIG_REASONS_SECTION:
-            # code -> sentence. Entries without both are skipped rather than half-carried: a reason
-            # is for display, so a malformed one must never reach a user, and never affects a lock.
-            out["invalid_reasons"] = {
-                str(item["code"]): str(item["description"])
-                for item in value or ()
-                if isinstance(item, Mapping) and item.get("code") and item.get("description")
-            }
+            out["invalid_reasons"] = dict(
+                filter(None, (_reason_entry(item) for item in value or ()
+                              if isinstance(item, Mapping)))
+            )
             continue
         if key in PUBLIC_CONFIG_ADAPTERS:
             target, adapt = PUBLIC_CONFIG_ADAPTERS[key]

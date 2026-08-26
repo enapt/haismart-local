@@ -525,6 +525,44 @@ async def test_public_device_config_needs_no_account_and_renames_its_sections() 
         assert gone not in cfg
 
 
+def test_a_lock_reason_is_read_under_either_of_its_two_spellings() -> None:
+    """The catalogue serialises one `invalidInfo` record two ways, and reading one spelling loses
+    every reason the other kind of product publishes.
+
+    Measured on the published corpus: `code`/`description` on 1,423 products and `name`/`desc` on the
+    28 that arrive in the other serialisation. Reading only the first left **21 products with an
+    empty mapping** — 189 sentences, every lock explanation they have — and an empty section looks
+    exactly like a product that declares no reasons at all (METHOD.md Rule 28).
+    """
+    both = normalize_public_config({
+        "invalidInfo": [
+            {"code": "50009", "description": "fan-only"},          # the common spelling
+            {"name": "3", "desc": "cannot change the fan speed"},   # the other serialisation's
+        ]
+    })
+    assert both["invalid_reasons"] == {
+        "50009": "fan-only",
+        "3": "cannot change the fan speed",
+    }
+
+
+def test_reason_code_zero_survives_because_zero_is_a_real_code() -> None:
+    """`0` means "cannot operate while the unit reports a fault". A truthiness test on the code
+    drops it, and the user is then shown a locked control with no reason."""
+    cfg = normalize_public_config({"invalidInfo": [{"code": "0", "description": "faulted"},
+                                                   {"name": 0, "desc": "faulted too"}]})
+    assert cfg["invalid_reasons"]["0"] == "faulted too"
+
+
+def test_a_reason_missing_its_sentence_is_skipped_not_half_carried() -> None:
+    """A reason exists to be displayed; a code with no text must never reach a user."""
+    cfg = normalize_public_config({"invalidInfo": [
+        {"code": "1"}, {"description": "no code"}, {"code": "2", "description": ""},
+        {"code": "3", "description": "kept"},
+    ]})
+    assert cfg["invalid_reasons"] == {"3": "kept"}
+
+
 async def test_public_device_config_refuses_an_unknown_product_code() -> None:
     """The catalogue reports success with an empty URL for a code it has never heard of, so a
     successful call is not enough to go on."""

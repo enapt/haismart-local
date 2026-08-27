@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "Jakość powietrza",
+        "state": {
+          "excellent": "Doskonała",
+          "good": "Dobra",
+          "moderate": "Umiarkowana",
+          "poor": "Zła"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "Klucz lokalny"
       },
+      "occupancy": {
+        "name": "Obecność",
+        "state": {
+          "unoccupied": "Nikogo nie ma",
+          "one_person": "Jedna osoba",
+          "several_people": "Kilka osób"
+        }
+      },
       "outdoor_pm25": {
         "name": "PM2.5 na zewnątrz"
       },
       "outdoor_temperature": {
         "name": "Temperatura zewnętrzna"
+      },
+      "pm25_level": {
+        "name": "Poziom PM2.5",
+        "state": {
+          "excellent": "Doskonała",
+          "good": "Dobra",
+          "moderate": "Umiarkowana",
+          "poor": "Zła"
+        }
+      },
+      "purifier_hours": {
+        "name": "Czas pracy oczyszczacza"
       },
       "uplus_id": {
         "name": "Identyfikator modelu"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "Ciągłe osuszanie"
       },
+      "control_lock": {
+        "name": "Blokada sterowania"
+      },
       "drying": {
         "name": "Suszenie"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "Usterka"
+      },
+      "filter_change": {
+        "name": "Filtr"
+      },
+      "formaldehyde_purify": {
+        "name": "Oczyszczanie z formaldehydu"
       },
       "fresh_air": {
         "name": "Świeże powietrze"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "Ochrona przed pleśnią"
       },
+      "pm25_purify": {
+        "name": "Oczyszczanie PM2.5"
+      },
       "prevent_heatstroke": {
         "name": "Ochrona przed udarem cieplnym"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "Unikanie strumienia powietrza"
+      },
+      "wind_sensing": {
+        "name": "Wykrywanie przepływu powietrza"
       }
     },
     "button": {

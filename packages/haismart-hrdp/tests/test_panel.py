@@ -55,3 +55,64 @@ def test_panel_bool_controls_exclude_the_read_only_features():
     for read_only in ("echoStatus", "heatAccumulationStatus", "humidificationStatus",
                       "intelligenceStatus", "10degreeHeatingStatus"):
         assert read_only not in PANEL_BOOL_CONTROLS
+
+
+def test_each_withheld_order_position_still_has_its_reason():
+    """The five derived-but-withheld positions, re-measured against the shipped model bundle.
+
+    Each was derived the same way the shipped ``PANEL_EXTRA_POSITIONS`` were -- unanimously, from
+    the products' own published group-set order -- and each is held back for a reason that is a
+    *measurement*, not a caution. Measurements expire: a catalogue re-sweep can make an attribute
+    visible, or move a product off a read-only family. So the reasons are checked here rather than
+    remembered, and this test failing is good news -- it means one of them can now be surfaced.
+    """
+    from haismart_hrdp.canonical_map import CANONICAL
+    from haismart_hrdp.model_rules import _bundle
+    from haismart_hrdp.panel import WITHHELD_ORDER_POSITIONS
+    from haismart_hrdp.wire_models import frame_write_fields
+
+    models = _bundle()["models"]
+
+    def visible(entry) -> set[str]:
+        return {a["name"] for a in entry.get("attributes") or () if not a.get("invisible")}
+
+    def declared(entry) -> set[str]:
+        return {a["name"] for a in entry.get("attributes") or ()}
+
+    checked = set()
+    for name, ((word, bit, _length), reason) in WITHHELD_ORDER_POSITIONS.items():
+        shows_it = [e for e in models.values() if name in visible(e)]
+        if reason == "invisible-everywhere":
+            # nothing to surface: every product that declares it says this unit does not have it
+            assert not shows_it, f"{name} is now visible on {len(shows_it)} products"
+            assert any(name in declared(e) for e in models.values()), (
+                f"{name} is not declared at all any more -- the entry is stale"
+            )
+        elif reason == "contested":
+            # the shared map places another attribute at the same word and bit; the products
+            # declaring this one overwhelmingly declare that one too, so a placement under this
+            # name would be reading the other attribute's bits on most of them.
+            rival = [
+                other for other, c in CANONICAL.items()
+                if other != name and c.word == word + 19 and c.bit == bit
+            ]
+            assert rival, f"{name}: nothing else is placed at w{word + 19}.b{bit} any more"
+            with_rival = [e for e in models.values()
+                          if name in declared(e) and set(rival) & declared(e)]
+            declares_it = [e for e in models.values() if name in declared(e)]
+            assert len(with_rival) > len(declares_it) / 2, (
+                f"{name} no longer travels with {rival} on most products"
+            )
+        elif reason == "read-only-family":
+            # the only units that could show it are ones this project already refuses to command,
+            # because their published order refutes the shared frame -- which is the very frame the
+            # position was derived against.
+            assert shows_it, f"{name} is visible nowhere; its reason should be invisible-everywhere"
+            for entry in shows_it:
+                assert not frame_write_fields(
+                    entry.get("group_set_order"), entry.get("uplus_id")
+                ), f"{name}: {entry.get('model')} now accepts frame writes"
+        else:                                             # pragma: no cover - guards the vocabulary
+            raise AssertionError(f"unknown withholding reason {reason!r}")
+        checked.add(name)
+    assert checked == set(WITHHELD_ORDER_POSITIONS)

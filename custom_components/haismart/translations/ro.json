@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "Calitatea aerului",
+        "state": {
+          "excellent": "Excelentă",
+          "good": "Bună",
+          "moderate": "Moderată",
+          "poor": "Slabă"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "Cheie locală"
       },
+      "occupancy": {
+        "name": "Ocupare",
+        "state": {
+          "unoccupied": "Neocupat",
+          "one_person": "O persoană",
+          "several_people": "Mai multe persoane"
+        }
+      },
       "outdoor_pm25": {
         "name": "PM2.5 exterior"
       },
       "outdoor_temperature": {
         "name": "Temperatură exterioară"
+      },
+      "pm25_level": {
+        "name": "Nivel PM2.5",
+        "state": {
+          "excellent": "Excelentă",
+          "good": "Bună",
+          "moderate": "Moderată",
+          "poor": "Slabă"
+        }
+      },
+      "purifier_hours": {
+        "name": "Durata de funcționare a purificatorului"
       },
       "uplus_id": {
         "name": "ID model"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "Dezumidificare continuă"
       },
+      "control_lock": {
+        "name": "Blocare comenzi"
+      },
       "drying": {
         "name": "Uscare"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "Defecțiune"
+      },
+      "filter_change": {
+        "name": "Filtru"
+      },
+      "formaldehyde_purify": {
+        "name": "Purificare formaldehidă"
       },
       "fresh_air": {
         "name": "Aer proaspăt"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "Protecție anti-mucegai"
       },
+      "pm25_purify": {
+        "name": "Purificare PM2.5"
+      },
       "prevent_heatstroke": {
         "name": "Prevenirea insolației"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "Evitarea fluxului de aer"
+      },
+      "wind_sensing": {
+        "name": "Detectare flux de aer"
       }
     },
     "button": {

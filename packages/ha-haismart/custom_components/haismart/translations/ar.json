@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "جودة الهواء",
+        "state": {
+          "excellent": "ممتاز",
+          "good": "جيد",
+          "moderate": "متوسط",
+          "poor": "رديء"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "المفتاح المحلي"
       },
+      "occupancy": {
+        "name": "الإشغال",
+        "state": {
+          "unoccupied": "غير مشغول",
+          "one_person": "شخص واحد",
+          "several_people": "عدة أشخاص"
+        }
+      },
       "outdoor_pm25": {
         "name": "PM2.5 الخارجي"
       },
       "outdoor_temperature": {
         "name": "درجة الحرارة الخارجية"
+      },
+      "pm25_level": {
+        "name": "مستوى PM2.5",
+        "state": {
+          "excellent": "ممتاز",
+          "good": "جيد",
+          "moderate": "متوسط",
+          "poor": "رديء"
+        }
+      },
+      "purifier_hours": {
+        "name": "مدة تشغيل المنقي"
       },
       "uplus_id": {
         "name": "معرّف الطراز"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "إزالة رطوبة مستمرة"
       },
+      "control_lock": {
+        "name": "قفل التحكم"
+      },
       "drying": {
         "name": "تجفيف"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "عطل"
+      },
+      "filter_change": {
+        "name": "فلتر"
+      },
+      "formaldehyde_purify": {
+        "name": "تنقية الفورمالديهايد"
       },
       "fresh_air": {
         "name": "هواء نقي"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "منع العفن"
       },
+      "pm25_purify": {
+        "name": "تنقية PM2.5"
+      },
       "prevent_heatstroke": {
         "name": "الوقاية من ضربة الشمس"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "تجنب الهواء"
+      },
+      "wind_sensing": {
+        "name": "استشعار تدفق الهواء"
       }
     },
     "button": {

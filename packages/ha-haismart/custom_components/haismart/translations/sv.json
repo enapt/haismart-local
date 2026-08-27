@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "Luftkvalitet",
+        "state": {
+          "excellent": "Utmärkt",
+          "good": "God",
+          "moderate": "Måttlig",
+          "poor": "Dålig"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "Lokal nyckel"
       },
+      "occupancy": {
+        "name": "Närvaro",
+        "state": {
+          "unoccupied": "Ingen närvarande",
+          "one_person": "En person",
+          "several_people": "Flera personer"
+        }
+      },
       "outdoor_pm25": {
         "name": "PM2.5 utomhus"
       },
       "outdoor_temperature": {
         "name": "Utomhustemperatur"
+      },
+      "pm25_level": {
+        "name": "PM2.5-nivå",
+        "state": {
+          "excellent": "Utmärkt",
+          "good": "God",
+          "moderate": "Måttlig",
+          "poor": "Dålig"
+        }
+      },
+      "purifier_hours": {
+        "name": "Renarens drifttid"
       },
       "uplus_id": {
         "name": "Modell-ID"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "Konstant avfuktning"
       },
+      "control_lock": {
+        "name": "Manöverlås"
+      },
       "drying": {
         "name": "Torkning"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "Fel"
+      },
+      "filter_change": {
+        "name": "Filter"
+      },
+      "formaldehyde_purify": {
+        "name": "Formaldehydrening"
       },
       "fresh_air": {
         "name": "Frisk luft"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "Mögelskydd"
       },
+      "pm25_purify": {
+        "name": "PM2.5-rening"
+      },
       "prevent_heatstroke": {
         "name": "Skydd mot värmeslag"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "Undvik luftflöde"
+      },
+      "wind_sensing": {
+        "name": "Luftflödesavkänning"
       }
     },
     "button": {

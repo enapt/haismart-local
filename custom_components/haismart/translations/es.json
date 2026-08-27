@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "Calidad del aire",
+        "state": {
+          "excellent": "Excelente",
+          "good": "Buena",
+          "moderate": "Moderada",
+          "poor": "Mala"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "Clave local"
       },
+      "occupancy": {
+        "name": "Ocupación",
+        "state": {
+          "unoccupied": "Sin ocupar",
+          "one_person": "Una persona",
+          "several_people": "Varias personas"
+        }
+      },
       "outdoor_pm25": {
         "name": "PM2.5 exterior"
       },
       "outdoor_temperature": {
         "name": "Temperatura exterior"
+      },
+      "pm25_level": {
+        "name": "Nivel de PM2.5",
+        "state": {
+          "excellent": "Excelente",
+          "good": "Buena",
+          "moderate": "Moderada",
+          "poor": "Mala"
+        }
+      },
+      "purifier_hours": {
+        "name": "Tiempo del purificador"
       },
       "uplus_id": {
         "name": "ID de modelo"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "Deshumidificación continua"
       },
+      "control_lock": {
+        "name": "Bloqueo de controles"
+      },
       "drying": {
         "name": "Secado"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "Avería"
+      },
+      "filter_change": {
+        "name": "Filtro"
+      },
+      "formaldehyde_purify": {
+        "name": "Purificación de formaldehído"
       },
       "fresh_air": {
         "name": "Aire fresco"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "Antimoho"
       },
+      "pm25_purify": {
+        "name": "Purificación PM2.5"
+      },
       "prevent_heatstroke": {
         "name": "Prevención de golpe de calor"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "Evitar corriente de aire"
+      },
+      "wind_sensing": {
+        "name": "Detección de flujo de aire"
       }
     },
     "button": {

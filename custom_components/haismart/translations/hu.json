@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "Levegőminőség",
+        "state": {
+          "excellent": "Kiváló",
+          "good": "Jó",
+          "moderate": "Közepes",
+          "poor": "Rossz"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "Helyi kulcs"
       },
+      "occupancy": {
+        "name": "Jelenlét",
+        "state": {
+          "unoccupied": "Nincs jelen",
+          "one_person": "Egy fő",
+          "several_people": "Több fő"
+        }
+      },
       "outdoor_pm25": {
         "name": "Kültéri PM2.5"
       },
       "outdoor_temperature": {
         "name": "Kültéri hőmérséklet"
+      },
+      "pm25_level": {
+        "name": "PM2.5-szint",
+        "state": {
+          "excellent": "Kiváló",
+          "good": "Jó",
+          "moderate": "Közepes",
+          "poor": "Rossz"
+        }
+      },
+      "purifier_hours": {
+        "name": "Tisztító üzemideje"
       },
       "uplus_id": {
         "name": "Modellazonosító"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "Folyamatos páramentesítés"
       },
+      "control_lock": {
+        "name": "Kezelőzár"
+      },
       "drying": {
         "name": "Szárítás"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "Hiba"
+      },
+      "filter_change": {
+        "name": "Szűrő"
+      },
+      "formaldehyde_purify": {
+        "name": "Formaldehid-tisztítás"
       },
       "fresh_air": {
         "name": "Friss levegő"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "Penészvédelem"
       },
+      "pm25_purify": {
+        "name": "PM2.5-tisztítás"
+      },
       "prevent_heatstroke": {
         "name": "Hőgutavédelem"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "Légáram elkerülése"
+      },
+      "wind_sensing": {
+        "name": "Légáram-érzékelés"
       }
     },
     "button": {

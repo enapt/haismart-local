@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "Chất lượng không khí",
+        "state": {
+          "excellent": "Rất tốt",
+          "good": "Tốt",
+          "moderate": "Trung bình",
+          "poor": "Kém"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "Khóa cục bộ"
       },
+      "occupancy": {
+        "name": "Sự hiện diện",
+        "state": {
+          "unoccupied": "Không có người",
+          "one_person": "Một người",
+          "several_people": "Nhiều người"
+        }
+      },
       "outdoor_pm25": {
         "name": "PM2.5 ngoài trời"
       },
       "outdoor_temperature": {
         "name": "Nhiệt độ ngoài trời"
+      },
+      "pm25_level": {
+        "name": "Mức PM2.5",
+        "state": {
+          "excellent": "Rất tốt",
+          "good": "Tốt",
+          "moderate": "Trung bình",
+          "poor": "Kém"
+        }
+      },
+      "purifier_hours": {
+        "name": "Thời gian chạy máy lọc"
       },
       "uplus_id": {
         "name": "Mã model"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "Hút ẩm liên tục"
       },
+      "control_lock": {
+        "name": "Khóa điều khiển"
+      },
       "drying": {
         "name": "Sấy khô"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "Lỗi"
+      },
+      "filter_change": {
+        "name": "Bộ lọc"
+      },
+      "formaldehyde_purify": {
+        "name": "Lọc formaldehyde"
       },
       "fresh_air": {
         "name": "Không khí tươi"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "Chống nấm mốc"
       },
+      "pm25_purify": {
+        "name": "Lọc PM2.5"
+      },
       "prevent_heatstroke": {
         "name": "Chống sốc nhiệt"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "Tránh luồng gió"
+      },
+      "wind_sensing": {
+        "name": "Cảm biến luồng gió"
       }
     },
     "button": {

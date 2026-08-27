@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "காற்றின் தரம்",
+        "state": {
+          "excellent": "சிறந்தது",
+          "good": "நல்லது",
+          "moderate": "மிதமானது",
+          "poor": "மோசமானது"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "லோக்கல் கீ"
       },
+      "occupancy": {
+        "name": "ஆள் இருப்பு",
+        "state": {
+          "unoccupied": "யாரும் இல்லை",
+          "one_person": "ஒருவர்",
+          "several_people": "பலர்"
+        }
+      },
       "outdoor_pm25": {
         "name": "வெளிப்புற PM2.5"
       },
       "outdoor_temperature": {
         "name": "வெளிப்புற வெப்பநிலை"
+      },
+      "pm25_level": {
+        "name": "PM2.5 அளவு",
+        "state": {
+          "excellent": "சிறந்தது",
+          "good": "நல்லது",
+          "moderate": "மிதமானது",
+          "poor": "மோசமானது"
+        }
+      },
+      "purifier_hours": {
+        "name": "சுத்திகரிப்பான் இயங்கிய நேரம்"
       },
       "uplus_id": {
         "name": "மாடல் ஐடி"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "தொடர் ஈரப்பதம் நீக்கம்"
       },
+      "control_lock": {
+        "name": "கட்டுப்பாட்டுப் பூட்டு"
+      },
       "drying": {
         "name": "உலர்த்துதல்"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "கோளாறு"
+      },
+      "filter_change": {
+        "name": "வடிகட்டி"
+      },
+      "formaldehyde_purify": {
+        "name": "ஃபார்மால்டிஹைடு சுத்திகரிப்பு"
       },
       "fresh_air": {
         "name": "புத்தம் காற்று"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "பூஞ்சை தடுப்பு"
       },
+      "pm25_purify": {
+        "name": "PM2.5 சுத்திகரிப்பு"
+      },
       "prevent_heatstroke": {
         "name": "வெப்ப அதிர்ச்சி தடுப்பு"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "காற்றோட்டம் தவிர்ப்பு"
+      },
+      "wind_sensing": {
+        "name": "காற்றோட்ட உணர்வு"
       }
     },
     "button": {

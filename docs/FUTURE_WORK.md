@@ -127,7 +127,13 @@ A unit declares three or four times the attributes any family map carries, and e
 the published map already says — so the extra readings are decoded into diagnostics
 (`model_declared_fields`), membership from the device's own model, position from the map. The
 user-facing ones have since been promoted to entities: the optional-feature sensors (item 4's gate),
-the panel controls (item 36), and the air-quality suite (item 37).
+the panel controls (item 36), and the air-quality suite (item 37). So have the maintenance and status
+readings the vendor's own panel renders **no** control for, which is its way of saying they are a
+status rather than a switch — the filter-change reminder (197 products declare it), the control-panel
+lock, the two four-step air-quality ratings, what the presence sensor currently sees, the two
+purification functions and the purifier's hour meter. Each takes the same three gates as the rest:
+the unit declares it, its model does not mark it as hardware it lacks, and its family's relationship
+to the published map is confirmed.
 
 What is **still** unreachable is the residue with no derivable position — attributes in the appended
 tail of the group-set list, which is unordered, so nothing places them. Where a run of unknowns fits
@@ -192,7 +198,7 @@ prevent.
 |---|---|---|
 | **past the last anchor** — no ordering information exists | 4,112 | only a capture places these |
 | **bracketed, but the run does not close** | ~1,350 | see below — not solvable from published data |
-| **derived, not yet surfaced** | 833 | five positions, run closed with no free parameter |
+| **derived, withheld with a stated reason** | 833 | five positions, run closed with no free parameter; each withheld on a measurement — see item 36 |
 | **not in any write order** | 574 | read-only or cloud-side by construction |
 | **compact-12 `echoStatus`** | 456 | its profile carries no record at all |
 
@@ -260,11 +266,19 @@ via its per-attribute commands. What remains open is the residue that no source 
   question publishes exactly that pair, so its width is settled by a population rather than by
   analogy to a single other field.
 
-  ⚠️ **Still not surfaced**, for two reasons that are about safety rather than evidence: these
-  positions are **reused between families** (below), so anything shipped must be family-gated; and
-  two of the five are capability flags — "does this unit *have* the function" — which are status,
-  never controls. A live write from a unit that has the setting remains the confirmation, as for any
-  control.
+  ⛔ **All five are nevertheless withheld — and the reason is now a measurement rather than caution.**
+  Each was checked against the shipped model bundle, one at a time:
+
+  | derived position | why it is not surfaced |
+  |---|---|
+  | balanced-wind and humidity-control capability flags, display mode | **159 products declare them and every one marks them as hardware the unit lacks.** There is no unit to show them on. Both flags are `有无` — "does this model have the function" — which is a statement about the product, not a state the appliance reports |
+  | the left tower's horizontal vane | **contested**: 161 of the 165 products declaring it also declare the ordinary horizontal vane, which the shared map places at exactly those bits. A placement under this name would be reading the other setting's bits on almost every unit that has it |
+  | constant dehumidification | the only **30** products that show it are the two families of item 38 — the ones whose published order refutes the shared frame, which is why they are read-only. A position derived from an order that contradicts the frame cannot be trusted against that frame |
+
+  Those reasons are kept as data next to the positions themselves and re-measured by the suite, not
+  written down and forgotten: if a catalogue re-sweep ever makes one of them visible, or moves a
+  product off a read-only family, the test says so instead of the position staying withheld for a
+  reason that quietly stopped being true.
 
   The other three stay unplaced, with a stated reason each: two sit **past the last setting the frame
   pins**, so nothing bounds them from above and no ordering information ever will; one sits in a run

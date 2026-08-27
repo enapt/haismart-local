@@ -4853,3 +4853,62 @@ async def test_a_shadow_refresh_never_touches_the_stored_model(
 
     assert entry.data == before_stored
     assert coordinator.digital_model is before_model
+
+
+async def test_the_maintenance_statuses_a_unit_declares_become_entities(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The filter reminder, control lock, quality ladders, occupancy and purifier hour meter.
+
+    Every one is a status the vendor's own panel renders no control for, so they arrive as read-only
+    entities under the same gate as the rest: the unit declares it, its model does not mark it
+    invisible, and the published map places it. What is worth pinning here rather than in the
+    library is the part a user sees -- the filter reminder is a PROBLEM, because it is a thing the
+    owner has to act on, while the control lock deliberately carries no device class at all (Home
+    Assistant's LOCK class reads `on` as *unlocked*, the opposite of this bit).
+    """
+    from haismart_hrdp.wire_models import _CLASSIC_PROBE
+
+    values = {
+        "localFilterChangeFlag": 1,       # the filter is due
+        "lockStatus": 1,                  # panel locked
+        "airQuality": 2,                  # 中 -> moderate
+        "sensingResult": 2,               # 单人 -> one person
+        "totalCleaningTime": 1200,        # hours on the purifier board
+    }
+    frame = bytearray(make_status_frame())
+    for name, field in _CLASSIC_PROBE.model_fields(sorted(values), len(frame)).items():
+        start = 92 + (field.word - 1) * 2
+        word = int.from_bytes(frame[start:start + 2], "big")
+        word &= ~(((1 << field.length) - 1) << field.bit)
+        word |= values[name] << field.bit
+        frame[start:start + 2] = word.to_bytes(2, "big")
+    mock_uss.read.return_value = [bytes(frame)]
+
+    model = heat_capable_digital_model()
+    model["attributes"].extend([{"name": n} for n in values])
+    model["attributes"].append({"name": "pm2p5CleaningStatus"})   # declared but INVISIBLE
+    model["invisible_attributes"] = ["pm2p5CleaningStatus"]
+    await _setup_with_model(hass, model)
+
+    registry = er.async_get(hass)
+
+    def state(platform: str, slug: str):
+        entity_id = registry.async_get_entity_id(platform, DOMAIN, f"A1B2C3D4E5F6_{slug}")
+        return hass.states.get(entity_id) if entity_id else None
+
+    filter_change = state("binary_sensor", "filter_change")
+    assert filter_change is not None and filter_change.state == "on"
+    assert filter_change.attributes["device_class"] == "problem"
+
+    lock = state("binary_sensor", "control_lock")
+    assert lock is not None and lock.state == "on"
+    assert "device_class" not in lock.attributes        # NOT `lock`, whose `on` means unlocked
+
+    assert state("sensor", "air_quality").state == "moderate"
+    assert state("sensor", "occupancy").state == "one_person"
+    purifier = state("sensor", "purifier_hours")
+    assert purifier.state == "1200" and purifier.attributes["unit_of_measurement"] == "h"
+
+    # the one this unit says it does not have gets no entity at all -- never a permanent off
+    assert state("binary_sensor", "pm25_purify") is None

@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "Качество на въздуха",
+        "state": {
+          "excellent": "Отлично",
+          "good": "Добро",
+          "moderate": "Умерено",
+          "poor": "Лошо"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "Локален ключ"
       },
+      "occupancy": {
+        "name": "Заетост",
+        "state": {
+          "unoccupied": "Няма никого",
+          "one_person": "Един човек",
+          "several_people": "Няколко души"
+        }
+      },
       "outdoor_pm25": {
         "name": "PM2.5 навън"
       },
       "outdoor_temperature": {
         "name": "Външна температура"
+      },
+      "pm25_level": {
+        "name": "Ниво PM2.5",
+        "state": {
+          "excellent": "Отлично",
+          "good": "Добро",
+          "moderate": "Умерено",
+          "poor": "Лошо"
+        }
+      },
+      "purifier_hours": {
+        "name": "Работа на пречиствателя"
       },
       "uplus_id": {
         "name": "Идентификатор на модела"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "Постоянно обезвлажняване"
       },
+      "control_lock": {
+        "name": "Заключване на управлението"
+      },
       "drying": {
         "name": "Изсушаване"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "Неизправност"
+      },
+      "filter_change": {
+        "name": "Филтър"
+      },
+      "formaldehyde_purify": {
+        "name": "Пречистване на формалдехид"
       },
       "fresh_air": {
         "name": "Свеж въздух"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "Защита от плесен"
       },
+      "pm25_purify": {
+        "name": "Пречистване PM2.5"
+      },
       "prevent_heatstroke": {
         "name": "Защита от топлинен удар"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "Избягване на въздушен поток"
+      },
+      "wind_sensing": {
+        "name": "Отчитане на въздушния поток"
       }
     },
     "button": {

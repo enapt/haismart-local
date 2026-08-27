@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "کیفیت هوا",
+        "state": {
+          "excellent": "عالی",
+          "good": "خوب",
+          "moderate": "متوسط",
+          "poor": "ضعیف"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "کلید محلی"
       },
+      "occupancy": {
+        "name": "حضور",
+        "state": {
+          "unoccupied": "بدون حضور",
+          "one_person": "یک نفر",
+          "several_people": "چند نفر"
+        }
+      },
       "outdoor_pm25": {
         "name": "PM2.5 بیرون"
       },
       "outdoor_temperature": {
         "name": "دمای بیرون"
+      },
+      "pm25_level": {
+        "name": "سطح PM2.5",
+        "state": {
+          "excellent": "عالی",
+          "good": "خوب",
+          "moderate": "متوسط",
+          "poor": "ضعیف"
+        }
+      },
+      "purifier_hours": {
+        "name": "مدت کار تصفیه‌کننده"
       },
       "uplus_id": {
         "name": "شناسه مدل"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "رطوبت‌زدایی پیوسته"
       },
+      "control_lock": {
+        "name": "قفل کنترل"
+      },
       "drying": {
         "name": "خشک‌کردن"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "خطا"
+      },
+      "filter_change": {
+        "name": "فیلتر"
+      },
+      "formaldehyde_purify": {
+        "name": "تصفیه فرمالدهید"
       },
       "fresh_air": {
         "name": "هوای تازه"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "ضد کپک"
       },
+      "pm25_purify": {
+        "name": "تصفیه PM2.5"
+      },
       "prevent_heatstroke": {
         "name": "پیشگیری از گرمازدگی"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "اجتناب از جریان هوا"
+      },
+      "wind_sensing": {
+        "name": "حسگر جریان هوا"
       }
     },
     "button": {

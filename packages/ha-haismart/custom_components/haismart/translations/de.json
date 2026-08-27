@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "Luftqualität",
+        "state": {
+          "excellent": "Ausgezeichnet",
+          "good": "Gut",
+          "moderate": "Mäßig",
+          "poor": "Schlecht"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "Lokaler Schlüssel"
       },
+      "occupancy": {
+        "name": "Belegung",
+        "state": {
+          "unoccupied": "Nicht belegt",
+          "one_person": "Eine Person",
+          "several_people": "Mehrere Personen"
+        }
+      },
       "outdoor_pm25": {
         "name": "PM2.5 außen"
       },
       "outdoor_temperature": {
         "name": "Außentemperatur"
+      },
+      "pm25_level": {
+        "name": "PM2.5-Stufe",
+        "state": {
+          "excellent": "Ausgezeichnet",
+          "good": "Gut",
+          "moderate": "Mäßig",
+          "poor": "Schlecht"
+        }
+      },
+      "purifier_hours": {
+        "name": "Reinigerlaufzeit"
       },
       "uplus_id": {
         "name": "Modell-ID"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "Dauerentfeuchtung"
       },
+      "control_lock": {
+        "name": "Bediensperre"
+      },
       "drying": {
         "name": "Trocknung"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "Störung"
+      },
+      "filter_change": {
+        "name": "Filter"
+      },
+      "formaldehyde_purify": {
+        "name": "Formaldehyd-Reinigung"
       },
       "fresh_air": {
         "name": "Frischluft"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "Schimmelschutz"
       },
+      "pm25_purify": {
+        "name": "PM2.5-Reinigung"
+      },
       "prevent_heatstroke": {
         "name": "Hitzschlagschutz"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "Windvermeidung"
+      },
+      "wind_sensing": {
+        "name": "Luftstromerkennung"
       }
     },
     "button": {

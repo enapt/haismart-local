@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "Hava kalitesi",
+        "state": {
+          "excellent": "Mükemmel",
+          "good": "İyi",
+          "moderate": "Orta",
+          "poor": "Kötü"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "Yerel anahtar"
       },
+      "occupancy": {
+        "name": "Doluluk",
+        "state": {
+          "unoccupied": "Boş",
+          "one_person": "Bir kişi",
+          "several_people": "Birden fazla kişi"
+        }
+      },
       "outdoor_pm25": {
         "name": "Dış ortam PM2.5"
       },
       "outdoor_temperature": {
         "name": "Dış ortam sıcaklığı"
+      },
+      "pm25_level": {
+        "name": "PM2.5 seviyesi",
+        "state": {
+          "excellent": "Mükemmel",
+          "good": "İyi",
+          "moderate": "Orta",
+          "poor": "Kötü"
+        }
+      },
+      "purifier_hours": {
+        "name": "Arıtıcı çalışma süresi"
       },
       "uplus_id": {
         "name": "Model kimliği"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "Sürekli nem alma"
       },
+      "control_lock": {
+        "name": "Kumanda kilidi"
+      },
       "drying": {
         "name": "Kurutma"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "Arıza"
+      },
+      "filter_change": {
+        "name": "Filtre"
+      },
+      "formaldehyde_purify": {
+        "name": "Formaldehit arıtma"
       },
       "fresh_air": {
         "name": "Temiz hava"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "Küf önleme"
       },
+      "pm25_purify": {
+        "name": "PM2.5 arıtma"
+      },
       "prevent_heatstroke": {
         "name": "Sıcak çarpması önleme"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "Hava akımından kaçınma"
+      },
+      "wind_sensing": {
+        "name": "Hava akışı algılama"
       }
     },
     "button": {

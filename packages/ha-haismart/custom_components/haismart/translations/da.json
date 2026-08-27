@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "Luftkvalitet",
+        "state": {
+          "excellent": "Fremragende",
+          "good": "God",
+          "moderate": "Middel",
+          "poor": "Dårlig"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "Lokal nøgle"
       },
+      "occupancy": {
+        "name": "Tilstedeværelse",
+        "state": {
+          "unoccupied": "Ingen til stede",
+          "one_person": "Én person",
+          "several_people": "Flere personer"
+        }
+      },
       "outdoor_pm25": {
         "name": "PM2.5 udendørs"
       },
       "outdoor_temperature": {
         "name": "Udendørstemperatur"
+      },
+      "pm25_level": {
+        "name": "PM2.5-niveau",
+        "state": {
+          "excellent": "Fremragende",
+          "good": "God",
+          "moderate": "Middel",
+          "poor": "Dårlig"
+        }
+      },
+      "purifier_hours": {
+        "name": "Rensetid"
       },
       "uplus_id": {
         "name": "Model-id"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "Konstant affugtning"
       },
+      "control_lock": {
+        "name": "Betjeningslås"
+      },
       "drying": {
         "name": "Tørring"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "Fejl"
+      },
+      "filter_change": {
+        "name": "Filter"
+      },
+      "formaldehyde_purify": {
+        "name": "Formaldehydrensning"
       },
       "fresh_air": {
         "name": "Frisk luft"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "Skimmelbeskyttelse"
       },
+      "pm25_purify": {
+        "name": "PM2.5-rensning"
+      },
       "prevent_heatstroke": {
         "name": "Beskyttelse mod hedeslag"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "Luftstrøm undgåelse"
+      },
+      "wind_sensing": {
+        "name": "Luftstrømsregistrering"
       }
     },
     "button": {

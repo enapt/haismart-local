@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "Luchtkwaliteit",
+        "state": {
+          "excellent": "Uitstekend",
+          "good": "Goed",
+          "moderate": "Matig",
+          "poor": "Slecht"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "Lokale sleutel"
       },
+      "occupancy": {
+        "name": "Aanwezigheid",
+        "state": {
+          "unoccupied": "Niemand aanwezig",
+          "one_person": "Één persoon",
+          "several_people": "Meerdere personen"
+        }
+      },
       "outdoor_pm25": {
         "name": "PM2.5 buiten"
       },
       "outdoor_temperature": {
         "name": "Buitentemperatuur"
+      },
+      "pm25_level": {
+        "name": "PM2.5-niveau",
+        "state": {
+          "excellent": "Uitstekend",
+          "good": "Goed",
+          "moderate": "Matig",
+          "poor": "Slecht"
+        }
+      },
+      "purifier_hours": {
+        "name": "Looptijd luchtreiniger"
       },
       "uplus_id": {
         "name": "Model-ID"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "Continu ontvochtigen"
       },
+      "control_lock": {
+        "name": "Bedieningsvergrendeling"
+      },
       "drying": {
         "name": "Drogen"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "Storing"
+      },
+      "filter_change": {
+        "name": "Filter"
+      },
+      "formaldehyde_purify": {
+        "name": "Formaldehydezuivering"
       },
       "fresh_air": {
         "name": "Frisse lucht"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "Schimmelpreventie"
       },
+      "pm25_purify": {
+        "name": "PM2.5-zuivering"
+      },
       "prevent_heatstroke": {
         "name": "Preventie hittberoerte"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "Luchtstroom vermijden"
+      },
+      "wind_sensing": {
+        "name": "Luchtstroomdetectie"
       }
     },
     "button": {

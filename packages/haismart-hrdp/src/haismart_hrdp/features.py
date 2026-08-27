@@ -37,6 +37,18 @@ OPTIONAL_BOOL_FEATURES: Mapping[str, str] = {
     "windAvoidance": "wind_avoidance",
     "humidificationStatus": "humidification",
     "heatAccumulationStatus": "heat_accumulation",
+    # --- the maintenance and air-treatment statuses the panel renders no switch for ---
+    # Measured against every published model rather than assumed: the figure after each name is how
+    # many of the 1,451 products declare it AND do not mark it invisible, i.e. how many could ever
+    # show it. None of them appears in any panel control descriptor, which is the vendor's own way
+    # of saying "status, not switch" -- so they belong here and not in `panel.PANEL_BOOL_CONTROLS`.
+    # Their false/true codes are 0/1 on every air-conditioner description that publishes a code
+    # map (checked -- the one device class that inverts `lockStatus` is not an air conditioner).
+    "localFilterChangeFlag": "filter_change",     # 197 -- the filter-change reminder
+    "lockStatus": "control_lock",                 # 17  -- the panel's electronic lock
+    "pm2p5CleaningStatus": "pm25_purify",         # 26
+    "ch2oCleaningStatus": "formaldehyde_purify",  # 6
+    "windSensingStatus": "wind_sensing",          # 5   -- sensing-driven even airflow
 }
 
 
@@ -44,6 +56,20 @@ OPTIONAL_BOOL_FEATURES: Mapping[str, str] = {
 # booleans -- a select would write, and a group-set write needs its own confirmation.
 OPTIONAL_ENUM_FEATURES: Mapping[str, tuple[str, Mapping[int, str]]] = {
     "humanSensingStatus": ("human_sensing", {0: "off", 1: "avoid", 2: "follow", 3: "on"}),
+    # The two four-step quality ladders, whose states are the vendor's own words (优/良/中/差) and
+    # not an invented scale. Both occupy a two-bit field, and every air-conditioner description
+    # publishing a code map for them lists 0..3 mapping to itself -- so the wire value IS the level.
+    # (Two descriptions publish a six-value, three-bit `airQuality`; both belong to another
+    # appliance class, and on the air-conditioner map the neighbouring attribute already occupies
+    # the bit a third one would need. Check the class before borrowing a width.)
+    "airQuality": ("air_quality", {0: "excellent", 1: "good", 2: "moderate", 3: "poor"}),
+    "pm2p5Level": ("pm25_level", {0: "excellent", 1: "good", 2: "moderate", 3: "poor"}),
+    # Occupancy, as the presence sensor reports it. **0 is not a state**: the model names it
+    # 无此功能 -- "no such function" -- an in-band statement that this unit has no presence sensor
+    # at all, exactly like the telemetry actuator states' "information not available". Leaving it
+    # out of the map is what drops it, so a unit without the sensor reads unknown rather than
+    # claiming an empty room.
+    "sensingResult": ("occupancy", {1: "unoccupied", 2: "one_person", 3: "several_people"}),
 }
 
 
@@ -65,6 +91,11 @@ OPTIONAL_NUMERIC_READINGS: Mapping[str, tuple[str, int]] = {
     "vocValue": ("voc_level", 1023),      # a unitless index (the models publish no unit for it)
     "co2Value": ("co2", 10_000),
     "indoorHumidity": ("humidity", 100),
+    # The purifier board's accumulated running hours (the model publishes the unit: `h`, 0..65535).
+    # A counter, so the zero rule reads the same way it does for the energy register: a unit whose
+    # board has never run reports 0 and is indistinguishable from one that does not have the board,
+    # and a permanent 0 h in someone's statistics is a fabricated number.
+    "totalCleaningTime": ("purifier_hours", 65535),
 }
 
 

@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "Ποιότητα αέρα",
+        "state": {
+          "excellent": "Άριστη",
+          "good": "Καλή",
+          "moderate": "Μέτρια",
+          "poor": "Κακή"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "Τοπικό κλειδί"
       },
+      "occupancy": {
+        "name": "Παρουσία",
+        "state": {
+          "unoccupied": "Κανείς",
+          "one_person": "Ένα άτομο",
+          "several_people": "Πολλά άτομα"
+        }
+      },
       "outdoor_pm25": {
         "name": "PM2.5 εξωτερικού χώρου"
       },
       "outdoor_temperature": {
         "name": "Εξωτερική θερμοκρασία"
+      },
+      "pm25_level": {
+        "name": "Επίπεδο PM2.5",
+        "state": {
+          "excellent": "Άριστη",
+          "good": "Καλή",
+          "moderate": "Μέτρια",
+          "poor": "Κακή"
+        }
+      },
+      "purifier_hours": {
+        "name": "Χρόνος λειτουργίας καθαριστή"
       },
       "uplus_id": {
         "name": "Αναγνωριστικό μοντέλου"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "Συνεχής αφύγρανση"
       },
+      "control_lock": {
+        "name": "Κλείδωμα χειριστηρίων"
+      },
       "drying": {
         "name": "Στέγνωμα"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "Βλάβη"
+      },
+      "filter_change": {
+        "name": "Φίλτρο"
+      },
+      "formaldehyde_purify": {
+        "name": "Καθαρισμός φορμαλδεΰδης"
       },
       "fresh_air": {
         "name": "Φρέσκος αέρας"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "Προστασία από μούχλα"
       },
+      "pm25_purify": {
+        "name": "Καθαρισμός PM2.5"
+      },
       "prevent_heatstroke": {
         "name": "Προστασία από θερμοπληξία"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "Αποφυγή ροής αέρα"
+      },
+      "wind_sensing": {
+        "name": "Ανίχνευση ροής αέρα"
       }
     },
     "button": {

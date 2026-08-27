@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "বাতাসের মান",
+        "state": {
+          "excellent": "চমৎকার",
+          "good": "ভালো",
+          "moderate": "মাঝারি",
+          "poor": "খারাপ"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "লোকাল কী"
       },
+      "occupancy": {
+        "name": "উপস্থিতি",
+        "state": {
+          "unoccupied": "কেউ নেই",
+          "one_person": "একজন",
+          "several_people": "কয়েকজন"
+        }
+      },
       "outdoor_pm25": {
         "name": "বাইরের PM2.5"
       },
       "outdoor_temperature": {
         "name": "বাইরের তাপমাত্রা"
+      },
+      "pm25_level": {
+        "name": "PM2.5 মাত্রা",
+        "state": {
+          "excellent": "চমৎকার",
+          "good": "ভালো",
+          "moderate": "মাঝারি",
+          "poor": "খারাপ"
+        }
+      },
+      "purifier_hours": {
+        "name": "পিউরিফায়ার চালানোর সময়"
       },
       "uplus_id": {
         "name": "মডেল আইডি"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "নিরন্তর আর্দ্রতা হ্রাস"
       },
+      "control_lock": {
+        "name": "নিয়ন্ত্রণ লক"
+      },
       "drying": {
         "name": "শুকানো"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "ত্রুটি"
+      },
+      "filter_change": {
+        "name": "ফিল্টার"
+      },
+      "formaldehyde_purify": {
+        "name": "ফরমালডিহাইড পরিশোধন"
       },
       "fresh_air": {
         "name": "তাজা বাতাস"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "ছত্রাক প্রতিরোধ"
       },
+      "pm25_purify": {
+        "name": "PM2.5 পরিশোধন"
+      },
       "prevent_heatstroke": {
         "name": "হিটস্ট্রোক প্রতিরোধ"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "বাতাস এড়ানো"
+      },
+      "wind_sensing": {
+        "name": "বায়ুপ্রবাহ সংবেদন"
       }
     },
     "button": {

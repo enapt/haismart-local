@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "ہوا کا معیار",
+        "state": {
+          "excellent": "بہترین",
+          "good": "اچھا",
+          "moderate": "درمیانہ",
+          "poor": "خراب"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "لوکل کی"
       },
+      "occupancy": {
+        "name": "موجودگی",
+        "state": {
+          "unoccupied": "کوئی نہیں",
+          "one_person": "ایک شخص",
+          "several_people": "کئی افراد"
+        }
+      },
       "outdoor_pm25": {
         "name": "بیرونی PM2.5"
       },
       "outdoor_temperature": {
         "name": "بیرونی درجہ حرارت"
+      },
+      "pm25_level": {
+        "name": "PM2.5 سطح",
+        "state": {
+          "excellent": "بہترین",
+          "good": "اچھا",
+          "moderate": "درمیانہ",
+          "poor": "خراب"
+        }
+      },
+      "purifier_hours": {
+        "name": "پیوریفائر کا دورانیہ"
       },
       "uplus_id": {
         "name": "ماڈل آئی ڈی"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "مسلسل نمی کمی"
       },
+      "control_lock": {
+        "name": "کنٹرول لاک"
+      },
       "drying": {
         "name": "خشک کرنا"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "خرابی"
+      },
+      "filter_change": {
+        "name": "فلٹر"
+      },
+      "formaldehyde_purify": {
+        "name": "فارملڈیہائیڈ صفائی"
       },
       "fresh_air": {
         "name": "تازہ ہوا"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "پھپھوندی سے بچاؤ"
       },
+      "pm25_purify": {
+        "name": "PM2.5 صفائی"
+      },
       "prevent_heatstroke": {
         "name": "لُو سے بچاؤ"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "ہوا کے بہاؤ سے گریز"
+      },
+      "wind_sensing": {
+        "name": "ہوا کے بہاؤ کی حس"
       }
     },
     "button": {

@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "คุณภาพอากาศ",
+        "state": {
+          "excellent": "ดีเยี่ยม",
+          "good": "ดี",
+          "moderate": "ปานกลาง",
+          "poor": "แย่"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "คีย์ภายใน"
       },
+      "occupancy": {
+        "name": "การมีคนอยู่",
+        "state": {
+          "unoccupied": "ไม่มีคน",
+          "one_person": "หนึ่งคน",
+          "several_people": "หลายคน"
+        }
+      },
       "outdoor_pm25": {
         "name": "PM2.5 ภายนอก"
       },
       "outdoor_temperature": {
         "name": "อุณหภูมิภายนอก"
+      },
+      "pm25_level": {
+        "name": "ระดับ PM2.5",
+        "state": {
+          "excellent": "ดีเยี่ยม",
+          "good": "ดี",
+          "moderate": "ปานกลาง",
+          "poor": "แย่"
+        }
+      },
+      "purifier_hours": {
+        "name": "เวลาทำงานของเครื่องฟอก"
       },
       "uplus_id": {
         "name": "รหัสรุ่น"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "ลดความชื้นต่อเนื่อง"
       },
+      "control_lock": {
+        "name": "ล็อกปุ่มควบคุม"
+      },
       "drying": {
         "name": "อบแห้ง"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "ข้อผิดพลาด"
+      },
+      "filter_change": {
+        "name": "ตัวกรอง"
+      },
+      "formaldehyde_purify": {
+        "name": "การฟอกฟอร์มาลดีไฮด์"
       },
       "fresh_air": {
         "name": "อากาศบริสุทธิ์"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "ป้องกันเชื้อรา"
       },
+      "pm25_purify": {
+        "name": "การฟอก PM2.5"
+      },
       "prevent_heatstroke": {
         "name": "ป้องกันโรคลมแดด"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "หลีกเลี่ยงลม"
+      },
+      "wind_sensing": {
+        "name": "การตรวจจับการไหลของอากาศ"
       }
     },
     "button": {

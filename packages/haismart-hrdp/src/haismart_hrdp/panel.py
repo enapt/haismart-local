@@ -60,6 +60,37 @@ PANEL_EXTRA_POSITIONS: Mapping[str, tuple[int, int, int]] = {
     "preventHeatstroke": (5, 15, 1),
 }
 
+#: Positions derived exactly the way :data:`PANEL_EXTRA_POSITIONS` was -- from the published
+#: group-set order, unanimous across every product that declares them -- and deliberately NOT
+#: shipped. The value is ``(position, why-not)``.
+#:
+#: They are kept here as data, with the reason as a token, because a reason recorded only in prose
+#: is a reason nobody re-measures: ``test_panel.py`` re-derives each one against the shipped model
+#: bundle, so the day a re-sweep makes one of these surfaceable the suite says so, instead of the
+#: position staying withheld for a reason that stopped being true.
+#:
+#: Note the first three take the same three bits ``PANEL_EXTRA_POSITIONS`` gives to mould-proof,
+#: drying and heatstroke-prevention. That is not a contradiction -- the two sets belong to different
+#: products, and the declaration gate is what separates them (exactly one product in the whole
+#: catalogue declares both sets, and it marks every one of them invisible). It is, however, why
+#: neither set may ever be placed without that gate.
+#:
+#: ``invisible-everywhere`` -- 159 products declare it and every one marks it invisible, so there is
+#:     no unit to show it on. Both of those are ``有无`` capability flags, which is the vendor
+#:     saying "this model has the hardware", not a state the appliance reports.
+#: ``contested`` -- the slot is where the shared map already places another attribute, and the
+#:     products declaring this one overwhelmingly declare that one too.
+#: ``read-only-family`` -- the only products that could show it are ones whose published order
+#:     refutes the shared frame, which is why they are read-only in the first place; a position
+#:     derived from an order that contradicts the frame cannot be trusted against that frame.
+WITHHELD_ORDER_POSITIONS: Mapping[str, tuple[tuple[int, int, int], str]] = {
+    "balancedWindExist": ((5, 15, 1), "invisible-everywhere"),
+    "humidityCtrlExist": ((5, 13, 1), "invisible-everywhere"),
+    "tempHumidDisplayMode": ((5, 14, 1), "invisible-everywhere"),
+    "windDirectionHorizontalL": ((4, 0, 3), "contested"),
+    "constDehumidificationStatus": ((4, 3, 1), "read-only-family"),
+}
+
 #: Multi-state panel controls (rendered as selects): attribute -> (slug, {wire value: state token}).
 #: The state tokens and their wire values are the vendor's own, read from the model's enum
 #: descriptions (NOT guessed); a wire value not in the map is dropped rather than shown as a code.

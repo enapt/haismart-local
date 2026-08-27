@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "空气质量",
+        "state": {
+          "excellent": "优",
+          "good": "良",
+          "moderate": "中",
+          "poor": "差"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "本地密钥"
       },
+      "occupancy": {
+        "name": "人感状态",
+        "state": {
+          "unoccupied": "无人",
+          "one_person": "单人",
+          "several_people": "多人"
+        }
+      },
       "outdoor_pm25": {
         "name": "室外 PM2.5"
       },
       "outdoor_temperature": {
         "name": "室外温度"
+      },
+      "pm25_level": {
+        "name": "PM2.5等级",
+        "state": {
+          "excellent": "优",
+          "good": "良",
+          "moderate": "中",
+          "poor": "差"
+        }
+      },
+      "purifier_hours": {
+        "name": "净化累计时间"
       },
       "uplus_id": {
         "name": "型号 ID"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "连续除湿"
       },
+      "control_lock": {
+        "name": "电子锁"
+      },
       "drying": {
         "name": "干燥"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "故障"
+      },
+      "filter_change": {
+        "name": "滤网提醒"
+      },
+      "formaldehyde_purify": {
+        "name": "甲醛净化"
       },
       "fresh_air": {
         "name": "新风"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "防霉"
       },
+      "pm25_purify": {
+        "name": "PM2.5净化"
+      },
       "prevent_heatstroke": {
         "name": "防中暑"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "避风"
+      },
+      "wind_sensing": {
+        "name": "感应匀风"
       }
     },
     "button": {

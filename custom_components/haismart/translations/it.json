@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "Qualità dell'aria",
+        "state": {
+          "excellent": "Eccellente",
+          "good": "Buona",
+          "moderate": "Moderata",
+          "poor": "Scarsa"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "Chiave locale"
       },
+      "occupancy": {
+        "name": "Presenza",
+        "state": {
+          "unoccupied": "Nessuno",
+          "one_person": "Una persona",
+          "several_people": "Più persone"
+        }
+      },
       "outdoor_pm25": {
         "name": "PM2.5 esterno"
       },
       "outdoor_temperature": {
         "name": "Temperatura esterna"
+      },
+      "pm25_level": {
+        "name": "Livello PM2.5",
+        "state": {
+          "excellent": "Eccellente",
+          "good": "Buona",
+          "moderate": "Moderata",
+          "poor": "Scarsa"
+        }
+      },
+      "purifier_hours": {
+        "name": "Ore del purificatore"
       },
       "uplus_id": {
         "name": "ID modello"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "Deumidificazione continua"
       },
+      "control_lock": {
+        "name": "Blocco comandi"
+      },
       "drying": {
         "name": "Asciugatura"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "Guasto"
+      },
+      "filter_change": {
+        "name": "Filtro"
+      },
+      "formaldehyde_purify": {
+        "name": "Purificazione formaldeide"
       },
       "fresh_air": {
         "name": "Aria fresca"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "Antimuffa"
       },
+      "pm25_purify": {
+        "name": "Purificazione PM2.5"
+      },
       "prevent_heatstroke": {
         "name": "Prevenzione colpo di calore"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "Elusione del flusso d'aria"
+      },
+      "wind_sensing": {
+        "name": "Rilevamento del flusso d'aria"
       }
     },
     "button": {

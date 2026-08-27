@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "Air quality",
+        "state": {
+          "excellent": "Excellent",
+          "good": "Good",
+          "moderate": "Moderate",
+          "poor": "Poor"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "Local key"
       },
+      "occupancy": {
+        "name": "Occupancy",
+        "state": {
+          "unoccupied": "Unoccupied",
+          "one_person": "One person",
+          "several_people": "Several people"
+        }
+      },
       "outdoor_pm25": {
         "name": "Outdoor PM2.5"
       },
       "outdoor_temperature": {
         "name": "Outdoor temperature"
+      },
+      "pm25_level": {
+        "name": "PM2.5 level",
+        "state": {
+          "excellent": "Excellent",
+          "good": "Good",
+          "moderate": "Moderate",
+          "poor": "Poor"
+        }
+      },
+      "purifier_hours": {
+        "name": "Purifier runtime"
       },
       "uplus_id": {
         "name": "Model ID"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "Constant dehumidify"
       },
+      "control_lock": {
+        "name": "Control lock"
+      },
       "drying": {
         "name": "Drying"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "Fault"
+      },
+      "filter_change": {
+        "name": "Filter"
+      },
+      "formaldehyde_purify": {
+        "name": "Formaldehyde purification"
       },
       "fresh_air": {
         "name": "Fresh air"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "Mould prevention"
       },
+      "pm25_purify": {
+        "name": "PM2.5 purification"
+      },
       "prevent_heatstroke": {
         "name": "Heatstroke prevention"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "Wind avoidance"
+      },
+      "wind_sensing": {
+        "name": "Airflow sensing"
       }
     },
     "button": {

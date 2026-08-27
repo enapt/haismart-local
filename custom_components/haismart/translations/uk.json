@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "Якість повітря",
+        "state": {
+          "excellent": "Відмінна",
+          "good": "Добра",
+          "moderate": "Середня",
+          "poor": "Погана"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "Локальний ключ"
       },
+      "occupancy": {
+        "name": "Присутність",
+        "state": {
+          "unoccupied": "Нікого немає",
+          "one_person": "Одна людина",
+          "several_people": "Кілька людей"
+        }
+      },
       "outdoor_pm25": {
         "name": "PM2.5 надворі"
       },
       "outdoor_temperature": {
         "name": "Температура надворі"
+      },
+      "pm25_level": {
+        "name": "Рівень PM2.5",
+        "state": {
+          "excellent": "Відмінна",
+          "good": "Добра",
+          "moderate": "Середня",
+          "poor": "Погана"
+        }
+      },
+      "purifier_hours": {
+        "name": "Напрацювання очищувача"
       },
       "uplus_id": {
         "name": "Ідентифікатор моделі"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "Постійне осушення"
       },
+      "control_lock": {
+        "name": "Блокування керування"
+      },
       "drying": {
         "name": "Сушіння"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "Несправність"
+      },
+      "filter_change": {
+        "name": "Фільтр"
+      },
+      "formaldehyde_purify": {
+        "name": "Очищення від формальдегіду"
       },
       "fresh_air": {
         "name": "Свіже повітря"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "Захист від цвілі"
       },
+      "pm25_purify": {
+        "name": "Очищення PM2.5"
+      },
       "prevent_heatstroke": {
         "name": "Захист від теплового удару"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "Уникання потоку повітря"
+      },
+      "wind_sensing": {
+        "name": "Датчик потоку повітря"
       }
     },
     "button": {

@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "वायु गुणवत्ता",
+        "state": {
+          "excellent": "उत्कृष्ट",
+          "good": "अच्छा",
+          "moderate": "मध्यम",
+          "poor": "खराब"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "लोकल की"
       },
+      "occupancy": {
+        "name": "उपस्थिति",
+        "state": {
+          "unoccupied": "कोई नहीं",
+          "one_person": "एक व्यक्ति",
+          "several_people": "कई लोग"
+        }
+      },
       "outdoor_pm25": {
         "name": "बाहरी PM2.5"
       },
       "outdoor_temperature": {
         "name": "बाहरी तापमान"
+      },
+      "pm25_level": {
+        "name": "PM2.5 स्तर",
+        "state": {
+          "excellent": "उत्कृष्ट",
+          "good": "अच्छा",
+          "moderate": "मध्यम",
+          "poor": "खराब"
+        }
+      },
+      "purifier_hours": {
+        "name": "प्यूरीफ़ायर चलने का समय"
       },
       "uplus_id": {
         "name": "मॉडल आईडी"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "सतत नमी हटाना"
       },
+      "control_lock": {
+        "name": "नियंत्रण लॉक"
+      },
       "drying": {
         "name": "सुखाना"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "खराबी"
+      },
+      "filter_change": {
+        "name": "फ़िल्टर"
+      },
+      "formaldehyde_purify": {
+        "name": "फॉर्मेल्डिहाइड शुद्धिकरण"
       },
       "fresh_air": {
         "name": "ताज़ी हवा"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "फफूंद रोधी"
       },
+      "pm25_purify": {
+        "name": "PM2.5 शुद्धिकरण"
+      },
       "prevent_heatstroke": {
         "name": "लू से बचाव"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "वायु प्रवाह से बचाव"
+      },
+      "wind_sensing": {
+        "name": "वायुप्रवाह संवेदन"
       }
     },
     "button": {

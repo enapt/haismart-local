@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "Kualitas udara",
+        "state": {
+          "excellent": "Sangat baik",
+          "good": "Baik",
+          "moderate": "Sedang",
+          "poor": "Buruk"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "Kunci lokal"
       },
+      "occupancy": {
+        "name": "Keberadaan orang",
+        "state": {
+          "unoccupied": "Tidak ada orang",
+          "one_person": "Satu orang",
+          "several_people": "Beberapa orang"
+        }
+      },
       "outdoor_pm25": {
         "name": "PM2.5 luar ruangan"
       },
       "outdoor_temperature": {
         "name": "Suhu luar ruangan"
+      },
+      "pm25_level": {
+        "name": "Tingkat PM2.5",
+        "state": {
+          "excellent": "Sangat baik",
+          "good": "Baik",
+          "moderate": "Sedang",
+          "poor": "Buruk"
+        }
+      },
+      "purifier_hours": {
+        "name": "Waktu operasi pemurni"
       },
       "uplus_id": {
         "name": "ID model"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "Dehumidifikasi konstan"
       },
+      "control_lock": {
+        "name": "Kunci kontrol"
+      },
       "drying": {
         "name": "Pengeringan"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "Gangguan"
+      },
+      "filter_change": {
+        "name": "Filter"
+      },
+      "formaldehyde_purify": {
+        "name": "Pemurnian formaldehida"
       },
       "fresh_air": {
         "name": "Udara segar"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "Anti jamur"
       },
+      "pm25_purify": {
+        "name": "Pemurnian PM2.5"
+      },
       "prevent_heatstroke": {
         "name": "Pencegahan sengatan panas"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "Hindari aliran udara"
+      },
+      "wind_sensing": {
+        "name": "Penginderaan aliran udara"
       }
     },
     "button": {

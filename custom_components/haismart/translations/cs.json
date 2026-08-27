@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "Kvalita vzduchu",
+        "state": {
+          "excellent": "Výborná",
+          "good": "Dobrá",
+          "moderate": "Střední",
+          "poor": "Špatná"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "Lokální klíč"
       },
+      "occupancy": {
+        "name": "Obsazenost",
+        "state": {
+          "unoccupied": "Nikdo",
+          "one_person": "Jedna osoba",
+          "several_people": "Více osob"
+        }
+      },
       "outdoor_pm25": {
         "name": "PM2.5 venku"
       },
       "outdoor_temperature": {
         "name": "Venkovní teplota"
+      },
+      "pm25_level": {
+        "name": "Úroveň PM2.5",
+        "state": {
+          "excellent": "Výborná",
+          "good": "Dobrá",
+          "moderate": "Střední",
+          "poor": "Špatná"
+        }
+      },
+      "purifier_hours": {
+        "name": "Doba běhu čističky"
       },
       "uplus_id": {
         "name": "ID modelu"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "Trvalé odvlhčování"
       },
+      "control_lock": {
+        "name": "Zámek ovládání"
+      },
       "drying": {
         "name": "Sušení"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "Porucha"
+      },
+      "filter_change": {
+        "name": "Filtr"
+      },
+      "formaldehyde_purify": {
+        "name": "Čištění formaldehydu"
       },
       "fresh_air": {
         "name": "Čerstvý vzduch"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "Ochrana proti plísni"
       },
+      "pm25_purify": {
+        "name": "Čištění PM2.5"
+      },
       "prevent_heatstroke": {
         "name": "Ochrana proti úpalu"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "Vyhýbání proudu vzduchu"
+      },
+      "wind_sensing": {
+        "name": "Snímání proudění vzduchu"
       }
     },
     "button": {

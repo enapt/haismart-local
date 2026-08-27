@@ -2672,3 +2672,95 @@ def test_the_rawlen_bounds_are_the_manufacturers_own():
 
     # an ordinary frame still round-trips
     assert biz_decrypt(frame(0x28 + 8, b"\x01" * 8), key) == (7, b"\x01" * 8)
+
+
+def _with_field(blob: bytes, field, value: int) -> bytes:
+    """``blob`` with ``field``'s bits set to ``value`` — for exercising a decode at a real position
+    rather than asserting against whatever a captured report happens to hold there."""
+    out = bytearray(blob)
+    start = 92 + (field.word - 1) * 2
+    word = int.from_bytes(out[start:start + 2], "big")
+    word &= ~(((1 << field.length) - 1) << field.bit)
+    word |= (value & ((1 << field.length) - 1)) << field.bit
+    out[start:start + 2] = word.to_bytes(2, "big")
+    return bytes(out)
+
+
+def test_the_maintenance_statuses_read_at_their_published_positions():
+    """The filter reminder, the control lock and the purification switches, read-only.
+
+    All five are ordinary declared booleans -- membership from the device's own model, position from
+    the published map -- so they need no capture apiece. What earns them a test of their own is that
+    they are the ones an owner acts on: a filter reminder that reads the wrong bit is worse than no
+    filter reminder, because it is indistinguishable from a real one.
+    """
+    from haismart_hrdp import declared_bool_features, read_bool_features
+    from haismart_hrdp.wire_models import _CLASSIC_PROBE, COMPACT12, EXTENDED46
+
+    names = ["localFilterChangeFlag", "lockStatus", "pm2p5CleaningStatus",
+             "ch2oCleaningStatus", "windSensingStatus"]
+    model = {"invisible_attributes": [], "attributes": [{"name": n} for n in names]}
+    assert declared_bool_features(model) == frozenset(names)
+
+    for name in names:
+        field = _CLASSIC_PROBE.model_fields([name], len(STATUS_125))[name]
+        for raw, expected in ((0, False), (1, True)):
+            got = read_bool_features(_CLASSIC_PROBE, model, _with_field(STATUS_125, field, raw))
+            assert got[name] is expected, (name, raw)
+
+    # the same gates as every other declared feature: a unit that says it lacks one does not get it,
+    # and a family with no confirmed relationship to the map places nothing rather than guessing
+    hidden = dict(model, invisible_attributes=["localFilterChangeFlag"])
+    assert "localFilterChangeFlag" not in declared_bool_features(hidden)
+    assert read_bool_features(COMPACT12, model, b"\x00" * 117) == {}
+    assert set(read_bool_features(EXTENDED46, model, b"\x00" * 209)) == set(names)
+
+
+def test_the_quality_ladders_and_occupancy_use_the_vendors_own_codes():
+    """Air quality, PM2.5 level and the presence result, labelled from the model's own enums.
+
+    The two ladders are 优/良/中/差 -- excellent, good, moderate, poor -- and every air-conditioner
+    profile publishing a code map for them lists 0..3 mapping to itself, so the wire value IS the
+    level and no translation table is needed. ``sensingResult`` is the one that needs care: its
+    value 0 is named 无此功能, *no such function*, an in-band statement that the unit has no presence
+    sensor. Reporting that as "unoccupied" would invent an empty room; it must read unknown.
+    """
+    from haismart_hrdp import read_enum_features
+    from haismart_hrdp.wire_models import _CLASSIC_PROBE
+
+    names = ["airQuality", "pm2p5Level", "sensingResult"]
+    model = {"invisible_attributes": [], "attributes": [{"name": n} for n in names]}
+    fields = _CLASSIC_PROBE.model_fields(names, len(STATUS_125))
+
+    for name in ("airQuality", "pm2p5Level"):
+        for raw, state in enumerate(("excellent", "good", "moderate", "poor")):
+            blob = _with_field(STATUS_125, fields[name], raw)
+            assert read_enum_features(_CLASSIC_PROBE, model, blob)[name] == state, (name, raw)
+
+    for raw, state in ((1, "unoccupied"), (2, "one_person"), (3, "several_people")):
+        blob = _with_field(STATUS_125, fields["sensingResult"], raw)
+        assert read_enum_features(_CLASSIC_PROBE, model, blob)["sensingResult"] == state
+    # 0 is "this unit has no presence sensor", not an empty room -- dropped, so the entity is unknown
+    blob = _with_field(STATUS_125, fields["sensingResult"], 0)
+    assert "sensingResult" not in read_enum_features(_CLASSIC_PROBE, model, blob)
+
+
+def test_the_purifier_hour_meter_reads_hours_and_zero_means_absent():
+    """The purifier board's accumulated hours, with the counter rule the energy register set.
+
+    Zero is absent rather than "has never run": a unit without the board reports 0 for its whole
+    service life and is indistinguishable from a new one, and a total permanently pinned at 0 in
+    someone's statistics is a fabricated number, not a measurement.
+    """
+    from haismart_hrdp import read_numeric_readings
+    from haismart_hrdp.wire_models import _CLASSIC_PROBE
+
+    model = {"invisible_attributes": [], "attributes": [{"name": "totalCleaningTime"}]}
+    field = _CLASSIC_PROBE.model_fields(["totalCleaningTime"], len(STATUS_125))["totalCleaningTime"]
+    assert field.length == 16                       # the model publishes 0..65535 hours
+
+    for raw in (1, 500, 65535):
+        blob = _with_field(STATUS_125, field, raw)
+        assert read_numeric_readings(_CLASSIC_PROBE, model, blob) == {"totalCleaningTime": raw}
+    assert read_numeric_readings(
+        _CLASSIC_PROBE, model, _with_field(STATUS_125, field, 0)) == {}

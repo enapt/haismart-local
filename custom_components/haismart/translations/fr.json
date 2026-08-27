@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "Qualité de l'air",
+        "state": {
+          "excellent": "Excellente",
+          "good": "Bonne",
+          "moderate": "Moyenne",
+          "poor": "Mauvaise"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "Clé locale"
       },
+      "occupancy": {
+        "name": "Occupation",
+        "state": {
+          "unoccupied": "Inoccupé",
+          "one_person": "Une personne",
+          "several_people": "Plusieurs personnes"
+        }
+      },
       "outdoor_pm25": {
         "name": "PM2.5 extérieur"
       },
       "outdoor_temperature": {
         "name": "Température extérieure"
+      },
+      "pm25_level": {
+        "name": "Niveau de PM2.5",
+        "state": {
+          "excellent": "Excellente",
+          "good": "Bonne",
+          "moderate": "Moyenne",
+          "poor": "Mauvaise"
+        }
+      },
+      "purifier_hours": {
+        "name": "Durée de fonctionnement du purificateur"
       },
       "uplus_id": {
         "name": "Identifiant du modèle"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "Déshumidification continue"
       },
+      "control_lock": {
+        "name": "Verrouillage des commandes"
+      },
       "drying": {
         "name": "Séchage"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "Défaut"
+      },
+      "filter_change": {
+        "name": "Filtre"
+      },
+      "formaldehyde_purify": {
+        "name": "Purification du formaldéhyde"
       },
       "fresh_air": {
         "name": "Air frais"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "Anti-moisissure"
       },
+      "pm25_purify": {
+        "name": "Purification PM2.5"
+      },
       "prevent_heatstroke": {
         "name": "Prévention des coups de chaleur"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "Évitement du flux d'air"
+      },
+      "wind_sensing": {
+        "name": "Détection du flux d'air"
       }
     },
     "button": {

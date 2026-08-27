@@ -36,6 +36,7 @@ from homeassistant.const import (
     UnitOfFrequency,
     UnitOfPower,
     UnitOfTemperature,
+    UnitOfTime,
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -195,7 +196,10 @@ def _reading(attribute: str) -> Callable[[dict[str, Any]], float | None]:
 # name from its device class, which Home Assistant already translates. The rest are named because
 # their device-class name alone would be wrong (two PM2.5 sensors would collide) or does not exist
 # (formaldehyde, a unitless VOC index).
-AIR_QUALITY_SENSORS: dict[str, HaismartSensorDescription] = {
+# The optional numeric readings that become sensors, by the attribute name the device declares.
+# Air quality and humidity, plus the purifier's hour meter -- everything `OPTIONAL_NUMERIC_READINGS`
+# can place. A declared reading with no entry here is simply not surfaced.
+OPTIONAL_READING_SENSORS: dict[str, HaismartSensorDescription] = {
     "indoorPM2p5Value": HaismartSensorDescription(
         key="indoor_pm25",
         translation_key="indoor_pm25",
@@ -242,6 +246,17 @@ AIR_QUALITY_SENSORS: dict[str, HaismartSensorDescription] = {
         native_unit_of_measurement=PERCENTAGE,
         value_fn=_reading("indoorHumidity"),
     ),
+    "totalCleaningTime": HaismartSensorDescription(
+        key="purifier_hours",
+        translation_key="purifier_hours",
+        device_class=SensorDeviceClass.DURATION,
+        # It only ever counts up, so it is a total rather than a measurement -- which is what lets
+        # a dashboard show hours-since as well as hours-total. The unit is the model's own (`h`).
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        native_unit_of_measurement=UnitOfTime.HOURS,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=_reading("totalCleaningTime"),
+    ),
 }
 
 
@@ -278,7 +293,7 @@ async def async_setup_entry(
     # can place). Not read-backed: zero means "absent" for these values, so existence comes from the
     # declaration and the value handles its own absence.
     for name in sorted(coordinator.declared_numeric_readings):
-        if desc := AIR_QUALITY_SENSORS.get(name):
+        if desc := OPTIONAL_READING_SENSORS.get(name):
             entities.append(HaismartSensor(coordinator, desc))
     # "Last self-clean" — only where self-clean is a real control (same gate as the button).
     if coordinator.supports_field("selfCleaningStatus"):

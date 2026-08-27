@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "Ilmanlaatu",
+        "state": {
+          "excellent": "Erinomainen",
+          "good": "Hyvä",
+          "moderate": "Kohtalainen",
+          "poor": "Huono"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "Paikallinen avain"
       },
+      "occupancy": {
+        "name": "Läsnäolo",
+        "state": {
+          "unoccupied": "Ei ketään",
+          "one_person": "Yksi henkilö",
+          "several_people": "Useita henkilöitä"
+        }
+      },
       "outdoor_pm25": {
         "name": "PM2.5 ulkona"
       },
       "outdoor_temperature": {
         "name": "Ulkolämpötila"
+      },
+      "pm25_level": {
+        "name": "PM2.5-taso",
+        "state": {
+          "excellent": "Erinomainen",
+          "good": "Hyvä",
+          "moderate": "Kohtalainen",
+          "poor": "Huono"
+        }
+      },
+      "purifier_hours": {
+        "name": "Puhdistimen käyttöaika"
       },
       "uplus_id": {
         "name": "Mallitunnus"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "Jatkuva kosteudenpoisto"
       },
+      "control_lock": {
+        "name": "Käyttölukitus"
+      },
       "drying": {
         "name": "Kuivaus"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "Vika"
+      },
+      "filter_change": {
+        "name": "Suodatin"
+      },
+      "formaldehyde_purify": {
+        "name": "Formaldehydin puhdistus"
       },
       "fresh_air": {
         "name": "Raitis ilma"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "Homeenesto"
       },
+      "pm25_purify": {
+        "name": "PM2.5-puhdistus"
+      },
       "prevent_heatstroke": {
         "name": "Lämpöhalvauksen esto"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "Ilmavirran väistö"
+      },
+      "wind_sensing": {
+        "name": "Ilmavirran tunnistus"
       }
     },
     "button": {

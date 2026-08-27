@@ -127,6 +127,19 @@ class HaismartCloudConnectionSensor(HaismartEntity, BinarySensorEntity):
         }
 
 
+#: Device classes for the declared features whose meaning HA already has a class for. Most of them
+#: are plain on/off functions and get none.
+#:
+#: ``lockStatus`` deliberately gets NO class. HA's ``LOCK`` reads ``on`` as *unlocked*, and this bit
+#: is the opposite way round -- the model names ``true`` 锁定, locked -- so claiming that class
+#: would invert the entity's meaning while looking tidier.
+_FEATURE_DEVICE_CLASSES: dict[str, BinarySensorDeviceClass] = {
+    # "the accumulated purifying time is up, remind the user to change the filter", in the model's
+    # own words: something the owner has to act on, which is what PROBLEM means here.
+    "localFilterChangeFlag": BinarySensorDeviceClass.PROBLEM,
+}
+
+
 class HaismartFeatureSensor(HaismartEntity, BinarySensorEntity):
     """One declared boolean feature, read-only, from the device's own model + the published map.
 
@@ -142,6 +155,7 @@ class HaismartFeatureSensor(HaismartEntity, BinarySensorEntity):
         self._attribute = attribute
         self._attr_translation_key = OPTIONAL_BOOL_FEATURES[attribute]
         self._attr_unique_id = f"{coordinator.device_id}_{OPTIONAL_BOOL_FEATURES[attribute]}"
+        self._attr_device_class = _FEATURE_DEVICE_CLASSES.get(attribute)
 
     @property
     def is_on(self) -> bool | None:

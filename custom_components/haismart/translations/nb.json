@@ -180,6 +180,15 @@
   },
   "entity": {
     "sensor": {
+      "air_quality": {
+        "name": "Luftkvalitet",
+        "state": {
+          "excellent": "Utmerket",
+          "good": "God",
+          "moderate": "Moderat",
+          "poor": "Dårlig"
+        }
+      },
       "coil_temperature": {
         "name": "Coil temperature"
       },
@@ -219,11 +228,31 @@
       "local_key": {
         "name": "Lokal nøkkel"
       },
+      "occupancy": {
+        "name": "Tilstedeværelse",
+        "state": {
+          "unoccupied": "Ingen til stede",
+          "one_person": "Én person",
+          "several_people": "Flere personer"
+        }
+      },
       "outdoor_pm25": {
         "name": "PM2.5 utendørs"
       },
       "outdoor_temperature": {
         "name": "Utetemperatur"
+      },
+      "pm25_level": {
+        "name": "PM2.5-nivå",
+        "state": {
+          "excellent": "Utmerket",
+          "good": "God",
+          "moderate": "Moderat",
+          "poor": "Dårlig"
+        }
+      },
+      "purifier_hours": {
+        "name": "Rensetid"
       },
       "uplus_id": {
         "name": "Modell-ID"
@@ -335,6 +364,9 @@
       "constant_dehumidify": {
         "name": "Konstant avfukting"
       },
+      "control_lock": {
+        "name": "Betjeningslås"
+      },
       "drying": {
         "name": "Tørking"
       },
@@ -349,6 +381,12 @@
       },
       "fault": {
         "name": "Feil"
+      },
+      "filter_change": {
+        "name": "Filter"
+      },
+      "formaldehyde_purify": {
+        "name": "Formaldehydrensing"
       },
       "fresh_air": {
         "name": "Frisk luft"
@@ -368,6 +406,9 @@
       "mould_proof": {
         "name": "Muggbeskyttelse"
       },
+      "pm25_purify": {
+        "name": "PM2.5-rensing"
+      },
       "prevent_heatstroke": {
         "name": "Beskyttelse mot heteslag"
       },
@@ -385,6 +426,9 @@
       },
       "wind_avoidance": {
         "name": "Unngå luftstrøm"
+      },
+      "wind_sensing": {
+        "name": "Luftstrømsregistrering"
       }
     },
     "button": {

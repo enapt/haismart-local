@@ -245,14 +245,26 @@ class GatewayClient:
     """Fetch per-device localKeys over the MQTT gateway.
 
     ``connect`` is a factory returning a live :class:`MqttConnection` for the given creds; it defaults to
-    the real TLS connection but tests pass a fake.
+    the real TLS connection but tests pass a fake. ``clock`` is the source of the collection deadline
+    and is injectable for the same reason: a test that asserts "one shared deadline, not one per
+    device" must not do so by measuring the wall clock.
     """
 
     def __init__(
-        self, creds: GatewayCreds, *, connect: ConnectionFactory | None = None
+        self,
+        creds: GatewayCreds,
+        *,
+        connect: ConnectionFactory | None = None,
+        clock: Callable[[], float] | None = None,
     ) -> None:
         self.creds = creds
         self._connect = connect or _tls_connect
+        # A timeout is an ELAPSED-time question, so it takes the monotonic clock. This used to read
+        # `time.time()`, which the system may step (NTP, suspend/resume, a WSL host clock jump) — and a
+        # stepped wall clock either abandons the collection early or holds the connection open far past
+        # the caller's timeout. `MqttPahoConnection.subscribe` in this same file already deadlined on
+        # `time.monotonic`; the two disagreed.
+        self._clock = clock or time.monotonic
         # Monotonic request counter. This used to be `time_ms + len(out)`, where `len(out)` only
         # advanced on SUCCESS — so two devices requested in the same millisecond after a failure got
         # the SAME sn, and a late reply for one could be stored against the other. A device holding
@@ -282,8 +294,8 @@ class GatewayClient:
             )
         keys: dict[str, LocalKey] = {}
         failures: dict[str, str] = {}
-        deadline = time.time() + timeout
-        while pending and time.time() < deadline:
+        deadline = self._clock() + timeout
+        while pending and self._clock() < deadline:
             for _topic, pay in conn.poll(0.5):
                 inner = parse_localkey_response(pay)
                 sn = str(inner.get("sn"))

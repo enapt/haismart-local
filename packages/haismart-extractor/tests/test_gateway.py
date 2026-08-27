@@ -4,7 +4,6 @@ Golden vectors are the real  live capture (both keys byte-matched the getLocalKe
 and decrypted the live ACs)."""
 import base64
 import json
-import time
 
 import pytest
 
@@ -307,6 +306,12 @@ def test_get_localkeys_shares_one_deadline_and_never_reuses_an_sn() -> None:
     The sn used to be ``time_ms + len(out)`` where ``len(out)`` only advanced on SUCCESS, so devices
     requested in the same millisecond after a failure shared an sn - and a late reply for one could be
     stored against the other, leaving a device holding another's key (an unfixable stale-key loop).
+
+    The deadline is asserted against an INJECTED clock, never a measurement of the wall clock. The
+    earlier form timed the call and allowed ``0.3 * 2.5`` seconds, which was both weak (a per-device
+    deadline costs 3x the timeout, so the bound only just separated pass from fail) and flaky -- one
+    run on a host whose clock stepped reported a NEGATIVE duration. With the clock injected the
+    assertion is exact: however many devices are asked for, the collection spans ONE timeout.
     """
     sns: list[str] = []
 
@@ -317,15 +322,19 @@ def test_get_localkeys_shares_one_deadline_and_never_reuses_an_sn() -> None:
         def publish(self, topic: str, payload: str) -> None:
             sns.append(json.loads(base64.b64decode(json.loads(payload)["data"]))["sn"])
 
-    t0 = time.monotonic()
-    out = GatewayClient(_creds(), connect=lambda _c: Recorder()).get_localkeys(
+    reads: list[float] = []
+
+    def fake_clock() -> float:
+        reads.append(len(reads) * 0.05)     # every read advances the clock one fixed step
+        return reads[-1]
+
+    out = GatewayClient(_creds(), connect=lambda _c: Recorder(), clock=fake_clock).get_localkeys(
         [UP_DEV, "ACB722AABBCC", "ACB722001122"], timeout=0.3
     )
-    elapsed = time.monotonic() - t0
     assert out == {}
     assert len(sns) == 3 and len(set(sns)) == 3, f"sn collision: {sns}"
-    # one shared deadline: a per-device deadline would have taken ~3x this
-    assert elapsed < 0.3 * 2.5, f"took {elapsed:.2f}s for 3 devices at timeout=0.3"
+    # One shared deadline: the whole collection spans one timeout. A per-device deadline would span 3.
+    assert reads[-1] - reads[0] == pytest.approx(0.3, abs=0.05)
 
 
 def test_get_localkeys_still_returns_the_devices_that_did_answer() -> None:

@@ -97,18 +97,18 @@ Start from [`docs/new-model.md`](docs/new-model.md): three status captures in kn
 control-word block and identify the sensor bytes by elimination. If you have the unit in front of
 you, that is the fastest path to a correct layout.
 
-You rarely have to find the layout by hand. Since v0.35.0 an unrecognised report is first matched
+You rarely have to find the layout by hand. An unrecognised report is first matched
 against the published models nearest its Model ID, and if one of their offsets explains what the unit
 sent, it is decoded with that — and commanded too, when the product publishes the attribute list of
 its own group-set command (nearly all do). A unit on that path that stays read-only has a product
 whose published description carries no such list; captures from it are what promote the layout to a
 real family, and they also unlock the readings beyond the core climate block.
 
-Since **v0.52.0** a unit that resembles *no* published model is handled too — the window air
+A unit that resembles *no* published model is handled too — the window air
 conditioners are the case, whose Model IDs diverge from everything published inside the appliance-type
 field. Having no relative to inherit an offset from, they are tried against every offset in use, and
-the report itself has to single one out. Since **v0.53.0** that no longer requires the product to
-publish a group-set list either: without one the unit is read and not commanded.
+the report itself has to single one out. That does not require the product to publish a group-set
+list either: without one the unit is read and not commanded.
 
 When nothing fits at all, diagnostics runs a search over the known families — see
 [`docs/report-layouts.md`](docs/report-layouts.md) — and attaches ranked candidates, because every

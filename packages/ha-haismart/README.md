@@ -39,17 +39,31 @@ write path. No cloud at runtime.
   - `climate` — target temperature, HVAC mode (off / auto / cool / dry / fan-only, plus **heat** where
     the unit reports it can), fan speed, swing on both axes, **presets** (eco / sleep / boost), on/off.
     Controls go *unavailable* in the states the unit's own model says it discards them in.
-  - `switch` ×5 — **strong** (rapid), **quiet** (mute), **health**, **sleep**, **lamp** (front display).
-  - `select` ×3 — **eco** (off / level 1..3), and **up-down** / **left-right vane**, each offering the
-    stops that unit's model publishes, on the families that pack a vane as a position rather than a flag.
+  - `switch` — **strong** (rapid), **quiet** (mute), **health**, **sleep**, **lamp** (front display),
+    plus every other function the vendor's own control panel renders a switch for and this unit
+    declares (fresh air, electric heating, ambient light, energy saving, mould prevention, dry-out,
+    heatstroke prevention). Offered the way the app offers them — declaration, not a capture apiece.
+  - `select` — **eco** (off / level 1..3), **up-down** / **left-right vane**, each offering the stops
+    that unit's model publishes on the families that pack a vane as a position rather than a flag,
+    and the panel's multi-state controls (presence-based airflow).
   - `sensor` — indoor + outdoor temperature, and **who last changed it** (handset / panel / network).
   - `sensor` — **Energy** (kWh), on the units that keep a running total themselves. Most carry the
-    register and never populate it; there it reads *unavailable* rather than a permanent zero.
+    register and never populate it; there it reads *unknown* rather than a permanent zero.
   - `sensor` ×5 + `binary_sensor` ×2 (diagnostic) — running **power**, compressor **current** and
     **frequency**, **coil** and **discharge** temperatures, and whether the **compressor** / indoor
     **fan** are running. From a second frame that only some units answer; absent on the rest.
   - `binary_sensor` — **Self-clean** (is a cycle running) and **Fault**, whose attributes name the
-    active faults with the service code the unit displays.
+    active faults with the service code the unit displays. A `button` starts a self-clean cycle where
+    the unit has one (a one-shot trigger, so a button rather than a switch), and a **Last self-clean**
+    timestamp records when the last cycle finished.
+  - `sensor` / `binary_sensor` (diagnostic) — the air-quality suite (indoor and outdoor **PM2.5**,
+    **CO₂**, **formaldehyde**, a **VOC** index, indoor **humidity**) on units that carry the probes,
+    and the read-only statuses a unit reports but the vendor's panel offers no control for: the
+    **filter-change reminder**, the purifier's **hour meter**, the **air-quality** and **PM2.5**
+    ratings, what the **presence sensor** sees, the **control-panel lock**, the purification
+    functions and the remaining optional features. Membership comes from the device's own model,
+    position from the published map; an attribute the model marks as hardware the unit lacks gets no
+    entity at all, and a probe reading nothing reads *unknown* rather than a fabricated zero.
   - `sensor` — **Model ID** (diagnostic): the `uPlusId` that selects the report layout. Its own entity
     rather than an attribute of the localKey sensor, because it is a model identifier and not a secret —
     reading it should not require enabling an entity whose state is your key. The state is shortened

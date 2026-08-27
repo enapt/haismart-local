@@ -165,18 +165,24 @@ That family confirms w20/w21/w22 unmoved, w35/w36 at +10, and a vane at w25 with
 w26.b9 inside the inserted block — so the ten-word block starts after w22 and at or before w25.
 If it starts at w25 the flag is at report w24; if it starts at w23 or w24 the flag is at report
 w34. Every reading predicts indoor temperature at w35, so that cannot separate them, and w23, w24,
-w33 and w34 all read zero in all three captures. Any capture with a w24-block feature switched on
+w33 and w34 read zero in **every** 209-byte report this project holds.
+
+★ That is stronger than "not pinned yet", and worth stating exactly: strip the ten-word block at
+each of the three candidate points and the resulting frames are **byte-identical** on every capture
+held, because the candidates differ only in which of those four all-zero words they remove. The
+hypotheses are observationally identical on this corpus *by construction* — no decoder could
+separate them, so no amount of re-reading will. Any capture with a w24-block feature switched on
 (Health, the ambient light, fresh air) pins the insert point and places the whole block at once.
 
 **Vane positions** — a `select` offering the stops a vane can hold, rather than just sweeping or
 not — need a family that packs the vane as the multi-bit code it is. Classic and extended-36 do;
 compact-12 collapses each vane to a single bit, so a position sent there would arrive as "sweep".
-Extended-46 packs its up-down vane as a code and both reads and writes it, but is
-still left out here: no write to that field has been *observed* landing on the family yet, and the
-four-way swing already exercises the same field at its two ends, which is the cheaper way to find
-out. Its left-right vane is not written at all — nothing in its report reads one back. The positions
-themselves come from the device's own model, so even on a family that can place them the entity
-appears only for a unit that publishes more than the two ends.
+Extended-46 packs its up-down vane as a code too, and reads and writes it — at the appliance's own
+position in the appended part of its settings list, not the shared slot a twin-tower cabinet keeps
+for its left tower (see the extended-46 section below). Its **left-right** vane is still not written:
+nothing in its report reads one back, and a control that cannot be read back is not offered. The
+positions themselves come from the device's own model, so even on a family that can place them the
+entity appears only for a unit that publishes more than the two ends.
 
 The up-down axis needs one translation on the way out: a model numbers its stops `0, 2, 4, 5, 6, 8`
 while the wire counts `0, 2, 4, 6, 8, 12`. `VANE_V_MODEL_TO_EPP` holds it, and it is confirmed on
@@ -506,7 +512,7 @@ The displacement has to be earned, and `WireModel.canonical_displacement` record
 |---|---|---|
 | classic | −19 | all 9 mapped positions reproduced; decodes a real 125-byte report in agreement with the classic decoder on every shared field |
 | extended-36 | 0 | all 12 mapped positions reproduced |
-| extended-46 | — | 6 of its 9 disagree with any single offset (the ten-word insert), so it declines |
+| extended-46 | 0, with a ten-word insert at w25 | no *single* offset fits — 6 of its 9 mapped positions disagree with any one — so the family displaces the map **piecewise**, describing the insert rather than declining. It then places as much of the map as extended-36 does (55 of the 85 attributes fit inside a 209-byte report), and the placements were checked against the device's own published values with none disagreeing |
 | compact-12 | — | not this lineage |
 
 Two things it will not do, both for the same reason — a value that may not mean what it says is
@@ -527,10 +533,16 @@ The readings land in a diagnostics download (`model_declared_fields`), beside th
 published values (`digital_model.reported_values`) so the two can be compared directly. Most are not
 entities: their placement rests on the published map rather than on a capture apiece, and a wrong
 value in a diagnostics file costs nothing where the same value on a dashboard is a fault report.
-The exception is the numeric environment suite — PM2.5, CO₂, formaldehyde, VOC, indoor humidity —
-which does become sensors on units that declare the probe, because those values carry their own
-guards: zero is "no probe" rather than a state, and every one of them is bounded by the published
-models, with anything outside the bound dropped as a sentinel (`FUTURE_WORK` item 37).
+Two groups are the exception, because they carry their own guards rather than resting on placement
+alone. The numeric environment suite — PM2.5, CO₂, formaldehyde, VOC, indoor humidity — becomes
+sensors on units that declare the probe: zero is "no probe" rather than a state, and every one is
+bounded by the published models, with anything outside the bound dropped as a sentinel
+(`FUTURE_WORK` item 37). So do the maintenance and status readings the vendor's own control panel
+renders **no** control for, which is its way of saying they are a status rather than a switch — the
+filter-change reminder, the purifier's hour meter, the air-quality and PM2.5 ratings, what the
+presence sensor currently sees, the control-panel lock and the two purification functions. Those are
+read-only by construction, their values are the manufacturer's own published codes rather than an
+interpretation, and a value the published codes do not name is dropped rather than shown.
 
 One placement detail matters here and is easy to get wrong: the reference hardware's 127-byte
 report keeps one extra word ahead of its sensor block, so the map's words 25 and up sit one word

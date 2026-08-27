@@ -9,8 +9,14 @@ SE-Asia ACs). No Home Assistant coupling, no cloud.
 - **Read:** `read_status` / `async_read_status` → `parse_full_status` decodes power, target / indoor /
   outdoor temperature, mode, fan, swing, and the secondary toggles.
 - **Control:** the `grSetDAC` group-set write path (`grsetdac_baseline_from_status` →
-  `set_grsetdac_field` → `async_send_op`). The encoder only emits fields/values in its allowlist.
+  `set_grsetdac_field` → `async_send_op`), where the encoder only emits fields and values in its
+  allowlist. Appliances that publish no group-set command are written **one setting at a time**
+  instead — a command per attribute, gated on the appliance's own declaration — which is how the
+  central cabinets and the compact family are controlled.
 - Per-model semantics via `AttributeProfile`, built from the device digital model (`profiles.py`).
+  A device declares three or four times what any family map names by hand, and `model_fields` reads
+  those too — membership from the device's own model, position from the shared map, the two arrived
+  at independently — so no capture is needed per attribute.
 - **Several report layouts.** Models pack their attributes into the same word array at different
   offsets; `canonical_map.py` carries the map they share and `wire_models.py` the families that are
   versions of it, so an unfamiliar report is usually a displacement rather than new work. A layout

@@ -213,63 +213,22 @@ as the guaranteed floor, flash **ESPHome** onto the module.
 
 ## Troubleshooting
 
-- **HA log: "Requirements for haismart not found" / import errors.** The two libs landed in a different Python
-  than HA's. Re-run `install-dev.sh` with `--python` pointing at HA's interpreter (Core/venv: the venv's
-  `bin/python`; Docker: run inside the container).
-- **One of your AC's controls turns up under "Favourites" on the Home dashboard and you never put it
-  there.** Nothing to do with this integration, and there is no star to un-click. On Home Assistant's
-  Home dashboard that section shows your pinned favourites *and then fills the remaining slots with
-  entities it predicts you use* — so a control you adjusted recently can appear on its own. Manage it
-  from **Edit home**, which has the favourites list and a toggle for the suggested entities. (Reported
-  upstream at [home-assistant/frontend#29840](https://github.com/home-assistant/frontend/issues/29840),
-  since the heading says "Favourites" either way.)
-- **"No decodable status" / entities unavailable right after adding.** Two different causes, and
-  recent versions tell them apart for you. If the climate entity works but the temperatures are
-  missing and a repair notification has appeared, the AC's **report layout is not one we know yet**
-  — the key is fine; please report the model (see [`docs/new-model.md`](docs/new-model.md)).
-  That is rare: an unfamiliar layout is usually matched against the published models
-  closest to it, which gives the core **readings** with no capture needed — and **commands** too,
-  since the settings a product's own published description lists are offered through the shared
-  group-set command. If your temperatures are right but the thermostat does nothing, your product is
-  one of the few that publishes no such list, and the capture procedure is what enables control
-  there.
-  Otherwise it is a **stale `localKey`** — it
-  rotates server-side. The login/cloud paths auto-refetch it; the offline path will prompt a reauth (and raise
-  a repair suggesting you add account creds so it self-heals next time).
+Install-specific problems are below. Everything else — a stale key, an unknown report layout,
+sign-in failures, an AC that moved address — is in
+[`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md), which also covers what to include when you open
+an issue.
 
-  If it persists, turn on debug logging for the integration:
-
-  ```yaml
-  # configuration.yaml
-  logger:
-    logs:
-      custom_components.haismart: debug
-  ```
-
-  Each failed cycle then logs which cause it is — the wording tells them apart:
-
-  | Log says | Means |
-  |---|---|
-  | `nothing decrypted this cycle` | the key is wrong/stale, **or** the AC pushed no status at all |
-  | `localKey is good … unrecognised frame` | the key is fine, but what the AC pushed isn't a status report (no `2715` signature, or too short) |
-
-  Note an unrecognised report **length** does not appear here at all: that case decodes partially and
-  raises the repair notification described above, so it is already named for you. Either way the log
-  line includes the frame — please open an issue with it if the entity stays unavailable. It carries
-  device state only, no key.
-- **The AC changed IP address.** Handled automatically: after a failed read the integration
-  broadcasts a local discovery query, recognises the unit by its device ID wherever it has landed,
-  and updates the entry to follow it — usually within the same poll, so you see nothing at all. A
-  DHCP reservation is still worth setting, but is no longer required.
+- **HA log: "Requirements for haismart not found" / import errors.** The two libraries landed in a
+  different Python than HA's. Re-run `install-dev.sh` with `--python` pointing at HA's interpreter
+  (Core/venv: the venv's `bin/python`; Docker: run inside the container).
 - **Can't reach the AC.** Confirm HA and the AC are on the same subnet and `:56800` is open:
-  `nc -z <ac-ip> 56800`. The integration finds the AC by **DHCP** (matching Haier's appliance MAC
-  prefixes) or the host you
-  provide; if you blocked the AC's WAN (§4), make sure you left its **LAN** open.
-- **Login rejected.** The integration now names the likely cause rather than listing all three
-  fields. "No Haier account … in the country you selected" (retCode 30032) means the **country** is
-  almost certainly wrong: it is the one the account was *registered* in, which need not be where you
-  live or where the AC is. A missing-field error is retCode 10001. If sign-in succeeds but no devices
-  appear, the account has none bound — share the AC to it in the app first.
+  `nc -z <ac-ip> 56800`. The integration finds the AC by DHCP (matching Haier's appliance MAC
+  prefixes) or the host you provide. If you blocked the AC's WAN access (§4), check you left its
+  **LAN** open.
+- **Sign-in rejected.** "No Haier account … in the country you selected" (retCode 30032) means the
+  **country** is wrong: it is the one the account was *registered* in, which need not be where you
+  live or where the AC is. A missing-field error is retCode 10001. If sign-in succeeds but no
+  devices appear, the account has none bound — share the AC to it in the app first.
 
 ## Uninstall
 

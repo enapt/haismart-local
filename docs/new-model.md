@@ -30,12 +30,12 @@ Captures are also what unlock the **readings beyond the core climate block** (po
 per-model extras) on a matched-relatives layout, so even a unit that reads *and* controls is worth
 capturing.
 
-★ **A single diagnostics file is worth more than it used to be.** It now carries the appliance's raw
-report *and* the manufacturer's own decoded values for the same appliance, fetched at the moment the
-file is generated rather than stored once at set-up — so the two halves describe the same moment and
-can be compared directly. Where a setting's place in the report is unknown, that pairing can often
-locate it arithmetically: find the bits that already equal the value the manufacturer reports. It
-works best when the setting is actually switched on, which is what the states below are for.
+★ **A single diagnostics file carries both halves of the answer.** It holds the appliance's raw
+report *and* the manufacturer's own decoded values for the same appliance, both taken at the moment
+the file is generated, so the two describe the same moment and can be compared directly. Where a
+setting's place in the report is unknown, that pairing can often locate it arithmetically: find the
+bits that already equal the value the manufacturer reports. It works best when the setting is
+actually switched on, which is what the states below are for.
 
 In every case, please open an issue either way — a model that now works without any capture is worth
 recording just as much as one that doesn't.

@@ -40,14 +40,11 @@ your unit, apply its own fault names and availability rules, and offer it in the
 account and no internet. (Those are catalogue entries, not distinct machines: many are the same unit
 in another colour or for another market, and the 1,451 products collapse to **26 hardware families**.
 21 model names are shared by more than one product — 56 products between them — so a model number
-alone no longer always identifies the product.) Earlier releases carried 171, which turned out to be
-one region's catalogue rather than the whole of it: the catalogue answers according to the country
-code an account registered with, and that code was being collected at setup and used for nothing
-else. The listing was later found to be filtered by product category as well, which had hidden the
-window air conditioners; every air-conditioner category now ships. If a previous version could not
-identify your air conditioner, this one very likely can.
+alone does not always identify the product.) The catalogue answers according to the country code an
+account registered with, and is filtered by product category as well; every region and every
+air-conditioner category ships here, window units included.
 
-A diagnostics download from a unit on a recognised layout now reads **every attribute that unit
+A diagnostics download from a unit on a recognised layout reads **every attribute that unit
 declares** and prints it beside the values the unit publishes through its cloud profile — two
 independent sources for the same readings. That is usually enough to confirm a model belongs in this
 table without anyone here owning one.
@@ -59,8 +56,8 @@ table without anyone here owning one.
 | `AACRL2E00` | PRO X INV-42/3PH | 125-byte classic | ✅ | `deviceType 0201201d`, OUI `24:E8:CE`. Reverse-cycle wall-mounted split; the reference unit for heat support. |
 | `AAC1UKZ01` | HSU-24VRRA03TF | 127-byte classic | ❌ | `deviceType 0201203a`, OUI `AC:B7:22`. Cooling-only. The original unit this project was written for. |
 | `AAC1UKZ01` | HSU-12HFMF/013WUSDC(W) | 117-byte compact-12 | ✅ | OUI `04:E2:29`. A **different wire family** — all attributes (sensors included) are packed into one word array. Reading and control both confirmed on real hardware. |
-| `AAD180E00` | HSU-12KCROC(IN)-R32 | 165-byte extended-36 | ✅ | `deviceType 02012036`. The classic bit map **displaced by 19 words**: the report carries a voice/media block first, so the climate attributes start at word 20. **Confirmed on hardware by the reporter** (2026-07-29): reading and full control — temperature, modes, fan speed, health, display light. |
-| `AAC1UKZ01` | HS-25VRB03 | 175-byte extended-36 | ❌ | Module `MK-QTWiFi3.1S`, firmware `e.4.3.00` / `R_6.0.01`, Malaysia. The extended-36 map with five further words of counters on the end. **Confirmed on hardware by the reporter** (2026-07-31): reading and full control — power, mode, temperature, fan speed, both swings, no snap-back. Its report carries **live power in watts**, which no other family here reports directly, plus a working **cumulative energy total in watt-hours** — the only unit here with both, so it feeds the Energy dashboard with no helper — and it publishes both vanes' positions. **Self-clean confirmed on hardware by the reporter** (2026-08-05): the button starts a cycle and the unit's own panel shows `CL`. That control had shipped for this family on the strength of the write command being shared across layouts rather than on an observation, so this is the first time it has been *seen* to work outside the classic family. |
+| `AAD180E00` | HSU-12KCROC(IN)-R32 | 165-byte extended-36 | ✅ | `deviceType 02012036`. The classic bit map **displaced by 19 words**: the report carries a voice/media block first, so the climate attributes start at word 20. **Confirmed on hardware by the reporter**: reading and full control — temperature, modes, fan speed, health, display light. |
+| `AAC1UKZ01` | HS-25VRB03 | 175-byte extended-36 | ❌ | Module `MK-QTWiFi3.1S`, firmware `e.4.3.00` / `R_6.0.01`, Malaysia. The extended-36 map with five further words of counters on the end. **Confirmed on hardware by the reporter**: reading and full control — power, mode, temperature, fan speed, both swings, no snap-back. Its report carries **live power in watts**, which no other family here reports directly, plus a working **cumulative energy total in watt-hours** — the only unit here with both, so it feeds the Energy dashboard with no helper — and it publishes both vanes' positions. **Self-clean is confirmed on hardware**: the button starts a cycle and the unit's own panel shows `CL`. |
 | `AAC1UKZ01` | HSU-24HFAB/013WUSDC(W)-T3 | 209-byte extended-46 | ✅ | OUI `5C:24:1F`. Extended-36 with a further ten-word block inserted at word 25, and a **half-degree setpoint**. Reading is confirmed against every captured state this project holds, fan speed included — it answers from the inserted block rather than the usual word. Control covers power, mode, temperature, fan speed and the up-down vane. On twin-airflow hardware the shared command's vane and fan bits belong to the **left tower**, so this family commands the appliance's own vane and fan from the appended part of its published settings list instead — the same words the report reads them back from. |
 
 > **"Report" is the status layout, not just a length.** Most models share the *classic* family (the

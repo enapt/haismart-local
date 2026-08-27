@@ -114,7 +114,7 @@ no unit here has reported a fault. `errCode` gives a free cross-check when one o
 single fault where the frame carries the set, so the bit that is set must be `errCode - 1`. Nothing
 to do but keep the diagnostic in place and check the first report that arrives.
 
-★ **Narrowed 2026-08-26 — the table itself is no longer in question.** Every published
+★ **The table itself is not in question.** Every published
 air-conditioner model declares **the same 51 faults at the same 51 positions**, with **zero**
 disagreements about a name, so the one shared table this integration applies to every family is
 justified by measurement rather than assumption. What remains untested is only the **bit ordering**
@@ -237,7 +237,7 @@ diagnostics) rather than promoted to entities, checked against the three real re
 * **the word-9/10 toggles and flags** — positions published, but every capture reads them 0, so there
   is no positive confirmation of a bit until a capture exercises one.
 
-⚠️ **Prior art was checked for these and does not answer them (2026-08-25).** The independent
+⚠️ **Prior art does not answer these.** The independent
 description of this same protocol carries **no power field at all** for this family, so it cannot
 settle the scale; and its label for the word-2 byte is the *source* of the humidity-vs-temperature
 disagreement recorded above, not evidence about it. Both still need one reading from a unit.
@@ -258,7 +258,7 @@ via its per-attribute commands. What remains open is the residue that no source 
   neighbours that share its run, at the same positions on all **159** products that publish it. The
   run is bounded by a confirmed position at each end and exactly one tiling fits it.
 
-  The step that used to be an inference is now a measurement. The catalogue publishes only each
+  The width is measured rather than inferred. The catalogue publishes only each
   setting's *standard* codes, while the wire carries the manufacturer's *internal* codes, and the
   bundled descriptions publish both — so the relationship between them can be counted rather than
   assumed. Counted: a code set beginning at zero keeps its codes in **1,082 of 1,082** cases, and of
@@ -294,7 +294,7 @@ via its per-attribute commands. What remains open is the residue that no source 
   controls. Blocked on one capture with a tower vane parked non-zero (the same capture item 3 wants).
 
 ⚠️ **The per-attribute write channel does NOT rescue any of this, and that is now measured rather
-than assumed (2026-08-25).** Item 42 writes central cabinets one setting at a time without needing a
+than assumed.** Item 42 writes central cabinets one setting at a time without needing a
 position, so the obvious question is whether the same channel reaches these. It does not: across all
 174 bundled device descriptions — 5,054 per-attribute command declarations, 596 distinct attribute
 names — **no air-conditioner class publishes a per-attribute command for any climate attribute**. The
@@ -304,10 +304,8 @@ belongs to a **different appliance category** (water heaters, sterilizer cabinet
 different numbers. The attrID list the models publish alongside it does not cover these attributes
 either. ⇒ For the wall/floor families a position is still required, and a capture is still the way
 to get one.
-* **`freshWindSpeed`** — ⚠️ **this bullet was wrong twice over and is corrected (2026-08-25).** It is
-  **not** "five values written by named attribute": read out of the published models, every product
-  that declares it marks it **`writeType: G`** — group-written — and publishes **four** values, in two
-  variants. Of the **16** products whose raw published model we hold: **3** publish
+* **`freshWindSpeed`** — read out of the published models, every product that declares it marks it
+  **`writeType: G`** — group-written — and publishes **four** values, in two variants. Of the **16** products whose raw published model we hold: **3** publish
   `0 无 · 1 低 · 2 高 · 3 额定`, which **fits the frame's 2-bit slot exactly**; **13** publish
   `0 无 · 1 低 · 2 高 · 4 中`, and **code 4 does not fit two bits**. So the blocker is narrower than
   recorded — it is not the attribute that cannot be carried, it is *that one value on that one
@@ -482,8 +480,8 @@ value travels in — the three loose ends a set-only test would have left. It wa
 that item 42 actually serves, which are the ones sending several ops. They have answered nothing.
 The evidence against is now strong (nothing in any of the 174 published device descriptions declares
 either half, the reference implementation documents the pair without using it, and hardware of a
-neighbouring generation refuses both), so this is no longer worth a reporter's time on its own — but
-if a central cabinet is ever on the other end of a probe, the same two commands cost ten seconds.
+neighbouring generation refuses both), so this is not worth a reporter's time on its own — but if a
+central cabinet is ever on the other end of a probe, the same two commands cost ten seconds.
 
 **Not a blocker for item 42.** Several ops is correct behaviour, just not the tidiest.
 
@@ -502,7 +500,7 @@ were inert.
 Two rules that differ only in the on/off value also collapsed into indistinguishable twins: power-on
 and power-off each carry their own follow-up commands, and both became the same empty condition.
 
-**What is fixed.** The reader now reads every vocabulary the catalogue uses, and a trigger it cannot
+**How it behaves.** The reader takes every vocabulary the catalogue uses, and a trigger it cannot
 express drops its whole rule rather than shipping one that silently never matches — omitting one term
 of an AND would make a rule fire in states its author excluded, which is worse than not having it.
 Both regression tests were confirmed to fail against the previous behaviour.
@@ -702,18 +700,18 @@ command either names an attribute the class publishes or it does not, and the ap
 refuses each one, so a command it does not implement is declined rather than misapplied. That is why
 the two vane commands can be withheld now and added later without disturbing anything else.
 
-**14. Deploy and verify the shipped rules — done (2026-08-04).** The rules for all published products
+**14. Deploy and verify the shipped rules — done.** The rules for all published products
 travel with the integration and are consulted when the catalogue is unreachable (the ordinary path on
 a firewalled install). Cross-checked on hardware: 19/19 comparable readings agree, the shipped and
 fetched copies agree on identity, locking is unchanged and conditional. Found and fixed in passing:
 diagnostics now prints the `invisible` flags (`feature_set_known`, `invisible_attributes` — empty and
 absent mean different things).
 
-**15. The compact family — superseded by item 31.** Its central "nothing more is obtainable" verdict
-did not survive a fuller reading: the family's own published description has thirty-eight positioned
-fields where the derived extract measured against had thirty, and `cloudControlStatus` /
-`sleepCurveStatus` are placed at word 9. The lasting lesson: **count coverage per family**, never
-against the shared map (which is generated from only one of the two published formats).
+**15. The compact family — see item 31.** The family's own published description carries
+thirty-eight positioned fields, ten more than the derived extract it was once measured against, and
+places `cloudControlStatus` / `sleepCurveStatus` at word 9. The lasting lesson: **count coverage per
+family**, never against the shared map, which is generated from only one of the two published
+formats.
 
 **16. A layout that is not a displacement.** Recorded, not urgent — no model of this shape is sold in
 the region served. One model elsewhere merges what the shared map spends two words on and packs the
@@ -852,14 +850,14 @@ family's fields read nothing, veto nothing, and return a truthy decode that pois
 baseline (`report too short (93) for extended46 baseline`). `WireModel.decode` now requires both
 anchors (indoor + setpoint) to have arrived. Rule 13 again — the guard existed in one caller (item
 23) and now lives in `decode`, reaching every family. Found in passing: the in-session baseline gate
-was classic-only, so every other family fell back to a cached blob; `is_control_baseline` now asks the
-registry.
+was classic-only, so every other family fell back to a cached blob; `is_control_baseline` asks the
+registry instead.
 
-**35. Which units are placed offline — measured.** 1,236 of 1,451 (85 %) placed from published data
-alone **as first measured**; the current figure is **1,421 of 1,451** (item 30's table). The reasoning
-below is kept because it is the record of how the remainder was worked through, one class at a time. ⚠️ **The original wording of this item — "the 215 unplaced are almost exactly one central-air
-class that the app publishes no panel for either — out of scope, not a hole" — was too broad, and is
-withdrawn (2026-08-23).** The 215 are **two** central-air classes plus eight others: `0d12` (187, no
+**35. Which units are placed offline — measured.** **1,421 of 1,451** are placed from published
+data alone (item 30's table). The working below is kept because it is how the remainder was resolved,
+one class at a time.
+
+The 215 that were once unplaced are **two** central-air classes plus eight others: `0d12` (187, no
 group command — item 11), `0d21` (**20, which publish the ordinary shared frame**), four wall and
 four window. **Twenty-eight of the 215 therefore publish a frame**, are corroborated against it, and
 are reachable on first report; only the 187 are genuinely without published positions. Nor is the

@@ -357,7 +357,7 @@ other), and neither declares a wind speed — this is a floor-standing / heat-pu
 split AC. Length alone cannot pick between them, so a report of this size must be resolved by Model
 ID, not by size.
 
-## Coverage, and what "no layout" now means
+## Coverage, and what "no layout" means
 
 Of the **1,451** published air conditioners:
 
@@ -568,7 +568,7 @@ not go away:
   failure this page exists to prevent.
 - **Control needs more than a read map.** A proposal says nothing about *which* settings a unit will
   honour, and writing to a guessed layout is not a risk worth taking, so a probe could only ever
-  replace the reading half. The window itself is no longer a mystery, though: the group-set frame is
+  replace the reading half. The window itself is not a mystery: the group-set frame is
   the report's own words 20 to 24 in shared-map terms — identical bit for bit through the first four,
   differing only in word five's filter flags, and stopping there because word 25 is where the
   unwritable sensor readings begin. So a family's write window follows from its displacement. What

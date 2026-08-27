@@ -33,8 +33,9 @@ records what the code already encodes, plus what has been learned since.
 
 3. **biz-data payload**: AES-128-CBC, IV = 16 zero bytes, key = `MD5(localKey-as-ascii-hex)`. The
    plaintext carries an `sn` and an MD5 integrity check. A wrong or rotated key fails that MD5 on
-   every payload — silently, which is why a stale key and an unreadable layout used to be
-   indistinguishable.
+   every payload, and it fails silently: nothing is logged at the AC's end and nothing comes back.
+   The integration tells a stale key from an unreadable layout by probing the unit's key version,
+   which needs no key of its own.
 
 Sessions are capped at roughly **17 seconds** from the handshake (not an idle timer — a keepalive
 does not extend it), and the AC accepts **one local session at a time**. It delivers its whole status

@@ -12,10 +12,10 @@ Everything else it needs, including the published details of **every air conditi
 ships with it: keep a copy of that key and setup works with no internet at all._
 
 > **This is the home of the project.** [`enapt/haismart-local`](https://github.com/enapt/haismart-local)
-> is where releases are cut and where issues get answered. Copies exist elsewhere — that is what the
-> MIT licence is for — but they are not tracked here, may be based on much older code, and their
-> version numbers are their own. If you arrived from one, check the release you are running against
-> [the list here](https://github.com/enapt/haismart-local/releases).
+> is where releases are cut and issues answered. Copies exist elsewhere — that is what the MIT licence
+> is for — but they are not tracked here and their version numbers are their own; if you arrived from
+> one, check what you are running against
+> [the releases](https://github.com/enapt/haismart-local/releases).
 
 **🌐 Getting started in your language:** [Bahasa Indonesia](docs/i18n/README.id.md) ·
 [ไทย](docs/i18n/README.th.md) · [Tiếng Việt](docs/i18n/README.vi.md) ·
@@ -67,31 +67,18 @@ work fine — this is used daily on an account registered outside South-East Asi
 
 **Confirmed working units** are listed in [`DEVICES.md`](DEVICES.md). Yours not there? It will very
 likely still work, and not by luck: the integration carries the published description of **every air
-conditioner in the manufacturer's catalogue — 1,451 product codes, covering 1,416 model numbers** —
-which settings each has, what its faults are called, and which controls it ignores in which state, so
-it configures itself for a unit nobody here has ever seen. Where your own account can describe your
-appliance, that is used too, and the two are combined rather than one being preferred. If something
-decodes oddly, that's a [great issue to open](docs/TROUBLESHOOTING.md#before-you-open-an-issue), and usually a quick fix.
+conditioner in the manufacturer's catalogue — 1,451 product codes covering 1,416 model numbers**, in
+every region and every air-conditioner category, window units included. Which settings each has, what
+its faults are called, which controls it ignores in which state — so it configures itself for a unit
+nobody here has ever seen. Where your own account can describe your appliance, that is used as well,
+and the two are combined. If something decodes oddly, that's a
+[great issue to open](docs/TROUBLESHOOTING.md#before-you-open-an-issue).
 
-Those figures are entries in a catalogue rather than distinct appliances, and it is worth being
-straight about the difference: many are the same unit in another colour or for another market
-(`…(W)-T3` and `…(GREY)-T3` are one air conditioner), and the 1,451 products collapse to just
-**26 hardware families**. 21 model names are even shared by more than one product — 56 products
-between them — which is why setup asks which product yours is rather than trusting the label alone.
-What the count means is that no published air conditioner is unknown to the integration — not that
-Haier sells 1,451 different machines.
-
-### Every region, not just one
-
-**The manufacturer's catalogue answers according to the country your account registered with**, and
-the regions publish very different lists — one 171 entries, another 242, Japan's 30, six countries
-none at all. It is filtered by product **category** as well as by region, which is what hides window
-air conditioners from a naive listing.
-
-**All of them ship here.** The complete catalogue is 1,999 products across 38 appliance categories,
-and every air-conditioner category among them is included, window units included. Your country is
-also used at setup — to shorten the model list to what is sold where you are, and to look up a model
-number the shipped list has not heard of.
+Those are catalogue entries, not distinct appliances: many are the same unit in another colour or for
+another market (`…(W)-T3` and `…(GREY)-T3` are one air conditioner), and the 1,451 collapse to **26
+hardware families**. 21 model names are shared by more than one product, which is why setup asks
+which product yours is rather than trusting the label. Your country is used at setup too, to shorten
+the model list to what is sold where you are.
 
 **Quick check:** if `nc -z <your-ac-ip> 56800` succeeds, the local protocol is listening.
 
@@ -108,131 +95,31 @@ One device per air conditioner, with:
 | **Eco** | Eco level, on models where it's confirmed |
 | **Left-right vane** / **Up-down vane** | Where each vane points, on units that publish its positions |
 | **Power** *(diagnostic)* | Live power draw in watts, on units that report it |
-| **Energy** | A running kWh total, on the units that keep one themselves. Goes straight on the Energy dashboard — no helper needed. Most units carry the register but never fill it in, and there the sensor reads *unknown*; see [Energy monitoring](#energy-monitoring) |
+| **Energy** | A running kWh total, on the units that keep one themselves — straight onto the Energy dashboard, no helper needed. Most carry the register and never fill it in; there it reads *unknown*. See [Energy monitoring](docs/behaviour.md#energy-monitoring) |
 | **Compressor current / frequency** *(diagnostic)* | What the outdoor unit is actually doing |
 | **Coil / discharge temperature** *(diagnostic)* | Evaporator and compressor-discharge temperatures |
-| **Air quality** | Indoor and outdoor PM2.5, CO₂, formaldehyde, a VOC index, and indoor humidity — on units that carry the probes. A unit without a given probe gets no entity for it, and a probe reading nothing shows *unknown* rather than a fake zero |
-| **Air quality rating** / **PM2.5 level** *(diagnostic, enum)* | The unit's own four-step verdict on the air — excellent / good / moderate / poor — rather than a number to interpret. On units that rate it |
+| **Air quality** | Indoor and outdoor PM2.5, CO₂, formaldehyde, a VOC index and indoor humidity, on units carrying the probes. No probe, no entity; a probe reading nothing shows *unknown* rather than a fake zero |
+| **Air quality rating** / **PM2.5 level** *(diagnostic, enum)* | The unit's own verdict on the air: excellent / good / moderate / poor |
 | **Compressor / Fan** *(diagnostic, on/off)* | Whether the compressor and indoor fan are actually running |
-| **Self-clean** | Start a cycle with the **Start self-clean** button — a one-shot trigger: it runs to completion and can't be cancelled, so it's a button, not a switch. A binary sensor shows whether a cycle is running, and a **Last self-clean** timestamp records when the last one finished, so a "days since"-style reminder is a one-line automation. Only on units whose model has it, and the button greys out when a clean can't be started — off, auto mode, sleep, or a fault |
-| **Filter** *(diagnostic, problem)* | The unit's own filter-change reminder, on the models that keep one — it turns on when the AC decides the filter is due, so a notification is a one-line automation. Units that also meter their purifier board get a **Purifier runtime** total in hours beside it |
-| **Extra controls** | The optional functions the vendor app itself offers a control for — fresh air, electric heating, ambient light, energy saving, mould prevention, dry-out, heatstroke prevention, presence-based airflow — each a real switch or select, and only on units that *actually* have the function |
-| **Optional features** *(diagnostic, on/off)* | The remaining extra functions a unit reports having but the app offers no control for — a 10 °C keep-warm, an intelligent mode, humidification, the buzzer, the control-panel lock, PM2.5 and formaldehyde purification, and others — each read-only, and only the ones your unit *actually* has (a model over-declares; the ones it lacks are hidden) |
+| **Self-clean** | A **Start self-clean** button (a cycle runs to completion and can't be cancelled, so a button rather than a switch), a sensor for whether one is running, and a **Last self-clean** timestamp for "days since" reminders. The button greys out when a cycle can't be started — off, auto mode, sleep, or a fault |
+| **Filter** *(diagnostic, problem)* | The AC's own filter-change reminder: on when it decides the filter is due. Units that meter their purifier board also get **Purifier runtime** in hours |
+| **Extra controls** | The optional functions the vendor app offers a control for — fresh air, electric heating, ambient light, energy saving, mould prevention, dry-out, heatstroke prevention, presence-based airflow — as switches and selects, on units that have them |
+| **Optional features** *(diagnostic, on/off)* | Read-only for the functions the app offers no control for: 10 °C keep-warm, intelligent mode, humidification, the buzzer, the control-panel lock, PM2.5 and formaldehyde purification, and others your unit has |
 | **Presence airflow** *(diagnostic, enum)* | Where a presence-sensing unit is directing air: off / avoid / follow. Only on units with the sensor |
-| **Occupancy** *(diagnostic, enum)* | What the presence sensor currently sees: nobody, one person, or several. A unit whose sensor is absent says so in the report itself, and gets no entity |
-| **Fault** *(diagnostic, problem)* | Whether the unit is reporting a fault. Its attributes name the active faults with the service code the unit shows (E1, F4, …) — that is what an engineer will ask for |
-| **Last changed by** *(diagnostic)* | Whether the last change came from the handset, the unit's own panel, or the network. Useful as an automation trigger when someone picks up the remote |
-| **Model ID** *(diagnostic)* | The identifier that selects your unit's report layout. Shown shortened (it's 64 characters); the exact value is on the entity's `uplus_id` attribute — quote that in a bug report about a model that isn't decoded |
+| **Occupancy** *(diagnostic, enum)* | What the presence sensor sees: nobody, one person, or several. A unit without the sensor says so in its report, and gets no entity |
+| **Fault** *(diagnostic, problem)* | Whether the unit reports a fault. Its attributes name the active faults with the service code the unit shows (E1, F4, …) — what an engineer will ask for |
+| **Last changed by** *(diagnostic)* | Handset, the unit's own panel, or the network — an automation trigger for when someone picks up the remote |
+| **Model ID** *(diagnostic)* | The identifier that selects your unit's report layout, shown shortened; the exact 64-character value is on its `uplus_id` attribute. Quote it in a bug report about a model that isn't decoded |
 | **Cloud connection** *(diagnostic, on/off)* | Whether the AC itself can still reach Haier's servers — see [going fully cloud-independent](#going-fully-cloud-independent) |
 | **Local key** *(diagnostic, off by default)* | Your unit's key, so it rides along in HA backups |
 
-Which of these appear depends on your model — the integration only exposes controls it can actually
-drive on your unit, and only reports the features your unit genuinely has, rather than showing
-buttons or sensors that do nothing. A model tends to describe every function its product line might
-have; the ones your particular unit lacks are recognised and left out.
+Which appear depends on your model. The integration reads your unit's own model and offers only
+what that unit has, so a heat pump gets Heat and a cooling-only unit does not. A setting your AC
+ignores in its current mode keeps its control visible and showing the real state; the command is
+refused with the reason rather than the control being greyed out.
 
-**Your air conditioner describes itself, and the integration listens.** When you sign in it fetches
-your unit's own model: the modes and fan speeds it really has, the setpoint range it accepts, the
-positions its vanes can hold, and the rules saying which settings it ignores in which state. That is
-why a heat pump gets Heat and a cooling-only unit does not, without anyone maintaining a list.
-
-**Some settings only apply in some modes, and the integration knows which.** Air conditioners ignore
-certain settings in certain states — a unit in fan-only discards the temperature you set, and most
-of them ignore boost while dehumidifying. Your unit's own model says which.
-
-Those controls **stay visible and keep showing their real state**; what changes is that the command
-is refused, naming the reason — *"Eco does not accept that setting: not available in fan-only
-mode"*. They are not marked unavailable, because a setting your AC ignores in its current mode is
-normal operation, not a fault: flagging it made a working system look broken, and took the reading
-and its history away for as long as the mode lasted. The one thing that does disappear is the
-temperature on the thermostat card, which is the mechanism Home Assistant provides for exactly this
-— better than a box that accepts numbers the unit throws away. A unit reporting a fault refuses its
-settings the same way. Nothing is restricted while the AC is merely switched off — that is when you
-are most likely to be setting it up.
-
-The climate entity also carries **presets** for the three comfort modes — eco, sleep and boost — so
-they work from the thermostat card, from a voice assistant and from `climate.set_preset_mode`, not
-only from the switches. A preset is exclusive: choosing one clears the others in a single write to
-the AC. The switches and the Eco select are still there for the individual fields and for choosing
-which eco level you want.
-
-**Swing** comes as both controls Home Assistant offers. The four-way one (off / up-down / left-right
-/ both) moves the two vanes together and is unchanged; alongside it, `climate.set_swing_horizontal_mode`
-moves the left-right vane on its own, without touching the up-down one. Units whose left-right
-position we haven't confirmed get only the four-way control.
-
-Swinging and pointing are different things, though, and a climate entity can only express the first.
-Where your unit publishes the stops a vane can hold, a **Left-right vane** or **Up-down vane** select
-appears with those positions on it, so you can aim the airflow at one part of the room rather than
-sweeping it across the whole. Fixed and Auto are the same two states the swing control covers; the
-positions in between are the ones it cannot reach. Positions are numbered as your unit numbers
-them — "Position 1" is the first stop it offers. A unit that publishes only fixed and auto for an
-axis gets no select for it, since the swing control already says everything there is to say.
-
-Not everything the air conditioner reports becomes an entity — its **firmware version**, for
-instance, is a property of the unit rather than a reading that changes, so it appears on the device
-page and in a diagnostics download instead of as a sensor that would never move.
-
-### Energy monitoring
-
-Units that report their power draw get a **Power** sensor in watts. That is a live reading, so it
-records into Home Assistant's history and long-term statistics on its own — but the **Energy
-dashboard** needs a running total in kWh, which is a different thing.
-
-**Some units keep that total themselves**, and those get an **Energy** sensor you can add straight
-to the Energy dashboard under **Settings → Dashboards → Energy → Individual devices**. It is the
-figure the air conditioner's own meter keeps, so it survives restarts and outages and does not
-depend on how often Home Assistant polls. If your unit has one, use it and skip the rest of this
-section. If your Energy sensor reads *unknown*, your unit is one of the many that carries the
-register and never fills it in — read on.
-
-To build a total from the power reading instead, add a Riemann-sum integral helper over it:
-
-1. **Settings → Devices & services → Helpers → Create helper → Integral sensor**
-2. Pick your AC's **Power** sensor as the input
-3. Metric prefix **k** (kilo), time unit **hours** — that gives you kWh
-4. Method: **Trapezoidal** is the sensible default for a value that ramps
-
-Then add the resulting kWh sensor under **Settings → Dashboards → Energy → Individual devices**.
-
-Two things worth knowing before you trust the numbers:
-
-- **Check the helper's state class is `total_increasing`.** If the Energy dashboard will not offer
-  your new sensor, this is almost always why — a helper left on `total` can also produce spikes in
-  long-term statistics after a restart.
-- **It is an estimate, and so is the manufacturer's.** The figure comes from the unit's own current
-  measurement, and integrating a value sampled every 30 seconds cannot capture everything in between.
-  The vendor app's energy screens are estimates too — by their own wording they are "based on the
-  operation status data of devices", and they stop counting entirely while the unit is offline. If you
-  need billing-grade numbers, use a clamp meter or a metering plug.
-
-The integration never invents a kWh total. Where a unit keeps one, you get it as it is counted;
-where it does not, the helper above is the honest way to build one.
-
-### How often it polls
-
-The integration polls every **30 seconds** by default (minimum 10), and you can change it under the
-integration's **Configure** menu. One poll fetches everything in a single connection — status,
-faults and the power figures — because these units accept only one connection at a time.
-
-If you want a different rhythm than a fixed interval, Home Assistant has a documented way that works
-for any integration: open the integration's **⋮ → System options** and turn off *Enable polling for
-updates*, then drive it from an automation calling `homeassistant.update_entity` on whatever schedule
-or trigger you like. That is useful if, say, you only want frequent readings while the AC is running.
-
-Polling faster than 10 seconds is not offered on purpose: each cycle is a full connection to the
-unit, and the readings simply do not change fast enough to be worth it.
-
-The **Cloud connection** sensor is refreshed on its own slower cadence (about once a minute) inside
-the same cycle. It costs one small UDP exchange rather than a connection, and the underlying state
-only moves on a scale of minutes, so there is nothing to gain from asking more often.
-
-When you change a setting, the air conditioner confirms it on that same connection, so the thermostat
-card reflects the change at once instead of waiting for the next poll. The engineering readings —
-power, current, frequency, the coil and discharge temperatures, compressor and fan — are not part of
-that confirmation, so they keep the values from the most recent poll until the next one arrives. They
-are held for at most two minutes, and cleared immediately if you switch the unit on or off, because
-the figures for a running unit say nothing about one that has just stopped.
+➡️ **[How the controls behave](docs/behaviour.md)** — mode-dependent settings, presets, vane
+positions, **energy monitoring** and **polling**, in detail.
 
 ## Before you install
 
@@ -301,7 +188,7 @@ choose anything.
 > single most common setup failure, because Haier's server reports it as "account not registered",
 > which reads like a wrong password.
 
-**I already have this unit's local key.** The offline route, and it now asks for almost nothing.
+**I already have this unit's local key.** The offline route, which asks for almost nothing.
 Home Assistant looks for Haier appliances on your network, asks each one to identify itself, and
 lists what answered — you pick yours and paste the key. The address and the device ID come from the
 appliance.
@@ -317,18 +204,15 @@ that family agrees on are used instead, which still covers every fault name.
 
 ### Adding a second air conditioner
 
-Once one unit is set up through an account, that account is stored — so the next one costs you
-nothing. **Add Integration → Haismart** now offers a third choice, first in the list:
+The account from your first unit is stored, so the next one costs nothing. **Add Integration →
+Haismart** offers a third choice, first in the list: **use the Haier account already added** — no
+password, no key, no address. It lists the appliances on that account that are not set up yet; pick
+one. Your air conditioner appearing in Home Assistant's **Discovered** box leads to the same
+confirmation rather than a key prompt.
 
-**Use the Haier account already added.** No password, no key, no address. It lists the appliances on
-the account that are not set up yet; pick one and it is added. The same thing happens if your air
-conditioner appears in Home Assistant's **Discovered** box — the card leads to a confirmation rather
-than to a key prompt, because the key can simply be fetched.
-
-Signing in a second time also works, but there is no reason to: each sign-in registers a new
-terminal with Haier, and the credentials your first air conditioner is holding are the ones that get
-superseded. If you do sign in again, every appliance already set up on that account is updated with
-the new credentials, so none of them is left behind.
+Signing in a second time works but gains nothing: each sign-in registers a new terminal with Haier
+and supersedes the credentials your first air conditioner holds. Every appliance already set up on
+that account is updated with the new credentials, so none is left behind.
 
 ## Automation examples
 
@@ -361,9 +245,8 @@ automation:
 
 ## Going fully cloud-independent
 
-**The local key is the only thing that has to come from Haier — everything else ships with the
-integration or comes from the appliance.** That is worth stating plainly, because it is what makes
-the rest of this section work rather than being a compromise:
+**The local key is the only thing that has to come from Haier.** Everything else ships with the
+integration or comes from the appliance:
 
 | what setting up an appliance needs | where it comes from |
 |---|---|
@@ -375,10 +258,8 @@ the rest of this section work rather than being a compromise:
 | its temperatures, modes and telemetry | read from the appliance |
 | **its local key** | **Haier — once** |
 
-So the one remaining cloud dependency is that Haier's server can **rotate** the key, which the
-integration then re-fetches.
-
-If you'd rather your AC never phoned home at all:
+The one remaining cloud dependency is that Haier's server can **rotate** the key, which the
+integration re-fetches. If you'd rather your AC never phoned home at all:
 
 1. **Archive the key first.** Enable the *Local key* diagnostic sensor on the device page — its state
    is the key, and its attributes carry the host, device ID and version. It then rides along in your
@@ -420,6 +301,7 @@ fix, plus **what to include when you open an issue** so it can be answered in on
 | | |
 |---|---|
 | [`INSTALL.md`](INSTALL.md) | Installing, the cloud-independent setup, and the domains involved |
+| [`docs/behaviour.md`](docs/behaviour.md) | How the controls behave: mode-dependent settings, presets, vanes, energy, polling |
 | [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) | Every known failure and its fix, and what to include in an issue |
 | [`docs/new-model.md`](docs/new-model.md) | Getting an unsupported model working — what to send and why |
 | [`docs/report-layouts.md`](docs/report-layouts.md) | The report layouts, per family, and how a new one is identified |
@@ -444,18 +326,13 @@ Protocol details, if you want to dig in: [`PROTOCOL.md`](PROTOCOL.md).
 
 ## Credits
 
-The local uSS/HRDP protocol support here — the handshake, the AES/localKey biz-data layer, the status
-decode and the grSetDAC control path — was worked out from scratch for this project, for
-interoperability with air conditioners we own.
-
 Large parts of the multi-device support come from [**@darkdiamond**](https://github.com/darkdiamond),
-developed in a fork and merged back here with history intact: support for a second report layout
-(and graceful degradation on an unknown one), the digital-model enum derivation that makes any model
-self-describe, the real product code, **heat mode confirmed on heat-capable hardware**, the
-horizontal-swing axis, the sign-in country picker and recovery flows, localisation, and this repo's
-CI. Thank you.
+developed in a fork and merged back here with history intact: a second report layout and graceful
+degradation on an unknown one, the digital-model enum derivation that makes any model self-describe,
+the real product code, heat mode confirmed on heat-capable hardware, the horizontal-swing axis, the
+sign-in country picker and recovery flows, localisation, and this repo's CI. Thank you.
 
-Standing on the shoulders of earlier independent work on Haier's local protocols:
+Earlier independent work on Haier's local protocols:
 
 - [bstuff/haier-ac-remote](https://github.com/bstuff/haier-ac-remote) and
   [roeij/py-haier-ac-remote](https://github.com/roeij/py-haier-ac-remote) — early port-56800 work
@@ -471,21 +348,16 @@ And to everyone who opens an issue, reports a model, or stars the repo. ⭐
 
 ## How sign-in works
 
-Setup uses **the app's own sign-in flow with your own account**: you enter your Haier credentials,
-the integration signs a normal API request with the app-level identifiers (an `appId`/`appKey` pair
-that is the same for every install of the Haismart app), and Haier returns your AC's local key. There
-is no authentication bypass, no defeated protection and no per-user secret of anyone else's involved —
-the same interoperability model that [`banto6/haier`](https://github.com/banto6/haier) uses for
-Haier's mainland app and [pyhOn](https://github.com/Andre0512/pyhOn) /
-[`hon`](https://github.com/Andre0512/hon) use for the hOn platform.
+Setup uses the app's own sign-in flow with your own account: you enter your Haier credentials, the
+integration signs a normal API request with the app-level identifiers shared by every install of the
+Haismart app, and Haier returns your AC's local key. Nothing is bypassed, and no per-user secret of
+anyone else's is involved — the same interoperability model
+[`banto6/haier`](https://github.com/banto6/haier) uses for Haier's mainland app and
+[pyhOn](https://github.com/Andre0512/pyhOn) for the hOn platform.
 
-Those app-level identifiers ship as defaults so sign-in works out of the box. If you would rather
-supply your own, every one of them is overridable by environment variable —
-`HAISMART_APP_ID`, `HAISMART_APP_KEY`, `HAISMART_CLIENT_ID`, `HAISMART_APP_VERSION`.
-
-Everything after setup is local: the protocol the AC speaks on port 56800 was worked out for this
-project so a unit you own can be driven from your own network. That is the point of the exercise —
-interoperability with your own hardware, not access to anything that isn't yours.
+Those identifiers ship as defaults so sign-in works out of the box, and each is overridable by
+environment variable: `HAISMART_APP_ID`, `HAISMART_APP_KEY`, `HAISMART_CLIENT_ID`,
+`HAISMART_APP_VERSION`. Everything after setup is local, on port 56800.
 
 ## Disclaimer
 

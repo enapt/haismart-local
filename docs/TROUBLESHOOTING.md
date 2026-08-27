@@ -12,7 +12,7 @@ to include so the answer comes back in one round trip instead of four.
 
 Handled for you. If a poll fails, the integration looks the unit up by its device ID — which is the
 Wi-Fi module's MAC — finds where it has moved to, and updates itself to follow, usually within the
-same poll. A DHCP reservation is still tidy, but it is no longer something you have to set up.
+same poll. A DHCP reservation is tidy, but not something you have to set up.
 
 </details>
 
@@ -91,6 +91,29 @@ logger:
     haismart_extractor: debug
 ```
 
+Each failed read cycle then logs which cause it is, and the wording tells them apart:
+
+| Log says | Means |
+|---|---|
+| `nothing decrypted this cycle` | the key is wrong or stale, **or** the AC pushed no status at all |
+| `localKey is good … unrecognised frame` | the key is fine, but what the AC pushed is not a status report |
+
+An unrecognised report *length* does not appear here: that decodes partially and raises the repair
+notification instead, so it is already named for you. The log line carries the frame — device state
+only, no key — so it is safe to attach to an issue.
+
+</details>
+
+<details>
+<summary><b>An AC control appears under "Favourites" and I never put it there</b></summary>
+
+Nothing to do with this integration, and there is no star to un-click. Home Assistant's Home
+dashboard shows your pinned favourites and then fills the remaining slots with entities it predicts
+you use, so a control you adjusted recently can appear on its own. Manage it from **Edit home**,
+which has the favourites list and a toggle for the suggested entities. (Reported upstream at
+[home-assistant/frontend#29840](https://github.com/home-assistant/frontend/issues/29840), since the
+heading says "Favourites" either way.)
+
 </details>
 
 ## Why it keeps asking for a key
@@ -122,19 +145,14 @@ way, and this is the configuration the integration is built for.
 
 ### "This air conditioner is already being set up"
 
-**This means you are on an old version — update, and it goes away.**
+**Update — this does not happen on a current version.** Adding an appliance deliberately takes
+precedence over the **Discovered** card your air conditioner raises by announcing itself, and the
+card clears itself.
 
-Your air conditioner announces itself on the network, so Home Assistant raises a **Discovered** card
-for it on its own. On old versions that card counted as a setup already in progress and blocked you
-from starting another one for the same unit, so signing in got as far as listing your air
-conditioners and was then turned away — and the only thing you could finish was the card itself,
-which asks for a local key you have no way to obtain. Nothing is wrong with your account, and
-nothing appears in the log, because sign-in succeeds and the refusal happens before a key is ever
-requested.
-
-Adding an appliance deliberately now takes precedence and the card clears itself. If you cannot
-update yet, **restart Home Assistant** and go straight to **Add Integration → Haismart → sign in**
-before the unit announces itself again.
+If you cannot update yet, **restart Home Assistant** and go straight to **Add Integration → Haismart
+→ sign in** before the unit announces itself again. Nothing is wrong with your account: sign-in
+succeeds and the refusal happens before a key is ever requested, which is why nothing appears in the
+log.
 
 > Do **not** press *Ignore* on the Discovered card to get rid of it. That records the appliance as
 > one you have chosen not to add, and setup will then refuse with *"already configured"* instead,

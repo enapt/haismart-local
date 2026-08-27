@@ -7,18 +7,17 @@ and no protocol knowledge**, just three captures from you.
 
 ## First: check whether it already reads
 
-Since **v0.35.0** an air conditioner whose exact layout we have never seen can often still be read,
-by matching it to the published models closest to it and checking the result against what the unit
-actually sent. Since **v0.52.0** that no longer needs a close match at all: a unit that resembles
-nothing published is tried against every layout offset in use, and its own report decides which one
-fits. Since **v0.53.0** it does not need to publish a group-set list either — without one it is read
+An air conditioner whose exact layout has never been seen can often still be read: it is matched to
+the published models closest to it and the result checked against what the unit actually sent. A unit
+that resembles nothing published is tried against every layout offset in use, and its own report
+decides which one fits. It does not need to publish a group-set list either — without one it is read
 and simply not commanded.
 
 So before capturing anything, look at what you have:
 
-- **Readings look right, and you can control it.** Nothing to do — your model is recognised. (Since
-  v0.48.0 this includes most units on the matched-relatives path: the core controls come from your
-  product's own published list of group-set settings, no capture required.)
+- **Readings look right, and you can control it.** Nothing to do — your model is recognised. This
+  includes most units on the matched-relatives path: the core controls come from your product's own
+  published list of group-set settings, no capture required.
 - **Readings look right, but the thermostat and switches won't change anything.** Your product is one
   of the few that publishes no group-set list, so commands stay withheld — the safe default, since a
   command writes a whole block of settings at once. **The captures below are exactly what turns your
@@ -107,24 +106,22 @@ and saying so in the report saves a round-trip. With a real product code the res
 published description — its rules, its fault list, and which of its features your particular unit
 actually has — can be looked up directly.
 
-**A product code an older release could not look up was not necessarily unknown to the
-manufacturer.** Its catalogue answers per **region**, scoped by the country code your account signed
+**The manufacturer's catalogue answers per region**, scoped by the country code your account signed
 in with, and the regions publish very different sets — one lists 171 air conditioners, another 242,
-Japan's lists 30 — while a region it does not recognise gets the complete set. Every product list
-shipped here before **v0.38.0** was one region's 171, so an appliance published elsewhere could not
-be named at all.
+Japan's lists 30 — while a region it does not recognise gets the complete set. It is filtered by
+product **category** as well, which is what hid the window air conditioners; every air-conditioner
+category is swept.
 
-The shipped catalogue now covers **every published air conditioner: 1,451 product codes covering
-1,416 model numbers**, collapsing to 26 hardware families — so the count is catalogue entries rather
-than distinct machines. (The v0.38.0 listing was later found to be filtered by product category as
-well as by region, which had hidden the window air conditioners; every air-conditioner category now
-ships. 21 model numbers are carried by more than one product, and where those disagree about their
-rules the integration declines to guess between them and falls back to what their family agrees on.) Of the 100 countries the setup
+The shipped catalogue covers **every published air conditioner: 1,451 product codes covering 1,416
+model numbers**, collapsing to 26 hardware families — so the count is catalogue entries rather than
+distinct machines. (21 model numbers are carried by more than one product, and where those disagree
+about their rules the integration declines to guess between them and falls back to what their family
+agrees on.) Of the 100 countries the setup
 form offers, 94 publish at least one air conditioner and six publish none — Myanmar, Nigeria, Kenya,
 Cambodia, Laos and Nepal — where the model shortlist simply is not narrowed by region.
 
-So if an older release could not name your appliance, retry on a current one before assuming the
-model is undocumented.
+So before assuming your model is undocumented, make sure you are on a current release — the shipped
+catalogue has grown a great deal, and a name it could not find once it very likely finds now.
 
 The file carries one more thing that saves a round-trip. Once your unit's layout **is** recognised,
 diagnostics reads **every attribute your air conditioner declares** — the settings with no entity as

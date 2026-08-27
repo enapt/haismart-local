@@ -163,38 +163,64 @@ model declares both. But their **position** is not determined (the models list t
 unordered region), and four identical fields with identical encodings are symmetric — no published
 description can separate them; it would take a reading in which they differ, and nothing published
 contains one. So this is parked.
-⚠️ **Its old reason no longer holds and is withdrawn (2026-08-25):** it used to end "the central-air
-family these belong to is now in the shipped list with identities and rules, but **none has a placed
-layout** (item 11), so leaving it parked still costs nothing". Those cabinets now read *and* command
-(items 11 and 42), so the cost is real, if small — a unit with four-sided vanes gets every other
-control and no vane control. It stays parked only because the four fields are genuinely
-indistinguishable in published data; **one report from a unit with the four vanes in four different
-positions separates them at once**, and that is now worth asking for.
 
-### 19. The still-unpositioned settings — recounted, and mostly not controls
+⚠️ **Parked is not free.** Those cabinets read *and* command (items 11 and 42), so a unit with
+four-sided vanes gets every other control and no vane control. It stays parked only because the four
+fields are genuinely indistinguishable in published data — **one report from a unit with the four
+vanes in four different positions separates them at once**, and that is worth asking for.
 
-Counted per family against the description each actually uses, the compact family is complete and the
-central-air family has six unplaced (item 13 plus two supply readings). The wall/floor family shows
-~101 unplaced attributes, but **that number is not the missing-control gap.** About 49 are not
-controls at all — rental/shared-AC management, energy/power telemetry (mostly already surfaced as the
-power and energy sensors; only niche solar/storage registers are genuinely unsurfaced), query-command
-pseudo-attributes, system/config/identity fields, and RGB scenario-lighting effects on a single
-product. That leaves **~52 genuine AC control/feature attributes**, and most of *those* are already
-handled (`generatorMode` is eco; the dual-airflow set is blocked on read-back; the timer trio on
-position; `mouldProof`/`drying`/`preventHeatstroke` shipped). **Quote the filtered figure, not 101.**
+### 19. The still-unpositioned settings — counted per lineage, and classified by *why*
 
-What settles any single one is unchanged: a report from a unit that actually has the feature, taken
-with the feature in a known state — the layout prober already scores against written-down states.
-Nothing is waiting on this and nothing can go wrong because of it: none is surfaced, so none can be
-mis-read, and a unit missing one is otherwise fully supported.
+⚠️ **Count per lineage, never against one map.** Positions do not transfer between lineages, and the
+compact family names its fields by Chinese label rather than by the catalogue's English name — so an
+English-name membership test is structurally blind to it and reports its whole attribute set as
+missing. That mistake has been made repeatedly; it is what the per-lineage table below exists to
+prevent.
+
+| lineage | products | attribute slots placed |
+|---|---|---|
+| compact-12 | 482 | **95.9 %** — 27 of the 28 attributes its products declare |
+| shared frame (wall/floor) | 754 | 80.0 % |
+| central `0d12` | 187 | 87.4 % |
+| central `0d21` | 20 | 81.1 % |
+| window / media | 8 | ~91 % |
+| **total** | **1,451** | **83.9 %** |
+
+**The raw slot count is not the missing-control gap.** Classified, what remains is:
+
+| why it is missing | slots | note |
+|---|---|---|
+| **past the last anchor** — no ordering information exists | 4,112 | only a capture places these |
+| **bracketed, but the run does not close** | ~1,350 | see below — not solvable from published data |
+| **derived, not yet surfaced** | 833 | five positions, run closed with no free parameter |
+| **not in any write order** | 574 | read-only or cloud-side by construction |
+| **compact-12 `echoStatus`** | 456 | its profile carries no record at all |
+
+Much of the "not in any write order" bucket is **not a wire field in the first place**: the
+manufacturer's own AC service holds per-appliance cloud records for self-learning, filter runtime,
+sleep curves, countdown timers and power history. A feature computed and stored in the cloud cannot
+appear in a byte map, and its absence from one is not a gap.
+
+⚠️ **`echoStatus` is corroborated absent, not merely unfound**: the compact profile has no record for
+it, the hardware silently discards a write to it on the classic family, and the vendor's own control
+panel renders no widget for it anywhere. Three independent sources agree.
+
+What settles any single one of the rest is unchanged: a report from a unit that actually has the
+feature, taken with the feature in a known state — the layout prober scores against written-down
+states. Nothing is waiting on this and nothing can go wrong because of it: none is surfaced, so none
+can be mis-read, and a unit missing one is otherwise fully supported.
 
 ### 31. The compact family's three unproven registers
 
-That family's 117-byte report is **decoded in full** — thirty-eight positioned fields, up from the
-seven once read, every original field still exactly where the published description says. Three of the
-additions are held in the decode (visible in diagnostics) rather than promoted to entities, because
-position is settled and *meaning* is not, checked against the three real reports from the issue #4
-unit:
+That family's 117-byte report is **decoded in full** — thirty-eight positioned fields, every one
+exactly where the published description says, and **27 of the 28 attributes its products declare are
+placed** (the 28th is `echoStatus`, for which the description carries no record at all).
+
+★ **The three registers below are precisely the ones the catalogue names nothing for.** Every other
+position in that description pairs with a declared attribute; these three do not, so their meaning
+cannot be read off the models and has to come from a reading. They are held in the decode (visible in
+diagnostics) rather than promoted to entities, checked against the three real reports from the issue
+#4 unit:
 
 * **input power** (word 3, low + high byte) — live (0 off, 15 cooling, 0 fan-only), but 15 is not
   watts while cooling, so the unit cannot be taken at face value. One reporter reading their meter or
@@ -220,19 +246,29 @@ The panel control surface **shipped** across every group-set family, and across 
 via its per-attribute commands. What remains open is the residue that no source can place or read:
 
 * **five append-region booleans** — `constDehumidificationStatus`, `preventSupercooling`,
-  `pvPowerSavingMode`, `uvSterilizationSwitch`, `windAvoidance`. ⚠️ **Re-attacked 2026-08-25 against
-  every published model, and the result is four-and-a-bit rather than five.** With each setting's
-  width taken from its own published value set instead of guessed, **`constDehumidificationStatus`
-  derives a position, and the same position on all 159 products that publish it** — together with
-  four neighbours that fall out of the same run. **Not shipped**, because the arithmetic only closes
-  once one neighbouring setting is taken to be one bit wide rather than two; that is strongly
-  precedented (exactly three settings in the whole catalogue publish that value pattern, and one of
-  them is already recorded as one bit) but it is inferred, and a wrong write position fails silently.
-  One report from a unit that has this setting confirms or refutes it outright.
-  The other four stay unplaced, and now with a stated reason each: two sit **past the last setting the
-  frame pins**, so nothing bounds them from above and no ordering information ever will; two sit in a
-  run with **seventeen spare bits**, where the frame reserves space the order cannot locate. Those
-  need a capture, not more analysis.
+  `pvPowerSavingMode`, `uvSterilizationSwitch`, `windAvoidance`.
+
+  ✅ **`constDehumidificationStatus` is now derived with no free parameter**, along with the four
+  neighbours that share its run, at the same positions on all **159** products that publish it. The
+  run is bounded by a confirmed position at each end and exactly one tiling fits it.
+
+  The step that used to be an inference is now a measurement. The catalogue publishes only each
+  setting's *standard* codes, while the wire carries the manufacturer's *internal* codes, and the
+  bundled descriptions publish both — so the relationship between them can be counted rather than
+  assumed. Counted: a code set beginning at zero keeps its codes in **1,082 of 1,082** cases, and of
+  every setting whose codes are the pair `{1,2}`, **235 of 249 occupy one bit**. The neighbour in
+  question publishes exactly that pair, so its width is settled by a population rather than by
+  analogy to a single other field.
+
+  ⚠️ **Still not surfaced**, for two reasons that are about safety rather than evidence: these
+  positions are **reused between families** (below), so anything shipped must be family-gated; and
+  two of the five are capability flags — "does this unit *have* the function" — which are status,
+  never controls. A live write from a unit that has the setting remains the confirmation, as for any
+  control.
+
+  The other three stay unplaced, with a stated reason each: two sit **past the last setting the frame
+  pins**, so nothing bounds them from above and no ordering information ever will; one sits in a run
+  with spare bits the order cannot locate. Those need a capture, not more analysis.
 
   ⚠️ **Their positions are REUSED between product families** — one family keeps mould-proof, drying
   and heatstroke-prevention where another keeps humidity-control, display-mode and balanced-wind.
@@ -274,7 +310,7 @@ units**) whose order has essentially **zero rank-correlation with the frame** (�
 layout, or a list published in some other discipline. Nothing anchors it, so nothing can be derived
 from it.
 
-Until v0.51.0 these products were offered the full frame-position control set; every one of those
+These products were once offered the full frame-position control set; every one of those
 writes was a guess with substantial counter-evidence, and a guessed group-set runs wrong functions
 silently rather than failing. They are now **read-only** (their report decode is unaffected — report
 layouts are verified against the report itself, and the read frame is not the write frame). What
@@ -290,17 +326,37 @@ The same audit showed extended-46's structure is not unique to it: **every twin-
 families, 161 products) lists the appliance's own `windDirectionVertical`, `windDirectionHorizontal`
 and `windSpeed` in the appended tail of its order, past the words the shared frame reaches. For
 extended-46 the packing arithmetic plus capture-confirmed read-back settled the vane and fan at
-group-set words 6/7 (item 29). The same derivation could in principle restore fan and swing on the
-other five families' ~117 products — but each family's tail packs differently and **no report from
-any of them has ever been seen**, so there is no read-back and no verification. Blocked on a first
-report per family; until then those controls are correctly absent (and the horizontal vane, which
-the frame position would have written into tower/auxiliary bits, is refused by the order gate —
-item 40 below).
+group-set words 6/7 (item 29).
+
+✅ **Mostly resolved — 109 of those products now have swing and fan speed.** Two of the families
+publish an order that is **byte-identical to extended-46's through both anchor positions**, and every
+attribute preceding them in the tail publishes an identical value set, so the packing that puts the
+anchors on those bits is *the same packing*. The positions are therefore extended-46's own, copied
+rather than re-derived, and they are carried in a family-keyed table
+(`family_write.TAIL_POSITIONS`). Measured over the whole catalogue: **109 products gain exactly two
+controls, none loses one and no position moves.**
+
+⚠️ Two things this did **not** fix, and both are honest residue:
+
+* **`windDirectionHorizontal` is still absent on all of them.** It is in the tail too, but
+  extended-46 has no confirmed position for it either, so there was nothing to copy. Worse, it is
+  now known to be *underivable*: between the two confirmed anchors the order leaves a **4-bit run**
+  for `windDirectionHorizontal` (irreducibly 3 bits) and `oxgyenSupplyMode` (2 bits, because its
+  published code set starts at 0 and such sets keep their codes in 1,082 of 1,082 measured cases).
+  Five bits into four. The residue is a reserved bit or an attribute the frame does not carry, and
+  **published data cannot tell those apart.** One capture settles it; nothing else will.
+* **8 products still lose all three controls.** One family inserts `waterWindSpeed` before the
+  anchors so its positions shift by that field's width, and two `0d21` families diverge earlier
+  still. Each needs its own solve or one report.
+
+⚠️ Rule 8 residue: no unit of the two newly-reached families has been commanded. The evidence is
+published order agreement plus a *sibling's* capture, which is stronger than what shipped for
+related layouts — but it is not this family's own hardware.
 ⚠️ **Checked 2026-08-25:** those same public trackers carry no report from a twin-tower cabinet
 either. Worth re-checking whenever one of those projects gains a dual-airflow user — that is exactly
 how item 42 was settled.
 
-### 41. The fan speeds — shipped v0.54.0; Boost alone is still withheld
+### 41. The fan speeds — named from the vendor's own wording; Boost alone is withheld
 
 Issue #11 exposed the shape of a defect worth stating once: the wire map's mode and fan **code sets
 are the identity** — on every family that is the published map at a displacement, the wire value *is*
@@ -346,7 +402,7 @@ a code table.
 * **`健康除湿` is display-only**, like the window units' ECO: it shows as Dry and is not separately
   selectable, because Home Assistant has no mode for it. Reported correctly, which it was not before.
 
-### 42. The `0d12` central cabinets — shipped v0.55.0; the two vane commands are still withheld
+### 42. The `0d12` central cabinets — controlled; the two vane commands are withheld
 
 **187 products** publish **no group command at all**. Every attribute is marked individually
 settable, and their firmware **refuses the group-set frame outright** — so the group set is not
@@ -366,9 +422,9 @@ the report so it shows real state rather than an echo of the request.
   on and trails when switching off, so a unit is configured while it runs and stopped only after the
   rest has been applied. ⚠️ That order is a choice, not a measurement; it is fixed so it is at least
   predictable.
-* **Reads were already right** from v0.53.0, and are now corroborated against reports from an
-  appliance of this exact identifier: setpoint, mode, fan and power all land where the published map
-  puts them. Anyone seeing wrong sensor values on one of these is on ≤ v0.52.x and needs to update.
+* **Reads are corroborated** against reports from an appliance of this exact identifier: setpoint,
+  mode, fan and power all land where the published map puts them. Wrong sensor values on one of
+  these means an old version — update.
 
 ⚠️ **The two vane commands are deliberately withheld.** This generation defines one for each axis,
 but no cabinet of this class has been seen to accept either — the appliance the rest were read from
@@ -530,7 +586,7 @@ Kept because each looks like something to "fix" until you know why it is the way
 
 ### The layout prober is told what the captures were
 
-Since v0.35.0 the prober is the *second* thing to run: an unfamiliar report is first matched against
+The prober is the *second* thing to run: an unfamiliar report is first matched against
 the offsets its nearest published relatives use (item 23), and the prober handles only what survives
 that. Its output is a shortlist to verify, not a result. `probe_layout` scores against
 `stated=[StatedState(...)]` — what each capture was known to be — as heavily as the device's published
@@ -564,12 +620,12 @@ only availability was, and that is now a refusal instead.
 **The observation that started it, which stands:** `switch.py` creates the five core toggles
 (strong/quiet/health/sleep/lamp) gated only by `supports_field`, which never consults `invisible` —
 while the panel controls ten lines below it *do*. `button.py`, `sensor.py` and `climate.py` share the
-ungated pattern. On paper that is the v0.32.0 phantom-feature bug on the control side.
+ungated pattern. On paper that is the phantom-feature bug on the control side.
 
 **The counter-example that closes it.** Gating `supports_field` on an explicit `invisible` mark
 immediately withdrew **left-right swing** from the owner's own unit. Its product `AAC1UKZ01` marks
 **`windDirectionHorizontal` invisible** (one of 25 invisible attributes of 39) — yet that control was
-**shipped in v0.24.0 and live-verified on that exact hardware**, tracking the handset through
+**shipped and live-verified on that exact hardware**, tracking the handset through
 auto → position_4 → fixed.
 
 ⇒ **The vendor's `invisible` flag says the unit has no horizontal vane. The unit has one.**
@@ -591,7 +647,7 @@ have a concrete case of it firing wrongly. **Leave the controls ungated.**
   invisible and absent from it. Order describes packing, `invisible` describes hardware. Never
   substitute one for the other (this is why the F6 order gate filters no absent hardware, by design).
 * **`invisible` is unreliable per-attribute**, at least for `windDirectionHorizontal` on `AAC1UKZ01`.
-  ⚠️ That should temper how far the v0.32.0 optional-feature gate is trusted, though the risk there
+  ⚠️ That should temper how far the optional-feature gate is trusted, though the risk there
   (a hidden sensor) is mild and no case of it is known.
 * The tree was left unchanged and the suite stayed green.
 
@@ -603,7 +659,7 @@ git history and, where noted, in the canonical docs and the code.
 **4. `echoStatus` vs `selfCleaningStatus` — the write contract.** Settled both ways. `echoStatus`
 stays read-only: a live self-verifying write is *accepted* but the bit never lands, and the app's own
 control panel renders no widget for it either. `selfCleaningStatus` is honoured (a live write started
-a cycle; the panel showed **CL**) and ships since v0.34.0 as a Start-self-clean button plus a
+a cycle; the panel showed **CL**) and ships as a Start-self-clean button plus a
 Last-self-clean timestamp. The rule this leaves: the model gives the *candidate* list of controls, a
 live self-verifying write gives the *verdict*, and a panel widget predicts that verdict for free — the
 four-step gate (`declares ∧ ¬invisible ∧ panel widget ∧ live write`) `panel.py` now implements.
@@ -616,8 +672,8 @@ disagrees.
 **11. The central-air category — settled across all three of its classes.** It is **235 published
 products in three architectures**, not one family: **28** compact (`8080`, a registered family that
 has read and controlled since its map shipped), **20** (`0d21`) publishing the ordinary shared frame
-and reachable on first report since v0.52.0, and **187** (`0d12`) publishing no group command at all
-— read since v0.53.0, controlled since v0.55.0 (item 42). Their read layout is the shared map at −19,
+and reachable on first report, and **187** (`0d12`) publishing no group command at all
+— read, and controlled a setting at a time (item 42). Their read layout is the shared map at −19,
 and it is corroborated against real reports on four anchors rather than inferred from report length.
 ⚠️ **Never say these units are "cloud-only".** That is a fact about the vendor's app, whose control
 API picks a channel per device and falls back to the cloud for one it holds no local byte map for.
@@ -682,21 +738,21 @@ poll — worst on a problem sensor, where "unknown" reads as the check having st
 times, once per reading; the test now guards the rule, not the three: whatever a poll publishes beyond
 plain status, the reply must too, by re-reading or by holding for a bounded time.
 
-**23. Layouts resolved from the nearest published relatives — shipped (v0.35.0).** An unfamiliar
+**23. Layouts resolved from the nearest published relatives — shipped.** An unfamiliar
 report is decoded at the offsets its close relatives use, keeping the one the report agrees with; the
 report is the only tie-breaker (rules key on product code, declared attributes describe feature set
 not layout, and both were tried and failed). Three refusals were deliberate; the read-only one was
 lifted by item 30. ⚠️ Assumes item 16's stronger claim; not yet exercised against a genuinely unknown
 appliance (both reference units are classic).
 
-**24. A setting the unit ignores is not a fault — fixed (v0.36.0).** A control discarded in the
-current mode used to go *unavailable*, which meant "state cannot be read" for states that read
-perfectly, hid the reason, and lost the history. It now stays visible and readable, and the *command*
-is refused with the model's own words. The refusal lives on the entity, not in `async_send_control`
+**24. A setting the unit ignores is not a fault — fixed.** A control discarded in the current mode
+must not go *unavailable*: that means "state cannot be read" for states that read perfectly, hides
+the reason, and loses the history. It stays visible and readable, and the *command* is refused with
+the model's own words. The refusal lives on the entity, not in `async_send_control`
 (a model marks the mode unwritable while off, and turning on *is* a mode write). The self-clean button
 is the deliberate exception — an action, not a state.
 
-**25. An outdoor reading that is not a measurement — shipped (v0.39.0).** The outdoor probe is dormant
+**25. An outdoor reading that is not a measurement — shipped.** The outdoor probe is dormant
 when the unit is off, so the board repeats its last value; published as a MEASUREMENT it dragged
 long-term statistics. Now `unknown` after 30 minutes off **and** unchanged — both required. Not a
 plausibility band (item 21): the value is correctly decoded and *knowably* unrefreshed, so the bound
@@ -717,7 +773,7 @@ the manufacturer's record, none disagreeing). Two things stay explicit on purpos
 block's own tower vane/fan (from captures), and the half-degree setpoint (position from the map,
 scaling from a reading — a test asserts the departure).
 
-**28. Fan speed and the up-down vane on the 209-byte family — settled (v0.47.0).** Both ship; w25/w26
+**28. Fan speed and the up-down vane on the 209-byte family — settled.** Both ship; w25/w26
 are the **appliance's own** vane and fan (a diagnostics file's cloud record listed the towers
 separately as 3/5 and 0/0, refuting the per-tower explanation they were withdrawn under). ★ Rule 14:
 a fact that is overturned takes its dependents with it — a `digital_model` frozen at onboarding and a
@@ -739,9 +795,8 @@ Safe without a capture because the group-set is one frame across every published
 report base word is `20 + the layout's own offset` (a definition, not a fitted constant), and *which*
 settings a unit has comes from its own published group-set list; families reusing a shared position
 have those controls refused (item 32). A layout that publishes no list stays read-only — the safe
-default. ⚠️ *"Nothing left read-only" was true as shipped and is no longer:* the v0.51.0 audit found
-two families whose published order refutes the frame outright, and they went back to read-only on
-that evidence.
+default. ⚠️ **Two families are read-only on positive evidence**, not for want of data: their
+published order refutes the frame outright (item 38).
 
 ★ **Figures — 1,451 = 1,421 read + write · 30 read-only · 0 without a layout.** Every published
 product can resolve a layout; none is refused for want of published data. The read-only 30 are the
@@ -755,9 +810,9 @@ and "1,236 products" everywhere either appears.
 | no group command at all — written one parameter at a time (item 42) | 187 | yes |
 | resolved, but the order refutes the frame | 30 | no |
 
-⚠️ **The 187 were read-only until v0.55.0**, on the reasoning that "control needs a frame and neither
-has a usable one". That was right about the frame and wrong about control: these cabinets do not use
-a frame at all, and the mechanism they do use needs no order and no packing. A gate written for one
+⚠️ **"Control needs a frame, and these have no usable one" is a tempting and wrong reading.** It is
+right about the frame and wrong about control: these cabinets do not use a frame at all, and the
+mechanism they do use needs no order and no packing. A gate written for one
 mechanism had been quietly deciding for a class that uses another.
 
 ⚠️ "Can resolve a layout" is not "will decode": the report still has to agree with exactly one
@@ -793,21 +848,16 @@ class that the app publishes no panel for either — out of scope, not a hole" �
 withdrawn (2026-08-23).** The 215 are **two** central-air classes plus eight others: `0d12` (187, no
 group command — item 11), `0d21` (**20, which publish the ordinary shared frame**), four wall and
 four window. **Twenty-eight of the 215 therefore publish a frame**, are corroborated against it, and
-became reachable on first report in **v0.52.0**; only the 187 are genuinely without published
-positions. Nor is the *category* out of scope: 28 further central-air products are a registered
-family that has read and controlled since the compact map shipped. The similarity threshold still
-must not be lowered to reach any of them (they differ inside the appliance-type field) — v0.52.0
-measures the displacement from the report instead.
+are reachable on first report; only the 187 are genuinely without published positions. Nor is the
+*category* out of scope: 28 further central-air products are a registered family that reads and
+controls. The similarity threshold must **not** be lowered to reach any of them (they differ inside
+the appliance-type field) — the displacement is measured from the report instead.
 
-★ **And in v0.53.0 the 187 are read too.** They were still being refused a decode because they
-publish no group-set order — a gate that turned out to be evidence about the *write* frame standing
-in for evidence about the *read* frame (Rule 22). They now resolve from their own report like any
-other appliance and are **read-only**, control being the thing that actually needs a frame. So the
-honest current statement is: **1,451 = 1,421 read + write · 30 read-only · 0 refused**.
-⚠️ *Superseded here:* this used to end "the open question for the 187 is no longer *will we read
-them* but *will one of their owners appear*". Both halves are answered — they read correctly from
-v0.53.0 and they are controllable from v0.55.0 (item 42), neither of which needed an owner to
-appear.
+★ **The 187 are read as well.** Requiring a group-set order before decoding them was evidence about
+the *write* frame standing in for evidence about the *read* frame (Rule 22). They resolve from their
+own report like any other appliance, and they are controlled a setting at a time (item 42). So the
+current statement is: **1,451 = 1,421 read + write · 30 read-only · 0 refused** — and neither half
+needed an owner to appear.
 
 ⚠️ "Placed offline" is not "will work": an unrecognised identifier falls back to report length, so
 the set that works on first contact is larger; and a resolved layout still needs its report to agree
@@ -822,7 +872,7 @@ table's own confirmed offsets). The outdoor coil/air-intake/defrost probes stay 
 zero-for-life on the reference hardware, so as entities they would read `unknown` forever (a live
 deploy caught and withdrew six such dead entities).
 
-**40. A frame write must be corroborated by the product's own published order — shipped (v0.51.0).**
+**40. A frame write must be corroborated by the product's own published order — shipped.**
 The order is positional, so it can contradict the frame for a setting under its *own name* — a
 departure the bit-reuse table (item 32) is structurally blind to, because that table only records
 positions where a *different* attribute was placed. The audit that found it ran every one of the
@@ -835,7 +885,7 @@ drops the moved names (the appended-tail shape), or refutes the frame outright a
 that introduces a new departure fails the suite instead of quietly being offered frame positions its
 own contract contradicts.
 
-**44. A refused command was reported as SUCCESS — fixed in v0.54.1.** Every op connection opens with
+**44. A refused command was reported as SUCCESS — fixed.** Every op connection opens with
 the unit's routine status push (frameType `0x06`) and alarm push (`0x04`) *before* the answer to our
 own frame arrives, so a refusal always travels alongside a perfectly decodable status blob. Taking
 that blob as "the unit answered with its updated state" reported the refusal as success and displayed

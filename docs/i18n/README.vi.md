@@ -33,7 +33,7 @@ tên là gì, và điều khiển nào bị bỏ qua trong trạng thái nào �
 ở đây từng thấy. Nếu tài khoản của bạn cũng mô tả được máy đó, cả hai nguồn được kết hợp chứ không
 chọn một.
 
-> Trước **v0.38.0** con số này là 171: danh sách đó chỉ thuộc một khu vực, nên máy điều hòa công bố ở nước khác không thể nhận dạng được. Nếu bản cũ không nhận ra thiết bị của bạn, bản này rất có thể nhận ra.
+> Danh mục của nhà sản xuất được lọc theo **khu vực** và theo **danh mục sản phẩm** — đó là lý do máy điều hòa cửa sổ dễ bị bỏ sót. Ở đây có **mọi danh mục điều hòa từ mọi khu vực**.
 
 ## Bạn nhận được gì
 

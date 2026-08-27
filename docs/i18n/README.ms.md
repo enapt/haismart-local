@@ -36,7 +36,7 @@ model, nama bagi setiap kerosakan, dan kawalan mana yang diabaikan dalam keadaan
 menyediakan dirinya sendiri untuk unit yang belum pernah kami lihat. Jika akaun anda turut boleh
 memerihalkan unit itu, kedua-duanya digabungkan, bukan salah satu dipilih.
 
-> Sebelum **v0.38.0** angkanya ialah 171: senarai itu hanya untuk satu wilayah, jadi penghawa dingin yang diterbitkan di negara lain tidak dapat dikenali. Jika versi lama gagal mengenali unit anda, versi ini berkemungkinan besar berjaya.
+> Katalog pengeluar ditapis mengikut wilayah **dan** mengikut kategori produk — itulah sebabnya penghawa dingin tingkap mudah tertinggal. Di sini **setiap kategori penghawa dingin daripada setiap wilayah** disertakan.
 
 ## Apa yang anda dapat
 

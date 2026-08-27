@@ -23,7 +23,7 @@ of the partial "unknown layout" path, so a wrong family is never published as fa
 
 ## When no family claims the report
 
-Since **v0.35.0** there is a step between "no family matches" and the partial decode.
+There is a step between "no family matches" and the partial decode.
 
 Every published model is the same attribute map at one of a small number of whole-word offsets, and a
 Model ID shares its leading characters with its close relatives. So the published models most like an
@@ -45,7 +45,7 @@ Three limits, all deliberate:
   command's packing (identical across the published air-conditioner descriptions), the product's own
   published list of which settings its group-set carries, and the per-family refusals for positions a
   family gives to a different attribute. A product publishing no list gets no frame-path control —
-  though since v0.55.0 that no longer means read-only, because a class with per-attribute commands is
+  though that does not mean read-only, because a class with per-attribute commands is
   commanded without a frame at all.
 - **Core readings only.** Power, setpoint, room and outdoor temperature, mode, fan, vertical swing,
   fault code and who last changed the unit. The further attributes a device declares stay unplaced
@@ -54,16 +54,14 @@ Three limits, all deliberate:
   shorter report — every field absent, nothing implausible because nothing is there — is rejected
   rather than believed.
 
-### When the unit resembles nothing published (v0.52.0, corrected in v0.53.0)
+### When the unit resembles nothing published
 
-Until v0.52.0, a Model ID resembling nothing published produced **no candidates at all**, and the
-unit fell through to the partial decode. That is what the window air conditioners hit (issue #11):
-their identifiers diverge at character 16, *inside* the device type, which is exactly the boundary
-the relatedness threshold exists to refuse — so they had no relative to inherit an offset from and
-reported "no decodable status" despite being an ordinary appliance.
+Some appliances resemble no published model closely enough to inherit an offset — the window air
+conditioners are the case in point: their identifiers diverge at character 16, *inside* the device
+type, which is exactly the boundary the relatedness threshold exists to refuse.
 
 They do not need a relative. The offsets are only two, and the shortlist was never the evidence —
-the report was. So a unit that **names itself** is now tried against every offset a published model
+the report is. So a unit that **names itself** is tried against every offset a published model
 reports at, and because that shortlist carries no ranking, **the report has to single one offset
 out**. Two that both fit is an unresolved question, not a coin toss, and falls back to the partial
 decode. In practice they rarely both fit — the offsets are nineteen words apart, so on a short
@@ -81,20 +79,19 @@ block and, unlike that path, a verdict.
 
 #### Reading and commanding are gated separately
 
-⚠️ v0.52.0 also required the product to publish a **group-set order** before it would read a report
-this way. That was withdrawn in v0.53.0, because it confused the two frames this page is otherwise
-careful about: **a group-set order describes the write frame**, and the read frame is a different
-frame. It says nothing about where a report's fields sit, and requiring it excluded 187 central-air
-cabinets whose attributes this map already places.
+Reading is gated on the **report**; a group-set order is not consulted for it. **A group-set order
+describes the write frame**, and the read frame is a different frame — it says nothing about where a
+report's fields sit. (Conflating the two would exclude the 187 central-air cabinets whose attributes
+this map already places.)
 
 The order gates **control through the published frame**: commanding a layout that way needs the
 product's own list of which settings its group-set carries.
 
-⚠️ **Until v0.55.0 that made a product publishing no order read-only, and this page said so. It is no
-longer true.** The frame is not the only way to command an appliance. A device class that publishes
-no group command *and* whose firmware refuses that frame is commanded **one setting at a time** — one
-command names the attribute, the value travels in the payload, and no order and no packing are
-involved. The 187 central-air cabinets are exactly that case, and they control from v0.55.0.
+Publishing no order does not make a product read-only, because the frame is not the only way to
+command an appliance. A device class that publishes no group command *and* whose firmware refuses
+that frame is commanded **one setting at a time** — one command names the attribute, the value
+travels in the payload, and no order and no packing are involved. The 187 central-air cabinets are
+exactly that case.
 
 So, for a report from an appliance no family claims:
 
@@ -113,7 +110,7 @@ name, so diagnostics distinguish it from a family confirmed on hardware.
 | Report | Family | Setpoint | Sensors | Status |
 |---|---|---|---|---|
 | 109 / 121 / 125 / 127 B | **classic** | `°C − 16` @ w1.b8 | indoor w6.b8, outdoor w7.b8 | ✅ read + control |
-| 109 B (window units) | classic map, resolved as `related-19` | as above | indoor w6.b8; **no outdoor probe** | ✅ read + control since v0.52.0 |
+| 109 B (window units) | classic map, resolved as `related-19` | as above | indoor w6.b8; **no outdoor probe** | ✅ read + control |
 | 117 B | **compact-12** | whole °C @ w12 | indoor w1; w2 low byte is the outdoor-UNIT temp (hot, ~60 °C cooling; not ambient) — diagnostics only | ✅ read + control |
 | 165 / 175 B | **extended-36** | `°C − 16` @ w20.b8 | indoor w25.b8, outdoor w26.b8 | ✅ read + control |
 | 209 B | **extended-46** | **half-degrees** @ w20.b8 | indoor w35.b8, outdoor w36.b8 | ✅ read + control (no left-right vane) |
@@ -174,7 +171,7 @@ w33 and w34 all read zero in all three captures. Any capture with a w24-block fe
 **Vane positions** — a `select` offering the stops a vane can hold, rather than just sweeping or
 not — need a family that packs the vane as the multi-bit code it is. Classic and extended-36 do;
 compact-12 collapses each vane to a single bit, so a position sent there would arrive as "sweep".
-Extended-46 packs its up-down vane as a code and both reads and writes it as of v0.47.0, but is
+Extended-46 packs its up-down vane as a code and both reads and writes it, but is
 still left out here: no write to that field has been *observed* landing on the family yet, and the
 four-way swing already exercises the same field at its two ends, which is the cheaper way to find
 out. Its left-right vane is not written at all — nothing in its report reads one back. The positions
@@ -282,11 +279,13 @@ w26** — exactly where the read map reads them back. So the controls now write 
 (report w25.b0) for the vane and word 7 (report w26.b9) for the fan, with the frame extended to seven
 words to reach them. Three independent lines agree (the published order, the captures, and the
 write↔read relation), so no reporter test is needed to place them; the only thing a live write would
-add is confirmation the appliance honours a seven-word frame (Rule 8). Until v0.47.x the controls
-wrote the shared slots — i.e. the **left tower** — and could not reach the appliance's own fields at
-all.
+add is confirmation the appliance honours a seven-word frame (Rule 8).
 
-### How the read positions were settled, and why they had been withdrawn
+⚠️ Writing the *shared* vane and fan slots on a twin-tower cabinet would drive the **left tower**, not
+the appliance — which is why those slots are refused here and the appended positions are used
+instead.
+
+### How the read positions were settled
 
 One diagnostics file carries a report **and** a cloud record taken close enough together to check
 against each other — setpoint 22.0, indoor 28.0, power on and all six word-22 toggles agreeing bit
@@ -299,16 +298,19 @@ for bit. Against that record:
 | w21.b8 (the map's fan) = **6** | `windSpeed` = **1** |
 | w26.b9 (inserted block) = **1** | `windSpeedL` / `R` = 3 / 5 |
 
-The per-tower explanation the fan had been withdrawn under is refuted by that same document: a tower
-register cannot read the appliance's value when the towers are published beside it as 3 / 5 and 0 / 0.
+Words 25 and 26 are the **appliance's own** vane and fan, not a tower register: a tower register
+cannot read the appliance's value when the towers are published beside it as 3 / 5 and 0 / 0.
 
-⚠️ **The retirement rested on a stale document, and on a freshness check that could not fail.** The
-capture that retired word 26 read 0 there "while the appliance's own cloud record said 1", from "a
-document that agreed with 53 other attributes and disagreed with none". That record was the **same
-frozen shadow** as the file before it — a diagnostics `digital_model` is fetched once, at
-onboarding — and its own setpoint disagreed with the report it was compared against, 22.0 against
-24.0. The 53 agreements run over `model_declared_fields`, which holds only attributes no field map
-reads (the voice module, probes these units lack, `tempUnit`), so none of them can change.
+⚠️ **Two traps to know before you use a diagnostics file as evidence**, because both look like clean
+disagreements:
+
+* **A diagnostics `digital_model` is fetched once, at onboarding, and never refreshed.** Compare it
+  against a report taken later and it will disagree — its setpoint may say 22.0 where the report
+  says 24.0 — and that disagreement is staleness, not a decode fault. Check the two halves agree on
+  something you *can* verify before trusting either.
+* **"Agrees with 53 attributes and disagrees with none" can be a check that cannot fail.**
+  `model_declared_fields` holds only attributes no field map reads (the voice module, probes these
+  units lack, `tempUnit`), so none of them can change — agreement there is guaranteed regardless.
 
 ⚠️ **`write_base_word + write_word - 1` is a heuristic, not a law.** On this family it holds for
 words 1..3 as *words* — setpoint, mode and the entire boolean block — and fails for exactly two
@@ -361,14 +363,14 @@ Of the **1,451** published air conditioners:
 
 ⚠️ **"Can resolve a layout" is not "will decode".** The report still has to agree with exactly one
 offset; a unit whose report agrees with neither, or with both, stays on the partial decode. What
-changed in v0.53.0 is that nothing is refused for want of *published* data — the report gets its
+matters is that nothing is refused for want of *published* data — the report gets its
 chance in every case where the appliance names itself.
 
-★ The 187 central-air cabinets are worth a note, because these docs wrote them off twice. First as
+★ The 187 central-air cabinets are worth a note, because they are easy to write off. First as
 out of scope; then as read-only, on the reasoning that control needs a frame they do not publish.
 Both are withdrawn. They are cabinets on two Model IDs, the shared map places **thirteen of their
 seventeen** attributes, their displacement is settled and corroborated against real reports, and they
-are commanded a setting at a time from v0.55.0. They are ordinary appliances that answer on the LAN
+are commanded a setting at a time. They are ordinary appliances that answer on the LAN
 like any other; it is the *vendor's own app* that drives them through the cloud, for want of a byte
 map that this project largely has.
 

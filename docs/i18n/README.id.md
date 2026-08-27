@@ -34,7 +34,7 @@ model, nama tiap kerusakan, dan kontrol mana yang diabaikan dalam kondisi terten
 menyiapkan dirinya sendiri untuk unit yang belum pernah kami lihat. Jika akun Anda juga bisa
 menjelaskan unit tersebut, keduanya digabungkan, bukan dipilih salah satu.
 
-> Sebelum **v0.38.0** angkanya 171: daftar itu hanya milik satu wilayah, sehingga AC yang diterbitkan di negara lain tidak bisa dikenali. Jika versi lama gagal mengenali unit Anda, versi ini kemungkinan besar berhasil.
+> Katalog pabrikan disaring menurut wilayah **dan** menurut kategori produk — itulah yang membuat AC jendela mudah terlewat. Di sini **setiap kategori AC dari setiap wilayah** ikut disertakan.
 
 ## Apa yang Anda dapatkan
 

@@ -83,18 +83,15 @@ Haier sells 1,451 different machines.
 
 ### Every region, not just one
 
-**The catalogue answers according to the country your account registered with**, and the regions
-publish very different lists — one 171 entries, another 242, Japan's 30, six countries none at all.
-Before **v0.38.0** what shipped here was a single region's 171, so an air conditioner published
-anywhere else could not be named, could not be offered by the number on its label, and could reach
-its own fault names only while Home Assistant had internet.
+**The manufacturer's catalogue answers according to the country your account registered with**, and
+the regions publish very different lists — one 171 entries, another 242, Japan's 30, six countries
+none at all. It is filtered by product **category** as well as by region, which is what hides window
+air conditioners from a naive listing.
 
-All of them now ship. The listing also turned out to be filtered by product **category**, which had
-hidden the window air conditioners — the complete catalogue is 1,999 products across 38 appliance
-categories, and every air-conditioner category among them now ships, window units included. Your
-country is also used at setup — to shorten the model list to what is sold where you are, and to look
-up a model number the shipped list has not heard of. If an older version could not identify your
-unit, this one very likely can.
+**All of them ship here.** The complete catalogue is 1,999 products across 38 appliance categories,
+and every air-conditioner category among them is included, window units included. Your country is
+also used at setup — to shorten the model list to what is sold where you are, and to look up a model
+number the shipped list has not heard of.
 
 **Quick check:** if `nc -z <your-ac-ip> 56800` succeeds, the local protocol is listening.
 

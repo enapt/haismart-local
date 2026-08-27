@@ -122,20 +122,19 @@ way, and this is the configuration the integration is built for.
 
 ### "This air conditioner is already being set up"
 
-Fixed in **v0.40.2** — if you are on an older version, this is what you are seeing.
+**This means you are on an old version — update, and it goes away.**
 
 Your air conditioner announces itself on the network, so Home Assistant raises a **Discovered** card
-for it on its own. That card is a setup already in progress, and it used to block you from starting
-another one for the same unit — so signing in got as far as listing your air conditioners and was
-then turned away, and the only thing you could finish was the card itself, which asks for a local
-key you have no way to obtain.
+for it on its own. On old versions that card counted as a setup already in progress and blocked you
+from starting another one for the same unit, so signing in got as far as listing your air
+conditioners and was then turned away — and the only thing you could finish was the card itself,
+which asks for a local key you have no way to obtain. Nothing is wrong with your account, and
+nothing appears in the log, because sign-in succeeds and the refusal happens before a key is ever
+requested.
 
-Nothing was wrong with your account, and nothing appears in the log, because sign-in succeeded and
-the refusal happens before a key is ever requested.
-
-On v0.40.2 and later, adding an appliance deliberately takes precedence and the card clears itself.
-If you are stuck on an older version, **restart Home Assistant** and then go straight to
-**Add Integration → Haismart → sign in** before the unit announces itself again.
+Adding an appliance deliberately now takes precedence and the card clears itself. If you cannot
+update yet, **restart Home Assistant** and go straight to **Add Integration → Haismart → sign in**
+before the unit announces itself again.
 
 > Do **not** press *Ignore* on the Discovered card to get rid of it. That records the appliance as
 > one you have chosen not to add, and setup will then refuse with *"already configured"* instead,
@@ -174,7 +173,7 @@ machine-readable output.
 
 ### If it still cannot fetch the key
 
-Since **v0.40.3** the screen tells you why, instead of leaving the reason in the log. When the fetch
+The screen tells you why, rather than leaving the reason in the log. When the fetch
 fails you get the exact response — a timeout, a refusal from Haier's key service, a reply that
 carried no key — printed on the page, along with whether the air conditioner itself says it can
 still reach Haier.

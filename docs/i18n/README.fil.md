@@ -36,7 +36,7 @@ ang bawat modelo, ano ang tawag sa bawat depekto, at aling mga kontrol ang binab
 kalagayan — kaya kaya nitong i-configure ang sarili para sa unit na hindi pa namin nakikita. Kung
 kayang ilarawan din ng inyong account ang unit, pinagsasama ang dalawa sa halip na pumili ng isa.
 
-> Bago ang **v0.38.0** ang bilang na ito ay 171: ang listahan ay para lamang sa isang rehiyon, kaya hindi makilala ang aircon na inilabas sa ibang bansa. Kung hindi nakilala ng lumang bersyon ang unit mo, malamang makilala na ngayon.
+> Ang katalogo ng gumawa ay sinasala ayon sa rehiyon **at** ayon sa kategorya ng produkto — iyan ang dahilan kung bakit madaling maiwan ang mga window aircon. Naririto ang **bawat kategorya ng aircon mula sa bawat rehiyon**.
 
 ## Ano ang makukuha ninyo
 

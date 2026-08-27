@@ -42,9 +42,16 @@ kayang ilarawan din ng inyong account ang unit, pinagsasama ang dalawa sa halip 
 
 Isang device kada aircon: **Climate** (temperatura, mode, bilis ng bentilador, swing, on/off), mga
 sensor ng temperatura sa **loob** at **labas**, mga **switch** (Strong, Quiet, Health, Sleep, Display
-light), pagpipiliang **Eco**, sensor ng **Model ID**, sensor ng **Cloud connection** (kung kaya pa
-ng aircon na abutin ang mga server ng Haier — kapaki-pakinabang kapag hinarangan ninyo ito), at ang
-diagnostic sensor na **Local key**.
+light), pagpipiliang **Eco**, pagpipilian ng **posisyon ng vane** kung inilalathala ito ng unit
+ninyo, sensor ng **Fault** na pinangangalanan ang sira kasama ang code na ipinapakita ng unit,
+**self-clean** (isang button at isang sensor), **power** at **energy** kung iniuulat ito ng unit,
+**air quality** kung mayroon itong mga probe, **paalala sa pagpapalit ng filter** kung mayroon nito,
+at mga diagnostic: **Model ID**, **Cloud connection** (kung kaya pa ng aircon na abutin ang mga
+server ng Haier — kapaki-pakinabang kapag hinarangan ninyo ito), at **Local key**.
+
+Nakadepende sa modelo ninyo kung alin ang lalabas: binabasa ng integration ang sariling modelo ng
+unit ninyo at inaalok lamang ang talagang mayroon ito. Buong listahan:
+[What you get](../../README.md#what-you-get).
 
 > Nasa Ingles pa ang mga screen ng integration para sa wikang Filipino. Kung nais ninyong isalin ang
 > mga ito, malugod naming tatanggapin ang isang pull request — tingnan ang
@@ -78,7 +85,7 @@ saka gamitin ang account na iyon dito.
 
 ### Mayroon na kayo ng lokal na key ng unit na ito?
 
-Ito ang offline na paraan, at halos wala na itong itinatanong. Hahanapin ng Home Assistant ang mga
+Ito ang offline na paraan, at halos wala itong itinatanong. Hahanapin ng Home Assistant ang mga
 Haier device sa inyong network, hihilingin sa bawat isa na magpakilala, at ilalista ang mga sumagot —
 piliin lamang ninyo ang sa inyo at i-paste ang key. Ang address at device ID ay mula na mismo sa
 aircon.
@@ -117,10 +124,11 @@ Dalawang paraan para tuluyang matapos ito, at mabuting gawin habang gumagana pa 
   kada session).
 - Ang pag-install nito ay **hindi humihinto sa pakikipag-usap ng aircon ninyo sa Haier**, maliban
   kung haharangan ninyo ito sa firewall.
-- Bigyan ang aircon ng **DHCP reservation** upang hindi magbago ang IP address nito.
+- Maayos ang **DHCP reservation** para sa aircon ngunit hindi kailangan: kapag nagbago ang IP
+  address nito, hahanapin muli ng integration ang unit sa device ID nito at susunod dito.
 
 ## Kailangan ng tulong?
 
 Mag-ulat ng isyu sa [GitHub Issues](https://github.com/enapt/haismart-local/issues) — **sa Ingles
 kung maaari**. Basahin muna ang [bahaging "Before you open an issue"](../TROUBLESHOOTING.md#before-you-open-an-issue)
-sa pangunahing README.
+sa gabay sa troubleshooting.

@@ -39,9 +39,15 @@ chọn một.
 
 Mỗi điều hòa là một thiết bị: **Climate** (nhiệt độ đặt, chế độ, tốc độ quạt, đảo gió, bật/tắt), cảm
 biến **nhiệt độ trong nhà** và **ngoài trời**, các **công tắc** (Mạnh, Yên tĩnh, Sức khỏe, Ngủ, Đèn
-hiển thị), lựa chọn **Eco**, cảm biến **Mã model**, cảm biến **Kết nối đám mây** (điều hòa còn liên
-lạc được với máy chủ Haier hay không — hữu ích nếu bạn chặn nó), và cảm biến chẩn đoán **Khóa cục
-bộ**. Giao diện có sẵn tiếng Việt.
+hiển thị), lựa chọn **Eco**, lựa chọn **vị trí cánh gió** nếu máy của bạn công bố chúng, cảm biến
+**Lỗi** nêu tên lỗi kèm mã mà máy bạn hiển thị, **tự làm sạch** (một nút bấm và một cảm biến),
+**công suất** và **điện năng** nếu máy bạn báo cáo, **chất lượng không khí** nếu máy có cảm biến,
+**nhắc thay lưới lọc** nếu máy có, cùng các mục chẩn đoán: **Mã model**, **Kết nối đám mây** (điều
+hòa còn liên lạc được với máy chủ Haier hay không — hữu ích nếu bạn chặn nó), và **Khóa cục bộ**.
+
+Những mục xuất hiện tùy theo model của bạn: tích hợp đọc chính model của máy bạn và chỉ cung cấp
+những gì máy đó thực sự có. Danh sách đầy đủ: [What you get](../../README.md#what-you-get). Giao
+diện có sẵn tiếng Việt.
 
 ## Cài đặt
 
@@ -69,7 +75,7 @@ khoản ấy ở đây.
 
 ### Đã có khóa cục bộ của máy này?
 
-Đây là hướng ngoại tuyến, và giờ gần như không hỏi gì cả. Home Assistant tìm các thiết bị Haier
+Đây là hướng ngoại tuyến, gần như không hỏi gì cả. Home Assistant tìm các thiết bị Haier
 trong mạng của bạn, yêu cầu từng máy tự giới thiệu, rồi liệt kê những máy đã trả lời — bạn chỉ việc
 chọn máy của mình và dán khóa vào. Địa chỉ và mã thiết bị đều lấy từ chính chiếc điều hòa.
 
@@ -101,10 +107,11 @@ Hai cách xử lý dứt điểm, nên làm ngay khi mọi thứ còn chạy t�
 - Home Assistant và điều hòa phải ở **cùng một subnet**. Không có máy chủ trung chuyển đám mây dự phòng.
 - Điều hòa chỉ chấp nhận **một phiên cục bộ tại một thời điểm** (khoảng 17 giây mỗi phiên).
 - Cài tích hợp này **không ngăn điều hòa liên lạc với Haier**, trừ khi bạn chặn bằng tường lửa.
-- Hãy đặt **DHCP reservation** cho điều hòa để địa chỉ IP không thay đổi.
+- **DHCP reservation** cho điều hòa thì gọn gàng nhưng không bắt buộc: nếu địa chỉ IP thay đổi,
+  tích hợp sẽ tìm lại máy theo ID thiết bị và tự đi theo.
 
 ## Cần trợ giúp?
 
 Báo lỗi tại [GitHub Issues](https://github.com/enapt/haismart-local/issues) — **bằng tiếng Anh nếu
 có thể**. Vui lòng đọc [mục "Before you open an issue"](../TROUBLESHOOTING.md#before-you-open-an-issue)
-trong README chính trước.
+trong hướng dẫn khắc phục sự cố trước.

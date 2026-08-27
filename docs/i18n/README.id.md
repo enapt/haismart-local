@@ -40,9 +40,16 @@ menjelaskan unit tersebut, keduanya digabungkan, bukan dipilih salah satu.
 
 Satu perangkat per AC: **Climate** (suhu, mode, kecepatan kipas, swing, nyala/mati), sensor **suhu
 dalam** dan **luar ruangan**, **sakelar** (Kuat, Senyap, Kesehatan, Tidur, Lampu layar), pilihan
-**Eco**, sensor **ID Model**, sensor **Koneksi cloud** (apakah AC masih dapat menghubungi server
-Haier — berguna jika Anda memblokirnya), serta sensor diagnostik **Kunci lokal**. Antarmuka
-tersedia dalam bahasa Indonesia.
+**Eco**, pilihan **posisi kisi-kisi** bila unit Anda mempublikasikannya, sensor **Kerusakan** yang
+menyebutkan nama kerusakan beserta kode yang ditampilkan unit Anda, **pembersihan mandiri** (sebuah
+tombol dan sebuah sensor), **daya** dan **energi** bila unit Anda melaporkannya, **kualitas udara**
+bila unit Anda punya sensornya, **pengingat ganti filter** bila unit Anda menyimpannya, ditambah
+diagnostik: **ID Model**, **Koneksi cloud** (apakah AC masih dapat menghubungi server Haier —
+berguna jika Anda memblokirnya), dan **Kunci lokal**.
+
+Yang muncul bergantung pada model Anda: integrasi membaca model unit Anda sendiri dan hanya
+menawarkan yang benar-benar dimiliki unit itu. Daftar lengkapnya ada di
+[What you get](../../README.md#what-you-get). Antarmuka tersedia dalam bahasa Indonesia.
 
 ## Pemasangan
 
@@ -69,7 +76,7 @@ email dan kata sandi, **bagikan AC ke akun itu** di aplikasi, lalu gunakan akun 
 
 ### Sudah punya kunci lokal unit ini?
 
-Jalur luring, dan kini hampir tidak menanyakan apa pun. Home Assistant mencari perangkat Haier di
+Jalur luring, yang hampir tidak menanyakan apa pun. Home Assistant mencari perangkat Haier di
 jaringan Anda, meminta masing-masing memperkenalkan diri, lalu menampilkan yang menjawab — Anda
 tinggal memilih milik Anda dan menempelkan kuncinya. Alamat dan ID perangkat diambil dari AC itu
 sendiri.
@@ -105,10 +112,11 @@ berfungsi:
 - AC hanya menerima **satu sesi lokal dalam satu waktu** (sekitar 17 detik per sesi).
 - Memasang ini **tidak menghentikan AC Anda berkomunikasi dengan Haier**, kecuali Anda memblokirnya
   dengan firewall.
-- Beri AC **reservasi DHCP** agar alamat IP-nya tidak berubah.
+- **Reservasi DHCP** untuk AC itu rapi, tetapi tidak wajib: jika alamatnya berubah, integrasi
+  menemukan unit itu lagi lewat ID perangkatnya dan mengikutinya.
 
 ## Butuh bantuan?
 
 Laporkan masalah di [GitHub Issues](https://github.com/enapt/haismart-local/issues) — **dalam bahasa
 Inggris jika memungkinkan**. Baca dulu [bagian "Before you open an issue"](../TROUBLESHOOTING.md#before-you-open-an-issue)
-di README utama.
+di panduan pemecahan masalah.

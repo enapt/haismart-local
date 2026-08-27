@@ -42,9 +42,16 @@ memerihalkan unit itu, kedua-duanya digabungkan, bukan salah satu dipilih.
 
 Satu peranti bagi setiap penghawa dingin: **Climate** (suhu, mod, kelajuan kipas, ayunan, hidup/mati),
 penderia **suhu dalaman** dan **luaran**, **suis** (Kuat, Senyap, Kesihatan, Tidur, Lampu paparan),
-pilihan **Eco**, penderia **ID Model**, penderia **Sambungan awan** (sama ada penghawa dingin masih
-boleh menghubungi pelayan Haier — berguna jika anda menyekatnya), dan penderia diagnostik **Kunci
-setempat**.
+pilihan **Eco**, pilihan **kedudukan bilah** jika unit anda menerbitkannya, penderia **Kerosakan**
+yang menamakan kerosakan itu berserta kod yang dipaparkan unit anda, **pembersihan sendiri** (sebuah
+butang dan sebuah penderia), **kuasa** dan **tenaga** jika unit anda melaporkannya, **kualiti udara**
+jika unit anda mempunyai penderianya, **peringatan tukar penapis** jika unit anda menyimpannya, serta
+diagnostik: **ID Model**, **Sambungan awan** (sama ada penghawa dingin masih boleh menghubungi pelayan
+Haier — berguna jika anda menyekatnya), dan **Kunci setempat**.
+
+Yang muncul bergantung pada model anda: integrasi membaca model unit anda sendiri dan hanya
+menawarkan apa yang unit itu benar-benar ada. Senarai penuh:
+[What you get](../../README.md#what-you-get).
 
 > ℹ️ Home Assistant tidak menyenaraikan bahasa Melayu sebagai bahasa antara muka, jadi integrasi ini
 > tiada terjemahan Melayu. Pengguna di Malaysia dan Brunei biasanya menetapkan Home Assistant kepada
@@ -77,7 +84,7 @@ akaun tersebut di sini.
 
 ### Sudah ada kunci setempat unit ini?
 
-Laluan luar talian, dan kini ia hampir tidak bertanya apa-apa. Home Assistant mencari peranti Haier
+Laluan luar talian, yang hampir tidak bertanya apa-apa. Home Assistant mencari peranti Haier
 pada rangkaian anda, meminta setiap satu memperkenalkan diri, lalu menyenaraikan yang menjawab —
 anda cuma memilih milik anda dan menampal kuncinya. Alamat dan ID peranti datang daripada penghawa
 dingin itu sendiri.
@@ -115,10 +122,11 @@ berfungsi:
 - Penghawa dingin menerima **satu sesi setempat pada satu masa** (kira-kira 17 saat setiap sesi).
 - Memasang ini **tidak menghentikan penghawa dingin anda daripada berhubung dengan Haier**, melainkan
   anda menyekatnya dengan tembok api.
-- Berikan penghawa dingin **tempahan DHCP** supaya alamat IP-nya tidak berubah.
+- **Tempahan DHCP** untuk penghawa dingin itu kemas, tetapi tidak wajib: jika alamatnya berubah,
+  integrasi mencari semula unit itu melalui ID perantinya dan mengikutinya.
 
 ## Perlukan bantuan?
 
 Laporkan masalah di [GitHub Issues](https://github.com/enapt/haismart-local/issues) — **dalam bahasa
 Inggeris jika boleh**. Sila baca [bahagian "Before you open an issue"](../TROUBLESHOOTING.md#before-you-open-an-issue)
-dalam README utama dahulu.
+dalam panduan penyelesaian masalah dahulu.

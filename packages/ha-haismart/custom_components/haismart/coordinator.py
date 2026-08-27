@@ -140,6 +140,11 @@ from .discovery import async_find_host
 # Socket timeout for the cloud MQTT-gateway localKey fetch (TLS connect + one round-trip).
 GATEWAY_TIMEOUT = 8.0
 
+# Bound on the diagnostics shadow refresh: a token refresh plus one request. Diagnostics are most
+# often asked for when something is wrong, which is exactly when the cloud may be unreachable, so
+# this must fail fast and produce the rest of the report rather than hang the download.
+_SHADOW_REFRESH_TIMEOUT = 10.0
+
 _LOGGER = logging.getLogger(__name__)
 
 type HaismartConfigEntry = ConfigEntry["HaismartCoordinator"]
@@ -2215,6 +2220,58 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return not all(
             data.get(k) for k in (CONF_PRODUCT_CODE, CONF_UPLUS_ID, CONF_DEVICE_TYPE)
         )
+
+    async def async_fresh_shadow(self) -> dict[str, str] | None:
+        """The values the CLOUD currently reports for this appliance, by attribute name.
+
+        Why this exists, and it is the whole point: the cloud holds the byte map for an appliance --
+        it was told which product this is at pairing -- and publishes every declared attribute's
+        decoded value **by name**. A raw report is the same information as bytes. Put the two side
+        by
+        side and placing an attribute stops being a search and becomes arithmetic: find the bits
+        that
+        already equal this known value. That works for any family, needs no capture and asks the
+        owner to do nothing.
+
+        ⚠️ **The stored model cannot serve this.** It is fetched once, when the appliance is added,
+        and never refreshed, so its values drift arbitrarily far from any report printed beside them
+        -- one attachment states `onOffStatus: false` while the report in the same file decodes the
+        unit as running. Diagnostics dumped that frozen copy next to a live report and the pair
+        could
+        never be used together, which is why the link went unnoticed rather than unavailable.
+
+        Read-only on purpose. A shadow carries **no** ``modifiers``/``alarms``/``constraints``/
+        ``invisible``, so merging one into the stored model would delete this unit's feature set and
+        every conditional rule with it. The values are returned to the caller and nothing is
+        written.
+
+        ``None`` when the entry has no cloud credentials or the fetch fails -- diagnostics must
+        still
+        be produced offline, which is exactly when they are most often asked for.
+        """
+        data = self.config_entry.data
+        usdk_client_id = data.get(CONF_CLOUD_CLIENT_ID)
+        refresh = data.get(CONF_REFRESH_TOKEN)
+        if not usdk_client_id or not refresh:
+            return None
+        try:
+            cloud = HaierCloud(
+                replace(SEA_APP_CREDENTIALS, client_id=usdk_client_id),
+                data.get(CONF_ACCESS_TOKEN) or "",
+                zone_info=data.get(CONF_ZONE_INFO, "0"),
+                transport=async_cloud_transport(self.hass),
+            )
+            async with asyncio.timeout(_SHADOW_REFRESH_TIMEOUT):
+                cloud.access_token = (await cloud.refresh_token(refresh)).access_token
+                model = await cloud.get_digital_model(self.device_id)
+        except (CloudError, KeyError, OSError, RuntimeError, TimeoutError, ValueError) as err:
+            _LOGGER.debug("no fresh shadow for %s: %s", self.device_id, err)
+            return None
+        return {
+            str(attr["name"]): str(attr["value"])
+            for attr in (model or {}).get("attributes") or []
+            if isinstance(attr, dict) and attr.get("name") and attr.get("value") is not None
+        }
 
     async def async_topup_identity(self) -> bool:
         """Fill in identity the device list has always carried but this entry never kept.

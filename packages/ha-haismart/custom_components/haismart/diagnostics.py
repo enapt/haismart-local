@@ -93,6 +93,13 @@ async def async_get_config_entry_diagnostics(
     coordinator = entry.runtime_data
     profile = coordinator.profile
     layout = await _async_layout_summary(hass, coordinator)
+    # The cloud's CURRENT decoded value for every declared attribute, fetched now rather than read
+    # out of the model stored at onboarding. Paired with the raw report below it turns an unplaced
+    # attribute into arithmetic -- find the bits already equal to this known value -- for any
+    # family,
+    # with nothing asked of the owner. Falls back to nothing when there are no credentials or the
+    # cloud is unreachable, which must not stop the rest of the report being produced.
+    fresh_shadow = await coordinator.async_fresh_shadow()
     # ⚠️ Under the coordinator's session lock. These appliances accept ONE connection at a time, so
     # a probe fired while a poll or a command is in flight makes one of them fail -- and a
     # diagnostics download taken *because* something is wrong must not manufacture a second fault
@@ -185,7 +192,7 @@ async def async_get_config_entry_diagnostics(
                 else coordinator.reported_host == coordinator.host
             ),
         },
-        "digital_model": _model_summary(coordinator.digital_model),
+        "digital_model": _model_summary(coordinator.digital_model, fresh_shadow),
         # Attributes this device declares that its family map does not carry, read off the published
         # map at the family's confirmed displacement. Every unit declares three or four times what
         # any hand-written map holds, so this is most of what a report actually says -- surfaced
@@ -335,7 +342,9 @@ def _shadow_values(model: dict[str, Any] | None) -> dict[str, Any]:
     }
 
 
-def _model_summary(model: dict[str, Any] | None) -> dict[str, Any] | None:
+def _model_summary(
+    model: dict[str, Any] | None, fresh_shadow: dict[str, str] | None = None
+) -> dict[str, Any] | None:
     """The parts of the digital model that describe CAPABILITIES.
 
     The full model is large and contains device-identifying ids, so only the attribute value ranges,
@@ -349,8 +358,13 @@ def _model_summary(model: dict[str, Any] | None) -> dict[str, Any] | None:
     be trusted. Summarising the model without it left that unanswerable from a diagnostics file --
     the only evidence was whether the resulting entities happened to look sane.
     """
+    # ⚠️ A fresh shadow is worth reporting even when NO model is stored -- a hand-configured entry
+    # has none, and that is precisely the install where the cloud's values are the only statement of
+    # what this appliance's attributes currently read. Bailing on `not model` threw them away.
     if not model:
-        return None
+        if fresh_shadow is None:
+            return None
+        return {"reported_values_now": fresh_shadow, "reported_values_now_available": True}
     attributes = {
         a.get("name"): (a.get("valueRange") or {})
         for a in model.get("attributes", [])
@@ -368,7 +382,16 @@ def _model_summary(model: dict[str, Any] | None) -> dict[str, Any] | None:
     return {
         "attributes": attributes,
         "groupCommands": group_commands,
+        # ⚠️ TWO sets of values, and the difference is load-bearing. `reported_values` is the model
+        # STORED AT ONBOARDING and never refreshed since, so it may describe the appliance as it was
+        # months ago -- one attachment states `onOffStatus: false` beside a report that decodes the
+        # unit as running. `reported_values_now` was fetched while this file was written, so it is
+        # the only one that may be compared against `last_raw_status`: pairing a value with the
+        # bytes
+        # printed next to it is what places an attribute no byte map carries.
         "reported_values": _shadow_values(model),
+        "reported_values_now": fresh_shadow,
+        "reported_values_now_available": fresh_shadow is not None,
         "feature_set_known": known,
         "invisible_attributes": list(model.get("invisible_attributes") or ()) if known else None,
     }

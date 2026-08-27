@@ -4752,3 +4752,104 @@ async def test_the_cabinet_reads_its_settings_back_from_its_own_report(
     assert coord.current_field("operationMode") == 1        # cool
     assert coord.current_field("windSpeed") == 3            # low
     assert coord.current_field("onOffStatus") == 0
+
+
+async def test_diagnostics_carries_a_shadow_fetched_NOW_beside_the_raw_report(
+    hass: HomeAssistant, mock_uss, monkeypatch
+) -> None:
+    """The cloud's current values must be dumped alongside the bytes, not the ones stored at setup.
+
+    The cloud holds this appliance's byte map -- it was told the product at pairing -- and publishes
+    every declared attribute's decoded value by name. A raw report is the same information as bytes.
+    Together they place an attribute no byte map here carries: find the bits already equal to the
+    known value. That only works if the two halves are contemporaneous, and the model stored at
+    onboarding is not: one real attachment states `onOffStatus: false` beside a report that decodes
+    the unit as running.
+    """
+    import json as _json
+
+    from custom_components.haismart.diagnostics import (
+        async_get_config_entry_diagnostics,
+    )
+
+    stored_model = _json.dumps({
+        "attributes": [
+            {"name": "onOffStatus", "value": "false"},      # stale on purpose: the appliance is ON
+            {"name": "cleanningMode", "value": "0"},
+        ],
+        "invisible_attributes": [],
+    })
+    entry = _entry(
+        refresh_token="2_REFRESH", access_token="ACCESS",
+        cloud_client_id="CLIENTID0123456789ABCDEF01234567",
+        digital_model=stored_model,
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    coordinator = entry.runtime_data
+
+    async def _fresh(self):
+        return {"cleanningMode": "3", "onOffStatus": "true"}
+
+    monkeypatch.setattr(type(coordinator), "async_fresh_shadow", _fresh)
+    diag = await async_get_config_entry_diagnostics(hass, entry)
+
+    model = diag["digital_model"]
+    assert model["reported_values_now"] == {"cleanningMode": "3", "onOffStatus": "true"}
+    assert model["reported_values_now_available"] is True
+    # ...and the frozen copy is still there, separately, because it is the one carrying the feature
+    # set. Collapsing the two would lose the distinction that makes either usable -- note the stored
+    # copy still says the unit is OFF while the fresh one says ON, which is the whole problem.
+    assert model["reported_values"]["onOffStatus"] == "false"
+    assert model["reported_values_now"]["onOffStatus"] == "true"
+    # the bytes it has to be read against are in the same file
+    assert diag["last_raw_status"] == mock_uss.frame.hex()
+    assert "2_REFRESH" not in _json.dumps(diag)
+
+
+async def test_a_shadow_refresh_that_fails_still_produces_diagnostics(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """No credentials, or no network, must cost nothing.
+
+    Diagnostics are downloaded most often when something is already wrong, which is exactly when the
+    cloud may be unreachable. A refresh that cannot happen is reported as absent -- distinct from
+    "fetched, and the appliance reports nothing" -- and the rest of the file is produced regardless.
+    """
+    from custom_components.haismart.diagnostics import (
+        async_get_config_entry_diagnostics,
+    )
+
+    entry = await _setup(hass)          # no cloud credentials at all
+    assert await entry.runtime_data.async_fresh_shadow() is None
+
+    diag = await async_get_config_entry_diagnostics(hass, entry)
+    model = diag["digital_model"]
+    # This entry stores no model either, so the whole section is absent -- which is the pre-existing
+    # behaviour and stays that way. What must not happen is the refusal costing anything else.
+    assert model is None or model["reported_values_now_available"] is False
+    assert diag["last_raw_status"] == mock_uss.frame.hex()
+    assert diag["state"]["mode"] == "cool"
+
+
+async def test_a_shadow_refresh_never_touches_the_stored_model(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Read-only, and this is not a style preference.
+
+    A shadow arrives with **no** modifiers, alarms, constraints or invisible flags -- that absence
+    was mistaken for "the feature does not exist" for months. Merging one into the stored model
+    would
+    therefore delete this unit's known feature set and every conditional rule with it, turning a
+    diagnostics download into a silent capability regression.
+    """
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data
+    before_stored = dict(entry.data)
+    before_model = coordinator.digital_model
+
+    await coordinator.async_fresh_shadow()
+
+    assert entry.data == before_stored
+    assert coordinator.digital_model is before_model

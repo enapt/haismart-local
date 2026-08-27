@@ -26,8 +26,10 @@ from collections.abc import Mapping
 
 __all__ = [
     "WRITE_OVERRIDES",
+    "TAIL_POSITIONS",
     "ALIASES",
     "write_overrides",
+    "tail_positions",
     "displaced_write_fields",
     "displaced_at",
 ]
@@ -122,6 +124,57 @@ WRITE_OVERRIDES: Mapping[str, Mapping[str, tuple[int, int, int]]] = {
 #: name of the multi-level economy control the write maps carry as ``ecoMode`` -- one ladder, two
 #: names, settled by cycling a unit through its levels -- so a family publishing it at the eco
 #: position displaces nothing either.
+# ── The append region: where a twin-tower family writes the APPLIANCE's own vane and fan ──────────
+#
+# A twin-tower cabinet's group-set keeps the shared frame's vane and fan slots for its **left
+# tower** (see ``WRITE_OVERRIDES`` above), and lists the appliance's own vane and fan in the
+# appended tail instead -- past the five words the shared frame reaches. Those two facts are the
+# same fact: the frame's slots are taken, so the appliance's controls went somewhere else.
+#
+# ``EXTENDED46`` carries these positions in its own registered map, where they are
+# **capture-confirmed** (the written bit reads back at report words 25 and 26, which is exactly
+# ``write_base_word + write_word - 1`` for group-set words 6 and 7). The families below are not
+# registered to any wire family, so before this table they were refused at the shared slots -- 
+# correctly -- and had nowhere else to be offered from, losing swing and fan speed entirely.
+#
+# The transfer is corroborated four ways for each family listed, and a family is listed ONLY when
+# all four hold (``tools/re/tail_transfer_audit.py`` re-checks them):
+#   1. same device class as the confirmed family;
+#   2. its published group-set order is **byte-identical** through the two anchor positions;
+#   3. every attribute preceding them in the tail publishes an **identical value set**, so the
+#      packing that puts the anchors at those bits is the same packing;
+#   4. the destination bits are confirmed on the sibling, not derived here.
+#
+# ⚠️ ``windDirectionHorizontal`` is deliberately absent: it is in the tail too, but no family has a
+# confirmed position for it -- ``EXTENDED46`` does not carry one either -- so it stays unoffered.
+# ⚠️ A field placed here must be gated with :func:`displaced_at` (position-keyed), never with
+# :func:`displaced_write_fields` (name-keyed), which would refuse it under its own name. That is
+# the v0.50.1 regression restated.
+TAIL_POSITIONS: Mapping[str, Mapping[str, tuple[int, int, int]]] = {
+    # 108 products. Order identical to extended-46's through position 67; the anchors are at 47/50.
+    "20086108008203240212001180133000": {
+        "windDirectionVertical": (6, 0, 4),
+        "windSpeed": (7, 9, 3),
+    },
+    # 1 product. Order identical through position 53.
+    "20086108008203240312001180204042": {
+        "windDirectionVertical": (6, 0, 4),
+        "windSpeed": (7, 9, 3),
+    },
+}
+
+
+def tail_positions(uplus_id: str | None) -> Mapping[str, tuple[int, int, int]]:
+    """Append-region write positions for this family, or empty.
+
+    Keyed the same way as :func:`write_overrides`: on the 32-character family prefix an appliance
+    announces for itself.
+    """
+    if not uplus_id:
+        return {}
+    return TAIL_POSITIONS.get(uplus_id[:32], {})
+
+
 ALIASES: Mapping[str, str] = {
     "tenDegreeHeatingStatus": "10degreeHeatingStatus",
     "generatorMode": "ecoMode",

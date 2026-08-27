@@ -1779,15 +1779,20 @@ def frame_write_fields(
     Returns ``{}`` when ``order`` is unknown, which keeps a layout read-only rather than commanding
     an appliance whose own published contract has not been seen.
     """
-    from .family_write import ALIASES, displaced_write_fields
+    from .family_write import ALIASES, displaced_at, displaced_write_fields, tail_positions
     from .wire_order import consistent_with_frame
 
     if not order:
         return {}
     refused = displaced_write_fields(uplus_id)
+    tail = tail_positions(uplus_id)
     spelled_as = dict(ALIASES) | {v: k for k, v in ALIASES.items()}
 
     def position(name: str) -> tuple[int, int, int] | None:
+        # The family's own append region wins: where it is listed, the shared frame's slot belongs
+        # to another attribute entirely (its left tower), which is why the field is refused there.
+        if name in tail:
+            return tail[name]
         cf = CANONICAL_WRITE.get(name) or CANONICAL_WRITE.get(spelled_as.get(name, ""))
         if cf is not None:
             return (cf.word, cf.bit, cf.length)
@@ -1797,6 +1802,10 @@ def frame_write_fields(
 
     known = {}
     for name in order:
+        # An appended field's frame slot is not where this family writes it, so it is no evidence
+        # about the order and must not be offered to the backbone check as an anchor.
+        if name in tail:
+            continue
         pos = position(name)
         if pos is not None:
             known[name] = pos[:2]
@@ -1808,12 +1817,20 @@ def frame_write_fields(
     out: dict[str, WriteField] = {}
     for name, spec in _FRAME_WRITE_SPEC.items():
         spelled = name if name in carried else spelled_as.get(name, name)
-        if name in refused or spelled not in carried:
-            continue
-        if spelled in known and spelled not in corroborated:
+        if spelled not in carried:
             continue
         pos = position(name)
         if pos is None:
+            continue
+        # A reuse is a fact about a POSITION, not a name (v0.50.1). A field this family appends is
+        # written somewhere the shared frame never reaches, so the name-keyed refusal -- which
+        # exists to protect the *frame's* slot -- must not follow it there.
+        if name in tail:
+            if displaced_at(uplus_id, name, *pos):
+                continue
+        elif name in refused:
+            continue
+        if spelled in known and spelled not in corroborated:
             continue
         out[name] = WriteField(*pos, **spec)  # type: ignore[arg-type]
     return out
@@ -1923,7 +1940,10 @@ def related_wire_model(
         writable=bool(write or params),
         value_param_fields=params,
         group_cmd=b"\x60\x01" if write else None,
-        word_count=5 if write else 0,
+        # The frame reaches five words; a family that writes its appliance's own vane and fan in
+        # the append region needs the op to run far enough to carry them. `word_count = 5` stopping
+        # the frame before word 6 is exactly what made extended-46's vane unreachable (v0.47.0).
+        word_count=max([5, *(f.word for f in write.values())]) if write else 0,
         write_base_word=20 + displacement,
         write_fields=write,
         position_fields=frozenset(

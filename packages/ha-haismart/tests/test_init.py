@@ -4912,3 +4912,64 @@ async def test_the_maintenance_statuses_a_unit_declares_become_entities(
 
     # the one this unit says it does not have gets no entity at all -- never a permanent off
     assert state("binary_sensor", "pm25_purify") is None
+
+
+async def test_the_central_cabinet_is_commanded_one_parameter_at_a_time(
+    hass: HomeAssistant,
+) -> None:
+    """Issue #12, end to end: a 133-byte report resolves and its controls become available.
+
+    This appliance is a `0d12` ceiling cabinet whose report carries four words the published map
+    does not describe. Every flat offset failed on the one field those words had moved -- the room
+    temperature -- so no wire model claimed the report, `_wire_model` stayed None, and control fell
+    through to the classic group-set path, whose refusal is the message in the issue title.
+
+    The chain pinned here is the whole fix: the layout name carries its inserted block, the
+    coordinator rebuilds the model from that name, and the controls that appear are the ones this
+    appliance declares -- each written by its own single-parameter command, because this class's
+    firmware refuses the group set outright.
+    """
+    from types import SimpleNamespace
+
+    from haismart_hrdp import related_model_named
+
+    from custom_components.haismart.coordinator import HaismartCoordinator
+
+    uplus = "201c10c7088081000d1205464544850000009cd68e692c104e2a333eab95d140"
+    # What the decode reports its choice as, and what the coordinator must rebuild from it.
+    model = related_model_named("related-19+4@25", 133, order=None, uplus_id=uplus)
+    assert model is not None
+    assert model.writable is True
+    assert model.group_cmd is None, "this class's firmware refuses the group set"
+
+    # The appliance declares nine attributes; `healthMode` is NOT among them, so the class table
+    # offering an id for it must not turn into a control here.
+    declared = {
+        "attributes": [
+            {"name": n}
+            for n in (
+                "onOffStatus", "targetTemperature", "operationMode", "windSpeed",
+                "muteStatus", "rapidMode", "indoorTemperature",
+                "windDirectionVertical", "windDirectionHorizontal",
+            )
+        ],
+        # Present-but-empty: this unit's real feature set is KNOWN and it hides nothing. Without
+        # the key the model is treated as "we do not know", and nothing is offered -- which is the
+        # deliberate safe direction and worth exercising on the way past.
+        "invisible_attributes": [],
+    }
+    unit = SimpleNamespace(uplus_id=uplus, _wire_model=model, digital_model=declared)
+    supports = HaismartCoordinator.supports_field
+    for field in ("onOffStatus", "targetTemperature", "operationMode", "windSpeed",
+                  "muteStatus", "rapidMode"):
+        assert supports(unit, field) is True, field
+    assert supports(unit, "healthMode") is False, "declared by the class, not by this appliance"
+
+    # ⚠️ And the two vane ids stay withheld: this unit has both axes and reports both back, but
+    # nothing of the class has been observed to ACCEPT either command.
+    for axis in ("windDirectionVertical", "windDirectionHorizontal"):
+        assert supports(unit, axis) is False
+
+    # A name that lost its insert would rebuild the flat layout and command the appliance four
+    # words out, so it must not parse at all.
+    assert related_model_named("related-19+4", 133, uplus_id=uplus) is None

@@ -24,10 +24,20 @@ keeps its own when it moves between the two sections. Expect the sequence to hav
 ### 1. Vane positions on a unit whose model understates it
 
 Both axes offer their positions as `select` entities beside the swing controls, built from the stops
-a unit's own model publishes. That half is closed and settled two ways: the up-down translation
-(`0, 2, 4, 5, 6, 8` in a model vs `0, 2, 4, 6, 8, 12` on the wire) was hardware-confirmed stop by
-stop and then reproduced independently by the published map across every model, including a `7 → 10`
-entry no unit here has exercised. A test asserts it field by field.
+a unit's own model publishes.
+
+The up-down axis needs a translation, because a model numbers its stops differently from the wire.
+That table is **read from the published map**, which carries the vendor's own code table for this
+attribute, rather than written out by hand — so it covers every stop the vendor defines, including
+the health-airflow positions and the second auto that a wall unit does not have but a cabinet does.
+The stops one unit was stepped through on hardware, capture by capture, are kept beside it and the
+suite checks the map still agrees with them: taking a table from a generated source is only safe
+while that source agrees with an observation.
+
+⚠️ **Why it is read rather than written:** every consumer of this table filters against its keys, so
+a stop the table omits is not written wrongly — it disappears, from the authorized set and from the
+select's options alike. A hand-written copy that covered one unit's stops silently cost **86
+products** the three positions their models declare and it does not.
 
 What is left is only the case where **a model publishes less than the hardware has.** The reference
 units are exactly that: their handsets step the up-down vane through six stops, but their model lists
@@ -438,12 +448,24 @@ the report so it shows real state rather than an echo of the request.
   mode, fan and power all land where the published map puts them. Wrong sensor values on one of
   these means an old version — update.
 
-⚠️ **The two vane commands are deliberately withheld.** This generation defines one for each axis,
-but no cabinet of this class has been seen to accept either — the appliance the rest were read from
-has no vane at all. A command that is simply unimplemented is refused and harmless; one that is
-implemented and means something else would move a setting nobody asked for. They wait for a single
-observation, on the same bar as every other control here. **One report from a cabinet with a working
-vane closes it.**
+⚠️ **The two vane commands are deliberately withheld**, and what closes it is smaller than a
+report. This generation defines a command for each axis, but neither has ever been observed
+being *accepted*: the reference table's other eleven ids were read off a real appliance's traffic
+while these two were added to it without any capture behind them, and the one cabinet whose traffic
+was captured has no vane. A command that is simply unimplemented is refused and harmless; one that is
+implemented and means something else would move a setting nobody asked for.
+
+★ **The hardware is not the missing piece.** A cabinet that declares both axes has reported,
+and both read back from the positions the map gives them — one capture even has the left-right vane
+on auto while the other two have it parked, so the axis is seen to move. What that establishes is the
+**read** side: it says nothing about whether the firmware accepts those two write commands, which is
+the only thing still withheld.
+
+⇒ **What closes it is an accept/refuse observation, not a report.** Send either command to a cabinet
+that has a vane and read the reply's frame type: `0x02` is accepted, `0x03` refused. That is a
+ten-second test on hardware that already exists, and it settles the axis for the whole class.
+The withheld ids and this reason are carried in the code as data, and the suite re-checks that they
+are waiting only on that observation rather than on the appliances lacking the hardware.
 
 ⚠️ **`invisible` is not used as the gate** — see item 43. Membership is the attribute being declared
 at all, because the parameter table is per device class while the function is per product: a cabinet

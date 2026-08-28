@@ -134,6 +134,7 @@ from .uss import (
     status_layout,
 )
 from .wire_models import (
+    VANE_V_CONFIRMED_ON_HARDWARE,
     VANE_V_EPP_TO_MODEL,
     VANE_V_MODEL_TO_EPP,
     WIRE_MODELS,
@@ -146,6 +147,8 @@ from .wire_models import (
     device_type_class,
     frame_write_fields,
     probe_layout,
+    related_family_name,
+    related_insert_models,
     related_model_named,
     related_shortlist_is_ranked,
     related_wire_models,
@@ -184,6 +187,8 @@ __all__ = [
     "WIRE_MODELS",
     "decode_related",
     "frame_write_fields",
+    "related_family_name",
+    "related_insert_models",
     "related_model_named",
     "related_shortlist_is_ranked",
     "related_wire_models",
@@ -211,6 +216,7 @@ __all__ = [
     "CanonicalField",
     "DISPLACEMENTS",
     "VANE_V_EPP_TO_MODEL",
+    "VANE_V_CONFIRMED_ON_HARDWARE",
     "StatusContainer",
     "parse_hello_resp",
     "check_hello_resp",

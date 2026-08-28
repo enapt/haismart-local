@@ -35,6 +35,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .canonical_map import CANONICAL_WRITE
 from .panel import PANEL_BOOL_CONTROLS, PANEL_ENUM_CONTROLS, PANEL_EXTRA_POSITIONS
+from .profiles import model_enum_codes
 from .wire_models import (
     OPERATION_SOURCE,
     decode_related,
@@ -1115,7 +1116,16 @@ def parse_full_status(
         # decides between them. Anything that fails falls through to the partial decode below,
         # exactly as before.
         if wm is None and (
-            decoded := decode_related(data, uplus_id, profile, order=order)
+            decoded := decode_related(
+                data, uplus_id, profile, order=order,
+                # The modes the device declares, for the corroboration an inserted layout needs.
+                # `None` (no model at all) and an empty set are deliberately the same answer here --
+                # both mean "nothing to check against", and `decode_related` refuses the inserted
+                # candidates rather than choosing among them unaided.
+                declared_modes=(
+                    model_enum_codes(digital_model, "operationMode") if digital_model else None
+                ),
+            )
         ) is not None:
             return decoded
     layout = derive_status_layout(data, digital_model)

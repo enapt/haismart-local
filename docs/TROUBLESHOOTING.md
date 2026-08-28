@@ -243,6 +243,15 @@ reconciled with the shared packing. A product that publishes no list is **read**
 simply not commanded: reading and commanding are gated separately, because a group-set list
 describes how a unit is *written*, which says nothing about where its report puts things.
 
+Some appliances carry a block of words in their report that no published description mentions,
+sitting between the settings and the sensors. Everything above the block reads correctly and
+everything below it is pushed further down, so the layout is rejected on a single field — the room
+temperature — and the unit decodes almost nothing rather than almost everything. Those are resolved
+too, but only where the reading can be corroborated against something outside the report: whether
+the unit reports itself as a heat pump has to agree with whether its own description lists a heat
+mode. Without that agreement no such layout is used, because the report alone cannot say how many
+words were inserted.
+
 Of the 1,451 published air conditioners, **1,421 read and control, 30 read and report only, and
 none is turned away before its report is looked at.** (The read-only thirty are the two families
 whose published order the shared packing cannot explain, so nothing is offered for them rather than

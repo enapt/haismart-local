@@ -105,6 +105,21 @@ So, for a report from an appliance no family claims:
 A resolved layout is reported as `related-19` / `related+0` (the offset it used) rather than a family
 name, so diagnostics distinguish it from a family confirmed on hardware.
 
+#### When the offsets all fail: an inserted block
+
+Some appliances report a block of words the published map does not describe, sitting between the
+settable block and the sensors. The settable half then reads correctly at an ordinary offset while
+everything from the room temperature on is pushed further down — so the layout is rejected on one
+field, and the appliance decodes nothing rather than nearly everything. Two families already known
+here are shaped that way (the classic 127-byte member, one word; extended-46, ten), and both insert
+at the same point.
+
+An inserted layout is only tried when **no** plain offset fits, and it must be corroborated against
+something outside the report before it is believed — the report alone cannot say how many words were
+inserted, because a wrong count lands the sensors on other real fields rather than off the end. The
+corroboration is the `acType` bit against the modes the device's own model declares. Such a layout is
+reported as `related-19+4@25`: the offset, the number of inserted words, and where they begin.
+
 ## Known families
 
 | Report | Family | Setpoint | Sensors | Status |
@@ -114,7 +129,8 @@ name, so diagnostics distinguish it from a family confirmed on hardware.
 | 117 B | **compact-12** | whole °C @ w12 | indoor w1; w2 low byte is the outdoor-UNIT temp (hot, ~60 °C cooling; not ambient) — diagnostics only | ✅ read + control |
 | 165 / 175 B | **extended-36** | `°C − 16` @ w20.b8 | indoor w25.b8, outdoor w26.b8 | ✅ read + control |
 | 209 B | **extended-46** | **half-degrees** @ w20.b8 | indoor w35.b8, outdoor w36.b8 | ✅ read + control (no left-right vane) |
-| 133 B | *unclaimed* — map below | `°C − 16` @ w1.b12 (4 bits) | indoor w5.b8, outdoor w6.b8 | ⏳ documented, not shipped |
+| 133 B | **central cabinet**, resolved as `related-19+4@25` | `°C − 16` @ w1.b8 | indoor w10.b8, outdoor w11.b8 | ✅ read + control (one setting at a time; no vane) |
+| 133 B | a second, unobserved map — see below | `°C − 16` @ w1.b12 (4 bits) | indoor w5.b8, outdoor w6.b8 | ⏳ documented, never seen |
 | 149 / 155 B | *unclaimed* — floor/heat-pump class | @ w25.b8 | — | ⏳ two conflicting maps at 149 B |
 
 ### Secondary readings, by family
@@ -184,10 +200,18 @@ nothing in its report reads one back, and a control that cannot be read back is 
 positions themselves come from the device's own model, so even on a family that can place them the
 entity appears only for a unit that publishes more than the two ends.
 
-The up-down axis needs one translation on the way out: a model numbers its stops `0, 2, 4, 5, 6, 8`
-while the wire counts `0, 2, 4, 6, 8, 12`. `VANE_V_MODEL_TO_EPP` holds it, and it is confirmed on
-hardware — a unit was stepped through every stop its app offers, one capture per stop, and reported
-the table's value each time, ending on the same `0x0c` the classic family has always used for auto.
+The up-down axis needs one translation on the way out, because a model numbers its stops differently
+from the wire: a unit's `0, 2, 4, 5, 6, 8` are `0, 2, 4, 6, 8, 12` there. `VANE_V_MODEL_TO_EPP` holds
+it, **read from the published map's own code table for the attribute** so that it covers every stop
+the vendor defines — including the two health-airflow positions and the second auto that some
+cabinets carry and a wall unit does not.
+
+Six of those stops are confirmed on hardware: a unit was stepped through every stop its app offers,
+one capture per stop, and reported the table's value each time, ending on the same `0x0c` the classic
+family has always used for auto. Those readings are kept beside the table and checked against it,
+because taking a table from a generated source is safe only while the source still agrees with an
+observation.
+
 The left-right axis needs no table: its model code is its wire value.
 
 ### classic
@@ -327,12 +351,57 @@ write observes it, and the readback now makes that something an owner can check.
 `windDirectionHorizontal` stays unwritten: its position is published like the others, but nothing in
 this family's report reads it back. See item 28 in `FUTURE_WORK.md`.
 
-### 133 B — documented, not shipped
+### 133 B — two different layouts share this length
 
-One factory preset implies a 133-byte report, and it is a real AC family, but no unit has been seen
-reporting one. The map is recorded here so that adding it is a ten-minute job rather than an
-investigation. Note the **4-bit setpoint** and that this family carries running power and compressor
-telemetry *inline* in the status report, where other families put it in a separate frame.
+⚠️ **The clearest example in this project of why a report's size is not its layout.** Two unrelated
+maps both produce a 133-byte report, and only one of them has ever been seen on hardware. A decoder
+that keys on length alone picks between them by coin toss; the appliance's own identifier picks
+correctly, which is why that is what resolves a report here.
+
+#### The central cabinet — read and control
+
+A ceiling-suspended cabinet of the `0d12` class. Its layout is the published map at the classic −19
+offset **with four words inserted** between the settable block and the sensors — the same shape as
+the classic family's 127-byte member (one inserted word) and extended-46 (ten), and at the same
+pivot. So the settable block sits exactly where every other family puts it, and everything from the
+room temperature on is four words further down.
+
+| report word | bytes | carries |
+|---|---|---|
+| w1 | 92–93 | targetTemperature `°C − 16` @ b8; up-down vane @ b0 |
+| w2 | 94–95 | operationMode @ b13, windSpeed @ b8 |
+| w3 | 96–97 | the flag word — onOffStatus @ b0, and the comfort toggles |
+| w4 | 98–99 | left-right vane @ b0 |
+| w5 | 100–101 | the secondary flag word |
+| **w6–w9** | 102–109 | **the four inserted words** — not described by any published map |
+| w10 | 110–111 | indoorTemperature @ b8 (half-degrees), indoorHumidity @ b0 |
+| w11 | 112–113 | outdoorTemperature @ b8 (`− 64`), acType @ b7 |
+| w12 | 114–115 | errCode @ b8, opSrc @ b0 |
+
+**How the insert is established, given that a wrong count also looks plausible.** Three different
+insert counts place the climate block on values that pass every range check — one reads a 25 °C room
+and a 31 °C outdoor, one reads 1 °C and −14 °C, one reads 47.5 °C. The rule that settles a plain
+offset ("try them all, accept it only if exactly one fits") therefore cannot settle a count, because
+a wrong count does not read off the end of the report; it lands the sensors on other real fields.
+
+What separates them is a fact from outside the report. `acType` is a bit the appliance sets one word
+past the room temperature, and the device's own model lists the operating modes it supports: a unit
+declaring a heat mode is a heat pump and says so, a unit that does not is cooling-only and says
+that. Only the true count reads back the machine the model describes. An appliance whose model
+declares nothing gets no inserted layout at all, because there would be nothing to check against.
+
+Control is **one setting at a time**: this class publishes no group-set command and its firmware
+refuses one, so power, setpoint, mode, fan and the comfort toggles are each their own command, and
+each is read back from its own position in the report above.
+
+#### The unobserved map
+
+One factory preset implies a different 133-byte report. No unit has been seen sending one, and it is
+**not** what the cabinets above report — run against a real cabinet's reports it reads a constant
+16 °C, permanently off, in every state, so nothing about it is confirmed. The map is recorded here so
+that adding it is a ten-minute job rather than an investigation. Note the **4-bit setpoint** and that
+it carries running power and compressor telemetry *inline* in the status report, where other families
+put it in a separate frame.
 
 | attribute | word.bit/len |
 |---|---|

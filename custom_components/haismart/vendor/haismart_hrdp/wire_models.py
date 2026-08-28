@@ -33,7 +33,7 @@ monitoring-only.
 """
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 
 from .canonical_map import CANONICAL, CANONICAL_WRITE, PROFILE_DISPLACEMENTS
@@ -165,12 +165,31 @@ VANE_H_AUTO = 0x07
 # 4, 5, 6, 8 while the unit works in even steps — and the difference is why a position on this axis
 # cannot simply be passed through.
 #
-# Confirmed on hardware: a unit stepped through every stop its app offers, one capture per stop,
-# reported 0, 2, 4, 6, 8 and 12 for the model's 0, 2, 4, 5, 6 and 8. The last of those is the same
-# 0x0C the classic family has always used for "auto", which is the check that the two ends agree.
-# ``7`` completes the table on the same pattern; no model seen here lists it.
-VANE_V_MODEL_TO_EPP: Mapping[int, int] = {0: 0, 2: 2, 4: 4, 5: 6, 6: 8, 7: 10, 8: 12}
+# ⚠️ **Read from the published map, not written out by hand.** This table used to be a literal of the
+# seven stops one unit was stepped through on hardware, and a code absent from it does not decode
+# wrong — it VANISHES, because every consumer filters against the table's keys
+# (``_model_authorized_codes`` drops an unlisted code from the model-authorized set, and the vane
+# select drops it from its options). So the four codes the vendor publishes and that unit lacks were
+# silently unreachable on the 86 products that declare them: ``1``/``3`` (健康气流, health airflow
+# up and down) and ``9`` (上下摆自动2, the special-model auto), plus ``10``, which no published
+# product declares at all.
+#
+# The map's ``enum`` is the vendor's own epp->std table, generated from the models' ``variants``, so
+# inverting it is the same table read from its source rather than a wider guess. It AGREES with the
+# hardware-confirmed seven on every one of them — zero disagreements — which is what licenses taking
+# the rest from it; ``test_vane_table_matches_the_stops_confirmed_on_hardware`` pins that agreement,
+# so a regenerated map that moved one of the confirmed stops fails rather than silently redefining
+# what a unit is told to do.
+VANE_V_MODEL_TO_EPP: Mapping[int, int] = {
+    std: epp for epp, std in (CANONICAL["windDirectionVertical"].enum or {}).items()
+}
 VANE_V_EPP_TO_MODEL: Mapping[int, int] = {epp: std for std, epp in VANE_V_MODEL_TO_EPP.items()}
+
+#: The stops a real unit was stepped through, one capture per stop, and reported. Kept separately
+#: from the table above so the published map is checked against an observation rather than trusted:
+#: ``12`` is the same ``0x0C`` the classic family has always used for auto, which is the check that
+#: the two ends agree.
+VANE_V_CONFIRMED_ON_HARDWARE: Mapping[int, int] = {0: 0, 2: 2, 4: 4, 5: 6, 6: 8, 8: 12}
 
 
 def vane_v_sweeping(raw: int) -> bool:
@@ -1649,10 +1668,17 @@ def select_wire_model(length: int, uplus_id: str | None = None) -> WireModel | N
 # everything the map states: these are the fields the plausibility check below can actually judge,
 # and the ones a thermostat needs. Anything further would be placed on the strength of the
 # relationship alone, which is what `canonical_displacement` exists to refuse.
+#
+# ⚠️ ``swing_horizontal`` belongs here for the same reason ``swing_vertical`` does and was simply
+# missed: the left-right vane sits one word from the up-down one, in the same core block, and a unit
+# that has the axis reports it there. Leaving it out meant a related-layout appliance with a working
+# left-right vane reported its swing state as nothing at all -- and the state is what a swing control
+# is read back from, so the axis looked dead even where the family can move it. Adding it is a READ
+# only: control is gated on the write map (``supports_field``), which this does not touch.
 _RELATED_KEYS: tuple[str, ...] = (
     "power", "target_temperature", "current_temperature", "outdoor_temperature",
     "heat_capable", "error_code", "last_changed_by", "operation_mode", "wind_speed",
-    "swing_vertical",
+    "swing_vertical", "swing_horizontal",
 )
 
 #: How much of an identifier two models must share before one is treated as the other's relative.
@@ -1846,11 +1872,8 @@ def frame_write_fields(
 #: value encodings need no translation because they are the published map's already -- mode
 #: ``0/1/2/4/6``, fan ``1/2/3/5``, setpoint ``°C − 16``, booleans ``0``/``1``.
 #:
-#: ⚠️ The two vane ids this generation also defines (``0x03`` up-down, ``0x0C`` left-right) are
-#: deliberately absent. The appliance these were read from has no vane, so those two alone have
-#: never been seen accepted by anything of this class. An id that is simply unimplemented is refused
-#: and harmless; one that is implemented and means something else would move a setting nobody asked
-#: for. They wait for a single observation, on the same bar as every other control here.
+#: ⚠️ The two vane ids this generation also defines are deliberately absent -- see
+#: :data:`WITHHELD_SINGLE_PARAM_IDS`, which records WHY, in a form the suite re-derives.
 SINGLE_PARAM_IDS: Mapping[str, Mapping[str, int]] = {
     "0d12": {
         "onOffStatus": 0x01,
@@ -1864,12 +1887,43 @@ SINGLE_PARAM_IDS: Mapping[str, Mapping[str, int]] = {
 }
 
 
+#: Single-parameter ids this project knows of and does not ship, with the reason -- as data, so the
+#: reason is CHECKED rather than asserted in a comment that nobody re-runs. A decision not to ship is
+#: a measurement, and a measurement has an expiry date: the moment one of these is observed accepted,
+#: the entry moves to :data:`SINGLE_PARAM_IDS` and the test below stops passing for the old reason.
+#:
+#: Both entries are the same story. Prior art publishes a table containing them, but its ``0x03`` and
+#: ``0x0C`` were **added without a linked capture** and appear zero times across every attachment in
+#: its issue tracker -- they are the invented half of a table whose other eleven ids were read off a
+#: real appliance's wire. The one cabinet whose traffic was captured has no vane, so nothing of this
+#: class has ever been seen to accept either. An id that is merely unimplemented gets refused and is
+#: harmless; one that is implemented and means something ELSE moves a setting nobody asked for, and
+#: this channel writes a named attribute directly with no read-modify-write to fall back on.
+#:
+#: ⚠️ What is NOT the reason: that the appliances lack the hardware. They do not -- the products of
+#: this class declare both axes and report both back, which is what
+#: ``test_the_withheld_vane_ids_are_waiting_only_on_an_observation`` pins. The gap is one
+#: accept/refuse observation, and the acceptance oracle makes that a ten-second test on any cabinet
+#: of this class that has a vane.
+WITHHELD_SINGLE_PARAM_IDS: Mapping[str, Mapping[str, tuple[int, str]]] = {
+    "0d12": {
+        "windDirectionVertical": (0x03, "never observed accepted"),
+        "windDirectionHorizontal": (0x0C, "never observed accepted"),
+    },
+}
+
+
 def _uplus_class(uplus_id: str | None) -> str:
     """The four identifier characters that name a device class, or ``""``."""
     return uplus_id[16:20].lower() if uplus_id and len(uplus_id) >= 20 else ""
 
 
-def value_param_write_fields(displacement: int, uplus_id: str | None) -> dict[str, ValueParam]:
+def value_param_write_fields(
+    displacement: int,
+    uplus_id: str | None,
+    *,
+    insert: tuple[int, int] | None = None,
+) -> dict[str, ValueParam]:
     """The single-parameter controls this appliance's device class publishes, positioned for reads.
 
     Membership comes from :data:`SINGLE_PARAM_IDS`; the read-back position comes from the published
@@ -1877,6 +1931,12 @@ def value_param_write_fields(displacement: int, uplus_id: str | None) -> dict[st
     offered where its state can also be read. An attribute the map cannot place is dropped rather
     than offered write-only, which is the rule this project applies everywhere: a control that cannot
     be read back is worse than a missing one.
+
+    ``insert`` is the ``(pivot, count)`` of a block the report carries and the published map does not
+    describe, for a family that displaces the map piecewise. Every id published for the one class
+    that uses this channel sits BELOW the pivot, so today it moves nothing -- it is here so that a
+    control above the pivot is placed correctly rather than nineteen words wrong, which is the shape
+    of mistake this whole module exists to refuse.
     """
     ids = SINGLE_PARAM_IDS.get(_uplus_class(uplus_id))
     if not ids:
@@ -1888,6 +1948,8 @@ def value_param_write_fields(displacement: int, uplus_id: str | None) -> dict[st
         if spec is None or c is None:
             continue
         word = c.word + displacement
+        if insert is not None and c.word >= insert[0]:
+            word += insert[1]
         if word < 1:
             continue
         out[name] = ValueParam(
@@ -1900,12 +1962,44 @@ def value_param_write_fields(displacement: int, uplus_id: str | None) -> dict[st
     return out
 
 
+#: The one word an inserted block has ever begun at. Both families that carry words the published map
+#: does not describe pivot HERE -- the classic 127-byte rental SKU (one word, ``targetRentTime``) and
+#: extended-46 (ten). It is not a free parameter fitted per report: it is the boundary between the
+#: settable climate block and the sensor block, and a family that carries extra words carries them
+#: between the two. Searching over pivots as well as counts would be fitting, and fitting places
+#: every attribute somewhere plausible and wrong.
+RELATED_INSERT_PIVOT = 25
+
+
+def _canonical_placement(
+    displacement: int, insert: tuple[int, int] | None
+) -> Callable[[int], int]:
+    """Where map word ``w`` lands, for a family displaced by ``displacement`` with ``insert``."""
+    if insert is None:
+        return lambda w: w + displacement
+    pivot, count = insert
+    return lambda w: w + displacement + (count if w >= pivot else 0)
+
+
+def related_family_name(displacement: int, insert: tuple[int, int] | None = None) -> str:
+    """The name a related layout reports itself by, and that :func:`related_model_named` parses back.
+
+    ``related-19`` for a flat offset; ``related-19+4@25`` when the report carries an inserted block.
+    The name has to carry the insert because it is the ONLY thing the decode hands its caller, and a
+    caller that rebuilt the flat model from a name that meant an inserted one would read the report
+    correctly and then command it through positions four words out.
+    """
+    base = f"related{displacement:+d}"
+    return base if insert is None else f"{base}+{insert[1]}@{insert[0]}"
+
+
 def related_wire_model(
     length: int,
     displacement: int,
     *,
     order: Sequence[str] | None = None,
     uplus_id: str | None = None,
+    insert: tuple[int, int] | None = None,
 ) -> WireModel:
     """A layout for reports of ``length``, taken from the published map at ``displacement``.
 
@@ -1929,11 +2023,24 @@ def related_wire_model(
     one has only been checked against the core block.
     """
     write = frame_write_fields(order, uplus_id)
-    params = value_param_write_fields(displacement, uplus_id)
+    params = value_param_write_fields(displacement, uplus_id, insert=insert)
+    place = _canonical_placement(displacement, insert)
+    # A group-set is packed as ONE contiguous word block sliced straight out of the report
+    # (`baseline_words`), so it cannot span a block the report carries and the map does not describe:
+    # every word from the pivot on would be seeded from the wrong place and written back there. The
+    # frame covers canonical words 20..19+word_count, so it crosses an insert once it reaches the
+    # pivot. Refuse the group-set in that case rather than pack it wrong -- the appliance keeps its
+    # reads and any per-attribute channel, which is the safe direction. No family reaches this today
+    # (the one class with an insert publishes no group-set order at all), and that is exactly why it
+    # is written down now rather than discovered by a wrong write later.
+    if insert is not None and write:
+        reach = max([5, *(f.word for f in write.values())])
+        if 19 + reach >= insert[0]:
+            write = {}
     return WireModel(
-        family=f"related{displacement:+d}",
+        family=related_family_name(displacement, insert),
         report_lengths=frozenset({length}),
-        fields=canonical_fields(displacement, list(_RELATED_KEYS)),
+        fields=canonical_fields(place, list(_RELATED_KEYS)),
         # Either mechanism makes an appliance commandable. A class that publishes no group-set order
         # gets no ``group_cmd`` and no ``write_fields``, so the group-set encoder still refuses it --
         # what it gets instead is one op per attribute.
@@ -1995,6 +2102,83 @@ def related_wire_models(
     )
 
 
+def related_insert_models(
+    length: int,
+    uplus_id: str | None,
+    *,
+    order: Sequence[str] | None = None,
+) -> tuple[WireModel, ...]:
+    """Candidate layouts for a report that carries words the published map does not describe.
+
+    Some appliances report a block of extra words between the settable climate block and the sensor
+    block, pushing every sensor along by that many words. The classic family already has one member
+    like this (the 127-byte rental SKU, one word) and extended-46 another (ten), and both pivot at
+    :data:`RELATED_INSERT_PIVOT` -- so the pivot is taken as known and only the COUNT is searched.
+
+    ⚠️ These are strictly a fallback for a report no flat offset fits, and :func:`decode_related`
+    only reaches them in that case. That is not a preference, it is what keeps the change safe: an
+    inserted layout can read a report the flat one also reads, so offering both would turn an
+    appliance that resolves today into one with two fits and therefore none.
+
+    ⚠️⚠️ And the counts are NOT self-separating. Measured on the three reports attached to issue #12,
+    **three different counts place the core block plausibly** -- the true one reads a 25 °C room and
+    a 31 °C outdoor, one reads 1 °C and -14 °C, and one reads 47.5 °C with no outdoor reading at all.
+    The "exactly one candidate fits" rule that settles a flat displacement therefore does NOT settle
+    a count, because a wrong count lands the sensors on other real fields rather than off the end of
+    the report. Corroboration by something outside the report is required, and that is what
+    :func:`insert_corroborated_by_actype` supplies.
+    """
+    disp = displacement_candidates(uplus_id) or (PUBLISHED_DISPLACEMENTS if uplus_id else ())
+    words = (length - _ATTR_BASE) // 2
+    out: list[WireModel] = []
+    for d in disp:
+        # An insert only moves things further down the report, so the largest count worth trying is
+        # the one that puts the last key the layout needs on the report's final word. Bounded by the
+        # report itself rather than by a constant nobody can justify.
+        highest = max(CANONICAL[_CLIMATE_SPEC[k][0]].word for k in _RELATED_KEYS)
+        for count in range(1, max(0, words - (highest + d)) + 1):
+            out.append(
+                related_wire_model(
+                    length, d, order=order, uplus_id=uplus_id,
+                    insert=(RELATED_INSERT_PIVOT, count),
+                )
+            )
+    return tuple(out)
+
+
+def insert_corroborated_by_actype(decoded: Mapping, declared_modes: Collection[int]) -> bool:
+    """Whether a candidate layout's ``acType`` bit agrees with the modes the device declares.
+
+    **This is the gate that separates one insert count from another, and it is not a plausibility
+    band.** It is two independent published facts being required to agree: ``acType`` is a bit the
+    appliance sets in every report, one word past the room temperature, and the device's own model
+    lists the operating modes it supports. A unit that declares a heat mode is a heat pump and its
+    ``acType`` says so; a unit that does not is cooling-only and its ``acType`` says that. A count
+    that lands ``acType`` on some other field has no reason to agree, and on the reports this was
+    built from it does not: of the three counts that place the core block plausibly, only the true
+    one reads back the cooling-only unit it is.
+
+    Two facts about the same appliance from two sources, and the layout has to satisfy both. That is
+    a far stronger test than "the numbers look sensible", which is what let the other two counts
+    through, and it needs no judgement about what a room temperature ought to be.
+
+    ⚠️ Returns ``False`` when the device declares no modes at all: with nothing to corroborate
+    against, an insert is a guess, and the appliance keeps the flat behaviour it has today rather
+    than gaining a layout nothing checked.
+    """
+    if not declared_modes:
+        return False
+    heat_capable = decoded.get("heat_capable")
+    if heat_capable is None:
+        return False
+    return bool(heat_capable) == (_HEAT_MODE in declared_modes)
+
+
+#: ``operationMode``'s heat code, in the STD space every published model uses. A model listing it is
+#: a heat pump; one that does not is cooling-only.
+_HEAT_MODE = 4
+
+
 def related_shortlist_is_ranked(uplus_id: str | None) -> bool:
     """Whether :func:`related_wire_models` ordered its candidates on evidence for ``uplus_id``.
 
@@ -2029,14 +2213,34 @@ def related_model_named(
     and nothing else.
 
     ``None`` for any name that is not one of ours, so an unrecognised layout cannot become writable.
+
+    ⚠️ A name carrying an inserted block (``related-19+4@25``) must rebuild WITH that block. Parsing
+    only the leading offset would return a model that reads four words short of where this report
+    keeps its sensors, and then command the appliance from it -- so an unparseable suffix returns
+    ``None`` rather than falling back to the flat layout.
     """
     if not family.startswith("related"):
         return None
+    rest = family[len("related"):]
+    insert: tuple[int, int] | None = None
+    if "+" in rest[1:]:
+        # `rest` opens with the offset's own sign, so look for the insert's `+` past that character.
+        head, _, tail = rest[1:].partition("+")
+        rest = rest[0] + head
+        count, sep, pivot = tail.partition("@")
+        if not sep:
+            return None
+        try:
+            insert = (int(pivot), int(count))
+        except ValueError:
+            return None
     try:
-        displacement = int(family[len("related"):])
+        displacement = int(rest)
     except ValueError:
         return None
-    return related_wire_model(length, displacement, order=order, uplus_id=uplus_id)
+    return related_wire_model(
+        length, displacement, order=order, uplus_id=uplus_id, insert=insert
+    )
 
 
 def decode_related(
@@ -2045,6 +2249,7 @@ def decode_related(
     profile=None,
     *,
     order: Sequence[str] | None = None,
+    declared_modes: Collection[int] | None = None,
 ) -> dict | None:
     """Decode ``data`` with the layout of the closest published relative that the report agrees with.
 
@@ -2071,7 +2276,30 @@ def decode_related(
         if ranked:
             return decoded
         fits.append(decoded)
-    return fits[0] if len(fits) == 1 else None
+    if fits:
+        return fits[0] if len(fits) == 1 else None
+
+    # Nothing placed the core block at any flat offset. Before falling through to the partial
+    # decode, ask whether this report carries a block the published map does not describe -- which
+    # is not a new kind of appliance but one this project already maps twice (the 127-byte classic
+    # member, extended-46). The failure looks exactly like it did for issue #12's central cabinet:
+    # the setpoint, mode, fan and power all read correctly at -19 while the room temperature landed
+    # inside the undescribed block and read zero, so the layout was rejected on the one field the
+    # extra words had moved.
+    #
+    # ⚠️ Reached ONLY when no flat offset fits, so an appliance that resolves today is untouched.
+    # ⚠️ And gated on corroboration, never on the count standing alone: three counts place issue
+    # #12's reports plausibly and only one is right.
+    if declared_modes is None:
+        return None
+    inserted = [
+        decoded
+        for wm in related_insert_models(len(data), uplus_id, order=order)
+        if (decoded := wm.decode(data, profile)) is not None
+        and all(k in decoded for k in _RELATED_REQUIRED)
+        and insert_corroborated_by_actype(decoded, declared_modes)
+    ]
+    return inserted[0] if len(inserted) == 1 else None
 
 
 def device_type_class(uplus_id: str | None) -> str | None:

@@ -1512,7 +1512,16 @@ def _shift_model(model: WireModel, pivot: int, shift: int, setpoint: tuple) -> W
     )
 
 
-def _score(decoded: dict, shadow: Mapping[str, str] | None) -> int:
+def _score(decoded: dict, shadow: Mapping[str, str] | None) -> int | None:
+    """How well a candidate layout explains a report, or ``None`` if it is refused outright.
+
+    A candidate that puts a value somewhere no such value can exist is not a low-scoring candidate,
+    it is a wrong one -- so :func:`structural_violations` vetoes rather than deducts. Scoring it
+    down instead would let a rich coincidence outrank a correct but sparse reading, which is exactly
+    how a mis-placed layout gets proposed to a reporter as the best guess.
+    """
+    if structural_violations(decoded):
+        return None
     score = 0
     if decoded.get("current_temperature") is not None:
         score += _SCORE_SENSOR_PLAUSIBLE
@@ -1617,7 +1626,12 @@ def probe_layout(
                         ):
                             scores = []
                             break
-                        scores.append(_score(decoded, shadow))
+                        # A veto, not a low score: a candidate placing a value where no such value
+                        # can exist is wrong, not merely unconvincing.
+                        if (one := _score(decoded, shadow)) is None:
+                            scores = []
+                            break
+                        scores.append(one)
                         decodes.append(
                             {k: v for k, v in decoded.items() if k not in ("layout", "writable")}
                         )
@@ -2146,6 +2160,37 @@ def related_insert_models(
     return tuple(out)
 
 
+#: The highest fault code the published alarm table defines. ``errCode`` is the alarm's position plus
+#: one, matched against all 51 entries with zero mismatches, so a report claiming a higher code is
+#: not reporting a fault -- it is being read at the wrong place.
+_MAX_ERR_CODE = 51
+
+
+def structural_violations(decoded: Mapping) -> tuple[str, ...]:
+    """Published value spaces a correctly-placed report cannot fall outside of.
+
+    These are the **legal-range** half of the structural invariants this project has recorded: a
+    field that cannot hold the value read out of it says the layout is wrong, whatever else it
+    scores. They are deliberately NOT the plausibility bands elsewhere in this module. A band asks
+    "does this look like a room temperature"; these ask "does this value exist at all", which is a
+    question the published data answers rather than the reader's expectations.
+
+    ⚠️ **The distinction is load-bearing, and the tempting version of this is a trap.** The recorded
+    invariant list also contains *"``errCode`` is 0 and the alarm frame is all-zero on a healthy
+    unit"*. As a cross-frame consistency check that is sound; as a test on a status report alone it
+    assumes the appliance is healthy, and would reject the CORRECT layout for anyone whose air
+    conditioner is actually reporting a fault -- the one owner most in need of a working decode. So
+    the range is checked and the health is not.
+
+    Returns the violations, empty when the report is consistent with every space we can check.
+    """
+    out: list[str] = []
+    err = decoded.get("error_code")
+    if isinstance(err, int) and err > _MAX_ERR_CODE:
+        out.append(f"error_code={err} exceeds the {_MAX_ERR_CODE} codes the alarm table defines")
+    return tuple(out)
+
+
 def insert_corroborated_by_actype(decoded: Mapping, declared_modes: Collection[int]) -> bool:
     """Whether a candidate layout's ``acType`` bit agrees with the modes the device declares.
 
@@ -2170,6 +2215,15 @@ def insert_corroborated_by_actype(decoded: Mapping, declared_modes: Collection[i
     ⚠️ Returns ``False`` when the device declares no modes at all: with nothing to corroborate
     against, an insert is a guess, and the appliance keeps the flat behaviour it has today rather
     than gaining a layout nothing checked.
+
+    ⛔ **:func:`structural_violations` is deliberately NOT applied here, and the reason is worth
+    keeping.** It vetoes candidates that are impossible, which is sound on its own -- but on this
+    path the safety comes from AMBIGUITY: two survivors mean the report cannot choose, and the
+    appliance keeps its partial decode. Removing an impossible candidate can leave a merely-wrong one
+    as the sole survivor and thereby get it accepted. Measured on the reports this was built from:
+    with the veto applied and a heat-declaring model, the one candidate left standing is the wrong
+    one, where without it two stand and the layout is refused. So the veto belongs where a human
+    reads the ranking (:func:`probe_layout`), not where a single survivor is acted on.
 
     ⓘ **Two further invariants would decide the same question without a model**, and are recorded
     rather than used: on the reports this was built from, ``errCode`` reads a value no alarm position

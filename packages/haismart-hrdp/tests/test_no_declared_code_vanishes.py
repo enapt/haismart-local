@@ -118,3 +118,49 @@ def test_a_group_set_is_never_packed_across_an_inserted_block() -> None:
     # Reads and the per-attribute channel are untouched -- refusing the group-set is not refusing
     # the appliance.
     assert crosses.fields
+
+
+def test_a_value_no_field_can_hold_vetoes_a_layout_candidate() -> None:
+    """A published value space is a legal-range test, and a candidate outside it is wrong.
+
+    ``errCode`` is an alarm's position plus one, matched against all 51 published entries with zero
+    mismatches, so a report claiming a higher code is not reporting a fault -- it is being read in
+    the wrong place. This is what the recorded invariant list means by "wrong regardless of score".
+    """
+    assert not wm.structural_violations({"error_code": 0})
+    assert not wm.structural_violations({"error_code": 51})
+    assert wm.structural_violations({"error_code": 52})
+    assert wm.structural_violations({"error_code": 95})
+    # Absent is not a violation: a family that does not place the field says nothing about it.
+    assert not wm.structural_violations({})
+
+
+def test_the_veto_is_not_applied_where_ambiguity_is_the_safety_net() -> None:
+    """⚠️ Pins a NON-obvious placement decision, so nobody 'tidies it up' by applying it everywhere.
+
+    The layout prober ranks candidates for a person to read, so removing impossible ones there is a
+    straight improvement. The inserted-layout gate is different: it ACTS on a single survivor, and
+    the protection against a wrong answer is that two candidates survive and the report is refused.
+    Vetoing an impossible candidate there can leave a merely-wrong one alone in the field.
+
+    Measured on the reports this was derived from: told (inconsistently) that the appliance declares
+    heat, the wrong count 3 is impossible and the wrong count 5 is not -- so with a veto the wrong
+    one would stand alone and be accepted, and without it two stand and nothing is.
+    """
+    from test_inserted_layouts import CABINET_UPLUS_ID, STATUS_133_COOL22
+
+    heat = frozenset({0, 1, 2, 4, 6})
+    survivors = []
+    for model in wm.related_insert_models(len(STATUS_133_COOL22), CABINET_UPLUS_ID):
+        decoded = model.decode(STATUS_133_COOL22, None)
+        if decoded is None or not all(k in decoded for k in wm._RELATED_REQUIRED):
+            continue
+        if wm.insert_corroborated_by_actype(decoded, heat):
+            survivors.append((model.family, bool(wm.structural_violations(decoded))))
+    # Two survive the corroboration; exactly one of them is also structurally impossible.
+    assert len(survivors) == 2, survivors
+    assert sum(1 for _, vetoed in survivors if vetoed) == 1
+    # So the gate must refuse -- which it does, because it does NOT apply the veto.
+    assert wm.decode_related(
+        STATUS_133_COOL22, CABINET_UPLUS_ID, None, declared_modes=heat
+    ) is None

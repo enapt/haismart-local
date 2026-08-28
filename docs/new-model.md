@@ -130,7 +130,8 @@ So before assuming your model is undocumented, make sure you are on a current re
 catalogue has grown a great deal, and a name it could not find once it very likely finds now.
 
 The file carries one more thing that saves a round-trip. Once your unit's layout **is** recognised,
-diagnostics reads **every attribute your air conditioner declares** — the settings with no entity as
-well as the ones with — and prints them beside the values your unit publishes through its cloud
-profile. Two independent sources for the same readings, which is usually enough to confirm a layout
+diagnostics reads **every attribute your air conditioner declares that the published description
+places** — the settings with no entity as well as the ones with — and prints them beside the values
+your unit publishes through its cloud profile. A richly-featured unit will declare some the
+description gives no position for; those are exactly the ones a capture is worth taking for. Two independent sources for the same readings, which is usually enough to confirm a layout
 outright, or to show exactly which field is off.

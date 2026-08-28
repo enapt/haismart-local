@@ -220,8 +220,9 @@ worth a great deal:
 A diagnostics download is close to self-contained. It already knows what you would otherwise be asked
 to transcribe: under `device_identity` it carries your **model number** and the product code it is
 keyed on, the **Model ID**, and the Wi-Fi module's **firmware and SDK version** exactly as the
-appliance reports them. Besides the raw report it carries **every attribute your unit declares, read
-off its own report** — the settings that have no entity as well as the ones that do — alongside the
+appliance reports them. Besides the raw report it carries **every attribute your unit declares that the
+published description places**, read off its own report — the settings that have no entity as well as
+the ones that do — alongside the
 values your air conditioner publishes through its cloud profile, so the two can be compared without
 asking you for anything further. On the reference unit those two independent sources agree on all 21
 comparable readings.

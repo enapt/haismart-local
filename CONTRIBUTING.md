@@ -126,8 +126,9 @@ scripts/probe-diagnostics.py off.json cool.json fan.json \
 to verify, never as a result: the ranking is a heuristic, close scores are common, and the same page
 explains why the registry, not the search, remains the authority on what ships.
 
-A diagnostics download also carries **every attribute the unit declares, read off its own report** —
-far more than the family map names — beside the values the device publishes through its cloud
+A diagnostics download also carries **every attribute the unit declares that the published
+description places**, read off its own report — far more than the family map names, though short of
+everything a feature-rich unit lists — beside the values the device publishes through its cloud
 profile, so the two can be compared without a round-trip to the reporter. On a family whose
 displacement is confirmed those two independent sources should agree; a disagreement is a finding.
 Nothing there becomes an entity, and [`docs/report-layouts.md`](docs/report-layouts.md) explains what

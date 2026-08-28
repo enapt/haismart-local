@@ -45,8 +45,12 @@ account registered with, and is filtered by product category as well; every regi
 air-conditioner category ships here, window units included.
 
 A diagnostics download from a unit on a recognised layout reads **every attribute that unit
-declares** and prints it beside the values the unit publishes through its cloud profile — two
-independent sources for the same readings. That is usually enough to confirm a model belongs in this
+declares and the published description places** — far more than the family map names — and prints it
+beside the values the unit publishes through its cloud profile, two independent sources for the same
+readings. A feature-rich unit declares more than that: its description lists what the *product*
+supports, and the layouts published for it are older than some of those functions, so a setting can
+be declared with nowhere on the wire to read it. That is a gap in what the manufacturer published,
+not a fault in the unit or the download. That is usually enough to confirm a model belongs in this
 table without anyone here owning one.
 
 ## Confirmed working

@@ -202,6 +202,14 @@ prevent.
 | window / media | 8 | ~91 % |
 | **total** | **1,451** | **83.9 %** |
 
+⚠️ **This is a slot count across all products, and it must not be read as "any given unit is 84 %
+mapped".** Most of the 1,451 are ordinary wall units declaring around twenty attributes, and they
+pull the figure up. A feature-rich appliance is much further from complete: the twin-tower cabinet
+this project holds diagnostics for declares **79 real attributes and 40 are positioned** — its own
+description lists what the *product* supports, while the layouts published for it predate several of
+those functions. That shortfall is a gap in what the manufacturer published, not one in what this
+integration reads.
+
 **The raw slot count is not the missing-control gap.** Classified, what remains is:
 
 | why it is missing | slots | note |
@@ -434,6 +442,14 @@ value in the payload.
 **What ships:** seven controls — power, setpoint, mode, fan speed, health, quiet and boost — offered
 where the cabinet's own model declares the attribute, and each read back from its own position in
 the report so it shows real state rather than an echo of the request.
+
+⚠️ **All of that is gated on the report resolving to a layout**, which for these cabinets is not
+automatic: one of them reports a block of words between its settings and its sensors that no
+published description mentions, so every ordinary offset is rejected on the room temperature alone
+and the appliance decodes almost nothing. That case is handled (see the 133-byte section of
+[`report-layouts.md`](report-layouts.md)); a cabinet reporting some *other* length with the same
+shape would need the same treatment, and the evidence for the block size has to come from outside
+the report.
 
 * **The command bytes** are the ones these appliances are observed to exchange, and the values need
   no translation: mode `0/1/2/4/6`, fan `1/2/3/5`, setpoint `°C − 16`, booleans `0`/`1` — the same

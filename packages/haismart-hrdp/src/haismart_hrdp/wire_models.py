@@ -2150,7 +2150,12 @@ def insert_corroborated_by_actype(decoded: Mapping, declared_modes: Collection[i
     """Whether a candidate layout's ``acType`` bit agrees with the modes the device declares.
 
     **This is the gate that separates one insert count from another, and it is not a plausibility
-    band.** It is two independent published facts being required to agree: ``acType`` is a bit the
+    band.** It is not a new test either: it is a structural invariant this project had already
+    written down -- *"``acType`` is 1 bit, and it must agree with whether the model list contains
+    heat"* -- under the standing verdict that a candidate layout violating it is wrong whatever else
+    it scores. What was missing was not the idea but the wiring.
+
+    It is two independent published facts being required to agree: ``acType`` is a bit the
     appliance sets in every report, one word past the room temperature, and the device's own model
     lists the operating modes it supports. A unit that declares a heat mode is a heat pump and its
     ``acType`` says so; a unit that does not is cooling-only and its ``acType`` says that. A count
@@ -2165,6 +2170,13 @@ def insert_corroborated_by_actype(decoded: Mapping, declared_modes: Collection[i
     ⚠️ Returns ``False`` when the device declares no modes at all: with nothing to corroborate
     against, an insert is a guess, and the appliance keeps the flat behaviour it has today rather
     than gaining a layout nothing checked.
+
+    ⓘ **Two further invariants would decide the same question without a model**, and are recorded
+    rather than used: on the reports this was built from, ``errCode`` reads a value no alarm position
+    reaches at one wrong count, and ``indoorHumidity`` exceeds 100 at the other. Either alone
+    eliminates one candidate. ⚠️ If they are ever wired up, use the LEGAL-RANGE form -- a code that
+    cannot exist, a percentage above 100 -- and never *"errCode is zero because a healthy unit reads
+    zero"*, which assumes the appliance is healthy and would refuse the true layout on a faulty one.
     """
     if not declared_modes:
         return False

@@ -2800,3 +2800,73 @@ def test_a_reason_code_is_read_against_the_product_that_sent_it() -> None:
     assert refusal_reason(cabinet, 50002) is None
     assert refusal_reason(None, 1) is None
     assert refusal_reason(cabinet, None) is None
+
+
+# Real telemetry payloads captured from two other published families, kept as the fixtures for the
+# published-map path. `EXT43_*` are the same appliance minutes apart, compressor running and idle.
+_EXT43_RUNNING = bytes.fromhex(
+    "2064000000000000000000000000000000000000000000000000000000000000000001000000080603000601"
+    "000000002f3557000001000000000000000000000000000000000000010340655b005b1b000a0105010e"
+)
+_EXT43_IDLE = bytes.fromhex(
+    "20640000000000000000000000000000000000000000000000000000000000000000010000000806030006"
+    "000000000030375700000100000000000000000000000000000000000000005460550055000000000001e0"
+)
+_EXT23 = bytes.fromhex(
+    "0908c2000200000500003700530000030000000000000000000000000000000000005e525251520001ff02200032"
+)
+
+
+def _telemetry_frame(payload: bytes) -> bytes:
+    """Wrap a raw telemetry payload as the appliance sends it, header and checksum included."""
+    body = bytes([10 + len(payload)]) + b"\x00" * 6 + b"\x02" + b"\x7d\x01" + payload
+    return b"\xff\xff" + body + bytes([sum(body) & 0xFF])
+
+
+def test_telemetry_decodes_for_a_family_that_is_not_the_classic_one():
+    """The engineering block is published per family and lands at different words in each.
+
+    `power` is at word 18 on the classic family and word 37 on this one, so no displacement could
+    ever have served both -- the manufacturer's own map for the frame's own span is used instead.
+    The two frames below are the same appliance minutes apart, and the figures agree with each
+    other: 259 W drawn at 1.0 A is about 250 V, and the coil is ten degrees colder while running.
+    """
+    running = uss.parse_extended_status(_telemetry_frame(_EXT43_RUNNING))
+    idle = uss.parse_extended_status(_telemetry_frame(_EXT43_IDLE))
+    assert running["power_w"] == 259
+    assert running["compressor_current_a"] == 1.0
+    assert running["compressor_frequency_hz"] == 27
+    assert running["compressor_running"] is True
+    assert running["coil_temperature"] == 12.0
+    assert idle["power_w"] == 0
+    assert idle["compressor_running"] is False
+    assert idle["coil_temperature"] == 22.0
+    assert idle["coil_temperature"] > running["coil_temperature"]
+
+
+def test_a_current_the_appliance_contradicts_is_not_published():
+    """One family reports a fixed 51.1 A in every frame while its own power reads zero.
+
+    Forty-seven captures, the figure never moving even as the frequency does: that is a field the
+    appliance does not populate, and publishing it would put a confident fifty amps in somebody's
+    diagnostics for the life of the install. The test is the frame disagreeing with itself, so a
+    genuinely idle unit reporting 0 W and 0.0 A is unaffected -- as the family above shows.
+    """
+    got = uss.parse_extended_status(_telemetry_frame(_EXT23))
+    assert got, "this family's span IS published -- it must decode"
+    assert got["power_w"] == 0
+    assert got["compressor_current_a"] == 0.0     # the raw field reads 511 -> 51.1 A
+    assert got["coil_temperature"] == 27.0        # ...while its temperatures are real
+
+
+def test_a_span_no_profile_describes_yields_nothing():
+    """The central cabinets' telemetry is 28 words and no profile of that class exists, so it stays
+    undecoded rather than being read against a neighbouring family's map."""
+    assert uss.parse_extended_status(_telemetry_frame(bytes(56))) == {}
+
+
+def test_a_truncated_classic_report_is_not_read_as_another_family():
+    """A 140-byte classic report carries a 23-word payload, which is a span another family
+    publishes -- so without checking the frame's own declared length, damage would decode as a
+    confident reading from the wrong map."""
+    assert uss.parse_extended_status(EXT_COOLING[:-1]) == {}

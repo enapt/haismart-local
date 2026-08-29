@@ -27,12 +27,13 @@ import random
 import socket
 import struct
 import time
-from collections.abc import Callable, Collection, Iterable, Sequence
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
+from .bigdata_map import BIGDATA_MAPS
 from .canonical_map import CANONICAL_WRITE
 from .panel import PANEL_BOOL_CONTROLS, PANEL_ENUM_CONTROLS, PANEL_EXTRA_POSITIONS
 from .profiles import model_enum_codes
@@ -1289,6 +1290,77 @@ _MAX_PLAUSIBLE_W = 20_000
 _MAX_PLAUSIBLE_A = 100.0
 
 
+#: The vendor's telemetry names, mapped onto the keys this library publishes.
+#: ⚠️ `outdoorOutAirTemperature` deliberately becomes `discharge_temperature` -- see the note in
+#: :func:`parse_extended_status` for why the map's label is not followed here.
+_BIGDATA_KEYS: Mapping[str, str] = {
+    "power": "power_w",
+    "compressorCurrent": "compressor_current_a",
+    "compressorFrequency": "compressor_frequency_hz",
+    "indoorCoilerTemperature": "coil_temperature",
+    "outdoorOutAirTemperature": "discharge_temperature",
+    "outdoorCoilerTemperature": "outdoor_coil_temperature",
+    "outdoorInAirTemperature": "outdoor_in_air_temperature",
+    "outdoorDefrostTemperature": "outdoor_defrost_temperature",
+    "expansionValveOpenDegree": "expansion_valve_opening",
+}
+#: The actuator states, which are 0=off / 1=on / 2=not reported rather than flags.
+_BIGDATA_ACTUATORS: Mapping[str, str] = {
+    "compressorStatus": "compressor_running",
+    "outdoorFanStatus": "outdoor_fan_running",
+}
+#: A temperature reading of exactly this raw value is the absent-probe sentinel, as on the status
+#: report: most units carry only some of these probes and a 0 must not become a confident -20 or
+#: -64 C reading in somebody's statistics.
+_BIGDATA_TEMPS = frozenset(
+    k for k in _BIGDATA_KEYS if "Temperature" in k or "Coiler" in k
+)
+
+
+def _extended_from_published_map(payload: bytes) -> dict[str, Any]:
+    """Telemetry for a family whose layout the manufacturer publishes, keyed on the frame's span.
+
+    Returns ``{}`` for a span no profile describes, which is the same silence an unrecognised report
+    has always produced -- a family we cannot place simply yields no telemetry rather than numbers
+    read from the wrong words.
+    """
+    fields = BIGDATA_MAPS.get(len(payload) // 2)
+    if not fields:
+        return {}
+    out: dict[str, Any] = {}
+    for field in fields:
+        value = field.read(payload)
+        if value is None:
+            continue
+        if (key := _BIGDATA_ACTUATORS.get(field.name)) is not None:
+            if value in (_ACTUATOR_ON, _ACTUATOR_OFF):
+                out[key] = value == _ACTUATOR_ON
+            continue
+        if (key := _BIGDATA_KEYS.get(field.name)) is None:
+            continue
+        if field.name in _BIGDATA_TEMPS and _sensor_temp(
+            (int.from_bytes(payload[2 * (field.word - 1):2 * field.word], "big") >> field.bit)
+            & ((1 << field.length) - 1), scale=field.k, offset=field.c) is None:
+            continue
+        if field.name == "power" and value > _MAX_PLAUSIBLE_W:
+            continue
+        if field.name == "compressorCurrent" and value > _MAX_PLAUSIBLE_A:
+            continue
+        out[key] = value
+    # Current drawn with no power drawn is not a measurement. One published family reports a
+    # constant 51.1 A in every frame we hold -- 47 of them, unchanged while its frequency varies and
+    # its power stays at zero -- so that is a field the appliance never populates. Left alone it
+    # would put a confident fifty-amp reading in somebody's diagnostics for the life of the install.
+    #
+    # The test is the appliance contradicting ITSELF rather than a threshold, so it costs nothing
+    # where the reading is real: a genuinely idle unit reports 0 W and 0.0 A (the richest family
+    # does exactly that) and is unchanged, and a running one reports both and is untouched.
+    # ⚠️ A family that measured current and not power would lose its current here. None does.
+    if out.get("power_w") == 0 and out.get("compressor_current_a"):
+        out["compressor_current_a"] = 0.0
+    return out
+
+
 def parse_extended_status(data: bytes) -> dict[str, Any]:
     """Decode the running power / compressor figures from an extended-status report.
 
@@ -1316,11 +1388,21 @@ def parse_extended_status(data: bytes) -> dict[str, Any]:
     Only some of these are surfaced as entities; the rest are decoded because the published map
     states where they are, and they reach a diagnostics download rather than a dashboard.
     """
-    if len(data) != _EXT_STATUS_LEN or data[2:4] != b"\x27\x15":
-        return {}
     at = data.find(EPP_FRAME_HEAD)
     if at < 0 or data[at + 10:at + 12] != _EPP_RPT_EXTENDED:
         return {}
+    if len(data) != _EXT_STATUS_LEN or data[2:4] != b"\x27\x15":
+        # Not the classic family's report. Every other published family places this block at its own
+        # words -- `power` is w18 here and w37 on the richest one -- so there is nothing to shift and
+        # the manufacturer's own map for that frame is used instead. Unknown spans still yield {}.
+        #
+        # ⚠️ Gated on the frame's OWN declared length first. Without that a *truncated* classic
+        # report -- 140 bytes instead of 141 -- carries a 23-word payload, which is a span another
+        # family publishes, so a damaged frame would be decoded confidently against the wrong map.
+        # A frame whose header disagrees with its own size is not a different family, it is broken.
+        if len(data) < at + 13 or data[at + 2] != len(data) - at - 3:
+            return {}
+        return _extended_from_published_map(data[at + 12:-1])
 
     out: dict[str, Any] = {}
     watts = int.from_bytes(data[_EXT_OFF_POWER:_EXT_OFF_POWER + 2], "big")

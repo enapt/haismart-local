@@ -384,11 +384,23 @@ and a 31 °C outdoor, one reads 1 °C and −14 °C, one reads 47.5 °C. The rul
 offset ("try them all, accept it only if exactly one fits") therefore cannot settle a count, because
 a wrong count does not read off the end of the report; it lands the sensors on other real fields.
 
-What separates them is a fact from outside the report. `acType` is a bit the appliance sets one word
-past the room temperature, and the device's own model lists the operating modes it supports: a unit
-declaring a heat mode is a heat pump and says so, a unit that does not is cooling-only and says
-that. Only the true count reads back the machine the model describes. An appliance whose model
-declares nothing gets no inserted layout at all, because there would be nothing to check against.
+**The count is arithmetic on the report's own size.** The same published layout with no extra block
+produces a report of a known length, and each extra word adds two bytes — the classic family
+calibrates that, its 127-byte rental variant being the one-word case against a 125-byte base. A
+133-byte report is therefore eight bytes, four words, longer, and can carry no other number.
+
+⚠️ **The size of a report is not its layout**, as the next section shows: two unrelated designs both
+produce 133 bytes. So the arithmetic is allowed only for the class whose identifier the appliance
+announces, and only for the one family whose report has been measured to end where its description
+ends. An appliance that says nothing about itself still gets no layout at all.
+
+★ **Why the size rather than a flag.** The unit sets a bit saying whether it can heat, and comparing
+that against the modes its model lists does separate the counts — but only in one direction. The
+meaningful value of that bit is the one a **cooling-only** unit sets; a heat pump leaves it clear,
+and clear is also what reading the wrong part of the report gives, because most of a report is zero.
+So the flag identifies a cooling-only cabinet and is silent for a heat pump. Two of the three
+cabinets on record are heat pumps, and both were left on the partial decode until the size settled
+it. The flag is still checked where the size does not apply.
 
 Control is **one setting at a time**: this class publishes no group-set command and its firmware
 refuses one, so power, setpoint, mode, fan and the comfort toggles are each their own command, and

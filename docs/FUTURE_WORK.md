@@ -474,9 +474,11 @@ reading is not duplicated.
 automatic: one of them reports a block of words between its settings and its sensors that no
 published description mentions, so every ordinary offset is rejected on the room temperature alone
 and the appliance decodes almost nothing. That case is handled (see the 133-byte section of
-[`report-layouts.md`](report-layouts.md)); a cabinet reporting some *other* length with the same
-shape would need the same treatment, and the evidence for the block size has to come from outside
-the report.
+[`report-layouts.md`](report-layouts.md)): the size of the report settles how big the block is, so a
+cabinet resolves whether or not it can heat. ★ That last part matters — the flag previously used to
+settle it only ever answers for a **cooling-only** unit, and two of the three such cabinets on record
+are heat pumps and were left reading almost nothing. A cabinet reporting some *other* length with the
+same shape would still need its own measurement before the same arithmetic could be trusted for it.
 
 * **The command bytes** are the ones these appliances are observed to exchange, and the values need
   no translation: mode `0/1/2/4/6`, fan `1/2/3/5`, setpoint `°C − 16`, booleans `0`/`1` — the same
@@ -670,6 +672,12 @@ refusal is read and the code beside it is dropped. Wiring it through would turn 
 vendor's own explanation, using text that is already present and already localised, and it would
 cover rules that no model states as a lock — several products describe a restriction only as a
 refusal reason, never as a pre-emptive one.
+
+✅ **The observation this was waiting for has turned up.** A central cabinet in a third party's own
+logs refuses a group-set command and answers with code **1**, which its own published table renders
+as *"this function is not supported"* — exactly right for a command that firmware does not implement.
+So the field is real, non-zero codes do occur, and the lookup produces the right sentence. What is
+left is to wire it through.
 
 ⚠️ **One thing to be careful about.** The code means whatever *that product's* table says it
 means, and the same number says different things on different products: **509 of them define code

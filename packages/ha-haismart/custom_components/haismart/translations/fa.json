@@ -190,10 +190,10 @@
         }
       },
       "coil_temperature": {
-        "name": "Coil temperature"
+        "name": "دمای کویل"
       },
       "discharge_temperature": {
-        "name": "Discharge temperature"
+        "name": "دمای تخلیه"
       },
       "formaldehyde": {
         "name": "فرمالدئید"
@@ -407,7 +407,7 @@
         "name": "اتصال ابری"
       },
       "compressor": {
-        "name": "Compressor"
+        "name": "کمپرسور"
       },
       "constant_dehumidify": {
         "name": "رطوبت‌زدایی پیوسته"

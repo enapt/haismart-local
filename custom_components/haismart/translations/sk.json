@@ -190,10 +190,10 @@
         }
       },
       "coil_temperature": {
-        "name": "Coil temperature"
+        "name": "Teplota výmenníka"
       },
       "discharge_temperature": {
-        "name": "Discharge temperature"
+        "name": "Výtlačná teplota"
       },
       "formaldehyde": {
         "name": "Formaldehyd"
@@ -344,9 +344,9 @@
         "name": "Eko",
         "state": {
           "off": "Vypnuté",
-          "level1": "Eko 5",
-          "level2": "Eko 6",
-          "level3": "Eko 7"
+          "level1": "Eko L1",
+          "level2": "Eko L2",
+          "level3": "Eko L3"
         }
       },
       "vane_horizontal": {
@@ -407,7 +407,7 @@
         "name": "Pripojenie ku cloudu"
       },
       "compressor": {
-        "name": "Compressor"
+        "name": "Kompresor"
       },
       "constant_dehumidify": {
         "name": "Trvalé odvlhčovanie"

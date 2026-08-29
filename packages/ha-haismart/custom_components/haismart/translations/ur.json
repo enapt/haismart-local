@@ -190,10 +190,10 @@
         }
       },
       "coil_temperature": {
-        "name": "Coil temperature"
+        "name": "کوائل کا درجہ حرارت"
       },
       "discharge_temperature": {
-        "name": "Discharge temperature"
+        "name": "اخراج کا درجہ حرارت"
       },
       "formaldehyde": {
         "name": "فارملڈیہائیڈ"
@@ -344,9 +344,9 @@
         "name": "ایکو",
         "state": {
           "off": "بند",
-          "level1": "ایکو 5",
-          "level2": "ایکو 6",
-          "level3": "ایکو 7"
+          "level1": "ایکو L1",
+          "level2": "ایکو L2",
+          "level3": "ایکو L3"
         }
       },
       "vane_horizontal": {
@@ -407,7 +407,7 @@
         "name": "کلاؤڈ کنکشن"
       },
       "compressor": {
-        "name": "Compressor"
+        "name": "کمپریسر"
       },
       "constant_dehumidify": {
         "name": "مسلسل نمی کمی"

@@ -190,10 +190,10 @@
         }
       },
       "coil_temperature": {
-        "name": "Coil temperature"
+        "name": "Patterin lämpötila"
       },
       "discharge_temperature": {
-        "name": "Discharge temperature"
+        "name": "Paineputken lämpötila"
       },
       "formaldehyde": {
         "name": "Formaldehydi"
@@ -344,9 +344,9 @@
         "name": "Eco",
         "state": {
           "off": "Pois",
-          "level1": "Eco 5",
-          "level2": "Eco 6",
-          "level3": "Eco 7"
+          "level1": "Eco L1",
+          "level2": "Eco L2",
+          "level3": "Eco L3"
         }
       },
       "vane_horizontal": {
@@ -407,7 +407,7 @@
         "name": "Pilviyhteys"
       },
       "compressor": {
-        "name": "Compressor"
+        "name": "Kompressori"
       },
       "constant_dehumidify": {
         "name": "Jatkuva kosteudenpoisto"

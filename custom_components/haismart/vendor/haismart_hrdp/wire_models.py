@@ -1986,6 +1986,8 @@ SINGLE_PARAM_IDS: Mapping[str, Mapping[str, int]] = {
         "targetTemperature": 0x02,
         "operationMode": 0x04,
         "windSpeed": 0x05,
+        "windDirectionVertical": 0x03,
+        "windDirectionHorizontal": 0x0C,
         "healthMode": 0x0B,
         "muteStatus": 0x19,
         "rapidMode": 0x1A,
@@ -1996,24 +1998,14 @@ SINGLE_PARAM_IDS: Mapping[str, Mapping[str, int]] = {
 #: Single-parameter ids derived rather than observed, offered only where the appliance can confirm
 #: them itself. A decision about an id is a measurement, and this is the form a measurement takes
 #: when the observation has to come from hardware nobody here owns: write it, then read the same
-#: attribute back from its own position in the report. It took or it did not.
+#: attribute back from its own position in the report. It took or it did not; if it did not, the
+#: caller retires that control permanently.
 #:
-#: Both are vane axes on the one class that writes a parameter at a time. Prior art publishes ids
-#: for them, but its ``0x03`` and ``0x0C`` were added with no linked capture and appear zero times
-#: across every attachment in that tracker -- so they are the invented half of an otherwise observed
-#: table and cannot be shipped on its authority alone.
-#:
-#: ``windDirectionVertical`` has a second, independent reason to believe ``0x03``, and it is the
-#: argument that corrected two of prior art's other ids: in the published wire order this attribute
-#: is the ONLY one declared between ``targetTemperature`` (observed ``0x02``) and ``operationMode``
-#: (observed ``0x04``), and ``0x03`` is the only id free in that span. Two routes, one number.
-#: ⚠️ It is a tight local bracket and NOT a rule -- the registry is not wire-ordered as a whole
-#: (health is ``0x0B`` while quiet and boost are ``0x19``/``0x1A``), so this forces the one gap it
-#: spans and says nothing about the rest. ``windDirectionHorizontal`` has no upper anchor at all,
-#: and rests on prior art alone; it is offered on the same terms because the appliance adjudicates.
-PROVISIONAL_SINGLE_PARAM_IDS: Mapping[str, Mapping[str, int]] = {
-    "0d12": {"windDirectionVertical": 0x03, "windDirectionHorizontal": 0x0C},
-}
+#: ⓘ **Empty today, and that is the mechanism having worked.** It carried the two central-cabinet
+#: vane ids, which nothing of the class had ever been watched accepting -- the one appliance whose
+#: traffic was recorded has no vane. An owner ran them, both axes moved, and they graduated to
+#: :data:`SINGLE_PARAM_IDS` above. The machinery stays because the next derived id will want it.
+PROVISIONAL_SINGLE_PARAM_IDS: Mapping[str, Mapping[str, int]] = {}
 
 
 def _uplus_class(uplus_id: str | None) -> str:

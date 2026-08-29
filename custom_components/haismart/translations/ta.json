@@ -190,10 +190,10 @@
         }
       },
       "coil_temperature": {
-        "name": "Coil temperature"
+        "name": "சுருள் வெப்பநிலை"
       },
       "discharge_temperature": {
-        "name": "Discharge temperature"
+        "name": "வெளியேற்ற வெப்பநிலை"
       },
       "formaldehyde": {
         "name": "பார்மால்டிகைடு"
@@ -344,9 +344,9 @@
         "name": "இக்கோ",
         "state": {
           "off": "அணை",
-          "level1": "இக்கோ 5",
-          "level2": "இக்கோ 6",
-          "level3": "இக்கோ 7"
+          "level1": "இக்கோ L1",
+          "level2": "இக்கோ L2",
+          "level3": "இக்கோ L3"
         }
       },
       "vane_horizontal": {
@@ -407,7 +407,7 @@
         "name": "கிளவுட் இணைப்பு"
       },
       "compressor": {
-        "name": "Compressor"
+        "name": "அமுக்கி"
       },
       "constant_dehumidify": {
         "name": "தொடர் ஈரப்பதம் நீக்கம்"

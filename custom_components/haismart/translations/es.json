@@ -190,10 +190,10 @@
         }
       },
       "coil_temperature": {
-        "name": "Coil temperature"
+        "name": "Temperatura del serpentín"
       },
       "discharge_temperature": {
-        "name": "Discharge temperature"
+        "name": "Temperatura de descarga"
       },
       "formaldehyde": {
         "name": "Formaldehído"
@@ -344,9 +344,9 @@
         "name": "Eco",
         "state": {
           "off": "Desactivado",
-          "level1": "Eco 5",
-          "level2": "Eco 6",
-          "level3": "Eco 7"
+          "level1": "Eco L1",
+          "level2": "Eco L2",
+          "level3": "Eco L3"
         }
       },
       "vane_horizontal": {
@@ -407,7 +407,7 @@
         "name": "Conexión a la nube"
       },
       "compressor": {
-        "name": "Compressor"
+        "name": "Compresor"
       },
       "constant_dehumidify": {
         "name": "Deshumidificación continua"

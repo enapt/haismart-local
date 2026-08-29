@@ -90,23 +90,21 @@ def test_the_command_bytes_are_the_published_parameter_ids(
     assert _central().encode_value_param(name, value) == (command, payload)
 
 
-def test_the_vane_commands_are_offered_for_the_appliance_to_settle() -> None:
-    """This generation defines an id for each vane and no appliance of the class has been watched
-    accepting one -- the cabinet they were read from has no vane at all. They are offered anyway,
-    marked provisional, because this channel writes ONE named parameter and both axes read back from
-    their own published positions: the appliance can answer the question by taking the value or not.
+def test_the_vane_commands_are_settled() -> None:
+    """Both axes are ordinary controls now: an owner of a cabinet of this class moved each of them.
 
-    ⚠️ Marked, not merely present. An id that is implemented and means something else would move a
-    setting nobody asked for, and the mark is what tells a caller it must check the read-back once
-    and stop offering the control if it does not take.
+    They were the last two ids nobody had watched an appliance accept -- the cabinet whose traffic
+    was recorded has no vane -- so they shipped able to retire themselves if the number turned out
+    to address something else. It did not, on either axis, so they are settled on the same footing
+    as the other seven: observed, on hardware of this class.
     """
     wm = _central()
     for vane in ("windDirectionVertical", "windDirectionHorizontal"):
-        assert wm.value_param_fields[vane].provisional is True
-        assert wm.value_param_value(REPORT_28C_OFF, vane) is not None
-    # and the settled seven are NOT marked, or the check above would be meaningless
-    assert not any(wm.value_param_fields[n].provisional
-                   for n in ("onOffStatus", "targetTemperature", "operationMode", "windSpeed"))
+        param = wm.value_param_fields[vane]
+        assert param.provisional is False, "observed on hardware -- no longer self-adjudicating"
+        assert wm.value_param_value(REPORT_28C_OFF, vane) is not None, "and still read back"
+    assert wm.value_param_fields["windDirectionVertical"].param_id == 0x03
+    assert wm.value_param_fields["windDirectionHorizontal"].param_id == 0x0C
 
 
 def test_the_vane_frame_is_the_shape_the_vendors_own_encoder_emits() -> None:

@@ -90,21 +90,26 @@ def test_a_provisional_id_is_offered_only_where_the_appliance_can_settle_it() ->
 
 
 def test_the_vertical_vane_id_is_the_only_one_its_bracket_leaves_free() -> None:
-    """The second, independent reason to believe 0x03 -- and the one prior art cannot supply.
+    """The second, independent reason to believe 0x03 -- reached before any hardware confirmed it.
+
+    An owner has since moved both axes, so the id is observed now; this is kept because it is the
+    argument that justified sending the command in the first place, and because a later map that
+    moved either anchor would quietly withdraw it.
 
     In the published wire order this attribute is the ONLY one the class declares between two
     OBSERVED ids, and one id is free in that span. Written down as a check because it is the whole
     argument: if a later map moves either anchor, or another attribute lands between them, the
     bracket stops forcing anything and this fails rather than quietly going on being quoted.
     """
-    lo, hi = wm.SINGLE_PARAM_IDS["0d12"]["targetTemperature"], wm.SINGLE_PARAM_IDS["0d12"]["operationMode"]
+    ids = wm.SINGLE_PARAM_IDS["0d12"]
+    lo, hi = ids["targetTemperature"], ids["operationMode"]
     vane = CANONICAL["windDirectionVertical"]
     span = [n for n, f in CANONICAL.items()
             if (CANONICAL["targetTemperature"].word, -CANONICAL["targetTemperature"].bit)
             < (f.word, -f.bit)
             < (CANONICAL["operationMode"].word, -CANONICAL["operationMode"].bit)]
     assert span == ["windDirectionVertical"], span
-    assert list(range(lo + 1, hi)) == [wm.PROVISIONAL_SINGLE_PARAM_IDS["0d12"][span[0]]]
+    assert list(range(lo + 1, hi)) == [ids[span[0]]]
     assert vane.word  # the position that makes the read-back check possible
 
 

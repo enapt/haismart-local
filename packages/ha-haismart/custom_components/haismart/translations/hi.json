@@ -190,10 +190,10 @@
         }
       },
       "coil_temperature": {
-        "name": "Coil temperature"
+        "name": "कॉइल तापमान"
       },
       "discharge_temperature": {
-        "name": "Discharge temperature"
+        "name": "डिस्चार्ज तापमान"
       },
       "formaldehyde": {
         "name": "फॉर्मेल्डिहाइड"
@@ -344,9 +344,9 @@
         "name": "इको",
         "state": {
           "off": "बंद",
-          "level1": "इको 5",
-          "level2": "इको 6",
-          "level3": "इको 7"
+          "level1": "इको L1",
+          "level2": "इको L2",
+          "level3": "इको L3"
         }
       },
       "vane_horizontal": {
@@ -407,7 +407,7 @@
         "name": "क्लाउड कनेक्शन"
       },
       "compressor": {
-        "name": "Compressor"
+        "name": "कंप्रेसर"
       },
       "constant_dehumidify": {
         "name": "सतत नमी हटाना"

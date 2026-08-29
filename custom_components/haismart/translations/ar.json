@@ -190,10 +190,10 @@
         }
       },
       "coil_temperature": {
-        "name": "Coil temperature"
+        "name": "درجة حرارة الملف"
       },
       "discharge_temperature": {
-        "name": "Discharge temperature"
+        "name": "درجة حرارة التصريف"
       },
       "formaldehyde": {
         "name": "الفورمالديهايد"
@@ -344,9 +344,9 @@
         "name": "اقتصادي",
         "state": {
           "off": "إيقاف",
-          "level1": "اقتصادي 5",
-          "level2": "اقتصادي 6",
-          "level3": "اقتصادي 7"
+          "level1": "اقتصادي L1",
+          "level2": "اقتصادي L2",
+          "level3": "اقتصادي L3"
         }
       },
       "vane_horizontal": {
@@ -407,7 +407,7 @@
         "name": "اتصال السحابة"
       },
       "compressor": {
-        "name": "Compressor"
+        "name": "الضاغط"
       },
       "constant_dehumidify": {
         "name": "إزالة رطوبة مستمرة"

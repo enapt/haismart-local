@@ -21,6 +21,9 @@ from typing import Any
 
 from haismart_hrdp import OPTIONAL_ENUM_FEATURES, vane_position_name
 from homeassistant.components.sensor import (
+    DOMAIN as SENSOR_DOMAIN,
+)
+from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorEntityDescription,
@@ -39,11 +42,18 @@ from homeassistant.const import (
     UnitOfTime,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_HOST, CONF_LOCALKEY_VERSION, CONF_PRODUCT_CODE, CONF_UPLUS_ID
+from .const import (
+    CONF_HOST,
+    CONF_LOCALKEY_VERSION,
+    CONF_PRODUCT_CODE,
+    CONF_UPLUS_ID,
+    DOMAIN,
+)
 from .coordinator import _VANE_ENDS, HaismartConfigEntry, HaismartCoordinator
 from .entity import HaismartEntity
 
@@ -297,12 +307,39 @@ async def async_setup_entry(
             entities.append(HaismartSensor(coordinator, desc))
     # Where each vane points, for an axis this unit reports but cannot be commanded to move — the
     # writable ones are selects instead, so the two never both appear for one axis.
+    reporting = {key for key, _, _ in coordinator.vane_position_axes()}
     for key, attribute, codes in coordinator.vane_position_axes():
         entities.append(HaismartVanePositionSensor(coordinator, key, attribute, codes))
+    _drop_superseded_vane_sensors(hass, coordinator, reporting)
     # "Last self-clean" — only where self-clean is a real control (same gate as the button).
     if coordinator.supports_field("selfCleaningStatus"):
         entities.append(HaismartLastSelfCleanSensor(coordinator))
     async_add_entities(entities)
+
+
+def _drop_superseded_vane_sensors(
+    hass: HomeAssistant, coordinator: HaismartCoordinator, reporting: set[str]
+) -> None:
+    """Remove the read-only position sensor for an axis that has since become a control.
+
+    An axis starts read-only and can become writable -- that is what happened to the central
+    cabinets, whose vane commands were settled by the appliances themselves. Home Assistant does not
+    forget an entity just because a platform stops creating it: the registry row survives, and the
+    entity lingers holding whatever it last read. So the owner would be left with a position sensor
+    frozen at some old stop, sitting beside a select showing where the vane actually is -- two
+    entities for one vane, disagreeing, and the stale one is the one an automation might already
+    reference.
+
+    Only rows this integration owns are touched, and only for an axis that is no longer reported
+    this way. An axis that is still read-only keeps its sensor, which is the whole point of it.
+    """
+    registry = er.async_get(hass)
+    for key, slug in _VANE_SLUGS.items():
+        if key in reporting:
+            continue
+        unique_id = f"{coordinator.device_id}_{slug}"
+        if entity_id := registry.async_get_entity_id(SENSOR_DOMAIN, DOMAIN, unique_id):
+            registry.async_remove(entity_id)
 
 
 class HaismartLastSelfCleanSensor(HaismartEntity, RestoreEntity, SensorEntity):

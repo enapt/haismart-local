@@ -190,10 +190,10 @@
         }
       },
       "coil_temperature": {
-        "name": "Coil temperature"
+        "name": "Température de la batterie"
       },
       "discharge_temperature": {
-        "name": "Discharge temperature"
+        "name": "Température de refoulement"
       },
       "formaldehyde": {
         "name": "Formaldéhyde"
@@ -344,9 +344,9 @@
         "name": "Éco",
         "state": {
           "off": "Désactivé",
-          "level1": "Éco 5",
-          "level2": "Éco 6",
-          "level3": "Éco 7"
+          "level1": "Éco L1",
+          "level2": "Éco L2",
+          "level3": "Éco L3"
         }
       },
       "vane_horizontal": {
@@ -407,7 +407,7 @@
         "name": "Connexion au cloud"
       },
       "compressor": {
-        "name": "Compressor"
+        "name": "Compresseur"
       },
       "constant_dehumidify": {
         "name": "Déshumidification continue"

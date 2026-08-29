@@ -190,10 +190,10 @@
         }
       },
       "coil_temperature": {
-        "name": "Coil temperature"
+        "name": "Serpantin sıcaklığı"
       },
       "discharge_temperature": {
-        "name": "Discharge temperature"
+        "name": "Basma sıcaklığı"
       },
       "formaldehyde": {
         "name": "Formaldehit"
@@ -344,9 +344,9 @@
         "name": "Eko",
         "state": {
           "off": "Kapalı",
-          "level1": "Eko 5",
-          "level2": "Eko 6",
-          "level3": "Eko 7"
+          "level1": "Eko L1",
+          "level2": "Eko L2",
+          "level3": "Eko L3"
         }
       },
       "vane_horizontal": {
@@ -407,7 +407,7 @@
         "name": "Bulut bağlantısı"
       },
       "compressor": {
-        "name": "Compressor"
+        "name": "Kompresör"
       },
       "constant_dehumidify": {
         "name": "Sürekli nem alma"

@@ -190,10 +190,10 @@
         }
       },
       "coil_temperature": {
-        "name": "Coil temperature"
+        "name": "কয়েলের তাপমাত্রা"
       },
       "discharge_temperature": {
-        "name": "Discharge temperature"
+        "name": "নিঃসরণ তাপমাত্রা"
       },
       "formaldehyde": {
         "name": "ফরমালডিহাইড"
@@ -407,7 +407,7 @@
         "name": "ক্লাউড সংযোগ"
       },
       "compressor": {
-        "name": "Compressor"
+        "name": "কম্প্রেসর"
       },
       "constant_dehumidify": {
         "name": "নিরন্তর আর্দ্রতা হ্রাস"

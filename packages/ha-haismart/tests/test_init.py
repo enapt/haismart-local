@@ -5081,6 +5081,7 @@ async def test_a_derived_parameter_id_is_settled_by_the_appliance_and_then_left_
     value that did not is recorded against the entry and the control is withdrawn for good, with the
     owner told rather than left pressing a button that quietly does nothing.
     """
+    from dataclasses import replace
     from types import SimpleNamespace
     from unittest.mock import MagicMock
 
@@ -5091,6 +5092,14 @@ async def test_a_derived_parameter_id_is_settled_by_the_appliance_and_then_left_
 
     uplus = "201c10c7088081000d1205464544850000009cd68e692c104e2a333eab95d140"
     model = related_model_named("related-19+4@25", 133, order=None, uplus_id=uplus)
+    # ⚠️ Built here rather than taken from the shipped table, which is empty: its last two entries
+    # were confirmed on an owner's hardware and graduated. A test that iterated the table would
+    # have quietly become vacuous at that moment, passing while testing nothing. The mechanism is
+    # what is under test, so the mechanism is what the fixture supplies.
+    provisional = replace(model.value_param_fields["windDirectionVertical"], provisional=True)
+    model = replace(model, value_param_fields={**model.value_param_fields,
+                                               "windDirectionVertical": provisional})
+    assert model.value_param_fields["windDirectionVertical"].provisional is True
     settle = HaismartCoordinator._async_settle_provisional
 
     def _unit(reads_back: dict[str, int]) -> SimpleNamespace:

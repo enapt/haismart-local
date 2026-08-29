@@ -190,10 +190,10 @@
         }
       },
       "coil_temperature": {
-        "name": "Coil temperature"
+        "name": "盘管温度"
       },
       "discharge_temperature": {
-        "name": "Discharge temperature"
+        "name": "排气温度"
       },
       "formaldehyde": {
         "name": "甲醛"
@@ -344,9 +344,9 @@
         "name": "节能",
         "state": {
           "off": "关闭",
-          "level1": "节能 5",
-          "level2": "节能 6",
-          "level3": "节能 7"
+          "level1": "节能 L1",
+          "level2": "节能 L2",
+          "level3": "节能 L3"
         }
       },
       "vane_horizontal": {
@@ -407,7 +407,7 @@
         "name": "云端连接"
       },
       "compressor": {
-        "name": "Compressor"
+        "name": "压缩机"
       },
       "constant_dehumidify": {
         "name": "连续除湿"

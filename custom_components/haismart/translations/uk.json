@@ -190,10 +190,10 @@
         }
       },
       "coil_temperature": {
-        "name": "Coil temperature"
+        "name": "Температура теплообмінника"
       },
       "discharge_temperature": {
-        "name": "Discharge temperature"
+        "name": "Температура нагнітання"
       },
       "formaldehyde": {
         "name": "Формальдегід"
@@ -344,9 +344,9 @@
         "name": "Еко",
         "state": {
           "off": "Вимкнено",
-          "level1": "Еко 5",
-          "level2": "Еко 6",
-          "level3": "Еко 7"
+          "level1": "Еко L1",
+          "level2": "Еко L2",
+          "level3": "Еко L3"
         }
       },
       "vane_horizontal": {
@@ -407,7 +407,7 @@
         "name": "Хмарне з'єднання"
       },
       "compressor": {
-        "name": "Compressor"
+        "name": "Компресор"
       },
       "constant_dehumidify": {
         "name": "Постійне осушення"

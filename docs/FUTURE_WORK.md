@@ -1049,9 +1049,16 @@ just silence, in both of the two forms the question can take.
 So the machine measures these things. What is missing is delivery: the Wi-Fi module relays the
 ordinary status and control messages for this appliance and does not appear to relay this one.
 
-⚠️ What is in that frame is not known. The layout of a detailed-data frame is described per
-appliance family, and no description of this family exists anywhere we hold, so it cannot be said
-which of its readings is power, current or a compressor state.
+⚠️ What is in that frame is only partly known, and it does **not** obviously include power. Its
+first three quarters are the ordinary status report repeated, leaving seven readings of which two
+are always empty and one is a fixed placeholder. Of the four that carry anything, one behaves like a
+temperature — lowest while cooling, highest in fan-only — and none behaves like a wattage. On the
+wall-mounted models the same seven readings carry power, current and compressor speed; on these they
+appear not to.
+
+So the appliance answers, and the answer seems not to contain what was being looked for. No
+description of this family's detailed-data layout exists anywhere we hold, so this is a reading of
+how the numbers behave rather than a decode.
 
 **What would close it:** a recording of that frame taken beside known conditions — the compressor
 running, then off. That is how every other family's power reading was placed.

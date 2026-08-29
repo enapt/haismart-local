@@ -259,6 +259,36 @@
       },
       "voc_level": {
         "name": "مستوى VOC"
+      },
+      "vane_vertical_position": {
+        "name": "الريشة الرأسية",
+        "state": {
+          "fixed": "ثابتة",
+          "position_1": "الوضع 1",
+          "position_2": "الوضع 2",
+          "position_3": "الوضع 3",
+          "position_4": "الوضع 4",
+          "position_5": "الوضع 5",
+          "position_6": "الوضع 6",
+          "auto": "تلقائي (تأرجح)",
+          "position_7": "الوضع 7",
+          "position_8": "الوضع 8"
+        }
+      },
+      "vane_horizontal_position": {
+        "name": "الريشة الأفقية",
+        "state": {
+          "fixed": "ثابتة",
+          "position_1": "الوضع 1",
+          "position_2": "الوضع 2",
+          "position_3": "الوضع 3",
+          "position_4": "الوضع 4",
+          "position_5": "الوضع 5",
+          "position_6": "الوضع 6",
+          "auto": "تلقائي (تأرجح)",
+          "position_7": "الوضع 7",
+          "position_8": "الوضع 8"
+        }
       }
     },
     "switch": {
@@ -322,7 +352,9 @@
           "position_4": "الوضع 4",
           "position_5": "الوضع 5",
           "position_6": "الوضع 6",
-          "auto": "تلقائي (تأرجح)"
+          "auto": "تلقائي (تأرجح)",
+          "position_7": "الوضع 7",
+          "position_8": "الوضع 8"
         }
       },
       "vane_vertical": {
@@ -335,7 +367,9 @@
           "position_4": "الوضع 4",
           "position_5": "الوضع 5",
           "position_6": "الوضع 6",
-          "auto": "تلقائي (تأرجح)"
+          "auto": "تلقائي (تأرجح)",
+          "position_7": "الوضع 7",
+          "position_8": "الوضع 8"
         }
       },
       "human_sensing": {

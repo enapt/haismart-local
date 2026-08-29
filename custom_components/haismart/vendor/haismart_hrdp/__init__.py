@@ -153,6 +153,9 @@ from .wire_models import (
     related_shortlist_is_ranked,
     related_wire_models,
     select_wire_model,
+    vane_code,
+    vane_model_code,
+    vane_position_name,
 )
 
 __version__ = "0.1.0"
@@ -192,6 +195,9 @@ __all__ = [
     "related_model_named",
     "related_shortlist_is_ranked",
     "related_wire_models",
+    "vane_code",
+    "vane_model_code",
+    "vane_position_name",
     "select_wire_model",
     "declared_fields",
     "device_type_class",

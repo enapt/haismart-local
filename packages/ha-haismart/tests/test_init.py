@@ -4973,3 +4973,92 @@ async def test_the_central_cabinet_is_commanded_one_parameter_at_a_time(
     # A name that lost its insert would rebuild the flat layout and command the appliance four
     # words out, so it must not parse at all.
     assert related_model_named("related-19+4", 133, uplus_id=uplus) is None
+
+
+async def test_a_vane_that_cannot_be_commanded_still_reports_where_it_points(
+    hass: HomeAssistant,
+) -> None:
+    """The same cabinet, on the reading its climate entity throws away.
+
+    Its vanes are position codes and it publishes ten up-down stops and eight left-right ones, but
+    the swing control answers only "is it sweeping" — so a vane parked at a real stop reads exactly
+    like one held closed. The commands stay withheld (nothing of this class has been seen to accept
+    one), which is precisely why the *reading* has to be surfaced somewhere: it is the only account
+    of the vanes this appliance will give.
+    """
+    from types import SimpleNamespace
+
+    from haismart_hrdp import related_model_named, vane_code
+    from haismart_hrdp.wire_models import vane_v_sweeping
+
+    from custom_components.haismart.coordinator import HaismartCoordinator
+
+    uplus = "201c10c7088081000d1205464544850000009cd68e692c104e2a333eab95d140"
+    model = related_model_named("related-19+4@25", 133, order=None, uplus_id=uplus)
+
+    def report(payload: str) -> bytes:
+        body = bytes.fromhex(payload.replace(" ", ""))
+        blob = bytearray(133)
+        blob[2:4] = b"\x27\x15"
+        blob[92:92 + len(body)] = body
+        return bytes(blob)
+
+    # Issue #12's own captures: up-down parked at its second stop with left-right sweeping, then
+    # both closed. The boolean cannot separate the first from the second.
+    parked = report("09 02 22 00 02 00 14 07 00 00 00 00 00 00 00 03 02 03 32 32 5F 80 00 03")
+    closed = report("06 00 23 00 02 01 14 00 00 00 00 00 00 00 00 03 02 03 32 32 5F 80 00 03")
+    assert vane_v_sweeping(vane_code(model, parked, "swing_vertical")) is False
+    assert vane_v_sweeping(vane_code(model, closed, "swing_vertical")) is False
+
+    declared = {
+        "attributes": [
+            {"name": "windDirectionVertical", "valueRange": {"type": "LIST", "dataList": [
+                {"data": str(c)} for c in range(10)]}},
+            {"name": "windDirectionHorizontal", "valueRange": {"type": "LIST", "dataList": [
+                {"data": str(c)} for c in range(8)]}},
+        ],
+        "invisible_attributes": [],
+    }
+    class _ReadOnly(SimpleNamespace):
+        def field_codes(self, name):       # withheld commands: nothing is writable here
+            return frozenset()
+
+    unit = _ReadOnly(
+        uplus_id=uplus, _wire_model=model, digital_model=declared, last_raw_status=parked,
+    )
+    axes = dict(
+        (key, codes) for key, _attr, codes in HaismartCoordinator.vane_position_axes(unit)
+    )
+    assert set(axes) == {"swing_vertical", "swing_horizontal"}, (
+        "both axes are declared, placed and un-commandable — both are worth reporting"
+    )
+    assert axes["swing_vertical"] == frozenset(range(10))
+
+    # And the position itself, in the code space this unit's own model publishes.
+    code = HaismartCoordinator.vane_position_code(unit, "swing_vertical")
+    assert code == 2, "the wire says 2 and the model numbers it 2 for the stops below auto"
+    assert HaismartCoordinator.vane_position_code(unit, "swing_horizontal") == 7
+
+
+async def test_a_vane_that_can_be_commanded_gets_no_second_entity(hass: HomeAssistant) -> None:
+    """Where the axis is writable the select already shows the stop, so the read-only sensor must
+    not appear as well — one axis, one entity."""
+    from types import SimpleNamespace
+
+    from custom_components.haismart.coordinator import HaismartCoordinator
+
+    class _Writable(SimpleNamespace):
+        def field_codes(self, name):           # what a writable family answers
+            return frozenset({0, 2, 4, 6, 8, 12})
+
+    uplus = "201c10c7088081000d1205464544850000009cd68e692c104e2a333eab95d140"
+    from haismart_hrdp import related_model_named
+    model = related_model_named("related-19+4@25", 133, order=None, uplus_id=uplus)
+    declared = {
+        "attributes": [{"name": "windDirectionVertical", "valueRange": {
+            "type": "LIST", "dataList": [{"data": str(c)} for c in range(10)]}}],
+        "invisible_attributes": [],
+    }
+    unit = _Writable(uplus_id=uplus, _wire_model=model, digital_model=declared,
+                     last_raw_status=None)
+    assert HaismartCoordinator.vane_position_axes(unit) == []

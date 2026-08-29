@@ -259,6 +259,36 @@
       },
       "voc_level": {
         "name": "VOC کی سطح"
+      },
+      "vane_vertical_position": {
+        "name": "عمودی پنکھڑی",
+        "state": {
+          "fixed": "ثابت",
+          "position_1": "پوزیشن 1",
+          "position_2": "پوزیشن 2",
+          "position_3": "پوزیشن 3",
+          "position_4": "پوزیشن 4",
+          "position_5": "پوزیشن 5",
+          "position_6": "پوزیشن 6",
+          "auto": "خودکار (جھولنا)",
+          "position_7": "پوزیشن 7",
+          "position_8": "پوزیشن 8"
+        }
+      },
+      "vane_horizontal_position": {
+        "name": "افقی پنکھڑی",
+        "state": {
+          "fixed": "ثابت",
+          "position_1": "پوزیشن 1",
+          "position_2": "پوزیشن 2",
+          "position_3": "پوزیشن 3",
+          "position_4": "پوزیشن 4",
+          "position_5": "پوزیشن 5",
+          "position_6": "پوزیشن 6",
+          "auto": "خودکار (جھولنا)",
+          "position_7": "پوزیشن 7",
+          "position_8": "پوزیشن 8"
+        }
       }
     },
     "switch": {
@@ -322,7 +352,9 @@
           "position_4": "پوزیشن 4",
           "position_5": "پوزیشن 5",
           "position_6": "پوزیشن 6",
-          "auto": "خودکار (جھولنا)"
+          "auto": "خودکار (جھولنا)",
+          "position_7": "پوزیشن 7",
+          "position_8": "پوزیشن 8"
         }
       },
       "vane_vertical": {
@@ -335,7 +367,9 @@
           "position_4": "پوزیشن 4",
           "position_5": "پوزیشن 5",
           "position_6": "پوزیشن 6",
-          "auto": "خودکار (جھولنا)"
+          "auto": "خودکار (جھولنا)",
+          "position_7": "پوزیشن 7",
+          "position_8": "پوزیشن 8"
         }
       },
       "human_sensing": {

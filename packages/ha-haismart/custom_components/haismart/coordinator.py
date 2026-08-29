@@ -37,6 +37,7 @@ from haismart_extractor.cloud import (
 )
 from haismart_hrdp import (
     EXTENDED_STATUS_FRAME_TYPES,
+    GRSETDAC_ENUMS,
     GRSETDAC_FIELDS,
     GRSETDAC_MODEL_AUTHORIZED,
     PANEL_BOOL_CONTROLS,
@@ -83,6 +84,7 @@ from haismart_hrdp import (
     set_grsetdac_field,
     udiscovery,
     validate_write,
+    vane_model_code,
     with_rules,
 )
 from haismart_hrdp import (
@@ -482,6 +484,27 @@ def _with_invalid_codes(
             rule = {**rule, "invalid_code": code}
         out.append(rule)
     return out
+
+
+#: Each vane axis's two ends, in the code space a DEVICE'S MODEL publishes -- derived from the
+#: encoder's own constants rather than written out again. The up-down axis needs the translation
+#: (its wire auto is `0x0c`, its model's is `8`); the left-right axis is the same in both spaces.
+#: The two vane axes, as (decode key, published attribute name).
+_VANE_AXES = (
+    ("swing_vertical", "windDirectionVertical"),
+    ("swing_horizontal", "windDirectionHorizontal"),
+)
+
+_VANE_ENDS = {
+    "swing_vertical": (
+        VANE_V_EPP_TO_MODEL[GRSETDAC_ENUMS["windDirectionVertical"]["off"]],
+        VANE_V_EPP_TO_MODEL[GRSETDAC_ENUMS["windDirectionVertical"]["on"]],
+    ),
+    "swing_horizontal": (
+        GRSETDAC_ENUMS["windDirectionHorizontal"]["off"],
+        GRSETDAC_ENUMS["windDirectionHorizontal"]["on"],
+    ),
+}
 
 
 class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
@@ -1726,6 +1749,43 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """The panel MULTI-STATE controls this device offers; same gate as the switches above."""
         declared = declared_panel_controls(self.digital_model)
         return [a for a in PANEL_ENUM_CONTROLS if a in declared and self.supports_field(a)]
+
+    def vane_position_axes(self) -> list[tuple[str, str, frozenset[int]]]:
+        """The vane axes worth reporting a POSITION for, as (key, attribute, declared codes).
+
+        A vane is a position code, and the climate entity reduces it to "is it sweeping" -- which is
+        the right answer for a swing control and loses the stop. Where the axis is also *writable*
+        the select already shows the stop, so this reports only the axes that are readable and not
+        writable: a cabinet written one setting at a time, whose vane commands are withheld for want
+        of an observed acceptance, still says where its vanes point in every report.
+
+        Three gates, the same ones the rest of the optional readings use: the family places the
+        axis,
+        the device declares the attribute and does not mark it as hardware it lacks, and its model
+        publishes more stops than the two ends -- a unit listing only fixed and auto is fully served
+        by the climate entity's swing control.
+        """
+        model = self._wire_model
+        if model is None or self.digital_model is None:
+            return []
+        declared = declared_attribute_names(self.digital_model)
+        out: list[tuple[str, str, frozenset[int]]] = []
+        for key, attr in _VANE_AXES:
+            if key not in model.fields or attr not in declared:
+                continue
+            if self.field_codes(attr):
+                continue                      # writable: the select already shows the position
+            codes = model_enum_codes(self.digital_model, attr)
+            if len(codes - {_VANE_ENDS[key][0], _VANE_ENDS[key][1]}) == 0:
+                continue                      # only the two ends: the swing control says it all
+            out.append((key, attr, frozenset(codes)))
+        return out
+
+    def vane_position_code(self, key: str) -> int | None:
+        """Where one vane points, in the code space this device's own model publishes."""
+        if self.last_raw_status is None or self._wire_model is None:
+            return None
+        return vane_model_code(self._wire_model, self.last_raw_status, key)
 
     def _feature_wire_model(self, length: int) -> WireModel | None:
         """The family map to read declared features with -- the classic probe for the lengths

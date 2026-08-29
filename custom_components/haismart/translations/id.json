@@ -259,6 +259,36 @@
       },
       "voc_level": {
         "name": "Tingkat VOC"
+      },
+      "vane_vertical_position": {
+        "name": "Kisi atas-bawah",
+        "state": {
+          "fixed": "Tetap",
+          "position_1": "Posisi 1",
+          "position_2": "Posisi 2",
+          "position_3": "Posisi 3",
+          "position_4": "Posisi 4",
+          "position_5": "Posisi 5",
+          "position_6": "Posisi 6",
+          "auto": "Otomatis (ayun)",
+          "position_7": "Posisi 7",
+          "position_8": "Posisi 8"
+        }
+      },
+      "vane_horizontal_position": {
+        "name": "Kisi kiri-kanan",
+        "state": {
+          "fixed": "Tetap",
+          "position_1": "Posisi 1",
+          "position_2": "Posisi 2",
+          "position_3": "Posisi 3",
+          "position_4": "Posisi 4",
+          "position_5": "Posisi 5",
+          "position_6": "Posisi 6",
+          "auto": "Otomatis (ayun)",
+          "position_7": "Posisi 7",
+          "position_8": "Posisi 8"
+        }
       }
     },
     "switch": {
@@ -322,7 +352,9 @@
           "position_4": "Posisi 4",
           "position_5": "Posisi 5",
           "position_6": "Posisi 6",
-          "auto": "Otomatis (ayun)"
+          "auto": "Otomatis (ayun)",
+          "position_7": "Posisi 7",
+          "position_8": "Posisi 8"
         }
       },
       "vane_vertical": {
@@ -335,7 +367,9 @@
           "position_4": "Posisi 4",
           "position_5": "Posisi 5",
           "position_6": "Posisi 6",
-          "auto": "Otomatis (ayun)"
+          "auto": "Otomatis (ayun)",
+          "position_7": "Posisi 7",
+          "position_8": "Posisi 8"
         }
       },
       "human_sensing": {

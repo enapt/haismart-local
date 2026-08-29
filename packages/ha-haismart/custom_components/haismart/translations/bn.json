@@ -259,6 +259,36 @@
       },
       "voc_level": {
         "name": "VOC মাত্রা"
+      },
+      "vane_vertical_position": {
+        "name": "উপর-নিচ ভেন",
+        "state": {
+          "fixed": "স্থির",
+          "position_1": "অবস্থান 1",
+          "position_2": "অবস্থান 2",
+          "position_3": "অবস্থান 3",
+          "position_4": "অবস্থান 4",
+          "position_5": "অবস্থান 5",
+          "position_6": "অবস্থান 6",
+          "auto": "স্বয়ংক্রিয় (দোলানো)",
+          "position_7": "অবস্থান 7",
+          "position_8": "অবস্থান 8"
+        }
+      },
+      "vane_horizontal_position": {
+        "name": "বাঁ-ডান ভেন",
+        "state": {
+          "fixed": "স্থির",
+          "position_1": "অবস্থান 1",
+          "position_2": "অবস্থান 2",
+          "position_3": "অবস্থান 3",
+          "position_4": "অবস্থান 4",
+          "position_5": "অবস্থান 5",
+          "position_6": "অবস্থান 6",
+          "auto": "স্বয়ংক্রিয় (দোলানো)",
+          "position_7": "অবস্থান 7",
+          "position_8": "অবস্থান 8"
+        }
       }
     },
     "switch": {
@@ -322,7 +352,9 @@
           "position_4": "অবস্থান 4",
           "position_5": "অবস্থান 5",
           "position_6": "অবস্থান 6",
-          "auto": "স্বয়ংক্রিয় (দোলানো)"
+          "auto": "স্বয়ংক্রিয় (দোলানো)",
+          "position_7": "অবস্থান 7",
+          "position_8": "অবস্থান 8"
         }
       },
       "vane_vertical": {
@@ -335,7 +367,9 @@
           "position_4": "অবস্থান 4",
           "position_5": "অবস্থান 5",
           "position_6": "অবস্থান 6",
-          "auto": "স্বয়ংক্রিয় (দোলানো)"
+          "auto": "স্বয়ংক্রিয় (দোলানো)",
+          "position_7": "অবস্থান 7",
+          "position_8": "অবস্থান 8"
         }
       },
       "human_sensing": {

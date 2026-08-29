@@ -259,6 +259,36 @@
       },
       "voc_level": {
         "name": "Nivel COV"
+      },
+      "vane_vertical_position": {
+        "name": "Clapetă verticală",
+        "state": {
+          "fixed": "Fixă",
+          "position_1": "Poziția 1",
+          "position_2": "Poziția 2",
+          "position_3": "Poziția 3",
+          "position_4": "Poziția 4",
+          "position_5": "Poziția 5",
+          "position_6": "Poziția 6",
+          "auto": "Automat (baleiaj)",
+          "position_7": "Poziția 7",
+          "position_8": "Poziția 8"
+        }
+      },
+      "vane_horizontal_position": {
+        "name": "Clapetă orizontală",
+        "state": {
+          "fixed": "Fixă",
+          "position_1": "Poziția 1",
+          "position_2": "Poziția 2",
+          "position_3": "Poziția 3",
+          "position_4": "Poziția 4",
+          "position_5": "Poziția 5",
+          "position_6": "Poziția 6",
+          "auto": "Automat (baleiaj)",
+          "position_7": "Poziția 7",
+          "position_8": "Poziția 8"
+        }
       }
     },
     "switch": {
@@ -322,7 +352,9 @@
           "position_4": "Poziția 4",
           "position_5": "Poziția 5",
           "position_6": "Poziția 6",
-          "auto": "Automat (baleiaj)"
+          "auto": "Automat (baleiaj)",
+          "position_7": "Poziția 7",
+          "position_8": "Poziția 8"
         }
       },
       "vane_vertical": {
@@ -335,7 +367,9 @@
           "position_4": "Poziția 4",
           "position_5": "Poziția 5",
           "position_6": "Poziția 6",
-          "auto": "Automat (baleiaj)"
+          "auto": "Automat (baleiaj)",
+          "position_7": "Poziția 7",
+          "position_8": "Poziția 8"
         }
       },
       "human_sensing": {

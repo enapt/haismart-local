@@ -259,6 +259,36 @@
       },
       "voc_level": {
         "name": "Poziom LZO"
+      },
+      "vane_vertical_position": {
+        "name": "Żaluzja pionowa",
+        "state": {
+          "fixed": "Stała",
+          "position_1": "Pozycja 1",
+          "position_2": "Pozycja 2",
+          "position_3": "Pozycja 3",
+          "position_4": "Pozycja 4",
+          "position_5": "Pozycja 5",
+          "position_6": "Pozycja 6",
+          "auto": "Automatycznie (wachlowanie)",
+          "position_7": "Pozycja 7",
+          "position_8": "Pozycja 8"
+        }
+      },
+      "vane_horizontal_position": {
+        "name": "Żaluzja pozioma",
+        "state": {
+          "fixed": "Stała",
+          "position_1": "Pozycja 1",
+          "position_2": "Pozycja 2",
+          "position_3": "Pozycja 3",
+          "position_4": "Pozycja 4",
+          "position_5": "Pozycja 5",
+          "position_6": "Pozycja 6",
+          "auto": "Automatycznie (wachlowanie)",
+          "position_7": "Pozycja 7",
+          "position_8": "Pozycja 8"
+        }
       }
     },
     "switch": {
@@ -322,7 +352,9 @@
           "position_4": "Pozycja 4",
           "position_5": "Pozycja 5",
           "position_6": "Pozycja 6",
-          "auto": "Automatycznie (wachlowanie)"
+          "auto": "Automatycznie (wachlowanie)",
+          "position_7": "Pozycja 7",
+          "position_8": "Pozycja 8"
         }
       },
       "vane_vertical": {
@@ -335,7 +367,9 @@
           "position_4": "Pozycja 4",
           "position_5": "Pozycja 5",
           "position_6": "Pozycja 6",
-          "auto": "Automatycznie (wachlowanie)"
+          "auto": "Automatycznie (wachlowanie)",
+          "position_7": "Pozycja 7",
+          "position_8": "Pozycja 8"
         }
       },
       "human_sensing": {

@@ -259,6 +259,36 @@
       },
       "voc_level": {
         "name": "VOC seviyesi"
+      },
+      "vane_vertical_position": {
+        "name": "Dikey kanat",
+        "state": {
+          "fixed": "Sabit",
+          "position_1": "Konum 1",
+          "position_2": "Konum 2",
+          "position_3": "Konum 3",
+          "position_4": "Konum 4",
+          "position_5": "Konum 5",
+          "position_6": "Konum 6",
+          "auto": "Otomatik (salınım)",
+          "position_7": "Konum 7",
+          "position_8": "Konum 8"
+        }
+      },
+      "vane_horizontal_position": {
+        "name": "Yatay kanat",
+        "state": {
+          "fixed": "Sabit",
+          "position_1": "Konum 1",
+          "position_2": "Konum 2",
+          "position_3": "Konum 3",
+          "position_4": "Konum 4",
+          "position_5": "Konum 5",
+          "position_6": "Konum 6",
+          "auto": "Otomatik (salınım)",
+          "position_7": "Konum 7",
+          "position_8": "Konum 8"
+        }
       }
     },
     "switch": {
@@ -322,7 +352,9 @@
           "position_4": "Konum 4",
           "position_5": "Konum 5",
           "position_6": "Konum 6",
-          "auto": "Otomatik (salınım)"
+          "auto": "Otomatik (salınım)",
+          "position_7": "Konum 7",
+          "position_8": "Konum 8"
         }
       },
       "vane_vertical": {
@@ -335,7 +367,9 @@
           "position_4": "Konum 4",
           "position_5": "Konum 5",
           "position_6": "Konum 6",
-          "auto": "Otomatik (salınım)"
+          "auto": "Otomatik (salınım)",
+          "position_7": "Konum 7",
+          "position_8": "Konum 8"
         }
       },
       "human_sensing": {

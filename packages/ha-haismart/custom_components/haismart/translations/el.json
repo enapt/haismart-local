@@ -259,6 +259,36 @@
       },
       "voc_level": {
         "name": "Επίπεδο VOC"
+      },
+      "vane_vertical_position": {
+        "name": "Κάθετο πτερύγιο",
+        "state": {
+          "fixed": "Σταθερό",
+          "position_1": "Θέση 1",
+          "position_2": "Θέση 2",
+          "position_3": "Θέση 3",
+          "position_4": "Θέση 4",
+          "position_5": "Θέση 5",
+          "position_6": "Θέση 6",
+          "auto": "Αυτόματο (αιώρηση)",
+          "position_7": "Θέση 7",
+          "position_8": "Θέση 8"
+        }
+      },
+      "vane_horizontal_position": {
+        "name": "Οριζόντιο πτερύγιο",
+        "state": {
+          "fixed": "Σταθερό",
+          "position_1": "Θέση 1",
+          "position_2": "Θέση 2",
+          "position_3": "Θέση 3",
+          "position_4": "Θέση 4",
+          "position_5": "Θέση 5",
+          "position_6": "Θέση 6",
+          "auto": "Αυτόματο (αιώρηση)",
+          "position_7": "Θέση 7",
+          "position_8": "Θέση 8"
+        }
       }
     },
     "switch": {
@@ -322,7 +352,9 @@
           "position_4": "Θέση 4",
           "position_5": "Θέση 5",
           "position_6": "Θέση 6",
-          "auto": "Αυτόματο (αιώρηση)"
+          "auto": "Αυτόματο (αιώρηση)",
+          "position_7": "Θέση 7",
+          "position_8": "Θέση 8"
         }
       },
       "vane_vertical": {
@@ -335,7 +367,9 @@
           "position_4": "Θέση 4",
           "position_5": "Θέση 5",
           "position_6": "Θέση 6",
-          "auto": "Αυτόματο (αιώρηση)"
+          "auto": "Αυτόματο (αιώρηση)",
+          "position_7": "Θέση 7",
+          "position_8": "Θέση 8"
         }
       },
       "human_sensing": {

@@ -259,6 +259,36 @@
       },
       "voc_level": {
         "name": "سطح VOC"
+      },
+      "vane_vertical_position": {
+        "name": "پره عمودی",
+        "state": {
+          "fixed": "ثابت",
+          "position_1": "موقعیت 1",
+          "position_2": "موقعیت 2",
+          "position_3": "موقعیت 3",
+          "position_4": "موقعیت 4",
+          "position_5": "موقعیت 5",
+          "position_6": "موقعیت 6",
+          "auto": "خودکار (نوسان)",
+          "position_7": "موقعیت 7",
+          "position_8": "موقعیت 8"
+        }
+      },
+      "vane_horizontal_position": {
+        "name": "پره افقی",
+        "state": {
+          "fixed": "ثابت",
+          "position_1": "موقعیت 1",
+          "position_2": "موقعیت 2",
+          "position_3": "موقعیت 3",
+          "position_4": "موقعیت 4",
+          "position_5": "موقعیت 5",
+          "position_6": "موقعیت 6",
+          "auto": "خودکار (نوسان)",
+          "position_7": "موقعیت 7",
+          "position_8": "موقعیت 8"
+        }
       }
     },
     "switch": {
@@ -322,7 +352,9 @@
           "position_4": "موقعیت 4",
           "position_5": "موقعیت 5",
           "position_6": "موقعیت 6",
-          "auto": "خودکار (نوسان)"
+          "auto": "خودکار (نوسان)",
+          "position_7": "موقعیت 7",
+          "position_8": "موقعیت 8"
         }
       },
       "vane_vertical": {
@@ -335,7 +367,9 @@
           "position_4": "موقعیت 4",
           "position_5": "موقعیت 5",
           "position_6": "موقعیت 6",
-          "auto": "خودکار (نوسان)"
+          "auto": "خودکار (نوسان)",
+          "position_7": "موقعیت 7",
+          "position_8": "موقعیت 8"
         }
       },
       "human_sensing": {

@@ -259,6 +259,36 @@
       },
       "voc_level": {
         "name": "VOC 水平"
+      },
+      "vane_vertical_position": {
+        "name": "上下风板",
+        "state": {
+          "fixed": "固定",
+          "position_1": "位置1",
+          "position_2": "位置2",
+          "position_3": "位置3",
+          "position_4": "位置4",
+          "position_5": "位置5",
+          "position_6": "位置6",
+          "auto": "自动（摆动）",
+          "position_7": "位置7",
+          "position_8": "位置8"
+        }
+      },
+      "vane_horizontal_position": {
+        "name": "左右风板",
+        "state": {
+          "fixed": "固定",
+          "position_1": "位置1",
+          "position_2": "位置2",
+          "position_3": "位置3",
+          "position_4": "位置4",
+          "position_5": "位置5",
+          "position_6": "位置6",
+          "auto": "自动（摆动）",
+          "position_7": "位置7",
+          "position_8": "位置8"
+        }
       }
     },
     "switch": {
@@ -322,7 +352,9 @@
           "position_4": "位置4",
           "position_5": "位置5",
           "position_6": "位置6",
-          "auto": "自动（摆动）"
+          "auto": "自动（摆动）",
+          "position_7": "位置7",
+          "position_8": "位置8"
         }
       },
       "vane_vertical": {
@@ -335,7 +367,9 @@
           "position_4": "位置4",
           "position_5": "位置5",
           "position_6": "位置6",
-          "auto": "自动（摆动）"
+          "auto": "自动（摆动）",
+          "position_7": "位置7",
+          "position_8": "位置8"
         }
       },
       "human_sensing": {

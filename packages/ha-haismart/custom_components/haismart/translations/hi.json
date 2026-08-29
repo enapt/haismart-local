@@ -259,6 +259,36 @@
       },
       "voc_level": {
         "name": "VOC स्तर"
+      },
+      "vane_vertical_position": {
+        "name": "ऊर्ध्वाधर वेन",
+        "state": {
+          "fixed": "स्थिर",
+          "position_1": "स्थिति 1",
+          "position_2": "स्थिति 2",
+          "position_3": "स्थिति 3",
+          "position_4": "स्थिति 4",
+          "position_5": "स्थिति 5",
+          "position_6": "स्थिति 6",
+          "auto": "स्वचालित (स्विंग)",
+          "position_7": "स्थिति 7",
+          "position_8": "स्थिति 8"
+        }
+      },
+      "vane_horizontal_position": {
+        "name": "क्षैतिज वेन",
+        "state": {
+          "fixed": "स्थिर",
+          "position_1": "स्थिति 1",
+          "position_2": "स्थिति 2",
+          "position_3": "स्थिति 3",
+          "position_4": "स्थिति 4",
+          "position_5": "स्थिति 5",
+          "position_6": "स्थिति 6",
+          "auto": "स्वचालित (स्विंग)",
+          "position_7": "स्थिति 7",
+          "position_8": "स्थिति 8"
+        }
       }
     },
     "switch": {
@@ -322,7 +352,9 @@
           "position_4": "स्थिति 4",
           "position_5": "स्थिति 5",
           "position_6": "स्थिति 6",
-          "auto": "स्वचालित (स्विंग)"
+          "auto": "स्वचालित (स्विंग)",
+          "position_7": "स्थिति 7",
+          "position_8": "स्थिति 8"
         }
       },
       "vane_vertical": {
@@ -335,7 +367,9 @@
           "position_4": "स्थिति 4",
           "position_5": "स्थिति 5",
           "position_6": "स्थिति 6",
-          "auto": "स्वचालित (स्विंग)"
+          "auto": "स्वचालित (स्विंग)",
+          "position_7": "स्थिति 7",
+          "position_8": "स्थिति 8"
         }
       },
       "human_sensing": {

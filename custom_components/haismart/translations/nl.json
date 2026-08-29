@@ -259,6 +259,36 @@
       },
       "voc_level": {
         "name": "VOC-niveau"
+      },
+      "vane_vertical_position": {
+        "name": "Verticale lamel",
+        "state": {
+          "fixed": "Vast",
+          "position_1": "Positie 1",
+          "position_2": "Positie 2",
+          "position_3": "Positie 3",
+          "position_4": "Positie 4",
+          "position_5": "Positie 5",
+          "position_6": "Positie 6",
+          "auto": "Automatisch (zwenken)",
+          "position_7": "Positie 7",
+          "position_8": "Positie 8"
+        }
+      },
+      "vane_horizontal_position": {
+        "name": "Horizontale lamel",
+        "state": {
+          "fixed": "Vast",
+          "position_1": "Positie 1",
+          "position_2": "Positie 2",
+          "position_3": "Positie 3",
+          "position_4": "Positie 4",
+          "position_5": "Positie 5",
+          "position_6": "Positie 6",
+          "auto": "Automatisch (zwenken)",
+          "position_7": "Positie 7",
+          "position_8": "Positie 8"
+        }
       }
     },
     "switch": {
@@ -322,7 +352,9 @@
           "position_4": "Positie 4",
           "position_5": "Positie 5",
           "position_6": "Positie 6",
-          "auto": "Automatisch (zwenken)"
+          "auto": "Automatisch (zwenken)",
+          "position_7": "Positie 7",
+          "position_8": "Positie 8"
         }
       },
       "vane_vertical": {
@@ -335,7 +367,9 @@
           "position_4": "Positie 4",
           "position_5": "Positie 5",
           "position_6": "Positie 6",
-          "auto": "Automatisch (zwenken)"
+          "auto": "Automatisch (zwenken)",
+          "position_7": "Positie 7",
+          "position_8": "Positie 8"
         }
       },
       "human_sensing": {

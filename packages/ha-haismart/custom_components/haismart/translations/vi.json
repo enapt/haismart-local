@@ -259,6 +259,36 @@
       },
       "voc_level": {
         "name": "Mức VOC"
+      },
+      "vane_vertical_position": {
+        "name": "Cánh gió trên-dưới",
+        "state": {
+          "fixed": "Cố định",
+          "position_1": "Vị trí 1",
+          "position_2": "Vị trí 2",
+          "position_3": "Vị trí 3",
+          "position_4": "Vị trí 4",
+          "position_5": "Vị trí 5",
+          "position_6": "Vị trí 6",
+          "auto": "Tự động (đảo gió)",
+          "position_7": "Vị trí 7",
+          "position_8": "Vị trí 8"
+        }
+      },
+      "vane_horizontal_position": {
+        "name": "Cánh gió trái-phải",
+        "state": {
+          "fixed": "Cố định",
+          "position_1": "Vị trí 1",
+          "position_2": "Vị trí 2",
+          "position_3": "Vị trí 3",
+          "position_4": "Vị trí 4",
+          "position_5": "Vị trí 5",
+          "position_6": "Vị trí 6",
+          "auto": "Tự động (đảo gió)",
+          "position_7": "Vị trí 7",
+          "position_8": "Vị trí 8"
+        }
       }
     },
     "switch": {
@@ -322,7 +352,9 @@
           "position_4": "Vị trí 4",
           "position_5": "Vị trí 5",
           "position_6": "Vị trí 6",
-          "auto": "Tự động (đảo gió)"
+          "auto": "Tự động (đảo gió)",
+          "position_7": "Vị trí 7",
+          "position_8": "Vị trí 8"
         }
       },
       "vane_vertical": {
@@ -335,7 +367,9 @@
           "position_4": "Vị trí 4",
           "position_5": "Vị trí 5",
           "position_6": "Vị trí 6",
-          "auto": "Tự động (đảo gió)"
+          "auto": "Tự động (đảo gió)",
+          "position_7": "Vị trí 7",
+          "position_8": "Vị trí 8"
         }
       },
       "human_sensing": {

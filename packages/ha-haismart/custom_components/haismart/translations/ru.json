@@ -259,6 +259,36 @@
       },
       "voc_level": {
         "name": "Уровень ЛОС"
+      },
+      "vane_vertical_position": {
+        "name": "Вертикальная заслонка",
+        "state": {
+          "fixed": "Фиксировано",
+          "position_1": "Позиция 1",
+          "position_2": "Позиция 2",
+          "position_3": "Позиция 3",
+          "position_4": "Позиция 4",
+          "position_5": "Позиция 5",
+          "position_6": "Позиция 6",
+          "auto": "Авто (качание)",
+          "position_7": "Позиция 7",
+          "position_8": "Позиция 8"
+        }
+      },
+      "vane_horizontal_position": {
+        "name": "Горизонтальная заслонка",
+        "state": {
+          "fixed": "Фиксировано",
+          "position_1": "Позиция 1",
+          "position_2": "Позиция 2",
+          "position_3": "Позиция 3",
+          "position_4": "Позиция 4",
+          "position_5": "Позиция 5",
+          "position_6": "Позиция 6",
+          "auto": "Авто (качание)",
+          "position_7": "Позиция 7",
+          "position_8": "Позиция 8"
+        }
       }
     },
     "switch": {
@@ -322,7 +352,9 @@
           "position_4": "Позиция 4",
           "position_5": "Позиция 5",
           "position_6": "Позиция 6",
-          "auto": "Авто (качание)"
+          "auto": "Авто (качание)",
+          "position_7": "Позиция 7",
+          "position_8": "Позиция 8"
         }
       },
       "vane_vertical": {
@@ -335,7 +367,9 @@
           "position_4": "Позиция 4",
           "position_5": "Позиция 5",
           "position_6": "Позиция 6",
-          "auto": "Авто (качание)"
+          "auto": "Авто (качание)",
+          "position_7": "Позиция 7",
+          "position_8": "Позиция 8"
         }
       },
       "human_sensing": {

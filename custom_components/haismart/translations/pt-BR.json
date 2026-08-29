@@ -259,6 +259,36 @@
       },
       "voc_level": {
         "name": "Nível de COV"
+      },
+      "vane_vertical_position": {
+        "name": "Aleta vertical",
+        "state": {
+          "fixed": "Fixa",
+          "position_1": "Posição 1",
+          "position_2": "Posição 2",
+          "position_3": "Posição 3",
+          "position_4": "Posição 4",
+          "position_5": "Posição 5",
+          "position_6": "Posição 6",
+          "auto": "Automático (oscilação)",
+          "position_7": "Posição 7",
+          "position_8": "Posição 8"
+        }
+      },
+      "vane_horizontal_position": {
+        "name": "Aleta horizontal",
+        "state": {
+          "fixed": "Fixa",
+          "position_1": "Posição 1",
+          "position_2": "Posição 2",
+          "position_3": "Posição 3",
+          "position_4": "Posição 4",
+          "position_5": "Posição 5",
+          "position_6": "Posição 6",
+          "auto": "Automático (oscilação)",
+          "position_7": "Posição 7",
+          "position_8": "Posição 8"
+        }
       }
     },
     "switch": {
@@ -322,7 +352,9 @@
           "position_4": "Posição 4",
           "position_5": "Posição 5",
           "position_6": "Posição 6",
-          "auto": "Automático (oscilação)"
+          "auto": "Automático (oscilação)",
+          "position_7": "Posição 7",
+          "position_8": "Posição 8"
         }
       },
       "vane_vertical": {
@@ -335,7 +367,9 @@
           "position_4": "Posição 4",
           "position_5": "Posição 5",
           "position_6": "Posição 6",
-          "auto": "Automático (oscilação)"
+          "auto": "Automático (oscilação)",
+          "position_7": "Posição 7",
+          "position_8": "Posição 8"
         }
       },
       "human_sensing": {

@@ -259,6 +259,36 @@
       },
       "voc_level": {
         "name": "Úroveň VOC"
+      },
+      "vane_vertical_position": {
+        "name": "Svislá lamela",
+        "state": {
+          "fixed": "Pevná",
+          "position_1": "Poloha 1",
+          "position_2": "Poloha 2",
+          "position_3": "Poloha 3",
+          "position_4": "Poloha 4",
+          "position_5": "Poloha 5",
+          "position_6": "Poloha 6",
+          "auto": "Automaticky (kývání)",
+          "position_7": "Poloha 7",
+          "position_8": "Poloha 8"
+        }
+      },
+      "vane_horizontal_position": {
+        "name": "Vodorovná lamela",
+        "state": {
+          "fixed": "Pevná",
+          "position_1": "Poloha 1",
+          "position_2": "Poloha 2",
+          "position_3": "Poloha 3",
+          "position_4": "Poloha 4",
+          "position_5": "Poloha 5",
+          "position_6": "Poloha 6",
+          "auto": "Automaticky (kývání)",
+          "position_7": "Poloha 7",
+          "position_8": "Poloha 8"
+        }
       }
     },
     "switch": {
@@ -322,7 +352,9 @@
           "position_4": "Poloha 4",
           "position_5": "Poloha 5",
           "position_6": "Poloha 6",
-          "auto": "Automaticky (kývání)"
+          "auto": "Automaticky (kývání)",
+          "position_7": "Poloha 7",
+          "position_8": "Poloha 8"
         }
       },
       "vane_vertical": {
@@ -335,7 +367,9 @@
           "position_4": "Poloha 4",
           "position_5": "Poloha 5",
           "position_6": "Poloha 6",
-          "auto": "Automaticky (kývání)"
+          "auto": "Automaticky (kývání)",
+          "position_7": "Poloha 7",
+          "position_8": "Poloha 8"
         }
       },
       "human_sensing": {

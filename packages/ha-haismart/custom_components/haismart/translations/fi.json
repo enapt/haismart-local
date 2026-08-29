@@ -259,6 +259,36 @@
       },
       "voc_level": {
         "name": "VOC-taso"
+      },
+      "vane_vertical_position": {
+        "name": "Pystysuuntainen säle",
+        "state": {
+          "fixed": "Kiinteä",
+          "position_1": "Asento 1",
+          "position_2": "Asento 2",
+          "position_3": "Asento 3",
+          "position_4": "Asento 4",
+          "position_5": "Asento 5",
+          "position_6": "Asento 6",
+          "auto": "Automaattinen (huojunta)",
+          "position_7": "Asento 7",
+          "position_8": "Asento 8"
+        }
+      },
+      "vane_horizontal_position": {
+        "name": "Vaakasuuntainen säle",
+        "state": {
+          "fixed": "Kiinteä",
+          "position_1": "Asento 1",
+          "position_2": "Asento 2",
+          "position_3": "Asento 3",
+          "position_4": "Asento 4",
+          "position_5": "Asento 5",
+          "position_6": "Asento 6",
+          "auto": "Automaattinen (huojunta)",
+          "position_7": "Asento 7",
+          "position_8": "Asento 8"
+        }
       }
     },
     "switch": {
@@ -322,7 +352,9 @@
           "position_4": "Asento 4",
           "position_5": "Asento 5",
           "position_6": "Asento 6",
-          "auto": "Automaattinen (huojunta)"
+          "auto": "Automaattinen (huojunta)",
+          "position_7": "Asento 7",
+          "position_8": "Asento 8"
         }
       },
       "vane_vertical": {
@@ -335,7 +367,9 @@
           "position_4": "Asento 4",
           "position_5": "Asento 5",
           "position_6": "Asento 6",
-          "auto": "Automaattinen (huojunta)"
+          "auto": "Automaattinen (huojunta)",
+          "position_7": "Asento 7",
+          "position_8": "Asento 8"
         }
       },
       "human_sensing": {

@@ -259,6 +259,36 @@
       },
       "voc_level": {
         "name": "VOC-nivå"
+      },
+      "vane_vertical_position": {
+        "name": "Loddrett spjeld",
+        "state": {
+          "fixed": "Fast",
+          "position_1": "Posisjon 1",
+          "position_2": "Posisjon 2",
+          "position_3": "Posisjon 3",
+          "position_4": "Posisjon 4",
+          "position_5": "Posisjon 5",
+          "position_6": "Posisjon 6",
+          "auto": "Automatisk (sving)",
+          "position_7": "Posisjon 7",
+          "position_8": "Posisjon 8"
+        }
+      },
+      "vane_horizontal_position": {
+        "name": "Vannrett spjeld",
+        "state": {
+          "fixed": "Fast",
+          "position_1": "Posisjon 1",
+          "position_2": "Posisjon 2",
+          "position_3": "Posisjon 3",
+          "position_4": "Posisjon 4",
+          "position_5": "Posisjon 5",
+          "position_6": "Posisjon 6",
+          "auto": "Automatisk (sving)",
+          "position_7": "Posisjon 7",
+          "position_8": "Posisjon 8"
+        }
       }
     },
     "switch": {
@@ -322,7 +352,9 @@
           "position_4": "Posisjon 4",
           "position_5": "Posisjon 5",
           "position_6": "Posisjon 6",
-          "auto": "Automatisk (sving)"
+          "auto": "Automatisk (sving)",
+          "position_7": "Posisjon 7",
+          "position_8": "Posisjon 8"
         }
       },
       "vane_vertical": {
@@ -335,7 +367,9 @@
           "position_4": "Posisjon 4",
           "position_5": "Posisjon 5",
           "position_6": "Posisjon 6",
-          "auto": "Automatisk (sving)"
+          "auto": "Automatisk (sving)",
+          "position_7": "Posisjon 7",
+          "position_8": "Posisjon 8"
         }
       },
       "human_sensing": {

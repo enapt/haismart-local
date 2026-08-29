@@ -259,6 +259,36 @@
       },
       "voc_level": {
         "name": "Рівень ЛОС"
+      },
+      "vane_vertical_position": {
+        "name": "Вертикальна заслінка",
+        "state": {
+          "fixed": "Фіксовано",
+          "position_1": "Позиція 1",
+          "position_2": "Позиція 2",
+          "position_3": "Позиція 3",
+          "position_4": "Позиція 4",
+          "position_5": "Позиція 5",
+          "position_6": "Позиція 6",
+          "auto": "Авто (гойдання)",
+          "position_7": "Позиція 7",
+          "position_8": "Позиція 8"
+        }
+      },
+      "vane_horizontal_position": {
+        "name": "Горизонтальна заслінка",
+        "state": {
+          "fixed": "Фіксовано",
+          "position_1": "Позиція 1",
+          "position_2": "Позиція 2",
+          "position_3": "Позиція 3",
+          "position_4": "Позиція 4",
+          "position_5": "Позиція 5",
+          "position_6": "Позиція 6",
+          "auto": "Авто (гойдання)",
+          "position_7": "Позиція 7",
+          "position_8": "Позиція 8"
+        }
       }
     },
     "switch": {
@@ -322,7 +352,9 @@
           "position_4": "Позиція 4",
           "position_5": "Позиція 5",
           "position_6": "Позиція 6",
-          "auto": "Авто (гойдання)"
+          "auto": "Авто (гойдання)",
+          "position_7": "Позиція 7",
+          "position_8": "Позиція 8"
         }
       },
       "vane_vertical": {
@@ -335,7 +367,9 @@
           "position_4": "Позиція 4",
           "position_5": "Позиція 5",
           "position_6": "Позиція 6",
-          "auto": "Авто (гойдання)"
+          "auto": "Авто (гойдання)",
+          "position_7": "Позиція 7",
+          "position_8": "Позиція 8"
         }
       },
       "human_sensing": {

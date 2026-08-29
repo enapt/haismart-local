@@ -127,9 +127,19 @@ to do but keep the diagnostic in place and check the first report that arrives.
 ★ **The table itself is not in question.** Every published
 air-conditioner model declares **the same 51 faults at the same 51 positions**, with **zero**
 disagreements about a name, so the one shared table this integration applies to every family is
-justified by measurement rather than assumption. What remains untested is only the **bit ordering**
-of the frame — which byte carries positions 0..7 — and none of the 43 status reports held here
-carries a non-zero fault code, so it still takes one report from a unit that is actually faulted.
+justified by measurement rather than assumption.
+
+★★ **And the bit ordering is no longer untested either.** It was the one part of this item still
+resting on our own reading: which byte carries positions 0..7, and which way the bits run inside it.
+An independent implementation of the same protocol decodes those frames too, and it was compared
+against ours frame by frame — 8 bitmap bytes read **last byte first**, least-significant bit first
+within each byte. Over every single-bit fault frame the two agree on **64 of 64 positions**, and its
+fault list is **51 entries matching ours position for position**. So both halves of the decode now
+have a second source.
+
+What is left is only that no unit here has ever reported a fault, so the decode has never run on a
+real one. That is now a confirmation waiting to happen rather than an open question, and the first
+faulted report still settles it for good.
 
 ### 8. The declared attributes that are still unreachable
 
@@ -202,7 +212,16 @@ prevent.
 | window / media | 8 | ~91 % |
 | **total** | **1,451** | **83.9 %** |
 
-⚠️ **This is a slot count across all products, and it must not be read as "any given unit is 84 %
+⚠️ **"Placed" here means "carried by the layout this integration ships", not "position unknown".**
+The two are not the same, and the gap between them is measured: of the residue, **6 attributes across
+837 product-slots have a position that has been worked out and is deliberately not shipped** — three
+are capability flags no product makes visible, one is contested against an attribute already placed
+at those bits, one belongs to families that are read-only, and one is unanimous over four products.
+Each is stored with the reason, and the test suite re-derives that reason from the shipped data, so
+the day one becomes shippable the suite says so. Counting only what nothing anywhere can place, the
+residue is **98 attributes over 7,118 slots**.
+
+⚠️ **It is also a slot count across all products, and it must not be read as "any given unit is 84 %
 mapped".** Most of the 1,451 are ordinary wall units declaring around twenty attributes, and they
 pull the figure up. A feature-rich appliance is much further from complete: the twin-tower cabinet
 this project holds diagnostics for declares **79 real attributes and 40 are positioned** — its own
@@ -443,6 +462,14 @@ value in the payload.
 where the cabinet's own model declares the attribute, and each read back from its own position in
 the report so it shows real state rather than an echo of the request.
 
+★ **The vanes are read even though they cannot be commanded.** A vane is a position, not a switch,
+and the climate entity's swing control answers only "is it sweeping" — so a vane parked at a real
+stop reads exactly like one held closed. These cabinets publish as many as ten up-down stops and
+eight left-right ones and report both axes in every status frame, so where an axis is readable and
+not writable its position is surfaced as a reading of its own, named for the stop the unit's own
+model publishes. Where the axis *is* writable the existing control already shows the stop, and the
+reading is not duplicated.
+
 ⚠️ **All of that is gated on the report resolving to a layout**, which for these cabinets is not
 automatic: one of them reports a block of words between its settings and its sensors that no
 published description mentions, so every ordinary offset is rejected on the room temperature alone
@@ -629,6 +656,55 @@ substitutes a fan speed when fan-only is selected on auto) more precisely than t
 **four products** publish two rules that set the same attribute to different values under the same
 condition (`windAvoidance` and the vane positions); the model orders them by a priority nothing here
 reads, so one of the two wins by list order. One report from such a unit would settle which.
+
+### 49. A refusal names its own reason, and we report it as a bare failure
+
+When an appliance declines a command it answers with a refusal frame, and that frame carries a
+**code saying which rule was broken** — not supported on this model, not while the unit is off, not
+in fan-only, not while a fault is active, and so on. Each product publishes its own table of those
+codes, and this integration already ships every one of them, translated: the same sentences that
+explain why a control is greyed out.
+
+Today the refusal is reduced to "the appliance did not accept that", because only the fact of the
+refusal is read and the code beside it is dropped. Wiring it through would turn a dead end into the
+vendor's own explanation, using text that is already present and already localised, and it would
+cover rules that no model states as a lock — several products describe a restriction only as a
+refusal reason, never as a pre-emptive one.
+
+⚠️ **One thing to be careful about.** The code means whatever *that product's* table says it
+means, and the same number says different things on different products: **509 of them define code
+`0` as "cannot operate while a fault is active"**, while the appliances whose refusals we have
+recorded do not define `0` at all — for those, a zero is the protocol's own way of saying the command
+was not recognised. So a decoder must look the code up in the table belonging to the appliance that
+sent it, and where the appliance publishes no entry for it, say plainly that the command was not
+recognised rather than borrow another product's sentence.
+
+★ That distinction is worth having for its own sake: it separates *"I do not know this command"* from
+*"I know it and will not do it right now"*, which is exactly the question left open about the two
+withheld vane commands on the central cabinets.
+
+✅ **The reading half is already done.** A refusal was drawn from an appliance here on purpose, by
+sending it a command reserved to mean nothing, and the reply carries the code exactly where it should
+be — a two-byte field, reading zero, with a valid checksum. So the field is real, present and
+readable today; what is left is to look it up and say the sentence, and to see one refusal from an
+appliance that publishes a code of its own.
+
+### 50. The central cabinets may be several indoor units behind one address
+
+The protocol treats a group of appliances on a shared bus behind one communication module as a
+single addressable system: every frame carries a source and destination address, the module is
+always address zero, and sub-units are numbered from one. There is a command to ask a system for
+**how many sub-units it has and what their addresses are**, and another the appliance sends when
+that set changes.
+
+This integration sends the destination address as zero in every frame, which is correct for a
+single-board appliance and is what the residential units are. For a central cabinet it may mean we
+are only ever talking to the first indoor unit of a system that has several — which would explain
+why a multi-unit installation appears as one device.
+
+Nothing here can test it: it needs a central installation with more than one indoor unit on one
+module. The enumeration command changes nothing if the appliance does not implement it — it is a
+question, and an appliance that does not understand it simply refuses.
 
 ## Reference — not open items
 

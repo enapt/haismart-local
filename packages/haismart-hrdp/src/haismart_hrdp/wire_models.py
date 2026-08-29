@@ -34,7 +34,7 @@ monitoring-only.
 from __future__ import annotations
 
 from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from .canonical_map import CANONICAL, CANONICAL_WRITE, PROFILE_DISPLACEMENTS
 from .panel import PANEL_BOOL_CONTROLS, PANEL_ENUM_CONTROLS, PANEL_EXTRA_POSITIONS
@@ -190,6 +190,58 @@ VANE_V_EPP_TO_MODEL: Mapping[int, int] = {epp: std for std, epp in VANE_V_MODEL_
 #: ``12`` is the same ``0x0C`` the classic family has always used for auto, which is the check that
 #: the two ends agree.
 VANE_V_CONFIRMED_ON_HARDWARE: Mapping[int, int] = {0: 0, 2: 2, 4: 4, 5: 6, 6: 8, 8: 12}
+
+
+def vane_position_name(code: int, codes: Collection[int], fixed: int, auto: int) -> str:
+    """Name one vane stop: ``"fixed"``, ``"auto"``, or ``"position_N"`` counting the stops between.
+
+    ``N`` is the stop's rank among the ones *this device* publishes, not its raw code -- two units
+    with different stop sets both count from one, which is what a person reads off a panel. The two
+    ends are named rather than numbered because every model publishes them and they are the only
+    stops whose behaviour (hold still / sweep) is not a direction.
+
+    Shared so the writable axis (a select) and the read-only one (a sensor) cannot drift apart: they
+    are the same question asked of the same codes, and the day they disagree is the day one of them
+    is wrong.
+    """
+    if code == fixed:
+        return "fixed"
+    if code == auto:
+        return "auto"
+    return f"position_{sorted(set(codes) - {fixed, auto}).index(code) + 1}"
+
+
+def vane_code(model: WireModel, data: bytes, key: str) -> int | None:
+    """The raw wire code of a vane axis on ``model``, or ``None`` if it places that axis nowhere.
+
+    ``key`` is ``"swing_vertical"`` or ``"swing_horizontal"``. The decode kinds ``vane_v``/``vane_h``
+    answer *is it sweeping*, which is the right answer for a climate entity's swing control and the
+    wrong one for "where is it pointing": a vane parked at a real stop and a vane held closed both
+    read ``False``. The position is on the wire either way -- this returns it unreduced, so a caller
+    that wants the stop can have it without re-deriving the placement.
+
+    ⚠️ **Vertical is in EPP codes, not the model's.** The two spaces differ above the second stop
+    (:data:`VANE_V_MODEL_TO_EPP`); the left-right axis needs no translation. Callers comparing
+    against a device's published stops must convert -- :func:`vane_model_code` does both.
+    """
+    field = model.fields.get(key)
+    if field is None:
+        return None
+    return replace(field, kind="raw").read(data)
+
+
+def vane_model_code(model: WireModel, data: bytes, key: str) -> int | None:
+    """A vane axis's position in the code space the DEVICE'S OWN MODEL publishes, or ``None``.
+
+    ``None`` also for a wire code no published stop maps to: the special modes park a vane at codes
+    no model names, and reporting one as a stop the unit never claimed to have would be an invention.
+    """
+    raw = vane_code(model, data, key)
+    if raw is None:
+        return None
+    if key == "swing_vertical":
+        return VANE_V_EPP_TO_MODEL.get(raw)
+    return raw
 
 
 def vane_v_sweeping(raw: int) -> bool:

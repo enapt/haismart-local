@@ -25,6 +25,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from haismart_hrdp import GRSETDAC_ENUMS, PANEL_ENUM_CONTROLS
+from haismart_hrdp.wire_models import vane_position_name
 from homeassistant.components.select import SelectEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -134,12 +135,9 @@ class HaismartVaneSelect(HaismartEntity, SelectEntity):
         self._attr_options = list(self._codes)
 
     def _option(self, code: int, codes: frozenset[int]) -> str:
-        if code == self._vane.fixed:
-            return "fixed"
-        if code == self._vane.auto:
-            return "auto"
-        positions = sorted(codes - {self._vane.fixed, self._vane.auto})
-        return f"position_{positions.index(code) + 1}"
+        # Shared with the read-only position sensor, so a writable axis and a read-only one can
+        # never name the same stop differently.
+        return vane_position_name(code, codes, self._vane.fixed, self._vane.auto)
 
     # No `available` override, for the same reason as the economy setting above: a faulted unit, or
     # one running a self-clean cycle, will not move its vanes -- but it still reports where they

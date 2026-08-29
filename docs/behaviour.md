@@ -120,3 +120,16 @@ power, current, frequency, the coil and discharge temperatures, compressor and f
 that confirmation, so they keep the values from the most recent poll. They are held for at most two
 minutes, and cleared immediately when you switch the unit on or off, because the figures for a
 running unit say nothing about one that has just stopped.
+
+## Swinging, pointing, and the units that can only be asked
+
+A vane is a position, not a switch. The swing control answers one question — is it sweeping — and on
+a unit whose vane holds a fixed direction that answer is the same whether the vane is closed or
+pointed somewhere deliberate.
+
+Where the unit accepts vane commands, a control lists the stops its own model publishes and the swing
+control keeps working alongside it. Where it does not — some central cabinets accept only one setting
+per command, and the vane commands among those are held back until one has been seen accepted — the
+appliance still reports both axes in every status message. Those units get a **reading** for each
+axis instead, naming the stop the vane is parked at in the same words the control would use. It is
+the only account of the vanes such a unit will give, and it was previously discarded.

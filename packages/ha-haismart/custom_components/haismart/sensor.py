@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from haismart_hrdp import OPTIONAL_ENUM_FEATURES
+from haismart_hrdp import OPTIONAL_ENUM_FEATURES, vane_position_name
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -44,7 +44,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
 
 from .const import CONF_HOST, CONF_LOCALKEY_VERSION, CONF_PRODUCT_CODE, CONF_UPLUS_ID
-from .coordinator import HaismartConfigEntry, HaismartCoordinator
+from .coordinator import _VANE_ENDS, HaismartConfigEntry, HaismartCoordinator
 from .entity import HaismartEntity
 
 # Newer Home Assistant renamed these two air-quality units. The old flat constants still work but
@@ -295,6 +295,10 @@ async def async_setup_entry(
     for name in sorted(coordinator.declared_numeric_readings):
         if desc := OPTIONAL_READING_SENSORS.get(name):
             entities.append(HaismartSensor(coordinator, desc))
+    # Where each vane points, for an axis this unit reports but cannot be commanded to move — the
+    # writable ones are selects instead, so the two never both appear for one axis.
+    for key, attribute, codes in coordinator.vane_position_axes():
+        entities.append(HaismartVanePositionSensor(coordinator, key, attribute, codes))
     # "Last self-clean" — only where self-clean is a real control (same gate as the button).
     if coordinator.supports_field("selfCleaningStatus"):
         entities.append(HaismartLastSelfCleanSensor(coordinator))
@@ -364,6 +368,51 @@ class HaismartFeatureEnumSensor(HaismartEntity, SensorEntity):
     @property
     def native_value(self) -> str | None:
         return ((self.coordinator.data or {}).get("features_enum") or {}).get(self._attribute)
+
+
+#: The decode key of each vane axis -> its entity slug, which reuses the select's own vocabulary
+#: (they are mutually exclusive, so the same wording serves both).
+_VANE_SLUGS = {"swing_vertical": "vane_vertical_position",
+               "swing_horizontal": "vane_horizontal_position"}
+
+
+class HaismartVanePositionSensor(HaismartEntity, SensorEntity):
+    """Where one vane points, on a unit whose vane can be READ but not commanded.
+
+    The climate entity reduces a vane to "is it sweeping", which is the right answer for a swing
+    control and throws the stop away -- a vane parked at a real position reads exactly like one held
+    closed. Where the axis is writable a select shows the stop and this does not exist; where it is
+    not (a cabinet written one setting at a time, whose vane commands are withheld for want of an
+    observed acceptance) the appliance still reports its vanes in every status frame, and this says
+    so rather than leaving the reading on the floor.
+    """
+
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self, coordinator: HaismartCoordinator, key: str, attribute: str, codes: frozenset[int]
+    ) -> None:
+        super().__init__(coordinator)
+        self._key = key
+        self._codes = codes
+        self._ends = _VANE_ENDS[key]
+        slug = _VANE_SLUGS[key]
+        self._attr_translation_key = slug
+        self._attr_unique_id = f"{coordinator.device_id}_{slug}"
+        self._attr_options = sorted(
+            {vane_position_name(c, codes, *self._ends) for c in codes},
+            key=lambda o: (o != "fixed", o == "auto", o),
+        )
+
+    @property
+    def native_value(self) -> str | None:
+        code = self.coordinator.vane_position_code(self._key)
+        if code is None or code not in self._codes:
+            # A unit can park a vane at a stop its own model does not list (the special modes do
+            # exactly that). Unknown beats naming an option this entity never offered.
+            return None
+        return vane_position_name(code, self._codes, *self._ends)
 
 
 class HaismartSensor(HaismartEntity, SensorEntity):

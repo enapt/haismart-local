@@ -164,9 +164,18 @@ def test_the_gate_is_keyed_on_the_declaration_and_not_on_the_answer() -> None:
     ]
     assert related_family_name(-19, (RELATED_INSERT_PIVOT, 4)) not in accepted
     assert len(accepted) > 1
+
+    # ⚠️ The gate's falsifiability is what the two assertions above pin, and it is unchanged. What
+    # HAS changed is that `decode_related` no longer rests on it alone: for a lineage whose report
+    # stops where the map stops, the frame length fixes the count outright
+    # (`RELATED_INSERT_BASE_LENGTH`), and arithmetic is not a coin toss. That matters because the
+    # flag can only ever confirm a COOLING-ONLY unit -- its informative value is 1, and a candidate
+    # read at the wrong offset lands on a zero byte, which decodes as "heat pump". Two of the three
+    # cabinets this project holds reports for are heat pumps, and both were refused until the
+    # length rule answered for them (`CANONICAL_WIRE_MAP.md` §AO).
     assert decode_related(
         STATUS_133_COOL22, CABINET_UPLUS_ID, None, declared_modes=heat_pump
-    ) is None
+    )["layout"] == related_family_name(-19, (RELATED_INSERT_PIVOT, 4))
 
 
 def test_an_appliance_that_declares_nothing_gets_no_inserted_layout() -> None:
@@ -247,3 +256,44 @@ def test_the_whole_read_path_resolves_it_not_just_the_resolver() -> None:
     assert state["layout"] == related_family_name(-19, (RELATED_INSERT_PIVOT, 4))
     assert state["writable"] is True
     assert state["current_temperature"] == 25.0
+
+
+def test_the_frame_length_fixes_the_insert_without_any_corroboration() -> None:
+    """The count is arithmetic, not a judgement, for a lineage that ends where the map ends.
+
+    `RELATED_INSERT_BASE_LENGTH` says the -19 lineage's report is 125 bytes with no inserted block,
+    and the classic family calibrates that: its 127-byte rental member is the +1 case, which is
+    exactly what `_CLASSIC_PROBE.length_inserts` already records. Two bytes per word, so a 133-byte
+    report is +4 and can be nothing else.
+
+    ★ This matters because `acType` cannot answer for every appliance. Its informative value is 1
+    (单冷, cooling only); a candidate read at the wrong offset lands on one of the many zero bytes a
+    report carries, and zero decodes as 冷暖 -- heat pump. So the flag singles out a cooling-only
+    unit and is silent for a heat pump, and two of the three cabinets this project holds reports for
+    are heat pumps.
+    """
+    from haismart_hrdp.wire_models import RELATED_INSERT_BASE_LENGTH
+
+    assert RELATED_INSERT_BASE_LENGTH["0d12"] == (-19, 125)
+    assert 125 + 2 * 4 == len(STATUS_133_COOL22), "133 bytes is the base plus four words"
+
+    # Told the appliance is a heat pump -- the case `acType` cannot decide -- the length still does.
+    heat_pump = CABINET_MODES | {4}
+    for modes in (CABINET_MODES, heat_pump):
+        decoded = decode_related(STATUS_133_COOL22, CABINET_UPLUS_ID, None, declared_modes=modes)
+        assert decoded is not None
+        assert decoded["layout"] == related_family_name(-19, (RELATED_INSERT_PIVOT, 4))
+        assert decoded["current_temperature"] == 25.0
+
+
+def test_the_length_rule_declines_the_families_it_was_not_measured_on() -> None:
+    """⚠️ A base length is a claim that the report ENDS where the map does, and it is false for
+    extended-46: its 209-byte report carries words past everything the map describes, so the same
+    arithmetic would imply +22 where the true insert is +10. Displacement 0 is therefore absent from
+    the table, and must stay absent until someone measures it."""
+    from haismart_hrdp.wire_models import RELATED_INSERT_BASE_LENGTH
+
+    assert set(RELATED_INSERT_BASE_LENGTH) == {"0d12"}
+    # ⚠️ And it is keyed on the CLASS, not the displacement: a second 133-byte map exists (a 4-bit
+    # setpoint at w1.b12, sensors at w5/w6) and length alone would hand it this family's placement.
+    assert all(isinstance(k, str) for k in RELATED_INSERT_BASE_LENGTH)

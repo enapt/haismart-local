@@ -160,7 +160,15 @@ def test_the_veto_is_not_applied_where_ambiguity_is_the_safety_net() -> None:
     # Two survive the corroboration; exactly one of them is also structurally impossible.
     assert len(survivors) == 2, survivors
     assert sum(1 for _, vetoed in survivors if vetoed) == 1
-    # So the gate must refuse -- which it does, because it does NOT apply the veto.
+    # The veto is still NOT applied here, and the reasoning above still holds for it: on a survivor
+    # count, removing an impossible candidate can leave a merely-wrong one alone in the field.
+    #
+    # ⚠️ What resolves this report is neither the veto nor the survivor count. The frame LENGTH fixes
+    # the insert outright for a lineage whose report stops where the map stops -- 125 B base, 2
+    # bytes per inserted word, so a 133-byte report is +4 and nothing else. Arithmetic does not need
+    # a safety net, and it answers for the heat-pump cabinets `acType` is structurally silent about
+    # (`CANONICAL_WIRE_MAP.md` §AO). The ambiguity above is what the gate would fall back to if the
+    # base length for this lineage were ever withdrawn.
     assert wm.decode_related(
         STATUS_133_COOL22, CABINET_UPLUS_ID, None, declared_modes=heat
-    ) is None
+    )["layout"].endswith("+4@25")

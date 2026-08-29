@@ -2036,6 +2036,33 @@ def value_param_write_fields(
 #: every attribute somewhere plausible and wrong.
 RELATED_INSERT_PIVOT = 25
 
+#: The report length a displacement yields with **no** inserted block, for lineages whose report
+#: stops where the published map stops. Where that holds, the insert count is not a matter of
+#: corroboration at all -- it is arithmetic on the frame length, which §5.2.2 of the vendor's
+#: standard makes an explicit field: ``insert = (length - base) / 2``.
+#:
+#: ★ The classic family is the proof and the calibration: **125 B is the base and its 127-byte
+#: rental member is the +1 case**, which is exactly what `_CLASSIC_PROBE.length_inserts` already
+#: says. A 133-byte report is therefore +4, which is what `acType` independently chose on the one
+#: cabinet able to answer, and what prior art measured as `control_packet_size: 18` on another.
+#:
+#: ⚠️ **Only for lineages with no trailing undescribed words.** Displacement 0 is deliberately
+#: absent: extended-46's 209-byte report carries words past everything the map describes, so its
+#: length implies +22 where the true insert is +10. A base listed here is a claim that the report
+#: ends where the map does, and it must be measured before being added.
+#: ⚠️⚠️ **Keyed on the device CLASS, not on the displacement alone.** Two unrelated maps both produce
+#: a 133-byte report -- the central cabinet, and a second layout recorded in `report-layouts.md`
+#: ("133 B — two different layouts share this length") with a 4-bit setpoint at w1.b12 and its
+#: sensors at w5/w6. A rule keyed on length alone would hand that family this one's placement and
+#: decode it wrongly, which is the exact failure that section warns about: *a decoder that keys on
+#: length alone picks between them by coin toss; the appliance's own identifier picks correctly*.
+#: So the identifier gates the arithmetic, and a class is listed here only once its report has been
+#: measured to end where the published map ends.
+RELATED_INSERT_BASE_LENGTH: Mapping[str, tuple[int, int]] = {
+    # device class -> (canonical displacement, the report length with no inserted block)
+    "0d12": (-19, 125),
+}
+
 
 def _canonical_placement(
     displacement: int, insert: tuple[int, int] | None
@@ -2243,6 +2270,26 @@ def structural_violations(decoded: Mapping) -> tuple[str, ...]:
     return tuple(out)
 
 
+def insert_corroborated_by_outdoor(decoded: Mapping, declares_outdoor: bool) -> bool:
+    """Whether a candidate places the outdoor reading an appliance that HAS one must report.
+
+    ``acType`` can only ever confirm a cooling-only unit: its informative value is ``1``, and a
+    candidate read at the wrong offset lands on one of the many zero bytes a report carries, which
+    decodes as "heat pump". A reading is the other way round -- at the true placement it is a real
+    temperature, and at a wrong one it is absent or out of band -- so it discriminates in the
+    direction ``acType`` cannot.
+
+    ⚠️ **Gated on the declaration, because some air conditioners genuinely have no outdoor probe.**
+    Measured over every report this project holds: **7 carry a room reading and no outdoor one, and
+    every one of the 7 comes from a product whose model does not declare the probe** -- there is no
+    counter-example, no appliance that declares an outdoor sensor and fails to report one. So this
+    costs nothing where it applies and says nothing where it does not.
+    """
+    if not declares_outdoor:
+        return True
+    return decoded.get("outdoor_temperature") is not None
+
+
 def insert_corroborated_by_actype(decoded: Mapping, declared_modes: Collection[int]) -> bool:
     """Whether a candidate layout's ``acType`` bit agrees with the modes the device declares.
 
@@ -2315,6 +2362,33 @@ def related_shortlist_is_ranked(uplus_id: str | None) -> bool:
 _RELATED_REQUIRED = ("power", "target_temperature", "current_temperature")
 
 
+def _parse_related_name(family: str) -> tuple[int, tuple[int, int] | None] | None:
+    """``"related-19+4@25"`` -> ``(-19, (25, 4))``; ``"related0"`` -> ``(0, None)``; else ``None``.
+
+    The layout name is the serialisation of the placement rule, and two callers now read it back --
+    :func:`related_model_named` to rebuild the model, and :func:`decode_related` to check the length
+    arithmetic. One parser, so a malformed name is rejected the same way in both.
+    """
+    if not family.startswith("related"):
+        return None
+    rest = family[len("related"):]
+    insert: tuple[int, int] | None = None
+    if "+" in rest[1:]:
+        head, _, tail = rest[1:].partition("+")
+        rest = rest[0] + head
+        count, sep, pivot = tail.partition("@")
+        if not sep:
+            return None
+        try:
+            insert = (int(pivot), int(count))
+        except ValueError:
+            return None
+    try:
+        return int(rest), insert
+    except ValueError:
+        return None
+
+
 def related_model_named(
     family: str,
     length: int,
@@ -2368,6 +2442,7 @@ def decode_related(
     *,
     order: Sequence[str] | None = None,
     declared_modes: Collection[int] | None = None,
+    declares_outdoor: bool | None = None,
 ) -> dict | None:
     """Decode ``data`` with the layout of the closest published relative that the report agrees with.
 
@@ -2410,12 +2485,42 @@ def decode_related(
     # #12's reports plausibly and only one is right.
     if declared_modes is None:
         return None
+    # ⚠️ An EMPTY declaration is "we know nothing", the same as no declaration -- the length gate
+    # must decline it too, or an appliance that declares nothing gets a layout after all.
+    if not declared_modes:
+        return None
+    # ★ Arithmetic, tried before the corroboration search. Where the lineage's report stops where the
+    # published map stops, the frame length fixes the count outright: `insert = (length - base) / 2`
+    # (:data:`RELATED_INSERT_BASE_LENGTH`). That needs no `acType`, so it answers for the heat-pump
+    # cabinets the flag is structurally silent about -- see `CANONICAL_WIRE_MAP.md` §AO.
+    by_length = []
+    for wm in related_insert_models(len(data), uplus_id, order=order):
+        # ⚠️ These models carry no `canonical_displacement`/`canonical_insert` -- the layout NAME is
+        # the serialisation of both (see `related_model_named`), so read it from there rather than
+        # from attributes that are None here.
+        spec = _parse_related_name(wm.family)
+        if spec is None:
+            continue
+        displacement, insert = spec
+        known = RELATED_INSERT_BASE_LENGTH.get((uplus_id or "")[16:20])
+        if known is None or insert is None:
+            continue
+        want_displacement, base = known
+        if displacement != want_displacement or base + 2 * insert[1] != len(data):
+            continue
+        decoded = wm.decode(data, profile)
+        if decoded is not None and all(k in decoded for k in _RELATED_REQUIRED):
+            by_length.append(decoded)
+    if len(by_length) == 1:
+        return by_length[0]
+
     inserted = [
         decoded
         for wm in related_insert_models(len(data), uplus_id, order=order)
         if (decoded := wm.decode(data, profile)) is not None
         and all(k in decoded for k in _RELATED_REQUIRED)
         and insert_corroborated_by_actype(decoded, declared_modes)
+        and insert_corroborated_by_outdoor(decoded, bool(declares_outdoor))
     ]
     return inserted[0] if len(inserted) == 1 else None
 

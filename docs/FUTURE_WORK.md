@@ -1056,9 +1056,15 @@ temperature — lowest while cooling, highest in fan-only — and none behaves l
 wall-mounted models the same seven readings carry power, current and compressor speed; on these they
 appear not to.
 
-So the appliance answers, and the answer seems not to contain what was being looked for. No
-description of this family's detailed-data layout exists anywhere we hold, so this is a reading of
-how the numbers behave rather than a decode.
+Checked against the machine's own state, which each recording carries: three of the nine were taken
+with the unit cooling and six were not, and **not one reading distinguishes them**. On the
+wall-mounted models those same readings are the most load-dependent numbers in the protocol.
+
+So the appliance answers, and its answer contains nothing that behaves like power or compressor
+load. No description of this family's detailed-data layout exists anywhere we hold, so this is a
+reading of how the numbers behave rather than a decode — and "cooling" is inferred from the setpoint
+being below the room temperature rather than observed. A recording taken beside a meter reading
+would settle it outright.
 
 **What would close it:** a recording of that frame taken beside known conditions — the compressor
 running, then off. That is how every other family's power reading was placed.

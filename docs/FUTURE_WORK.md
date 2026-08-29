@@ -1030,3 +1030,23 @@ did not even look stale. Detection was already right; only the precedence was wr
 checked first now, and the reply is still decoded so the seed baseline is refreshed either way.
 Regression test `test_a_refusal_is_not_masked_by_the_routine_status_push`, confirmed to fail against
 the old ordering.
+
+
+### 51. The cumulative energy counter is not read on a relative's layout
+
+An air conditioner whose layout is worked out from a close relative's gets eleven readings, and the
+cumulative electricity counter is not one of them. A unit whose own family map is registered does
+get it.
+
+This is not currently costing anyone: of every report attached to this project, the only appliances
+decoded from a relative's layout are the central cabinets, and none of those publishes a counter at
+all. It is written down because that is a fact about the reports we happen to hold rather than about
+the design.
+
+⚠️ It is deliberately not added on spec. The counter is a 32-bit value that extends *backwards* from
+its stated position, so on a layout that carries extra words in the middle it lands somewhere no
+report has ever confirmed — and a wrong lifetime-kWh figure in someone's energy dashboard is worse
+than no figure at all.
+
+**What closes it:** one diagnostics file from an air conditioner that is decoded from a relative's
+layout *and* whose model lists the counter. The value can then be checked rather than assumed.

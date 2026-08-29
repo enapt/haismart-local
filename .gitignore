@@ -23,3 +23,7 @@ CLAUDE.private.md
 # Stray artefacts from local tooling — this repo is swept with `git add -A` at release,
 # so anything that lands in the working tree gets committed unless it is named here.
 *.wav
+
+# Notification-plugin droppings — a tool writes these into the working tree; they are not the
+# project and must never be swept into a commit (release.sh stages every untracked root file).
+.peon-*

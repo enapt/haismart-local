@@ -1038,6 +1038,24 @@ Regression test `test_a_refusal_is_not_masked_by_the_routine_status_push`, confi
 the old ordering.
 
 
+### 52. Power and running data on the roof-mounted cabinets is produced but not delivered
+
+These cabinets answer a query for their detailed running data when it is asked over the wire inside
+the appliance — a recording of one shows the manufacturer's own module asking nine times and the
+board answering all nine, with a frame that is populated and changes between recordings. Asked the
+same question over the network, the same class of appliance answers nothing at all: not a refusal,
+just silence, in both of the two forms the question can take.
+
+So the machine measures these things. What is missing is delivery: the Wi-Fi module relays the
+ordinary status and control messages for this appliance and does not appear to relay this one.
+
+⚠️ What is in that frame is not known. The layout of a detailed-data frame is described per
+appliance family, and no description of this family exists anywhere we hold, so it cannot be said
+which of its readings is power, current or a compressor state.
+
+**What would close it:** a recording of that frame taken beside known conditions — the compressor
+running, then off. That is how every other family's power reading was placed.
+
 ### 51. The cumulative energy counter is not read on a relative's layout
 
 An air conditioner whose layout is worked out from a close relative's gets eleven readings, and the

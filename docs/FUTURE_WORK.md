@@ -720,6 +720,12 @@ question, and an appliance that does not understand it simply refuses.
 
 Kept because each looks like something to "fix" until you know why it is the way it is.
 
+⛔ **Not on the central cabinets, and that is settled rather than untested.** The communication
+standard states that a multi-appliance system *must* use the interactive conversation mode, and
+those cabinets use the simpler one where the module asks and the appliance only answers — which
+their own refusals confirm. So an appliance of that class is not one of these systems, however many
+indoor units a building has. This needs hardware that actually talks the interactive mode.
+
 ### The layout prober is told what the captures were
 
 The prober is the *second* thing to run: an unfamiliar report is first matched against

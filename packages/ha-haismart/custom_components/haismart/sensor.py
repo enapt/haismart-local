@@ -395,13 +395,14 @@ class HaismartVanePositionSensor(HaismartEntity, SensorEntity):
     ) -> None:
         super().__init__(coordinator)
         self._key = key
+        self._attribute = attribute
         self._codes = codes
         self._ends = _VANE_ENDS[key]
         slug = _VANE_SLUGS[key]
         self._attr_translation_key = slug
         self._attr_unique_id = f"{coordinator.device_id}_{slug}"
         self._attr_options = sorted(
-            {vane_position_name(c, codes, *self._ends) for c in codes},
+            {vane_position_name(c, codes, *self._ends, attribute) for c in codes},
             key=lambda o: (o != "fixed", o == "auto", o),
         )
 
@@ -412,7 +413,7 @@ class HaismartVanePositionSensor(HaismartEntity, SensorEntity):
             # A unit can park a vane at a stop its own model does not list (the special modes do
             # exactly that). Unknown beats naming an option this entity never offered.
             return None
-        return vane_position_name(code, self._codes, *self._ends)
+        return vane_position_name(code, self._codes, *self._ends, self._attribute)
 
 
 class HaismartSensor(HaismartEntity, SensorEntity):

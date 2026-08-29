@@ -270,9 +270,14 @@
           "position_4": "Konum 4",
           "position_5": "Konum 5",
           "position_6": "Konum 6",
-          "auto": "Otomatik (salınım)",
           "position_7": "Konum 7",
-          "position_8": "Konum 8"
+          "position_8": "Konum 8",
+          "auto": "Otomatik (salınım)",
+          "auto_2": "Otomatik (alternatif salınım)",
+          "down_half_auto": "Otomatik (alt yarı)",
+          "health_down": "Sağlıklı hava akışı (aşağı)",
+          "health_up": "Sağlıklı hava akışı (yukarı)",
+          "up_half_auto": "Otomatik (üst yarı)"
         }
       },
       "vane_horizontal_position": {
@@ -285,9 +290,11 @@
           "position_4": "Konum 4",
           "position_5": "Konum 5",
           "position_6": "Konum 6",
-          "auto": "Otomatik (salınım)",
           "position_7": "Konum 7",
-          "position_8": "Konum 8"
+          "position_8": "Konum 8",
+          "auto": "Otomatik (salınım)",
+          "left_half_auto": "Otomatik (sol yarı)",
+          "right_half_auto": "Otomatik (sağ yarı)"
         }
       }
     },
@@ -352,9 +359,11 @@
           "position_4": "Konum 4",
           "position_5": "Konum 5",
           "position_6": "Konum 6",
-          "auto": "Otomatik (salınım)",
           "position_7": "Konum 7",
-          "position_8": "Konum 8"
+          "position_8": "Konum 8",
+          "auto": "Otomatik (salınım)",
+          "left_half_auto": "Otomatik (sol yarı)",
+          "right_half_auto": "Otomatik (sağ yarı)"
         }
       },
       "vane_vertical": {
@@ -367,9 +376,14 @@
           "position_4": "Konum 4",
           "position_5": "Konum 5",
           "position_6": "Konum 6",
-          "auto": "Otomatik (salınım)",
           "position_7": "Konum 7",
-          "position_8": "Konum 8"
+          "position_8": "Konum 8",
+          "auto": "Otomatik (salınım)",
+          "auto_2": "Otomatik (alternatif salınım)",
+          "down_half_auto": "Otomatik (alt yarı)",
+          "health_down": "Sağlıklı hava akışı (aşağı)",
+          "health_up": "Sağlıklı hava akışı (yukarı)",
+          "up_half_auto": "Otomatik (üst yarı)"
         }
       },
       "human_sensing": {

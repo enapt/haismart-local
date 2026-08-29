@@ -270,9 +270,14 @@
           "position_4": "Pozycja 4",
           "position_5": "Pozycja 5",
           "position_6": "Pozycja 6",
-          "auto": "Automatycznie (wachlowanie)",
           "position_7": "Pozycja 7",
-          "position_8": "Pozycja 8"
+          "position_8": "Pozycja 8",
+          "auto": "Automatycznie (wachlowanie)",
+          "auto_2": "Automatycznie (alternatywne wachlowanie)",
+          "down_half_auto": "Automatycznie (dolna połowa)",
+          "health_down": "Zdrowy nawiew (w dół)",
+          "health_up": "Zdrowy nawiew (w górę)",
+          "up_half_auto": "Automatycznie (górna połowa)"
         }
       },
       "vane_horizontal_position": {
@@ -285,9 +290,11 @@
           "position_4": "Pozycja 4",
           "position_5": "Pozycja 5",
           "position_6": "Pozycja 6",
-          "auto": "Automatycznie (wachlowanie)",
           "position_7": "Pozycja 7",
-          "position_8": "Pozycja 8"
+          "position_8": "Pozycja 8",
+          "auto": "Automatycznie (wachlowanie)",
+          "left_half_auto": "Automatycznie (lewa połowa)",
+          "right_half_auto": "Automatycznie (prawa połowa)"
         }
       }
     },
@@ -352,9 +359,11 @@
           "position_4": "Pozycja 4",
           "position_5": "Pozycja 5",
           "position_6": "Pozycja 6",
-          "auto": "Automatycznie (wachlowanie)",
           "position_7": "Pozycja 7",
-          "position_8": "Pozycja 8"
+          "position_8": "Pozycja 8",
+          "auto": "Automatycznie (wachlowanie)",
+          "left_half_auto": "Automatycznie (lewa połowa)",
+          "right_half_auto": "Automatycznie (prawa połowa)"
         }
       },
       "vane_vertical": {
@@ -367,9 +376,14 @@
           "position_4": "Pozycja 4",
           "position_5": "Pozycja 5",
           "position_6": "Pozycja 6",
-          "auto": "Automatycznie (wachlowanie)",
           "position_7": "Pozycja 7",
-          "position_8": "Pozycja 8"
+          "position_8": "Pozycja 8",
+          "auto": "Automatycznie (wachlowanie)",
+          "auto_2": "Automatycznie (alternatywne wachlowanie)",
+          "down_half_auto": "Automatycznie (dolna połowa)",
+          "health_down": "Zdrowy nawiew (w dół)",
+          "health_up": "Zdrowy nawiew (w górę)",
+          "up_half_auto": "Automatycznie (górna połowa)"
         }
       },
       "human_sensing": {

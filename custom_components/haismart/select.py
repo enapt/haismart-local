@@ -137,7 +137,9 @@ class HaismartVaneSelect(HaismartEntity, SelectEntity):
     def _option(self, code: int, codes: frozenset[int]) -> str:
         # Shared with the read-only position sensor, so a writable axis and a read-only one can
         # never name the same stop differently.
-        return vane_position_name(code, codes, self._vane.fixed, self._vane.auto)
+        return vane_position_name(
+            code, codes, self._vane.fixed, self._vane.auto, self._vane.field
+        )
 
     # No `available` override, for the same reason as the economy setting above: a faulted unit, or
     # one running a self-clean cycle, will not move its vanes -- but it still reports where they

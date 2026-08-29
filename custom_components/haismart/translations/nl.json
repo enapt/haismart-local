@@ -270,9 +270,14 @@
           "position_4": "Positie 4",
           "position_5": "Positie 5",
           "position_6": "Positie 6",
-          "auto": "Automatisch (zwenken)",
           "position_7": "Positie 7",
-          "position_8": "Positie 8"
+          "position_8": "Positie 8",
+          "auto": "Automatisch (zwenken)",
+          "auto_2": "Automatisch (alternatief zwenken)",
+          "down_half_auto": "Automatisch (onderste helft)",
+          "health_down": "Gezonde luchtstroom (omlaag)",
+          "health_up": "Gezonde luchtstroom (omhoog)",
+          "up_half_auto": "Automatisch (bovenste helft)"
         }
       },
       "vane_horizontal_position": {
@@ -285,9 +290,11 @@
           "position_4": "Positie 4",
           "position_5": "Positie 5",
           "position_6": "Positie 6",
-          "auto": "Automatisch (zwenken)",
           "position_7": "Positie 7",
-          "position_8": "Positie 8"
+          "position_8": "Positie 8",
+          "auto": "Automatisch (zwenken)",
+          "left_half_auto": "Automatisch (linkerhelft)",
+          "right_half_auto": "Automatisch (rechterhelft)"
         }
       }
     },
@@ -352,9 +359,11 @@
           "position_4": "Positie 4",
           "position_5": "Positie 5",
           "position_6": "Positie 6",
-          "auto": "Automatisch (zwenken)",
           "position_7": "Positie 7",
-          "position_8": "Positie 8"
+          "position_8": "Positie 8",
+          "auto": "Automatisch (zwenken)",
+          "left_half_auto": "Automatisch (linkerhelft)",
+          "right_half_auto": "Automatisch (rechterhelft)"
         }
       },
       "vane_vertical": {
@@ -367,9 +376,14 @@
           "position_4": "Positie 4",
           "position_5": "Positie 5",
           "position_6": "Positie 6",
-          "auto": "Automatisch (zwenken)",
           "position_7": "Positie 7",
-          "position_8": "Positie 8"
+          "position_8": "Positie 8",
+          "auto": "Automatisch (zwenken)",
+          "auto_2": "Automatisch (alternatief zwenken)",
+          "down_half_auto": "Automatisch (onderste helft)",
+          "health_down": "Gezonde luchtstroom (omlaag)",
+          "health_up": "Gezonde luchtstroom (omhoog)",
+          "up_half_auto": "Automatisch (bovenste helft)"
         }
       },
       "human_sensing": {

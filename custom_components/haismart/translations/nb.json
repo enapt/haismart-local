@@ -270,9 +270,14 @@
           "position_4": "Posisjon 4",
           "position_5": "Posisjon 5",
           "position_6": "Posisjon 6",
-          "auto": "Automatisk (sving)",
           "position_7": "Posisjon 7",
-          "position_8": "Posisjon 8"
+          "position_8": "Posisjon 8",
+          "auto": "Automatisk (sving)",
+          "auto_2": "Automatisk (alternativt sving)",
+          "down_half_auto": "Automatisk (nedre halvdel)",
+          "health_down": "Sunn luftstrøm (ned)",
+          "health_up": "Sunn luftstrøm (opp)",
+          "up_half_auto": "Automatisk (øvre halvdel)"
         }
       },
       "vane_horizontal_position": {
@@ -285,9 +290,11 @@
           "position_4": "Posisjon 4",
           "position_5": "Posisjon 5",
           "position_6": "Posisjon 6",
-          "auto": "Automatisk (sving)",
           "position_7": "Posisjon 7",
-          "position_8": "Posisjon 8"
+          "position_8": "Posisjon 8",
+          "auto": "Automatisk (sving)",
+          "left_half_auto": "Automatisk (venstre halvdel)",
+          "right_half_auto": "Automatisk (høyre halvdel)"
         }
       }
     },
@@ -352,9 +359,11 @@
           "position_4": "Posisjon 4",
           "position_5": "Posisjon 5",
           "position_6": "Posisjon 6",
-          "auto": "Automatisk (sving)",
           "position_7": "Posisjon 7",
-          "position_8": "Posisjon 8"
+          "position_8": "Posisjon 8",
+          "auto": "Automatisk (sving)",
+          "left_half_auto": "Automatisk (venstre halvdel)",
+          "right_half_auto": "Automatisk (høyre halvdel)"
         }
       },
       "vane_vertical": {
@@ -367,9 +376,14 @@
           "position_4": "Posisjon 4",
           "position_5": "Posisjon 5",
           "position_6": "Posisjon 6",
-          "auto": "Automatisk (sving)",
           "position_7": "Posisjon 7",
-          "position_8": "Posisjon 8"
+          "position_8": "Posisjon 8",
+          "auto": "Automatisk (sving)",
+          "auto_2": "Automatisk (alternativt sving)",
+          "down_half_auto": "Automatisk (nedre halvdel)",
+          "health_down": "Sunn luftstrøm (ned)",
+          "health_up": "Sunn luftstrøm (opp)",
+          "up_half_auto": "Automatisk (øvre halvdel)"
         }
       },
       "human_sensing": {

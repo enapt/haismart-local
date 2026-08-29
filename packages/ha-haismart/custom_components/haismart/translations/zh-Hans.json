@@ -270,9 +270,14 @@
           "position_4": "位置4",
           "position_5": "位置5",
           "position_6": "位置6",
-          "auto": "自动（摆动）",
           "position_7": "位置7",
-          "position_8": "位置8"
+          "position_8": "位置8",
+          "auto": "自动（摆动）",
+          "auto_2": "自动（摆动2）",
+          "down_half_auto": "下半程自动",
+          "health_down": "健康气流（下吹）",
+          "health_up": "健康气流（上吹）",
+          "up_half_auto": "上半程自动"
         }
       },
       "vane_horizontal_position": {
@@ -285,9 +290,11 @@
           "position_4": "位置4",
           "position_5": "位置5",
           "position_6": "位置6",
-          "auto": "自动（摆动）",
           "position_7": "位置7",
-          "position_8": "位置8"
+          "position_8": "位置8",
+          "auto": "自动（摆动）",
+          "left_half_auto": "左半程自动",
+          "right_half_auto": "右半程自动"
         }
       }
     },
@@ -352,9 +359,11 @@
           "position_4": "位置4",
           "position_5": "位置5",
           "position_6": "位置6",
-          "auto": "自动（摆动）",
           "position_7": "位置7",
-          "position_8": "位置8"
+          "position_8": "位置8",
+          "auto": "自动（摆动）",
+          "left_half_auto": "左半程自动",
+          "right_half_auto": "右半程自动"
         }
       },
       "vane_vertical": {
@@ -367,9 +376,14 @@
           "position_4": "位置4",
           "position_5": "位置5",
           "position_6": "位置6",
-          "auto": "自动（摆动）",
           "position_7": "位置7",
-          "position_8": "位置8"
+          "position_8": "位置8",
+          "auto": "自动（摆动）",
+          "auto_2": "自动（摆动2）",
+          "down_half_auto": "下半程自动",
+          "health_down": "健康气流（下吹）",
+          "health_up": "健康气流（上吹）",
+          "up_half_auto": "上半程自动"
         }
       },
       "human_sensing": {

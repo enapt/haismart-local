@@ -136,6 +136,8 @@ from .uss import (
     status_layout,
 )
 from .wire_models import (
+    PROVISIONAL_SINGLE_PARAM_IDS,
+    VANE_NAMED_STOPS,
     VANE_V_CONFIRMED_ON_HARDWARE,
     VANE_V_EPP_TO_MODEL,
     VANE_V_MODEL_TO_EPP,
@@ -199,6 +201,8 @@ __all__ = [
     "related_wire_models",
     "vane_code",
     "vane_model_code",
+    "PROVISIONAL_SINGLE_PARAM_IDS",
+    "VANE_NAMED_STOPS",
     "vane_position_name",
     "select_wire_model",
     "declared_fields",

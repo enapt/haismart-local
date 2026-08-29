@@ -270,9 +270,14 @@
           "position_4": "Asento 4",
           "position_5": "Asento 5",
           "position_6": "Asento 6",
-          "auto": "Automaattinen (huojunta)",
           "position_7": "Asento 7",
-          "position_8": "Asento 8"
+          "position_8": "Asento 8",
+          "auto": "Automaattinen (huojunta)",
+          "auto_2": "Automaattinen (vaihtoehtoinen huojunta)",
+          "down_half_auto": "Automaattinen (alapuolisko)",
+          "health_down": "Terveellinen ilmavirta (alas)",
+          "health_up": "Terveellinen ilmavirta (ylös)",
+          "up_half_auto": "Automaattinen (yläpuolisko)"
         }
       },
       "vane_horizontal_position": {
@@ -285,9 +290,11 @@
           "position_4": "Asento 4",
           "position_5": "Asento 5",
           "position_6": "Asento 6",
-          "auto": "Automaattinen (huojunta)",
           "position_7": "Asento 7",
-          "position_8": "Asento 8"
+          "position_8": "Asento 8",
+          "auto": "Automaattinen (huojunta)",
+          "left_half_auto": "Automaattinen (vasen puolisko)",
+          "right_half_auto": "Automaattinen (oikea puolisko)"
         }
       }
     },
@@ -352,9 +359,11 @@
           "position_4": "Asento 4",
           "position_5": "Asento 5",
           "position_6": "Asento 6",
-          "auto": "Automaattinen (huojunta)",
           "position_7": "Asento 7",
-          "position_8": "Asento 8"
+          "position_8": "Asento 8",
+          "auto": "Automaattinen (huojunta)",
+          "left_half_auto": "Automaattinen (vasen puolisko)",
+          "right_half_auto": "Automaattinen (oikea puolisko)"
         }
       },
       "vane_vertical": {
@@ -367,9 +376,14 @@
           "position_4": "Asento 4",
           "position_5": "Asento 5",
           "position_6": "Asento 6",
-          "auto": "Automaattinen (huojunta)",
           "position_7": "Asento 7",
-          "position_8": "Asento 8"
+          "position_8": "Asento 8",
+          "auto": "Automaattinen (huojunta)",
+          "auto_2": "Automaattinen (vaihtoehtoinen huojunta)",
+          "down_half_auto": "Automaattinen (alapuolisko)",
+          "health_down": "Terveellinen ilmavirta (alas)",
+          "health_up": "Terveellinen ilmavirta (ylös)",
+          "up_half_auto": "Automaattinen (yläpuolisko)"
         }
       },
       "human_sensing": {

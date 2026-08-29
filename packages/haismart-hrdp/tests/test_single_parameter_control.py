@@ -61,6 +61,8 @@ def test_a_central_cabinet_is_commandable_although_it_publishes_no_group_set() -
     assert set(wm.value_param_fields) == {
         "onOffStatus", "targetTemperature", "operationMode",
         "windSpeed", "healthMode", "muteStatus", "rapidMode",
+        # Offered on the appliance's own terms -- see the provisional test below.
+        "windDirectionVertical", "windDirectionHorizontal",
     }
 
 
@@ -88,16 +90,37 @@ def test_the_command_bytes_are_the_published_parameter_ids(
     assert _central().encode_value_param(name, value) == (command, payload)
 
 
-def test_the_vane_commands_are_withheld() -> None:
-    """This generation defines an id for each vane, but no appliance of THIS class has been seen to
-    accept one -- the one they were read from has no vane at all. An id that is unimplemented is
-    refused and harmless; one that is implemented and means something else would move a setting
-    nobody asked for, which is the failure this project does not ship."""
+def test_the_vane_commands_are_offered_for_the_appliance_to_settle() -> None:
+    """This generation defines an id for each vane and no appliance of the class has been watched
+    accepting one -- the cabinet they were read from has no vane at all. They are offered anyway,
+    marked provisional, because this channel writes ONE named parameter and both axes read back from
+    their own published positions: the appliance can answer the question by taking the value or not.
+
+    ⚠️ Marked, not merely present. An id that is implemented and means something else would move a
+    setting nobody asked for, and the mark is what tells a caller it must check the read-back once
+    and stop offering the control if it does not take.
+    """
     wm = _central()
     for vane in ("windDirectionVertical", "windDirectionHorizontal"):
-        assert vane not in wm.value_param_fields
-        with pytest.raises(KeyError):
-            wm.encode_value_param(vane, 0)
+        assert wm.value_param_fields[vane].provisional is True
+        assert wm.value_param_value(REPORT_28C_OFF, vane) is not None
+    # and the settled seven are NOT marked, or the check above would be meaningless
+    assert not any(wm.value_param_fields[n].provisional
+                   for n in ("onOffStatus", "targetTemperature", "operationMode", "windSpeed"))
+
+
+def test_the_vane_frame_is_the_shape_the_vendors_own_encoder_emits() -> None:
+    """The half of a write the id does not decide. Recorded byte for byte from the vendor's
+    `epp_parser_attr_write_v2` on a published profile: frame type 1, `0x5D00 | id`, a big-endian
+    16-bit value, and the checksum over the lot. If our framing were wrong every id would fail and
+    the read-back gate would retire perfectly good ones."""
+    from haismart_hrdp.uss import build_epp_frame
+
+    wm = _central()
+    cmd, payload = wm.encode_value_param("onOffStatus", 1)
+    assert build_epp_frame(0x01, cmd, payload) == bytes.fromhex("ffff0c000000000000015d0100016c")
+    cmd, payload = wm.encode_value_param("windDirectionVertical", 2)
+    assert build_epp_frame(0x01, cmd, payload).hex() == "ffff0c000000000000015d0300026f"
 
 
 def test_a_control_is_read_back_from_the_report_not_from_what_was_sent() -> None:

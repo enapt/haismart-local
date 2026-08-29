@@ -451,7 +451,7 @@ a code table.
 * **`健康除湿` is display-only**, like the window units' ECO: it shows as Dry and is not separately
   selectable, because Home Assistant has no mode for it. Reported correctly, which it was not before.
 
-### 42. The `0d12` central cabinets — controlled; the two vane commands are withheld
+### 42. The `0d12` central cabinets — controlled, vanes included
 
 **187 products** publish **no group command at all**. Every attribute is marked individually
 settable, and their firmware **refuses the group-set frame outright** — so the group set is not
@@ -493,24 +493,26 @@ same shape would still need its own measurement before the same arithmetic could
   mode, fan and power all land where the published map puts them. Wrong sensor values on one of
   these means an old version — update.
 
-⚠️ **The two vane commands are deliberately withheld**, and what closes it is smaller than a
-report. This generation defines a command for each axis, but neither has ever been observed
-being *accepted*: the reference table's other eleven ids were read off a real appliance's traffic
-while these two were added to it without any capture behind them, and the one cabinet whose traffic
-was captured has no vane. A command that is simply unimplemented is refused and harmless; one that is
-implemented and means something else would move a setting nobody asked for.
+★ **The two vane commands are offered on terms the appliance itself settles.** This generation
+defines a command for each axis, and neither had ever been watched being *accepted*: the reference
+table's other eleven were read off a real appliance's traffic while these two were added without any
+capture behind them, and the one cabinet whose traffic was captured has no vane. That was never
+going to resolve itself, so it is resolved a different way.
 
-★ **The hardware is not the missing piece.** A cabinet that declares both axes has reported,
-and both read back from the positions the map gives them — one capture even has the left-right vane
-on auto while the other two have it parked, so the axis is seen to move. What that establishes is the
-**read** side: it says nothing about whether the firmware accepts those two write commands, which is
-the only thing still withheld.
+Two things changed. **The up-down command is now bracketed**: in the published wire order that
+attribute is the only one these cabinets declare between two commands that *were* observed, and only
+one command number is free in that gap — so the number is forced, and it is the number the reference
+table guessed. And **both axes read back**. This channel names one attribute at a time, and the
+report says where each vane is pointing, so the appliance can answer the question the moment
+somebody uses the control: ask for a stop, then look at where the vane says it is.
 
-⇒ **What closes it is an accept/refuse observation, not a report.** Send either command to a cabinet
-that has a vane and read the reply's frame type: `0x02` is accepted, `0x03` refused. That is a
-ten-second test on hardware that already exists, and it settles the axis for the whole class.
-The withheld ids and this reason are carried in the code as data, and the suite re-checks that they
-are waiting only on that observation rather than on the appliances lacking the hardware.
+⇒ **A control is written, checked once against the appliance's own reading, and then trusted.** If
+the value took, nothing more is checked. If it did not, that control is withdrawn for good and the
+failure is reported, rather than leaving somebody pressing a button that quietly does nothing. The
+left-right number has no bracket behind it and rests on the reference table alone — it is offered on
+exactly the same terms, because the appliance is what decides either way.
+
+**143 of the 187 cabinets declare an up-down vane and 91 a left-right one.**
 
 ⚠️ **`invisible` is not used as the gate** — see item 43. Membership is the attribute being declared
 at all, because the parameter table is per device class while the function is per product: a cabinet

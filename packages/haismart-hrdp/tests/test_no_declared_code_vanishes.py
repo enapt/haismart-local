@@ -73,21 +73,39 @@ def test_the_vane_table_carries_the_codes_that_used_to_vanish() -> None:
         assert std in wm.VANE_V_MODEL_TO_EPP
 
 
-def test_the_withheld_vane_ids_are_waiting_only_on_an_observation() -> None:
-    """A withholding is a measurement, so it states what it waits for and is re-checked.
+def test_a_provisional_id_is_offered_only_where_the_appliance_can_settle_it() -> None:
+    """An id nobody has watched being accepted is offered only if the same attribute reads back.
 
-    The two central-cabinet vane ids are not shipped because nothing of that class has ever been
-    seen to accept them -- NOT because the appliances lack the hardware. This pins the distinction:
-    the map places both axes, so the only missing piece is one accept/refuse observation. Shipping
-    an id means taking it out of the withheld table, and this is what makes that deliberate.
+    That is what makes offering it honest rather than hopeful: the appliance adjudicates its own
+    registry, once, and an id that does not take is retired instead of being sent again. So the
+    invariant is not "is it observed" but "can this be checked" -- every provisional attribute must
+    have a published position to read it back from, and no id may be both settled and provisional.
     """
-    for klass, withheld in wm.WITHHELD_SINGLE_PARAM_IDS.items():
-        shipped = wm.SINGLE_PARAM_IDS.get(klass, {})
-        assert not set(withheld) & set(shipped), "an id cannot be both shipped and withheld"
-        for name, (param_id, reason) in withheld.items():
-            assert reason == "never observed accepted"
+    for klass, unconfirmed in wm.PROVISIONAL_SINGLE_PARAM_IDS.items():
+        settled = wm.SINGLE_PARAM_IDS.get(klass, {})
+        assert not set(unconfirmed) & set(settled), "an id cannot be both settled and provisional"
+        for name, param_id in unconfirmed.items():
             assert 0 < param_id < 0x100
             assert name in CANONICAL, f"{name} has no published position to read it back from"
+
+
+def test_the_vertical_vane_id_is_the_only_one_its_bracket_leaves_free() -> None:
+    """The second, independent reason to believe 0x03 -- and the one prior art cannot supply.
+
+    In the published wire order this attribute is the ONLY one the class declares between two
+    OBSERVED ids, and one id is free in that span. Written down as a check because it is the whole
+    argument: if a later map moves either anchor, or another attribute lands between them, the
+    bracket stops forcing anything and this fails rather than quietly going on being quoted.
+    """
+    lo, hi = wm.SINGLE_PARAM_IDS["0d12"]["targetTemperature"], wm.SINGLE_PARAM_IDS["0d12"]["operationMode"]
+    vane = CANONICAL["windDirectionVertical"]
+    span = [n for n, f in CANONICAL.items()
+            if (CANONICAL["targetTemperature"].word, -CANONICAL["targetTemperature"].bit)
+            < (f.word, -f.bit)
+            < (CANONICAL["operationMode"].word, -CANONICAL["operationMode"].bit)]
+    assert span == ["windDirectionVertical"], span
+    assert list(range(lo + 1, hi)) == [wm.PROVISIONAL_SINGLE_PARAM_IDS["0d12"][span[0]]]
+    assert vane.word  # the position that makes the read-back check possible
 
 
 def test_a_group_set_is_never_packed_across_an_inserted_block() -> None:

@@ -270,9 +270,14 @@
           "position_4": "Position 4",
           "position_5": "Position 5",
           "position_6": "Position 6",
-          "auto": "Automatique (balayage)",
           "position_7": "Position 7",
-          "position_8": "Position 8"
+          "position_8": "Position 8",
+          "auto": "Automatique (balayage)",
+          "auto_2": "Automatique (balayage alternatif)",
+          "down_half_auto": "Automatique (moitié inférieure)",
+          "health_down": "Flux d'air sain (vers le bas)",
+          "health_up": "Flux d'air sain (vers le haut)",
+          "up_half_auto": "Automatique (moitié supérieure)"
         }
       },
       "vane_horizontal_position": {
@@ -285,9 +290,11 @@
           "position_4": "Position 4",
           "position_5": "Position 5",
           "position_6": "Position 6",
-          "auto": "Automatique (balayage)",
           "position_7": "Position 7",
-          "position_8": "Position 8"
+          "position_8": "Position 8",
+          "auto": "Automatique (balayage)",
+          "left_half_auto": "Automatique (moitié gauche)",
+          "right_half_auto": "Automatique (moitié droite)"
         }
       }
     },
@@ -352,9 +359,11 @@
           "position_4": "Position 4",
           "position_5": "Position 5",
           "position_6": "Position 6",
-          "auto": "Automatique (balayage)",
           "position_7": "Position 7",
-          "position_8": "Position 8"
+          "position_8": "Position 8",
+          "auto": "Automatique (balayage)",
+          "left_half_auto": "Automatique (moitié gauche)",
+          "right_half_auto": "Automatique (moitié droite)"
         }
       },
       "vane_vertical": {
@@ -367,9 +376,14 @@
           "position_4": "Position 4",
           "position_5": "Position 5",
           "position_6": "Position 6",
-          "auto": "Automatique (balayage)",
           "position_7": "Position 7",
-          "position_8": "Position 8"
+          "position_8": "Position 8",
+          "auto": "Automatique (balayage)",
+          "auto_2": "Automatique (balayage alternatif)",
+          "down_half_auto": "Automatique (moitié inférieure)",
+          "health_down": "Flux d'air sain (vers le bas)",
+          "health_up": "Flux d'air sain (vers le haut)",
+          "up_half_auto": "Automatique (moitié supérieure)"
         }
       },
       "human_sensing": {

@@ -270,9 +270,14 @@
           "position_4": "Posizione 4",
           "position_5": "Posizione 5",
           "position_6": "Posizione 6",
-          "auto": "Automatico (oscillazione)",
           "position_7": "Posizione 7",
-          "position_8": "Posizione 8"
+          "position_8": "Posizione 8",
+          "auto": "Automatico (oscillazione)",
+          "auto_2": "Automatico (oscillazione alternativa)",
+          "down_half_auto": "Automatico (metà inferiore)",
+          "health_down": "Flusso d'aria salutare (verso il basso)",
+          "health_up": "Flusso d'aria salutare (verso l'alto)",
+          "up_half_auto": "Automatico (metà superiore)"
         }
       },
       "vane_horizontal_position": {
@@ -285,9 +290,11 @@
           "position_4": "Posizione 4",
           "position_5": "Posizione 5",
           "position_6": "Posizione 6",
-          "auto": "Automatico (oscillazione)",
           "position_7": "Posizione 7",
-          "position_8": "Posizione 8"
+          "position_8": "Posizione 8",
+          "auto": "Automatico (oscillazione)",
+          "left_half_auto": "Automatico (metà sinistra)",
+          "right_half_auto": "Automatico (metà destra)"
         }
       }
     },
@@ -352,9 +359,11 @@
           "position_4": "Posizione 4",
           "position_5": "Posizione 5",
           "position_6": "Posizione 6",
-          "auto": "Automatico (oscillazione)",
           "position_7": "Posizione 7",
-          "position_8": "Posizione 8"
+          "position_8": "Posizione 8",
+          "auto": "Automatico (oscillazione)",
+          "left_half_auto": "Automatico (metà sinistra)",
+          "right_half_auto": "Automatico (metà destra)"
         }
       },
       "vane_vertical": {
@@ -367,9 +376,14 @@
           "position_4": "Posizione 4",
           "position_5": "Posizione 5",
           "position_6": "Posizione 6",
-          "auto": "Automatico (oscillazione)",
           "position_7": "Posizione 7",
-          "position_8": "Posizione 8"
+          "position_8": "Posizione 8",
+          "auto": "Automatico (oscillazione)",
+          "auto_2": "Automatico (oscillazione alternativa)",
+          "down_half_auto": "Automatico (metà inferiore)",
+          "health_down": "Flusso d'aria salutare (verso il basso)",
+          "health_up": "Flusso d'aria salutare (verso l'alto)",
+          "up_half_auto": "Automatico (metà superiore)"
         }
       },
       "human_sensing": {

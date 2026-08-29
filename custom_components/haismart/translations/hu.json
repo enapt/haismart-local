@@ -270,9 +270,14 @@
           "position_4": "4. pozíció",
           "position_5": "5. pozíció",
           "position_6": "6. pozíció",
-          "auto": "Automatikus (lengés)",
           "position_7": "7. pozíció",
-          "position_8": "8. pozíció"
+          "position_8": "8. pozíció",
+          "auto": "Automatikus (lengés)",
+          "auto_2": "Automatikus (alternatív lengés)",
+          "down_half_auto": "Automatikus (alsó fél)",
+          "health_down": "Egészséges légáram (lefelé)",
+          "health_up": "Egészséges légáram (felfelé)",
+          "up_half_auto": "Automatikus (felső fél)"
         }
       },
       "vane_horizontal_position": {
@@ -285,9 +290,11 @@
           "position_4": "4. pozíció",
           "position_5": "5. pozíció",
           "position_6": "6. pozíció",
-          "auto": "Automatikus (lengés)",
           "position_7": "7. pozíció",
-          "position_8": "8. pozíció"
+          "position_8": "8. pozíció",
+          "auto": "Automatikus (lengés)",
+          "left_half_auto": "Automatikus (bal fél)",
+          "right_half_auto": "Automatikus (jobb fél)"
         }
       }
     },
@@ -352,9 +359,11 @@
           "position_4": "4. pozíció",
           "position_5": "5. pozíció",
           "position_6": "6. pozíció",
-          "auto": "Automatikus (lengés)",
           "position_7": "7. pozíció",
-          "position_8": "8. pozíció"
+          "position_8": "8. pozíció",
+          "auto": "Automatikus (lengés)",
+          "left_half_auto": "Automatikus (bal fél)",
+          "right_half_auto": "Automatikus (jobb fél)"
         }
       },
       "vane_vertical": {
@@ -367,9 +376,14 @@
           "position_4": "4. pozíció",
           "position_5": "5. pozíció",
           "position_6": "6. pozíció",
-          "auto": "Automatikus (lengés)",
           "position_7": "7. pozíció",
-          "position_8": "8. pozíció"
+          "position_8": "8. pozíció",
+          "auto": "Automatikus (lengés)",
+          "auto_2": "Automatikus (alternatív lengés)",
+          "down_half_auto": "Automatikus (alsó fél)",
+          "health_down": "Egészséges légáram (lefelé)",
+          "health_up": "Egészséges légáram (felfelé)",
+          "up_half_auto": "Automatikus (felső fél)"
         }
       },
       "human_sensing": {

@@ -18,7 +18,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from collections.abc import Callable, Collection, Iterable
+from collections.abc import Callable, Collection, Iterable, Mapping
 from dataclasses import replace
 from datetime import timedelta
 from functools import partial
@@ -116,6 +116,7 @@ from .const import (
     CONF_PRODUCT_CODE,
     CONF_REFRESH_TOKEN,
     CONF_SCAN_INTERVAL,
+    CONF_UNUSABLE_PARAMS,
     CONF_UPLUS_ID,
     CONF_ZONE_INFO,
     DEFAULT_PRODUCT_CODE,
@@ -1375,13 +1376,71 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.async_set_updated_data(state)
         else:
             await self.async_request_refresh()
+        await self._async_settle_provisional(changes)
+
+    async def _async_settle_provisional(self, changes: Mapping[str, int]) -> None:
+        """Let the appliance decide whether a derived parameter id is really its own.
+
+        Some of this class's ids were worked out rather than watched being accepted, and a wrong one
+        would not fail loudly: this channel names an attribute by number, so an id that means
+        something else on this firmware would be accepted and would move that something else. What
+        makes offering them honest is that the same attribute reads back from its own place in the
+        report -- so the appliance answers the question the moment somebody uses the control.
+
+        Answered once, and remembered. If the value took, the id is this appliance's and nothing
+        more is checked. If it did not, the control is retired for good and the owner is told,
+        rather than left pressing a button that quietly does nothing -- or something else.
+        """
+        wm = self._wire_model
+        if wm is None:
+            return
+        unsettled = {
+            name: value for name, value in changes.items()
+            if (param := wm.value_param_fields.get(name)) is not None
+            and param.provisional
+            and name not in self.unusable_params
+        }
+        if not unsettled:
+            return
+        refused = sorted(n for n, v in unsettled.items() if self.current_field(n) != v)
+        if not refused:
+            return
+        self._remember_unusable_params(refused)
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="control_rejected",
+            translation_placeholders={
+                "name": self.config_entry.title,
+                "error": (
+                    "the air conditioner accepted the command but did not change "
+                    f"{', '.join(refused)}, so this control has been withdrawn"
+                ),
+            },
+        )
+
+    @property
+    def unusable_params(self) -> frozenset[str]:
+        """Controls this appliance answered no to. See :data:`CONF_UNUSABLE_PARAMS`."""
+        return frozenset(self.config_entry.data.get(CONF_UNUSABLE_PARAMS) or ())
+
+    def _remember_unusable_params(self, names: Iterable[str]) -> None:
+        fresh = set(names) - self.unusable_params
+        if not fresh:
+            return
+        self.hass.config_entries.async_update_entry(
+            self.config_entry,
+            data={
+                **self.config_entry.data,
+                CONF_UNUSABLE_PARAMS: sorted(self.unusable_params | fresh),
+            },
+        )
 
     def _refusal_reason(self, reply: list[bytes]) -> str:
         """What the appliance said when it refused, in its own manufacturer's words where possible.
 
-        A refusal carries a reason code, and the product's own model publishes what its codes mean --
-        the same sentences that explain why a control is greyed out. So "does not accept that
-        setting" can say *which* rule was broken instead of stopping at the fact of the refusal.
+        A refusal carries a reason code, and the product's own model publishes what its codes
+        mean -- the same sentences that explain why a control is greyed out. So "does not accept
+        that setting" can say *which* rule was broken instead of the bare fact of the refusal.
 
         ⚠️ **Looked up against THIS appliance only.** The same number means different things on
         different products, so a code the model does not publish is reported as unrecognised rather
@@ -1753,6 +1812,10 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # CLASS while the function is per product, so a cabinet without a health module must not
             # be offered health merely because its class defines an id for it.
             if name in wm.value_param_fields:
+                # ...and not one this appliance has already declined. A provisional id is offered
+                # until the appliance answers; once it has answered no, it is not asked again.
+                if name in self.unusable_params:
+                    return False
                 return name in declared_attribute_names(self.digital_model)
             return False
         # The classic fallback and the frame both pack at the shared positions, so the name IS the

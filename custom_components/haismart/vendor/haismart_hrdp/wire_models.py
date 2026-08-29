@@ -192,13 +192,44 @@ VANE_V_EPP_TO_MODEL: Mapping[int, int] = {epp: std for std, epp in VANE_V_MODEL_
 VANE_V_CONFIRMED_ON_HARDWARE: Mapping[int, int] = {0: 0, 2: 2, 4: 4, 5: 6, 6: 8, 8: 12}
 
 
-def vane_position_name(code: int, codes: Collection[int], fixed: int, auto: int) -> str:
-    """Name one vane stop: ``"fixed"``, ``"auto"``, or ``"position_N"`` counting the stops between.
+VANE_NAMED_STOPS: Mapping[str, Mapping[int, str]] = {
+    "windDirectionVertical": {
+        1: "health_up",
+        3: "health_down",
+        9: "auto_2",
+        12: "up_half_auto",
+        13: "down_half_auto",
+    },
+    "windDirectionHorizontal": {8: "left_half_auto", 9: "right_half_auto"},
+}
+"""The stops the vendor gives a name to rather than a number, per axis, in the model's codes.
 
-    ``N`` is the stop's rank among the ones *this device* publishes, not its raw code -- two units
-    with different stop sets both count from one, which is what a person reads off a panel. The two
-    ends are named rather than numbered because every model publishes them and they are the only
-    stops whose behaviour (hold still / sweep) is not a direction.
+Read off the manufacturer's own panel dictionary, whose ``windDirectionUD<N>`` keys are the model
+codes themselves: ``1``/``3`` are 健康气流 up and down -- a comfort preset that points the vane away
+from the room rather than a place along the sweep -- and the rest are the half-sweep and secondary
+automatic modes. They are named because numbering them says the wrong thing about what they do, and
+because doing so is what makes the numbered stops line up with the numbers printed in the manual:
+the two health stops sit at codes ``1`` and ``3``, *between* the ordinary positions, so counting
+them pushes every stop after them one place along.
+
+⚠️ The same code means different things on the two axes -- ``9`` is a second automatic sweep
+vertically and the right-half sweep horizontally -- so this is keyed by attribute and must stay
+that way.
+"""
+
+
+def vane_position_name(
+    code: int, codes: Collection[int], fixed: int, auto: int, attribute: str | None = None
+) -> str:
+    """Name one vane stop: an end, one of the vendor's named stops, or ``"position_N"``.
+
+    ``N`` counts the *numbered* stops this device publishes, skipping the ends and anything in
+    :data:`VANE_NAMED_STOPS`, so it reproduces the position numbers the vendor prints for that
+    model. Two units with different stop sets both count from one, which is what a person reads off
+    a panel; the raw codes are not a sequence and would make a poor label.
+
+    ``attribute`` names the axis. Omitting it numbers every stop, which is right only for an axis
+    whose codes are all ordinary positions -- pass it whenever the axis is known.
 
     Shared so the writable axis (a select) and the read-only one (a sensor) cannot drift apart: they
     are the same question asked of the same codes, and the day they disagree is the day one of them
@@ -208,7 +239,11 @@ def vane_position_name(code: int, codes: Collection[int], fixed: int, auto: int)
         return "fixed"
     if code == auto:
         return "auto"
-    return f"position_{sorted(set(codes) - {fixed, auto}).index(code) + 1}"
+    named = VANE_NAMED_STOPS.get(attribute or "", {})
+    if code in named:
+        return named[code]
+    numbered = sorted(set(codes) - {fixed, auto} - set(named))
+    return f"position_{numbered.index(code) + 1}"
 
 
 def vane_code(model: WireModel, data: bytes, key: str) -> int | None:
@@ -329,6 +364,11 @@ class ValueParam:
     param_id: int
     spec: WriteField
     read: WireField
+    #: ``True`` where the id is DERIVED rather than observed being accepted. The appliance settles
+    #: it: the value is written, and the same attribute's own read-back position says whether it
+    #: landed. A caller that offers one of these must check, once, and stop offering it if it does
+    #: not take -- see :data:`PROVISIONAL_SINGLE_PARAM_IDS`.
+    provisional: bool = False
 
     @property
     def command(self) -> bytes:
@@ -1939,7 +1979,7 @@ def frame_write_fields(
 #: ``0/1/2/4/6``, fan ``1/2/3/5``, setpoint ``°C − 16``, booleans ``0``/``1``.
 #:
 #: ⚠️ The two vane ids this generation also defines are deliberately absent -- see
-#: :data:`WITHHELD_SINGLE_PARAM_IDS`, which records WHY, in a form the suite re-derives.
+#: :data:`PROVISIONAL_SINGLE_PARAM_IDS`, offered on terms the appliance itself settles.
 SINGLE_PARAM_IDS: Mapping[str, Mapping[str, int]] = {
     "0d12": {
         "onOffStatus": 0x01,
@@ -1953,29 +1993,26 @@ SINGLE_PARAM_IDS: Mapping[str, Mapping[str, int]] = {
 }
 
 
-#: Single-parameter ids this project knows of and does not ship, with the reason -- as data, so the
-#: reason is CHECKED rather than asserted in a comment that nobody re-runs. A decision not to ship is
-#: a measurement, and a measurement has an expiry date: the moment one of these is observed accepted,
-#: the entry moves to :data:`SINGLE_PARAM_IDS` and the test below stops passing for the old reason.
+#: Single-parameter ids derived rather than observed, offered only where the appliance can confirm
+#: them itself. A decision about an id is a measurement, and this is the form a measurement takes
+#: when the observation has to come from hardware nobody here owns: write it, then read the same
+#: attribute back from its own position in the report. It took or it did not.
 #:
-#: Both entries are the same story. Prior art publishes a table containing them, but its ``0x03`` and
-#: ``0x0C`` were **added without a linked capture** and appear zero times across every attachment in
-#: its issue tracker -- they are the invented half of a table whose other eleven ids were read off a
-#: real appliance's wire. The one cabinet whose traffic was captured has no vane, so nothing of this
-#: class has ever been seen to accept either. An id that is merely unimplemented gets refused and is
-#: harmless; one that is implemented and means something ELSE moves a setting nobody asked for, and
-#: this channel writes a named attribute directly with no read-modify-write to fall back on.
+#: Both are vane axes on the one class that writes a parameter at a time. Prior art publishes ids
+#: for them, but its ``0x03`` and ``0x0C`` were added with no linked capture and appear zero times
+#: across every attachment in that tracker -- so they are the invented half of an otherwise observed
+#: table and cannot be shipped on its authority alone.
 #:
-#: ⚠️ What is NOT the reason: that the appliances lack the hardware. They do not -- the products of
-#: this class declare both axes and report both back, which is what
-#: ``test_the_withheld_vane_ids_are_waiting_only_on_an_observation`` pins. The gap is one
-#: accept/refuse observation, and the acceptance oracle makes that a ten-second test on any cabinet
-#: of this class that has a vane.
-WITHHELD_SINGLE_PARAM_IDS: Mapping[str, Mapping[str, tuple[int, str]]] = {
-    "0d12": {
-        "windDirectionVertical": (0x03, "never observed accepted"),
-        "windDirectionHorizontal": (0x0C, "never observed accepted"),
-    },
+#: ``windDirectionVertical`` has a second, independent reason to believe ``0x03``, and it is the
+#: argument that corrected two of prior art's other ids: in the published wire order this attribute
+#: is the ONLY one declared between ``targetTemperature`` (observed ``0x02``) and ``operationMode``
+#: (observed ``0x04``), and ``0x03`` is the only id free in that span. Two routes, one number.
+#: ⚠️ It is a tight local bracket and NOT a rule -- the registry is not wire-ordered as a whole
+#: (health is ``0x0B`` while quiet and boost are ``0x19``/``0x1A``), so this forces the one gap it
+#: spans and says nothing about the rest. ``windDirectionHorizontal`` has no upper anchor at all,
+#: and rests on prior art alone; it is offered on the same terms because the appliance adjudicates.
+PROVISIONAL_SINGLE_PARAM_IDS: Mapping[str, Mapping[str, int]] = {
+    "0d12": {"windDirectionVertical": 0x03, "windDirectionHorizontal": 0x0C},
 }
 
 
@@ -2004,11 +2041,13 @@ def value_param_write_fields(
     control above the pivot is placed correctly rather than nineteen words wrong, which is the shape
     of mistake this whole module exists to refuse.
     """
-    ids = SINGLE_PARAM_IDS.get(_uplus_class(uplus_id))
-    if not ids:
+    cls = _uplus_class(uplus_id)
+    ids = dict(SINGLE_PARAM_IDS.get(cls) or {})
+    unconfirmed = dict(PROVISIONAL_SINGLE_PARAM_IDS.get(cls) or {})
+    if not ids and not unconfirmed:
         return {}
     out: dict[str, ValueParam] = {}
-    for name, pid in ids.items():
+    for name, pid in {**ids, **unconfirmed}.items():
         spec = _FRAME_WRITE_SPEC.get(name)
         c = CANONICAL.get(name)
         if spec is None or c is None:
@@ -2019,6 +2058,7 @@ def value_param_write_fields(
         if word < 1:
             continue
         out[name] = ValueParam(
+            provisional=name in unconfirmed,
             param_id=pid,
             # The payload is a full 16 bits whatever the attribute's packed width is, so the value
             # bound has to come from the attribute's own spec rather than from a bit field.

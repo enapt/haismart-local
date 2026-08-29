@@ -270,9 +270,14 @@
           "position_4": "Posisi 4",
           "position_5": "Posisi 5",
           "position_6": "Posisi 6",
-          "auto": "Otomatis (ayun)",
           "position_7": "Posisi 7",
-          "position_8": "Posisi 8"
+          "position_8": "Posisi 8",
+          "auto": "Otomatis (ayun)",
+          "auto_2": "Otomatis (ayun alternatif)",
+          "down_half_auto": "Otomatis (separuh bawah)",
+          "health_down": "Aliran udara sehat (bawah)",
+          "health_up": "Aliran udara sehat (atas)",
+          "up_half_auto": "Otomatis (separuh atas)"
         }
       },
       "vane_horizontal_position": {
@@ -285,9 +290,11 @@
           "position_4": "Posisi 4",
           "position_5": "Posisi 5",
           "position_6": "Posisi 6",
-          "auto": "Otomatis (ayun)",
           "position_7": "Posisi 7",
-          "position_8": "Posisi 8"
+          "position_8": "Posisi 8",
+          "auto": "Otomatis (ayun)",
+          "left_half_auto": "Otomatis (separuh kiri)",
+          "right_half_auto": "Otomatis (separuh kanan)"
         }
       }
     },
@@ -352,9 +359,11 @@
           "position_4": "Posisi 4",
           "position_5": "Posisi 5",
           "position_6": "Posisi 6",
-          "auto": "Otomatis (ayun)",
           "position_7": "Posisi 7",
-          "position_8": "Posisi 8"
+          "position_8": "Posisi 8",
+          "auto": "Otomatis (ayun)",
+          "left_half_auto": "Otomatis (separuh kiri)",
+          "right_half_auto": "Otomatis (separuh kanan)"
         }
       },
       "vane_vertical": {
@@ -367,9 +376,14 @@
           "position_4": "Posisi 4",
           "position_5": "Posisi 5",
           "position_6": "Posisi 6",
-          "auto": "Otomatis (ayun)",
           "position_7": "Posisi 7",
-          "position_8": "Posisi 8"
+          "position_8": "Posisi 8",
+          "auto": "Otomatis (ayun)",
+          "auto_2": "Otomatis (ayun alternatif)",
+          "down_half_auto": "Otomatis (separuh bawah)",
+          "health_down": "Aliran udara sehat (bawah)",
+          "health_up": "Aliran udara sehat (atas)",
+          "up_half_auto": "Otomatis (separuh atas)"
         }
       },
       "human_sensing": {

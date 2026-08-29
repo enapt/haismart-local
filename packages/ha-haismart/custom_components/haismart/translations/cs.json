@@ -270,9 +270,14 @@
           "position_4": "Poloha 4",
           "position_5": "Poloha 5",
           "position_6": "Poloha 6",
-          "auto": "Automaticky (kývání)",
           "position_7": "Poloha 7",
-          "position_8": "Poloha 8"
+          "position_8": "Poloha 8",
+          "auto": "Automaticky (kývání)",
+          "auto_2": "Automaticky (alternativní kývání)",
+          "down_half_auto": "Automaticky (dolní polovina)",
+          "health_down": "Zdravé proudění (dolů)",
+          "health_up": "Zdravé proudění (nahoru)",
+          "up_half_auto": "Automaticky (horní polovina)"
         }
       },
       "vane_horizontal_position": {
@@ -285,9 +290,11 @@
           "position_4": "Poloha 4",
           "position_5": "Poloha 5",
           "position_6": "Poloha 6",
-          "auto": "Automaticky (kývání)",
           "position_7": "Poloha 7",
-          "position_8": "Poloha 8"
+          "position_8": "Poloha 8",
+          "auto": "Automaticky (kývání)",
+          "left_half_auto": "Automaticky (levá polovina)",
+          "right_half_auto": "Automaticky (pravá polovina)"
         }
       }
     },
@@ -352,9 +359,11 @@
           "position_4": "Poloha 4",
           "position_5": "Poloha 5",
           "position_6": "Poloha 6",
-          "auto": "Automaticky (kývání)",
           "position_7": "Poloha 7",
-          "position_8": "Poloha 8"
+          "position_8": "Poloha 8",
+          "auto": "Automaticky (kývání)",
+          "left_half_auto": "Automaticky (levá polovina)",
+          "right_half_auto": "Automaticky (pravá polovina)"
         }
       },
       "vane_vertical": {
@@ -367,9 +376,14 @@
           "position_4": "Poloha 4",
           "position_5": "Poloha 5",
           "position_6": "Poloha 6",
-          "auto": "Automaticky (kývání)",
           "position_7": "Poloha 7",
-          "position_8": "Poloha 8"
+          "position_8": "Poloha 8",
+          "auto": "Automaticky (kývání)",
+          "auto_2": "Automaticky (alternativní kývání)",
+          "down_half_auto": "Automaticky (dolní polovina)",
+          "health_down": "Zdravé proudění (dolů)",
+          "health_up": "Zdravé proudění (nahoru)",
+          "up_half_auto": "Automaticky (horní polovina)"
         }
       },
       "human_sensing": {

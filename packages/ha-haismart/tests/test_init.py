@@ -4958,21 +4958,93 @@ async def test_the_central_cabinet_is_commanded_one_parameter_at_a_time(
         # deliberate safe direction and worth exercising on the way past.
         "invisible_attributes": [],
     }
-    unit = SimpleNamespace(uplus_id=uplus, _wire_model=model, digital_model=declared)
+    unit = SimpleNamespace(
+        uplus_id=uplus, _wire_model=model, digital_model=declared,
+        # Nothing has been declined yet: the vane ids below are offered for the appliance to settle.
+        unusable_params=frozenset(),
+    )
     supports = HaismartCoordinator.supports_field
     for field in ("onOffStatus", "targetTemperature", "operationMode", "windSpeed",
                   "muteStatus", "rapidMode"):
         assert supports(unit, field) is True, field
     assert supports(unit, "healthMode") is False, "declared by the class, not by this appliance"
 
-    # ⚠️ And the two vane ids stay withheld: this unit has both axes and reports both back, but
-    # nothing of the class has been observed to ACCEPT either command.
+    # The two vane ids are offered for the appliance to settle: it has both axes, declares both,
+    # and reports both back, so a write either takes or it does not and the answer is visible.
     for axis in ("windDirectionVertical", "windDirectionHorizontal"):
-        assert supports(unit, axis) is False
+        assert supports(unit, axis) is True
+
+    # ...and once it has answered no, it is never asked again. That is what keeps offering a
+    # derived id honest rather than hopeful.
+    declined = SimpleNamespace(
+        uplus_id=uplus, _wire_model=model, digital_model=declared,
+        unusable_params=frozenset({"windDirectionHorizontal"}),
+    )
+    assert supports(declined, "windDirectionHorizontal") is False
+    assert supports(declined, "windDirectionVertical") is True, "one answer is about one control"
+    assert supports(declined, "targetTemperature") is True, "and never about a settled one"
 
     # A name that lost its insert would rebuild the flat layout and command the appliance four
     # words out, so it must not parse at all.
     assert related_model_named("related-19+4", 133, uplus_id=uplus) is None
+
+
+async def test_a_derived_parameter_id_is_settled_by_the_appliance_and_then_left_alone(
+    hass: HomeAssistant,
+) -> None:
+    """The gate that makes offering a worked-out id honest rather than hopeful.
+
+    This channel names an attribute by NUMBER, so an id that means something else on this firmware
+    would be accepted and would move that something else -- the reply frame cannot catch that,
+    because the appliance really did accept the command. What catches it is the attribute's own
+    read-back: ask for a stop, then look at where the vane says it is.
+
+    Both directions are pinned. A value that took leaves the control alone and records nothing; a
+    value that did not is recorded against the entry and the control is withdrawn for good, with the
+    owner told rather than left pressing a button that quietly does nothing.
+    """
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+
+    from haismart_hrdp import related_model_named
+
+    from custom_components.haismart.const import CONF_UNUSABLE_PARAMS
+    from custom_components.haismart.coordinator import HaismartCoordinator
+
+    uplus = "201c10c7088081000d1205464544850000009cd68e692c104e2a333eab95d140"
+    model = related_model_named("related-19+4@25", 133, order=None, uplus_id=uplus)
+    settle = HaismartCoordinator._async_settle_provisional
+
+    def _unit(reads_back: dict[str, int]) -> SimpleNamespace:
+        entry = MagicMock()
+        entry.data = {}
+        entry.title = "Cabinet"
+        unit = SimpleNamespace(
+            _wire_model=model, config_entry=entry, unusable_params=frozenset(),
+            current_field=reads_back.get, hass=MagicMock(),
+        )
+        remember = HaismartCoordinator._remember_unusable_params
+        unit._remember_unusable_params = lambda names: remember(unit, names)
+        return unit
+
+    # It took: nothing is recorded and nothing is raised.
+    took = _unit({"windDirectionVertical": 2})
+    await settle(took, {"windDirectionVertical": 2})
+    took.hass.config_entries.async_update_entry.assert_not_called()
+
+    # It did not: the control is withdrawn, once, and the owner is told which one.
+    ignored = _unit({"windDirectionVertical": 8})
+    with pytest.raises(HomeAssistantError) as err:
+        await settle(ignored, {"windDirectionVertical": 2})
+    assert "windDirectionVertical" in err.value.translation_placeholders["error"]
+    written = ignored.hass.config_entries.async_update_entry.call_args.kwargs["data"]
+    assert written[CONF_UNUSABLE_PARAMS] == ["windDirectionVertical"]
+
+    # A SETTLED id is never adjudicated -- it was observed, and a unit that happens to refuse a
+    # setpoint in its current state must not lose the setpoint control for it.
+    settled = _unit({"targetTemperature": 24})
+    await settle(settled, {"targetTemperature": 25})
+    settled.hass.config_entries.async_update_entry.assert_not_called()
 
 
 async def test_a_vane_that_cannot_be_commanded_still_reports_where_it_points(

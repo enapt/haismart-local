@@ -270,9 +270,14 @@
           "position_4": "Vị trí 4",
           "position_5": "Vị trí 5",
           "position_6": "Vị trí 6",
-          "auto": "Tự động (đảo gió)",
           "position_7": "Vị trí 7",
-          "position_8": "Vị trí 8"
+          "position_8": "Vị trí 8",
+          "auto": "Tự động (đảo gió)",
+          "auto_2": "Tự động (đảo gió thay thế)",
+          "down_half_auto": "Tự động (nửa dưới)",
+          "health_down": "Luồng gió khỏe mạnh (xuống)",
+          "health_up": "Luồng gió khỏe mạnh (lên)",
+          "up_half_auto": "Tự động (nửa trên)"
         }
       },
       "vane_horizontal_position": {
@@ -285,9 +290,11 @@
           "position_4": "Vị trí 4",
           "position_5": "Vị trí 5",
           "position_6": "Vị trí 6",
-          "auto": "Tự động (đảo gió)",
           "position_7": "Vị trí 7",
-          "position_8": "Vị trí 8"
+          "position_8": "Vị trí 8",
+          "auto": "Tự động (đảo gió)",
+          "left_half_auto": "Tự động (nửa trái)",
+          "right_half_auto": "Tự động (nửa phải)"
         }
       }
     },
@@ -352,9 +359,11 @@
           "position_4": "Vị trí 4",
           "position_5": "Vị trí 5",
           "position_6": "Vị trí 6",
-          "auto": "Tự động (đảo gió)",
           "position_7": "Vị trí 7",
-          "position_8": "Vị trí 8"
+          "position_8": "Vị trí 8",
+          "auto": "Tự động (đảo gió)",
+          "left_half_auto": "Tự động (nửa trái)",
+          "right_half_auto": "Tự động (nửa phải)"
         }
       },
       "vane_vertical": {
@@ -367,9 +376,14 @@
           "position_4": "Vị trí 4",
           "position_5": "Vị trí 5",
           "position_6": "Vị trí 6",
-          "auto": "Tự động (đảo gió)",
           "position_7": "Vị trí 7",
-          "position_8": "Vị trí 8"
+          "position_8": "Vị trí 8",
+          "auto": "Tự động (đảo gió)",
+          "auto_2": "Tự động (đảo gió thay thế)",
+          "down_half_auto": "Tự động (nửa dưới)",
+          "health_down": "Luồng gió khỏe mạnh (xuống)",
+          "health_up": "Luồng gió khỏe mạnh (lên)",
+          "up_half_auto": "Tự động (nửa trên)"
         }
       },
       "human_sensing": {

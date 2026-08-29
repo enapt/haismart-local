@@ -270,9 +270,14 @@
           "position_4": "Poziția 4",
           "position_5": "Poziția 5",
           "position_6": "Poziția 6",
-          "auto": "Automat (baleiaj)",
           "position_7": "Poziția 7",
-          "position_8": "Poziția 8"
+          "position_8": "Poziția 8",
+          "auto": "Automat (baleiaj)",
+          "auto_2": "Automat (baleiaj alternativ)",
+          "down_half_auto": "Automat (jumătatea inferioară)",
+          "health_down": "Flux de aer sănătos (în jos)",
+          "health_up": "Flux de aer sănătos (în sus)",
+          "up_half_auto": "Automat (jumătatea superioară)"
         }
       },
       "vane_horizontal_position": {
@@ -285,9 +290,11 @@
           "position_4": "Poziția 4",
           "position_5": "Poziția 5",
           "position_6": "Poziția 6",
-          "auto": "Automat (baleiaj)",
           "position_7": "Poziția 7",
-          "position_8": "Poziția 8"
+          "position_8": "Poziția 8",
+          "auto": "Automat (baleiaj)",
+          "left_half_auto": "Automat (jumătatea stângă)",
+          "right_half_auto": "Automat (jumătatea dreaptă)"
         }
       }
     },
@@ -352,9 +359,11 @@
           "position_4": "Poziția 4",
           "position_5": "Poziția 5",
           "position_6": "Poziția 6",
-          "auto": "Automat (baleiaj)",
           "position_7": "Poziția 7",
-          "position_8": "Poziția 8"
+          "position_8": "Poziția 8",
+          "auto": "Automat (baleiaj)",
+          "left_half_auto": "Automat (jumătatea stângă)",
+          "right_half_auto": "Automat (jumătatea dreaptă)"
         }
       },
       "vane_vertical": {
@@ -367,9 +376,14 @@
           "position_4": "Poziția 4",
           "position_5": "Poziția 5",
           "position_6": "Poziția 6",
-          "auto": "Automat (baleiaj)",
           "position_7": "Poziția 7",
-          "position_8": "Poziția 8"
+          "position_8": "Poziția 8",
+          "auto": "Automat (baleiaj)",
+          "auto_2": "Automat (baleiaj alternativ)",
+          "down_half_auto": "Automat (jumătatea inferioară)",
+          "health_down": "Flux de aer sănătos (în jos)",
+          "health_up": "Flux de aer sănătos (în sus)",
+          "up_half_auto": "Automat (jumătatea superioară)"
         }
       },
       "human_sensing": {

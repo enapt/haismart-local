@@ -116,6 +116,11 @@ EXTENDED_MISSES = 3
 # the end of the story: when the appliance has answered the question, the ones it answered "no" to
 # go away.
 CONF_ABSENT_READINGS = "absent_readings"
+#: Controls whose single-parameter id the appliance did not honour. The id for these is derived
+#: rather than observed, so it is offered once and settled by the appliance itself: write it, read
+#: the attribute back, and record it here if it did not take. Recorded on the entry because the
+#: answer is a fact about this appliance's firmware and does not change between restarts.
+CONF_UNUSABLE_PARAMS = "unusable_params"
 # The state keys carried by the extended-status report, i.e. everything that goes when an appliance
 # answers none of the published forms of that query. Named here rather than in either platform
 # because both a sensor and a binary sensor read from this same frame, and a list that lived in one

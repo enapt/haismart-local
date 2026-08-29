@@ -25,7 +25,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from haismart_hrdp import GRSETDAC_ENUMS, PANEL_ENUM_CONTROLS
-from haismart_hrdp.wire_models import vane_position_name
+from haismart_hrdp.wire_models import VANE_V_EPP_TO_MODEL, vane_position_name
 from homeassistant.components.select import SelectEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -135,11 +135,27 @@ class HaismartVaneSelect(HaismartEntity, SelectEntity):
         self._attr_options = list(self._codes)
 
     def _option(self, code: int, codes: frozenset[int]) -> str:
-        # Shared with the read-only position sensor, so a writable axis and a read-only one can
-        # never name the same stop differently.
+        """Name one stop. Shared with the read-only position sensor, so a writable axis and a
+        read-only one can never name the same stop differently.
+
+        ⚠️ **This entity works in WIRE codes and the naming is done in the MODEL's.** The two spaces
+        part company above the second stop on the up-down axis, so the stop the vendor calls its
+        second automatic sweep is wire ``14`` here and ``9`` in the manual. Naming it from the wire
+        number would rank it as an ordinary position while the sensor, which already works in the
+        model's codes, named it correctly -- the same stop under two names, which is exactly what
+        sharing this function is meant to make impossible.
+        """
+        std = self._to_model(code)
         return vane_position_name(
-            code, codes, self._vane.fixed, self._vane.auto, self._vane.field
+            std, {self._to_model(c) for c in codes},
+            self._to_model(self._vane.fixed), self._to_model(self._vane.auto), self._vane.field,
         )
+
+    def _to_model(self, code: int) -> int:
+        """A wire code in the space this device's own model publishes. Identity on left-right."""
+        if self._vane.field != "windDirectionVertical":
+            return code
+        return VANE_V_EPP_TO_MODEL.get(code, code)
 
     # No `available` override, for the same reason as the economy setting above: a faulted unit, or
     # one running a self-clean cycle, will not move its vanes -- but it still reports where they

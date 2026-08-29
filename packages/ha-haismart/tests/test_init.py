@@ -4989,6 +4989,48 @@ async def test_the_central_cabinet_is_commanded_one_parameter_at_a_time(
     assert related_model_named("related-19+4", 133, uplus_id=uplus) is None
 
 
+async def test_the_select_and_the_sensor_name_the_same_stop_identically(
+    hass: HomeAssistant,
+) -> None:
+    """One vane, two entities, and they must never disagree about what a stop is called.
+
+    They arrive at it from opposite directions: the select works in WIRE codes because that is what
+    it has to send, and the position sensor works in the MODEL's because that is what it reads. The
+    two spaces part company above the second up-down stop -- the vendor's second automatic sweep is
+    wire 14 and model 9 -- so naming from the wire number ranked it as an ordinary position while
+    the sensor named it correctly. Same stop, two names.
+
+    Checked across every stop a ten-stop axis publishes, both axes, rather than on the one that
+    happened to be noticed.
+    """
+    from haismart_hrdp import VANE_V_MODEL_TO_EPP, vane_position_name
+
+    from custom_components.haismart.select import _VANES, HaismartVaneSelect
+
+    for vane in _VANES:
+        vertical = vane.field == "windDirectionVertical"
+        model_codes = set(range(10)) if vertical else set(range(8))
+        wire = {VANE_V_MODEL_TO_EPP[c] if vertical else c for c in model_codes}
+        select = HaismartVaneSelect.__new__(HaismartVaneSelect)
+        select._vane = vane
+        for std in sorted(model_codes):
+            # what the sensor calls it, from the model's own codes
+            sensor_name = vane_position_name(
+                std, model_codes, 0, 8 if vertical else 7, vane.field
+            )
+            # what the select calls it, having started from the wire code
+            select_name = select._option(
+                VANE_V_MODEL_TO_EPP[std] if vertical else std, frozenset(wire)
+            )
+            assert sensor_name == select_name, (vane.field, std, sensor_name, select_name)
+        # ...and the naming is the vendor's, not a rank: its second automatic sweep is not a place
+        # along the sweep, and its two health-airflow stops are not places along it either.
+        if vertical:
+            assert select._option(VANE_V_MODEL_TO_EPP[9], frozenset(wire)) == "auto_2"
+            assert select._option(VANE_V_MODEL_TO_EPP[1], frozenset(wire)) == "health_up"
+            assert select._option(VANE_V_MODEL_TO_EPP[3], frozenset(wire)) == "health_down"
+
+
 async def test_a_vane_written_one_parameter_at_a_time_still_gets_a_select(
     hass: HomeAssistant,
 ) -> None:

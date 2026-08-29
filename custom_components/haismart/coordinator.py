@@ -77,6 +77,8 @@ from haismart_hrdp import (
     read_enum_features,
     read_grsetdac_field,
     read_numeric_readings,
+    refusal_code,
+    refusal_reason,
     related_model_named,
     reply_refused,
     rules_for_product,
@@ -1366,13 +1368,35 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 translation_key="control_rejected",
                 translation_placeholders={
                     "name": self.config_entry.title,
-                    "error": "the air conditioner refused the command",
+                    "error": self._refusal_reason(reply),
                 },
             )
         if state is not None:
             self.async_set_updated_data(state)
         else:
             await self.async_request_refresh()
+
+    def _refusal_reason(self, reply: list[bytes]) -> str:
+        """What the appliance said when it refused, in its own manufacturer's words where possible.
+
+        A refusal carries a reason code, and the product's own model publishes what its codes mean --
+        the same sentences that explain why a control is greyed out. So "does not accept that
+        setting" can say *which* rule was broken instead of stopping at the fact of the refusal.
+
+        ⚠️ **Looked up against THIS appliance only.** The same number means different things on
+        different products, so a code the model does not publish is reported as unrecognised rather
+        than rendered with somebody else's sentence. A zero from an appliance that publishes no zero
+        is the protocol's own "command not recognised", which is a useful thing to be told: it means
+        the command itself is wrong, not the moment.
+        """
+        code = refusal_code(reply)
+        if code is None:
+            return "the air conditioner refused the command"
+        if (reason := refusal_reason(self.digital_model, code)) is not None:
+            return reason
+        if code == 0:
+            return "the air conditioner did not recognise the command"
+        return f"the air conditioner refused the command (reason {code})"
 
     def _state_from_reply(self, reply: list[bytes]) -> dict[str, Any] | None:
         """The newest decodable full-status report in a control op's reply blobs, or None if none

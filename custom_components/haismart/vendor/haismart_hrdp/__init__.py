@@ -71,6 +71,7 @@ from .profiles import (
     model_enum_codes,
     profile_for,
     profile_from_device_config,
+    refusal_reason,
     validate_write,
     writable_attributes,
 )
@@ -129,6 +130,7 @@ from .uss import (
     probe_localkey_version,
     read_grsetdac_field,
     read_status,
+    refusal_code,
     reply_refused,
     set_grsetdac_field,
     status_layout,
@@ -229,6 +231,8 @@ __all__ = [
     "HelloResp",
     "probe_handshake_reply",
     "probe_localkey_version",
+    "refusal_code",
+    "refusal_reason",
     "reply_refused",
     # CONTROL / write
     "build_epp_frame",

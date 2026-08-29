@@ -507,6 +507,29 @@ def reply_refused(blobs: Iterable[bytes]) -> bool:
     return any(epp_frame_type(blob) == EPP_FRAME_TYPE_REFUSED for blob in blobs)
 
 
+def refusal_code(blobs: Iterable[bytes]) -> int | None:
+    """The reason code an appliance sent with its refusal, or ``None`` if no refusal is present.
+
+    A refusal is ``FF FF | len | address identifier | 03 | code(2) | checksum`` -- the code sits
+    where a subcommand would on any other frame. Confirmed on hardware: a reserved subcommand draws
+    ``ff ff 0a 00*6 03 00 00 0d`` from a real unit, checksum included.
+
+    ⚠️ **The code means whatever THIS product's table says it means**, and the same number says
+    different things on different products -- 509 of them publish a code ``0`` meaning "cannot
+    operate while a fault is active", while an appliance that publishes no entry for ``0`` is using
+    the protocol's own "command not recognised". So the number is returned here and the sentence is
+    looked up against the appliance that sent it; see :func:`~haismart_hrdp.profiles.refusal_reason`.
+    """
+    for blob in blobs:
+        if epp_frame_type(blob) != EPP_FRAME_TYPE_REFUSED:
+            continue
+        at = blob.find(EPP_FRAME_HEAD)
+        start = at + _EPP_FRAME_TYPE_OFFSET + 1
+        if at >= 0 and len(blob) >= start + 2:
+            return int.from_bytes(blob[start:start + 2], "big")
+    return None
+
+
 def build_epp_frame(frame_type: int, epp_cmd: bytes, data: bytes = b"") -> bytes:
     """Build a positional OLD-EPP ``FF FF`` frame. The checksum rule reproduces the real report
     checksums (0xAE/0xF9).

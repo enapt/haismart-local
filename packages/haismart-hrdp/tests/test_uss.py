@@ -2764,3 +2764,39 @@ def test_the_purifier_hour_meter_reads_hours_and_zero_means_absent():
         assert read_numeric_readings(_CLASSIC_PROBE, model, blob) == {"totalCleaningTime": raw}
     assert read_numeric_readings(
         _CLASSIC_PROBE, model, _with_field(STATUS_125, field, 0)) == {}
+
+
+def test_a_refusal_carries_a_reason_code() -> None:
+    """The `0x03` frame says WHY, and the byte layout is confirmed on hardware.
+
+    A reserved subcommand sent to a real unit draws `ff ff 0a 00*6 03 00 00 0d` — the vendor's
+    standard puts the 无效信息编码 where any other frame carries its subcommand, and the checksum
+    (0x0A + 0x03) verifies.
+    """
+    from haismart_hrdp import refusal_code
+
+    frame = bytes.fromhex("ffff0a00000000000003") + bytes.fromhex("0000") + b"\x0d"
+    blob = b"\x00" * 80 + frame
+    assert refusal_code([blob]) == 0
+
+    # A non-zero code, as a central cabinet sends when it refuses a group set it does not implement.
+    frame1 = bytes.fromhex("ffff0a00000000000003") + bytes.fromhex("0001") + b"\x0e"
+    assert refusal_code([b"\x00" * 80 + frame1]) == 1
+    # A reply carrying no refusal at all yields None rather than a number nobody sent.
+    assert refusal_code([b"\x00" * 80 + bytes.fromhex("ffff0c000000000000010102000174")]) is None
+
+
+def test_a_reason_code_is_read_against_the_product_that_sent_it() -> None:
+    """⚠️ Never a global table. The same number means different things on different appliances —
+    509 products publish a `0` meaning "cannot operate while a fault is active", while an appliance
+    publishing no `0` is using the protocol's own "command not recognised"."""
+    from haismart_hrdp import refusal_reason
+
+    cabinet = {"invalid_reasons": {"1": "this function is not supported",
+                                   "13": "not available in fan-only mode"}}
+    assert refusal_reason(cabinet, 1) == "this function is not supported"
+    assert refusal_reason(cabinet, 13) == "not available in fan-only mode"
+    # A code this product does not publish must not borrow another product's sentence.
+    assert refusal_reason(cabinet, 50002) is None
+    assert refusal_reason(None, 1) is None
+    assert refusal_reason(cabinet, None) is None

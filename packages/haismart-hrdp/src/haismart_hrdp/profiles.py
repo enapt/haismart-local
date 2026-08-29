@@ -387,6 +387,25 @@ def locked_attributes(
     return frozenset(lock_reasons(model, state, active_alarms))
 
 
+def refusal_reason(model: Mapping[str, Any] | None, code: int | None) -> str | None:
+    """What THIS appliance's own model says a refusal code means, or ``None`` if it says nothing.
+
+    The same table that explains why a control is greyed out also explains a refusal -- the vendor's
+    standard sends the code with the refusal precisely so the client can say which rule was broken,
+    rather than reporting a bare failure.
+
+    ⚠️ **Never a global lookup.** A reason code is not a key shared between products: ``1`` is "this
+    function is not supported" on one appliance and something else on another, and 509 products
+    publish a ``0`` meaning "cannot operate while a fault is active" where others publish none.
+    Returning ``None`` for a code this product does not publish is the point -- the caller then says
+    the command was not recognised instead of borrowing another appliance's sentence.
+    """
+    if code is None or not model:
+        return None
+    reasons = model.get("invalid_reasons") or {}
+    return reasons.get(str(code)) or None
+
+
 def lock_reasons(
     model: Mapping[str, Any] | None,
     state: Mapping[str, str],

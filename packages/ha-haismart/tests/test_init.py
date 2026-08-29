@@ -4989,6 +4989,42 @@ async def test_the_central_cabinet_is_commanded_one_parameter_at_a_time(
     assert related_model_named("related-19+4", 133, uplus_id=uplus) is None
 
 
+async def test_a_vane_written_one_parameter_at_a_time_still_gets_a_select(
+    hass: HomeAssistant,
+) -> None:
+    """The gap between "the coordinator would write it" and "an entity exists to ask".
+
+    The choice of stops comes from `field_codes`, which took its width from the group-set word
+    block -- and a cabinet written one named parameter at a time HAS no word block, so that lookup
+    came back empty and no select was ever built. Every other gate said yes; the control simply did
+    not appear. The bound for this channel is the width of the slot the value reads back into,
+    which is the same reasoning the group-set path uses and is what makes the read-back check
+    possible at all.
+    """
+    from types import SimpleNamespace
+
+    from haismart_hrdp import related_model_named
+
+    from custom_components.haismart.coordinator import HaismartCoordinator
+
+    uplus = "201c10c7088081000d1205464544850000009cd68e692c104e2a333eab95d140"
+    model = related_model_named("related-19+4@25", 133, order=None, uplus_id=uplus)
+    assert dict(model.write_fields) == {}, "the premise: no group-set block to take a width from"
+
+    # The stops this appliance's own model publishes: ten up-down, eight left-right.
+    unit = SimpleNamespace(
+        _wire_model=model,
+        model_codes={"windDirectionVertical": frozenset(range(10)),
+                     "windDirectionHorizontal": frozenset(range(8))},
+    )
+    codes = HaismartCoordinator.field_codes
+    assert codes(unit, "windDirectionVertical") == frozenset(range(10))
+    assert codes(unit, "windDirectionHorizontal") == frozenset(range(8))
+    # Both offer stops beyond the two ends, which is what the select platform requires to build one.
+    assert codes(unit, "windDirectionVertical") - {0, 8}
+    assert codes(unit, "windDirectionHorizontal") - {0, 7}
+
+
 async def test_a_derived_parameter_id_is_settled_by_the_appliance_and_then_left_alone(
     hass: HomeAssistant,
 ) -> None:

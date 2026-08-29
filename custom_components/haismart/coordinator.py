@@ -1843,8 +1843,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         A vane is a position code, and the climate entity reduces it to "is it sweeping" -- which is
         the right answer for a swing control and loses the stop. Where the axis is also *writable*
         the select already shows the stop, so this reports only the axes that are readable and not
-        writable: a cabinet written one setting at a time, whose vane commands are withheld for want
-        of an observed acceptance, still says where its vanes point in every report.
+        writable: an axis a family can read but not command still says where it points in every
+        report, rather than having that reading thrown away by the swing control.
 
         Three gates, the same ones the rest of the optional readings use: the family places the
         axis,
@@ -2054,7 +2054,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """The wire values this unit's own digital model authorizes for ``name``, or empty.
 
         Only fields a model is allowed to widen have such a list — :data:`GRSETDAC_MODEL_AUTHORIZED`
-        on the classic family, and a non-classic family's own ``position_fields``, which names the
+        on the classic family, a single-parameter family's own value-carrying commands, and
+        otherwise a non-classic family's ``position_fields``, which names the
         fields it packs as the multi-bit codes they are. A family that collapses a vane to a single
         bit is excluded there: a position packed into it would arrive as "sweep". Empty is also the
         answer with no stored model (the manual onboarding path) — nothing then authorizes more than
@@ -2065,6 +2066,17 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         out: the encoder refuses it, so offering it would only ever produce a control that fails.
         """
         if (wm := self._wire_model) is not None:
+            if (param := wm.value_param_fields.get(name)) is not None:
+                # A family written one named parameter at a time has no group-set word block, so
+                # there is no write field to take a width from. The bound is the width of the slot
+                # the value reads BACK into: a code too wide for it could be sent and could never
+                # be seen to have arrived, which is the same reason the group-set path bounds by
+                # its own field. The single-bit exclusion below applies here for the same reason
+                # it applies there -- a position packed into one bit arrives as "sweep".
+                return frozenset(
+                    code for code in self.model_codes.get(name) or ()
+                    if param.read.length > 1 and code < (1 << param.read.length)
+                )
             if name not in wm.position_fields or (wf := wm.write_fields.get(name)) is None:
                 return frozenset()
             width = wf.length

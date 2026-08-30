@@ -186,7 +186,15 @@ def declared_bool_features(model) -> frozenset[str]:
 #: ⚠️ Zero is NOT surfaced for these (see :func:`read_enum_features`): on a declaring unit 0 is the
 #: real state "off", but where the hardware itself is inferred, 0 cannot be told from "not fitted".
 CLASS_CARRIED_ENUM_FEATURES: Mapping[str, frozenset[str]] = {
-    "0d12": frozenset({"humanSensingStatus"}),
+    # ★ The presence feature is TWO halves and both belong here -- the vendor's own UI models it as a
+    # setting plus a reading, and surfacing only the setting would report the mode while hiding what
+    # the sensor sees:
+    #   `humanSensingStatus` (w23.b6/2)  SETTING  0 off · 1 avoid · 2 follow · 3 on
+    #   `sensingResult`      (w26.b4/2)  READING  0 no-such-function · 1 nobody · 2 one · 3 several
+    # ⚠️ `sensingResult`'s 0 already means "no such function" and is dropped by its own state map, so
+    # a cabinet without the sensor yields no entity whether or not this class carries it -- which is
+    # what all seven observed cabinets do today. It costs nothing and lights up if one ever detects.
+    "0d12": frozenset({"humanSensingStatus", "sensingResult"}),
 }
 
 

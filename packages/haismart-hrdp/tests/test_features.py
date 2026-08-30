@@ -57,3 +57,32 @@ def test_an_inferred_presence_reading_of_zero_is_not_reported_as_off():
     # but a product that DOES declare it keeps 0 as a real "off"
     declaring = {"invisible_attributes": [], "attributes": {"humanSensingStatus": {}}}
     assert read_enum_features(wm, declaring, blob, "0d12")["humanSensingStatus"] == "off"
+
+
+def test_the_presence_feature_ships_as_BOTH_halves():
+    """The vendor models presence as a setting plus a reading, and both belong on this class.
+
+    `humanSensingStatus` w23.b6/2 is the SETTING (0 off / 1 avoid / 2 follow / 3 on -- the panel's
+    two toggles write 1 and 2, never 3). `sensingResult` w26.b4/2 is the READING (0 no-such-function
+    / 1 nobody / 2 one person / 3 several). Surfacing only the setting would report the mode while
+    hiding what the sensor sees.
+
+    ⚠️ `sensingResult`'s 0 already means "no such function" and its state map drops it, so a cabinet
+    without the sensor gains no entity either way -- which is every cabinet observed so far.
+    """
+    from haismart_hrdp.features import (
+        CLASS_CARRIED_ENUM_FEATURES,
+        declared_enum_features,
+        read_enum_features,
+    )
+    from haismart_hrdp.wire_models import related_model_named
+
+    assert CLASS_CARRIED_ENUM_FEATURES["0d12"] == {"humanSensingStatus", "sensingResult"}
+    model = {"invisible_attributes": [], "attributes": {"onOffStatus": {}}}
+    assert declared_enum_features(model, "0d12") == {"humanSensingStatus", "sensingResult"}
+
+    blob = bytes.fromhex(STATUS_133_PRESENCE_ON)
+    wm = related_model_named("related-19+4@25", len(blob), uplus_id=_D12_UPLUS)
+    read = read_enum_features(wm, model, blob, "0d12")
+    assert read["humanSensingStatus"] == "on"      # the mode the unit is in
+    assert "sensingResult" not in read             # 0 = 无此功能, dropped rather than shown

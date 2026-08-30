@@ -2948,3 +2948,56 @@ def test_the_global_attribute_ids_are_global_and_the_widths_are_not():
     assert ATTR_IDS["humanSensingStatus"] == 0x004C
     for ambiguous in ("volume", "time", "version"):
         assert ATTR_IDS[ambiguous] not in ATTR_WIDTHS
+
+
+#: A refusal recorded off a real `0d12` cabinet — the vendor's own module driving the indoor board,
+#: which answered this eight times to `5D08` and once to `5D18`. Kept verbatim because every other
+#: refusal fixture here is hand-built with a zero address block, and this one is not: byte 3 is
+#: `0x40`, the vendor standard's CRC flag (§5.2.3 bit 6), so the frame also carries a trailing
+#: **CRC16** after the checksum. Both are exactly the shapes a synthetic fixture cannot exercise.
+_REAL_REFUSAL_0D12 = bytes.fromhex("ffff0a40000000000003" "0001" "4e" "2320")
+
+
+def test_a_real_refusal_decodes_through_its_address_flags_and_trailing_crc() -> None:
+    """The shipped reader handles a refusal as an appliance really sends one.
+
+    ⚠️ Every other fixture in this file builds the frame by hand with `00*6` for the address and
+    nothing after the checksum. A real one sets the **CRC flag** in the address identifier and
+    appends a CRC16, so a reader that assumed a zero address block, or that measured the frame from
+    its end, would pass the hand-built cases and fail on hardware. That is this project's recorded
+    failure mode -- fixtures agreeing with the code rather than with a device -- so the bytes below
+    are the recorded ones.
+    """
+    from haismart_hrdp import refusal_code
+
+    assert _REAL_REFUSAL_0D12[3] == 0x40, "the fixture must keep the CRC flag it was recorded with"
+    # The checksum the appliance sent covers the length byte through the reason code, and verifies
+    # WITH the flagged address included -- so the flag is part of the frame, not framing noise.
+    assert sum(_REAL_REFUSAL_0D12[2:12]) & 0xFF == _REAL_REFUSAL_0D12[12] == 0x4E
+    assert len(_REAL_REFUSAL_0D12) == 15, "10-byte frame + checksum + the CRC16 the flag demands"
+    assert refusal_code([b"\x00" * 80 + _REAL_REFUSAL_0D12]) == 1
+
+
+def test_the_refusal_code_separates_an_unknown_command_from_an_absent_function() -> None:
+    """★ The three-way distinction, which is what makes probing an ENUMERATION rather than a guess.
+
+    A `0d12` cabinet answers `0001` to a command it recognises for hardware it does not have --
+    **187 of 187 of those products publish code `1` = "this function is not supported"** -- and
+    `0000`, the protocol's own 无效命令, to one it does not recognise at all. So a probe can tell
+    "that command number is not in this class's registry" from "that number is real and this
+    cabinet lacks the function", and neither answer writes anything.
+    """
+    from haismart_hrdp import refusal_code, refusal_reason
+
+    cabinet = {"invalid_reasons": {"1": "this function is not supported"}}
+    unknown = bytes.fromhex("ffff0a00000000000003" "0000" "0d")
+
+    absent_function = refusal_code([b"\x00" * 80 + _REAL_REFUSAL_0D12])
+    not_a_command = refusal_code([b"\x00" * 80 + unknown])
+    assert absent_function == 1 and not_a_command == 0
+
+    # The appliance's own words for the one it recognises...
+    assert refusal_reason(cabinet, absent_function) == "this function is not supported"
+    # ...and nothing borrowed for the one it does not: this product publishes no `0`, so the caller
+    # is left to say the command was not recognised rather than render another product's sentence.
+    assert refusal_reason(cabinet, not_a_command) is None

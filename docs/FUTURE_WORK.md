@@ -518,6 +518,36 @@ exactly the same terms, because the appliance is what decides either way.
 at all, because the parameter table is per device class while the function is per product: a cabinet
 with no health module must not be offered health merely because its class defines a command for it.
 
+#### ⛔ Presence-based airflow is READ on these cabinets and cannot be commanded — the number is not published
+
+One of these cabinets reports its presence mode as *on* where three identical siblings report *off*,
+so the hardware is real and the reading ships. **The command is a different matter, and the reason is
+narrow: nobody publishes the number.**
+
+Everything else about it is settled. The position, the width and all four values come from the shared
+description and are validated against the appliance's own reported values. The manufacturer's own
+model for this exact product marks the attribute **writable**. Its app groups the attribute with mode,
+fan and both vanes in the same write path. Every attribute on this class is written one at a time.
+**Only the command number is missing** — and it is missing from everything published:
+
+* no description of this class exists at all, in either of the two formats the manufacturer ships;
+* **five of the nine numbers this integration already uses for these cabinets appear in no published
+  description either** — two of them confirmed by an owner moving the vane — so "not published" is
+  the ordinary condition here and says nothing about whether a command exists;
+* the numbers **cannot be borrowed**: the six other appliance kinds that do publish one treat presence
+  as a plain on/off in one bit, not the four-state setting an air conditioner has, and where those
+  same appliance kinds can be checked against numbers we already know for these cabinets, they
+  disagree;
+* and it is **not derivable by arithmetic** — the numbering follows neither the wire order, nor the
+  manufacturer's global attribute index, nor the order attributes are declared in, nor the platform
+  the product belongs to. All four were measured across every published description.
+
+★ **What would settle it, and it costs nothing.** A refusal carries a code, and these products
+distinguish *"I do not recognise that command"* from *"I recognise it and do not have that hardware"*
+(item 49). Two cabinets of the same model, one with the sensor and one without, therefore answer a
+single harmless probe differently — and a probe carrying the value the attribute already holds
+changes nothing whichever way it lands.
+
 ### 45. A multi-attribute write command exists on paper — and this generation refuses it
 
 Item 42 sends one op per setting, because the class it serves has no group-set command. The protocol
@@ -661,44 +691,6 @@ substitutes a fan speed when fan-only is selected on auto) more precisely than t
 condition (`windAvoidance` and the vane positions); the model orders them by a priority nothing here
 reads, so one of the two wins by list order. One report from such a unit would settle which.
 
-### 49. A refusal names its own reason, and we report it as a bare failure
-
-When an appliance declines a command it answers with a refusal frame, and that frame carries a
-**code saying which rule was broken** — not supported on this model, not while the unit is off, not
-in fan-only, not while a fault is active, and so on. Each product publishes its own table of those
-codes, and this integration already ships every one of them, translated: the same sentences that
-explain why a control is greyed out.
-
-Today the refusal is reduced to "the appliance did not accept that", because only the fact of the
-refusal is read and the code beside it is dropped. Wiring it through would turn a dead end into the
-vendor's own explanation, using text that is already present and already localised, and it would
-cover rules that no model states as a lock — several products describe a restriction only as a
-refusal reason, never as a pre-emptive one.
-
-✅ **The observation this was waiting for has turned up.** A central cabinet in a third party's own
-logs refuses a group-set command and answers with code **1**, which its own published table renders
-as *"this function is not supported"* — exactly right for a command that firmware does not implement.
-So the field is real, non-zero codes do occur, and the lookup produces the right sentence. What is
-left is to wire it through.
-
-⚠️ **One thing to be careful about.** The code means whatever *that product's* table says it
-means, and the same number says different things on different products: **509 of them define code
-`0` as "cannot operate while a fault is active"**, while the appliances whose refusals we have
-recorded do not define `0` at all — for those, a zero is the protocol's own way of saying the command
-was not recognised. So a decoder must look the code up in the table belonging to the appliance that
-sent it, and where the appliance publishes no entry for it, say plainly that the command was not
-recognised rather than borrow another product's sentence.
-
-★ That distinction is worth having for its own sake: it separates *"I do not know this command"* from
-*"I know it and will not do it right now"*, which is exactly the question left open about the two
-withheld vane commands on the central cabinets.
-
-✅ **The reading half is already done.** A refusal was drawn from an appliance here on purpose, by
-sending it a command reserved to mean nothing, and the reply carries the code exactly where it should
-be — a two-byte field, reading zero, with a valid checksum. So the field is real, present and
-readable today; what is left is to look it up and say the sentence, and to see one refusal from an
-appliance that publishes a code of its own.
-
 ### 50. The central cabinets may be several indoor units behind one address
 
 The protocol treats a group of appliances on a shared bus behind one communication module as a
@@ -794,6 +786,28 @@ have a concrete case of it firing wrongly. **Leave the controls ungated.**
 * The tree was left unchanged and the suite stayed green.
 
 # Settled
+
+**49. A refusal names its own reason, and it is reported in the manufacturer's own words.** Done.
+An appliance that declines a command answers with a code saying which rule was broken, and each
+product publishes its own table of those codes — this integration ships all of them, translated, and
+now reads the code off the refusal and renders that product's sentence. ⚠️ Never a global lookup: the
+same number means different things on different appliances, so a code a product does not publish is
+reported as "the command was not recognised" rather than borrowed from another product. The reader is
+held to a refusal recorded from a real central cabinet, which carries the flag that says a checksum
+is followed by a CRC — a shape no hand-written fixture had. ★ The distinction it draws is worth more
+than the sentence: an appliance answers one code when it does not recognise a command at all, and
+another when it recognises the command and does not have the hardware, so a probe can tell whether a
+command number exists without writing anything.
+
+**51. Presence-based airflow, on the family whose own description publishes it.** Done for the
+compact lineage. Those cabinets place the setting in their published group command at a named word
+and bit, with the manufacturer's own codes for the two states it has there — and the position is the
+one the read map already carries, so the setting reads back where it was written. ⚠️ The attribute
+has four states on the shared frame and **two** here, because this lineage gives it a single bit; a
+control is therefore built from the values its own family can carry, and the other two are refused by
+the encoder rather than silently truncated. Sixteen products gained a control that previously had
+neither a switch nor a reading. ⛔ Still open on the central cabinets, which are written one setting
+at a time and whose number for it is not published anywhere — see item 42.
 
 Not open items — collapsed to the conclusion plus a pointer. The full reasoning for each is in the
 git history and, where noted, in the canonical docs and the code.

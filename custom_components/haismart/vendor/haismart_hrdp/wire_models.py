@@ -680,6 +680,16 @@ _COMPACT12_WRITE = {
     # family, and far narrower than the 16 bits the field occupies.
     "targetTemperature": WriteField(12, 0, 16, "passthrough", min_epp=0, max_epp=14),
     "onOffStatus": WriteField(9, 0, 1, "passthrough"),
+    # Presence-based airflow, from the same published group-command line as everything above:
+    # `20200H#2&9,12,1*00:00,03:01` — word 9, bit 12, one bit, STD 0 -> EPP 0 and STD 3 -> EPP 1.
+    # ⚠️ **TWO codes, not four.** The shared frame gives this attribute a 2-bit slot carrying
+    # off/avoid/follow/on; this lineage gives it ONE bit and its own map names only the two ends, so
+    # `avoid` (1) and `follow` (2) cannot be expressed here at all. `std_enum` is what refuses them
+    # -- the encoder rejects a code the map does not carry, and the select offers only the codes the
+    # family can express, rather than a control that fails on two of its four options.
+    # The position is the one the read map already publishes for `human_sensing` (w9.b12), so the
+    # write reads back at the bit it wrote, which is the relation every family here is held to.
+    "humanSensingStatus": WriteField(9, 12, 1, "std_enum", std_to_epp={0: 0, 3: 1}),
 }
 
 # The "compact-12" family: a 12-word report (117 B) where every attribute — sensors included — lives

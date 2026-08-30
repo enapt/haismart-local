@@ -1,4 +1,6 @@
 """The panel control surface — the app's documentary authorisation, reproduced."""
+import pytest
+
 from haismart_hrdp import (
     PANEL_BOOL_CONTROLS,
     PANEL_CONTROLS,
@@ -116,3 +118,51 @@ def test_each_withheld_order_position_still_has_its_reason():
             raise AssertionError(f"unknown withholding reason {reason!r}")
         checked.add(name)
     assert checked == set(WITHHELD_ORDER_POSITIONS)
+
+
+def test_compact12_writes_presence_at_its_own_published_position():
+    """compact-12 places `humanSensingStatus` where its OWN profile puts it, with the two codes
+    that profile names -- not the shared frame's four.
+
+    The lineage's group-command line reads `20200H#2&9,12,1*00:00,03:01`: word 9, bit 12, one bit,
+    STD 0 -> EPP 0 and STD 3 -> EPP 1. Two attributes on the same line already reproduce the shipped
+    maps exactly (`20200D` is `operationMode`, `20200F` is `windSpeed`), which is what makes the
+    reading of the format a measurement rather than an interpretation.
+
+    ⚠️ The shared frame gives this attribute a TWO-bit slot carrying off/avoid/follow/on. Here it is
+    one bit and only the ends exist, so `avoid` and `follow` must be REFUSED rather than silently
+    truncated into the neighbouring bit.
+    """
+    from haismart_hrdp.wire_models import COMPACT12
+
+    wf = COMPACT12.write_fields["humanSensingStatus"]
+    assert (wf.word, wf.bit, wf.length) == (9, 12, 1)
+    assert wf.std_to_epp == {0: 0, 3: 1}
+
+    # It writes the bit its own READ map already publishes, so the state reads back where it was
+    # written -- the write<->read relation every family here is held to.
+    assert COMPACT12.fields["human_sensing"].word == wf.word
+    assert COMPACT12.fields["human_sensing"].bit == wf.bit
+
+    baseline = bytes.fromhex("001d003b000000000000000300000000000000000000000b")
+    on = COMPACT12.encode_control(baseline, {"humanSensingStatus": 3})
+    assert [i for i, (a, b) in enumerate(zip(baseline, on, strict=True)) if a != b] == [16]  # w9 high byte
+    assert on[16] & 0x10                                                        # bit 12
+    assert COMPACT12.encode_control(on, {"humanSensingStatus": 0}) == baseline
+
+    for unsupported in (1, 2):          # avoid / follow: no code for them on this lineage
+        with pytest.raises(ValueError):
+            COMPACT12.encode_control(baseline, {"humanSensingStatus": unsupported})
+
+
+def test_compact12_reads_presence_back_as_the_code_it_writes():
+    """The value read back is in the same representation the encoder accepts, so the control shows
+    the appliance's real state: raw bit set -> STD 3, clear -> STD 0."""
+    from haismart_hrdp.wire_models import COMPACT12
+    from tests.test_uss import STATUS_117_OFF
+
+    assert COMPACT12.current_write_value(STATUS_117_OFF, "humanSensingStatus") == 0
+    lit = bytearray(STATUS_117_OFF)
+    lit[92 + (9 - 1) * 2] |= 0x10                    # report word 9, bit 12
+    assert COMPACT12.current_write_value(bytes(lit), "humanSensingStatus") == 3
+    assert COMPACT12.decode(bytes(lit))["human_sensing"] is True

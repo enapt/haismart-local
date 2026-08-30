@@ -419,8 +419,18 @@ def test_grsetdac_families_carry_the_frame_panel_controls():
             wf = wm.write_fields[name]
             cf = CANONICAL_WRITE[name]
             assert (wf.word, wf.bit, wf.length) == (cf.word, cf.bit, cf.length), name
-    # compact-12 is a different group command / layout — not extended by the shared frame
-    assert not (frame_panel & set(COMPACT12.write_fields))
+    # compact-12 is a different group command / layout — not extended by the shared frame.
+    # ⚠️ The invariant is about POSITION, not about the name. This family may well control an
+    # attribute the frame also positions -- it publishes its own group-command line and
+    # `humanSensingStatus` is on it -- but it must reach it at ITS OWN position, never inherit the
+    # frame's. Asserting on names alone would forbid a control the vendor's own description
+    # authorises, which is the mistake `family_write.displaced_at` exists to avoid on the write path.
+    for name in frame_panel & set(COMPACT12.write_fields):
+        wf, cf = COMPACT12.write_fields[name], CANONICAL_WRITE[name]
+        assert (wf.word, wf.bit, wf.length) != (cf.word, cf.bit, cf.length), (
+            f"compact-12 places {name} at the shared frame's position -- it must come from its own "
+            f"published map, not be inherited"
+        )
 
 
 def test_compact_single_parameter_controls_write_by_command_and_read_back():

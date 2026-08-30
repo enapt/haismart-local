@@ -5272,3 +5272,57 @@ def test_presence_reaches_a_cabinet_whose_product_never_declares_it() -> None:
     # feature cannot be told from "no sensor fitted", so it yields no reading and hence no entity.
     off = bytes.fromhex(STATUS_133_PRESENCE_OFF)
     assert read_enum_features(model, declares_nothing, off, uplus_class(uplus)) == {}
+
+
+_PRESENCE_MODEL = {"attributes": [
+    {"name": "onOffStatus", "writable": True, "valueRange": {
+        "type": "LIST", "dataList": [{"data": "false"}, {"data": "true"}]}},
+    {"name": "humanSensingStatus", "writable": True, "valueRange": {
+        "type": "LIST", "dataList": [{"data": c} for c in ("0", "1", "2", "3")]}},
+], "invisible_attributes": []}
+
+
+async def test_a_presence_control_offers_only_the_codes_its_family_can_carry(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The attribute's vocabulary and the family's are not the same thing.
+
+    `humanSensingStatus` has four states on the shared frame (off/avoid/follow/on, a two-bit slot).
+    compact-12 gives it ONE bit and its own published group-command line names only the two ends
+    (`20200H#2&9,12,1*00:00,03:01`), so avoid and follow cannot be carried there at all. Offering
+    them would be two options on a control that refuse every time they are chosen -- which is the
+    reason `freshWindSpeed` is withheld outright, arriving here on a family that CAN write the
+    attribute rather than one that cannot.
+    """
+    from haismart_hrdp.wire_models import COMPACT12, related_wire_model
+
+    entry = await _setup_with_model(hass, _PRESENCE_MODEL)
+    coord = entry.runtime_data
+
+    coord._wire_model = COMPACT12
+    assert coord.panel_select_codes("humanSensingStatus") == frozenset({0, 3})
+
+    # ...while a family whose slot is the full two bits keeps all four.
+    coord.uplus_id = _CENTRAL_UPLUS_ID
+    coord._wire_model = related_wire_model(
+        133, -19, order=["humanSensingStatus"], uplus_id=_CENTRAL_UPLUS_ID
+    )
+    if coord._wire_model.write_fields.get("humanSensingStatus") is not None:
+        assert coord.panel_select_codes("humanSensingStatus") == frozenset({0, 1, 2, 3})
+
+
+async def test_the_presence_select_is_built_from_the_codes_the_family_can_carry(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """...and the select entity takes its options from that, rather than from the attribute."""
+    from haismart_hrdp.wire_models import COMPACT12
+
+    from custom_components.haismart.select import HaismartPanelSelect
+
+    entry = await _setup_with_model(hass, _PRESENCE_MODEL)
+    coord = entry.runtime_data
+    coord._wire_model = COMPACT12
+
+    select = HaismartPanelSelect(coord, "humanSensingStatus")
+    assert select.options == ["off", "on"]
+    assert "avoid" not in select.options and "follow" not in select.options

@@ -1845,6 +1845,36 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         declared = declared_panel_controls(self.digital_model)
         return [a for a in PANEL_ENUM_CONTROLS if a in declared and self.supports_field(a)]
 
+    def panel_select_codes(self, name: str) -> frozenset[int]:
+        """The wire values of a panel multi-state control this appliance can actually be sent.
+
+        The attribute's vocabulary and the family's are not the same thing. The shared frame gives
+        ``humanSensingStatus`` a two-bit slot carrying off/avoid/follow/on; compact-12 gives it ONE
+        bit and its own published map names only the two ends (STD 0 and STD 3), so ``avoid`` and
+        ``follow`` cannot be expressed there at all. Offering the attribute's full vocabulary would
+        put two options on the control that refuse every time they are chosen — the
+        ``freshWindSpeed`` lesson, arriving on a family that CAN write the attribute rather
+        than one that cannot.
+
+        So the set is what the family's own write field can carry, narrowed by the codes this unit's
+        model declares when it publishes any. Empty means "ask the attribute", which is what a
+        caller with no wire model (the classic path) should do.
+        """
+        entry = PANEL_ENUM_CONTROLS.get(name)
+        if entry is None:
+            return frozenset()
+        codes = set(entry[1])
+        if (wm := self._wire_model) is not None and (wf := wm.write_fields.get(name)) is not None:
+            if wf.kind == "std_enum":
+                codes &= set(wf.std_to_epp or {})
+            else:
+                codes = {c for c in codes if c < (1 << wf.length)}
+                if wf.max_epp is not None:
+                    codes = {c for c in codes if c <= wf.max_epp}
+        if self.digital_model and (declared := model_enum_codes(self.digital_model, name)):
+            codes &= declared
+        return frozenset(codes)
+
     def _alarm_names(self) -> tuple[str, ...]:
         """This appliance's own positional fault names, for positions past the shared table.
 

@@ -193,10 +193,15 @@ class HaismartPanelSelect(HaismartEntity, SelectEntity):
         self._field = field
         slug, states = PANEL_ENUM_CONTROLS[field]
         self._to_token = dict(states)               # wire value -> token
-        self._to_value = {t: v for v, t in states.items()}  # token -> wire value
+        # Only the values this family can actually carry are offered; the rest would be a control
+        # that refuses whenever they are chosen (compact-12 has one bit here, not two). Reading is
+        # unrestricted — the appliance may report a state its own controller set that no command of
+        # ours could ask for, and showing that is the point of reading it back.
+        offered = coordinator.panel_select_codes(field) or frozenset(states)
+        self._to_value = {states[v]: v for v in sorted(offered) if v in states}
         self._attr_translation_key = slug
         self._attr_unique_id = f"{coordinator.device_id}_{slug}"
-        self._attr_options = [states[v] for v in sorted(states)]
+        self._attr_options = [states[v] for v in sorted(offered) if v in states]
 
     # No `available` override: a setting the unit currently ignores is not a fault (see the vane
     # select above); the command is refused with the model's reason instead.

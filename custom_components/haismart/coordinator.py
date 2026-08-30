@@ -18,7 +18,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from collections.abc import Callable, Collection, Iterable, Mapping
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from dataclasses import replace
 from datetime import timedelta
 from functools import partial
@@ -70,6 +70,7 @@ from haismart_hrdp import (
     parse_alarm_frame,
     parse_extended_status,
     parse_full_status,
+    positional_alarm_labels,
     probe_localkey_version,
     profile_for,
     profile_from_device_config,
@@ -85,6 +86,7 @@ from haismart_hrdp import (
     select_wire_model,
     set_grsetdac_field,
     udiscovery,
+    uplus_class,
     validate_write,
     vane_model_code,
     with_rules,
@@ -382,14 +384,20 @@ def _model_authorized_codes(model: dict[str, Any] | None) -> dict[str, set[int]]
     return {name: values for name, values in codes.items() if values}
 
 
-def _alarms_from(blobs: list[bytes]) -> dict[str, Any]:
+def _alarms_from(
+    blobs: list[bytes], names: Sequence[str] | None = None
+) -> dict[str, Any]:
     """Active faults out of a session's blobs, or ``{}`` if it carried no fault frame.
 
     The unit pushes one alongside every status report, so this needs no extra request. An all-clear
     frame yields a count of 0 -- distinct from "no frame seen", which must not clear a stale alarm.
+
+    ``names`` is this appliance's own positional fault list, for the positions the shared table does
+    not reach. A central cabinet publishes 72 fault positions where the shared table carries 51, so
+    without it a real fault on such a unit reports as "Unknown fault 71".
     """
     for blob in blobs:
-        if (alarms := parse_alarm_frame(blob)) is not None:
+        if (alarms := parse_alarm_frame(blob, names)) is not None:
             return alarms
     return {}
 
@@ -721,7 +729,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         telemetry, extended_blob = _telemetry_from(blobs)
         if extended_blob is not None:
             self.last_raw_extended = extended_blob
-        alarms = self._held_alarms(_alarms_from(blobs))
+        alarms = self._held_alarms(_alarms_from(blobs, self._alarm_names()))
 
         for blob in blobs:
             if state := parse_full_status(
@@ -1837,6 +1845,14 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         declared = declared_panel_controls(self.digital_model)
         return [a for a in PANEL_ENUM_CONTROLS if a in declared and self.supports_field(a)]
 
+    def _alarm_names(self) -> tuple[str, ...]:
+        """This appliance's own positional fault names, for positions past the shared table.
+
+        Empty when no model is stored (the manual path), which leaves the shared table in charge --
+        the behaviour every install had before, so nothing regresses without a model.
+        """
+        return positional_alarm_labels(self.digital_model)
+
     def vane_position_axes(self) -> list[tuple[str, str, frozenset[int]]]:
         """The vane axes worth reporting a POSITION for, as (key, attribute, declared codes).
 
@@ -1902,7 +1918,9 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         wm = self._feature_wire_model(len(blob))
         if wm is None or not self.digital_model:
             return {}
-        return read_enum_features(wm, self.digital_model, blob)
+        return read_enum_features(
+            wm, self.digital_model, blob, uplus_class(self.uplus_id)
+        )
 
     def _numeric_reading_states(self, blob: bytes) -> dict[str, int]:
         """The declared air-quality/humidity values read out of this report, or ``{}``.
@@ -1943,7 +1961,15 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if not blob or not self.digital_model:
             return frozenset()
         wm = self._feature_wire_model(len(blob))
-        return frozenset(read_enum_features(wm, self.digital_model, blob)) if wm else frozenset()
+        return (
+            frozenset(
+                read_enum_features(
+                    wm, self.digital_model, blob, uplus_class(self.uplus_id)
+                )
+            )
+            if wm
+            else frozenset()
+        )
 
     @property
     def declared_numeric_readings(self) -> frozenset[str]:

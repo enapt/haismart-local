@@ -162,11 +162,44 @@ def declared_bool_features(model) -> frozenset[str]:
     return _PLACEABLE_BOOL & _attribute_names(model)
 
 
-def declared_enum_features(model) -> frozenset[str]:
-    """The optional multi-state features a device declares AND the map can place -- same gate."""
+#: Attributes a device CLASS demonstrably carries on the wire while its products systematically do
+#: not declare them. A narrow, evidence-carrying exception to the declaration gate -- never a general
+#: loosening, which is what stops phantom entities.
+#:
+#: ``0d12`` (187 commercial cabinets) is the measured case. Its products publish a minimal cloud
+#: control surface -- **17 distinct attribute names across all 187**, enumerated -- while the board
+#: emits the full shared frame. The proof that under-declaration is systematic on this class, rather
+#: than a statement about the hardware, is `outdoorTemperature`: **0 of 187 declare an outdoor probe
+#: and every cabinet observed has a working one** (25-33 °C in Bangkok, 11-16 °C in Europe), which
+#: this integration already surfaces. Applying the declaration gate literally here would delete that
+#: sensor too.
+#:
+#: For `humanSensingStatus` specifically, three independent sources agree the class carries it:
+#:  * the **alarm table** publishes `humanSensingModuleErr` (人感模块故障) on **187 of 187** `0d12`
+#:    products and on **none of the other 1,264** -- a class-exclusive fault, and a manufacturer does
+#:    not publish one for a module the line cannot have;
+#:  * the vendor's own **panel bundle** for these products embeds a device model naming
+#:    `humanSensingStatus` 感人模式 with all four values;
+#:  * the **wire**: of four cabinets of one model, with identical firmware, one reads 3 ("on") at the
+#:    published position while its three siblings read 0.
+#:
+#: ⚠️ Zero is NOT surfaced for these (see :func:`read_enum_features`): on a declaring unit 0 is the
+#: real state "off", but where the hardware itself is inferred, 0 cannot be told from "not fitted".
+CLASS_CARRIED_ENUM_FEATURES: Mapping[str, frozenset[str]] = {
+    "0d12": frozenset({"humanSensingStatus"}),
+}
+
+
+def declared_enum_features(model, device_class: str | None = None) -> frozenset[str]:
+    """The optional multi-state features a device declares AND the map can place -- same gate.
+
+    ``device_class`` additionally admits the attributes its class is known to carry undeclared
+    (:data:`CLASS_CARRIED_ENUM_FEATURES`). Omitted, behaviour is exactly as before.
+    """
+    carried = _PLACEABLE_ENUM & CLASS_CARRIED_ENUM_FEATURES.get((device_class or "").lower(), frozenset())
     if not _known_feature_set(model):
-        return frozenset()
-    return _PLACEABLE_ENUM & _attribute_names(model)
+        return carried
+    return (_PLACEABLE_ENUM & _attribute_names(model)) | carried
 
 
 def declared_numeric_readings(model) -> frozenset[str]:
@@ -195,21 +228,34 @@ def read_numeric_readings(wire_model, declared, blob: bytes) -> dict[str, int]:
     return out
 
 
-def read_enum_features(wire_model, declared, blob: bytes) -> dict[str, str]:
+def read_enum_features(
+    wire_model, declared, blob: bytes, device_class: str | None = None
+) -> dict[str, str]:
     """Read the declared multi-state features out of ``blob`` as their labelled state.
 
     Same map-and-position basis as :func:`read_bool_features`; the raw value is looked up in the
     attribute's state map, and a value the map does not name is dropped rather than shown as a code.
     """
-    names = declared_enum_features(declared)
+    names = declared_enum_features(declared, device_class)
     if not names:
         return {}
+    # Where the hardware is inferred from the class rather than declared by the product, a zero
+    # reading cannot be told from "not fitted" -- so it is dropped and the entity reads unknown,
+    # the same call already made for `sensingResult`'s 无此功能 and for the absent-counter rule.
+    inferred = _PLACEABLE_ENUM & CLASS_CARRIED_ENUM_FEATURES.get(
+        (device_class or "").lower(), frozenset()
+    )
+    if _known_feature_set(declared):
+        inferred -= _attribute_names(declared)
     out: dict[str, str] = {}
     for name, field in wire_model.model_fields(sorted(names), len(blob)).items():
         states = OPTIONAL_ENUM_FEATURES[name][1]
         value = field.read(blob)
-        if isinstance(value, int) and value in states:
-            out[name] = states[value]
+        if not isinstance(value, int) or value not in states:
+            continue
+        if name in inferred and value == 0:
+            continue
+        out[name] = states[value]
     return out
 
 

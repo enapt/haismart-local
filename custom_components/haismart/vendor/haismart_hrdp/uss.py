@@ -487,8 +487,45 @@ def describe_epp_frame(blob: bytes) -> str | None:
         return "an alarm-stop frame"
     command = epp_command(blob)
     if command == EPP_CMD_CHANGED_PARAMS:
-        return "a changed-parameters report (6c01), which this integration does not read"
+        return "a changed-parameters report (6c01), which carries no positional status"
     return None
+
+
+def parse_changed_params(blob: bytes) -> dict[str, int] | None:
+    """Decode a `6c01` changed-parameter report into ``{attribute: raw value}``, or ``None``.
+
+    **Layout-independent** -- this is the one report that needs no byte map, because it names each
+    value by the vendor's GLOBAL attribute id rather than by position. That is what makes it worth
+    reading at all: an appliance whose family we cannot place still reports intelligibly here.
+
+    Payload shape, confirmed against the vendor's own decoder: ``[ id(BE16) value(width) ]*`` with
+    **no count prefix and no separator** -- the width comes from the id's own declared length, which
+    is why a table is required and a guess is not possible. Widths are taken from
+    :data:`~haismart_hrdp.attr_ids.ATTR_WIDTHS`; an id the vendor publishes no width for stops the
+    walk, because reading past it would silently misalign every later pair.
+
+    ⚠️ Values are RAW wire values, not scaled or translated -- the caller owns that, exactly as for
+    the positional decode. ``None`` when ``blob`` carries no such frame; ``{}`` when it carries an
+    empty one, which is a real answer and distinct from "not a changed-parameter report".
+    """
+    from .attr_ids import ATTR_NAMES, ATTR_WIDTHS
+
+    at = blob.find(EPP_FRAME_HEAD)
+    if at < 0 or len(blob) < at + 12 or epp_command(blob) != EPP_CMD_CHANGED_PARAMS:
+        return None
+    declared = blob[at + 2]
+    payload = blob[at + 12:at + 2 + max(declared, 0)]
+    out: dict[str, int] = {}
+    i = 0
+    while i + 2 <= len(payload):
+        ident = int.from_bytes(payload[i:i + 2], "big")
+        name = ATTR_NAMES.get(ident)
+        width = ATTR_WIDTHS.get(ident)
+        if name is None or width is None or i + 2 + width > len(payload):
+            break                       # an unknown id has an unknown width: stop, never guess
+        out[name] = int.from_bytes(payload[i + 2:i + 2 + width], "big")
+        i += 2 + width
+    return out
 
 
 def epp_frame_type(blob: bytes) -> int | None:
@@ -1501,12 +1538,29 @@ ALARM_LABELS: tuple[str, ...] = (
 )
 
 
-def alarm_label(code: int) -> str:
-    """The label for a fault position, or a placeholder for one this model does not name."""
-    return ALARM_LABELS[code] if 0 <= code < len(ALARM_LABELS) else f"Unknown fault {code}"
+def alarm_label(code: int, names: Sequence[str] | None = None) -> str:
+    """The label for a fault position, preferring the shared table and falling back to ``names``.
+
+    ``ALARM_LABELS`` is the wording this project carries for the positions **every** published air
+    conditioner agrees on, and it is checked: across the catalogue, one product's alarm list and
+    another's are identical for positions 0..50 and **diverge from 51 onward** (a central cabinet
+    puts `tdOverHighAlarm` where a window unit puts `refrigerantCycleErr`). So the shared table is
+    right as far as it goes, and **must not be extended from any one family's list** -- past its end
+    the only authority is the appliance's own model, which is what ``names`` carries.
+
+    ⚠️ ``names`` is indexed by wire POSITION, i.e. already offset past the model's "fault cleared"
+    entry -- :func:`~haismart_hrdp.profiles.positional_alarm_labels` does that.
+    """
+    if 0 <= code < len(ALARM_LABELS):
+        return ALARM_LABELS[code]
+    if names and 0 <= code < len(names) and names[code]:
+        return names[code]
+    return f"Unknown fault {code}"
 
 
-def parse_alarm_frame(data: bytes) -> dict[str, Any] | None:
+def parse_alarm_frame(
+    data: bytes, names: Sequence[str] | None = None
+) -> dict[str, Any] | None:
     """Decode a fault frame into active fault positions, or ``None`` if ``data`` is not one.
 
     Returns ``{"alarm_count", "alarm_codes", "alarm_labels"}``; an all-clear unit yields a count of 0
@@ -1530,7 +1584,7 @@ def parse_alarm_frame(data: bytes) -> dict[str, Any] | None:
     return {
         "alarm_count": len(codes),
         "alarm_codes": codes,
-        "alarm_labels": [alarm_label(code) for code in codes],
+        "alarm_labels": [alarm_label(code, names) for code in codes],
     }
 
 

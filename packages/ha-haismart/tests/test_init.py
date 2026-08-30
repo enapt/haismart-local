@@ -54,6 +54,22 @@ VANE_H = "select.downstairs_ac_left_right_vane"
 VANE_V = "select.downstairs_ac_up_down_vane"
 
 
+
+# Real 133-byte reports from issue #12's cabinets: `.102` reads humanSensingStatus = 3 at
+# canonical w23.b6; `.64` -- same model, same module firmware -- reads 0 there.
+STATUS_133_PRESENCE_ON = (
+    "00002715000000004e5601000003020000040100000000000000000000000000000000000000000000000000"
+    "000000000000000000000000000000000000000000000000000000000000000000000035ffff320000000000"
+    "00066d0104042200020114c30000000000000003021330325b80000300000000000000000000000000000000"
+    "02"
+)
+STATUS_133_PRESENCE_OFF = (
+    "0000271500000000000000000000000000000000000000000000000000000000000000000000000033433136"
+    "343030463444363300000000000000000000000000000000000000000000000000000035ffff320000000000"
+    "00066d0108024100020114030000000000000003020330325980000700000000000000000000000000000000"
+    "55"
+)
+
 def _entry(**overrides) -> MockConfigEntry:
     return MockConfigEntry(
         domain=DOMAIN,
@@ -5221,3 +5237,38 @@ async def test_a_vane_that_can_be_commanded_gets_no_second_entity(hass: HomeAssi
     unit = _Writable(uplus_id=uplus, _wire_model=model, digital_model=declared,
                      last_raw_status=None)
     assert HaismartCoordinator.vane_position_axes(unit) == []
+
+
+def test_presence_reaches_a_cabinet_whose_product_never_declares_it() -> None:
+    """A `0d12` cabinet reports its presence mode on the wire and its product never declares it.
+
+    The declaration gate is what stops phantom entities, so it is not loosened -- the exception is
+    per class and carries its own evidence (`features.CLASS_CARRIED_ENUM_FEATURES`). The proof that
+    under-declaration is systematic on this class, rather than a statement about the hardware, is
+    `outdoorTemperature`: 0 of 187 products declare an outdoor probe and every cabinet observed has
+    a working one, which this integration already ships.
+
+    ⚠️ The two class keys are NOT interchangeable and mixing them silently matches nothing:
+    `uplus_class` gives the four-character `0d12` every per-class table is keyed on, while
+    `device_type_class` gives the five-character deviceType form `0d012`. Using the latter here made
+    the feature read as absent with every other gate passing.
+    """
+    from haismart_hrdp import related_model_named, uplus_class
+    from haismart_hrdp.features import read_enum_features
+    from haismart_hrdp.wire_models import device_type_class
+
+    uplus = "201c10c7088081000d1205464544850000009cd68e692c104e2a333eab95d140"
+    assert uplus_class(uplus) == "0d12"
+    assert device_type_class(uplus) == "0d012"        # the trap, pinned
+
+    model = related_model_named("related-19+4@25", 133, order=None, uplus_id=uplus)
+    declares_nothing = {"invisible_attributes": [], "attributes": {"onOffStatus": {}}}
+
+    on = bytes.fromhex(STATUS_133_PRESENCE_ON)
+    assert read_enum_features(model, declares_nothing, on, uplus_class(uplus)) == {
+        "humanSensingStatus": "on"
+    }
+    # its sibling cabinet -- same model, same firmware -- reads 0 there, which on an inferred
+    # feature cannot be told from "no sensor fitted", so it yields no reading and hence no entity.
+    off = bytes.fromhex(STATUS_133_PRESENCE_OFF)
+    assert read_enum_features(model, declares_nothing, off, uplus_class(uplus)) == {}

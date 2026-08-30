@@ -15,6 +15,7 @@ Home-Assistant-agnostic. The local protocol lives in ``uss.py``:
 """
 from __future__ import annotations
 
+from .attr_ids import ATTR_IDS, ATTR_NAMES, ATTR_WIDTHS, attr_id, attr_name
 from .canonical_map import CANONICAL, DISPLACEMENTS, CanonicalField
 from .device_rules import (
     DEVICE_RULES,
@@ -69,6 +70,7 @@ from .profiles import (
     lock_reasons,
     locked_attributes,
     model_enum_codes,
+    positional_alarm_labels,
     profile_for,
     profile_from_device_config,
     refusal_reason,
@@ -157,6 +159,7 @@ from .wire_models import (
     related_shortlist_is_ranked,
     related_wire_models,
     select_wire_model,
+    uplus_class,
     vane_code,
     vane_model_code,
     vane_position_name,
@@ -206,7 +209,18 @@ __all__ = [
     "vane_position_name",
     "select_wire_model",
     "declared_fields",
+    "ATTR_IDS",
+    "ATTR_NAMES",
+    "ATTR_WIDTHS",
+    "attr_id",
+    "attr_name",
+    "ATTR_IDS",
+    "ATTR_NAMES",
+    "ATTR_WIDTHS",
+    "attr_id",
+    "attr_name",
     "device_type_class",
+    "uplus_class",
     "OPTIONAL_BOOL_FEATURES",
     "PANEL_BOOL_CONTROLS",
     "PANEL_CONTROLS",
@@ -269,6 +283,7 @@ __all__ = [
     "CLOUD_STATES",
     # per-model attribute profiles
     "AttributeProfile",
+    "positional_alarm_labels",
     "profile_for",
     "profile_from_device_config",
     "validate_write",

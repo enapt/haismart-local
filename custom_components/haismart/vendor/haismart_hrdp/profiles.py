@@ -16,6 +16,7 @@ What differs is the outer envelope and its encryption, not the frame inside.
 from __future__ import annotations
 
 import logging
+import re
 from collections.abc import Collection, Mapping
 from typing import Any
 
@@ -371,6 +372,41 @@ def alarm_names(model: Mapping[str, Any] | None, codes: Collection[int]) -> froz
         if 0 <= index < len(alarms) and (name := alarms[index].get("name")):
             names.add(name)
     return frozenset(names)
+
+
+_ALARM_WORD_FIXUPS = {"err": "fault"}
+
+
+def positional_alarm_labels(model: Mapping[str, Any] | None) -> tuple[str, ...]:
+    """Readable fault names for this appliance, indexed by WIRE POSITION.
+
+    The shared :data:`~haismart_hrdp.uss.ALARM_LABELS` covers the positions every published air
+    conditioner agrees on. Measured across the catalogue that is positions **0..50**: two products'
+    alarm lists are identical up to there and **diverge from 51 onward**, so a longer list from one
+    family would misname another's faults. Past the shared table the appliance's own model is the
+    only authority, and this turns it into something displayable.
+
+    The model lists its "fault cleared" entry first, which is not a position, so wire position N is
+    the model's entry **N + 1** -- the same offset :func:`active_alarm_names` and the unit's own
+    error code use.
+
+    ⚠️ The wording is derived from the vendor's own identifier (``humanSensingModuleErr`` ->
+    "Human sensing module fault"), because **no vendor English exists for these positions**: the
+    panel bundles publish English for 70 entries and none of them is one of the extras this reaches.
+    A derived name from the manufacturer's own word beats "Unknown fault 71"; it is not invented
+    meaning.
+    """
+    alarms = (model or {}).get("alarms") or ()
+    out: list[str] = []
+    for entry in tuple(alarms)[1:]:
+        name = (entry or {}).get("name") or ""
+        words = re.findall(r"[A-Z]+(?![a-z])|[A-Z][a-z0-9]*|[a-z0-9]+", name)
+        if not words:
+            out.append("")
+            continue
+        parts = [_ALARM_WORD_FIXUPS.get(w.lower(), w.lower()) for w in words]
+        out.append((parts[0][:1].upper() + parts[0][1:] + " " + " ".join(parts[1:])).strip())
+    return tuple(out)
 
 
 def locked_attributes(

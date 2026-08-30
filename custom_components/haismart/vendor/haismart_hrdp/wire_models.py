@@ -2008,8 +2008,13 @@ SINGLE_PARAM_IDS: Mapping[str, Mapping[str, int]] = {
 PROVISIONAL_SINGLE_PARAM_IDS: Mapping[str, Mapping[str, int]] = {}
 
 
-def _uplus_class(uplus_id: str | None) -> str:
-    """The four identifier characters that name a device class, or ``""``."""
+def uplus_class(uplus_id: str | None) -> str:
+    """The four identifier characters that name a device class, or ``""``.
+
+    ⚠️ **Not** :func:`device_type_class`, which returns the five-character *deviceType* form
+    (``0d012``). Every per-class table in this project is keyed on THIS four-character slice
+    (``0d12``); mixing the two silently matches nothing, which reads as "the feature is absent".
+    """
     return uplus_id[16:20].lower() if uplus_id and len(uplus_id) >= 20 else ""
 
 
@@ -2033,7 +2038,7 @@ def value_param_write_fields(
     control above the pivot is placed correctly rather than nineteen words wrong, which is the shape
     of mistake this whole module exists to refuse.
     """
-    cls = _uplus_class(uplus_id)
+    cls = uplus_class(uplus_id)
     ids = dict(SINGLE_PARAM_IDS.get(cls) or {})
     unconfirmed = dict(PROVISIONAL_SINGLE_PARAM_IDS.get(cls) or {})
     if not ids and not unconfirmed:
@@ -2118,6 +2123,21 @@ def related_family_name(displacement: int, insert: tuple[int, int] | None = None
     return base if insert is None else f"{base}+{insert[1]}@{insert[0]}"
 
 
+#: Device classes whose related layout has been checked FIELD FOR FIELD against the appliance's own
+#: cloud-reported values, not merely on the core block -- the standard ``canonical_displacement``
+#: exists to require. Only these get it set, so an unverified family still places nothing beyond the
+#: core readings.
+#:
+#: ``0d12``: six diagnostics from **four different cabinets**, each carrying a contemporaneous cloud
+#: shadow, give **40 agreements and 0 real differences** across power, setpoint, room temperature,
+#: mode, fan speed and **both vane axes**. (The two apparent temperature differences are the room
+#: crossing 24/25 between the two fetches; our value tracks the wire byte in both, and the cloud errs
+#: in OPPOSITE directions -- which a wrong scale or offset could not produce.) Corroborated further
+#: by the insert count being forced by the report's own length, and by prior art's independently
+#: measured ``control_packet_size: 18``.
+RELATED_DISPLACEMENT_CONFIRMED: frozenset[str] = frozenset({"0d12"})
+
+
 def related_wire_model(
     length: int,
     displacement: int,
@@ -2143,9 +2163,11 @@ def related_wire_model(
     The displacement itself is not assumed: it is whichever candidate the report agreed with, which
     is the same evidence the read path already required before publishing a single value.
 
-    ``canonical_displacement`` stays unset regardless -- that gates the *further* attributes a device
-    declares, which rest on the offset being checked field-for-field against a real report, and this
-    one has only been checked against the core block.
+    ``canonical_displacement`` stays unset **unless this class is in**
+    :data:`RELATED_DISPLACEMENT_CONFIRMED`. That flag gates the *further* attributes a device
+    declares, which rest on the offset being checked field-for-field against a real report rather
+    than only on the core block -- so it is granted per class, against a measurement, and never by
+    default.
     """
     write = frame_write_fields(order, uplus_id)
     params = value_param_write_fields(displacement, uplus_id, insert=insert)
@@ -2162,10 +2184,13 @@ def related_wire_model(
         reach = max([5, *(f.word for f in write.values())])
         if 19 + reach >= insert[0]:
             write = {}
+    confirmed = uplus_class(uplus_id) in RELATED_DISPLACEMENT_CONFIRMED
     return WireModel(
         family=related_family_name(displacement, insert),
         report_lengths=frozenset({length}),
         fields=canonical_fields(place, list(_RELATED_KEYS)),
+        canonical_displacement=displacement if confirmed else None,
+        canonical_insert=insert if confirmed else None,
         # Either mechanism makes an appliance commandable. A class that publishes no group-set order
         # gets no ``group_cmd`` and no ``write_fields``, so the group-set encoder still refuses it --
         # what it gets instead is one op per attribute.

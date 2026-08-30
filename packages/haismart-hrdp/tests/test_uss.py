@@ -2870,3 +2870,81 @@ def test_a_truncated_classic_report_is_not_read_as_another_family():
     publishes -- so without checking the frame's own declared length, damage would decode as a
     confident reading from the wrong map."""
     assert uss.parse_extended_status(EXT_COOLING[:-1]) == {}
+
+
+def test_a_fault_past_the_shared_table_is_named_from_the_appliances_own_model():
+    """A central cabinet publishes 72 fault positions where the shared table carries 51.
+
+    Without its own list, a real fault on such a unit reports as "Unknown fault 71" -- which is what
+    this asserts against. Position 71 is `humanSensingModuleErr`; that appliance's own model is the
+    only thing that names it, because the shared table stops at 50 and **must not be extended from
+    another family's list**: two products' alarm lists are identical to position 50 and diverge from
+    51 (a central cabinet has `tdOverHighAlarm` where a window unit has `refrigerantCycleErr`).
+    """
+    from haismart_hrdp.profiles import positional_alarm_labels
+
+    model = {"alarms": [{"name": "alarmCancel"}] + [
+        {"name": n} for n in ["outdoorModuleErr"] * 51 + ["tdOverHighAlarm"] + ["x"] * 19
+        + ["humanSensingModuleErr"]
+    ]}
+    names = positional_alarm_labels(model)
+    assert uss.alarm_label(0, names) == uss.ALARM_LABELS[0]          # the shared table still wins early
+    assert uss.alarm_label(50, names) == uss.ALARM_LABELS[50]
+    assert uss.alarm_label(51, names) == "Td over high alarm"    # past it, the appliance's own list
+    assert uss.alarm_label(71, names) == "Human sensing module fault"
+    assert uss.alarm_label(71) == "Unknown fault 71"             # and without a model, unchanged
+    assert uss.alarm_label(200, names) == "Unknown fault 200"    # past both, still honest
+
+
+def test_the_shared_alarm_table_is_not_extended_past_where_families_agree():
+    """Pins the reason the fix is per-appliance rather than a longer shared table.
+
+    Measured over the published catalogue, products agree on fault positions 0..50 and disagree from
+    51. Growing ``ALARM_LABELS`` past 51 from any one family's list would silently misname another
+    family's faults, so the length itself is the invariant worth holding.
+    """
+    assert len(uss.ALARM_LABELS) == 51
+
+
+def test_a_changed_parameter_report_decodes_without_any_byte_map():
+    """`6c01` names each value by GLOBAL attribute id, so it needs no layout at all.
+
+    That is what makes it worth reading: an appliance whose wire family we cannot place still
+    reports intelligibly here. Payload is `[id(BE16) value(width)]*` with no count prefix and no
+    separator, so the width must come from the id's own declared length -- which is why the table is
+    required and a guess is impossible.
+    """
+    from haismart_hrdp.attr_ids import ATTR_IDS
+
+    def frame(payload: bytes) -> bytes:
+        body = b"\x00" * 6 + b"\x06" + b"\x6c\x01" + payload
+        return b"\xff\xff" + bytes([len(body) + 2]) + body + b"\x00"
+
+    # two pairs back to back, no separator: presence mode "on" then the quiet toggle
+    payload = (ATTR_IDS["humanSensingStatus"].to_bytes(2, "big") + b"\x03"
+               + ATTR_IDS["muteStatus"].to_bytes(2, "big") + b"\x01")
+    assert uss.parse_changed_params(frame(payload)) == {
+        "humanSensingStatus": 3, "muteStatus": 1,
+    }
+    # an empty report is a real answer, distinct from "not this kind of frame"
+    assert uss.parse_changed_params(frame(b"")) == {}
+    assert uss.parse_changed_params(STATUS_125) is None
+    # an id nobody publishes has an unknown width, so the walk STOPS rather than misaligning
+    unknown = b"\xff\xfe\x01" + ATTR_IDS["muteStatus"].to_bytes(2, "big") + b"\x01"
+    assert uss.parse_changed_params(frame(unknown)) == {}
+
+
+def test_the_global_attribute_ids_are_global_and_the_widths_are_not():
+    """The property the table rests on, pinned -- and the exception that nearly broke it.
+
+    674 names, zero id collisions across 57 profiles and 14 device classes, and every name declared
+    by more than one class agrees. ⚠️ The WIDTHS do not share that property: `volume`, `time` and
+    `version` are each published at two different lengths, so they carry no width and stop the walk
+    instead of misaligning it. Picking one would not fail loudly -- it would shift every later pair.
+    """
+    from haismart_hrdp.attr_ids import ATTR_IDS, ATTR_NAMES, ATTR_WIDTHS
+
+    assert len(ATTR_NAMES) == len(ATTR_IDS)            # a bijection: no two names share an id
+    assert ATTR_IDS["humanSensingStatus"] == 0x004C
+    for ambiguous in ("volume", "time", "version"):
+        assert ATTR_IDS[ambiguous] not in ATTR_WIDTHS

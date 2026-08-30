@@ -518,7 +518,7 @@ exactly the same terms, because the appliance is what decides either way.
 at all, because the parameter table is per device class while the function is per product: a cabinet
 with no health module must not be offered health merely because its class defines a command for it.
 
-#### ⛔ Presence-based airflow is READ on these cabinets and cannot be commanded — the number is not published
+#### ⛔ Presence-based airflow is READ on these cabinets and is not commanded — the number is not published
 
 One of these cabinets reports its presence mode as *on* where three identical siblings report *off*,
 so the hardware is real and the reading ships. **The command is a different matter, and the reason is
@@ -541,6 +541,17 @@ fan and both vanes in the same write path. Every attribute on this class is writ
 * and it is **not derivable by arithmetic** — the numbering follows neither the wire order, nor the
   manufacturer's global attribute index, nor the order attributes are declared in, nor the platform
   the product belongs to. All four were measured across every published description.
+
+★★ **And nothing published separates it from the controls that already work.** In the
+manufacturer's own richest description of this appliance kind — 86 attributes — presence is
+recorded exactly as the up-down vane, the left-right vane, the mode, the fan speed, health, quiet
+and boost are: no command number, marked not writable, same category, adjacent bits in the same
+frame. **All seven of those are commanded here, and an owner has moved both vanes on real
+hardware.** Sixty-five of the 86 attributes carry no command number at all, and only one of the nine
+numbers this integration sends appears in that description. ⇒ **a missing command number is the
+ordinary condition for this appliance kind**, and it is not evidence that the appliance would refuse
+the command. The honest statement is that **the number has not been observed** — not that presence
+cannot be set.
 
 ★ **What would settle it, and it costs nothing.** A refusal carries a code, and these products
 distinguish *"I do not recognise that command"* from *"I recognise it and do not have that hardware"*

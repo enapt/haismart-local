@@ -86,3 +86,35 @@ def test_the_presence_feature_ships_as_BOTH_halves():
     read = read_enum_features(wm, model, blob, "0d12")
     assert read["humanSensingStatus"] == "on"      # the mode the unit is in
     assert "sensingResult" not in read             # 0 = 无此功能, dropped rather than shown
+
+
+def test_presence_is_not_read_where_its_bits_belong_to_a_vane():
+    """A per-CLASS carried attribute is not safe when the class is not one layout.
+
+    `humanSensingStatus` is w23.b6/2. On `0d12` the four-sided vanes SUBSTITUTE for
+    `windDirectionHorizontal` across w23.b0-b11 as four 3-bit fields (b0/b3/b6/b9), so on a
+    four-sided cassette **b6-b7 are the low two bits of `4SidesWindDirection3`**. Reading them as
+    presence reports a vane position as a presence mode -- a WRONG value, which is worse than a
+    missing one. Measured: 52 of 187 `0d12` products declare the vanes, 91 declare
+    `windDirectionHorizontal`, and none declares both.
+    """
+    from haismart_hrdp.features import CARRIED_BLOCKED_BY, declared_enum_features, read_enum_features
+    from haismart_hrdp.wire_models import related_model_named
+
+    assert CARRIED_BLOCKED_BY["humanSensingStatus"] == {
+        "4SidesWindDirection1", "4SidesWindDirection2",
+        "4SidesWindDirection3", "4SidesWindDirection4",
+    }
+    plain = {"invisible_attributes": [], "attributes": {"windDirectionHorizontal": {}}}
+    cassette = {"invisible_attributes": [], "attributes": {"4SidesWindDirection3": {}}}
+
+    assert "humanSensingStatus" in declared_enum_features(plain, "0d12")
+    assert "humanSensingStatus" not in declared_enum_features(cassette, "0d12")
+    # sensingResult is at w26.b4 -- untouched by the substitution, so it survives either way
+    assert "sensingResult" in declared_enum_features(cassette, "0d12")
+
+    # and on a real report the value is withheld rather than mislabelled
+    blob = bytes.fromhex(STATUS_133_PRESENCE_ON)
+    wm = related_model_named("related-19+4@25", len(blob), uplus_id=_D12_UPLUS)
+    assert read_enum_features(wm, plain, blob, "0d12")["humanSensingStatus"] == "on"
+    assert "humanSensingStatus" not in read_enum_features(wm, cassette, blob, "0d12")

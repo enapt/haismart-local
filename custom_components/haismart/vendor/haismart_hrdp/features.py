@@ -185,6 +185,26 @@ def declared_bool_features(model) -> frozenset[str]:
 #:
 #: ⚠️ Zero is NOT surfaced for these (see :func:`read_enum_features`): on a declaring unit 0 is the
 #: real state "off", but where the hardware itself is inferred, 0 cannot be told from "not fitted".
+#: Attributes that CONTRADICT a class-carried one at the same bits, keyed by the carried name.
+#: If the device declares any of these, the carried attribute is NOT read -- its bits belong to
+#: something else on that product.
+#:
+#: ⛔ `humanSensingStatus` sits at w23.b6/2, and on `0d12` the four-sided vanes **substitute** for
+#: `windDirectionHorizontal` across **w23.b0-b11** as four 3-bit fields (b0/b3/b6/b9). So on a
+#: four-sided cassette **b6-b7 are the low two bits of `4SidesWindDirection3`**, and reading them as
+#: presence would report a VANE POSITION as a presence mode -- a wrong value, not a missing one.
+#: Measured: of 187 `0d12` products, **52 declare the four-sided vanes and 91 declare
+#: `windDirectionHorizontal`** -- so the class is not one layout at w23 and a per-CLASS gate is not
+#: enough. This is the bit-reuse hazard `family_write.WRITE_OVERRIDES` exists for, arriving on the
+#: read path.
+CARRIED_BLOCKED_BY: Mapping[str, frozenset[str]] = {
+    "humanSensingStatus": frozenset({
+        "4SidesWindDirection1", "4SidesWindDirection2",
+        "4SidesWindDirection3", "4SidesWindDirection4",
+    }),
+}
+
+
 CLASS_CARRIED_ENUM_FEATURES: Mapping[str, frozenset[str]] = {
     # ★ The presence feature is TWO halves and both belong here -- the vendor's own UI models it as a
     # setting plus a reading, and surfacing only the setting would report the mode while hiding what
@@ -205,9 +225,15 @@ def declared_enum_features(model, device_class: str | None = None) -> frozenset[
     (:data:`CLASS_CARRIED_ENUM_FEATURES`). Omitted, behaviour is exactly as before.
     """
     carried = _PLACEABLE_ENUM & CLASS_CARRIED_ENUM_FEATURES.get((device_class or "").lower(), frozenset())
+    declared = _attribute_names(model) if _known_feature_set(model) else frozenset()
+    # Drop a carried attribute whose bits this product gives to something else (see
+    # :data:`CARRIED_BLOCKED_BY`). Reading them anyway yields a wrong value, not an absent one.
+    carried = frozenset(
+        n for n in carried if not (CARRIED_BLOCKED_BY.get(n, frozenset()) & declared)
+    )
     if not _known_feature_set(model):
         return carried
-    return (_PLACEABLE_ENUM & _attribute_names(model)) | carried
+    return (_PLACEABLE_ENUM & declared) | carried
 
 
 def declared_numeric_readings(model) -> frozenset[str]:

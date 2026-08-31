@@ -9,6 +9,7 @@ a setting, and how the energy and polling side works.
 - [Swinging and pointing](#swinging-and-pointing)
 - [Energy monitoring](#energy-monitoring)
 - [How often it polls](#how-often-it-polls)
+- [Vane readings on units that cannot be asked](#vane-readings-on-units-that-cannot-be-asked)
 
 ## Your unit describes itself
 
@@ -121,7 +122,7 @@ that confirmation, so they keep the values from the most recent poll. They are h
 minutes, and cleared immediately when you switch the unit on or off, because the figures for a
 running unit say nothing about one that has just stopped.
 
-## Swinging, pointing, and the units that can only be asked
+## Vane readings on units that cannot be asked
 
 A vane is a position, not a switch. The swing control answers one question — is it sweeping — and on
 a unit whose vane holds a fixed direction that answer is the same whether the vane is closed or

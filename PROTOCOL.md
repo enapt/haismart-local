@@ -118,7 +118,7 @@ Expressed against the shared map, the op is report words 20 to 24 and `write_bas
 | Field | Where | Decode |
 |---|---|---|
 | `targetTemperature` | byte 92 | `byte + 16` |
-| `windDirectionVertical` | byte 93 | bit 3 (`0x08`) = auto up-down swing |
+| `windDirectionVertical` | byte 93, low nibble | a **position code** — `12` (`0x0c`) is auto/sweeping; see *Vane positions* below, not a bit test |
 | `operationMode` / `windSpeed` | byte 94 | `byte >> 5` and `byte & 0x07` |
 | `onOffStatus` | byte 97 | **bit 0 only** (`byte & 0x01`) |
 | `windDirectionHorizontal` | word 4, bits 0–2 | `0` fixed, `7` auto |
@@ -229,7 +229,10 @@ else in the report. Note it also locks out the ordinary louver control until the
 auto, so a unit can appear unresponsive to the position button while it is engaged.
 
 Stepping a unit through every position gives, on the wire: vertical **1, 2, 3, 4, 6, 8** and auto
-**12**; horizontal **0, 3, 4, 5, 6** and auto **7**. Vertical **8** is the vane parked pointing down
+**12**; horizontal **0, 3, 4, 5, 6** and auto **7**. The full model↔wire table for the up-down axis
+is read from the published map's own code table (eleven codes, including two health-airflow
+presets and a second auto that cabinets carry), so a unit's `select` offers exactly the stops its
+model publishes — see [`docs/report-layouts.md`](docs/report-layouts.md). Vertical **8** is the vane parked pointing down
 and horizontal **3–6** are ordinary parked positions — none of them sweeping. Both are worth spelling
 out because they are exactly the values a bit test gets wrong: `& 0x08` calls vertical 8 a sweep, and
 a plain truthiness test calls all four horizontal positions one.
@@ -306,10 +309,17 @@ pushes on the op's own connection, so the baseline is always live.
 
 The op's five words are the report's own control block — word for word and bit for bit, ending where
 the sensor readings begin, since a thermometer cannot be written to. A device model publishes the
-same layout and names **39** fields in it, far more than the table below; the table is deliberately
-the shorter list, because a field belongs here only once a write of it is confirmed on hardware. A
-model describing a field is not evidence a unit honours a write to it — one flag in this very word
-block is published, marked writable, and silently discarded by real hardware.
+same layout and names **39** fields in it, far more than the table below. The table is the core
+that was established field by field on hardware, and it is the allowlist of the classic encoder.
+The other controls the integration offers on this frame — self-clean, fresh air, electric heating,
+ambient light, energy saving, mould-proof, dry-out, heatstroke prevention, presence-based airflow —
+are written at the positions the published frame gives them, and offered
+only where the product declares the attribute, does not mark it as hardware the unit lacks, the
+vendor's own control panel renders a control for it, and the product's published settings order
+agrees with the position (families that keep a different setting at a shared position have that
+control refused). A model describing a field is still not evidence a unit honours a write to it —
+one flag in this very word block is published, marked writable, and silently discarded by real
+hardware, which is exactly why the panel gate exists.
 
 | Field | Word | Shift | Width |
 |---|---|---|---|
@@ -426,9 +436,12 @@ Onboarding fetches two things about a device and uses both:
 The second is not fetched by name — the model is looked up in the account's resource service, which
 answers with a download URL carrying a build stamp, the file's version and its MD5.
 
-**That listing is scoped to the account, not to the request.** It answers with the configs published
-for the caller's own devices and reports success whatever model, identifier or resource type the
-request carries, so the response has to be selected from rather than trusted to contain one entry.
+**Asked with an account token, that listing answers for the account rather than the request** — it
+returns the configs published for the caller's own devices and reports success whatever model,
+identifier or resource type the request carries, so the response has to be selected from rather than
+trusted to contain one entry. (Asked with the app's own credentials and no user token it answers for
+whichever model number is named, which is how the published description of every product is
+fetched offline; the integration's per-device fetch takes the account route.)
 The uPlusId is what identifies a device there; the model number is the half whose spelling varies,
 since a sticker may read `HSU-24HFAB/013WUSDC(W)-T3` where the service says `HSU-24HFAB`. A device
 that is not in the listing gets no rules at all, which locks nothing — the safe direction — rather

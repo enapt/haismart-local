@@ -3,9 +3,10 @@
 Fully-local control of Haier ACs that pair with the **Haismart** (Haier U+/uHome SE‑Asia) app — no cloud at
 runtime after setup. This guide gets the integration onto a running Home Assistant for real use/testing.
 
-> **Not on HACS yet.** The integration depends on two helper libraries (`haismart-hrdp`, `haismart-extractor`)
-> that aren't published to PyPI, so HA can't auto-install them. `scripts/install-dev.sh` handles that by
-> pip-installing them into HA's Python env; then HA sees the `manifest.json` requirements already satisfied.
+> **HACS and the manual copy are self-contained.** The two helper libraries (`haismart-hrdp`,
+> `haismart-extractor`) are not on PyPI, so the installable component at the repo root carries them
+> vendored inside it — nothing to pip-install, on any install type including Home Assistant OS. The
+> pip route below (`scripts/install-dev.sh`) is for running the packages from a source checkout.
 
 ## Prerequisites
 
@@ -51,9 +52,9 @@ docker exec -it homeassistant bash -lc \
 ```
 
 ### Home Assistant OS / Supervised
-You can't easily pip-install into the core container here — this is the one awkward case. For testing,
-use a **Core/venv or Container** instance (even a spare one on the same LAN). Vendoring the two pure-Python
-libs into the component is the eventual HAOS fix, but that's packaging work, not covered by this script.
+Use HACS or the manual copy above — the vendored component needs no pip step, which is what makes it
+work on HAOS. `install-dev.sh` is not for this install type (you cannot pip-install into the core
+container without disabling protection mode).
 
 ### Options
 - `--symlink` — symlink the component instead of copying (edits apply on the next HA restart; handy for dev).
@@ -64,8 +65,9 @@ Then **restart Home Assistant.**
 
 ## 2. Add the integration
 
-**Settings → Devices & Services → Add Integration → "Haismart (Haier local)"** (it may also appear on its own
-via zeroconf, since it listens for `_cae._udp`). Pick one path:
+**Settings → Devices & Services → Add Integration → "Haismart (Haier local)"** (a unit may also raise a
+**Discovered** card by DHCP — these modules announce no mDNS — but the card is not reliable, so go through
+Add Integration if it does not appear). Pick one path:
 
 - **Login (recommended) — no key to paste:** email/phone + password + the **country your Haier
   account was registered in**, picked from a list (it is the phone dialling code underneath, and it
@@ -84,16 +86,18 @@ via zeroconf, since it listens for `_cae._udp`). Pick one path:
 The flow validates by doing a live read, then creates the entities.
 
 **Multiple ACs (e.g. Upstairs + Downstairs):** each AC is its own HA device, added one at a time. After you
-add the first, run **Add Integration → Haismart** again — the picker now shows only the AC(s) you haven't
-added yet (and says so once they're all in). Each AC is also **DHCP-discovered** (Haier's Wi-Fi
-modules use a number of MAC prefixes; the integration matches all the appliance ones it knows),
-so both will appear as "Discovered" cards you can add directly.
+add the first, run **Add Integration → Haismart** again — it offers **use the Haier account already
+added** first, with no password and no key, and the picker shows only the AC(s) you haven't added yet
+(and says so once they're all in). A unit may also raise a "Discovered" card by DHCP (the integration
+matches Haier's appliance MAC prefixes), which leads to the same confirmation — but Home Assistant's
+network view does not always see these units, so do not wait for the card.
 
 ## 3. Verify
 
-You should get, per AC: a **climate** card (temperature, mode, fan, swing, on/off), five **switches**
-(strong / quiet / health / sleep / display light), an **eco** select, and indoor/outdoor **temperature**
-sensors. Change the setpoint — the AC applies it and the card confirms from the AC's own reply immediately.
+You should get, per AC, a **climate** card (temperature, mode, fan, swing, presets, on/off), the
+**switches**, **selects** and **sensors** your unit's own model declares — the full list is
+[What you get](README.md#what-you-get) in the README. Change the setpoint — the AC applies it and the
+card confirms from the AC's own reply immediately.
 
 ## 4. Optional: go fully cloud-independent (block Haier's servers)
 
@@ -218,9 +222,10 @@ sign-in failures, an AC that moved address — is in
 [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md), which also covers what to include when you open
 an issue.
 
-- **HA log: "Requirements for haismart not found" / import errors.** The two libraries landed in a
-  different Python than HA's. Re-run `install-dev.sh` with `--python` pointing at HA's interpreter
-  (Core/venv: the venv's `bin/python`; Docker: run inside the container).
+- **HA log: "Requirements for haismart not found" / import errors** (source installs only — the
+  HACS/manual copy needs no libraries). The two libraries landed in a different Python than HA's.
+  Re-run `install-dev.sh` with `--python` pointing at HA's interpreter (Core/venv: the venv's
+  `bin/python`; Docker: run inside the container).
 - **Can't reach the AC.** Confirm HA and the AC are on the same subnet and `:56800` is open:
   `nc -z <ac-ip> 56800`. The integration finds the AC by DHCP (matching Haier's appliance MAC
   prefixes) or the host you provide. If you blocked the AC's WAN access (§4), check you left its

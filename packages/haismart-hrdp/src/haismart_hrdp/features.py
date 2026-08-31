@@ -64,11 +64,13 @@ OPTIONAL_ENUM_FEATURES: Mapping[str, tuple[str, Mapping[int, str]]] = {
     # the bit a third one would need. Check the class before borrowing a width.)
     "airQuality": ("air_quality", {0: "excellent", 1: "good", 2: "moderate", 3: "poor"}),
     "pm2p5Level": ("pm25_level", {0: "excellent", 1: "good", 2: "moderate", 3: "poor"}),
-    # Occupancy, as the presence sensor reports it. **0 is not a state**: the model names it
-    # 无此功能 -- "no such function" -- an in-band statement that this unit has no presence sensor
-    # at all, exactly like the telemetry actuator states' "information not available". Leaving it
-    # out of the map is what drops it, so a unit without the sensor reads unknown rather than
-    # claiming an empty room.
+    # Occupancy, as the presence sensor reports it. **0 is not a state, and it is not "no sensor"
+    # either.** The vendor's template names 0 无此功能 ("no such function"), but the one cabinet
+    # observed with presence mode ON read 0 here with the room empty -- and the vendor's module has
+    # a presence pipeline of its own whose vocabulary is 0 nobody / 1 someone, which may be what the
+    # board relays. Until a non-zero reading fixes the vocabulary, 0 is left out of the map so the
+    # entity reads unknown: never an empty room, never a verdict that the sensor is absent. The raw
+    # value is kept in diagnostics (`raw_enum_values`) so a report shows it either way.
     "sensingResult": ("occupancy", {1: "unoccupied", 2: "one_person", 3: "several_people"}),
 }
 
@@ -217,9 +219,10 @@ CLASS_CARRIED_ENUM_FEATURES: Mapping[str, frozenset[str]] = {
     # this map's w23 and w26 once the class's whole-word displacement is applied. So the class
     # carrying them undeclared is a documented fact about the frame, not an inference from one
     # cabinet's bytes.
-    # ⚠️ `sensingResult`'s 0 already means "no such function" and is dropped by its own state map, so
-    # a cabinet without the sensor yields no entity whether or not this class carries it -- which is
-    # what all seven observed cabinets do today. It costs nothing and lights up if one ever detects.
+    # ⚠️ `sensingResult` reads 0 on every cabinet observed so far -- including the issue #12 cabinet
+    # whose presence MODE reads 3 (on) in the same reports, taken with nobody under it. 0 is
+    # therefore unknown, not "no sensor": its own state map leaves it out, so the entity reads
+    # unknown until a non-zero value arrives and fixes the vocabulary (see OPTIONAL_ENUM_FEATURES).
     "0d12": frozenset({"humanSensingStatus", "sensingResult"}),
 }
 
@@ -296,6 +299,26 @@ def read_enum_features(
         if name in inferred and value == 0:
             continue
         out[name] = states[value]
+    return out
+
+
+def raw_enum_values(
+    wire_model, declared, blob: bytes, device_class: str | None = None
+) -> dict[str, int]:
+    """The fields :func:`read_enum_features` reads, as the raw wire value -- nothing dropped.
+
+    For diagnostics. The labelled reader leaves out a value its map does not name, which is right
+    for an entity and wrong for a bug report: `sensingResult` 0 reads unknown on purpose, and the
+    only way to tell that apart from a field the layout could not place is to see the 0.
+    """
+    names = declared_enum_features(declared, device_class)
+    if not names:
+        return {}
+    out: dict[str, int] = {}
+    for name, field in wire_model.model_fields(sorted(names), len(blob)).items():
+        value = field.read(blob)
+        if isinstance(value, int):
+            out[name] = value
     return out
 
 

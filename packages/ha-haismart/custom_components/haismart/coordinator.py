@@ -94,6 +94,7 @@ from haismart_hrdp import (
 from haismart_hrdp import (
     declared_numeric_readings as numeric_reading_names,
 )
+from haismart_hrdp.uss import frame_key
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
@@ -153,6 +154,10 @@ GATEWAY_TIMEOUT = 8.0
 _SHADOW_REFRESH_TIMEOUT = 10.0
 
 _LOGGER = logging.getLogger(__name__)
+
+#: Distinct frame kinds kept per entry before further new kinds are only counted. Real sessions
+#: carry a handful; the cap only guards the diagnostics file against a misbehaving stream.
+_LAN_FRAME_KINDS = 64
 
 type HaismartConfigEntry = ConfigEntry["HaismartCoordinator"]
 
@@ -614,6 +619,12 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.unknown_layout: int | None = None
         # distinct status reports kept while the layout is unrecognised (see _remember_report)
         self._recent_reports: list[bytes] = []
+        # Every kind of frame this appliance has sent on the LAN, parsed or not, with the latest
+        # bytes of each -- keyed on frame type and command. See _record_frames.
+        self.lan_frames: dict[str, dict[str, Any]] = {}
+        # The uSS messages of the most recent read session, one record each, decrypted or not
+        # (uss.collect_session_blobs). Diagnostics prints both.
+        self.uss_trace: list[dict[str, Any]] = []
         # length of a report that decoded fully via a KNOWN non-classic wire model that is not yet
         # write-capable (read-only family), or None. Blocks control with a clear message — unlike
         # unknown_layout it raises no repair, because monitoring works.
@@ -735,6 +746,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if extended_blob is not None:
             self.last_raw_extended = extended_blob
         alarms = self._held_alarms(_alarms_from(blobs, self._alarm_names()))
+        self._record_frames(blobs, "poll")
 
         for blob in blobs:
             if state := parse_full_status(
@@ -881,8 +893,9 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def _async_read(self) -> list[bytes]:
         """One read cycle against the current host, holding the single-session lock."""
+        trace: list[dict[str, Any]] = []
         async with self._session:
-            return await async_read_status(
+            blobs = await async_read_status(
                 self.host, self.device_id, self._local_key, timeout=READ_TIMEOUT,
                 # The same guard the control path has always had. Without it a rotation is not
                 # recognised as one: every payload fails its checksum, the cycle reports "nothing
@@ -896,7 +909,49 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     extended_status_epp_frame(EXTENDED_STATUS_FRAME_TYPES[self._extended_form])
                     if self._ask_extended else None
                 ),
+                trace=trace,
             )
+        # Kept whether or not anything decoded: a session whose messages all failed to decrypt, or
+        # carried only short acks, is exactly what a bug report has to be able to show.
+        self.uss_trace = trace
+        return blobs
+
+    def _record_frames(self, blobs: list[bytes], session: str) -> None:
+        """Keep every frame the appliance sent this session, parsed or not, with its bytes.
+
+        A session's blobs are sifted for the status report, the telemetry frame and the alarm
+        frame; a push nothing here decodes would otherwise never reach a bug report. The vendor's
+        own module has status frames of its own, one of which carries its presence sensor and the
+        sensed person's distance; whether any of that reaches the LAN is a question the diagnostics
+        file must be able to answer. Each frame kind is counted and its latest bytes kept, keyed on
+        frame type and command.
+        """
+        for blob in blobs:
+            key = frame_key(blob)
+            if key not in self.lan_frames and len(self.lan_frames) >= _LAN_FRAME_KINDS:
+                self.lan_frames.setdefault("_overflow", {"count": 0})["count"] += 1
+                continue
+            if parse_alarm_frame(blob, self._alarm_names()) is not None:
+                role = "alarm"
+            elif parse_extended_status(blob):
+                role = "telemetry"
+            elif parse_full_status(
+                blob, self.profile, self.digital_model,
+                uplus_id=self.uplus_id, order=self.declared_group_order,
+            ):
+                role = "status report"
+            else:
+                role = describe_epp_frame(blob) or "unparsed"
+            entry = self.lan_frames.setdefault(key, {"count": 0, "sessions": []})
+            entry["count"] += 1
+            entry.update(role=role, length=len(blob), last_hex=blob.hex())
+            if session not in entry["sessions"]:
+                entry["sessions"].append(session)
+            if role == "unparsed" and entry["count"] == 1:
+                _LOGGER.debug(
+                    "%s sent a frame nothing here decodes (%s, %d bytes); kept for diagnostics",
+                    self.host, key, len(blob),
+                )
 
     async def _async_rediscover_host(self) -> bool:
         """Find this AC at a new address after a failed read. ``True`` if the host changed.
@@ -1543,6 +1598,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """The newest decodable full-status report in a control op's reply blobs, or None if none
         decoded. The AC echoes updated state on the op connection (the protocol). Also updates
         the seed baseline + miss counter so the next op/poll starts from the confirmed state."""
+        self._record_frames(reply, "control")
         telemetry, extended_blob = _telemetry_from(reply)
         if extended_blob is not None:
             self.last_raw_extended = extended_blob

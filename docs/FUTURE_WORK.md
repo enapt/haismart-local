@@ -748,6 +748,31 @@ Nothing here can test it: it needs a central installation with more than one ind
 module. The enumeration command changes nothing if the appliance does not implement it — it is a
 question, and an appliance that does not understand it simply refuses.
 
+### 53. Presence is a MODULE-side sensor with its own pipeline — and it reports distance
+
+The vendor's generated protocol document for `0D012` (`catalogue/profiles_0d12/0D012_UART通讯协议.txt`)
+carries a second presence pipeline beside the board's 2-bit `sensingResult`: the **Wi-Fi module's
+own status frames** (§6.41 reply, §6.44 push — every 10 s in 人感模式, at once on change) include a
+**`0xA0` 人感 block** — bit0 `0 无人 / 1 有人`, bit1 start/stop, bit2 antenna status, plus **the
+sensed person's distance band, lower and upper bound in centimetres**. The board enables and
+configures it with system-interaction frames (`0x100A` enable · `0x100B` disable · `0x100C`
+parameters, sent after every handshake · `0x1011` query · `0x100F` "module asks the board to disable
+its own presence logic"). `humanSensingModuleErr` on 187/187 `0d12` products is that module's fault.
+
+Consequences:
+
+* The board's `sensingResult` reads `0` on every `0d12` report on file — **including the issue #12
+  cabinet whose presence MODE reads 3 (on) in the same reports, taken with nobody under the
+  cassette.** `0` is therefore *unknown*, not "no sensor"; the state map leaves it out and the raw
+  value is in diagnostics (`feature_raw`). ⛔ Do not gate anything on `sensingResult == 0`.
+* Every LAN frame kind is kept with its bytes (`lan_frames`) and every uSS message of the last
+  session is traced (`uss_messages`), so whether the module's `0xA0` block ever reaches `:56800`
+  is answerable from a diagnostics file.
+* **The experiment:** on a cabinet with presence mode on, capture with someone under it, then with
+  the room empty. If the board field follows (`1`/`2`/`3` vs `0`) the vocabulary is settled; if a
+  frame with the `0xA0` block appears in `lan_frames`, the module's own report — with the
+  distance — is on the LAN and a presence/distance sensor can ship.
+
 ## Reference — not open items
 
 Kept because each looks like something to "fix" until you know why it is the way it is.

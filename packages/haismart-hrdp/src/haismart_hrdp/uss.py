@@ -1633,6 +1633,7 @@ async def async_read_status(ip: str, device_id: str, local_key: str, *,
                             pro_ver: int = 2, timeout: float = 4.0,
                             extra_request: bytes | None = None,
     expect_localkey_version: int | None = None,
+    trace: list[dict] | None = None,
 ) -> list[bytes]:
     """Async READ-ONLY handshake + status collect (for the HA coordinator).
 
@@ -1641,9 +1642,12 @@ async def async_read_status(ip: str, device_id: str, local_key: str, *,
     extended-status query (:func:`extended_status_epp_frame`) is polled: these units accept a single
     connection at a time, so folding the extra query into the existing cycle costs no additional
     connection and no additional poll. It is still a read — nothing is written to the device.
+
+    ``trace``, when given, receives one record per uSS message the session carried -- the hello
+    reply and everything after it, decrypted or not (:func:`collect_session_blobs`), so that
+    everything the appliance sends can reach a bug report.
     """
     reader, writer = await asyncio.wait_for(asyncio.open_connection(ip, USS_PORT), timeout)
-    blobs: list[bytes] = []
     try:
         writer.write(hello_message(device_id, sn=1, pro_ver=pro_ver))
         await writer.drain()
@@ -1655,6 +1659,8 @@ async def async_read_status(ip: str, device_id: str, local_key: str, *,
             rbuf += chunk
         resp = decode_message(rbuf)
         check_hello_resp(resp, expect_localkey_version)
+        if trace is not None:
+            trace.append({**_message_record(resp), "stage": "hello"})
         speak = negotiated_type_byte(resp, requested=TYPE_BYTE[pro_ver])
         writer.write(encode_message(INFO_HELLO_DONE, 2, b"", type_byte=speak, session=resp.session))
         await writer.drain()
@@ -1703,13 +1709,65 @@ async def async_read_status(ip: str, device_id: str, local_key: str, *,
             await writer.wait_closed()
         except Exception:  # noqa: BLE001
             pass
+    return collect_session_blobs(buf, local_key, trace)
+
+
+#: The shortest uSS payload that can carry biz-encrypted data (an AES block, the MD5 check and the
+#: framing). Anything shorter is a plain control message -- an ack or a session frame.
+_BIZ_MIN_PAYLOAD = 48
+
+
+def _message_record(m: Message) -> dict:
+    return {
+        "info_type": m.info_type, "type_byte": m.type_byte, "flag": m.flag,
+        "session": m.session, "payload_len": len(m.payload),
+    }
+
+
+def frame_key(blob: bytes) -> str:
+    """``"<frameType>/<eppCmd>"`` for a decrypted blob, e.g. ``01/6d01`` for the status report.
+
+    The key diagnostics files every frame kind under. A blob without an EPP frame head keys as
+    ``no-epp-frame``; a frame type that carries no command (the alarm reply) keys its two bytes
+    anyway, which is stable and harmless.
+    """
+    frame_type = epp_frame_type(blob)
+    if frame_type is None:
+        return "no-epp-frame"
+    command = epp_command(blob)
+    return f"{frame_type:02x}/{command.hex() if command else '----'}"
+
+
+def collect_session_blobs(
+    buf: bytes, local_key: str, trace: list[dict] | None = None
+) -> list[bytes]:
+    """Every decrypted biz blob in a session's bytes -- and, in ``trace``, every message.
+
+    A session carries more than the blobs that decrypt: short control messages, payloads the key
+    cannot open, frames nothing here decodes. The vendor's own module has status frames of its own
+    (one carries its presence sensor and the sensed person's distance), and whether any of them
+    reaches the LAN is exactly the kind of question a bug report has to be able to answer. So each
+    message gets a record: which it was, how long, whether it decrypted, and -- for the short
+    control messages, which carry no secret -- its payload.
+    """
+    blobs: list[bytes] = []
     for raw in split_messages(buf):
         m = decode_message(raw)
-        if len(m.payload) >= 48:
+        rec = _message_record(m) if trace is not None else None
+        if len(m.payload) >= _BIZ_MIN_PAYLOAD:
             try:
-                blobs.append(biz_decrypt(m.payload, local_key)[1])
+                blob = biz_decrypt(m.payload, local_key)[1]
             except ValueError:
-                pass
+                if rec is not None:
+                    rec["decrypted"] = False
+            else:
+                blobs.append(blob)
+                if rec is not None:
+                    rec.update(decrypted=True, frame=frame_key(blob), blob_len=len(blob))
+        elif rec is not None:
+            rec.update(decrypted=None, payload_hex=m.payload.hex())
+        if rec is not None:
+            trace.append(rec)
     return blobs
 
 

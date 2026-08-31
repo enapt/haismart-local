@@ -149,3 +149,21 @@ def test_the_presence_positions_are_the_manufacturers_own_not_ours():
     assert CLASS_CARRIED_ENUM_FEATURES["0d12"] == frozenset(
         {"humanSensingStatus", "sensingResult"}
     )
+
+
+def test_raw_enum_values_keep_the_zero_the_state_map_drops():
+    """`sensingResult` 0 is the template's 无此功能 -- yet the one cabinet observed with presence mode
+    ON read 0 too, with nobody under it. So 0 is unknown, never "no sensor", and the raw value is
+    what a report has to show either way. This is the reader diagnostics uses for it."""
+    from haismart_hrdp.features import raw_enum_values, read_enum_features
+    from haismart_hrdp.wire_models import related_model_named
+
+    model = {"invisible_attributes": [], "attributes": {"onOffStatus": {}}}
+    for hexblob, mode in ((STATUS_133_PRESENCE_ON, 3), (STATUS_133_PRESENCE_OFF, 0)):
+        blob = bytes.fromhex(hexblob)
+        wm = related_model_named("related-19+4@25", len(blob), uplus_id=_D12_UPLUS)
+        raw = raw_enum_values(wm, model, blob, "0d12")
+        assert raw["humanSensingStatus"] == mode
+        assert raw["sensingResult"] == 0
+        assert "sensingResult" not in read_enum_features(wm, model, blob, "0d12")
+    assert raw_enum_values(wm, model, blob) == {}          # unchanged without the class

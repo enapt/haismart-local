@@ -5461,3 +5461,29 @@ async def test_diagnostics_carry_the_command_numbers_and_the_last_answer(
     assert controls["class_carried"]["blocked_by_declared"] == {
         "humanSensingStatus": ["4SidesWindDirection3"],
     }
+
+
+async def test_diagnostics_keeps_every_lan_frame(hass: HomeAssistant, mock_uss) -> None:
+    """A frame the integration does not decode reaches the diagnostics file: it is counted, keyed
+    on frame type and command, and kept as hex, next to the frames that were recognised. That is
+    how a module-side push nobody has decoded gets seen."""
+    from haismart_hrdp.uss import build_epp_frame, frame_key
+
+    from custom_components.haismart.diagnostics import (
+        async_get_config_entry_diagnostics,
+    )
+
+    stray = build_epp_frame(0x01, b"\xa0\x01", b"\x00\x01\x00\x2a\x00\x64")
+    mock_uss.read.return_value = [mock_uss.frame, stray]
+    entry = await _setup(hass)
+    diag = await async_get_config_entry_diagnostics(hass, entry)
+
+    frames = diag["lan_frames"]
+    assert frames[frame_key(mock_uss.frame)]["role"] == "status report"
+    kept = frames[frame_key(stray)]
+    assert kept["role"] == "unparsed"
+    assert kept["last_hex"] == stray.hex()
+    assert kept["length"] == len(stray) and kept["count"] >= 1
+    assert "poll" in kept["sessions"]
+    assert diag["uss_messages"] == []          # the mocked read opens no socket
+    assert isinstance(diag["feature_raw"], dict)

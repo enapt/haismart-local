@@ -3001,3 +3001,31 @@ def test_the_refusal_code_separates_an_unknown_command_from_an_absent_function()
     # ...and nothing borrowed for the one it does not: this product publishes no `0`, so the caller
     # is left to say the command was not recognised rather than render another product's sentence.
     assert refusal_reason(cabinet, not_a_command) is None
+
+
+def test_collect_session_blobs_traces_every_message():
+    """Every uSS message a session carried is recorded -- decrypted or not, short or long -- so a
+    frame nobody decodes (a module-side push, say) cannot vanish between the socket and the
+    diagnostics file. The blob list itself is unchanged."""
+    SESSION = 0x1234
+    data = REAL_STATUS_DOWN
+    long_msg = uss.encode_message(
+        0x64, 3, uss.biz_encrypt(547, data, LOCALKEY), flag=uss.FLAG_BIZ_ENCRYPTED, session=SESSION,
+    )
+    short_msg = uss.encode_message(0x65, 4, b"\x00\x01\x02\x03", session=SESSION)
+    other_key = "fedcba9876543210fedcba9876543210"
+    bad_msg = uss.encode_message(
+        0x64, 5, uss.biz_encrypt(548, data, other_key), flag=uss.FLAG_BIZ_ENCRYPTED, session=SESSION,
+    )
+    trace: list[dict] = []
+    blobs = uss.collect_session_blobs(long_msg + short_msg + bad_msg, LOCALKEY, trace)
+    assert blobs == [data]
+    assert [t["info_type"] for t in trace] == [0x64, 0x65, 0x64]
+    assert trace[0]["decrypted"] is True
+    assert trace[0]["frame"] == uss.frame_key(data)
+    assert trace[0]["frame"].endswith("/6d01")     # the report, whatever frame type carried it
+    assert trace[0]["blob_len"] == len(data)
+    assert trace[1]["decrypted"] is None and trace[1]["payload_hex"] == "00010203"
+    assert trace[2]["decrypted"] is False and "payload_hex" not in trace[2]
+    # the trace is optional and changes nothing about what the caller gets
+    assert uss.collect_session_blobs(long_msg + short_msg + bad_msg, LOCALKEY) == [data]

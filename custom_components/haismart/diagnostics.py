@@ -17,6 +17,7 @@ from haismart_hrdp import (
     select_wire_model,
     uplus_class,
 )
+from haismart_hrdp.features import raw_enum_values
 from haismart_hrdp.udiscovery import CLOUD_STATES
 from haismart_hrdp.uss import EXTENDED_STATUS_FRAME_TYPES
 from homeassistant.components.diagnostics import async_redact_data
@@ -162,6 +163,19 @@ async def async_get_config_entry_diagnostics(
         # Which commands this appliance is written with, which of them are on trial, and what
         # the last one drew. See _controls_summary.
         "controls": _controls_summary(coordinator),
+        # Every kind of frame this appliance has sent on the LAN, parsed or not, with the latest
+        # bytes of each. A frame nothing here decodes is counted, named where recognised, and kept
+        # as hex -- which is what a maintainer needs to find out whether, say, the module's own
+        # presence report ever reaches the LAN. `role` is what the integration made of it.
+        "lan_frames": coordinator.lan_frames,
+        # The uSS messages of the most recent read session, one record each: which arrived, how
+        # long, whether it decrypted. Short control messages keep their payload (no secret rides
+        # in one; the key never travels).
+        "uss_messages": coordinator.uss_trace,
+        # The optional multi-state readings as RAW wire values, including a value the state map
+        # leaves out on purpose: `sensingResult` 0 reads unknown in the entity, and only the raw
+        # value tells that apart from a field the layout could not place.
+        "feature_raw": _feature_raw(coordinator),
         # Everything a maintainer needs to add a layout, without a second round-trip.
         "report": {
             "length": len(coordinator.last_raw_status or b"") or None,
@@ -322,6 +336,17 @@ def _declared_readings(coordinator) -> dict[str, Any] | None:
     if not fields:
         return None
     return {name: wf.read(blob) for name, wf in sorted(fields.items())}
+
+
+def _feature_raw(coordinator) -> dict[str, int]:
+    """The optional multi-state fields of the last report as raw wire values (see features)."""
+    blob = coordinator.last_raw_status
+    if not blob or not coordinator.digital_model:
+        return {}
+    wm = coordinator._feature_wire_model(len(blob))  # noqa: SLF001 - the gate itself is the fact
+    if wm is None:
+        return {}
+    return raw_enum_values(wm, coordinator.digital_model, blob, uplus_class(coordinator.uplus_id))
 
 
 def _controls_summary(coordinator) -> dict[str, Any]:

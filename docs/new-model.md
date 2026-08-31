@@ -10,8 +10,9 @@ and no protocol knowledge**, just three captures from you.
 An air conditioner whose exact layout has never been seen can often still be read: it is matched to
 the published models closest to it and the result checked against what the unit actually sent. A unit
 that resembles nothing published is tried against every layout offset in use, and its own report
-decides which one fits. It does not need to publish a group-set list either — without one it is read
-and simply not commanded.
+decides which one fits. Commanding is gated separately: through the product's own published list of
+group-set settings, or — for a class that publishes no group-set command at all — one setting at a
+time; only a product whose list contradicts the shared command layout is left read-only.
 
 So before capturing anything, look at what you have:
 
@@ -19,8 +20,9 @@ So before capturing anything, look at what you have:
   includes most units on the matched-relatives path: the core controls come from your product's own
   published list of group-set settings, no capture required.
 - **Readings look right, but the thermostat and switches won't change anything.** Your product is one
-  of the few that publishes no group-set list, so commands stay withheld — the safe default, since a
-  command writes a whole block of settings at once. **The captures below are exactly what turns your
+  of the few whose published list of settings contradicts the shared command layout, so commands are
+  withheld — the safe default, since a group-set command writes a whole block of settings at once and
+  a guessed layout runs the wrong function silently. **The captures below are exactly what turns your
   model into a controllable one** — and because the readings already work, they are easy to take.
 - **Only power, setpoint, mode and fan appear, or values are clearly wrong.** Either your unit did not
   tell us which model it is, or no offset agreed with its report. The captures below are the way

@@ -99,7 +99,7 @@ So, for a report from an appliance no family claims:
 |---|---|---|
 | names itself | publishes a group-set order | read **and** control through the frame, once the report picks an offset |
 | names itself | publishes none, but its class has per-attribute commands | read **and** control, one setting at a time |
-| names itself | publishes none, and its order refutes the frame | **read-only** |
+| names itself | publishes an order that refutes the frame | **read-only** |
 | does not name itself | — | partial decode, flagged `layout: unknown` |
 
 A resolved layout is reported as `related-19` / `related+0` (the offset it used) rather than a family
@@ -117,8 +117,11 @@ at the same point.
 An inserted layout is only tried when **no** plain offset fits, and it must be corroborated against
 something outside the report before it is believed — the report alone cannot say how many words were
 inserted, because a wrong count lands the sensors on other real fields rather than off the end. The
-corroboration is the `acType` bit against the modes the device's own model declares. Such a layout is
-reported as `related-19+4@25`: the offset, the number of inserted words, and where they begin.
+corroboration is the report's own size, for the one class whose base length is measured (a 133-byte
+report on that class is four words longer than its description and can be nothing else); the `acType`
+bit against the modes the device's own model declares is checked where the size does not apply, and it
+only ever answers for a cooling-only unit. Such a layout is reported as `related-19+4@25`: the offset,
+the number of inserted words, and where they begin.
 
 ## Known families
 
@@ -145,9 +148,9 @@ a confident but invented value.
 | fault code + last-changed-by | ✅ | — | ✅ | ✅ |
 | fault bitmap | ✅ (its own frame, family-independent) | ✅ | ✅ | ✅ |
 | self-clean | ✅ | ❌ | ✅ | ❌ |
-| vane positions (both axes) | ✅ | ❌ | ✅ | ❌ |
+| vane positions (both axes) | ✅ | ❌ | ✅ | ✅ up-down only |
 | live power, from the report itself | ❌ | ⚠️ (decoded at w3, diagnostics only — unit unproven, so no sensor) | ✅ (175 B only) | ❌ |
-| cumulative energy total | ❌ (register present, never populated) | ❌ | ✅ (where populated) | ❌ (works, unit unsettled) |
+| cumulative energy total | ✅ (where populated — the reference units never fill it) | ❌ | ✅ (where populated) | ❌ (works, unit unsettled) |
 
 Heat capability, the fault code and last-changed-by all sit in the sensor block, one and two words
 past the outdoor reading, so they follow wherever that lands. The fault bitmap arrives in a separate
@@ -403,8 +406,9 @@ cabinets on record are heat pumps, and both were left on the partial decode unti
 it. The flag is still checked where the size does not apply.
 
 Control is **one setting at a time**: this class publishes no group-set command and its firmware
-refuses one, so power, setpoint, mode, fan and the comfort toggles are each their own command, and
-each is read back from its own position in the report above.
+refuses one, so power, setpoint, mode, fan, both vanes, the comfort toggles and presence-based airflow
+are each their own command, and each is read back from its own position in the report above (the
+presence command is provisional — confirmed by that read-back on first use, withdrawn if it fails).
 
 #### The unobserved map
 

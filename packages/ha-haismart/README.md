@@ -9,7 +9,9 @@ write path. No cloud at runtime.
 
 ## What it provides
 
-- **Config Flow** (`config_flow.py`): a menu offers two onboarding paths — **login** or **manual**.
+- **Config Flow** (`config_flow.py`): a menu offers two onboarding paths — **login** or **manual** — plus,
+  once an account is stored, **use the account already added** first in the list (the next appliance
+  costs no password and no key).
   - *Login* (**email/phone + password + region**): signs in with your Haismart account directly —
     `HaierCloud.login`, the SE-Asia H5 login (hybrid AES+RSA, `zoneInfo`=region code). This is the "just
     sign in like the app" path. **Google/Facebook accounts** have no password: create a throwaway

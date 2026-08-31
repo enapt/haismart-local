@@ -100,15 +100,18 @@ you, that is the fastest path to a correct layout.
 You rarely have to find the layout by hand. An unrecognised report is first matched
 against the published models nearest its Model ID, and if one of their offsets explains what the unit
 sent, it is decoded with that — and commanded too, when the product publishes the attribute list of
-its own group-set command (nearly all do). A unit on that path that stays read-only has a product
-whose published description carries no such list; captures from it are what promote the layout to a
-real family, and they also unlock the readings beyond the core climate block.
+its own group-set command (nearly all do). A class that publishes no group-set command at all is
+commanded one setting at a time instead. A unit on that path that stays read-only has a product whose
+published list contradicts the shared command layout — two families — and captures from it are what
+would settle its write layout; captures also promote any resolved layout to a real family and unlock
+the readings beyond the core climate block.
 
 A unit that resembles *no* published model is handled too — the window air
 conditioners are the case, whose Model IDs diverge from everything published inside the appliance-type
 field. Having no relative to inherit an offset from, they are tried against every offset in use, and
 the report itself has to single one out. That does not require the product to publish a group-set
-list either: without one the unit is read and not commanded.
+list either: reading is gated on the report alone, and commanding on the product's own list — or, for
+a class that publishes none, on its per-attribute commands.
 
 When nothing fits at all, diagnostics runs a search over the known families — see
 [`docs/report-layouts.md`](docs/report-layouts.md) — and attaches ranked candidates, because every
@@ -143,9 +146,11 @@ Two rules make this safe:
   declared attributes off the map is fair — the map states where they are, the device states that it
   has them, and for a *code* the map also states whether the wire numbering is the published
   numbering. Deciding what a code means where nothing states it is not fair: the extended report
-  places six two-bit actuator states whose values are declared to be 0, 1 or 2 with no meanings
-  attached, so those are reported as the codes they are rather than as booleans. A live unit sends
-  the same value for two of them whether it is cooling hard or idle at 0 W.
+  places six two-bit actuator states whose values the map declares as 0, 1 or 2 with no meanings
+  attached, and they were reported as bare codes until an independent implementation of the same
+  protocol stated the meanings (0 off, 1 on, 2 *not reported*) and a live unit corroborated them by
+  sending 2 for two of them whether cooling hard or idle. They read off / on / absent now — never
+  `bool(code)`, which would show a state the unit declined to report as running.
 - **A new grSetDAC field or value needs an observation, not a deduction.** The way to get one is a
   single-attribute sweep: change exactly one setting in the vendor app and diff the report. That is
   how every field in the current map was established, and how horizontal swing and heat were added.

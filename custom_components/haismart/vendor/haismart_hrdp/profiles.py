@@ -442,6 +442,16 @@ def refusal_reason(model: Mapping[str, Any] | None, code: int | None) -> str | N
     return reasons.get(str(code)) or None
 
 
+#: The one published refusal sentence that is about the COMMAND rather than the unit's state. Every
+#: other sentence a product publishes ("not available while the unit is off", a fault, the wrong
+#: mode) describes the moment; this one, and a code the product does not publish at all (the
+#: protocol's own "not recognised"), say the command is not this appliance's -- which is what
+#: retires a command number that was derived rather than observed. The wording is the catalogue
+#: build's rendering of the vendor's source sentence, so it is stable across products where the
+#: number beneath it is not (code 1 on one product, absent on another).
+REASON_NOT_SUPPORTED = "this function is not supported"
+
+
 def lock_reasons(
     model: Mapping[str, Any] | None,
     state: Mapping[str, str],

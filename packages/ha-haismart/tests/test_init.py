@@ -5138,6 +5138,8 @@ async def test_a_derived_parameter_id_is_settled_by_the_appliance_and_then_left_
         )
         remember = HaismartCoordinator._remember_unusable_params
         unit._remember_unusable_params = lambda names: remember(unit, names)
+        unit.last_control = None
+        unit._note_withdrawn = lambda names: HaismartCoordinator._note_withdrawn(unit, names)
         return unit
 
     # It took: nothing is recorded and nothing is raised.
@@ -5336,3 +5338,126 @@ async def test_the_presence_select_is_built_from_the_codes_the_family_can_carry(
     select = HaismartPanelSelect(coord, "humanSensingStatus")
     assert select.options == ["off", "on"]
     assert "avoid" not in select.options and "follow" not in select.options
+
+
+async def test_a_provisional_id_the_appliance_refuses_outright_is_withdrawn(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A derived command number can be wrong in two ways an accepted write cannot show.
+
+    `_async_settle_provisional` catches the number that is ACCEPTED and moves nothing. But an
+    appliance that recognises the command and has no such hardware answers with a refusal instead
+    -- code 1, "this function is not supported", on this class -- and so does one that does not
+    recognise the command at all (the protocol's own `0000`). Both say the number is not this
+    appliance's, and both used to raise before the settling step ran, so the control stayed on
+    offer and every press drew the same error. Withdrawn now, on the appliance's own word -- and
+    the refusal is kept where diagnostics can show it.
+    """
+    from haismart_hrdp.uss import EPP_FRAME_TYPE_REFUSED, build_epp_frame
+
+    coord = await _central_coordinator(hass, mock_uss)
+    coord.digital_model = {
+        **coord.digital_model,
+        "invalid_reasons": {
+            "1": "this function is not supported",
+            "17": "not available in the unit's current state",
+        },
+    }
+    assert coord._wire_model.value_param_fields["humanSensingStatus"].provisional
+    assert coord.supports_field("humanSensingStatus") is True
+
+    # "I know that command, and I have no such function" -- a cabinet without the sensor.
+    mock_uss.send.return_value = [
+        _central_report(), build_epp_frame(EPP_FRAME_TYPE_REFUSED, b"\x00\x01"),
+    ]
+    with pytest.raises(HomeAssistantError, match="not supported.*withdrawn"):
+        await coord.async_send_control({"humanSensingStatus": 3})
+    assert "humanSensingStatus" in coord.unusable_params
+    assert coord.supports_field("humanSensingStatus") is False
+    last = coord.last_control
+    assert last["changes"] == {"humanSensingStatus": 3}
+    assert last["refused"] is True and last["refusal_code"] == 1
+    assert last["reason"] == "this function is not supported"
+    assert last["provisional"] == ["humanSensingStatus"]
+    assert last["withdrawn"] == ["humanSensingStatus"]
+    assert last["reply_frame_types"][-1] == "0x03"
+
+
+async def test_a_refusal_about_the_moment_does_not_retire_a_provisional_id(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """"Not available while the unit is off" is about the unit, not the number.
+
+    A derived number tried at the wrong moment must not be thrown away for it -- only "not
+    supported" and a code the product does not publish (the protocol's "not recognised") are the
+    appliance saying the command is not its own.
+    """
+    from haismart_hrdp.uss import EPP_FRAME_TYPE_REFUSED, build_epp_frame
+
+    coord = await _central_coordinator(hass, mock_uss)
+    coord.digital_model = {
+        **coord.digital_model,
+        "invalid_reasons": {
+            "1": "this function is not supported",
+            "10": "not available while the unit is off",
+        },
+    }
+    mock_uss.send.return_value = [
+        _central_report(), build_epp_frame(EPP_FRAME_TYPE_REFUSED, b"\x00\x0a"),
+    ]
+    with pytest.raises(HomeAssistantError, match="while the unit is off"):
+        await coord.async_send_control({"humanSensingStatus": 3})
+    assert "humanSensingStatus" not in coord.unusable_params
+    assert coord.supports_field("humanSensingStatus") is True
+    assert coord.last_control["withdrawn"] == []
+
+    # ...whereas a code this product does not publish is the protocol's own "not recognised".
+    mock_uss.send.return_value = [
+        _central_report(), build_epp_frame(EPP_FRAME_TYPE_REFUSED, b"\x00\x00"),
+    ]
+    with pytest.raises(HomeAssistantError, match="did not recognise.*withdrawn"):
+        await coord.async_send_control({"humanSensingStatus": 3})
+    assert "humanSensingStatus" in coord.unusable_params
+    assert coord.last_control["refusal_code"] == 0
+    assert coord.last_control["withdrawn"] == ["humanSensingStatus"]
+
+
+async def test_diagnostics_carry_the_command_numbers_and_the_last_answer(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The per-attribute command numbers are a per-board registry nothing publishes, and one of
+    them is derived rather than observed; the appliance's answer to it is the finding a report
+    has to carry, together with the gate that offered it."""
+    from custom_components.haismart.diagnostics import (
+        async_get_config_entry_diagnostics,
+    )
+
+    coord = await _central_coordinator(hass, mock_uss)
+    await coord.async_send_control({"onOffStatus": 1})
+    controls = (await async_get_config_entry_diagnostics(hass, coord.config_entry))["controls"]
+    assert controls["single_param_ids"]["onOffStatus"] == {
+        "command": "0x5D01", "provisional": False,
+    }
+    assert controls["single_param_ids"]["humanSensingStatus"] == {
+        "command": "0x5D08", "provisional": True,
+    }
+    assert controls["paired_commands"] == {}
+    assert "humanSensingStatus" in controls["class_carried"]["offered"]
+    assert controls["class_carried"]["blocked_by_declared"] == {}
+    assert controls["unusable_params"] == []
+    last = controls["last_control"]
+    assert last["changes"] == {"onOffStatus": 1}
+    assert last["refused"] is False and last["reason"] is None
+    assert last["provisional"] == [] and last["withdrawn"] == []
+
+    # A cassette that declares the four-sided vanes gives presence's bits to a vane, so the gate
+    # drops it -- and the file says which declared attribute did the blocking.
+    coord.digital_model = {
+        **coord.digital_model,
+        "attributes": [*coord.digital_model["attributes"], {"name": "4SidesWindDirection3"}],
+    }
+    controls = (await async_get_config_entry_diagnostics(hass, coord.config_entry))["controls"]
+    assert "humanSensingStatus" not in controls["class_carried"]["offered"]
+    assert controls["class_carried"]["blocked_by_declared"] == {
+        "humanSensingStatus": ["4SidesWindDirection3"],
+    }

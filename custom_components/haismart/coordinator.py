@@ -546,6 +546,11 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.last_raw_status: bytes | None = None
         # the most recent extended (telemetry) frame, kept for the same reason
         self.last_raw_extended: bytes | None = None
+        #: What the most recent control op sent and what the appliance answered: the changes, the
+        #: reply frame types, any refusal code with the product's own sentence for it, and which
+        #: derived command numbers the answer settled. Diagnostics carry it, so "I pressed it and
+        #: got an error" arrives with the appliance's actual answer rather than a paraphrase.
+        self.last_control: dict[str, Any] | None = None
         # Whether this unit answers the extended-status query (running power / compressor figures).
         # None = not yet known; settled on the first cycle that produces a status report.
         self.supports_extended: bool | None = None
@@ -1367,17 +1372,29 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # The refusal is therefore checked FIRST. `_state_from_reply` still runs, because refreshing
         # the seed baseline from a fresh push is worth having either way.
         state = self._state_from_reply(reply)
+        provisional = self._provisional_in(changes)
+        self._record_control(changes, reply, provisional)
         if reply_refused(reply):
             # The unit answered, and what it answered was a refusal. Distinct from the silence
             # below on purpose: silence is a connection that missed and is worth retrying, a
             # refusal is the unit declining this setting in its current state and will keep
             # declining it. Saying so beats a poll that reports the value never changed.
+            reason = self._refusal_reason(reply)
+            if provisional and self._refusal_disqualifies(reply):
+                # The appliance recognised the command and says it has no such function, or did
+                # not recognise the command at all. Either way the derived number is not this
+                # appliance's, and the control is retired exactly as an accepted-but-unmoved
+                # write retires it (:meth:`_async_settle_provisional`). A refusal about the
+                # MOMENT -- switched off, faulted, the wrong mode -- is not held against it.
+                self._remember_unusable_params(provisional)
+                self._note_withdrawn(provisional)
+                reason = f"{reason}, so this control has been withdrawn"
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="control_rejected",
                 translation_placeholders={
                     "name": self.config_entry.title,
-                    "error": self._refusal_reason(reply),
+                    "error": reason,
                 },
             )
         if state is not None:
@@ -1414,6 +1431,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if not refused:
             return
         self._remember_unusable_params(refused)
+        self._note_withdrawn(refused)
         raise HomeAssistantError(
             translation_domain=DOMAIN,
             translation_key="control_rejected",
@@ -1442,6 +1460,62 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 CONF_UNUSABLE_PARAMS: sorted(self.unusable_params | fresh),
             },
         )
+
+    def _provisional_in(self, changes: Mapping[str, int]) -> list[str]:
+        """The names in ``changes`` written by a command number derived rather than observed."""
+        wm = self._wire_model
+        if wm is None:
+            return []
+        return sorted(
+            n for n in changes
+            if (p := wm.value_param_fields.get(n)) is not None and p.provisional
+        )
+
+    def _refusal_disqualifies(self, reply: list[bytes]) -> bool:
+        """Whether a refusal is about the COMMAND rather than the moment.
+
+        A refusal carries a reason code and the product's own table says what it means. Two
+        answers say the command itself is not this appliance's -- a code the product does not
+        publish (the protocol's own "not recognised"), and the product's "this function is not
+        supported" -- and those retire a derived number. Every other published reason ("not
+        available while the unit is off", a fault, the wrong mode) describes the state the unit is
+        in, and a derived number must not be thrown away for having been tried at the wrong moment.
+        """
+        from haismart_hrdp.profiles import REASON_NOT_SUPPORTED
+
+        code = refusal_code(reply)
+        if code is None:
+            return False
+        reason = refusal_reason(self.digital_model, code)
+        return reason is None or reason == REASON_NOT_SUPPORTED
+
+    def _record_control(
+        self, changes: Mapping[str, int], reply: list[bytes], provisional: list[str]
+    ) -> None:
+        """Keep what was sent and what came back, for diagnostics (:attr:`last_control`)."""
+        from datetime import UTC, datetime
+
+        from haismart_hrdp.uss import epp_frame_type
+
+        refused = reply_refused(reply)
+        self.last_control = {
+            "at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "changes": dict(changes),
+            "reply_frame_types": [
+                None if t is None else f"0x{t:02x}" for t in map(epp_frame_type, reply)
+            ],
+            "refused": refused,
+            "refusal_code": refusal_code(reply),
+            "reason": self._refusal_reason(reply) if refused else None,
+            "provisional": list(provisional),
+            "withdrawn": [],
+        }
+
+    def _note_withdrawn(self, names: Iterable[str]) -> None:
+        if self.last_control is not None:
+            self.last_control["withdrawn"] = sorted(
+                set(self.last_control["withdrawn"]) | set(names)
+            )
 
     def _refusal_reason(self, reply: list[bytes]) -> str:
         """What the appliance said when it refused, in its own manufacturer's words where possible.

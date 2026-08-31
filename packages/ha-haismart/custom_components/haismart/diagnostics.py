@@ -7,6 +7,7 @@ from typing import Any
 
 from haismart_hrdp import (
     STATUS_LAYOUTS,
+    declared_attribute_names,
     declared_order,
     derive_status_layout,
     device_type_class,
@@ -14,6 +15,7 @@ from haismart_hrdp import (
     probe_layout,
     rules_for_product,
     select_wire_model,
+    uplus_class,
 )
 from haismart_hrdp.udiscovery import CLOUD_STATES
 from haismart_hrdp.uss import EXTENDED_STATUS_FRAME_TYPES
@@ -157,6 +159,9 @@ async def async_get_config_entry_diagnostics(
         # each locked field with the reason its own model gives, so a report of "the control is
         # missing" carries why without another round trip
         "locked_reasons": dict(sorted(coordinator.locked_reasons.items())),
+        # Which commands this appliance is written with, which of them are on trial, and what
+        # the last one drew. See _controls_summary.
+        "controls": _controls_summary(coordinator),
         # Everything a maintainer needs to add a layout, without a second round-trip.
         "report": {
             "length": len(coordinator.last_raw_status or b"") or None,
@@ -317,6 +322,45 @@ def _declared_readings(coordinator) -> dict[str, Any] | None:
     if not fields:
         return None
     return {name: wf.read(blob) for name, wf in sorted(fields.items())}
+
+
+def _controls_summary(coordinator) -> dict[str, Any]:
+    """Which commands this appliance is written with, which are on trial, and what the last drew.
+
+    The per-attribute command numbers are a per-board registry nothing publishes, so which numbers
+    an appliance is being sent cannot be read off anything else in this file -- and one of them may
+    be DERIVED rather than observed (``provisional``), in which case the appliance's own answer to
+    it is the finding. ``last_control`` is that answer as it arrived: the reply frame types, the
+    refusal code, the product's own sentence for it, and whether the control was withdrawn.
+    ``class_carried`` is the read/control gate for attributes a device class carries without
+    declaring them, with the declared attributes that blocked one where its bits belong to something
+    else on this product.
+    """
+    from haismart_hrdp.features import CARRIED_BLOCKED_BY, CLASS_CARRIED_ENUM_FEATURES
+
+    wm = coordinator._wire_model  # noqa: SLF001 - no public accessor; the registry entry is the fact
+    single = {
+        name: {"command": f"0x{0x5D00 | p.param_id:04X}", "provisional": p.provisional}
+        for name, p in sorted((wm.value_param_fields if wm is not None else {}).items())
+    }
+    paired = {
+        name: {"on": p.on.hex(), "off": None if p.off is None else p.off.hex()}
+        for name, p in sorted((wm.single_param_fields if wm is not None else {}).items())
+    }
+    carried = CLASS_CARRIED_ENUM_FEATURES.get(uplus_class(coordinator.uplus_id), frozenset())
+    declared = declared_attribute_names(coordinator.digital_model)
+    offered = coordinator._class_carried_controls()  # noqa: SLF001 - the gate itself is the fact
+    blocked = {
+        n: sorted(CARRIED_BLOCKED_BY.get(n, frozenset()) & declared)
+        for n in sorted(carried - offered)
+    }
+    return {
+        "single_param_ids": single,
+        "paired_commands": paired,
+        "class_carried": {"offered": sorted(offered), "blocked_by_declared": blocked},
+        "unusable_params": sorted(coordinator.unusable_params),
+        "last_control": coordinator.last_control,
+    }
 
 
 def _classic_probe_for(length: int):

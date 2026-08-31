@@ -128,8 +128,7 @@ a unit whose vane holds a fixed direction that answer is the same whether the va
 pointed somewhere deliberate.
 
 Where the unit accepts vane commands, a control lists the stops its own model publishes and the swing
-control keeps working alongside it. Where it does not — some central cabinets accept only one setting
-per command, and the vane commands among those are held back until one has been seen accepted — the
-appliance still reports both axes in every status message. Those units get a **reading** for each
+control keeps working alongside it. Where it does not — an axis its family has no confirmed command for, or a family that is
+read-only altogether — the appliance still reports both axes in every status message. Those units get a **reading** for each
 axis instead, naming the stop the vane is parked at in the same words the control would use. It is
 the only account of the vanes such a unit will give, and it was previously discarded.

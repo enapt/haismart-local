@@ -129,7 +129,7 @@ reported as `related-19+4@25`: the offset, the number of inserted words, and whe
 | 117 B | **compact-12** | whole °C @ w12 | indoor w1; w2 low byte is the outdoor-UNIT temp (hot, ~60 °C cooling; not ambient) — diagnostics only | ✅ read + control |
 | 165 / 175 B | **extended-36** | `°C − 16` @ w20.b8 | indoor w25.b8, outdoor w26.b8 | ✅ read + control |
 | 209 B | **extended-46** | **half-degrees** @ w20.b8 | indoor w35.b8, outdoor w36.b8 | ✅ read + control (no left-right vane) |
-| 133 B | **central cabinet**, resolved as `related-19+4@25` | `°C − 16` @ w1.b8 | indoor w10.b8, outdoor w11.b8 | ✅ read + control (one setting at a time; no vane) |
+| 133 B | **central cabinet**, resolved as `related-19+4@25` | `°C − 16` @ w1.b8 | indoor w10.b8, outdoor w11.b8 | ✅ read + control (one setting at a time, vanes included) |
 | 133 B | a second, unobserved map — see below | `°C − 16` @ w1.b12 (4 bits) | indoor w5.b8, outdoor w6.b8 | ⏳ documented, never seen |
 | 149 / 155 B | *unclaimed* — floor/heat-pump class | @ w25.b8 | — | ⏳ two conflicting maps at 149 B |
 

@@ -195,6 +195,18 @@ four-sided vanes gets every other control and no vane control. It stays parked o
 fields are genuinely indistinguishable in published data — **one report from a unit with the four
 vanes in four different positions separates them at once**, and that is worth asking for.
 
+★ **What has narrowed since.** On the central class that carries them, the four fields and the
+ordinary left-right vane are **never declared together** (none of 143 products declares both), so the
+working hypothesis is that they *substitute* for it at its bits — four three-bit fields filling that
+word exactly. That is the position the presence reading is guarded against (item 42): a cassette
+declaring the four vanes is not read for presence, because those bits would be a vane. It is a
+hypothesis about their *place*, held on arithmetic; the permutation still needs the report above.
+⚠️ On the *other* central class every product declares both the four vanes and the left-right vane,
+so there they cannot share bits, and the placement does not transfer between the two classes.
+**Commanding them is blocked separately**: each vane would be its own single-setting command, and its
+number lives in the same unpublished per-board registry as the presence number (item 42) — a
+recording of the vendor's module driving a four-vane cabinet would settle both at once.
+
 ### 19. The still-unpositioned settings — counted per lineage, and classified by *why*
 
 ⚠️ **Count per lineage, never against one map.** Positions do not transfer between lineages, and the
@@ -458,11 +470,12 @@ settable, and their firmware **refuses the group-set frame outright** — so the
 merely undeclared for these cabinets, it is unavailable. Each setting is its own command, with the
 value in the payload.
 
-**What ships:** seven controls — power, setpoint, mode, fan speed, health, quiet and boost — offered
+**What ships:** power, setpoint, mode, fan speed, health, quiet, boost and both vane axes — offered
 where the cabinet's own model declares the attribute, and each read back from its own position in
-the report so it shows real state rather than an echo of the request.
+the report so it shows real state rather than an echo of the request — plus presence-based airflow,
+on the terms described at the end of this item.
 
-★ **The vanes are read even though they cannot be commanded.** A vane is a position, not a switch,
+★ **A vane is read even where it cannot be commanded.** A vane is a position, not a switch,
 and the climate entity's swing control answers only "is it sweeping" — so a vane parked at a real
 stop reads exactly like one held closed. These cabinets publish as many as ten up-down stops and
 eight left-right ones and report both axes in every status frame, so where an axis is readable and
@@ -493,24 +506,27 @@ same shape would still need its own measurement before the same arithmetic could
   mode, fan and power all land where the published map puts them. Wrong sensor values on one of
   these means an old version — update.
 
-★ **The two vane commands are offered on terms the appliance itself settles.** This generation
-defines a command for each axis, and neither had ever been watched being *accepted*: the reference
-table's other eleven were read off a real appliance's traffic while these two were added without any
-capture behind them, and the one cabinet whose traffic was captured has no vane. That was never
-going to resolve itself, so it is resolved a different way.
+★ **The two vane commands were offered on terms the appliance itself settles — and it settled them.**
+This generation defines a command for each axis, and for a long time neither had been watched being
+*accepted*: the reference table's other eleven were read off a real appliance's traffic while these
+two were added without any capture behind them, and the one cabinet whose traffic was captured has no
+vane. So they were resolved a different way, and the mechanism is worth keeping because presence
+(below) uses it now.
 
-Two things changed. **The up-down command is now bracketed**: in the published wire order that
-attribute is the only one these cabinets declare between two commands that *were* observed, and only
-one command number is free in that gap — so the number is forced, and it is the number the reference
-table guessed. And **both axes read back**. This channel names one attribute at a time, and the
-report says where each vane is pointing, so the appliance can answer the question the moment
-somebody uses the control: ask for a stop, then look at where the vane says it is.
+**The up-down command is bracketed**: in the published wire order that attribute is the only one
+these cabinets declare between two commands that *were* observed, and only one command number is
+free in that gap — so the number is forced, and it is the number the reference table guessed. And
+**both axes read back**. This channel names one attribute at a time, and the report says where each
+vane is pointing, so the appliance can answer the question the moment somebody uses the control: ask
+for a stop, then look at where the vane says it is.
 
-⇒ **A control is written, checked once against the appliance's own reading, and then trusted.** If
-the value took, nothing more is checked. If it did not, that control is withdrawn for good and the
-failure is reported, rather than leaving somebody pressing a button that quietly does nothing. The
-left-right number has no bracket behind it and rests on the reference table alone — it is offered on
-exactly the same terms, because the appliance is what decides either way.
+⇒ **A provisional control is written, checked once against the appliance's own reading, and then
+trusted.** If the value took, nothing more is checked. If it did not, that control is withdrawn for
+good and the failure is reported, rather than leaving somebody pressing a button that quietly does
+nothing. An owner then moved **both** axes on real hardware — the adjudication passed on the up-down
+command it bracketed and on the left-right command that rested on the reference table alone — so
+both are plain confirmed controls now, and the provisional machinery stays in place for the next
+derived command.
 
 **143 of the 187 cabinets declare an up-down vane and 91 a left-right one.**
 
@@ -531,46 +547,46 @@ from, and would settle the question above at the same time.
 at all, because the parameter table is per device class while the function is per product: a cabinet
 with no health module must not be offered health merely because its class defines a command for it.
 
-#### ⛔ Presence-based airflow is READ on these cabinets and is not commanded — the number is not published
+#### Presence-based airflow on these cabinets — offered provisionally, on the vane terms above
 
 One of these cabinets reports its presence mode as *on* where three identical siblings report *off*,
-so the hardware is real and the reading ships. **The command is a different matter, and the reason is
-narrow: nobody publishes the number.**
+so the hardware is real and the reading has shipped for a while. The **control** is offered too now,
+as a select (off / avoid / follow / on), and how it is offered matters because its command number is
+**derived rather than observed**.
 
-Everything else about it is settled. The position, the width and all four values come from the shared
-description and are validated against the appliance's own reported values. The manufacturer's own
-model for this exact product marks the attribute **writable**. Its app groups the attribute with mode,
-fan and both vanes in the same write path. Every attribute on this class is written one at a time.
-**Only the command number is missing** — and it is missing from everything published:
+**Where the number comes from.** The manufacturer's own communication module drives these boards with
+a fixed burst of fourteen single-setting commands. Twelve are the ones the public reference table
+names; two are not named anywhere. On the one cabinet whose traffic was captured — which has no
+presence sensor — the board **refuses one of those two with the code that means "I recognise this
+command and do not have that hardware"** (item 49) and accepts the other. A command a sensorless
+board refuses for want of hardware, in the gap where presence must sit, is presence. That is an
+elimination on the vendor's own firmware, not a guess — but it has never been watched being
+*accepted*, and the numbering is assigned per appliance kind, so it cannot be looked up: the same
+number means something else on other appliance kinds, and where other kinds do publish a presence
+command it is a different number again.
 
-* no description of this class exists at all, in either of the two formats the manufacturer ships;
-* **five of the nine numbers this integration already uses for these cabinets appear in no published
-  description either** — two of them confirmed by an owner moving the vane — so "not published" is
-  the ordinary condition here and says nothing about whether a command exists;
-* the numbers **cannot be borrowed**: the six other appliance kinds that do publish one treat presence
-  as a plain on/off in one bit, not the four-state setting an air conditioner has, and where those
-  same appliance kinds can be checked against numbers we already know for these cabinets, they
-  disagree;
-* and it is **not derivable by arithmetic** — the numbering follows neither the wire order, nor the
-  manufacturer's global attribute index, nor the order attributes are declared in, nor the platform
-  the product belongs to. All four were measured across every published description.
+**Why it is safe to offer anyway.** It is offered exactly as the vane commands were: the appliance
+reports the setting's own position in every status frame, so the first use writes the command and
+reads the setting back. If it took, the control is trusted from then on. If the appliance refused it
+or the setting did not move, the control is **withdrawn for good** and the failure is reported — the
+cost of a wrong number is one command that changes nothing. A cabinet without the sensor withdraws it
+the first time anyone tries, which is the right outcome for that cabinet.
 
-★★ **And nothing published separates it from the controls that already work.** In the
-manufacturer's own richest description of this appliance kind — 86 attributes — presence is
-recorded exactly as the up-down vane, the left-right vane, the mode, the fan speed, health, quiet
-and boost are: no command number, marked not writable, same category, adjacent bits in the same
-frame. **All seven of those are commanded here, and an owner has moved both vanes on real
-hardware.** Sixty-five of the 86 attributes carry no command number at all, and only one of the nine
-numbers this integration sends appears in that description. ⇒ **a missing command number is the
-ordinary condition for this appliance kind**, and it is not evidence that the appliance would refuse
-the command. The honest statement is that **the number has not been observed** — not that presence
-cannot be set.
+**Who gets it.** The cabinet's cloud description does not list the attribute — the same
+under-declaration that hides its outdoor probe — so membership comes from the per-product description
+the vendor's app itself reads, which declares the setting **writable** with all four values for the
+product on record here. The control is offered on that fact, and only where the cabinet's own
+description does not put a different setting on those bits (some four-vane cassettes do, and a
+presence control there would be writing a vane).
 
-★ **What would settle it, and it costs nothing.** A refusal carries a code, and these products
-distinguish *"I do not recognise that command"* from *"I recognise it and do not have that hardware"*
-(item 49). Two cabinets of the same model, one with the sensor and one without, therefore answer a
-single harmless probe differently — and a probe carrying the value the attribute already holds
-changes nothing whichever way it lands.
+⚠️ **Two things are called "presence" and they are not interchangeable.** The airflow *mode* — what a
+user changes — is an ordinary attribute of the main board, and that is what is commanded here. The
+sensor's own enable and installation parameters are a separate conversation between the module and a
+sub-board that never reaches the network, and are not something a user sets. Conflating the two once
+produced the wrong conclusion that presence could not be controlled at all.
+
+**What would settle it outright:** one use on a cabinet that has the sensor. The adjudication above
+runs automatically, so nothing is asked of anyone beyond trying the control.
 
 ### 45. A multi-attribute write command exists on paper — and this generation refuses it
 
@@ -821,7 +837,9 @@ held to a refusal recorded from a real central cabinet, which carries the flag t
 is followed by a CRC — a shape no hand-written fixture had. ★ The distinction it draws is worth more
 than the sentence: an appliance answers one code when it does not recognise a command at all, and
 another when it recognises the command and does not have the hardware, so a probe can tell whether a
-command number exists without writing anything.
+command number exists without writing anything. ⚠️ The central cabinets of item 42 publish an
+**empty** reason table of their own, so every refusal they send carries the protocol's generic "not
+recognised" code; a product-specific reason will only ever be seen from a family that publishes one.
 
 **51. Presence-based airflow, on the family whose own description publishes it.** Done for the
 compact lineage. Those cabinets place the setting in their published group command at a named word
@@ -830,8 +848,11 @@ one the read map already carries, so the setting reads back where it was written
 has four states on the shared frame and **two** here, because this lineage gives it a single bit; a
 control is therefore built from the values its own family can carry, and the other two are refused by
 the encoder rather than silently truncated. Sixteen products gained a control that previously had
-neither a switch nor a reading. ⛔ Still open on the central cabinets, which are written one setting
-at a time and whose number for it is not published anywhere — see item 42.
+neither a switch nor a reading. The central cabinets, written one setting at a time, are offered it
+too — provisionally, on the self-checking terms in item 42, because their number for it is derived
+from the vendor's own module traffic rather than published. ⇒ **Every product that declares presence
+visibly now has a control for it**: 47 on the shared frame, 16 on this lineage, and the central
+cabinets on the terms above.
 
 Not open items — collapsed to the conclusion plus a pointer. The full reasoning for each is in the
 git history and, where noted, in the canonical docs and the code.
@@ -866,7 +887,8 @@ group-set command *and* their firmware refuses that frame outright, so each sett
 command. The safety property is argued from that mechanism rather than copied from the group set: a
 command either names an attribute the class publishes or it does not, and the appliance accepts or
 refuses each one, so a command it does not implement is declined rather than misapplied. That is why
-the two vane commands can be withheld now and added later without disturbing anything else.
+a command can be held back until it is observed and added later without disturbing anything else —
+as the two vane commands were, and as presence is now.
 
 **14. Deploy and verify the shipped rules — done.** The rules for all published products
 travel with the integration and are consulted when the catalogue is unreachable (the ordinary path on
@@ -1106,6 +1128,13 @@ would settle it outright.
 
 **What would close it:** a recording of that frame taken beside known conditions — the compressor
 running, then off. That is how every other family's power reading was placed.
+
+ⓘ The manufacturer's *design template* for this appliance kind does describe a running-data frame —
+62 readings with scaling, power and compressor current among them — but it is the full-function
+template, not this product: the frame the real cabinet emits is far shorter and does not line up with
+it (power lands on an empty word). So a description exists and still does not place anything for
+these cabinets; the recording above is still what closes it, and delivery over the network is still
+the prior blocker.
 
 ### 51. The cumulative energy counter is not read on a relative's layout
 

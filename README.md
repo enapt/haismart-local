@@ -105,7 +105,7 @@ One device per air conditioner, with:
 | **Filter** *(diagnostic, problem)* | The AC's own filter-change reminder: on when it decides the filter is due. Units that meter their purifier board also get **Purifier runtime** in hours |
 | **Extra controls** | The optional functions the vendor app offers a control for — fresh air, electric heating, ambient light, energy saving, mould prevention, dry-out, heatstroke prevention, presence-based airflow — as switches and selects, on units that have them |
 | **Optional features** *(diagnostic, on/off)* | Read-only for the functions the app offers no control for: 10 °C keep-warm, intelligent mode, humidification, the buzzer, the control-panel lock, PM2.5 and formaldehyde purification, and others your unit has |
-| **Presence airflow** *(diagnostic, enum)* | Where a presence-sensing unit is directing air: off / avoid / follow. Only on units with the sensor |
+| **Presence airflow** *(diagnostic, enum)* | Where a presence-sensing unit is directing air: off / avoid / follow / on. Only on units with the sensor; where the unit can be commanded it is a select under *Extra controls* instead, and the reading is not duplicated |
 | **Occupancy** *(diagnostic, enum)* | What the presence sensor sees: nobody, one person, or several. A unit without the sensor says so in its report, and gets no entity |
 | **Fault** *(diagnostic, problem)* | Whether the unit reports a fault. Its attributes name the active faults with the service code the unit shows (E1, F4, …) — what an engineer will ask for |
 | **Last changed by** *(diagnostic)* | Handset, the unit's own panel, or the network — an automation trigger for when someone picks up the remote |

@@ -514,6 +514,19 @@ exactly the same terms, because the appliance is what decides either way.
 
 **143 of the 187 cabinets declare an up-down vane and 91 a left-right one.**
 
+⚠️ **One thing about these command numbers is worth stating plainly: they were watched on one
+appliance kind and are sent to two.** This class covers **187 appliances in two families** — 162 of
+one, which is the family every captured number came from, and **25 of another** that publishes two
+and a half times as many functions. All 187 are individually written and the two families agree on
+the 87 functions that matter here, so sending the same numbers to both is a reasonable expectation —
+but nobody has watched the second family answer. A command is still only ever sent for a function the
+appliance itself declares, and a control that does not take is withdrawn permanently, so the exposure
+is one command; the point is that it is an expectation rather than an observation.
+
+★ **That also names the most valuable single capture anyone could contribute here:** traffic from one
+of those 25 appliances would place far more commands than the recording this integration was built
+from, and would settle the question above at the same time.
+
 ⚠️ **`invisible` is not used as the gate** — see item 43. Membership is the attribute being declared
 at all, because the parameter table is per device class while the function is per product: a cabinet
 with no health module must not be offered health merely because its class defines a command for it.

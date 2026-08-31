@@ -211,6 +211,12 @@ CLASS_CARRIED_ENUM_FEATURES: Mapping[str, frozenset[str]] = {
     # the sensor sees:
     #   `humanSensingStatus` (w23.b6/2)  SETTING  0 off · 1 avoid · 2 follow · 3 on
     #   `sensingResult`      (w26.b4/2)  READING  0 no-such-function · 1 nobody · 2 one · 3 several
+    # ✅ Both positions are the manufacturer's own, not ours. Its protocol document for this exact
+    # device class puts the setting at `Byte8:Bit7~Byte8:Bit6` and the reading at
+    # `Byte14:Bit5~Byte14:Bit4` of the status frame -- w4.b6/2 and w7.b4/2 in its numbering, which is
+    # this map's w23 and w26 once the class's whole-word displacement is applied. So the class
+    # carrying them undeclared is a documented fact about the frame, not an inference from one
+    # cabinet's bytes.
     # ⚠️ `sensingResult`'s 0 already means "no such function" and is dropped by its own state map, so
     # a cabinet without the sensor yields no entity whether or not this class carries it -- which is
     # what all seven observed cabinets do today. It costs nothing and lights up if one ever detects.

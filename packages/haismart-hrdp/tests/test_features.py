@@ -118,3 +118,34 @@ def test_presence_is_not_read_where_its_bits_belong_to_a_vane():
     wm = related_model_named("related-19+4@25", len(blob), uplus_id=_D12_UPLUS)
     assert read_enum_features(wm, plain, blob, "0d12")["humanSensingStatus"] == "on"
     assert "humanSensingStatus" not in read_enum_features(wm, cassette, blob, "0d12")
+
+
+def test_the_presence_positions_are_the_manufacturers_own_not_ours():
+    """Both presence positions match the vendor's protocol document for this device class.
+
+    The class-carried exception in :data:`CLASS_CARRIED_ENUM_FEATURES` reads two attributes that
+    `0d12` products never declare. That is only safe if the positions are right, and they are not
+    ours: the manufacturer's own generated protocol document for this exact device class places the
+    setting at ``Byte8:Bit7~Byte8:Bit6`` and the reading at ``Byte14:Bit5~Byte14:Bit4`` of the status
+    frame. In its numbering those are word 4 bit 6 and word 7 bit 4, each two bits wide; this map
+    numbers the same frame with the class's whole-word displacement applied, so they land at w23 and
+    w26.
+
+    Pinned so that a change to either position has to argue with the manufacturer rather than with
+    a comment.
+    """
+    from haismart_hrdp.canonical_map import CANONICAL
+    from haismart_hrdp.features import CLASS_CARRIED_ENUM_FEATURES
+
+    displacement = 19  # the span between the vendor's word 1 and this map's word 20
+
+    setting = CANONICAL["humanSensingStatus"]
+    assert (setting.word, setting.bit, setting.length) == (4 + displacement, 6, 2)
+
+    reading = CANONICAL["sensingResult"]
+    assert (reading.word, reading.bit, reading.length) == (7 + displacement, 4, 2)
+
+    # and both are what the class-carried exception actually names
+    assert CLASS_CARRIED_ENUM_FEATURES["0d12"] == frozenset(
+        {"humanSensingStatus", "sensingResult"}
+    )

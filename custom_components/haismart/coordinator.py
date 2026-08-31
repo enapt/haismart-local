@@ -1782,6 +1782,27 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """
         return declared_order(self.digital_model)
 
+    def _class_carried_controls(self) -> frozenset[str]:
+        """Multi-state controls this appliance's device class carries UNDECLARED, minus any this
+        product gives its bits to something else.
+
+        The mirror of the read side (:func:`haismart_hrdp.features.declared_enum_features`): a
+        ``0d12`` cabinet carries ``humanSensingStatus`` without listing it in its cloud model -- the
+        same under-declaration that hides its outdoor probe -- so the presence *reading* is surfaced
+        from a per-class fact rather than the model. The presence *control* is offered on the same
+        fact, and the same block: where the four-sided vanes reuse presence's bits (item 42), the
+        control is dropped as the reading is. What settles whether THIS cabinet actually has the
+        sensor is not this gate but the write itself -- the id is provisional and reads back from
+        w23.b6/2 (:func:`_async_settle_provisional`).
+        """
+        from haismart_hrdp.features import CARRIED_BLOCKED_BY, CLASS_CARRIED_ENUM_FEATURES
+
+        carried = CLASS_CARRIED_ENUM_FEATURES.get(uplus_class(self.uplus_id), frozenset())
+        declared = declared_attribute_names(self.digital_model)
+        return frozenset(
+            n for n in carried if not (CARRIED_BLOCKED_BY.get(n, frozenset()) & declared)
+        )
+
     def supports_field(self, name: str) -> bool:
         """Whether a control field can be written on the family this unit actually reports.
 
@@ -1824,7 +1845,14 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 # until the appliance answers; once it has answered no, it is not asked again.
                 if name in self.unusable_params:
                     return False
-                return name in declared_attribute_names(self.digital_model)
+                # Membership is the declaration, OR a control the class carries undeclared
+                # (presence on 0d12): the cloud model omits it the way it omits the outdoor probe,
+                # so the read is surfaced from a per-class fact and the control is offered on the
+                # same one -- with the provisional read-back settling whether THIS cabinet has it.
+                return (
+                    name in declared_attribute_names(self.digital_model)
+                    or name in self._class_carried_controls()
+                )
             return False
         # The classic fallback and the frame both pack at the shared positions, so the name IS the
         # position there and the set-valued refusal still applies.
@@ -1841,8 +1869,11 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return [a for a in PANEL_BOOL_CONTROLS if a in declared and self.supports_field(a)]
 
     def panel_select_fields(self) -> list[str]:
-        """The panel MULTI-STATE controls this device offers; same gate as the switches above."""
-        declared = declared_panel_controls(self.digital_model)
+        """The panel MULTI-STATE controls this device offers; same gate as the switches above,
+        plus the ones its class carries undeclared (presence on 0d12 -- see
+        :meth:`_class_carried_controls`). The write gate ``supports_field`` still has the final say,
+        so a carried control a cabinet cannot write, or has declined, is not offered."""
+        declared = declared_panel_controls(self.digital_model) | self._class_carried_controls()
         return [a for a in PANEL_ENUM_CONTROLS if a in declared and self.supports_field(a)]
 
     def panel_select_codes(self, name: str) -> frozenset[int]:

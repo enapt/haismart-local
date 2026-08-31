@@ -63,7 +63,14 @@ def test_a_central_cabinet_is_commandable_although_it_publishes_no_group_set() -
         "windSpeed", "healthMode", "muteStatus", "rapidMode",
         # Offered on the appliance's own terms -- see the provisional test below.
         "windDirectionVertical", "windDirectionHorizontal",
+        # Presence airflow. Inferred rather than seen accepted -- the one otherwise-unidentified id
+        # an appliance without the sensor refuses -- so it ships provisional: read back from
+        # w23.b6/2 and withdrawn if it does not take.
+        "humanSensingStatus",
     }
+    # And it is the provisional one, so the appliance settles it.
+    assert wm.value_param_fields["humanSensingStatus"].provisional is True
+    assert wm.value_param_fields["humanSensingStatus"].param_id == 0x08
 
 
 @pytest.mark.parametrize(
@@ -105,6 +112,29 @@ def test_the_vane_commands_are_settled() -> None:
         assert wm.value_param_value(REPORT_28C_OFF, vane) is not None, "and still read back"
     assert wm.value_param_fields["windDirectionVertical"].param_id == 0x03
     assert wm.value_param_fields["windDirectionHorizontal"].param_id == 0x0C
+
+
+def test_presence_is_a_provisional_control_written_via_5d08() -> None:
+    """Presence airflow (off/avoid/follow/on) is a main-board attribute -- reported at w23.b6/2 --
+    set by a single-parameter id. The id is inferred, not seen accepted: of the ids these appliances
+    are observed to exchange, ``0x08`` is the one an appliance without the presence sensor refuses,
+    so it is offered for presence. Provisional therefore: written as ``0x5D00 | 0x08``, a big-endian
+    value, and read back from w23.b6/2 to settle whether this cabinet really has it.
+    """
+    from haismart_hrdp.uss import build_epp_frame
+
+    wm = _central()
+    param = wm.value_param_fields["humanSensingStatus"]
+    assert param.param_id == 0x08
+    assert param.provisional is True
+    assert param.read.word == 4  # canonical w23 at this class's -19 displacement
+    for code in (0, 1, 2, 3):    # off / avoid / follow / on all encode
+        cmd, payload = wm.encode_value_param("humanSensingStatus", code)
+        assert cmd == b"\x5d\x08"
+        assert payload == code.to_bytes(2, "big")
+    # the whole frame, the vendor's own shape
+    cmd, payload = wm.encode_value_param("humanSensingStatus", 2)
+    assert build_epp_frame(0x01, cmd, payload).hex() == "ffff0c000000000000015d08000274"
 
 
 def test_the_vane_frame_is_the_shape_the_vendors_own_encoder_emits() -> None:

@@ -2011,11 +2011,22 @@ SINGLE_PARAM_IDS: Mapping[str, Mapping[str, int]] = {
 #: attribute back from its own position in the report. It took or it did not; if it did not, the
 #: caller retires that control permanently.
 #:
-#: ⓘ **Empty today, and that is the mechanism having worked.** It carried the two central-cabinet
-#: vane ids, which nothing of the class had ever been watched accepting -- the one appliance whose
-#: traffic was recorded has no vane. An owner ran them, both axes moved, and they graduated to
-#: :data:`SINGLE_PARAM_IDS` above. The machinery stays because the next derived id will want it.
-PROVISIONAL_SINGLE_PARAM_IDS: Mapping[str, Mapping[str, int]] = {}
+#: ⓘ It has carried the two central-cabinet vane ids before (nothing of the class had ever been
+#: watched accepting them -- the one appliance whose traffic was recorded has no vane; an owner ran
+#: them, both axes moved, and they graduated to :data:`SINGLE_PARAM_IDS` above). It carries one now:
+#:
+#: **``humanSensingStatus`` = ``0x08`` -- presence airflow (off/avoid/follow/on), inferred rather
+#: than seen accepted.** These appliances are observed to exchange a fixed set of single-parameter
+#: ids; most are the settings this project already commands, and two carry no established meaning.
+#: ``0x08`` is the one of those two that an appliance *without* the presence sensor refuses, while a
+#: unit that has the sensor accepts it, so it is offered for presence. Because it is inferred from
+#: which ids an appliance accepts rather than watched moving the setting, it is offered on the
+#: appliance's own terms: written, then read back from ``humanSensingStatus``'s own place in the
+#: report (w23.b6/2). It took or it did not, and a cabinet that refuses it -- or does not have the
+#: sensor -- retires the control for good on the first use.
+PROVISIONAL_SINGLE_PARAM_IDS: Mapping[str, Mapping[str, int]] = {
+    "0d12": {"humanSensingStatus": 0x08},
+}
 
 
 def uplus_class(uplus_id: str | None) -> str:

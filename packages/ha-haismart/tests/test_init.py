@@ -4979,6 +4979,7 @@ async def test_the_central_cabinet_is_commanded_one_parameter_at_a_time(
         # Nothing has been declined yet: the vane ids below are offered for the appliance to settle.
         unusable_params=frozenset(),
     )
+    unit._class_carried_controls = lambda: HaismartCoordinator._class_carried_controls(unit)
     supports = HaismartCoordinator.supports_field
     for field in ("onOffStatus", "targetTemperature", "operationMode", "windSpeed",
                   "muteStatus", "rapidMode"):
@@ -4990,12 +4991,21 @@ async def test_the_central_cabinet_is_commanded_one_parameter_at_a_time(
     for axis in ("windDirectionVertical", "windDirectionHorizontal"):
         assert supports(unit, axis) is True
 
+    # Presence airflow is offered too, and NOT because this appliance declares it -- it does not,
+    # the same way it does not declare its outdoor probe -- but because the class carries it. Its id
+    # is inferred rather than seen accepted, so it is provisional and the write settles whether THIS
+    # cabinet really has the sensor, exactly as the vane ids do.
+    assert "humanSensingStatus" not in {a["name"] for a in declared["attributes"]}
+    assert supports(unit, "humanSensingStatus") is True, "class-carried, offered to settle"
+
     # ...and once it has answered no, it is never asked again. That is what keeps offering a
     # derived id honest rather than hopeful.
     declined = SimpleNamespace(
         uplus_id=uplus, _wire_model=model, digital_model=declared,
-        unusable_params=frozenset({"windDirectionHorizontal"}),
+        unusable_params=frozenset({"windDirectionHorizontal", "humanSensingStatus"}),
     )
+    declined._class_carried_controls = lambda: HaismartCoordinator._class_carried_controls(declined)
+    assert supports(declined, "humanSensingStatus") is False, "no sensor here, so withdrawn"
     assert supports(declined, "windDirectionHorizontal") is False
     assert supports(declined, "windDirectionVertical") is True, "one answer is about one control"
     assert supports(declined, "targetTemperature") is True, "and never about a settled one"

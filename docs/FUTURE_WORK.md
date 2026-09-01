@@ -1265,7 +1265,18 @@ the frame-keeping build, and from Haier's own generated UART protocol for this c
   electrical data on an hOn unit — the board itself sends the placeholder; esphome-at-UART sees what
   we see, and reported no usable current for that unit. (The smartAir2 Casarte's live power/current
   is an older protocol on a single-phase board — not transferable.) The only sliver left is that #19
-  is residential, not the exact 3-phase commercial OEM board.
+  is residential, not the exact 3-phase commercial OEM board. ★ **The esphome hON SOURCE (not just its logs) is the register map we'd been reconstructing.**
+  `esphome/components/haier` (`hon_packet.h`) defines the single-parameter `DataParameters` register
+  (`CONTROL` + `0x5D00+id`, our exact write path); it matches our 9 confirmed 0d12 ids bit-for-bit
+  and adds the standard ids `0x07 USE_FAHRENHEIT` (2nd witness for the withheld `5D07 tempUnit`),
+  `0x09 DISPLAY`, `0x0A TEN_DEGREE`, `0x0D SELF_CLEANING`, `0x16 BEEPER`, `0x17 LOCK_REMOTE`,
+  `0x1B SLEEP` — residential-derived CANDIDATES to probe on a 0d12 via the provisional mechanism.
+  So "the 5Dxx numbering is not derivable" was true of HAIER'S PUBLISHED DATA; esphome's RE of real
+  devices derives the STANDARD register (the enum GAP at 0x08 still neither confirms nor denies the
+  provisional `5D08` presence, and it holds nothing for 4-sided vanes / ampereControl / powerSource).
+  esphome also confirms NO voltage/energy field in hON (3rd source), and names fields we do not yet
+  surface — `room_humidity` (status byte12), the expansion valve as a %, and 51 named alarm bits
+  incl. the electrical/three-phase protections a 0d12 raises.
 
 These cabinets answer a query for their detailed running data when it is asked over the wire inside
 the appliance — a recording of one shows the manufacturer's own module asking nine times and the

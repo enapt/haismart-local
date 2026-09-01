@@ -2350,6 +2350,7 @@ def test_encoder_membership_is_not_widened_by_the_published_map():
     """
     from haismart_hrdp.canonical_map import CANONICAL_WRITE
     from haismart_hrdp.panel import PANEL_CONTROLS
+    from haismart_hrdp.wire_models import VALUE_PARAM_ONLY
 
     assert len(CANONICAL_WRITE) > len(uss.GRSETDAC_FIELDS)
     # in the frame, but not a panel control -> not writable
@@ -2357,9 +2358,16 @@ def test_encoder_membership_is_not_widened_by_the_published_map():
         assert withheld in CANONICAL_WRITE, "expected the map to describe it"
         assert withheld not in PANEL_CONTROLS, f"{withheld} is not a panel control"
         assert withheld not in uss.GRSETDAC_FIELDS, f"{withheld} must not be writable"
-    # every panel control the frame positions IS writable (the widening, and exactly it)
+    # a value-param-only panel control is in the frame AND a panel control, yet still NOT in the
+    # group-set encoder: its encoding was measured on the per-attribute channel alone, so packing it
+    # into the shared frame would be an unverified write on families that never entered that channel.
+    assert "tempUnit" in CANONICAL_WRITE
+    assert "tempUnit" in PANEL_CONTROLS
+    assert "tempUnit" in VALUE_PARAM_ONLY
+    assert "tempUnit" not in uss.GRSETDAC_FIELDS
+    # every OTHER panel control the frame positions IS writable through it (the widening, exactly it)
     for name in PANEL_CONTROLS:
-        if name in CANONICAL_WRITE:
+        if name in CANONICAL_WRITE and name not in VALUE_PARAM_ONLY:
             assert name in uss.GRSETDAC_FIELDS, f"{name} is a panel control the frame places"
     # selfCleaningStatus looked identical to echoStatus on paper (both published, both model-writable)
     # and was withheld the same way -- until a live write of it landed (the panel showed "CL") while

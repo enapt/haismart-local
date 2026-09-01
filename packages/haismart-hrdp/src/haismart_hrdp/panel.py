@@ -103,8 +103,26 @@ WITHHELD_ORDER_POSITIONS: Mapping[str, tuple[tuple[int, int, int], str]] = {
 #: earlier version guessed {0:off,1:low,2:medium,3:high}; the panel's own value list settles it —
 #: value 2 is HIGH, value 4 is mid, and there is no "off/medium/high" ordering to assume. Read the
 #: listed enum, don't guess.)
+#: ⚠️ The keys are the value the control reads back and writes -- a Haier STD code, NOT the raw wire
+#: code, wherever the two differ. A ``value_param`` enum whose wire code is not its std code is given
+#: a std read (:data:`~haismart_hrdp.wire_models.VALUE_PARAM_READ_ENUM`) so ``current_field`` returns
+#: the std value, and its ``std_enum`` spec takes the std value back to the wire; the model's own
+#: :func:`~haismart_hrdp.profiles.model_enum_codes` is in std too, so all three agree. Keying these
+#: in wire codes would put the select and the code-narrowing in one space and the model in another.
 PANEL_ENUM_CONTROLS: Mapping[str, tuple[str, Mapping[int, str]]] = {
     "humanSensingStatus": ("human_sensing", {0: "off", 1: "avoid", 2: "follow", 3: "on"}),
+    # 0d12 display unit. std 1 °C / 2 °F (the model's codes); the wire holds epp 0/1.
+    "tempUnit": ("temp_unit", {1: "celsius", 2: "fahrenheit"}),
+    # 0d12 four-way cassette louvres: one select per louvre, stops named for the model's list
+    # (fixed, five positions, auto). std 0..6; the wire holds the config's non-linear epp code.
+    **{
+        f"4SidesWindDirection{i}": (
+            f"four_sided_vane_{i}",
+            {0: "fixed", 1: "position_1", 2: "position_2", 3: "position_3",
+             4: "position_4", 5: "position_5", 6: "auto"},
+        )
+        for i in (1, 2, 3, 4)
+    },
 }
 
 #: Every attribute this module classifies as a panel control (bool or enum).

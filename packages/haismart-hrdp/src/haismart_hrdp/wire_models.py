@@ -1911,6 +1911,20 @@ _FRAME_WRITE_SPEC: Mapping[str, Mapping[str, object]] = {
 }
 
 
+#: Attributes whose write is confirmed on the per-attribute (``value_param``) channel ONLY, and so
+#: must not be offered through the group-set even where a product's order carries them.
+#:
+#: ``tempUnit`` is the case. Haier's device config gives its value encoding (std 1/2 -> epp 0/1) for
+#: the central-cabinet single-parameter channel, and it happens to sit in ``CANONICAL_WRITE`` -- so
+#: without this guard it would join the group-set frame and surface a °C/°F select on the ~22
+#: non-central products whose order lists it, an unverified group-set write on families this
+#: config expansion never touched. Membership on the group-set is order-corroborated for POSITION,
+#: but the value encoding here was measured on the central cabinets alone, so the control is kept to
+#: the channel it was measured on. (The four-way louvres need no entry: they are not in
+#: ``CANONICAL_WRITE`` and reach no product through the group-set at all.)
+VALUE_PARAM_ONLY: frozenset[str] = frozenset({"tempUnit"})
+
+
 def frame_write_fields(
     order: Sequence[str] | None, uplus_id: str | None = None
 ) -> dict[str, WriteField]:
@@ -1973,6 +1987,12 @@ def frame_write_fields(
     carried = set(order)
     out: dict[str, WriteField] = {}
     for name, spec in _FRAME_WRITE_SPEC.items():
+        if name in VALUE_PARAM_ONLY:
+            # A confirmed only on the per-attribute channel is not offered through the group-set,
+            # even where the product's order carries it: its value encoding was established from the
+            # single-parameter config alone, and packing it into the shared frame would be an
+            # unverified write on families that never entered this expansion. See VALUE_PARAM_ONLY.
+            continue
         spelled = name if name in carried else spelled_as.get(name, name)
         if spelled not in carried:
             continue

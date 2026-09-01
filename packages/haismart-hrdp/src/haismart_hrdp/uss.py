@@ -39,6 +39,7 @@ from .panel import PANEL_BOOL_CONTROLS, PANEL_ENUM_CONTROLS, PANEL_EXTRA_POSITIO
 from .profiles import model_enum_codes
 from .wire_models import (
     OPERATION_SOURCE,
+    VALUE_PARAM_ONLY,
     decode_related,
     select_wire_model,
     vane_h_sweeping,
@@ -781,7 +782,10 @@ _PANEL_FRAME_WRITES = {
     **{
         name: (CANONICAL_WRITE[name].word, CANONICAL_WRITE[name].bit, CANONICAL_WRITE[name].length)
         for name in (*PANEL_BOOL_CONTROLS, *PANEL_ENUM_CONTROLS)
-        if name in CANONICAL_WRITE
+        # A value-param-only panel control (tempUnit) sits in the frame but is not written through
+        # it -- its encoding was measured on the per-attribute channel alone -- so it is kept out of
+        # the group-set encoder's field map exactly as it is kept out of `frame_write_fields`.
+        if name in CANONICAL_WRITE and name not in VALUE_PARAM_ONLY
     },
     # order-derived controls the invariant frame does not carry (unanimous, see PANEL_EXTRA_POSITIONS)
     **PANEL_EXTRA_POSITIONS,

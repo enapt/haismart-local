@@ -11,16 +11,44 @@ from haismart_hrdp.uss import GRSETDAC_FIELDS
 
 
 def test_every_panel_control_is_positioned_and_encodable():
-    """The controls this module offers must all be placeable without a capture — either by the
-    invariant frame, or by the published order (``PANEL_EXTRA_POSITIONS``, each unanimous). A control
-    with no established position has no business here. All must be encodable (in GRSETDAC_FIELDS)."""
-    from haismart_hrdp.panel import PANEL_EXTRA_POSITIONS
+    """The controls this module offers must all be placeable and encodable without a capture, on ONE
+    of the two write channels:
 
+    * the group-set frame -- positioned by the invariant frame or the published order
+      (``PANEL_EXTRA_POSITIONS``, each unanimous), and in the encoder's ``GRSETDAC_FIELDS``; or
+    * the per-attribute channel -- a single-parameter id, a read-back position (the published map,
+      or the literal-position table for an id inside the report's inserted block), and a value
+      encoding in ``_FRAME_WRITE_SPEC``.
+
+    A control with no established position/encoding on either channel has no business here."""
+    from haismart_hrdp.canonical_map import CANONICAL
+    from haismart_hrdp.panel import PANEL_EXTRA_POSITIONS
+    from haismart_hrdp.wire_models import (
+        _FRAME_WRITE_SPEC,
+        INSERTED_PARAM_POSITIONS,
+        PROVISIONAL_SINGLE_PARAM_IDS,
+        SINGLE_PARAM_IDS,
+    )
+
+    single_param = {
+        n
+        for table in (SINGLE_PARAM_IDS, PROVISIONAL_SINGLE_PARAM_IDS)
+        for ids in table.values()
+        for n in ids
+    }
+    inserted = {n for m in INSERTED_PARAM_POSITIONS.values() for n in m}
     for name in PANEL_CONTROLS:
-        assert name in CANONICAL_WRITE or name in PANEL_EXTRA_POSITIONS, (
-            f"{name} has no established write position"
+        group_set = (
+            name in CANONICAL_WRITE or name in PANEL_EXTRA_POSITIONS
+        ) and name in GRSETDAC_FIELDS
+        value_param = (
+            name in single_param
+            and (name in CANONICAL or name in inserted)  # a read-back position
+            and name in _FRAME_WRITE_SPEC  # a value encoding
         )
-        assert name in GRSETDAC_FIELDS, f"{name} is not encodable"
+        assert group_set or value_param, (
+            f"{name} has no established write position/encoding on either channel"
+        )
 
 
 def test_echostatus_is_not_a_panel_control():

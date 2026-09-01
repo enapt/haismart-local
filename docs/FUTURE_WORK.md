@@ -1258,7 +1258,14 @@ the frame-keeping build, and from Haier's own generated UART protocol for this c
   model we already have (no voltage), and the second is behind the developer login and scoped to the
   OEM's account. So neither reaches the electrical data; the board↔module UART tap (decoded with the
   vendor's own U+串口监听工具, whose E++ crypto could be recovered from `SerialAssistant.exe`) remains
-  the only avenue, and it needs physical access to a cabinet.
+  the only avenue, and it needs physical access to a cabinet. ★ **Update — the board-direct case is already in the prior art.** esphome replaces the
+  Wi-Fi module with an ESP on the board UART, so its captures ARE board-direct; prior-art issue #19
+  (HaierProtocol 0.9.20, the hOn family) logs raw `7D01` frames off the board whose current field
+  reads the SAME railed `01FF` we see via the module relay. So a serial tap would NOT recover the
+  electrical data on an hOn unit — the board itself sends the placeholder; esphome-at-UART sees what
+  we see, and reported no usable current for that unit. (The smartAir2 Casarte's live power/current
+  is an older protocol on a single-phase board — not transferable.) The only sliver left is that #19
+  is residential, not the exact 3-phase commercial OEM board.
 
 These cabinets answer a query for their detailed running data when it is asked over the wire inside
 the appliance — a recording of one shows the manufacturer's own module asking nine times and the

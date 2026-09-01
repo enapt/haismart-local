@@ -1292,6 +1292,14 @@ the frame-keeping build, and from Haier's own generated UART protocol for this c
     a refusal/unmoved field withdraws) the same way `5D08` presence ships; `0x09` is ambiguous between
     `screenDisplayStatus` and `lightStatus` — resolve on hardware. Needs a reporter's `0d12` to
     confirm, but no capture — the provisional mechanism adjudicates on first use.
+  * **Per-unit feature detection — NOT in the hON handshake** (dug esphome, 2026-09-01). The
+    device-version answer's `functions[1]` bitmap is PROTOCOL negotiation (CRC/interactive/multinode/
+    roles), not an appliance-feature manifest; esphome gates nothing on it. Human-sensing has no
+    capability marker (result field reads `00`=N/A whether or not a PIR is fitted). The only untested
+    place a manifest could live is the config frames `0x7C`/`0xE9`/`0xEB` — likely module-terminated
+    over `:56800` (like `0x61`/`0x70`), but `0x7C` is an untried probe on a live unit (⛔ disable an
+    entry first). So the per-product presence/feature gate must stay panel-derived or class-based; the
+    wire offers no per-unit capability read.
 
 These cabinets answer a query for their detailed running data when it is asked over the wire inside
 the appliance — a recording of one shows the manufacturer's own module asking nine times and the

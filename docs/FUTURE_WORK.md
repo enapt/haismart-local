@@ -1252,7 +1252,13 @@ the frame-keeping build, and from Haier's own generated UART protocol for this c
   both public templates, all residential + commercial AC EPP models) converges on the same three
   electrical fields, so it is a long shot. Confirming or refuting it needs a **UART capture** of that
   board (module↔board), which this project has never taken; prior-art issue trackers are the capture
-  corpus if one surfaces.
+  corpus if one surfaces. **RE of the vendor's E++ tool** (2026-09-01) surfaced two endpoints we do not use — a
+  function-model file (`resource/funcModelFile`, parallel to the `logicLimit` we fetch) and the
+  per-board PCB E++ file store — but the first needs a signed request and serves the same class
+  model we already have (no voltage), and the second is behind the developer login and scoped to the
+  OEM's account. So neither reaches the electrical data; the board↔module UART tap (decoded with the
+  vendor's own U+串口监听工具, whose E++ crypto could be recovered from `SerialAssistant.exe`) remains
+  the only avenue, and it needs physical access to a cabinet.
 
 These cabinets answer a query for their detailed running data when it is asked over the wire inside
 the appliance — a recording of one shows the manufacturer's own module asking nine times and the

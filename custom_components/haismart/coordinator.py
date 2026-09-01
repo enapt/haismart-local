@@ -63,6 +63,7 @@ from haismart_hrdp import (
     family_rules,
     grsetdac_baseline_from_status,
     grsetdac_op_frame,
+    is_extended_status_frame,
     lock_reasons,
     locked_attributes,
     merge_rules,
@@ -418,10 +419,17 @@ def _telemetry_from(blobs: list[bytes]) -> tuple[dict[str, Any], bytes | None]:
     decode rather than from the bytes -- and this frame carries the readings whose meaning is least
     settled, one of which has now been argued over twice.
     """
+    extended_blob: bytes | None = None
     for blob in blobs:
-        if ext := parse_extended_status(blob):
-            return ext, blob
-    return {}, None
+        if is_extended_status_frame(blob):
+            # The frame the query is answered by -- kept for diagnostics whether or not it
+            # decodes, because a big-data frame from a model larger than any published layout is
+            # exactly the thing a maintainer needs to add its map, and it must not vanish just
+            # because this build cannot yet read it.
+            extended_blob = blob
+            if ext := parse_extended_status(blob):
+                return ext, blob
+    return {}, extended_blob
 
 
 def _build_profile(
@@ -567,6 +575,13 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._extended_form = 0
         # consecutive cycles that carried status but no extended report (see EXTENDED_MISSES)
         self._extended_misses = 0
+        # consecutive cycles the unit ANSWERED the telemetry query with a big-data frame we
+        # have no field map for (a model larger than any published layout). Kept apart from
+        # `_extended_misses`, which counts SILENCE: an answered-but-unmapped frame is never a
+        # miss -- the unit copes with the query, so it keeps being polled and captured -- but
+        # its telemetry entities cannot populate, so they retire once this crosses the same
+        # threshold, while polling continues.
+        self._undecoded_extended = 0
         # The last extended reading actually reported, with when it arrived and the on/off state it
         # described. A cycle that carries no extended report re-publishes it (see
         # `_apply_telemetry`) so a control op does not blank the telemetry entities.
@@ -806,6 +821,29 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     # one-way door, which is exactly the objection the old "create everything
                     # unconditionally" rule was built to avoid.
                     self._async_reading_returned(EXTENDED_READING_KEYS)
+                    self._undecoded_extended = 0
+                elif extended_blob is not None:
+                    # The unit ANSWERED the telemetry query, with a big-data frame this build has no
+                    # field map for -- a newer or larger model than any published layout. That is
+                    # not silence and not a fault: the unit supports the query and copes with
+                    # the extra frame, so keep asking -- that keeps the frame fresh in
+                    # `last_raw_extended` and the lan-frame ledger for whoever adds its map. The
+                    # telemetry ENTITIES
+                    # cannot populate without that map, though, so they retire at the same threshold
+                    # a silent unit's do -- the difference is only that polling does NOT stop, so a
+                    # build that later learns the layout lights them straight back up.
+                    self._extended_misses = 0
+                    self._undecoded_extended += 1
+                    if self._undecoded_extended == EXTENDED_MISSES:
+                        _LOGGER.info(
+                            "%s answers the telemetry query with a %d-byte big-data frame this "
+                            "build has no field map for; still capturing it every poll, but its "
+                            "power and compressor entities cannot be filled and are being removed",
+                            self.host, len(extended_blob),
+                        )
+                        self._async_reading_refused(
+                            k for k in EXTENDED_READING_KEYS if k not in state
+                        )
                 elif self.supports_extended is True and not self._ask_extended:
                     # The query was paused by an empty cycle (see below), and reads are working
                     # again — so ask for the extended report again rather than leaving a unit that
@@ -1130,7 +1168,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         ir.async_create_issue(
             self.hass,
             DOMAIN,
-            f"{ISSUE_UNKNOWN_LAYOUT}_{self.device_id}",
+            self._issue_id(ISSUE_UNKNOWN_LAYOUT),
             is_fixable=False,
             severity=ir.IssueSeverity.WARNING,
             translation_key=ISSUE_UNKNOWN_LAYOUT,
@@ -1149,7 +1187,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if self.unknown_layout is None:
             return
         self.unknown_layout = None
-        ir.async_delete_issue(self.hass, DOMAIN, f"{ISSUE_UNKNOWN_LAYOUT}_{self.device_id}")
+        ir.async_delete_issue(self.hass, DOMAIN, self._issue_id(ISSUE_UNKNOWN_LAYOUT))
 
     def _log_undecodable(self, blobs: list[bytes]) -> None:
         """Debug-log what the AC actually sent when no status decoded — the report discriminator.
@@ -2358,6 +2396,31 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "succeeded; a fresh key is needed"
         )
 
+    def _issue_id(self, key: str) -> str:
+        """A repair-issue id for this appliance, keyed on the config ENTRY, not the device id.
+
+        The device id is the module's Wi-Fi MAC; it is redacted from the diagnostics ``data`` and
+        must not leak back in through an issue id, because Home Assistant lists every one of an
+        integration's issues in that same diagnostics download. The entry id is opaque, per-device,
+        stable for the life of the entry, and already the diagnostics file's own name -- so it
+        identifies the appliance for a repair without naming its hardware.
+        """
+        return f"{key}_{self.config_entry.entry_id}"
+
+    def _migrate_legacy_issue_ids(self) -> None:
+        """Delete any repair raised under the old device-id-keyed scheme.
+
+        Earlier builds keyed these on the device id (the MAC). A still-open one would otherwise be
+        orphaned -- the new code deletes by the entry-id name and never finds it -- so clear the
+        legacy names once at setup. Anything still true is re-raised under the new id on the next
+        poll, so this loses no warning, only the MAC in the id.
+        """
+        for key in (
+            ISSUE_STALE_LOCALKEY, ISSUE_KEY_REFRESH_FAILED, ISSUE_KEY_WILL_ROTATE,
+            ISSUE_UNKNOWN_LAYOUT,
+        ):
+            ir.async_delete_issue(self.hass, DOMAIN, f"{key}_{self.device_id}")
+
     def _raise_stale_localkey_issue(self, old: int | None, current: int) -> None:
         """Explain a re-key that had to be done by hand — and say which of the two reasons it was.
 
@@ -2371,7 +2434,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         ir.async_create_issue(
             self.hass,
             DOMAIN,
-            f"{key}_{self.device_id}",
+            self._issue_id(key),
             is_fixable=False,
             severity=ir.IssueSeverity.WARNING,
             translation_key=key,
@@ -2399,7 +2462,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """
         offline_entry = not self.config_entry.data.get(CONF_REFRESH_TOKEN)
         will_rotate = offline_entry and self.cloud_connected is True
-        issue_id = f"{ISSUE_KEY_WILL_ROTATE}_{self.device_id}"
+        issue_id = self._issue_id(ISSUE_KEY_WILL_ROTATE)
         if not will_rotate:
             ir.async_delete_issue(self.hass, DOMAIN, issue_id)
             return
@@ -2416,7 +2479,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def clear_stale_localkey_issue(self) -> None:
         """Delete the manual-re-key repair once rotation self-heals via the cloud gateway."""
         for key in (ISSUE_STALE_LOCALKEY, ISSUE_KEY_REFRESH_FAILED):
-            ir.async_delete_issue(self.hass, DOMAIN, f"{key}_{self.device_id}")
+            ir.async_delete_issue(self.hass, DOMAIN, self._issue_id(key))
 
     async def async_fetch_model_rules(self) -> bool:
         """Top up a stored model that arrived without its rules, for an entry set up before those

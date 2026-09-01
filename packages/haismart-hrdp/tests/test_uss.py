@@ -1673,6 +1673,45 @@ def test_an_unreported_actuator_never_reads_as_running():
     assert got["compressor_running"] is True and got["fan_running"] is True
 
 
+# A real 0D012 central-AC big-data (7d01) report from the issue #12 reporter: 147 bytes, payload 27
+# words. Its running fields are decoded by the documented 0D012 layout (uss._BIGDATA_VENDOR_DOC,
+# from the vendor's own 附录H), which is the published span-21 block one word-run further in.
+EXT_0D012 = bytes.fromhex(
+    "00002715000000004e5601006803020068040100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000044ffff40000000000000067d0109022200020114c0000000000000000302133232618000030000000000000000000000000000000000005a614062610001ff022400b415")
+
+
+def test_extended_status_decodes_the_0d012_central_ac_bigdata_frame():
+    """The 147-byte 0D012 frame is recognised and decoded, not dropped for being an unknown size.
+
+    Regression for the frame that made the coordinator give up polling telemetry on the central
+    cabinets: its span (27 words) was in no generated map, so the parser returned {} and the unit
+    was written off as having no telemetry. The vendor's own 附录H places the running block exactly
+    where the span-21 family carries it, one word-run past the extra PM2.5/CH2O/VOC/CO2 readings.
+    """
+    got = uss.parse_extended_status(EXT_0D012)
+    assert got != {}                                  # it is recognised, so polling continues
+    # captured at the setpoint with the compressor idle, so the running figures read zero honestly
+    assert got["power_w"] == 0
+    assert got["compressor_frequency_hz"] == 0
+    assert got["compressor_current_a"] == 0.0
+    assert got["compressor_running"] is False
+    # the outdoor probes read their absent-sensor sentinel here, so they stay out rather than -64 C
+    assert "outdoor_coil_temperature" not in got
+
+
+def test_an_extended_frame_is_recognised_by_command_whatever_its_size():
+    """`is_extended_status_frame` sees the 7d01 report by COMMAND, so a larger new model still
+    counts as an answer to the telemetry query and keeps being polled rather than written off."""
+    assert uss.is_extended_status_frame(EXT_0D012) is True
+    assert uss.is_extended_status_frame(EXT_COOLING) is True     # the classic 141-byte frame too
+    assert uss.is_extended_status_frame(REAL_STATUS_DOWN) is False  # an ordinary status report
+    # a 7d01 frame whose SPAN we have no map for is still recognised as the extended report...
+    oversized = EXT_0D012 + b"\x00" * 8
+    assert uss.is_extended_status_frame(oversized) is True
+    # ...and named rather than dumped in the "unfamiliar" bucket, so it is kept for a future map
+    assert "7d01" in (uss.describe_epp_frame(oversized) or "")
+
+
 def test_parse_extended_status_rejects_anything_else():
     """Only the confirmed extended layout decodes — never a guess at another report's bytes."""
     assert uss.parse_extended_status(b"") == {}

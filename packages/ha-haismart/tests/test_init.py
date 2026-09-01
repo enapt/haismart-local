@@ -1388,7 +1388,7 @@ async def test_localkey_rotation_triggers_reauth(
     from homeassistant.helpers import issue_registry as ir
 
     issue = ir.async_get(hass).async_get_issue(
-        DOMAIN, "stale_localkey_manual_reauth_A1B2C3D4E5F6"
+        DOMAIN, f"stale_localkey_manual_reauth_{entry.entry_id}"
     )
     assert issue is not None and issue.severity is ir.IssueSeverity.WARNING
 
@@ -1451,7 +1451,7 @@ async def test_localkey_rotation_auto_refreshes_via_gateway(
     from homeassistant.helpers import issue_registry as ir
 
     assert ir.async_get(hass).async_get_issue(
-        DOMAIN, "stale_localkey_manual_reauth_A1B2C3D4E5F6"
+        DOMAIN, f"stale_localkey_manual_reauth_{entry.entry_id}"
     ) is None
 
 
@@ -1834,7 +1834,9 @@ async def test_unknown_report_layout_degrades_and_reports(hass: HomeAssistant, m
     assert coordinator.unknown_layout == len(mock_uss.frame) + 1
 
     issues = ir.async_get(hass)
-    assert issues.async_get_issue(DOMAIN, f"{ISSUE_UNKNOWN_LAYOUT}_{coordinator.device_id}")
+    assert issues.async_get_issue(
+        DOMAIN, f"{ISSUE_UNKNOWN_LAYOUT}_{coordinator.config_entry.entry_id}"
+    )
 
     # writing is refused, with a reason rather than a stack trace
     with pytest.raises(HomeAssistantError, match="not recognised"):
@@ -3482,7 +3484,7 @@ async def test_an_offline_entry_on_a_still_connected_appliance_is_warned_early(
 
     issues = ir.async_get(hass)
     assert issues.async_get_issue(
-        DOMAIN, f"{ISSUE_KEY_WILL_ROTATE}_A1B2C3D4E5F6"
+        DOMAIN, f"{ISSUE_KEY_WILL_ROTATE}_{entry.entry_id}"
     ), "an appliance still on the internet with no way to re-key must be flagged"
 
 
@@ -3504,7 +3506,7 @@ async def test_no_rotation_warning_once_either_remedy_is_in_place(
     await hass.config_entries.async_setup(blocked.entry_id)
     await hass.async_block_till_done()
     assert not ir.async_get(hass).async_get_issue(
-        DOMAIN, f"{ISSUE_KEY_WILL_ROTATE}_A1B2C3D4E5F6"
+        DOMAIN, f"{ISSUE_KEY_WILL_ROTATE}_{blocked.entry_id}"
     ), "a blocked appliance's key is frozen, so there is nothing to warn about"
 
     # 2) still online, but an account is attached: rotations are fetched
@@ -3517,7 +3519,7 @@ async def test_no_rotation_warning_once_either_remedy_is_in_place(
     await hass.config_entries.async_setup(signed_in.entry_id)
     await hass.async_block_till_done()
     assert not ir.async_get(hass).async_get_issue(
-        DOMAIN, f"{ISSUE_KEY_WILL_ROTATE}_B1B2C3D4E5F6"
+        DOMAIN, f"{ISSUE_KEY_WILL_ROTATE}_{signed_in.entry_id}"
     )
 
 
@@ -3551,18 +3553,18 @@ async def test_a_failed_key_refresh_does_not_tell_you_to_add_an_account_you_have
         ):
             coordinator = HaismartCoordinator(hass, entry)
             coordinator._raise_stale_localkey_issue(45, 46)
-        return ir.async_get(hass)
+        return ir.async_get(hass), entry.entry_id
 
     from custom_components.haismart.coordinator import HaismartCoordinator
 
     # no account stored: the advice is to add one
-    issues = await _rotated({}, "A1B2C3D4E5F6")
-    assert issues.async_get_issue(DOMAIN, f"{ISSUE_STALE_LOCALKEY}_A1B2C3D4E5F6")
-    assert not issues.async_get_issue(DOMAIN, f"{ISSUE_KEY_REFRESH_FAILED}_A1B2C3D4E5F6")
+    issues, eid = await _rotated({}, "A1B2C3D4E5F6")
+    assert issues.async_get_issue(DOMAIN, f"{ISSUE_STALE_LOCALKEY}_{eid}")
+    assert not issues.async_get_issue(DOMAIN, f"{ISSUE_KEY_REFRESH_FAILED}_{eid}")
 
     # account already stored: the advice must NOT be to add one
-    issues = await _rotated({CONF_REFRESH_TOKEN: "2_RT"}, "A1B2C3D4E5F6")
-    assert issues.async_get_issue(DOMAIN, f"{ISSUE_KEY_REFRESH_FAILED}_A1B2C3D4E5F6")
+    issues, eid = await _rotated({CONF_REFRESH_TOKEN: "2_RT"}, "A1B2C3D4E5F6")
+    assert issues.async_get_issue(DOMAIN, f"{ISSUE_KEY_REFRESH_FAILED}_{eid}")
 
 
 async def test_a_slow_identity_lookup_does_not_hold_up_startup(

@@ -27,6 +27,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> 
     # in an executor first, so that one-off read happens off the loop (it is a no-op afterwards).
     await hass.async_add_executor_job(_preload_model_rules)
     coordinator = HaismartCoordinator(hass, entry)
+    # Clear any repair raised under the old device-id-keyed scheme (the MAC leaked into the
+    # diagnostics issue list through it); anything still true is re-raised under the new
+    # entry-id name on the next poll.
+    coordinator._migrate_legacy_issue_ids()
     await coordinator.async_config_entry_first_refresh()
 
     # A successful first read means the stored key works, so clear any stale-localKey repair left

@@ -33,7 +33,7 @@ from typing import Any
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-from .bigdata_map import BIGDATA_MAPS
+from .bigdata_map import BIGDATA_MAPS, BigdataField
 from .canonical_map import CANONICAL_WRITE
 from .panel import PANEL_BOOL_CONTROLS, PANEL_ENUM_CONTROLS, PANEL_EXTRA_POSITIONS
 from .profiles import model_enum_codes
@@ -488,6 +488,12 @@ def describe_epp_frame(blob: bytes) -> str | None:
     command = epp_command(blob)
     if command == EPP_CMD_CHANGED_PARAMS:
         return "a changed-parameters report (6c01), which carries no positional status"
+    if command == _EPP_RPT_EXTENDED:
+        # A 7d01 big-data report whose SPAN we have no map for -- a newer or larger model than any
+        # published layout describes. It is not junk and not a fault: the unit answered the
+        # telemetry query, we simply cannot place this family's fields yet. Naming it keeps it out
+        # of the "unfamiliar" bucket and marks it, with its bytes, as the thing to add a map for.
+        return "an extended-status / big-data report (7d01) with no known field map for its size"
     return None
 
 
@@ -1354,6 +1360,49 @@ _BIGDATA_TEMPS = frozenset(
 )
 
 
+def is_extended_status_frame(blob: bytes) -> bool:
+    """Whether ``blob`` is a ``7d01`` big-data report, regardless of its size or whether it decodes.
+
+    The telemetry query (:func:`extended_status_epp_frame`) is answered by a ``7d01`` report, and
+    the answer is what carries the running power and compressor figures. Recognising it by COMMAND
+    rather than by length is what lets the caller tell "the unit answered, we just have no field map
+    for this model's frame" from "the unit ignores the query" -- the first must keep being polled so
+    the frame stays fresh for diagnostics and gains a map, the second is written off. A new model
+    whose big-data frame is longer than any we have seen still answers True here.
+    """
+    at = blob.find(EPP_FRAME_HEAD)
+    return at >= 0 and blob[at + 10:at + 12] == _EPP_RPT_EXTENDED
+
+
+# The 0D012 central-AC family's big-data (7d01) layout, from Haier's OWN generated UART protocol
+# document for this class (`catalogue/profiles_0d12/0D012_UART通讯协议.txt`, 附录H). It is NOT
+# derived from a bundled profile -- no `0d` profile ships in the app -- so it lives here rather than
+# in the generated `bigdata_map.py`, and the generator leaves it alone. 附录H gives each field a
+# 1-indexed BYTE in the big-data payload; a byte maps to word ceil(byte/2) (high half for an odd
+# byte, low half for an even one), and the running block -- power @Byte29=word15 through the
+# expansion valve @Byte41=word21 -- is word-for-word the published span-21 layout, which is the
+# cross-check that this is the same block Haier documents. The frame is longer (27 payload words)
+# only because this class reports the indoor/outdoor PM2.5, CH2O, VOC and CO2 readings ahead of it.
+# ⚠️ The running-field SCALING is the span-21 family's (same vendor); it is confirmed present but its
+# live values await a capture of this class with the compressor running (`FUTURE_WORK` 52).
+_BIGDATA_VENDOR_DOC: Mapping[int, tuple[BigdataField, ...]] = {
+    27: (
+        BigdataField("power", 15, 0, 16, 1.0, 0.0, 'W'),
+        BigdataField("indoorCoilerTemperature", 16, 8, 8, 0.5, -20.0, '℃'),
+        BigdataField("outdoorOutAirTemperature", 16, 0, 8, 1.0, -64.0, '℃'),
+        BigdataField("outdoorCoilerTemperature", 17, 8, 8, 1.0, -64.0, '℃'),
+        BigdataField("outdoorInAirTemperature", 17, 0, 8, 1.0, -64.0, '℃'),
+        BigdataField("outdoorDefrostTemperature", 18, 8, 8, 1.0, -64.0, '℃'),
+        BigdataField("compressorFrequency", 18, 0, 8, 1.0, 0.0, 'Hz'),
+        BigdataField("compressorCurrent", 19, 0, 16, 0.1, 0.0, 'A'),
+        BigdataField("outdoorFanStatus", 20, 8, 2, 1.0, 0.0, None),
+        BigdataField("fourWayValveStatus", 20, 4, 2, 1.0, 0.0, None),
+        BigdataField("compressorStatus", 20, 0, 2, 1.0, 0.0, None),
+        BigdataField("expansionValveOpenDegree", 21, 0, 16, 1.0, 0.0, None),
+    ),
+}
+
+
 def _extended_from_published_map(payload: bytes) -> dict[str, Any]:
     """Telemetry for a family whose layout the manufacturer publishes, keyed on the frame's span.
 
@@ -1361,7 +1410,8 @@ def _extended_from_published_map(payload: bytes) -> dict[str, Any]:
     has always produced -- a family we cannot place simply yields no telemetry rather than numbers
     read from the wrong words.
     """
-    fields = BIGDATA_MAPS.get(len(payload) // 2)
+    span = len(payload) // 2
+    fields = BIGDATA_MAPS.get(span) or _BIGDATA_VENDOR_DOC.get(span)
     if not fields:
         return {}
     out: dict[str, Any] = {}

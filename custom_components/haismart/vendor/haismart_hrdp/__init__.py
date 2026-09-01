@@ -123,6 +123,7 @@ from .uss import (
     hello_done_message,
     hello_message,
     is_control_baseline,
+    is_extended_status_frame,
     localkey_aes_key,
     parse_alarm_frame,
     parse_extended_status,
@@ -259,6 +260,7 @@ __all__ = [
     "EXTENDED_STATUS_FRAME_TYPES",
     "describe_epp_frame",
     "extended_status_epp_frame",
+    "is_extended_status_frame",
     "getallproperty_epp_frame",
     "build_cae_op_request",         # outbound CAE op envelope
     "build_op_request_message",     # full outbound op message

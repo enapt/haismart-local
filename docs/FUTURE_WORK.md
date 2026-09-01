@@ -1268,7 +1268,12 @@ the frame-keeping build, and from Haier's own generated UART protocol for this c
   frame in the prior-art corpus — 47, residential `U-AC` and commercial `U-BAC` (the `0d12` family's
   own device name, #115) — has `current`=`01FF` and no usable power; ZERO live. The railed field is a
   HON-PROTOCOL-WIDE property, not our unit or the module; the one live capture is smartAir2. No sliver
-  remains. ★ **The esphome hON SOURCE (not just its logs) is the register map we'd been reconstructing.**
+  remains. ★ **esphome confirms the group-set NACK too:** prior-art #115 is a `U-BAC` unit
+  (commercial hON = our `0d12` family); esphome sent a group-set `60 01` and got `type 03` INVALID,
+  code `00 01` — U-BAC/`0d12` REFUSES the group-set, exactly our finding. esphome has no
+  single-param fallback, so it can only READ these cabinets; our `5Dxx` single-param path is the
+  correct one and a genuine differentiator. (It also means esphome never requests big-data `4DFE` on
+  U-BAC in that log — 0 occurrences — consistent with the group-set being rejected first.) ★ **The esphome hON SOURCE (not just its logs) is the register map we'd been reconstructing.**
   `esphome/components/haier` (`hon_packet.h`) defines the single-parameter `DataParameters` register
   (`CONTROL` + `0x5D00+id`, our exact write path); it matches our 9 confirmed 0d12 ids bit-for-bit
   and adds the standard ids `0x07 USE_FAHRENHEIT` (2nd witness for the withheld `5D07 tempUnit`),

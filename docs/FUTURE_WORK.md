@@ -1157,7 +1157,7 @@ Regression test `test_a_refusal_is_not_masked_by_the_routine_status_push`, confi
 the old ordering.
 
 
-### 52. The roof cabinets' big-data telemetry is delivered and now DECODED — its liveness is the open part
+### 52. The roof cabinets' big-data telemetry — SETTLED: compressor frequency and temperatures are live; power/current are not reported
 
 ⚠️ **Reworked 2026-09-01.** Three earlier readings of this were wrong in turn and are all corrected
 here at the point of the claim. The truth, from the issue #12 cabinet (`AE2C52Q00`) captured with
@@ -1178,20 +1178,27 @@ the frame-keeping build, and from Haier's own generated UART protocol for this c
   ⛔ Withdrawn: the intermediate claim that the tail was *"the classic 14-byte tail, decode with the
   classic offsets"* — the classic-offset read landed on undocumented bytes past Byte41 and only
   looked plausible while idle.
-* **What is still open: whether the running fields are LIVE.** In every frame on file `power`,
-  `compressorFrequency`, `compressorCurrent` and `compressorStatus` read **zero**. But every one of
-  those frames is the **same frozen startup frame**: the pre-fix build gave up after three misses
-  and stopped asking, so four separate diagnostics downloads (status counts 50→117, one taken after
-  "set cool, wait 5 min") all carry the identical `7d01` from the first cycles, taken with the unit
-  idle. Zero is therefore *idle-or-never-populated* and cannot yet be told apart — the same doubt
-  as the original item, now narrowed to the running fields alone.
-* **The fix makes the next capture settle it.** Because the frame now decodes, `supports_extended`
-  stays true and the cabinet is polled every cycle — so a diagnostics download while the compressor
-  is running (no reload needed) will carry a *live* `7d01`. If `power`/`frequency`/`current` move
-  with load, the span-21 scaling stands and the entities are real; if they stay zero under load,
-  this class's board does not populate them over the LAN and the entities retire (`_undecoded`… no —
-  they surface `0`, so a running-and-still-zero capture is what withdraws them). Either way the raw
-  frame is kept every poll for the record.
+* ⛔ **The 附录H byte positions were WRONG for this product** (corrected once more, from the wire).
+  The vendor appendix places `power` at Byte29 and `compressorFrequency`/`compressorCurrent` at
+  Byte36/37, and those read a flat zero on the hardware. The real running block is the **classic
+  engineering trailer at the END of the frame** — the identical block the 141-byte wall units carry,
+  six bytes further along a 147-byte report — so it is decoded from the frame length, not from the
+  appendix offsets.
+* **SETTLED on three live captures** (once the build keeps polling, the reporter's downloads are
+  live): the readings TRACK the compressor exactly — `compressorFrequency` **0 Hz idle → 40 cruising
+  → 103 cooling hard**, evaporator coil **25 → 17 → 10.5 °C** (colder under load), discharge line
+  **33 → 49 → 79 °C** (hotter), compressor **off → on → on**. These four (plus fan state) are real
+  and shipped. Textbook refrigeration physics, self-consistent across the three states.
+* **Power and current are NOT reported by this three-phase class.** `power` reads a flat 0;
+  `compressorCurrent` is railed at its documented full-scale ceiling (`0x01FF` = 51.1 A — the vendor
+  model gives it a 9-bit field, 0.0–51.1 A — unchanged whether the compressor is off or at 103 Hz,
+  which no real current does). The vendor model documents **only** `power` (W) and `compressorCurrent`
+  (A) here — **no voltage, no per-phase reading, no energy/kWh counter anywhere** in the 0D012 model
+  (three-phase appears only as a *fault* code, `threePhaseSupplyErr`). So power cannot be
+  reconstructed on-device, and a supply voltage would not help (there is no real current to multiply,
+  and the compressor drive frequency does not convert to watts). Those two entities are retired for
+  such a unit (`coordinator`, keyed on the decode dropping them) rather than shown as a constant that
+  tracks nothing. Item closed for these cabinets; real energy needs an external meter.
 
 These cabinets answer a query for their detailed running data when it is asked over the wire inside
 the appliance — a recording of one shows the manufacturer's own module asking nine times and the

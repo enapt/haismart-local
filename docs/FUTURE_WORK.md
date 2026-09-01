@@ -479,10 +479,12 @@ settable, and their firmware **refuses the group-set frame outright** — so the
 merely undeclared for these cabinets, it is unavailable. Each setting is its own command, with the
 value in the payload.
 
-**What ships:** power, setpoint, mode, fan speed, health, quiet, boost and both vane axes — offered
-where the cabinet's own model declares the attribute, and each read back from its own position in
-the report so it shows real state rather than an echo of the request — plus presence-based airflow,
-on the terms described at the end of this item.
+**What ships:** power, setpoint, mode, fan speed, health, quiet, boost, both vane axes and the
+display unit (°C/°F) — offered where the cabinet's own model declares the attribute, and each read
+back from its own position in the report so it shows real state rather than an echo of the request —
+plus presence-based airflow and the four-way cassette louvres, on the provisional terms described at
+the end of this item and in item 13. All fifteen single-parameter ids are Haier's own, taken from
+its device config (`catalogue/configfiles/`) and checked by `tools/re/validate_configfile_register.py`.
 
 ★ **A vane is read even where it cannot be commanded.** A vane is a position, not a switch,
 and the climate entity's swing control answers only "is it sweeping" — so a vane parked at a real

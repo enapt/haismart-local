@@ -180,32 +180,41 @@ each level, one download per state) settle it. (⚠️ Off and L1 were only 18 W
 capture; worth one more reading before anyone describes what L1 *does*, though it does not affect
 where the field is.)
 
-### 13. The four-sided cassette vanes — parked, not a request
+### 13. The four-sided cassette vanes — shipped provisional, awaiting one wire confirmation
 
-Seventeen central models expose four independent vanes instead of one left-right field. Established
-without hardware: they **replace** the left-right field (the only difference between the nine- and
-twelve-attribute variants of one family), are **three bits each** on the same code range, and no
-model declares both. But their **position** is not determined (the models list them in the appended,
-unordered region), and four identical fields with identical encodings are symmetric — no published
-description can separate them; it would take a reading in which they differ, and nothing published
-contains one. So this is parked.
+The four independent louvres of a four-way cassette (52 products declare them) ship as four selects,
+offered on any cabinet that declares them and written one setting at a time: `5D0F`/`0E`/`11`/`10`,
+each std stop `0..6` mapped to the config's non-linear epp code. Both halves come from the
+manufacturer's own device config (`catalogue/configfiles/`, the master byte map): the write ids sit
+in the same per-attribute `eppCmd` column as the nine confirmed climate ids, and the read positions
+are the config's **word 6** — four nibbles filling that word, inside the report's inserted block.
 
-⚠️ **Parked is not free.** Those cabinets read *and* command (items 11 and 42), so a unit with
-four-sided vanes gets every other control and no vane control. It stays parked only because the four
-fields are genuinely indistinguishable in published data — **one report from a unit with the four
-vanes in four different positions separates them at once**, and that is worth asking for.
+⚠️ **Provisional, for one specific reason.** The write ids are as solid as the nine, but their read
+position has never been seen *populated* on the wire: the one `0d12` cabinet captured is a
+single-flow cassette that leaves word 6 at zero. So each is written by id and settled by its own
+read-back — a cabinet that actually moves its louvre confirms the position on first use, and one that
+does not retires the control. **One report from a four-way cabinet with the louvres in four different
+positions confirms all four at once**, and that is the only thing still worth asking for.
 
-★ **What has narrowed since.** On the central class that carries them, the four fields and the
-ordinary left-right vane are **never declared together** (none of 143 products declares both), so the
-working hypothesis is that they *substitute* for it at its bits — four three-bit fields filling that
-word exactly. That is the position the presence reading is guarded against (item 42): a cassette
-declaring the four vanes is not read for presence, because those bits would be a vane. It is a
-hypothesis about their *place*, held on arithmetic; the permutation still needs the report above.
-⚠️ On the *other* central class every product declares both the four vanes and the left-right vane,
-so there they cannot share bits, and the placement does not transfer between the two classes.
-**Commanding them is blocked separately**: each vane would be its own single-setting command, and its
-number lives in the same unpublished per-board registry as the presence number (item 42) — a
-recording of the vendor's module driving a four-vane cabinet would settle both at once.
+★ **A pre-config guess was corrected.** The louvres were once placed at w23, *substituting* for
+`windDirectionHorizontal`'s bits — a hypothesis held on arithmetic before the config was in hand.
+Haier's config puts them at word 6, independent of `windDirectionHorizontal` at word 4; the two
+coexist in the byte-map rather than sharing bits. The presence read-guard (item 42) that rested on
+the w23 story still holds by a different, still-valid fact (four-way cabinets do not declare
+presence), and its comment now says so.
+
+**Residue, recorded not parked:**
+* **The 商空 spelling.** The second `0d12` config family (`…2151860b57…`) spells these
+  `fourSidesWindDirection*` and `tenDegreeHeatingStatus`; **20 constraintfiles declare the louvres
+  under that spelling**, and the panel maps key on the first family's `4SidesWindDirection*`, so those
+  20 products are **not yet offered** the louvres. Closing it is a spelling alias, not new wire work.
+* **`ampereControl`** (`5D32`, second family, ~4 products) — a compressor-current limit like the ECO
+  ladder, now that the config gives it a number. Held for a focused follow-up; its value semantics
+  are not yet worked out. Tracked in the register oracle's `DECLARED_NOT_YET_SHIPPED`.
+
+The standing gate for all of this is `tools/re/validate_configfile_register.py`: it imports the
+shipped register and checks every id, read position and big-data word against both config families,
+and that every config id is shipped, deliberately withheld, deferred, or a known spelling.
 
 ### 19. The still-unpositioned settings — counted per lineage, and classified by *why*
 

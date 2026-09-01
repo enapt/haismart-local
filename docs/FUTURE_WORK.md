@@ -1252,7 +1252,13 @@ the frame-keeping build, and from Haier's own generated UART protocol for this c
   both public templates, all residential + commercial AC EPP models) converges on the same three
   electrical fields, so it is a long shot. Confirming or refuting it needs a **UART capture** of that
   board (module↔board), which this project has never taken; prior-art issue trackers are the capture
-  corpus if one surfaces. **RE of the vendor's E++ tool** (2026-09-01) surfaced two endpoints we do not use — a
+  corpus if one surfaces. ★ **Simulator dig (2026-09-01) added actionable items** (memory
+  `esphome-hon-source-is-the-decode-reference`): **compact-12/smartAir2 gains 5 controls we don't
+  ship** — display, lock, ten-degree, half-degree, temp-unit (byte/bit-exact) — plus a `room_humidity`
+  SENSOR; a concrete feature add for the 16 compact-12 products. The 7 hON `0d12` single-param
+  candidates are double-confirmed. And `GET_DEVICE_CONFIGURATION 0x7C→0x7D` is a documented but
+  uncharacterized per-unit config exchange — a live `0x7C` probe is the standing lead for the
+  per-unit feature gate (likely module-blocked over :56800, untried). **RE of the vendor's E++ tool** (2026-09-01) surfaced two endpoints we do not use — a
   function-model file (`resource/funcModelFile`, parallel to the `logicLimit` we fetch) and the
   per-board PCB E++ file store — but the first needs a signed request and serves the same class
   model we already have (no voltage), and the second is behind the developer login and scoped to the

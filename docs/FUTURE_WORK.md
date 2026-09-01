@@ -794,6 +794,19 @@ Consequences:
   experiment still needs a cabinet whose owner confirms the sensor is fitted — one of those five
   models is the place to ask.
 
+### 54. Left-right vane on `0d12` — control confirmed on hardware, and the code→position map
+
+The issue #12 reporter drove `windDirectionHorizontal` from the integration on their `AE2C52Q00`
+cabinet and watched the louvre: **the `5D0C` single-parameter control works** (the vane moved), and
+of the eight codes the model authorises (`0..7`), **codes 1 and 2 do nothing** while **3 = far left,
+4 = near-centre left, 5 = near-centre right, 6 = far right** — four discrete stops sweeping the room
+left→right. `0` and `7` were not reported (by analogy with the vertical vane, `0` fixed / `7` auto).
+So the control and its adjudication (`5D0C`, per the diagnostics `single_param_ids`) are confirmed
+live on a real `0d12` cabinet, and the enum's *usable* range is the middle four codes, not all eight.
+This is a per-hardware observation, not a model change; it is the ground truth to check the shipped
+`windDirectionHorizontal` labels against, and the first confirmation that a `0d12` L-R vane command
+moves the actual louvre (the four-sided cassette sweep, `FUTURE_WORK` unchanged, is still unobserved).
+
 ## Reference — not open items
 
 Kept because each looks like something to "fix" until you know why it is the way it is.
@@ -1144,23 +1157,41 @@ Regression test `test_a_refusal_is_not_masked_by_the_routine_status_push`, confi
 the old ordering.
 
 
-### 52. Power and running data on the roof-mounted cabinets is delivered — and left unparsed
+### 52. The roof cabinets' big-data telemetry is delivered and now DECODED — its liveness is the open part
 
-⚠️ **Corrected 2026-09-01.** A diagnostics download from the issue #12 cabinet, taken with the
-build that keeps every LAN frame, shows the cabinet **answering** the detailed-running-data query
-over the network: three `06/7d01` reports of **147 bytes** in `lan_frames`, one for each of the
-three asks the integration makes before it gives up — after which it recorded seven readings as
-absent. The reply is the 133-byte status body followed by a **14-byte engineering tail**, the same
-tail size the wall-mounted models append (141 − 127), and the tail carries the same +64 temperature
-encoding (`0x61` = 33 °C, equal to the outdoor reading in the same report). `parse_extended_status`
-accepts the classic length only and hands every other length to the published-family maps, which
-have no entry for a related layout, so the reply reads as a miss. Delivery was never missing; the
-decode is. Next: decode the tail with the classic offsets taken relative to the status length,
-verified on captures with the compressor running (the reply on file has frequency 0 with the room
-at setpoint, and its "current" bytes `01 ff` do not fit the classic ×0.1 scaling — three-phase may
-encode these differently). ⛔ Withdrawn, kept as the record: *"Asked the same question over the
-network, the same class of appliance answers nothing at all: not a refusal, just silence, in both
-of the two forms the question can take. What is missing is delivery."* The silence was the parser's.
+⚠️ **Reworked 2026-09-01.** Three earlier readings of this were wrong in turn and are all corrected
+here at the point of the claim. The truth, from the issue #12 cabinet (`AE2C52Q00`) captured with
+the frame-keeping build, and from Haier's own generated UART protocol for this class:
+
+* **The cabinet answers the telemetry query over the LAN.** `lan_frames` holds a **147-byte
+  `06/7d01`** report. ⛔ Withdrawn: *"the same class of appliance answers nothing at all… what is
+  missing is delivery."* The silence was the parser's, not the module's.
+* **It is the documented `0D012` big-data frame, and it is DECODED (shipped).** The `7d01` payload
+  is Haier's *big-data information (BIT-position format)*, whose field layout is the vendor's own
+  **附录H** in `catalogue/profiles_0d12/0D012_UART通讯协议.txt`. The payload offset is confirmed the
+  right one because its first eight bytes decode to the live state exactly (target 25 °C, mode cool,
+  on, human-sensing 3). 附录H places `power` at Byte29, `compressorFrequency` Byte36,
+  `compressorCurrent` Byte37, `compressorStatus` Byte40 — which is **word-for-word the published
+  span-21 layout** one word-run past this class's extra indoor/outdoor PM2.5, CH₂O, VOC and CO₂
+  readings (hence the 27-word span). That map ships as `uss._BIGDATA_VENDOR_DOC[27]`;
+  `parse_extended_status` decodes the frame and the coordinator no longer writes the unit off.
+  ⛔ Withdrawn: the intermediate claim that the tail was *"the classic 14-byte tail, decode with the
+  classic offsets"* — the classic-offset read landed on undocumented bytes past Byte41 and only
+  looked plausible while idle.
+* **What is still open: whether the running fields are LIVE.** In every frame on file `power`,
+  `compressorFrequency`, `compressorCurrent` and `compressorStatus` read **zero**. But every one of
+  those frames is the **same frozen startup frame**: the pre-fix build gave up after three misses
+  and stopped asking, so four separate diagnostics downloads (status counts 50→117, one taken after
+  "set cool, wait 5 min") all carry the identical `7d01` from the first cycles, taken with the unit
+  idle. Zero is therefore *idle-or-never-populated* and cannot yet be told apart — the same doubt
+  as the original item, now narrowed to the running fields alone.
+* **The fix makes the next capture settle it.** Because the frame now decodes, `supports_extended`
+  stays true and the cabinet is polled every cycle — so a diagnostics download while the compressor
+  is running (no reload needed) will carry a *live* `7d01`. If `power`/`frequency`/`current` move
+  with load, the span-21 scaling stands and the entities are real; if they stay zero under load,
+  this class's board does not populate them over the LAN and the entities retire (`_undecoded`… no —
+  they surface `0`, so a running-and-still-zero capture is what withdraws them). Either way the raw
+  frame is kept every poll for the record.
 
 These cabinets answer a query for their detailed running data when it is asked over the wire inside
 the appliance — a recording of one shows the manufacturer's own module asking nine times and the
@@ -1186,12 +1217,12 @@ would settle it outright.
 **What would close it:** a recording of that frame taken beside known conditions — the compressor
 running, then off. That is how every other family's power reading was placed.
 
-ⓘ The manufacturer's *design template* for this appliance kind does describe a running-data frame —
-62 readings with scaling, power and compressor current among them — but it is the full-function
-template, not this product: the frame the real cabinet emits is far shorter and does not line up with
-it (power lands on an empty word). So a description exists and still does not place anything for
-these cabinets; the recording above is still what closes it, and delivery over the network is still
-the prior blocker.
+ⓘ ⛔ **Superseded 2026-09-01.** This said the vendor's *design template* described a 62-reading
+frame that "does not line up — power lands on an empty word", concluding no description placed
+anything. That was the full-function template read against the wrong offset. The class's real
+big-data layout IS documented — 附录H of the generated UART protocol — and DOES line up (power at
+Byte29 = word15, the span-21 position); the earlier mismatch was the analysis, not the data. What
+remains open is only whether the board fills those documented fields when the compressor runs.
 
 ### 51. The cumulative energy counter is not read on a relative's layout
 

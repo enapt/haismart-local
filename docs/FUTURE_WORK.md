@@ -1264,8 +1264,11 @@ the frame-keeping build, and from Haier's own generated UART protocol for this c
   reads the SAME railed `01FF` we see via the module relay. So a serial tap would NOT recover the
   electrical data on an hOn unit — the board itself sends the placeholder; esphome-at-UART sees what
   we see, and reported no usable current for that unit. (The smartAir2 Casarte's live power/current
-  is an older protocol on a single-phase board — not transferable.) The only sliver left is that #19
-  is residential, not the exact 3-phase commercial OEM board. ★ **The esphome hON SOURCE (not just its logs) is the register map we'd been reconstructing.**
+  is an older protocol on a single-phase board — not transferable.) ★ **Closed: 47/47 hON frames rail the current.** Every genuine hON `7D01` big-data
+  frame in the prior-art corpus — 47, residential `U-AC` and commercial `U-BAC` (the `0d12` family's
+  own device name, #115) — has `current`=`01FF` and no usable power; ZERO live. The railed field is a
+  HON-PROTOCOL-WIDE property, not our unit or the module; the one live capture is smartAir2. No sliver
+  remains. ★ **The esphome hON SOURCE (not just its logs) is the register map we'd been reconstructing.**
   `esphome/components/haier` (`hon_packet.h`) defines the single-parameter `DataParameters` register
   (`CONTROL` + `0x5D00+id`, our exact write path); it matches our 9 confirmed 0d12 ids bit-for-bit
   and adds the standard ids `0x07 USE_FAHRENHEIT` (2nd witness for the withheld `5D07 tempUnit`),

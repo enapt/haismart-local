@@ -794,7 +794,7 @@ def httpx_transport(client: Any) -> Transport:
             # class name is kept because it is the diagnosis -- "ConnectError" against a catalogue
             # host says the host could not be reached -- and so is the host, never the whole URL.
             host = urlsplit(req.url).netloc or req.url
-            raise CloudError(
+            raise CloudConnectionError(
                 f"{req.method} {host}: {type(err).__name__}: {err}"
             ) from err
         return Response(status=resp.status_code, text=resp.text)
@@ -1217,3 +1217,13 @@ class HaierCloud:
 
 class CloudError(Exception):
     """A cloud request failed (non-200 or malformed response)."""
+
+
+class CloudConnectionError(CloudError):
+    """The cloud host could not be reached at all -- DNS, a refused/unroutable connection, a timeout.
+
+    A subclass of :class:`CloudError` so every ``except CloudError`` still catches it, but a distinct
+    type so a caller that wants to can tell "the server was unreachable" from "the server answered
+    with an error". :func:`httpx_transport` raises it for the transport-layer failures httpx reports
+    (see :data:`HTTPX_REQUEST_ERRORS`); a sign-in flow uses the distinction to say "cannot reach
+    Haier" instead of "check your password" when the network, not the credentials, is at fault."""

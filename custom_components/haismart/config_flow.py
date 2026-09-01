@@ -31,6 +31,7 @@ import voluptuous as vol
 from haismart_extractor import GatewayCreds, GatewayError, get_localkey_via_gateway
 from haismart_extractor.cloud import (
     SEA_APP_CREDENTIALS,
+    CloudConnectionError,
     CloudError,
     HaierCloud,
     get_public_device_config,
@@ -310,6 +311,12 @@ def _login_error_for(err: Exception) -> str:
     the wrong region, and the region is the only part of the form a user cannot simply re-read off
     their password manager -- so it gets its own message rather than a generic three-way shrug.
     """
+    # A transport failure that reached here wrapped as an auth error is not a credential problem:
+    # the server never answered, so "check your email and password" sends the user the wrong way.
+    # `_async_login_cloud` re-raises the original as the cause, so the connection case is a type
+    # test, not a string sniff -- a genuine rejection always carries a retCode instead.
+    if isinstance(getattr(err, "__cause__", None), (CloudConnectionError, TimeoutError, OSError)):
+        return "cannot_connect_cloud"
     text = str(err)
     if "30032" in text:
         return "account_not_in_region"

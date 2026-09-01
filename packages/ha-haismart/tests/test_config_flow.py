@@ -889,6 +889,43 @@ async def test_manual_onboarding_survives_a_failed_lookup(
     assert CONF_DIGITAL_MODEL not in result["data"]
 
 
+async def test_a_network_failure_at_sign_in_is_not_reported_as_a_wrong_password(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A host that cannot reach Haier at sign-in must say so, not "check your email and password".
+
+    The sign-in failures Haier reports carry a retCode; a transport failure carries none, and used
+    to fall through to the generic credential error. httpx now raises `CloudConnectionError` for an
+    unreachable host, `_async_login_cloud` re-raises it as the cause, and the message becomes
+    "cannot reach Haier" -- so a DNS or routing fault on the user's side does not send them off to
+    re-check a password that was never the problem.
+    """
+    from unittest.mock import patch
+
+    import httpx
+    from haismart_extractor.cloud import httpx_transport
+
+    class UnreachableClient:
+        async def request(self, *args, **kwargs):
+            raise httpx.ConnectError("[Errno -2] Name or service not known")
+
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "login"}
+    )
+    with patch(
+        "custom_components.haismart.config_flow.async_cloud_transport",
+        return_value=httpx_transport(UnreachableClient()),
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_USERNAME: "someone@example.test", CONF_PASSWORD: "pw", "zone_info": "66"},
+        )
+
+    assert result["type"] == FlowResultType.FORM
+    assert result["errors"] == {"base": "cannot_connect_cloud"}
+
+
 async def test_manual_onboarding_survives_an_unreachable_catalogue(
     hass: HomeAssistant, mock_uss
 ) -> None:

@@ -10,6 +10,7 @@ from __future__ import annotations
 from .cloud import (
     SEA_APP_CREDENTIALS,
     AppCredentials,
+    CloudConnectionError,
     CloudDevice,
     CloudError,
     Domains,
@@ -40,6 +41,7 @@ __version__ = "0.1.0"
 __all__ = [
     "SEA_APP_CREDENTIALS",
     "AppCredentials",
+    "CloudConnectionError",
     "CloudDevice",
     "CloudError",
     "Domains",

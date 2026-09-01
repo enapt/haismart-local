@@ -746,6 +746,22 @@ class Response:
 Transport = Callable[[Request], Awaitable[Response]]
 
 
+# What an httpx request raises when it fails: a DNS miss or refused connection (``ConnectError``),
+# a timeout (``ConnectTimeout``/``ReadTimeout``/...), a dropped connection, a malformed URL. Every
+# one of them descends from ``Exception`` directly -- ``ConnectError`` is not an ``OSError`` and
+# ``ReadTimeout`` is not a ``TimeoutError`` -- so left as they are they pass straight through every
+# ``except CloudError`` (or ``OSError``, or ``TimeoutError``) in the callers. ``HTTPError`` is the
+# root of the request/response family and ``InvalidURL`` the one request-time failure outside it;
+# ``StreamError`` is already a ``RuntimeError``. Empty when httpx is not installed, which is only
+# the case when no httpx client can exist either.
+try:
+    import httpx as _httpx
+
+    HTTPX_REQUEST_ERRORS: tuple[type[Exception], ...] = (_httpx.HTTPError, _httpx.InvalidURL)
+except ImportError:  # pragma: no cover - the `cloud` extra is optional
+    HTTPX_REQUEST_ERRORS = ()
+
+
 HTTP_TIMEOUT = 15.0
 
 # One shared httpx client per event loop. Constructing a client loads the CA bundle from DISK, which
@@ -764,13 +780,23 @@ def httpx_transport(client: Any) -> Transport:
     context is ever built on the event loop and connections are pooled with the rest of the host's.
     """
     async def _transport(req: Request) -> Response:
-        resp = await client.request(
-            req.method,
-            req.url,
-            headers=req.headers,
-            content=req.body.encode("utf-8"),
-            timeout=HTTP_TIMEOUT,
-        )
+        try:
+            resp = await client.request(
+                req.method,
+                req.url,
+                headers=req.headers,
+                content=req.body.encode("utf-8"),
+                timeout=HTTP_TIMEOUT,
+            )
+        except HTTPX_REQUEST_ERRORS as err:
+            # The one place that knows it is speaking httpx, so the one place its failures can be
+            # turned into the error every caller handles (see :data:`HTTPX_REQUEST_ERRORS`). The
+            # class name is kept because it is the diagnosis -- "ConnectError" against a catalogue
+            # host says the host could not be reached -- and so is the host, never the whole URL.
+            host = urlsplit(req.url).netloc or req.url
+            raise CloudError(
+                f"{req.method} {host}: {type(err).__name__}: {err}"
+            ) from err
         return Response(status=resp.status_code, text=resp.text)
 
     return _transport

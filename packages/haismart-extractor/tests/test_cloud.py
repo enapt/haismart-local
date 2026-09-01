@@ -430,6 +430,36 @@ async def test_httpx_transport_wraps_a_caller_supplied_client() -> None:
     }]
 
 
+async def test_httpx_transport_reports_a_failed_request_as_a_cloud_error() -> None:
+    """httpx's exceptions descend from ``Exception`` directly -- ``ConnectError`` is not an
+    ``OSError``, ``ReadTimeout`` is not a ``TimeoutError`` -- so untranslated, a refused connection,
+    a DNS failure or a timeout passes every ``except CloudError`` in the callers. The transport is
+    the one place that knows it is speaking httpx, so it is where they are translated: the class
+    name and the host are in the message, the original is the cause."""
+    import httpx
+
+    from haismart_extractor.cloud import httpx_transport
+
+    class FailingClient:
+        def __init__(self, err: Exception) -> None:
+            self.err = err
+
+        async def request(self, *args, **kwargs):
+            raise self.err
+
+    for err in (
+        httpx.ConnectError("[Errno -2] Name or service not known"),
+        httpx.ReadTimeout("timed out"),
+        httpx.InvalidURL("not a URL"),
+    ):
+        with pytest.raises(CloudError, match=type(err).__name__) as caught:
+            await httpx_transport(FailingClient(err))(
+                Request("GET", "https://catalogue.test/file.json", {}, "")
+            )
+        assert caught.value.__cause__ is err
+        assert "catalogue.test" in str(caught.value)
+
+
 async def test_default_client_is_built_off_the_event_loop_and_reused() -> None:
     """Regression: the default transport must not construct its httpx client on the event loop
     (HA reports that as a blocking `load_verify_locations` call). It builds it in an executor

@@ -889,6 +889,51 @@ async def test_manual_onboarding_survives_a_failed_lookup(
     assert CONF_DIGITAL_MODEL not in result["data"]
 
 
+async def test_manual_onboarding_survives_an_unreachable_catalogue(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """What an unreachable catalogue actually raises is httpx's own exception class.
+
+    The suite's stand-in transport refuses with ``OSError``, which every caller catches, so a mock
+    of the lookup cannot see this. A Home Assistant that cannot reach the catalogue host gets
+    ``httpx.ConnectError``, which descends from ``Exception`` directly, and unless the transport
+    translates it the model step dies on it: the model number resolves offline, the supplementary
+    fetch fails, and the owner sees "Unknown error occurred" and cannot add the appliance at all
+    (reported on a manual re-add, model picked from the shortlist). This drives the real fetch, not
+    a mock of it, so the transport boundary is what is under test.
+    """
+    from unittest.mock import patch
+
+    import httpx
+    from haismart_extractor.cloud import httpx_transport
+
+    from custom_components.haismart.const import CONF_DIGITAL_MODEL
+
+    class UnreachableClient:
+        """Home Assistant's shared httpx client, on a host that cannot resolve the catalogue."""
+
+        async def request(self, *args, **kwargs):
+            raise httpx.ConnectError("[Errno -2] Name or service not known")
+
+    flow_id = await _start_manual(hass)
+    # The production transport, wrapped around a client that fails the way httpx fails -- not a
+    # stand-in transport, which would bypass the one layer whose job this is.
+    with patch(
+        "custom_components.haismart.config_flow.async_cloud_transport",
+        return_value=httpx_transport(UnreachableClient()),
+    ):
+        result = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
+        assert result["step_id"] == "model"
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_PRODUCT_CODE: "HSU-12KCROC(IN)-R32"}
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_PRODUCT_CODE] == "AAD180E00"   # resolved offline, kept
+    assert CONF_DIGITAL_MODEL not in result["data"]            # the supplement is simply absent
+
+
 async def test_a_backed_up_local_key_is_all_an_offline_install_needs(
     hass: HomeAssistant, mock_uss
 ) -> None:

@@ -394,6 +394,61 @@
           "off": "Kapalı",
           "on": "Açık"
         }
+      },
+      "four_sided_vane_1": {
+        "name": "Four-way vane 1",
+        "state": {
+          "fixed": "Sabit",
+          "position_1": "Konum 1",
+          "position_2": "Konum 2",
+          "position_3": "Konum 3",
+          "position_4": "Konum 4",
+          "position_5": "Konum 5",
+          "auto": "Otomatik (salınım)"
+        }
+      },
+      "four_sided_vane_2": {
+        "name": "Four-way vane 2",
+        "state": {
+          "fixed": "Sabit",
+          "position_1": "Konum 1",
+          "position_2": "Konum 2",
+          "position_3": "Konum 3",
+          "position_4": "Konum 4",
+          "position_5": "Konum 5",
+          "auto": "Otomatik (salınım)"
+        }
+      },
+      "four_sided_vane_3": {
+        "name": "Four-way vane 3",
+        "state": {
+          "fixed": "Sabit",
+          "position_1": "Konum 1",
+          "position_2": "Konum 2",
+          "position_3": "Konum 3",
+          "position_4": "Konum 4",
+          "position_5": "Konum 5",
+          "auto": "Otomatik (salınım)"
+        }
+      },
+      "four_sided_vane_4": {
+        "name": "Four-way vane 4",
+        "state": {
+          "fixed": "Sabit",
+          "position_1": "Konum 1",
+          "position_2": "Konum 2",
+          "position_3": "Konum 3",
+          "position_4": "Konum 4",
+          "position_5": "Konum 5",
+          "auto": "Otomatik (salınım)"
+        }
+      },
+      "temp_unit": {
+        "name": "Temperature unit",
+        "state": {
+          "celsius": "Celsius (°C)",
+          "fahrenheit": "Fahrenheit (°F)"
+        }
       }
     },
     "binary_sensor": {

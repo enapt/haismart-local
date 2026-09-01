@@ -394,6 +394,61 @@
           "off": "Tắt",
           "on": "Bật"
         }
+      },
+      "four_sided_vane_1": {
+        "name": "Four-way vane 1",
+        "state": {
+          "fixed": "Cố định",
+          "position_1": "Vị trí 1",
+          "position_2": "Vị trí 2",
+          "position_3": "Vị trí 3",
+          "position_4": "Vị trí 4",
+          "position_5": "Vị trí 5",
+          "auto": "Tự động (đảo gió)"
+        }
+      },
+      "four_sided_vane_2": {
+        "name": "Four-way vane 2",
+        "state": {
+          "fixed": "Cố định",
+          "position_1": "Vị trí 1",
+          "position_2": "Vị trí 2",
+          "position_3": "Vị trí 3",
+          "position_4": "Vị trí 4",
+          "position_5": "Vị trí 5",
+          "auto": "Tự động (đảo gió)"
+        }
+      },
+      "four_sided_vane_3": {
+        "name": "Four-way vane 3",
+        "state": {
+          "fixed": "Cố định",
+          "position_1": "Vị trí 1",
+          "position_2": "Vị trí 2",
+          "position_3": "Vị trí 3",
+          "position_4": "Vị trí 4",
+          "position_5": "Vị trí 5",
+          "auto": "Tự động (đảo gió)"
+        }
+      },
+      "four_sided_vane_4": {
+        "name": "Four-way vane 4",
+        "state": {
+          "fixed": "Cố định",
+          "position_1": "Vị trí 1",
+          "position_2": "Vị trí 2",
+          "position_3": "Vị trí 3",
+          "position_4": "Vị trí 4",
+          "position_5": "Vị trí 5",
+          "auto": "Tự động (đảo gió)"
+        }
+      },
+      "temp_unit": {
+        "name": "Temperature unit",
+        "state": {
+          "celsius": "Celsius (°C)",
+          "fahrenheit": "Fahrenheit (°F)"
+        }
       }
     },
     "binary_sensor": {

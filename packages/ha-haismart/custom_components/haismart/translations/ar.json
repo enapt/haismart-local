@@ -394,6 +394,61 @@
           "off": "إيقاف",
           "on": "تشغيل"
         }
+      },
+      "four_sided_vane_1": {
+        "name": "Four-way vane 1",
+        "state": {
+          "fixed": "ثابتة",
+          "position_1": "الوضع 1",
+          "position_2": "الوضع 2",
+          "position_3": "الوضع 3",
+          "position_4": "الوضع 4",
+          "position_5": "الوضع 5",
+          "auto": "تلقائي (تأرجح)"
+        }
+      },
+      "four_sided_vane_2": {
+        "name": "Four-way vane 2",
+        "state": {
+          "fixed": "ثابتة",
+          "position_1": "الوضع 1",
+          "position_2": "الوضع 2",
+          "position_3": "الوضع 3",
+          "position_4": "الوضع 4",
+          "position_5": "الوضع 5",
+          "auto": "تلقائي (تأرجح)"
+        }
+      },
+      "four_sided_vane_3": {
+        "name": "Four-way vane 3",
+        "state": {
+          "fixed": "ثابتة",
+          "position_1": "الوضع 1",
+          "position_2": "الوضع 2",
+          "position_3": "الوضع 3",
+          "position_4": "الوضع 4",
+          "position_5": "الوضع 5",
+          "auto": "تلقائي (تأرجح)"
+        }
+      },
+      "four_sided_vane_4": {
+        "name": "Four-way vane 4",
+        "state": {
+          "fixed": "ثابتة",
+          "position_1": "الوضع 1",
+          "position_2": "الوضع 2",
+          "position_3": "الوضع 3",
+          "position_4": "الوضع 4",
+          "position_5": "الوضع 5",
+          "auto": "تلقائي (تأرجح)"
+        }
+      },
+      "temp_unit": {
+        "name": "Temperature unit",
+        "state": {
+          "celsius": "Celsius (°C)",
+          "fahrenheit": "Fahrenheit (°F)"
+        }
       }
     },
     "binary_sensor": {

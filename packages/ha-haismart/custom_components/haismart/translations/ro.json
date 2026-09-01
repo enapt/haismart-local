@@ -394,6 +394,61 @@
           "off": "Oprit",
           "on": "Pornit"
         }
+      },
+      "four_sided_vane_1": {
+        "name": "Four-way vane 1",
+        "state": {
+          "fixed": "Fixă",
+          "position_1": "Poziția 1",
+          "position_2": "Poziția 2",
+          "position_3": "Poziția 3",
+          "position_4": "Poziția 4",
+          "position_5": "Poziția 5",
+          "auto": "Automat (baleiaj)"
+        }
+      },
+      "four_sided_vane_2": {
+        "name": "Four-way vane 2",
+        "state": {
+          "fixed": "Fixă",
+          "position_1": "Poziția 1",
+          "position_2": "Poziția 2",
+          "position_3": "Poziția 3",
+          "position_4": "Poziția 4",
+          "position_5": "Poziția 5",
+          "auto": "Automat (baleiaj)"
+        }
+      },
+      "four_sided_vane_3": {
+        "name": "Four-way vane 3",
+        "state": {
+          "fixed": "Fixă",
+          "position_1": "Poziția 1",
+          "position_2": "Poziția 2",
+          "position_3": "Poziția 3",
+          "position_4": "Poziția 4",
+          "position_5": "Poziția 5",
+          "auto": "Automat (baleiaj)"
+        }
+      },
+      "four_sided_vane_4": {
+        "name": "Four-way vane 4",
+        "state": {
+          "fixed": "Fixă",
+          "position_1": "Poziția 1",
+          "position_2": "Poziția 2",
+          "position_3": "Poziția 3",
+          "position_4": "Poziția 4",
+          "position_5": "Poziția 5",
+          "auto": "Automat (baleiaj)"
+        }
+      },
+      "temp_unit": {
+        "name": "Temperature unit",
+        "state": {
+          "celsius": "Celsius (°C)",
+          "fahrenheit": "Fahrenheit (°F)"
+        }
       }
     },
     "binary_sensor": {

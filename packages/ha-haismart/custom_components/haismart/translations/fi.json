@@ -394,6 +394,61 @@
           "off": "Pois",
           "on": "Päällä"
         }
+      },
+      "four_sided_vane_1": {
+        "name": "Four-way vane 1",
+        "state": {
+          "fixed": "Kiinteä",
+          "position_1": "Asento 1",
+          "position_2": "Asento 2",
+          "position_3": "Asento 3",
+          "position_4": "Asento 4",
+          "position_5": "Asento 5",
+          "auto": "Automaattinen (huojunta)"
+        }
+      },
+      "four_sided_vane_2": {
+        "name": "Four-way vane 2",
+        "state": {
+          "fixed": "Kiinteä",
+          "position_1": "Asento 1",
+          "position_2": "Asento 2",
+          "position_3": "Asento 3",
+          "position_4": "Asento 4",
+          "position_5": "Asento 5",
+          "auto": "Automaattinen (huojunta)"
+        }
+      },
+      "four_sided_vane_3": {
+        "name": "Four-way vane 3",
+        "state": {
+          "fixed": "Kiinteä",
+          "position_1": "Asento 1",
+          "position_2": "Asento 2",
+          "position_3": "Asento 3",
+          "position_4": "Asento 4",
+          "position_5": "Asento 5",
+          "auto": "Automaattinen (huojunta)"
+        }
+      },
+      "four_sided_vane_4": {
+        "name": "Four-way vane 4",
+        "state": {
+          "fixed": "Kiinteä",
+          "position_1": "Asento 1",
+          "position_2": "Asento 2",
+          "position_3": "Asento 3",
+          "position_4": "Asento 4",
+          "position_5": "Asento 5",
+          "auto": "Automaattinen (huojunta)"
+        }
+      },
+      "temp_unit": {
+        "name": "Temperature unit",
+        "state": {
+          "celsius": "Celsius (°C)",
+          "fahrenheit": "Fahrenheit (°F)"
+        }
       }
     },
     "binary_sensor": {

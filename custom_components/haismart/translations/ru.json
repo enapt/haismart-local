@@ -394,6 +394,61 @@
           "off": "Выкл.",
           "on": "Вкл."
         }
+      },
+      "four_sided_vane_1": {
+        "name": "Four-way vane 1",
+        "state": {
+          "fixed": "Фиксировано",
+          "position_1": "Позиция 1",
+          "position_2": "Позиция 2",
+          "position_3": "Позиция 3",
+          "position_4": "Позиция 4",
+          "position_5": "Позиция 5",
+          "auto": "Авто (качание)"
+        }
+      },
+      "four_sided_vane_2": {
+        "name": "Four-way vane 2",
+        "state": {
+          "fixed": "Фиксировано",
+          "position_1": "Позиция 1",
+          "position_2": "Позиция 2",
+          "position_3": "Позиция 3",
+          "position_4": "Позиция 4",
+          "position_5": "Позиция 5",
+          "auto": "Авто (качание)"
+        }
+      },
+      "four_sided_vane_3": {
+        "name": "Four-way vane 3",
+        "state": {
+          "fixed": "Фиксировано",
+          "position_1": "Позиция 1",
+          "position_2": "Позиция 2",
+          "position_3": "Позиция 3",
+          "position_4": "Позиция 4",
+          "position_5": "Позиция 5",
+          "auto": "Авто (качание)"
+        }
+      },
+      "four_sided_vane_4": {
+        "name": "Four-way vane 4",
+        "state": {
+          "fixed": "Фиксировано",
+          "position_1": "Позиция 1",
+          "position_2": "Позиция 2",
+          "position_3": "Позиция 3",
+          "position_4": "Позиция 4",
+          "position_5": "Позиция 5",
+          "auto": "Авто (качание)"
+        }
+      },
+      "temp_unit": {
+        "name": "Temperature unit",
+        "state": {
+          "celsius": "Celsius (°C)",
+          "fahrenheit": "Fahrenheit (°F)"
+        }
       }
     },
     "binary_sensor": {

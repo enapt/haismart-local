@@ -394,6 +394,61 @@
           "off": "Av",
           "on": "På"
         }
+      },
+      "four_sided_vane_1": {
+        "name": "Four-way vane 1",
+        "state": {
+          "fixed": "Fast",
+          "position_1": "Posisjon 1",
+          "position_2": "Posisjon 2",
+          "position_3": "Posisjon 3",
+          "position_4": "Posisjon 4",
+          "position_5": "Posisjon 5",
+          "auto": "Automatisk (sving)"
+        }
+      },
+      "four_sided_vane_2": {
+        "name": "Four-way vane 2",
+        "state": {
+          "fixed": "Fast",
+          "position_1": "Posisjon 1",
+          "position_2": "Posisjon 2",
+          "position_3": "Posisjon 3",
+          "position_4": "Posisjon 4",
+          "position_5": "Posisjon 5",
+          "auto": "Automatisk (sving)"
+        }
+      },
+      "four_sided_vane_3": {
+        "name": "Four-way vane 3",
+        "state": {
+          "fixed": "Fast",
+          "position_1": "Posisjon 1",
+          "position_2": "Posisjon 2",
+          "position_3": "Posisjon 3",
+          "position_4": "Posisjon 4",
+          "position_5": "Posisjon 5",
+          "auto": "Automatisk (sving)"
+        }
+      },
+      "four_sided_vane_4": {
+        "name": "Four-way vane 4",
+        "state": {
+          "fixed": "Fast",
+          "position_1": "Posisjon 1",
+          "position_2": "Posisjon 2",
+          "position_3": "Posisjon 3",
+          "position_4": "Posisjon 4",
+          "position_5": "Posisjon 5",
+          "auto": "Automatisk (sving)"
+        }
+      },
+      "temp_unit": {
+        "name": "Temperature unit",
+        "state": {
+          "celsius": "Celsius (°C)",
+          "fahrenheit": "Fahrenheit (°F)"
+        }
       }
     },
     "binary_sensor": {

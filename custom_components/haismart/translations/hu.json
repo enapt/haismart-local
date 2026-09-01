@@ -394,6 +394,61 @@
           "off": "Ki",
           "on": "Be"
         }
+      },
+      "four_sided_vane_1": {
+        "name": "Four-way vane 1",
+        "state": {
+          "fixed": "Rögzített",
+          "position_1": "1. pozíció",
+          "position_2": "2. pozíció",
+          "position_3": "3. pozíció",
+          "position_4": "4. pozíció",
+          "position_5": "5. pozíció",
+          "auto": "Automatikus (lengés)"
+        }
+      },
+      "four_sided_vane_2": {
+        "name": "Four-way vane 2",
+        "state": {
+          "fixed": "Rögzített",
+          "position_1": "1. pozíció",
+          "position_2": "2. pozíció",
+          "position_3": "3. pozíció",
+          "position_4": "4. pozíció",
+          "position_5": "5. pozíció",
+          "auto": "Automatikus (lengés)"
+        }
+      },
+      "four_sided_vane_3": {
+        "name": "Four-way vane 3",
+        "state": {
+          "fixed": "Rögzített",
+          "position_1": "1. pozíció",
+          "position_2": "2. pozíció",
+          "position_3": "3. pozíció",
+          "position_4": "4. pozíció",
+          "position_5": "5. pozíció",
+          "auto": "Automatikus (lengés)"
+        }
+      },
+      "four_sided_vane_4": {
+        "name": "Four-way vane 4",
+        "state": {
+          "fixed": "Rögzített",
+          "position_1": "1. pozíció",
+          "position_2": "2. pozíció",
+          "position_3": "3. pozíció",
+          "position_4": "4. pozíció",
+          "position_5": "5. pozíció",
+          "auto": "Automatikus (lengés)"
+        }
+      },
+      "temp_unit": {
+        "name": "Temperature unit",
+        "state": {
+          "celsius": "Celsius (°C)",
+          "fahrenheit": "Fahrenheit (°F)"
+        }
       }
     },
     "binary_sensor": {

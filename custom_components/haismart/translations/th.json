@@ -394,6 +394,61 @@
           "off": "ปิด",
           "on": "เปิด"
         }
+      },
+      "four_sided_vane_1": {
+        "name": "Four-way vane 1",
+        "state": {
+          "fixed": "คงที่",
+          "position_1": "ตำแหน่ง 1",
+          "position_2": "ตำแหน่ง 2",
+          "position_3": "ตำแหน่ง 3",
+          "position_4": "ตำแหน่ง 4",
+          "position_5": "ตำแหน่ง 5",
+          "auto": "อัตโนมัติ (ส่าย)"
+        }
+      },
+      "four_sided_vane_2": {
+        "name": "Four-way vane 2",
+        "state": {
+          "fixed": "คงที่",
+          "position_1": "ตำแหน่ง 1",
+          "position_2": "ตำแหน่ง 2",
+          "position_3": "ตำแหน่ง 3",
+          "position_4": "ตำแหน่ง 4",
+          "position_5": "ตำแหน่ง 5",
+          "auto": "อัตโนมัติ (ส่าย)"
+        }
+      },
+      "four_sided_vane_3": {
+        "name": "Four-way vane 3",
+        "state": {
+          "fixed": "คงที่",
+          "position_1": "ตำแหน่ง 1",
+          "position_2": "ตำแหน่ง 2",
+          "position_3": "ตำแหน่ง 3",
+          "position_4": "ตำแหน่ง 4",
+          "position_5": "ตำแหน่ง 5",
+          "auto": "อัตโนมัติ (ส่าย)"
+        }
+      },
+      "four_sided_vane_4": {
+        "name": "Four-way vane 4",
+        "state": {
+          "fixed": "คงที่",
+          "position_1": "ตำแหน่ง 1",
+          "position_2": "ตำแหน่ง 2",
+          "position_3": "ตำแหน่ง 3",
+          "position_4": "ตำแหน่ง 4",
+          "position_5": "ตำแหน่ง 5",
+          "auto": "อัตโนมัติ (ส่าย)"
+        }
+      },
+      "temp_unit": {
+        "name": "Temperature unit",
+        "state": {
+          "celsius": "Celsius (°C)",
+          "fahrenheit": "Fahrenheit (°F)"
+        }
       }
     },
     "binary_sensor": {

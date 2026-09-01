@@ -394,6 +394,61 @@
           "off": "خاموش",
           "on": "روشن"
         }
+      },
+      "four_sided_vane_1": {
+        "name": "Four-way vane 1",
+        "state": {
+          "fixed": "ثابت",
+          "position_1": "موقعیت 1",
+          "position_2": "موقعیت 2",
+          "position_3": "موقعیت 3",
+          "position_4": "موقعیت 4",
+          "position_5": "موقعیت 5",
+          "auto": "خودکار (نوسان)"
+        }
+      },
+      "four_sided_vane_2": {
+        "name": "Four-way vane 2",
+        "state": {
+          "fixed": "ثابت",
+          "position_1": "موقعیت 1",
+          "position_2": "موقعیت 2",
+          "position_3": "موقعیت 3",
+          "position_4": "موقعیت 4",
+          "position_5": "موقعیت 5",
+          "auto": "خودکار (نوسان)"
+        }
+      },
+      "four_sided_vane_3": {
+        "name": "Four-way vane 3",
+        "state": {
+          "fixed": "ثابت",
+          "position_1": "موقعیت 1",
+          "position_2": "موقعیت 2",
+          "position_3": "موقعیت 3",
+          "position_4": "موقعیت 4",
+          "position_5": "موقعیت 5",
+          "auto": "خودکار (نوسان)"
+        }
+      },
+      "four_sided_vane_4": {
+        "name": "Four-way vane 4",
+        "state": {
+          "fixed": "ثابت",
+          "position_1": "موقعیت 1",
+          "position_2": "موقعیت 2",
+          "position_3": "موقعیت 3",
+          "position_4": "موقعیت 4",
+          "position_5": "موقعیت 5",
+          "auto": "خودکار (نوسان)"
+        }
+      },
+      "temp_unit": {
+        "name": "Temperature unit",
+        "state": {
+          "celsius": "Celsius (°C)",
+          "fahrenheit": "Fahrenheit (°F)"
+        }
       }
     },
     "binary_sensor": {

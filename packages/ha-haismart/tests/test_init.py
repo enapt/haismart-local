@@ -5342,6 +5342,84 @@ async def test_the_presence_select_is_built_from_the_codes_the_family_can_carry(
     assert "avoid" not in select.options and "follow" not in select.options
 
 
+_0D12_DISPLAY_AND_VANES_MODEL = {"attributes": [
+    {"name": "onOffStatus", "writable": True, "valueRange": {
+        "type": "LIST", "dataList": [{"data": "false"}, {"data": "true"}]}},
+    # the display unit, declared: std 1 °C / 2 °F
+    {"name": "tempUnit", "writable": True, "valueRange": {
+        "type": "LIST", "dataList": [{"data": "1"}, {"data": "2"}]}},
+    # the four louvres of a four-way cassette, each std 0..6
+    *[{"name": f"4SidesWindDirection{i}", "writable": True, "valueRange": {
+        "type": "LIST", "dataList": [{"data": str(c)} for c in range(7)]}}
+      for i in (1, 2, 3, 4)],
+], "invisible_attributes": []}
+
+
+async def test_0d12_display_unit_and_four_sided_louvres_are_offered_where_declared(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The config expansion, at the offering gate. A central cabinet that declares the display unit
+    and the four-way louvres gets a select for each -- tempUnit settled (its read sits in the
+    climate block), the four louvres provisional (their read sits in the report's inserted block,
+    which no wire has shown populated). The keys, codes and options are the model's STD codes."""
+    from haismart_hrdp import related_model_named
+
+    from custom_components.haismart.select import HaismartPanelSelect
+
+    entry = await _setup_with_model(hass, _0D12_DISPLAY_AND_VANES_MODEL)
+    coord = entry.runtime_data
+    coord.uplus_id = _CENTRAL_UPLUS_ID
+    # exactly the model the coordinator rebuilds in production for a 133-byte report of this class
+    coord._wire_model = related_model_named(
+        "related-19+4@25", 133, order=None, uplus_id=_CENTRAL_UPLUS_ID
+    )
+
+    offered = coord.panel_select_fields()
+    assert "tempUnit" in offered
+    for i in (1, 2, 3, 4):
+        assert f"4SidesWindDirection{i}" in offered
+
+    # the codes each control can be sent are the model's declared STD codes
+    assert coord.panel_select_codes("tempUnit") == frozenset({1, 2})
+    assert coord.panel_select_codes("4SidesWindDirection1") == frozenset(range(7))
+
+    # tempUnit is settled; the louvres are provisional (the appliance settles their inserted-block
+    # read on first use)
+    vp = coord._wire_model.value_param_fields
+    assert vp["tempUnit"].provisional is False
+    assert vp["4SidesWindDirection1"].provisional is True
+
+    # the select options are the localized state tokens, in code order
+    select = HaismartPanelSelect(coord, "4SidesWindDirection1")
+    assert select.options == [
+        "fixed", "position_1", "position_2", "position_3", "position_4", "position_5", "auto",
+    ]
+    assert HaismartPanelSelect(coord, "tempUnit").options == ["celsius", "fahrenheit"]
+
+
+async def test_0d12_display_unit_and_louvres_are_not_phantoms_where_undeclared(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The other half of the gate: a central cabinet that declares NEITHER gets neither. The config
+    byte-map has the ids for the whole class, but the declaration gate -- not the byte-map -- is
+    what decides, so a cabinet like issue #12's (which declares only its climate basics) sees no
+    display-unit or louvre control, exactly as the app shows none."""
+    from haismart_hrdp import related_model_named
+
+    entry = await _setup_with_model(
+        hass, {"attributes": [{"name": "onOffStatus"}], "invisible_attributes": []}
+    )
+    coord = entry.runtime_data
+    coord.uplus_id = _CENTRAL_UPLUS_ID
+    coord._wire_model = related_model_named(
+        "related-19+4@25", 133, order=None, uplus_id=_CENTRAL_UPLUS_ID
+    )
+
+    offered = coord.panel_select_fields()
+    assert "tempUnit" not in offered
+    assert not any(f"4SidesWindDirection{i}" in offered for i in (1, 2, 3, 4))
+
+
 async def test_a_provisional_id_the_appliance_refuses_outright_is_withdrawn(
     hass: HomeAssistant, mock_uss
 ) -> None:

@@ -394,6 +394,61 @@
           "off": "Ανενεργό",
           "on": "Ενεργό"
         }
+      },
+      "four_sided_vane_1": {
+        "name": "Four-way vane 1",
+        "state": {
+          "fixed": "Σταθερό",
+          "position_1": "Θέση 1",
+          "position_2": "Θέση 2",
+          "position_3": "Θέση 3",
+          "position_4": "Θέση 4",
+          "position_5": "Θέση 5",
+          "auto": "Αυτόματο (αιώρηση)"
+        }
+      },
+      "four_sided_vane_2": {
+        "name": "Four-way vane 2",
+        "state": {
+          "fixed": "Σταθερό",
+          "position_1": "Θέση 1",
+          "position_2": "Θέση 2",
+          "position_3": "Θέση 3",
+          "position_4": "Θέση 4",
+          "position_5": "Θέση 5",
+          "auto": "Αυτόματο (αιώρηση)"
+        }
+      },
+      "four_sided_vane_3": {
+        "name": "Four-way vane 3",
+        "state": {
+          "fixed": "Σταθερό",
+          "position_1": "Θέση 1",
+          "position_2": "Θέση 2",
+          "position_3": "Θέση 3",
+          "position_4": "Θέση 4",
+          "position_5": "Θέση 5",
+          "auto": "Αυτόματο (αιώρηση)"
+        }
+      },
+      "four_sided_vane_4": {
+        "name": "Four-way vane 4",
+        "state": {
+          "fixed": "Σταθερό",
+          "position_1": "Θέση 1",
+          "position_2": "Θέση 2",
+          "position_3": "Θέση 3",
+          "position_4": "Θέση 4",
+          "position_5": "Θέση 5",
+          "auto": "Αυτόματο (αιώρηση)"
+        }
+      },
+      "temp_unit": {
+        "name": "Temperature unit",
+        "state": {
+          "celsius": "Celsius (°C)",
+          "fahrenheit": "Fahrenheit (°F)"
+        }
       }
     },
     "binary_sensor": {

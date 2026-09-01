@@ -394,6 +394,61 @@
           "off": "बंद",
           "on": "चालू"
         }
+      },
+      "four_sided_vane_1": {
+        "name": "Four-way vane 1",
+        "state": {
+          "fixed": "स्थिर",
+          "position_1": "स्थिति 1",
+          "position_2": "स्थिति 2",
+          "position_3": "स्थिति 3",
+          "position_4": "स्थिति 4",
+          "position_5": "स्थिति 5",
+          "auto": "स्वचालित (स्विंग)"
+        }
+      },
+      "four_sided_vane_2": {
+        "name": "Four-way vane 2",
+        "state": {
+          "fixed": "स्थिर",
+          "position_1": "स्थिति 1",
+          "position_2": "स्थिति 2",
+          "position_3": "स्थिति 3",
+          "position_4": "स्थिति 4",
+          "position_5": "स्थिति 5",
+          "auto": "स्वचालित (स्विंग)"
+        }
+      },
+      "four_sided_vane_3": {
+        "name": "Four-way vane 3",
+        "state": {
+          "fixed": "स्थिर",
+          "position_1": "स्थिति 1",
+          "position_2": "स्थिति 2",
+          "position_3": "स्थिति 3",
+          "position_4": "स्थिति 4",
+          "position_5": "स्थिति 5",
+          "auto": "स्वचालित (स्विंग)"
+        }
+      },
+      "four_sided_vane_4": {
+        "name": "Four-way vane 4",
+        "state": {
+          "fixed": "स्थिर",
+          "position_1": "स्थिति 1",
+          "position_2": "स्थिति 2",
+          "position_3": "स्थिति 3",
+          "position_4": "स्थिति 4",
+          "position_5": "स्थिति 5",
+          "auto": "स्वचालित (स्विंग)"
+        }
+      },
+      "temp_unit": {
+        "name": "Temperature unit",
+        "state": {
+          "celsius": "Celsius (°C)",
+          "fahrenheit": "Fahrenheit (°F)"
+        }
       }
     },
     "binary_sensor": {

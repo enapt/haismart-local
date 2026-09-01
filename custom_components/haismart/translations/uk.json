@@ -394,6 +394,61 @@
           "off": "Вимк.",
           "on": "Увімк."
         }
+      },
+      "four_sided_vane_1": {
+        "name": "Four-way vane 1",
+        "state": {
+          "fixed": "Фіксовано",
+          "position_1": "Позиція 1",
+          "position_2": "Позиція 2",
+          "position_3": "Позиція 3",
+          "position_4": "Позиція 4",
+          "position_5": "Позиція 5",
+          "auto": "Авто (гойдання)"
+        }
+      },
+      "four_sided_vane_2": {
+        "name": "Four-way vane 2",
+        "state": {
+          "fixed": "Фіксовано",
+          "position_1": "Позиція 1",
+          "position_2": "Позиція 2",
+          "position_3": "Позиція 3",
+          "position_4": "Позиція 4",
+          "position_5": "Позиція 5",
+          "auto": "Авто (гойдання)"
+        }
+      },
+      "four_sided_vane_3": {
+        "name": "Four-way vane 3",
+        "state": {
+          "fixed": "Фіксовано",
+          "position_1": "Позиція 1",
+          "position_2": "Позиція 2",
+          "position_3": "Позиція 3",
+          "position_4": "Позиція 4",
+          "position_5": "Позиція 5",
+          "auto": "Авто (гойдання)"
+        }
+      },
+      "four_sided_vane_4": {
+        "name": "Four-way vane 4",
+        "state": {
+          "fixed": "Фіксовано",
+          "position_1": "Позиція 1",
+          "position_2": "Позиція 2",
+          "position_3": "Позиція 3",
+          "position_4": "Позиція 4",
+          "position_5": "Позиція 5",
+          "auto": "Авто (гойдання)"
+        }
+      },
+      "temp_unit": {
+        "name": "Temperature unit",
+        "state": {
+          "celsius": "Celsius (°C)",
+          "fahrenheit": "Fahrenheit (°F)"
+        }
       }
     },
     "binary_sensor": {

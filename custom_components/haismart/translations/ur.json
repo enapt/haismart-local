@@ -394,6 +394,61 @@
           "off": "بند",
           "on": "آن"
         }
+      },
+      "four_sided_vane_1": {
+        "name": "Four-way vane 1",
+        "state": {
+          "fixed": "ثابت",
+          "position_1": "پوزیشن 1",
+          "position_2": "پوزیشن 2",
+          "position_3": "پوزیشن 3",
+          "position_4": "پوزیشن 4",
+          "position_5": "پوزیشن 5",
+          "auto": "خودکار (جھولنا)"
+        }
+      },
+      "four_sided_vane_2": {
+        "name": "Four-way vane 2",
+        "state": {
+          "fixed": "ثابت",
+          "position_1": "پوزیشن 1",
+          "position_2": "پوزیشن 2",
+          "position_3": "پوزیشن 3",
+          "position_4": "پوزیشن 4",
+          "position_5": "پوزیشن 5",
+          "auto": "خودکار (جھولنا)"
+        }
+      },
+      "four_sided_vane_3": {
+        "name": "Four-way vane 3",
+        "state": {
+          "fixed": "ثابت",
+          "position_1": "پوزیشن 1",
+          "position_2": "پوزیشن 2",
+          "position_3": "پوزیشن 3",
+          "position_4": "پوزیشن 4",
+          "position_5": "پوزیشن 5",
+          "auto": "خودکار (جھولنا)"
+        }
+      },
+      "four_sided_vane_4": {
+        "name": "Four-way vane 4",
+        "state": {
+          "fixed": "ثابت",
+          "position_1": "پوزیشن 1",
+          "position_2": "پوزیشن 2",
+          "position_3": "پوزیشن 3",
+          "position_4": "پوزیشن 4",
+          "position_5": "پوزیشن 5",
+          "auto": "خودکار (جھولنا)"
+        }
+      },
+      "temp_unit": {
+        "name": "Temperature unit",
+        "state": {
+          "celsius": "Celsius (°C)",
+          "fahrenheit": "Fahrenheit (°F)"
+        }
       }
     },
     "binary_sensor": {

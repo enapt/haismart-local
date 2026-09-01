@@ -1199,6 +1199,32 @@ the frame-keeping build, and from Haier's own generated UART protocol for this c
   and the compressor drive frequency does not convert to watts). Those two entities are retired for
   such a unit (`coordinator`, keyed on the decode dropping them) rather than shown as a constant that
   tracks nothing. Item closed for these cabinets; real energy needs an external meter.
+* **Every path checked — the enumeration behind the negative** (so "no power" is scoped, not
+  assumed): the vendor's Appendix C is the COMPLETE 0D012 command table and holds exactly **three**
+  commands — `4D01` getAllProperty (→ 6D01), `4DFE` getBigDataFrame (→ 7D01), `5D01` onOff set.
+  There is **no 7D02, no 4C01/5C01 per-attribute read, and no "detailed running data" query** in the
+  61-page protocol. The 62-field 7D01 model's only load/electrical fields are `power` (W),
+  `compressorFrequency` (Hz) and `compressorCurrent` (A) — **no voltage, per-phase current, power
+  factor, reactive power, second current or kWh accumulator anywhere**, in 7D01 or the 101-field
+  6D01 status. So there is no fuller frame or channel we have not read.
+* **The board DOES measure current and voltage — it just never exposes the value.** The 6D01 model
+  carries the electrical quantities only as PROTECTION FAULT BITS: `powerProtection` (over-voltage),
+  `outdoorACProtection` / `outdoorDCProtection` (over-current), `ctCurrentErr` (CT abnormal),
+  `threePhaseSupplyErr`. A unit needs a CT and voltage sensing to raise those, so the measurement
+  exists internally — it reaches the protocol only as a threshold trip (a named fault we already
+  surface), never as a readable analog value.
+* **The two fields are real, and populated on OTHER classes.** Prior art issue #39 (a single-phase
+  residential Casarte, smartAir2 family) sends live, varying `power` (0 / 256 W) and
+  `compressorCurrent` (0.0 / 76.8 / 153.7 raw) on the same two fields — so they work on Haier
+  hardware in general; this three-phase central class simply leaves them empty (`power` 0) and
+  railed (`compressorCurrent` at its documented max `0x01FF` = 51.1 A). Why frequency but not amps:
+  of the model's three load fields this class populates only the frequency.
+* **Why the app shows nothing yet the cloud could:** the protocol routes 7D01 "only to the cloud
+  server" by design (`user data → all endpoints; big-data → cloud only`), which is why the app's
+  local view has no telemetry; the module relays 7D01 to a LAN controller anyway (that is how we get
+  it), and the frame it relays is the BOARD's own — its temps and frequency track load, so the empty
+  power/current are the board's own empties on this class, not a module placeholder or a richer
+  copy the cloud keeps back.
 
 These cabinets answer a query for their detailed running data when it is asked over the wire inside
 the appliance — a recording of one shows the manufacturer's own module asking nine times and the

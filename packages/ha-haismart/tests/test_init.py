@@ -5441,7 +5441,7 @@ async def test_diagnostics_carry_the_command_numbers_and_the_last_answer(
         "command": "0x5D01", "provisional": False,
     }
     assert controls["single_param_ids"]["humanSensingStatus"] == {
-        "command": "0x5D08", "provisional": True,
+        "command": "0x5D23", "provisional": True,
     }
     assert controls["paired_commands"] == {}
     assert "humanSensingStatus" in controls["class_carried"]["offered"]

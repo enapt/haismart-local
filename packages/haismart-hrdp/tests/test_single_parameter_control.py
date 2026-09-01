@@ -63,14 +63,14 @@ def test_a_central_cabinet_is_commandable_although_it_publishes_no_group_set() -
         "windSpeed", "healthMode", "muteStatus", "rapidMode",
         # Offered on the appliance's own terms -- see the provisional test below.
         "windDirectionVertical", "windDirectionHorizontal",
-        # Presence airflow. Inferred rather than seen accepted -- the one otherwise-unidentified id
-        # an appliance without the sensor refuses -- so it ships provisional: read back from
-        # w23.b6/2 and withdrawn if it does not take.
+        # Presence airflow. Id `5D23` from Haier's own device config; ships provisional only because
+        # the write has not been exercised on a cabinet -- read back from w23.b6/2, withdrawn if it
+        # does not take.
         "humanSensingStatus",
     }
     # And it is the provisional one, so the appliance settles it.
     assert wm.value_param_fields["humanSensingStatus"].provisional is True
-    assert wm.value_param_fields["humanSensingStatus"].param_id == 0x08
+    assert wm.value_param_fields["humanSensingStatus"].param_id == 0x23
 
 
 @pytest.mark.parametrize(
@@ -114,27 +114,28 @@ def test_the_vane_commands_are_settled() -> None:
     assert wm.value_param_fields["windDirectionHorizontal"].param_id == 0x0C
 
 
-def test_presence_is_a_provisional_control_written_via_5d08() -> None:
+def test_presence_is_a_provisional_control_written_via_5d23() -> None:
     """Presence airflow (off/avoid/follow/on) is a main-board attribute -- reported at w23.b6/2 --
-    set by a single-parameter id. The id is inferred, not seen accepted: of the ids these appliances
-    are observed to exchange, ``0x08`` is the one an appliance without the presence sensor refuses,
-    so it is offered for presence. Provisional therefore: written as ``0x5D00 | 0x08``, a big-endian
-    value, and read back from w23.b6/2 to settle whether this cabinet really has it.
+    set by single-parameter id ``0x23``. The id is Haier's own: the manufacturer's device config for
+    both central-cabinet families gives ``humanSensingStatus`` the write command ``5D23`` (and the
+    nine ids confirmed on hardware match the same config). Provisional only because the write has not
+    yet been exercised on a cabinet: written as ``0x5D00 | 0x23``, a big-endian value, read back from
+    w23.b6/2. (``0x08`` was a wrong earlier guess -- the config shows it is ``halfDegreeSettingStatus``.)
     """
     from haismart_hrdp.uss import build_epp_frame
 
     wm = _central()
     param = wm.value_param_fields["humanSensingStatus"]
-    assert param.param_id == 0x08
+    assert param.param_id == 0x23
     assert param.provisional is True
     assert param.read.word == 4  # canonical w23 at this class's -19 displacement
     for code in (0, 1, 2, 3):    # off / avoid / follow / on all encode
         cmd, payload = wm.encode_value_param("humanSensingStatus", code)
-        assert cmd == b"\x5d\x08"
+        assert cmd == b"\x5d\x23"
         assert payload == code.to_bytes(2, "big")
     # the whole frame, the vendor's own shape
     cmd, payload = wm.encode_value_param("humanSensingStatus", 2)
-    assert build_epp_frame(0x01, cmd, payload).hex() == "ffff0c000000000000015d08000274"
+    assert build_epp_frame(0x01, cmd, payload).hex() == "ffff0c000000000000015d2300028f"
 
 
 def test_the_vane_frame_is_the_shape_the_vendors_own_encoder_emits() -> None:

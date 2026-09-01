@@ -788,7 +788,9 @@ Consequences:
   C/E HCFI product declares `humanSensingStatus` (13CSR, 18CSR, 25ESR, 30CSR, …) while the brochure
   names five. So neither published model is a per-unit or even per-model witness for the sensor,
   and a per-product gate built from the panel would offer presence on exactly this reporter's
-  cabinet. The provisional `5D08` write — offered, not yet tried on this unit — remains the only
+  cabinet. The provisional `5D23` write (⚠️ **corrected from `5D08`** — Haier's own device config gives
+  `humanSensingStatus` the write command `5D23`; `5D08` is `halfDegreeSettingStatus`; see
+  `catalogue/configfiles/`) — offered, not yet tried on this unit — remains the only
   adjudicator on `0d12` (a `0001` "not supported" refusal withdraws the control); on the C/E family
   the five brochure names are the only allow-list held, scoped to one market's brochure. The
   experiment still needs a cabinet whose owner confirms the sensor is fitted — one of those five
@@ -1287,7 +1289,7 @@ the frame-keeping build, and from Haier's own generated UART protocol for this c
   `0x1B SLEEP` — residential-derived CANDIDATES to probe on a 0d12 via the provisional mechanism.
   So "the 5Dxx numbering is not derivable" was true of HAIER'S PUBLISHED DATA; esphome's RE of real
   devices derives the STANDARD register (the enum GAP at 0x08 still neither confirms nor denies the
-  provisional `5D08` presence, and it holds nothing for 4-sided vanes / ampereControl / powerSource).
+  provisional `5D23` presence, and it holds nothing for 4-sided vanes / ampereControl / powerSource).
   esphome also confirms NO voltage/energy field in hON (3rd source), and names fields we do not yet
   surface — `room_humidity` (status byte12), the expansion valve as a %, and 51 named alarm bits
   incl. the electrical/three-phase protections a 0d12 raises.
@@ -1301,9 +1303,9 @@ the frame-keeping build, and from Haier's own generated UART protocol for this c
     `0x07/09/0A/0D/16/17/1B` each map to an attribute the `0D012` class DECLARES (附录H): `tempUnit`,
     `screenDisplayStatus`(/`lightStatus`), `10degreeHeatingStatus`, `selfCleaningStatus`, `muteStatus`,
     `lockStatus`, `silentSleepStatus`. We ship 9 confirmed `0d12` single-param ids + provisional
-    `5D08`; these are 7 more, high-confidence (id from esphome's 9/9-matching register, attribute
+    `5D08`; these are candidates (the CANONICAL ids are now in each family's config — `catalogue/configfiles/`; id from esphome's 9/9-matching register, attribute
     from the class model). Add them as PROVISIONAL single-param controls (self-adjudicating —
-    a refusal/unmoved field withdraws) the same way `5D08` presence ships; `0x09` is ambiguous between
+    a refusal/unmoved field withdraws) the same way `5D23` presence ships; `0x09` is ambiguous between
     `screenDisplayStatus` and `lightStatus` — resolve on hardware. Needs a reporter's `0d12` to
     confirm, but no capture — the provisional mechanism adjudicates on first use.
   * **Per-unit feature detection — NOT in the hON handshake** (dug esphome, 2026-09-01). The

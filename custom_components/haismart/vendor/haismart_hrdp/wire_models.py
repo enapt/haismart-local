@@ -2015,17 +2015,22 @@ SINGLE_PARAM_IDS: Mapping[str, Mapping[str, int]] = {
 #: watched accepting them -- the one appliance whose traffic was recorded has no vane; an owner ran
 #: them, both axes moved, and they graduated to :data:`SINGLE_PARAM_IDS` above). It carries one now:
 #:
-#: **``humanSensingStatus`` = ``0x08`` -- presence airflow (off/avoid/follow/on), inferred rather
-#: than seen accepted.** These appliances are observed to exchange a fixed set of single-parameter
-#: ids; most are the settings this project already commands, and two carry no established meaning.
-#: ``0x08`` is the one of those two that an appliance *without* the presence sensor refuses, while a
-#: unit that has the sensor accepts it, so it is offered for presence. Because it is inferred from
-#: which ids an appliance accepts rather than watched moving the setting, it is offered on the
-#: appliance's own terms: written, then read back from ``humanSensingStatus``'s own place in the
-#: report (w23.b6/2). It took or it did not, and a cabinet that refuses it -- or does not have the
-#: sensor -- retires the control for good on the first use.
+#: **``humanSensingStatus`` = ``0x23`` -- presence airflow (off/avoid/follow/on).** The id is
+#: Haier's OWN: the manufacturer's device config for both central-cabinet families
+#: (``…0d1205464544…`` and ``…0d122151860b57…``) gives ``humanSensingStatus`` the write command
+#: ``5D23`` (the config's per-attribute ``eppCmd``; the nine ids this project confirmed on hardware
+#: all match that same config). It is still offered provisionally -- written, then read back from
+#: ``humanSensingStatus``'s own place in the report (w23.b6/2) -- only because the WRITE has not yet
+#: been exercised on a cabinet, not because the number is a guess. A unit that refuses it, or has no
+#: sensor, retires the control for good on the first use.
+#:
+#: ⚠️ ``0x08`` was WRONG. It was derived by elimination (the id an appliance "without the sensor
+#: refuses") before Haier's config was in hand; the config shows ``0x08`` is ``halfDegreeSettingStatus``
+#: and presence is ``0x23``. A control keyed on ``0x08`` toggled half-degree, not presence -- it fails
+#: safe (the read-back does not move, so it self-withdraws), but it was the wrong register. The 5Dxx
+#: numbering is board-specific and IS in each family's config; see ``catalogue/configfiles/``.
 PROVISIONAL_SINGLE_PARAM_IDS: Mapping[str, Mapping[str, int]] = {
-    "0d12": {"humanSensingStatus": 0x08},
+    "0d12": {"humanSensingStatus": 0x23},
 }
 
 

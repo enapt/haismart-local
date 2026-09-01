@@ -1225,6 +1225,34 @@ the frame-keeping build, and from Haier's own generated UART protocol for this c
   it), and the frame it relays is the BOARD's own — its temps and frequency track load, so the empty
   power/current are the board's own empties on this class, not a module placeholder or a richer
   copy the cloud keeps back.
+* **The HARDWARE EPP was checked, not just the cloud template — they are byte-for-byte identical.**
+  The board's own UART protocol document, the APK-bundled EPP wire models, the big-data
+  function-model PDF and the master/slave comms spec all define the SAME 63 big-data fields at the
+  SAME byte positions (`power` Byte29-30, `compressorFrequency` Byte36, `compressorCurrent`
+  Byte37-38); the cloud template dropped nothing. There is **no separate diagnostic/engineering
+  frame** — the "run-monitoring data area" (运行监控数据区) IS the 7D big-data set, spec'd as
+  "synced to the app via the message platform, not pushed in the status loop" (the cloud routing
+  above). Residential AC classes (`02011/02012/03012`) carry the **identical** three electrical
+  fields and no voltage either — home units are not privileged. A `380 V` / phase scan of all four
+  LAN frame types across five captures found nothing (the one 0xC0=384 candidate is a fixed
+  status-structure flag, constant across every state and `0x3f` on the wall units).
+* **The platform CAN model readable voltage — every AC class deliberately omits it.** Washing
+  machines (`05001*`, `voltage` 0–500 V), range hoods (`0900*`, `voltage` 85–285 V), fridges (DC fan
+  drive voltages) and water heaters (`dcVoltage`) expose a readable voltage on their own 7D01. That
+  the fridge/washer/hood models carry it while EVERY Haier AC model (residential and the central-AC
+  sibling `0D021`, which shares this template) omits it is strong evidence the omission is model
+  design, not truncation. The board monitors voltage/current for outdoor-unit protection — proven by
+  the errCode enum (7 power over-voltage · 26/28 AC/DC over-current · 30 CT abnormal · 37 three-phase
+  supply) — and exposes that monitoring **only as the protection verdict (an alarm bit)**, never the
+  measured value.
+* **Honest residue (needs a capture, not more reading):** the on-disk `0D012_UART通讯协议.txt` is the
+  GENERIC template-generated document, not the reporter's specific OEM outdoor board
+  (`HCFI-38XTR32F`/`AE2C52Q00`). A particular OEM board could in principle define extra 7D fields —
+  but the spec forbids the big-data area from duplicating anything, and every source (generic doc,
+  both public templates, all residential + commercial AC EPP models) converges on the same three
+  electrical fields, so it is a long shot. Confirming or refuting it needs a **UART capture** of that
+  board (module↔board), which this project has never taken; prior-art issue trackers are the capture
+  corpus if one surfaces.
 
 These cabinets answer a query for their detailed running data when it is asked over the wire inside
 the appliance — a recording of one shows the manufacturer's own module asking nine times and the

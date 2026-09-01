@@ -1278,6 +1278,21 @@ the frame-keeping build, and from Haier's own generated UART protocol for this c
   surface — `room_humidity` (status byte12), the expansion valve as a %, and 51 named alarm bits
   incl. the electrical/three-phase protections a 0d12 raises.
 
+  ★ **Cross-checks done 2026-09-01 (esphome source):**
+  * **Alarms — VALIDATED 51/51.** Our `ALARM_LABELS` is position-for-position identical to esphome's
+    `HON_ALARM_MESSAGES` (all 51), and RICHER — we carry the service codes (`F1`/`E2`/`E14`/`E18`)
+    esphome lacks; the only nit is esphome's "CBD" typo at idx13 where we correctly say "PCB". So
+    "fault names right through position 50" is now independently confirmed for every bit.
+  * **★ Seven NEW candidate single-parameter controls for `0d12`.** esphome's `DataParameters` ids
+    `0x07/09/0A/0D/16/17/1B` each map to an attribute the `0D012` class DECLARES (附录H): `tempUnit`,
+    `screenDisplayStatus`(/`lightStatus`), `10degreeHeatingStatus`, `selfCleaningStatus`, `muteStatus`,
+    `lockStatus`, `silentSleepStatus`. We ship 9 confirmed `0d12` single-param ids + provisional
+    `5D08`; these are 7 more, high-confidence (id from esphome's 9/9-matching register, attribute
+    from the class model). Add them as PROVISIONAL single-param controls (self-adjudicating —
+    a refusal/unmoved field withdraws) the same way `5D08` presence ships; `0x09` is ambiguous between
+    `screenDisplayStatus` and `lightStatus` — resolve on hardware. Needs a reporter's `0d12` to
+    confirm, but no capture — the provisional mechanism adjudicates on first use.
+
 These cabinets answer a query for their detailed running data when it is asked over the wire inside
 the appliance — a recording of one shows the manufacturer's own module asking nine times and the
 board answering all nine, with a frame that is populated and changes between recordings.

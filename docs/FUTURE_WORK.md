@@ -772,6 +772,27 @@ Consequences:
   the room empty. If the board field follows (`1`/`2`/`3` vs `0`) the vocabulary is settled; if a
   frame with the `0xA0` block appears in `lan_frames`, the module's own report — with the
   distance — is on the LAN and a presence/distance sensor can ship.
+* **Outcome on the issue #12 cabinet (2026-09-01):** the reporter states the unit **has no PIR
+  sensor**, and that the app's "Detecting" screen is fault detection (as read from the panel).
+  Their diagnostics with the frame-keeping build: `feature_raw` `humanSensingStatus 3` (on) with
+  `sensingResult 0`; `lan_frames` holds four kinds only — the 4-byte session blob, `06/6d01` 133 B,
+  `04/0f5a` 103 B, `06/7d01` 147 B (item 52) — no `0xA0` block. So this cabinet cannot register the
+  experiment, and it shows that the board's presence MODE field reads "on" on a unit without the
+  sensor. The control was offered by the CLASS gate (`CLASS_CARRIED_ENUM_FEATURES["0d12"]`,
+  `_class_carried_controls`) — the product's constraintfile lists 9 attributes and no presence,
+  while the panel-embedded model fetched for this very product (`catalogue/panel_embedded_model_air_southaisask.json`, prodNo `AE2C52Q00`, 39 attributes keyed by name) DOES declare `humanSensingStatus` (感人模式, writable, marked not readable). **The manufacturer's own per-model witness** (a Haier Thailand brochure the
+  reporter supplied, `captures/issue12/brochure-human-sensor-models-2026-09-01.png`): "HUMAN SENSOR
+  … *only on HCFI-36ETR32, HCFI-40ESR32, HCFI-40ETR32, HCFI-48ESR32 and HCFI-48ETR32*" — five
+  models, all on the C/E-series family (`…00041410…`, shared-frame presence), none of them `0d12`;
+  `HCFI-38XTR32F` is not on it. The brochure also refutes the constraintfile the other way: every
+  C/E HCFI product declares `humanSensingStatus` (13CSR, 18CSR, 25ESR, 30CSR, …) while the brochure
+  names five. So neither published model is a per-unit or even per-model witness for the sensor,
+  and a per-product gate built from the panel would offer presence on exactly this reporter's
+  cabinet. The provisional `5D08` write — offered, not yet tried on this unit — remains the only
+  adjudicator on `0d12` (a `0001` "not supported" refusal withdraws the control); on the C/E family
+  the five brochure names are the only allow-list held, scoped to one market's brochure. The
+  experiment still needs a cabinet whose owner confirms the sensor is fitted — one of those five
+  models is the place to ask.
 
 ## Reference — not open items
 
@@ -1123,16 +1144,27 @@ Regression test `test_a_refusal_is_not_masked_by_the_routine_status_push`, confi
 the old ordering.
 
 
-### 52. Power and running data on the roof-mounted cabinets is produced but not delivered
+### 52. Power and running data on the roof-mounted cabinets is delivered — and left unparsed
+
+⚠️ **Corrected 2026-09-01.** A diagnostics download from the issue #12 cabinet, taken with the
+build that keeps every LAN frame, shows the cabinet **answering** the detailed-running-data query
+over the network: three `06/7d01` reports of **147 bytes** in `lan_frames`, one for each of the
+three asks the integration makes before it gives up — after which it recorded seven readings as
+absent. The reply is the 133-byte status body followed by a **14-byte engineering tail**, the same
+tail size the wall-mounted models append (141 − 127), and the tail carries the same +64 temperature
+encoding (`0x61` = 33 °C, equal to the outdoor reading in the same report). `parse_extended_status`
+accepts the classic length only and hands every other length to the published-family maps, which
+have no entry for a related layout, so the reply reads as a miss. Delivery was never missing; the
+decode is. Next: decode the tail with the classic offsets taken relative to the status length,
+verified on captures with the compressor running (the reply on file has frequency 0 with the room
+at setpoint, and its "current" bytes `01 ff` do not fit the classic ×0.1 scaling — three-phase may
+encode these differently). ⛔ Withdrawn, kept as the record: *"Asked the same question over the
+network, the same class of appliance answers nothing at all: not a refusal, just silence, in both
+of the two forms the question can take. What is missing is delivery."* The silence was the parser's.
 
 These cabinets answer a query for their detailed running data when it is asked over the wire inside
 the appliance — a recording of one shows the manufacturer's own module asking nine times and the
-board answering all nine, with a frame that is populated and changes between recordings. Asked the
-same question over the network, the same class of appliance answers nothing at all: not a refusal,
-just silence, in both of the two forms the question can take.
-
-So the machine measures these things. What is missing is delivery: the Wi-Fi module relays the
-ordinary status and control messages for this appliance and does not appear to relay this one.
+board answering all nine, with a frame that is populated and changes between recordings.
 
 ⚠️ What is in that frame is only partly known, and it does **not** obviously include power. Its
 first three quarters are the ordinary status report repeated, leaving seven readings of which two

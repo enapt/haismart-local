@@ -1673,40 +1673,53 @@ def test_an_unreported_actuator_never_reads_as_running():
     assert got["compressor_running"] is True and got["fan_running"] is True
 
 
-# A real 0D012 central-AC big-data (7d01) report from the issue #12 reporter: 147 bytes, payload 27
-# words. Its running fields are decoded by the documented 0D012 layout (uss._BIGDATA_VENDOR_DOC,
-# from the vendor's own 附录H), which is the published span-21 block one word-run further in.
-EXT_0D012 = bytes.fromhex(
+# Real 0D012 central-AC big-data (7d01) reports from the issue #12 cabinet, in three compressor
+# states: idle, cruising at 40 Hz, and cooling hard at 103 Hz. The running block is the classic
+# engineering trailer at the END of a longer (147-byte) frame, so it is read from the frame length.
+EXT_0D012_IDLE = bytes.fromhex(
     "00002715000000004e5601006803020068040100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000044ffff40000000000000067d0109022200020114c0000000000000000302133232618000030000000000000000000000000000000000005a614062610001ff022400b415")
+EXT_0D012_COOL_40HZ = bytes.fromhex(
+    "00002715000000004e5601006703020066040100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000044ffff40000000000000067d0105022200020114c0000000000000000302133032618000030000000000000000000000000000000000004a714054662801ff022500b42f")
+EXT_0D012_COOL_103HZ = bytes.fromhex(
+    "00002715000000004e5601006803020066040100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000044ffff40000000000000067d0104022200020114c0000000000000000302132e32638000030000000000000000000000000000000000003d8f404d6e6701ff022500a46f")
 
 
-def test_extended_status_decodes_the_0d012_central_ac_bigdata_frame():
-    """The 147-byte 0D012 frame is recognised and decoded, not dropped for being an unknown size.
+def test_0d012_bigdata_decodes_end_anchored_and_tracks_the_compressor():
+    """The 147-byte 0D012 report decodes, and its readings TRACK the load across three real captures.
 
-    Regression for the frame that made the coordinator give up polling telemetry on the central
-    cabinets: its span (27 words) was in no generated map, so the parser returned {} and the unit
-    was written off as having no telemetry. The vendor's own 附录H places the running block exactly
-    where the span-21 family carries it, one word-run past the extra PM2.5/CH2O/VOC/CO2 readings.
+    Regression for two shipped mistakes: the frame's span was in no map so it was dropped (the unit
+    written off as having no telemetry), and a first fix read a documented byte map whose running
+    positions are a flat zero on the real hardware. The block is actually the classic engineering
+    trailer at the end of a longer frame -- so the values are read from the frame length, and they
+    move with the compressor exactly as refrigeration physics requires.
     """
-    got = uss.parse_extended_status(EXT_0D012)
-    assert got != {}                                  # it is recognised, so polling continues
-    # captured at the setpoint with the compressor idle, so the running figures read zero honestly
-    assert got["power_w"] == 0
-    assert got["compressor_frequency_hz"] == 0
-    assert got["compressor_current_a"] == 0.0
-    assert got["compressor_running"] is False
-    # the outdoor probes read their absent-sensor sentinel here, so they stay out rather than -64 C
-    assert "outdoor_coil_temperature" not in got
+    idle = uss.parse_extended_status(EXT_0D012_IDLE)
+    cruise = uss.parse_extended_status(EXT_0D012_COOL_40HZ)
+    hard = uss.parse_extended_status(EXT_0D012_COOL_103HZ)
+    # compressor frequency: zero idle, and rising with load -- the values DIFFER, they are live
+    assert (idle["compressor_frequency_hz"], cruise["compressor_frequency_hz"],
+            hard["compressor_frequency_hz"]) == (0, 40, 103)
+    # the evaporator coil gets colder and the discharge line hotter as it works harder
+    assert idle["coil_temperature"] > cruise["coil_temperature"] > hard["coil_temperature"]
+    assert idle["discharge_temperature"] < cruise["discharge_temperature"] < hard["discharge_temperature"]
+    # the compressor state is off idle, on under load
+    assert idle["compressor_running"] is False
+    assert cruise["compressor_running"] is True and hard["compressor_running"] is True
+    # power and current are NOT reported by this three-phase family (current pinned at the 0x01FF
+    # sentinel, power a flat zero), so they are dropped rather than surfaced as a constant 51.1 A /
+    # 0 W -- and dropped identically whether idle or running, so the entities do not flicker
+    for d in (idle, cruise, hard):
+        assert "power_w" not in d and "compressor_current_a" not in d
 
 
 def test_an_extended_frame_is_recognised_by_command_whatever_its_size():
     """`is_extended_status_frame` sees the 7d01 report by COMMAND, so a larger new model still
     counts as an answer to the telemetry query and keeps being polled rather than written off."""
-    assert uss.is_extended_status_frame(EXT_0D012) is True
+    assert uss.is_extended_status_frame(EXT_0D012_IDLE) is True
     assert uss.is_extended_status_frame(EXT_COOLING) is True     # the classic 141-byte frame too
     assert uss.is_extended_status_frame(REAL_STATUS_DOWN) is False  # an ordinary status report
     # a 7d01 frame whose SPAN we have no map for is still recognised as the extended report...
-    oversized = EXT_0D012 + b"\x00" * 8
+    oversized = EXT_0D012_IDLE + b"\x00" * 8
     assert uss.is_extended_status_frame(oversized) is True
     # ...and named rather than dumped in the "unfamiliar" bucket, so it is kept for a future map
     assert "7d01" in (uss.describe_epp_frame(oversized) or "")

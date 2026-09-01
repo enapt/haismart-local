@@ -815,13 +815,28 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 if telemetry:
                     self.supports_extended = True
                     self._extended_misses = 0
+                    self._undecoded_extended = 0
                     # An appliance that answers after we had written it off gets its entities back.
                     # A firmware update can add the extended report, and a refusal recorded before
                     # that must not be the last word -- otherwise the removal below would be a
                     # one-way door, which is exactly the objection the old "create everything
-                    # unconditionally" rule was built to avoid.
-                    self._async_reading_returned(EXTENDED_READING_KEYS)
-                    self._undecoded_extended = 0
+                    # unconditionally" rule was built to avoid. Only the keys THIS frame carries,
+                    # though: a family that decodes telemetry but never reports power must not have
+                    # its power entity restored every cycle only to be retired again (below).
+                    self._async_reading_returned(
+                        [k for k in EXTENDED_READING_KEYS if k in telemetry]
+                    )
+                    # A unit that decodes telemetry yet reports no power -- and no power in its
+                    # status frame either -- does not measure the electrical quantities: the 0d012
+                    # three-phase cabinets report the compressor drive frequency and the
+                    # refrigeration temperatures, not watts or amps (the current field is pinned at
+                    # a sentinel that never tracks load). Those two entities can never fill, so
+                    # retire them rather than leave them unknown for the life of the install. The
+                    # decode drops them identically whether the unit is idle or running, so this is
+                    # stable; a family that carries power in its STATUS report (issue #8) keeps it,
+                    # because `state` already holds it here.
+                    if "power_w" not in telemetry and "power_w" not in state:
+                        self._async_reading_refused(("power_w", "compressor_current_a"))
                 elif extended_blob is not None:
                     # The unit ANSWERED the telemetry query, with a big-data frame this build has no
                     # field map for -- a newer or larger model than any published layout. That is

@@ -33,7 +33,7 @@ from typing import Any
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-from .bigdata_map import BIGDATA_MAPS, BigdataField
+from .bigdata_map import BIGDATA_MAPS
 from .canonical_map import CANONICAL_WRITE
 from .panel import PANEL_BOOL_CONTROLS, PANEL_ENUM_CONTROLS, PANEL_EXTRA_POSITIONS
 from .profiles import model_enum_codes
@@ -1374,35 +1374,6 @@ def is_extended_status_frame(blob: bytes) -> bool:
     return at >= 0 and blob[at + 10:at + 12] == _EPP_RPT_EXTENDED
 
 
-# The 0D012 central-AC family's big-data (7d01) layout, from Haier's OWN generated UART protocol
-# document for this class (`catalogue/profiles_0d12/0D012_UART通讯协议.txt`, 附录H). It is NOT
-# derived from a bundled profile -- no `0d` profile ships in the app -- so it lives here rather than
-# in the generated `bigdata_map.py`, and the generator leaves it alone. 附录H gives each field a
-# 1-indexed BYTE in the big-data payload; a byte maps to word ceil(byte/2) (high half for an odd
-# byte, low half for an even one), and the running block -- power @Byte29=word15 through the
-# expansion valve @Byte41=word21 -- is word-for-word the published span-21 layout, which is the
-# cross-check that this is the same block Haier documents. The frame is longer (27 payload words)
-# only because this class reports the indoor/outdoor PM2.5, CH2O, VOC and CO2 readings ahead of it.
-# ⚠️ The running-field SCALING is the span-21 family's (same vendor); it is confirmed present but its
-# live values await a capture of this class with the compressor running (`FUTURE_WORK` 52).
-_BIGDATA_VENDOR_DOC: Mapping[int, tuple[BigdataField, ...]] = {
-    27: (
-        BigdataField("power", 15, 0, 16, 1.0, 0.0, 'W'),
-        BigdataField("indoorCoilerTemperature", 16, 8, 8, 0.5, -20.0, '℃'),
-        BigdataField("outdoorOutAirTemperature", 16, 0, 8, 1.0, -64.0, '℃'),
-        BigdataField("outdoorCoilerTemperature", 17, 8, 8, 1.0, -64.0, '℃'),
-        BigdataField("outdoorInAirTemperature", 17, 0, 8, 1.0, -64.0, '℃'),
-        BigdataField("outdoorDefrostTemperature", 18, 8, 8, 1.0, -64.0, '℃'),
-        BigdataField("compressorFrequency", 18, 0, 8, 1.0, 0.0, 'Hz'),
-        BigdataField("compressorCurrent", 19, 0, 16, 0.1, 0.0, 'A'),
-        BigdataField("outdoorFanStatus", 20, 8, 2, 1.0, 0.0, None),
-        BigdataField("fourWayValveStatus", 20, 4, 2, 1.0, 0.0, None),
-        BigdataField("compressorStatus", 20, 0, 2, 1.0, 0.0, None),
-        BigdataField("expansionValveOpenDegree", 21, 0, 16, 1.0, 0.0, None),
-    ),
-}
-
-
 def _extended_from_published_map(payload: bytes) -> dict[str, Any]:
     """Telemetry for a family whose layout the manufacturer publishes, keyed on the frame's span.
 
@@ -1410,8 +1381,7 @@ def _extended_from_published_map(payload: bytes) -> dict[str, Any]:
     has always produced -- a family we cannot place simply yields no telemetry rather than numbers
     read from the wrong words.
     """
-    span = len(payload) // 2
-    fields = BIGDATA_MAPS.get(span) or _BIGDATA_VENDOR_DOC.get(span)
+    fields = BIGDATA_MAPS.get(len(payload) // 2)
     if not fields:
         return {}
     out: dict[str, Any] = {}
@@ -1478,27 +1448,41 @@ def parse_extended_status(data: bytes) -> dict[str, Any]:
     at = data.find(EPP_FRAME_HEAD)
     if at < 0 or data[at + 10:at + 12] != _EPP_RPT_EXTENDED:
         return {}
-    if len(data) != _EXT_STATUS_LEN or data[2:4] != b"\x27\x15":
-        # Not the classic family's report. Every other published family places this block at its own
-        # words -- `power` is w18 here and w37 on the richest one -- so there is nothing to shift and
-        # the manufacturer's own map for that frame is used instead. Unknown spans still yield {}.
-        #
-        # ⚠️ Gated on the frame's OWN declared length first. Without that a *truncated* classic
-        # report -- 140 bytes instead of 141 -- carries a 23-word payload, which is a span another
-        # family publishes, so a damaged frame would be decoded confidently against the wrong map.
-        # A frame whose header disagrees with its own size is not a different family, it is broken.
-        if len(data) < at + 13 or data[at + 2] != len(data) - at - 3:
-            return {}
-        return _extended_from_published_map(data[at + 12:-1])
+    # A frame whose OWN declared length disagrees with its size is broken, not a new family -- reject
+    # it before any offset is read, so a truncated report is never decoded against the wrong bytes.
+    if len(data) < at + 13 or data[at + 2] != len(data) - at - 3:
+        return {}
+    payload = data[at + 12:-1]
+    if (len(payload) // 2) in BIGDATA_MAPS:
+        # A published family whose engineering block sits at fixed WORD positions (`power` is w10,
+        # w15 or w37 depending on the family) -- decode it from the manufacturer's own map.
+        return _extended_from_published_map(payload)
 
+    # Every non-published family confirmed on hardware appends the block at the END of the frame:
+    # the classic 141-byte wall units, and the 0d012 central cabinets at 147 bytes, which carry the
+    # identical block six bytes further along a longer frame. So the offsets are taken from the
+    # frame's length -- `shift` is 0 for the classic report and 6 for the 0d012 one -- and a larger
+    # model that follows the same convention decodes with no new entry (verified on the issue #12
+    # cabinet: compressor frequency 0 idle / 103 cooling hard / 40 cruising, coil and discharge
+    # tracking the load across three captures).
+    #
+    # Bounded below at the classic length: this convention is confirmed only for frames that size
+    # and larger (the "new models overrun the usual sizing" case). A shorter unrecognised frame is
+    # not decoded from its tail -- its block need not be there -- so it yields nothing and is still
+    # captured for a layout to be added, rather than read against offsets that may not apply.
+    if len(data) < _EXT_STATUS_LEN:
+        return {}
+    shift = len(data) - _EXT_STATUS_LEN
     out: dict[str, Any] = {}
-    watts = int.from_bytes(data[_EXT_OFF_POWER:_EXT_OFF_POWER + 2], "big")
+    watts = int.from_bytes(data[_EXT_OFF_POWER + shift:_EXT_OFF_POWER + shift + 2], "big")
     if watts <= _MAX_PLAUSIBLE_W:
         out["power_w"] = watts
-    amps = int.from_bytes(data[_EXT_OFF_CURRENT:_EXT_OFF_CURRENT + 2], "big") / 10.0
-    if amps <= _MAX_PLAUSIBLE_A:
-        out["compressor_current_a"] = round(amps, 1)
-    out["compressor_frequency_hz"] = data[_EXT_OFF_FREQ]
+    raw_current = int.from_bytes(
+        data[_EXT_OFF_CURRENT + shift:_EXT_OFF_CURRENT + shift + 2], "big"
+    )
+    if raw_current / 10.0 <= _MAX_PLAUSIBLE_A:
+        out["compressor_current_a"] = round(raw_current / 10.0, 1)
+    out["compressor_frequency_hz"] = data[_EXT_OFF_FREQ + shift]
     # Same absent-sensor policy as the status report's temperatures: 0 must not become a confident
     # -20/-64 C reading in a user's statistics. Most units carry only some of these probes.
     for key, off, scale, offset in (
@@ -1508,17 +1492,47 @@ def parse_extended_status(data: bytes) -> dict[str, Any]:
         ("outdoor_in_air_temperature", _EXT_OFF_OUTDOOR_IN_AIR, 1.0, -64.0),
         ("outdoor_defrost_temperature", _EXT_OFF_OUTDOOR_DEFROST, 1.0, -64.0),
     ):
-        value = _sensor_temp(data[off], scale=scale, offset=offset)
+        value = _sensor_temp(data[off + shift], scale=scale, offset=offset)
         if value is not None:
             out[key] = value
-    actuators = int.from_bytes(data[_EXT_OFF_ACTUATORS:_EXT_OFF_ACTUATORS + 2], "big")
+    actuators = int.from_bytes(
+        data[_EXT_OFF_ACTUATORS + shift:_EXT_OFF_ACTUATORS + shift + 2], "big"
+    )
     for key, bit in _EXT_ACTUATOR_STATES:
         state = (actuators >> bit) & 0x03
         if state in (_ACTUATOR_ON, _ACTUATOR_OFF):
             out[key] = state == _ACTUATOR_ON
     out["expansion_valve_opening"] = int.from_bytes(
-        data[_EXT_OFF_EXPANSION_VALVE:_EXT_OFF_EXPANSION_VALVE + 2], "big"
+        data[_EXT_OFF_EXPANSION_VALVE + shift:_EXT_OFF_EXPANSION_VALVE + shift + 2], "big"
     )
+    # Power and the current beside it read a flat zero on some families -- the 0d012 three-phase
+    # cabinets among them -- even while the compressor is plainly running (frequency up, coil cold,
+    # discharge hot). The board reports the compressor's drive frequency and the refrigeration
+    # temperatures but not the electrical quantities, so a running compressor drawing 0 W is not a
+    # measurement: drop both rather than surface a permanent, misleading 0. A family that genuinely
+    # measures power reports it (the classic units read hundreds of watts at these frequencies), so
+    # this only ever removes a value that was never real. Idle is left untouched -- 0 Hz with 0 W is
+    # a real idle reading, not a gap.
+    # The electrical quantities are documented for this frame but not populated by every family.
+    # Haier's own 0D012 model gives compressorCurrent a 9-bit field whose maximum, 0x01FF, is
+    # exactly 51.1 A -- and the 0d012 three-phase cabinets park the field at that ceiling: it reads
+    # a fixed 51.1 A with the compressor off and unchanged at 103 Hz, which no real current does,
+    # while power reads a flat 0. (The docs carry only `power` and `compressorCurrent` here -- no
+    # voltage, no per-phase reading, no energy counter -- so there is nothing else to read power
+    # from.) A current railed at its full-scale ceiling with no power beside it means this unit does
+    # not measure the electrical quantities: drop both rather than surface a constant that tracks
+    # nothing. A family that genuinely measures them sends a real current (below the ceiling) and
+    # hundreds of watts under load, so this only removes a value that was never real, and it does so
+    # identically whether the unit is idle or running -- no flicker. The compressor drive frequency
+    # and the refrigeration temperatures, which DO track the load, are kept.
+    _CURRENT_RAILED_AT_MAX = 0x01FF
+    if raw_current == _CURRENT_RAILED_AT_MAX and not out.get("power_w"):
+        out.pop("power_w", None)
+        out.pop("compressor_current_a", None)
+    elif not out.get("power_w") and out.get("compressor_current_a"):
+        # A real family that is simply idle: current with no power is not a measurement, so zero it
+        # (the same self-contradiction guard the published-map path applies).
+        out["compressor_current_a"] = 0.0
     return out
 
 

@@ -404,7 +404,8 @@
           "position_3": "Posición 3",
           "position_4": "Posición 4",
           "position_5": "Posición 5",
-          "auto": "Automático (oscilación)"
+          "auto": "Automático (oscilación)",
+          "health_airflow": "Health airflow"
         }
       },
       "four_sided_vane_2": {
@@ -416,7 +417,8 @@
           "position_3": "Posición 3",
           "position_4": "Posición 4",
           "position_5": "Posición 5",
-          "auto": "Automático (oscilación)"
+          "auto": "Automático (oscilación)",
+          "health_airflow": "Health airflow"
         }
       },
       "four_sided_vane_3": {
@@ -428,7 +430,8 @@
           "position_3": "Posición 3",
           "position_4": "Posición 4",
           "position_5": "Posición 5",
-          "auto": "Automático (oscilación)"
+          "auto": "Automático (oscilación)",
+          "health_airflow": "Health airflow"
         }
       },
       "four_sided_vane_4": {
@@ -440,7 +443,8 @@
           "position_3": "Posición 3",
           "position_4": "Posición 4",
           "position_5": "Posición 5",
-          "auto": "Automático (oscilación)"
+          "auto": "Automático (oscilación)",
+          "health_airflow": "Health airflow"
         }
       },
       "temp_unit": {

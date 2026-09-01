@@ -404,7 +404,8 @@
           "position_3": "Poloha 3",
           "position_4": "Poloha 4",
           "position_5": "Poloha 5",
-          "auto": "Automaticky (kývanie)"
+          "auto": "Automaticky (kývanie)",
+          "health_airflow": "Health airflow"
         }
       },
       "four_sided_vane_2": {
@@ -416,7 +417,8 @@
           "position_3": "Poloha 3",
           "position_4": "Poloha 4",
           "position_5": "Poloha 5",
-          "auto": "Automaticky (kývanie)"
+          "auto": "Automaticky (kývanie)",
+          "health_airflow": "Health airflow"
         }
       },
       "four_sided_vane_3": {
@@ -428,7 +430,8 @@
           "position_3": "Poloha 3",
           "position_4": "Poloha 4",
           "position_5": "Poloha 5",
-          "auto": "Automaticky (kývanie)"
+          "auto": "Automaticky (kývanie)",
+          "health_airflow": "Health airflow"
         }
       },
       "four_sided_vane_4": {
@@ -440,7 +443,8 @@
           "position_3": "Poloha 3",
           "position_4": "Poloha 4",
           "position_5": "Poloha 5",
-          "auto": "Automaticky (kývanie)"
+          "auto": "Automaticky (kývanie)",
+          "health_airflow": "Health airflow"
         }
       },
       "temp_unit": {

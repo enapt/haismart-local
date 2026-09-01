@@ -404,7 +404,8 @@
           "position_3": "پوزیشن 3",
           "position_4": "پوزیشن 4",
           "position_5": "پوزیشن 5",
-          "auto": "خودکار (جھولنا)"
+          "auto": "خودکار (جھولنا)",
+          "health_airflow": "Health airflow"
         }
       },
       "four_sided_vane_2": {
@@ -416,7 +417,8 @@
           "position_3": "پوزیشن 3",
           "position_4": "پوزیشن 4",
           "position_5": "پوزیشن 5",
-          "auto": "خودکار (جھولنا)"
+          "auto": "خودکار (جھولنا)",
+          "health_airflow": "Health airflow"
         }
       },
       "four_sided_vane_3": {
@@ -428,7 +430,8 @@
           "position_3": "پوزیشن 3",
           "position_4": "پوزیشن 4",
           "position_5": "پوزیشن 5",
-          "auto": "خودکار (جھولنا)"
+          "auto": "خودکار (جھولنا)",
+          "health_airflow": "Health airflow"
         }
       },
       "four_sided_vane_4": {
@@ -440,7 +443,8 @@
           "position_3": "پوزیشن 3",
           "position_4": "پوزیشن 4",
           "position_5": "پوزیشن 5",
-          "auto": "خودکار (جھولنا)"
+          "auto": "خودکار (جھولنا)",
+          "health_airflow": "Health airflow"
         }
       },
       "temp_unit": {

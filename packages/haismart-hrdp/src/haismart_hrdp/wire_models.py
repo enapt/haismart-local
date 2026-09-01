@@ -1899,12 +1899,16 @@ _FRAME_WRITE_SPEC: Mapping[str, Mapping[str, object]] = {
     # therefore win. Writing the raw std where the epp is meant would set the wrong unit or overflow.
     # tempUnit: display unit, std 1 °C / 2 °F -> epp 0 / 1 (config eppCmd 5D07, 19 products declare).
     "tempUnit": {"kind": "std_enum", "std_to_epp": {1: 0, 2: 1}},
-    # Four-sided cassette louvres: std stop 0..6 -> the config's non-linear epp code. Offered
-    # provisionally and read back from the report's inserted block (INSERTED_PARAM_POSITIONS).
+    # Four-sided cassette louvres: std stop -> the config's non-linear epp code. Stops 0..6 are
+    # fixed / positions 1-5 / auto; std 7 (epp 5) is 健康气流, the health-airflow stop the 52 candy
+    # cabinets declare. (The 商空 family numbers that same stop std 10 -> epp 5; its cabinets are
+    # unobserved and its divergent windSpeed encoding is tracked in the register oracle, so its
+    # stop-10 is not added to this shared map -- a 商空 unit simply is not offered the health stop.)
+    # Offered provisionally, read back from the inserted block (INSERTED_PARAM_POSITIONS).
     **{
         f"4SidesWindDirection{i}": {
             "kind": "std_enum",
-            "std_to_epp": {0: 0, 1: 2, 2: 4, 3: 6, 4: 8, 5: 10, 6: 12},
+            "std_to_epp": {0: 0, 1: 2, 2: 4, 3: 6, 4: 8, 5: 10, 6: 12, 7: 5},
         }
         for i in (1, 2, 3, 4)
     },
@@ -2103,7 +2107,8 @@ PROVISIONAL_SINGLE_PARAM_IDS: Mapping[str, Mapping[str, int]] = {
 VALUE_PARAM_READ_ENUM: Mapping[str, Mapping[int, int]] = {
     "tempUnit": {0: 1, 1: 2},
     **{
-        f"4SidesWindDirection{i}": {0: 0, 2: 1, 4: 2, 6: 3, 8: 4, 10: 5, 12: 6}
+        # inverse of the write map above, including epp 5 -> std 7 (健康气流, health airflow)
+        f"4SidesWindDirection{i}": {0: 0, 2: 1, 4: 2, 6: 3, 8: 4, 10: 5, 12: 6, 5: 7}
         for i in (1, 2, 3, 4)
     },
 }

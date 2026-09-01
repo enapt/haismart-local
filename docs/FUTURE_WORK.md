@@ -203,18 +203,30 @@ coexist in the byte-map rather than sharing bits. The presence read-guard (item 
 the w23 story still holds by a different, still-valid fact (four-way cabinets do not declare
 presence), and its comment now says so.
 
-**Residue, recorded not parked:**
-* **The 商空 spelling.** The second `0d12` config family (`…2151860b57…`) spells these
-  `fourSidesWindDirection*` and `tenDegreeHeatingStatus`; **20 constraintfiles declare the louvres
-  under that spelling**, and the panel maps key on the first family's `4SidesWindDirection*`, so those
-  20 products are **not yet offered** the louvres. Closing it is a spelling alias, not new wire work.
+**Residue, recorded not parked** (all watched by `tools/re/validate_configfile_register.py`, which
+checks every id, read position, **value encoding** and big-data word against both config families and
+that every config id is accounted for):
+
+* **The unobserved second (商空) family diverges, and nobody has captured one.** The `…2151860b57…`
+  family (23 products) numbers a few controls differently in its config — its `windSpeed` is
+  non-identity (`std 6→epp 7`, `std 9→epp 6`; the shipped class-wide identity map would set the
+  wrong fan speed on it), and it numbers the health-airflow louvre stop `std 10` where the observed
+  candy family uses `std 7`. Its report also carries ~18 more status words than candy's, so the
+  `(length−125)/2` insert heuristic would miscount on it. None of this touches the observed candy
+  family that ships to real units; it is fenced off because the 商空 family is a **capture target**,
+  not a shipping target. The oracle WARNs on the encoding divergence rather than failing.
 * **`ampereControl`** (`5D32`, second family, ~4 products) — a compressor-current limit like the ECO
   ladder, now that the config gives it a number. Held for a focused follow-up; its value semantics
-  are not yet worked out. Tracked in the register oracle's `DECLARED_NOT_YET_SHIPPED`.
-
-The standing gate for all of this is `tools/re/validate_configfile_register.py`: it imports the
-shipped register and checks every id, read position and big-data word against both config families,
-and that every config id is shipped, deliberately withheld, deferred, or a known spelling.
+  are not yet worked out. Tracked in the oracle's `DECLARED_NOT_YET_SHIPPED`.
+* **The `0d21` cassette is a SEPARATE class, not this one.** ~20 products spell the louvres
+  `fourSidesWindDirection*` in their own declarations — those are class `0d21` (uPlusId `…0d21…`), a
+  distinct device class with no single-parameter support here at all. Adding it is its own item (a
+  `0d21` capture, its own decode), not a spelling alias on `0d12`. ⚠️ An earlier note here wrongly
+  filed those 20 as a `0d12` 商空 spelling gap; they are a different class.
+* **Not louvre-related but surfaced in the same sweep:** the ext-46 family reads/writes its inserted
+  `windSpeed` at `w26.b9` with an identity enum, where its config puts it at `w26.b8` with a
+  non-identity enum — wrong for the upper fan codes, and `b9`'s span reaches `oxygenSupplyMode`'s bit.
+  Already flagged hardware-unverified in the code; a real ext-46 capture is the fix (its own item).
 
 ### 19. The still-unpositioned settings — counted per lineage, and classified by *why*
 

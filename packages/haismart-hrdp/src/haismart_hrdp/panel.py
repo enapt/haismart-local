@@ -119,7 +119,7 @@ PANEL_ENUM_CONTROLS: Mapping[str, tuple[str, Mapping[int, str]]] = {
         f"4SidesWindDirection{i}": (
             f"four_sided_vane_{i}",
             {0: "fixed", 1: "position_1", 2: "position_2", 3: "position_3",
-             4: "position_4", 5: "position_5", 6: "auto"},
+             4: "position_4", 5: "position_5", 6: "auto", 7: "health_airflow"},
         )
         for i in (1, 2, 3, 4)
     },

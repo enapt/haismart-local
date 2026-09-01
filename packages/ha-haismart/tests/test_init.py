@@ -5348,9 +5348,9 @@ _0D12_DISPLAY_AND_VANES_MODEL = {"attributes": [
     # the display unit, declared: std 1 °C / 2 °F
     {"name": "tempUnit", "writable": True, "valueRange": {
         "type": "LIST", "dataList": [{"data": "1"}, {"data": "2"}]}},
-    # the four louvres of a four-way cassette, each std 0..6
+    # the four louvres of a four-way cassette: fixed, positions 1-5, auto (6) and health-airflow (7)
     *[{"name": f"4SidesWindDirection{i}", "writable": True, "valueRange": {
-        "type": "LIST", "dataList": [{"data": str(c)} for c in range(7)]}}
+        "type": "LIST", "dataList": [{"data": str(c)} for c in (0, 1, 2, 3, 4, 5, 6, 7)]}}
       for i in (1, 2, 3, 4)],
 ], "invisible_attributes": []}
 
@@ -5381,7 +5381,7 @@ async def test_0d12_display_unit_and_four_sided_louvres_are_offered_where_declar
 
     # the codes each control can be sent are the model's declared STD codes
     assert coord.panel_select_codes("tempUnit") == frozenset({1, 2})
-    assert coord.panel_select_codes("4SidesWindDirection1") == frozenset(range(7))
+    assert coord.panel_select_codes("4SidesWindDirection1") == frozenset(range(8))  # incl. 7=health
 
     # tempUnit is settled; the louvres are provisional (the appliance settles their inserted-block
     # read on first use)
@@ -5389,10 +5389,11 @@ async def test_0d12_display_unit_and_four_sided_louvres_are_offered_where_declar
     assert vp["tempUnit"].provisional is False
     assert vp["4SidesWindDirection1"].provisional is True
 
-    # the select options are the localized state tokens, in code order
+    # the select options are the localized tokens, in code order, incl. the health stop (std 7)
     select = HaismartPanelSelect(coord, "4SidesWindDirection1")
     assert select.options == [
         "fixed", "position_1", "position_2", "position_3", "position_4", "position_5", "auto",
+        "health_airflow",
     ]
     assert HaismartPanelSelect(coord, "tempUnit").options == ["celsius", "fahrenheit"]
 

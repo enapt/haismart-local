@@ -121,15 +121,19 @@ def test_four_sided_louvres_are_provisional_inside_the_inserted_block() -> None:
         vp = wm.value_param_fields[f"4SidesWindDirection{i}"]
         assert vp.provisional is True and vp.param_id == pid
         assert (vp.read.word, vp.read.bit, vp.read.length) == (6, bit, 4)
-    # write: the config's non-linear std->epp (stop 3 -> epp 6, stop 6/"auto" -> epp 12)
+    # write: the config's non-linear std->epp (stop 3 -> epp 6, stop 6/"auto" -> epp 12, and the
+    # 健康气流 health-airflow stop 7 -> epp 5, which the candy family's 52 cabinets declare)
     assert wm.encode_value_param("4SidesWindDirection1", 3) == (b"\x5d\x0f", b"\x00\x06")
     assert wm.encode_value_param("4SidesWindDirection1", 6) == (b"\x5d\x0f", b"\x00\x0c")
+    assert wm.encode_value_param("4SidesWindDirection1", 7) == (b"\x5d\x0f", b"\x00\x05")
     # read: epp in the inserted block decodes back to the model's stop number
     rep = bytearray(CENTRAL_LENGTH)
     off = 92 + (6 - 1) * 2                          # report word 6
     rep[off] = (6 << 0) | (2 << 4)                  # high byte: b8-11 = epp 6, b12-15 = epp 2
     assert wm.value_param_value(bytes(rep), "4SidesWindDirection1") == 3       # epp 6 -> stop 3
     assert wm.value_param_value(bytes(rep), "4SidesWindDirection2") == 1       # epp 2 -> stop 1
+    rep[off] = 5                                    # b8-11 = epp 5 -> health airflow (std 7)
+    assert wm.value_param_value(bytes(rep), "4SidesWindDirection1") == 7
 
     # ...and NOT offered on a model built without the block: the inserted word would not exist.
     no_block = _central()

@@ -1893,6 +1893,21 @@ _FRAME_WRITE_SPEC: Mapping[str, Mapping[str, object]] = {
         if name in CANONICAL_WRITE
     },
     **{name: {"kind": "passthrough", "max_epp": 1} for name in PANEL_EXTRA_POSITIONS},
+    # ── 0d12 central-cabinet enum single-parameters, from Haier's own device config ──────────────
+    # NON-identity (std != epp), so each needs an explicit std_enum. tempUnit is in CANONICAL_WRITE,
+    # so the block above would synthesise a passthrough for it; these entries come AFTER it and
+    # therefore win. Writing the raw std where the epp is meant would set the wrong unit or overflow.
+    # tempUnit: display unit, std 1 °C / 2 °F -> epp 0 / 1 (config eppCmd 5D07, 19 products declare).
+    "tempUnit": {"kind": "std_enum", "std_to_epp": {1: 0, 2: 1}},
+    # Four-sided cassette louvres: std stop 0..6 -> the config's non-linear epp code. Offered
+    # provisionally and read back from the report's inserted block (INSERTED_PARAM_POSITIONS).
+    **{
+        f"4SidesWindDirection{i}": {
+            "kind": "std_enum",
+            "std_to_epp": {0: 0, 1: 2, 2: 4, 3: 6, 4: 8, 5: 10, 6: 12},
+        }
+        for i in (1, 2, 3, 4)
+    },
 }
 
 
@@ -2001,6 +2016,12 @@ SINGLE_PARAM_IDS: Mapping[str, Mapping[str, int]] = {
         "healthMode": 0x0B,
         "muteStatus": 0x19,
         "rapidMode": 0x1A,
+        # Display unit (°C/°F). Confirmed the same way as the nine above -- Haier's own device
+        # config gives it eppCmd 5D07 -- and, unlike them, it needs a std<->epp translation
+        # (std 1/2 -> epp 0/1); see :data:`_FRAME_WRITE_SPEC`. 19 of the 152 catalogued 0d12
+        # products declare it, and its read sits in the climate block (w22.b13, config w3), so it
+        # is placed by the same displacement as the rest rather than provisionally.
+        "tempUnit": 0x07,
     },
 }
 
@@ -2029,8 +2050,60 @@ SINGLE_PARAM_IDS: Mapping[str, Mapping[str, int]] = {
 #: and presence is ``0x23``. A control keyed on ``0x08`` toggled half-degree, not presence -- it fails
 #: safe (the read-back does not move, so it self-withdraws), but it was the wrong register. The 5Dxx
 #: numbering is board-specific and IS in each family's config; see ``catalogue/configfiles/``.
+#:
+#: **``4SidesWindDirection1..4`` = ``0x0F/0E/11/10`` -- the four-way cassette louvres.** 52 of the
+#: 152 catalogued 0d12 products declare them (``operationType: I``, individually settable), and the
+#: config gives each its own eppCmd. They are provisional for a different reason than presence: the
+#: WRITE id is as solid as the nine confirmed ones, but their READ-BACK position -- the config's
+#: word 6, inside the report's inserted block (:data:`INSERTED_PARAM_POSITIONS`) -- has never been
+#: seen populated on the wire (no four-way cassette diagnostics exists yet; the one 0d12 unit
+#: captured is a single-flow cassette that leaves word 6 at zero). So each is written via its config
+#: id and read back from word 6; a cabinet that actually moves its louvre confirms both the id and
+#: the position on first use, and one that does not retires the control. ⚠️ An earlier note placed
+#: these at w23 reusing ``windDirectionHorizontal``'s bits -- a pre-config derivation Haier's own
+#: config (word 6, independent of ``windDirectionHorizontal`` at word 4) supersedes.
 PROVISIONAL_SINGLE_PARAM_IDS: Mapping[str, Mapping[str, int]] = {
-    "0d12": {"humanSensingStatus": 0x23},
+    "0d12": {
+        "humanSensingStatus": 0x23,
+        "4SidesWindDirection1": 0x0F,
+        "4SidesWindDirection2": 0x0E,
+        "4SidesWindDirection3": 0x11,
+        "4SidesWindDirection4": 0x10,
+    },
+}
+
+
+#: Where an enum single-parameter reads back in a representation that is NOT its raw wire code, as
+#: ``{raw epp -> Haier STD}``. :func:`value_param_write_fields` gives these controls an ``enum`` read
+#: so the select entity, and the model's declared-code narrowing, both see the STD value the write
+#: side speaks -- the raw epp would disagree for a non-identity map (tempUnit's epp 0/1 vs std 1/2;
+#: the cassette louvres' epp 0/2/4… vs std 0/1/2…). Identity enums (mode, fan, presence) are absent:
+#: they read raw and the climate/vane entities translate for themselves, so touching their read
+#: here would feed those entities a STD code where they expect the wire code.
+VALUE_PARAM_READ_ENUM: Mapping[str, Mapping[int, int]] = {
+    "tempUnit": {0: 1, 1: 2},
+    **{
+        f"4SidesWindDirection{i}": {0: 0, 2: 1, 4: 2, 6: 3, 8: 4, 10: 5, 12: 6}
+        for i in (1, 2, 3, 4)
+    },
+}
+
+
+#: Single-parameter controls whose read-back sits inside the report's inserted block -- the words a
+#: displaced family carries that the published map does not describe -- as ``{class: {name: (report
+#: word, bit, length)}}``. The displacement formula in :func:`value_param_write_fields` cannot reach
+#: these: a canonical word maps either before the pivot (report < 6) or, once past it, to report
+#: word 10 and up, so the inserted words 6..9 have no canonical pre-image. They are placed at the
+#: literal report word Haier's config gives instead (config word == report word on this class, the
+#: same identity the nine confirmed ids satisfy), and only where the report actually carries the
+#: block (its length implies an insert). The four-way cassette louvres are the only case today.
+INSERTED_PARAM_POSITIONS: Mapping[str, Mapping[str, tuple[int, int, int]]] = {
+    "0d12": {
+        "4SidesWindDirection3": (6, 0, 4),
+        "4SidesWindDirection4": (6, 4, 4),
+        "4SidesWindDirection1": (6, 8, 4),
+        "4SidesWindDirection2": (6, 12, 4),
+    },
 }
 
 
@@ -2059,34 +2132,58 @@ def value_param_write_fields(
     be read back is worse than a missing one.
 
     ``insert`` is the ``(pivot, count)`` of a block the report carries and the published map does not
-    describe, for a family that displaces the map piecewise. Every id published for the one class
-    that uses this channel sits BELOW the pivot, so today it moves nothing -- it is here so that a
-    control above the pivot is placed correctly rather than nineteen words wrong, which is the shape
-    of mistake this whole module exists to refuse.
+    describe, for a family that displaces the map piecewise. Most ids published for this channel sit
+    BELOW the pivot and are placed by the displacement alone. A few live INSIDE the block itself
+    (:data:`INSERTED_PARAM_POSITIONS` -- the four-way cassette louvres), which the displacement
+    cannot reach: they are placed at the literal report word the config gives, and only where the
+    report actually carries the block (``insert`` is not ``None``). A control the map cannot place is
+    dropped rather than offered write-only -- a control that cannot be read back is worse than a
+    missing one.
+
+    An enum whose read-back is not its raw wire code (:data:`VALUE_PARAM_READ_ENUM`) is given an
+    ``enum`` read so the value it shows is the STD code the write side and the model both speak.
     """
     cls = uplus_class(uplus_id)
     ids = dict(SINGLE_PARAM_IDS.get(cls) or {})
     unconfirmed = dict(PROVISIONAL_SINGLE_PARAM_IDS.get(cls) or {})
     if not ids and not unconfirmed:
         return {}
+    inserted = INSERTED_PARAM_POSITIONS.get(cls) or {}
     out: dict[str, ValueParam] = {}
     for name, pid in {**ids, **unconfirmed}.items():
         spec = _FRAME_WRITE_SPEC.get(name)
-        c = CANONICAL.get(name)
-        if spec is None or c is None:
+        if spec is None:
             continue
-        word = c.word + displacement
-        if insert is not None and c.word >= insert[0]:
-            word += insert[1]
+        if name in inserted:
+            # Inside the report's inserted block. The block begins at report word
+            # ``RELATED_INSERT_PIVOT + displacement`` and the config numbers this word the same, so
+            # its literal report word is used directly -- but only when the report carries the block.
+            if insert is None:
+                continue
+            word, bit, length = inserted[name]
+        else:
+            c = CANONICAL.get(name)
+            if c is None:
+                continue
+            word = c.word + displacement
+            if insert is not None and c.word >= insert[0]:
+                word += insert[1]
+            bit, length = c.bit, c.length
         if word < 1:
             continue
+        read_enum = VALUE_PARAM_READ_ENUM.get(name)
+        read = (
+            WireField(word, bit, length, kind="enum", enum=read_enum)
+            if read_enum is not None
+            else WireField(word, bit, length, kind="raw")
+        )
         out[name] = ValueParam(
             provisional=name in unconfirmed,
             param_id=pid,
             # The payload is a full 16 bits whatever the attribute's packed width is, so the value
             # bound has to come from the attribute's own spec rather than from a bit field.
             spec=WriteField(0, 0, 16, **spec),  # type: ignore[arg-type]
-            read=WireField(word, c.bit, c.length, kind="raw"),
+            read=read,
         )
     return out
 

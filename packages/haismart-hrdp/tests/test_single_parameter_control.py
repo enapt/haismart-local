@@ -63,14 +63,78 @@ def test_a_central_cabinet_is_commandable_although_it_publishes_no_group_set() -
         "windSpeed", "healthMode", "muteStatus", "rapidMode",
         # Offered on the appliance's own terms -- see the provisional test below.
         "windDirectionVertical", "windDirectionHorizontal",
+        # Display unit (°C/°F). Confirmed like the nine above from Haier's own device config
+        # (eppCmd 5D07); reads back in the climate block, so it is placed by displacement, not
+        # provisionally.
+        "tempUnit",
         # Presence airflow. Id `5D23` from Haier's own device config; ships provisional only because
         # the write has not been exercised on a cabinet -- read back from w23.b6/2, withdrawn if it
         # does not take.
         "humanSensingStatus",
+        # The four-way cassette louvres live INSIDE the report's inserted block, so they are offered
+        # only when the model is built with an insert (a real 133-byte report). This model is built
+        # with none, which is exactly why they are absent here -- see the inserted-block test below.
     }
     # And it is the provisional one, so the appliance settles it.
     assert wm.value_param_fields["humanSensingStatus"].provisional is True
     assert wm.value_param_fields["humanSensingStatus"].param_id == 0x23
+
+
+CENTRAL_INSERT = (25, 4)  # a real 133-byte report: (length - 125) / 2 = 4 words inserted at w25
+
+
+def _central_with_block() -> object:
+    return related_wire_model(
+        CENTRAL_LENGTH, CENTRAL_DISPLACEMENT,
+        order=None, uplus_id=CENTRAL_UPLUS_ID, insert=CENTRAL_INSERT,
+    )
+
+
+def test_temp_unit_is_a_settled_control_translated_between_std_and_epp() -> None:
+    """°C/°F. Confirmed like the nine climate ids from Haier's own config (eppCmd 5D07), and unlike
+    them it is NOT identity: std 1/2 (the model's codes) map to epp 0/1 on the wire, so the encode
+    must translate and the read-back must translate the other way, or the control would set °F when
+    asked for °C and show the wrong unit."""
+    wm = _central_with_block()
+    tu = wm.value_param_fields["tempUnit"]
+    assert tu.provisional is False and tu.param_id == 0x07
+    # write: std -> command 0x5D07 and the config's epp payload
+    assert wm.encode_value_param("tempUnit", 1) == (b"\x5d\x07", b"\x00\x00")  # °C  -> epp 0
+    assert wm.encode_value_param("tempUnit", 2) == (b"\x5d\x07", b"\x00\x01")  # °F  -> epp 1
+    with pytest.raises(ValueError):
+        wm.encode_value_param("tempUnit", 5)                                   # not a unit code
+    # read: the report's raw epp comes back as the model's std code (climate block, report w3.b13)
+    rep = bytearray(CENTRAL_LENGTH)
+    rep[92 + (3 - 1) * 2 + 1] = 0x00               # bit 13 clear -> epp 0
+    assert wm.value_param_value(bytes(rep), "tempUnit") == 1                   # °C
+    rep[92 + (3 - 1) * 2] = 0x20                    # word 3 high byte bit 13 set -> epp 1
+    assert wm.value_param_value(bytes(rep), "tempUnit") == 2                   # °F
+
+
+def test_four_sided_louvres_are_provisional_inside_the_inserted_block() -> None:
+    """The four-way cassette louvres. Their write ids are as solid as the nine (Haier's config gives
+    each one), but they read back from word 6 -- inside the report's inserted block -- which no wire
+    capture has shown populated, so they ship provisional: written by id, settled by their own
+    read-back. They exist only where the report carries the block."""
+    wm = _central_with_block()
+    for i, (pid, bit) in {1: (0x0F, 8), 2: (0x0E, 12), 3: (0x11, 0), 4: (0x10, 4)}.items():
+        vp = wm.value_param_fields[f"4SidesWindDirection{i}"]
+        assert vp.provisional is True and vp.param_id == pid
+        assert (vp.read.word, vp.read.bit, vp.read.length) == (6, bit, 4)
+    # write: the config's non-linear std->epp (stop 3 -> epp 6, stop 6/"auto" -> epp 12)
+    assert wm.encode_value_param("4SidesWindDirection1", 3) == (b"\x5d\x0f", b"\x00\x06")
+    assert wm.encode_value_param("4SidesWindDirection1", 6) == (b"\x5d\x0f", b"\x00\x0c")
+    # read: epp in the inserted block decodes back to the model's stop number
+    rep = bytearray(CENTRAL_LENGTH)
+    off = 92 + (6 - 1) * 2                          # report word 6
+    rep[off] = (6 << 0) | (2 << 4)                  # high byte: b8-11 = epp 6, b12-15 = epp 2
+    assert wm.value_param_value(bytes(rep), "4SidesWindDirection1") == 3       # epp 6 -> stop 3
+    assert wm.value_param_value(bytes(rep), "4SidesWindDirection2") == 1       # epp 2 -> stop 1
+
+    # ...and NOT offered on a model built without the block: the inserted word would not exist.
+    no_block = _central()
+    assert "4SidesWindDirection1" not in no_block.value_param_fields
+    assert "tempUnit" in no_block.value_param_fields                           # climate block stays
 
 
 @pytest.mark.parametrize(

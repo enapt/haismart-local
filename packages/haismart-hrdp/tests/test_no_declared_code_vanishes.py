@@ -84,9 +84,14 @@ def test_a_provisional_id_is_offered_only_where_the_appliance_can_settle_it() ->
     for klass, unconfirmed in wm.PROVISIONAL_SINGLE_PARAM_IDS.items():
         settled = wm.SINGLE_PARAM_IDS.get(klass, {})
         assert not set(unconfirmed) & set(settled), "an id cannot be both settled and provisional"
+        inserted = wm.INSERTED_PARAM_POSITIONS.get(klass, {})
         for name, param_id in unconfirmed.items():
             assert 0 < param_id < 0x100
-            assert name in CANONICAL, f"{name} has no published position to read it back from"
+            # A read-back position, from the published map OR -- for an id inside the report's
+            # inserted block, which the map does not describe -- from the literal-position table.
+            assert name in CANONICAL or name in inserted, (
+                f"{name} has no published position to read it back from"
+            )
 
 
 def test_the_vertical_vane_id_is_the_only_one_its_bracket_leaves_free() -> None:

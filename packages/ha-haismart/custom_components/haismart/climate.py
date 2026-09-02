@@ -21,6 +21,7 @@ from homeassistant.components.climate import (
     SWING_VERTICAL,
     ClimateEntity,
     ClimateEntityFeature,
+    HVACAction,
     HVACMode,
 )
 from homeassistant.components.climate.const import (
@@ -59,6 +60,14 @@ _DISPLAY_ONLY_MODES = frozenset({"eco", "health_dry"})
 _ECO_MODE_TOKEN = "eco"
 _HVAC_TO_MODE = {
     hvac: token for token, hvac in _MODE_TO_HVAC.items() if token not in _DISPLAY_ONLY_MODES
+}
+#: What a RUNNING compressor is doing, by the mode it is set to. Auto is decided in `hvac_action`
+#: (it is cooling on a unit that cannot heat, and undecidable from the report on one that can);
+#: fan-only and off never depend on the compressor and are handled there too.
+_RUNNING_ACTION = {
+    HVACMode.COOL: HVACAction.COOLING,
+    HVACMode.HEAT: HVACAction.HEATING,
+    HVACMode.DRY: HVACAction.DRYING,
 }
 
 # Fan-only mode on this unit won't accept fan=auto; when entering it (or if the user picks auto
@@ -333,6 +342,45 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
         if state.get("power") is False:
             return HVACMode.OFF
         return _MODE_TO_HVAC.get(state.get("mode"))
+
+    @property
+    def hvac_action(self) -> HVACAction | None:
+        """What the unit is doing now, as distinct from what it is set to.
+
+        Home Assistant draws this on its own: the tile card badges the entity icon with it (a
+        snowflake while cooling, a clock while idle) and the thermostat card and more-info dialog
+        print it under the temperature. Nothing here is new information -- it is the extended
+        report's compressor flag, already a binary sensor, restated in the vocabulary the climate
+        card understands: a unit SET to Cool reads ``cooling`` while its compressor runs and
+        ``idle`` once the setpoint is reached and it stops, which is the distinction the badge
+        exists to show. Off and fan-only need no telemetry -- the status report alone settles them.
+
+        Where the compressor flag is unknown -- a unit that answers no extended query, or one
+        whose last reading has aged out (`TELEMETRY_MAX_AGE`) -- this is unknown too, rather than
+        an echo of the mode. A "cooling" badge on an idle unit is precisely the wrong answer, and
+        the mode already stands beside it in the card.
+
+        Auto on a heat-pump is the one case the report cannot settle: the compressor is running,
+        but nothing decoded says which way it is pumping (the reversing-valve field reads "not
+        reported" on every capture to hand), so it stays unknown. On a unit that cannot heat, auto
+        can only be cooling.
+        """
+        state = self._state
+        if not state:
+            return None
+        if state.get("power") is False:
+            return HVACAction.OFF
+        mode = _MODE_TO_HVAC.get(state.get("mode"))
+        if mode is HVACMode.FAN_ONLY:
+            return HVACAction.FAN
+        running = state.get("compressor_running")
+        if running is None:
+            return None
+        if not running:
+            return HVACAction.IDLE
+        if mode is HVACMode.AUTO and HVACMode.HEAT not in self.hvac_modes:
+            return HVACAction.COOLING
+        return _RUNNING_ACTION.get(mode)
 
     @property
     def current_temperature(self) -> float | None:

@@ -832,6 +832,28 @@ This is a per-hardware observation, not a model change; it is the ground truth t
 `windDirectionHorizontal` labels against, and the first confirmation that a `0d12` L-R vane command
 moves the actual louvre (the four-sided cassette sweep, `FUTURE_WORK` unchanged, is still unobserved).
 
+### 55. What the unit is doing (`hvac_action`) is undecidable in auto on a heat pump while the compressor runs
+
+The climate entity reports what the unit is *doing* -- cooling / idle / drying / heating / fan / off
+-- from the extended report's compressor flag; Home Assistant badges the tile-card icon with it and
+prints it under the temperature in the thermostat card. Two gaps, both left as honest unknowns
+rather than guesses:
+
+- **Auto on a unit that can heat, compressor running.** Nothing decoded says which way the
+  compressor is pumping. The extended report carries a reversing-valve field
+  (`four_way_valve_status`), but every capture to hand reads it as "not reported" (2), and its
+  polarity -- whether 1 means heating -- has never been observed. So the action reads unknown
+  there; idle, and the explicit modes, are still decided. On a cooling-only unit auto reads
+  cooling, because nothing else is possible.
+- **Units that answer no extended query.** Off and fan-only are decided from the status report;
+  cool / heat / dry read unknown rather than echoing the mode, because "cooling" on an idle unit
+  is precisely the wrong answer the badge exists to avoid.
+
+**What closes the first:** one extended report from a heat-pump unit that is heating (mode heat,
+compressor running) whose reversing-valve field reads 0 or 1 -- that fixes the polarity, and auto
+can then be decided from it. Defrost (`defrost_status`, same actuator word) can be published as
+`defrosting` the same way once one report shows it at 1.
+
 ## Reference — not open items
 
 Kept because each looks like something to "fix" until you know why it is the way it is.

@@ -416,6 +416,124 @@ async def test_powered_off_reports_hvac_off(hass: HomeAssistant, mock_uss) -> No
     assert hass.states.get(CLIMATE).state == "off"
 
 
+async def test_hvac_action_follows_the_compressor(
+    hass: HomeAssistant, mock_uss, freezer
+) -> None:
+    """`hvac_action` is what the unit is DOING, as distinct from the mode it is set to: the
+    extended report's compressor flag, restated in the climate card's vocabulary. Home Assistant
+    badges the tile-card icon with it (a snowflake while cooling, a clock while idle) and prints
+    it under the temperature in the thermostat card, with no dashboard configuration."""
+    mock_uss.read.return_value = [make_status_frame(), make_extended_frame(compressor=True)]
+    await _setup(hass)
+    climate = hass.states.get(CLIMATE)
+    assert climate.state == "cool"
+    assert climate.attributes["hvac_action"] == "cooling"
+
+    # setpoint reached and the compressor stopped: still SET to cool, no longer cooling
+    mock_uss.read.return_value = [make_status_frame(), make_extended_frame(compressor=False)]
+    await _tick(hass, freezer)
+    climate = hass.states.get(CLIMATE)
+    assert climate.state == "cool"
+    assert climate.attributes["hvac_action"] == "idle"
+    # the two cannot disagree: they read the same flag
+    assert hass.states.get("binary_sensor.downstairs_ac_compressor").state == "off"
+
+    # dry cycles the compressor the same way
+    mock_uss.read.return_value = [
+        make_status_frame(mode_code=2), make_extended_frame(compressor=True),
+    ]
+    await _tick(hass, freezer)
+    assert hass.states.get(CLIMATE).attributes["hvac_action"] == "drying"
+
+    # auto on this cooling-only unit can only be cooling
+    mock_uss.read.return_value = [
+        make_status_frame(mode_code=0), make_extended_frame(compressor=True),
+    ]
+    await _tick(hass, freezer)
+    climate = hass.states.get(CLIMATE)
+    assert climate.state == "auto"
+    assert climate.attributes["hvac_action"] == "cooling"
+
+
+async def test_hvac_action_off_and_fan_only_need_no_telemetry(
+    hass: HomeAssistant, mock_uss, freezer
+) -> None:
+    """Off and fan-only are settled by the status report alone -- neither depends on the
+    compressor -- so a unit that never answers the extended query still reports them."""
+    mock_uss.read.return_value = [make_status_frame(power=False)]
+    await _setup(hass)
+    assert hass.states.get(CLIMATE).attributes["hvac_action"] == "off"
+
+    mock_uss.read.return_value = [make_status_frame(mode_code=6)]
+    await _tick(hass, freezer)
+    climate = hass.states.get(CLIMATE)
+    assert climate.state == "fan_only"
+    assert climate.attributes["hvac_action"] == "fan"
+
+
+async def test_hvac_action_is_unknown_rather_than_the_mode_without_the_compressor_flag(
+    hass: HomeAssistant, mock_uss, freezer
+) -> None:
+    """A unit SET to Cool whose compressor state is unknown reports no action at all, not
+    "cooling": telling idle from cooling is the whole point of the attribute, and a badge that
+    said "cooling" on an idle unit would be exactly the wrong answer. That covers a unit that
+    answers no extended query, and one whose last reading has aged out."""
+    mock_uss.read.return_value = [make_status_frame()]
+    await _setup(hass)
+    climate = hass.states.get(CLIMATE)
+    assert climate.state == "cool"
+    assert "hvac_action" not in climate.attributes
+
+    # now it answers: the action appears ...
+    mock_uss.read.return_value = [make_status_frame(), make_extended_frame(compressor=True)]
+    await _tick(hass, freezer)
+    assert hass.states.get(CLIMATE).attributes["hvac_action"] == "cooling"
+
+    # ... stands in through a cycle whose extended reply is missing (every control op is one) ...
+    mock_uss.read.return_value = [make_status_frame()]
+    await _tick(hass, freezer)
+    assert hass.states.get(CLIMATE).attributes["hvac_action"] == "cooling"
+
+    # ... and goes with the reading once that is too old to speak for the unit
+    freezer.tick(timedelta(seconds=TELEMETRY_MAX_AGE))
+    await _tick(hass, freezer)
+    assert hass.states.get("binary_sensor.downstairs_ac_compressor").state == "unknown"
+    assert "hvac_action" not in hass.states.get(CLIMATE).attributes
+
+
+async def test_hvac_action_auto_on_a_heat_pump_is_undecidable_while_running(
+    hass: HomeAssistant, mock_uss, freezer
+) -> None:
+    """On a unit that can heat, auto with the compressor running is left unknown: nothing decoded
+    says which way it is pumping (the reversing-valve field reads "not reported" on every capture
+    to hand). Idle is still idle, and a mode the unit was told -- heat -- is still decided."""
+    mock_uss.read.return_value = [
+        make_status_frame(mode_code=0), make_extended_frame(compressor=True),
+    ]
+    entry = _entry(digital_model=json.dumps(heat_capable_digital_model()))
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    climate = hass.states.get(CLIMATE)
+    assert "heat" in climate.attributes["hvac_modes"]
+    assert climate.state == "auto"
+    assert "hvac_action" not in climate.attributes
+
+    mock_uss.read.return_value = [
+        make_status_frame(mode_code=0), make_extended_frame(compressor=False),
+    ]
+    await _tick(hass, freezer)
+    assert hass.states.get(CLIMATE).attributes["hvac_action"] == "idle"
+
+    mock_uss.read.return_value = [
+        make_status_frame(mode_code=4), make_extended_frame(compressor=True),
+    ]
+    await _tick(hass, freezer)
+    climate = hass.states.get(CLIMATE)
+    assert climate.state == "heat"
+    assert climate.attributes["hvac_action"] == "heating"
+
+
 async def test_compact12_family_decodes_and_controls_via_4d5f(
     hass: HomeAssistant, mock_uss
 ) -> None:

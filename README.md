@@ -88,7 +88,7 @@ One device per air conditioner, with:
 
 | Entity | What it does |
 |---|---|
-| **Climate** | Temperature setpoint, mode (cool / heat / dry / fan-only / auto), fan speed, swing, preset (eco / sleep / boost), on/off. Heat is offered only when the unit itself reports it can heat |
+| **Climate** | Temperature setpoint, mode (cool / heat / dry / fan-only / auto), fan speed, swing, preset (eco / sleep / boost), on/off. Heat is offered only when the unit itself reports it can heat. On units that report their compressor it also says what the unit is *doing* — cooling, idle, drying, heating, fan, off — which Home Assistant's tile card badges on the icon and the thermostat card prints under the temperature |
 | **Indoor temperature** | The AC's own room-temperature reading |
 | **Outdoor temperature** | Outdoor probe, on units that have one |
 | **Switches** | Strong, Quiet, Health, Sleep, Display light |

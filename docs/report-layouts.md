@@ -280,7 +280,7 @@ attributes — these units do describe one — and a single-flow unit leaves mos
 ⚠️ **That reading is wrong for the two words we read from it.** Word 25 and word 26 carry the
 **appliance's** vane and fan, not a tower's: see the fan entry below.
 
-Three things about it differ in kind rather than position, and each was fixed by values the reports
+Three things about it differ in kind rather than position, and each is settled by values the reports
 carry directly:
 
 - the **setpoint counts half degrees from zero** (wire 44 = 22 °C), not whole degrees offset by 16;

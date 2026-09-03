@@ -122,6 +122,11 @@ that confirmation, so they keep the values from the most recent poll. They are h
 minutes, and cleared immediately when you switch the unit on or off, because the figures for a
 running unit say nothing about one that has just stopped.
 
+The thermostat's own account of what the unit is *doing* — cooling, idle, drying, heating, fan, off
+— comes from the compressor flag among those readings, so it follows the same rule: it holds for the
+same two minutes, and where the flag is unknown it reads unknown, with no badge on the card, rather
+than echoing the mode. Off and fan-only need no telemetry and are always reported.
+
 ## Vane readings on units that cannot be asked
 
 A vane is a position, not a switch. The swing control answers one question — is it sweeping — and on
@@ -132,4 +137,4 @@ Where the unit accepts vane commands, a control lists the stops its own model pu
 control keeps working alongside it. Where it does not — an axis its family has no confirmed command for, or a family that is
 read-only altogether — the appliance still reports both axes in every status message. Those units get a **reading** for each
 axis instead, naming the stop the vane is parked at in the same words the control would use. It is
-the only account of the vanes such a unit will give, and it was previously discarded.
+the only account of the vanes such a unit will give.

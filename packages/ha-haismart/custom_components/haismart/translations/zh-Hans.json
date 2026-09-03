@@ -149,6 +149,7 @@
       "missing_field": "海尔拒绝了本次登录，因为有字段缺失或为空。",
       "cloud_auth": "登录失败。请检查你的邮箱或手机号以及密码。",
       "cannot_connect_cloud": "登录成功，但无法连接海尔服务器以列出你的设备。这通常是暂时性的——请稍后再试。",
+      "cloud_unreachable": "无法连接海尔服务器。请检查 Home Assistant 能否访问互联网并解析海尔的地址——Home Assistant 主机上的 DNS 或防火墙问题看起来正是这样——然后再试一次。",
       "invalid_key": "本地密钥必须是 32 位十六进制字符串。",
       "invalid_auth": "空调有响应，但此本地密钥无法解密其状态——密钥有误，或已被轮换。",
       "cannot_connect": "无法通过 56800 端口连接到空调。请检查 IP 地址，并确认 Home Assistant 与它在同一网络中。",

@@ -149,6 +149,7 @@
       "missing_field": "A Haier recusou o login porque um campo estava faltando ou vazio.",
       "cloud_auth": "Falha ao entrar. Confira seu e-mail ou número de telefone e sua senha.",
       "cannot_connect_cloud": "Login feito com sucesso, mas não foi possível alcançar os servidores da Haier para listar seus dispositivos. Isso costuma ser temporário — tente de novo em instantes.",
+      "cloud_unreachable": "Não foi possível alcançar os servidores da Haier. Confira se o Home Assistant tem acesso à internet e consegue resolver o endereço da Haier — um problema de DNS ou de firewall no host do Home Assistant se parece exatamente com isso — e tente de novo.",
       "invalid_key": "A chave local precisa ser uma sequência hexadecimal de 32 caracteres.",
       "invalid_auth": "O ar-condicionado respondeu, mas esta chave local não descriptografa o estado dele — a chave está errada ou foi trocada.",
       "cannot_connect": "Não foi possível alcançar o ar-condicionado na porta 56800. Confira o endereço IP e se o Home Assistant está na mesma rede.",

@@ -149,6 +149,7 @@
       "missing_field": "A Haier elutasította a bejelentkezést, mert egy mező hiányzott vagy üres volt.",
       "cloud_auth": "A bejelentkezés nem sikerült. Ellenőrizd az e-mail-címedet vagy telefonszámodat és a jelszavadat.",
       "cannot_connect_cloud": "A bejelentkezés sikerült, de a Haier szerverei nem voltak elérhetők az eszközeid listázásához. Ez általában átmeneti – próbáld újra egy pillanat múlva.",
+      "cloud_unreachable": "A Haier szerverei nem voltak elérhetők. Ellenőrizd, hogy a Home Assistant eléri-e az internetet és fel tudja-e oldani a Haier címét – a Home Assistant gépén egy DNS- vagy tűzfalprobléma pontosan így néz ki –, majd próbáld újra.",
       "invalid_key": "A helyi kulcsnak 32 karakteres hexadecimális karakterláncnak kell lennie.",
       "invalid_auth": "A klíma válaszolt, de ez a helyi kulcs nem fejti vissza az állapotát – a kulcs hibás, vagy lecserélték.",
       "cannot_connect": "Nem sikerült elérni a klímát az 56800-as porton. Ellenőrizd az IP-címet, és hogy a Home Assistant ugyanazon a hálózaton van-e.",

@@ -149,6 +149,7 @@
       "missing_field": "Haier rechazó el inicio de sesión porque faltaba un campo o estaba vacío.",
       "cloud_auth": "Error al iniciar sesión. Comprueba tu correo o número de teléfono y tu contraseña.",
       "cannot_connect_cloud": "Sesión iniciada correctamente, pero no se pudo contactar con los servidores de Haier para listar tus dispositivos. Suele ser temporal: inténtalo de nuevo en un momento.",
+      "cloud_unreachable": "No se pudo contactar con los servidores de Haier. Comprueba que Home Assistant tiene acceso a internet y puede resolver la dirección de Haier (un problema de DNS o de cortafuegos en el equipo de Home Assistant se ve exactamente así) y vuelve a intentarlo.",
       "invalid_key": "La clave local debe ser una cadena hexadecimal de 32 caracteres.",
       "invalid_auth": "El aire acondicionado respondió, pero esta clave local no descifra su estado: la clave es incorrecta o ha cambiado.",
       "cannot_connect": "No se pudo contactar con el aire acondicionado en el puerto 56800. Comprueba la dirección IP y que Home Assistant esté en la misma red.",

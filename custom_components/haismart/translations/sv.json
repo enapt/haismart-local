@@ -149,6 +149,7 @@
       "missing_field": "Haier avvisade inloggningen eftersom ett fält saknades eller var tomt.",
       "cloud_auth": "Inloggningen misslyckades. Kontrollera din e-postadress eller ditt telefonnummer och ditt lösenord.",
       "cannot_connect_cloud": "Inloggningen lyckades, men Haiers servrar gick inte att nå för att lista dina enheter. Det är oftast tillfälligt – försök igen om en stund.",
+      "cloud_unreachable": "Haiers servrar gick inte att nå. Kontrollera att Home Assistant når internet och kan slå upp Haiers adress – ett DNS- eller brandväggsproblem på Home Assistant-värden ser ut precis så här – och försök igen.",
       "invalid_key": "Den lokala nyckeln måste vara en hex-sträng på 32 tecken.",
       "invalid_auth": "Luftkonditioneringen svarade, men den här lokala nyckeln avkodar inte dess status – nyckeln är fel eller har bytts.",
       "cannot_connect": "Det gick inte att nå luftkonditioneringen på port 56800. Kontrollera IP-adressen och att Home Assistant är i samma nätverk.",

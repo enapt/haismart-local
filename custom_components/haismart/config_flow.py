@@ -316,7 +316,7 @@ def _login_error_for(err: Exception) -> str:
     # `_async_login_cloud` re-raises the original as the cause, so the connection case is a type
     # test, not a string sniff -- a genuine rejection always carries a retCode instead.
     if isinstance(getattr(err, "__cause__", None), (CloudConnectionError, TimeoutError, OSError)):
-        return "cannot_connect_cloud"
+        return "cloud_unreachable"
     text = str(err)
     if "30032" in text:
         return "account_not_in_region"
@@ -644,11 +644,11 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors["base"] = _login_error_for(err)
                 placeholders = {"username": user_input[CONF_USERNAME], "zone": zone}
             except (CloudError, OSError, RuntimeError, TimeoutError) as err:
-                # Reached only from list_devices_v2 below in the original code; kept distinct
-                # because
-                # sign-in itself already succeeded by this point.
+                # The sign-in itself never got an answer -- a transport failure that arrived
+                # unwrapped rather than as a CloudAuthError's cause. Nothing was signed in, so the
+                # "signed in, but..." wording of the device-list failure below would be a lie.
                 _LOGGER.debug("cloud sign-in transport failure: %s", err)
-                errors["base"] = "cannot_connect_cloud"
+                errors["base"] = "cloud_unreachable"
             else:
                 try:
                     self._devices = await self._cloud.list_devices_v2()
@@ -1439,7 +1439,7 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                 placeholders = {"username": user_input[CONF_USERNAME], "zone": zone}
             except (CloudError, OSError, RuntimeError, TimeoutError) as err:
                 _LOGGER.warning("attaching cloud credentials failed: %s", err)
-                errors["base"] = "cannot_connect_cloud"
+                errors["base"] = "cloud_unreachable"
             else:
                 # Same sign-in, same consequence for everyone else on the account.
                 await self._async_share_after_login(_cloud, cloud_data)
@@ -1552,7 +1552,7 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                 placeholders = {"username": user_input[CONF_USERNAME], "zone": zone}
             except (CloudError, GatewayError, KeyError, OSError, RuntimeError, TimeoutError) as err:
                 _LOGGER.warning("re-fetching the localKey for %s failed: %s", device_id, err)
-                errors["base"] = "cannot_connect_cloud"
+                errors["base"] = "cloud_unreachable"
             else:
                 return self.async_update_reload_and_abort(
                     entry,

@@ -149,6 +149,7 @@
       "missing_field": "Haier từ chối đăng nhập vì có một trường bị thiếu hoặc để trống.",
       "cloud_auth": "Đăng nhập thất bại. Hãy kiểm tra lại email hoặc số điện thoại và mật khẩu của bạn.",
       "cannot_connect_cloud": "Đăng nhập thành công, nhưng không kết nối được tới máy chủ Haier để liệt kê thiết bị của bạn. Việc này thường chỉ là tạm thời — hãy thử lại sau ít phút.",
+      "cloud_unreachable": "Không kết nối được tới máy chủ Haier. Hãy kiểm tra Home Assistant có truy cập được Internet và phân giải được địa chỉ của Haier không — sự cố DNS hoặc tường lửa trên máy chạy Home Assistant trông đúng như thế này — rồi thử lại.",
       "invalid_key": "Khóa cục bộ phải là một chuỗi hex gồm 32 ký tự.",
       "invalid_auth": "Điều hòa có phản hồi, nhưng khóa cục bộ này không giải mã được trạng thái của nó — khóa sai, hoặc đã bị thay đổi.",
       "cannot_connect": "Không kết nối được tới điều hòa ở cổng 56800. Hãy kiểm tra địa chỉ IP, và bảo đảm Home Assistant ở cùng mạng.",

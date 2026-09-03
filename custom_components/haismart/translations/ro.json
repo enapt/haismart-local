@@ -149,6 +149,7 @@
       "missing_field": "Haier a respins autentificarea pentru că un câmp lipsea sau era gol.",
       "cloud_auth": "Autentificarea a eșuat. Verifică e-mailul sau numărul de telefon și parola.",
       "cannot_connect_cloud": "Autentificarea a reușit, dar serverele Haier nu au putut fi contactate pentru a-ți lista dispozitivele. De obicei este temporar — încearcă din nou peste puțin timp.",
+      "cloud_unreachable": "Serverele Haier nu au putut fi contactate. Verifică dacă Home Assistant are acces la internet și poate rezolva adresa Haier — o problemă de DNS sau de firewall pe gazda Home Assistant arată exact așa — apoi încearcă din nou.",
       "invalid_key": "Cheia locală trebuie să fie un șir hexazecimal de 32 de caractere.",
       "invalid_auth": "Aparatul a răspuns, dar această cheie locală nu îi decriptează starea — cheia este greșită sau a fost schimbată.",
       "cannot_connect": "Aparatul nu a putut fi contactat pe portul 56800. Verifică adresa IP și dacă Home Assistant se află în aceeași rețea.",

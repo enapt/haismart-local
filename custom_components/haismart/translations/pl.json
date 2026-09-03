@@ -149,6 +149,7 @@
       "missing_field": "Haier odrzucił logowanie, ponieważ brakowało jednego z pól lub było puste.",
       "cloud_auth": "Logowanie nie powiodło się. Sprawdź adres e-mail lub numer telefonu oraz hasło.",
       "cannot_connect_cloud": "Zalogowano pomyślnie, ale nie udało się połączyć z serwerami Haiera, aby pobrać listę urządzeń. Zwykle jest to przejściowe — spróbuj ponownie za chwilę.",
+      "cloud_unreachable": "Nie udało się połączyć z serwerami Haiera. Sprawdź, czy Home Assistant ma dostęp do internetu i potrafi rozwiązać adres Haiera — problem z DNS lub zaporą na hoście Home Assistant wygląda dokładnie tak — i spróbuj ponownie.",
       "invalid_key": "Klucz lokalny musi być 32-znakowym ciągiem szesnastkowym.",
       "invalid_auth": "Klimatyzator odpowiedział, ale ten klucz lokalny nie odszyfrowuje jego stanu — klucz jest nieprawidłowy albo został zmieniony.",
       "cannot_connect": "Nie udało się połączyć z klimatyzatorem na porcie 56800. Sprawdź adres IP oraz to, czy Home Assistant jest w tej samej sieci.",

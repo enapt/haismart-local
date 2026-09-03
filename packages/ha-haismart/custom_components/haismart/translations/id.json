@@ -149,6 +149,7 @@
       "missing_field": "Haier menolak proses masuk karena ada kolom yang kosong atau tidak terisi.",
       "cloud_auth": "Gagal masuk. Periksa email atau nomor telepon dan kata sandi Anda.",
       "cannot_connect_cloud": "Berhasil masuk, tetapi server Haier tidak dapat dihubungi untuk menampilkan daftar perangkat Anda. Biasanya ini bersifat sementara — coba lagi sebentar lagi.",
+      "cloud_unreachable": "Server Haier tidak dapat dihubungi. Pastikan Home Assistant dapat mengakses internet dan me-resolve alamat Haier — masalah DNS atau firewall pada host Home Assistant terlihat persis seperti ini — lalu coba lagi.",
       "invalid_key": "Kunci lokal harus berupa string heksadesimal 32 karakter.",
       "invalid_auth": "AC merespons, tetapi kunci lokal ini tidak dapat mendekripsi statusnya — kuncinya salah, atau sudah diganti.",
       "cannot_connect": "Tidak dapat menjangkau AC di port 56800. Periksa alamat IP-nya, dan pastikan Home Assistant berada di jaringan yang sama.",

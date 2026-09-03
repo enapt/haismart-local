@@ -149,6 +149,7 @@
       "missing_field": "Haier afviste login, fordi et felt manglede eller var tomt.",
       "cloud_auth": "Login mislykkedes. Kontrollér din e-mail eller dit telefonnummer og din adgangskode.",
       "cannot_connect_cloud": "Login lykkedes, men Haiers servere kunne ikke nås for at hente listen over dine enheder. Det er som regel forbigående – prøv igen om et øjeblik.",
+      "cloud_unreachable": "Haiers servere kunne ikke nås. Kontrollér, at Home Assistant kan nå internettet og slå Haiers adresse op – et DNS- eller firewallproblem på Home Assistant-værten ser præcis sådan ud – og prøv igen.",
       "invalid_key": "Den lokale nøgle skal være en hex-streng på 32 tegn.",
       "invalid_auth": "Klimaanlægget svarede, men denne lokale nøgle dekrypterer ikke dets status – nøglen er forkert eller er blevet skiftet.",
       "cannot_connect": "Klimaanlægget kunne ikke nås på port 56800. Kontrollér IP-adressen, og at Home Assistant er på samme netværk.",

@@ -149,6 +149,7 @@
       "missing_field": "Haier heeft de aanmelding geweigerd omdat een veld ontbrak of leeg was.",
       "cloud_auth": "Aanmelden mislukt. Controleer je e-mailadres of telefoonnummer en je wachtwoord.",
       "cannot_connect_cloud": "Aanmelden gelukt, maar de servers van Haier waren niet bereikbaar om je apparaten op te halen. Dit is meestal tijdelijk — probeer het zo meteen opnieuw.",
+      "cloud_unreachable": "De servers van Haier waren niet bereikbaar. Controleer of Home Assistant internet heeft en het adres van Haier kan opzoeken — een DNS- of firewallprobleem op de Home Assistant-host ziet er precies zo uit — en probeer het daarna opnieuw.",
       "invalid_key": "De lokale sleutel moet een hex-string van 32 tekens zijn.",
       "invalid_auth": "De airco antwoordde, maar deze lokale sleutel ontsleutelt de status niet — de sleutel is onjuist of is gewisseld.",
       "cannot_connect": "Kon de airco niet bereiken op poort 56800. Controleer het IP-adres en of Home Assistant in hetzelfde netwerk zit.",

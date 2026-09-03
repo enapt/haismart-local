@@ -149,6 +149,7 @@
       "missing_field": "Haier oturum açmayı reddetti: bir alan eksik veya boştu.",
       "cloud_auth": "Oturum açılamadı. E-postanızı veya telefon numaranızı ve parolanızı kontrol edin.",
       "cannot_connect_cloud": "Oturum açma başarılı, ancak cihazlarınızı listelemek için Haier sunucularına ulaşılamadı. Bu genellikle geçicidir — birazdan yeniden deneyin.",
+      "cloud_unreachable": "Haier sunucularına ulaşılamadı. Home Assistant'ın internete erişebildiğini ve Haier'in adresini çözebildiğini kontrol edin — Home Assistant ana makinesindeki bir DNS veya güvenlik duvarı sorunu tam olarak böyle görünür — sonra yeniden deneyin.",
       "invalid_key": "Yerel anahtar 32 karakterlik onaltılık bir dize olmalıdır.",
       "invalid_auth": "Klima yanıt verdi, ancak bu yerel anahtar durumunu çözmüyor — anahtar yanlış ya da değiştirilmiş.",
       "cannot_connect": "Klimaya 56800 numaralı bağlantı noktasından ulaşılamadı. IP adresini ve Home Assistant'ın aynı ağda olup olmadığını kontrol edin.",

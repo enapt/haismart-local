@@ -149,6 +149,7 @@
       "missing_field": "Haier rejected the sign-in because a field was missing or empty.",
       "cloud_auth": "Sign-in failed. Check your email or phone number and your password.",
       "cannot_connect_cloud": "Signed in successfully, but Haier's servers could not be reached to list your devices. This is usually temporary — try again in a moment.",
+      "cloud_unreachable": "Haier's servers could not be reached. Check that Home Assistant can reach the internet and resolve Haier's address — a DNS or firewall problem on the Home Assistant host looks exactly like this — then try again.",
       "invalid_key": "The local key must be a 32-character hex string.",
       "invalid_auth": "The air conditioner answered, but this local key does not decrypt its status — the key is wrong, or it has been rotated.",
       "cannot_connect": "Could not reach the air conditioner on port 56800. Check the IP address, and that Home Assistant is on the same network.",

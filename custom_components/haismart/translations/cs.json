@@ -149,6 +149,7 @@
       "missing_field": "Haier přihlášení odmítl, protože některé pole chybělo nebo bylo prázdné.",
       "cloud_auth": "Přihlášení se nezdařilo. Zkontrolujte e-mail nebo telefonní číslo a heslo.",
       "cannot_connect_cloud": "Přihlášení proběhlo úspěšně, ale servery Haier nebyly dostupné pro načtení seznamu vašich zařízení. Bývá to dočasné – zkuste to za chvíli znovu.",
+      "cloud_unreachable": "Servery Haier nebyly dostupné. Zkontrolujte, že se Home Assistant dostane na internet a dokáže přeložit adresu Haier – problém s DNS nebo firewallem na hostiteli Home Assistant vypadá přesně takto – a zkuste to znovu.",
       "invalid_key": "Lokální klíč musí být hexadecimální řetězec o 32 znacích.",
       "invalid_auth": "Klimatizace odpověděla, ale tento lokální klíč její stav nedešifruje – klíč je nesprávný, nebo byl změněn.",
       "cannot_connect": "Klimatizaci se nepodařilo kontaktovat na portu 56800. Zkontrolujte IP adresu a to, že je Home Assistant ve stejné síti.",

@@ -149,6 +149,7 @@
       "missing_field": "Haier hylkäsi kirjautumisen, koska jokin kenttä puuttui tai oli tyhjä.",
       "cloud_auth": "Kirjautuminen epäonnistui. Tarkista sähköpostisi tai puhelinnumerosi ja salasanasi.",
       "cannot_connect_cloud": "Kirjautuminen onnistui, mutta Haierin palvelimiin ei saatu yhteyttä laiteluettelon hakemiseksi. Tämä on yleensä tilapäistä – yritä hetken kuluttua uudelleen.",
+      "cloud_unreachable": "Haierin palvelimiin ei saatu yhteyttä. Tarkista, että Home Assistant pääsee internetiin ja pystyy selvittämään Haierin osoitteen – DNS- tai palomuuriongelma Home Assistant -koneella näyttää täsmälleen tältä – ja yritä uudelleen.",
       "invalid_key": "Paikallisen avaimen on oltava 32 merkin heksadesimaalimerkkijono.",
       "invalid_auth": "Ilmastointilaite vastasi, mutta tämä paikallinen avain ei pura sen tilatietoja – avain on väärä tai se on vaihdettu.",
       "cannot_connect": "Ilmastointilaitteeseen ei saatu yhteyttä portissa 56800. Tarkista IP-osoite ja se, että Home Assistant on samassa verkossa.",

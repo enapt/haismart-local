@@ -615,6 +615,34 @@ async def test_login_wrong_region_gets_its_own_error(hass: HomeAssistant, mock_u
     assert _login_error_for(bad_password) == "cloud_auth"
 
 
+async def test_device_list_failure_after_a_real_sign_in_keeps_its_own_message(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Two failures, two messages. A sign-in that never reached Haier says the servers could not be
+    reached; a device list that fails AFTER a successful sign-in says "signed in, but" -- and those
+    words must never be shown for the first case, where nothing was signed in at all."""
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    from haismart_extractor.cloud import CloudConnectionError
+
+    cloud = MagicMock()
+    cloud.list_devices_v2 = AsyncMock(side_effect=CloudConnectionError("GET uhome: timed out"))
+    with patch(
+        "custom_components.haismart.config_flow._async_login_cloud",
+        AsyncMock(return_value=(cloud, {})),
+    ):
+        result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"next_step_id": "login"}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_USERNAME: "me@example.com", CONF_PASSWORD: "pw", CONF_ZONE_INFO: "351"},
+        )
+    assert result["type"] == FlowResultType.FORM
+    assert result["errors"] == {"base": "cannot_connect_cloud"}
+
+
 async def test_login_with_no_devices_aborts(hass: HomeAssistant, mock_uss) -> None:
     """Sign-in succeeded; the account is simply empty.
 
@@ -923,7 +951,7 @@ async def test_a_network_failure_at_sign_in_is_not_reported_as_a_wrong_password(
         )
 
     assert result["type"] == FlowResultType.FORM
-    assert result["errors"] == {"base": "cannot_connect_cloud"}
+    assert result["errors"] == {"base": "cloud_unreachable"}
 
 
 async def test_manual_onboarding_survives_an_unreachable_catalogue(

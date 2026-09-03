@@ -149,6 +149,7 @@
       "missing_field": "Haier hat die Anmeldung abgelehnt, weil ein Feld fehlte oder leer war.",
       "cloud_auth": "Anmeldung fehlgeschlagen. Prüfe deine E-Mail-Adresse bzw. Telefonnummer und dein Passwort.",
       "cannot_connect_cloud": "Anmeldung erfolgreich, aber Haiers Server waren nicht erreichbar, um deine Geräte aufzulisten. Das ist meist vorübergehend – versuche es gleich noch einmal.",
+      "cloud_unreachable": "Haiers Server waren nicht erreichbar. Prüfe, ob Home Assistant ins Internet kommt und Haiers Adresse auflösen kann – ein DNS- oder Firewall-Problem auf dem Home-Assistant-Host sieht genau so aus – und versuche es dann noch einmal.",
       "invalid_key": "Der lokale Schlüssel muss eine 32-stellige Hex-Zeichenkette sein.",
       "invalid_auth": "Das Klimagerät hat geantwortet, aber dieser lokale Schlüssel entschlüsselt seinen Status nicht – der Schlüssel ist falsch oder wurde gewechselt.",
       "cannot_connect": "Das Klimagerät war über Port 56800 nicht erreichbar. Prüfe die IP-Adresse und ob Home Assistant im selben Netzwerk ist.",

@@ -149,6 +149,7 @@
       "missing_field": "Haier ha rifiutato l'accesso perché un campo era mancante o vuoto.",
       "cloud_auth": "Accesso non riuscito. Controlla l'e-mail o il numero di telefono e la password.",
       "cannot_connect_cloud": "Accesso riuscito, ma non è stato possibile contattare i server Haier per elencare i tuoi dispositivi. Di solito è temporaneo: riprova tra poco.",
+      "cloud_unreachable": "Non è stato possibile contattare i server Haier. Controlla che Home Assistant abbia accesso a internet e riesca a risolvere l'indirizzo di Haier (un problema di DNS o di firewall sull'host di Home Assistant si presenta esattamente così), poi riprova.",
       "invalid_key": "La chiave locale deve essere una stringa esadecimale di 32 caratteri.",
       "invalid_auth": "Il climatizzatore ha risposto, ma questa chiave locale non ne decifra lo stato: la chiave è errata oppure è stata cambiata.",
       "cannot_connect": "Impossibile raggiungere il climatizzatore sulla porta 56800. Controlla l'indirizzo IP e che Home Assistant sia sulla stessa rete.",

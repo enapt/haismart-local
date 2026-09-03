@@ -10,7 +10,7 @@ cloud-reachability); see [PROTOCOL.md](PROTOCOL.md) for both.
 
 ```bash
 python3 -m venv --system-site-packages .venv && . .venv/bin/activate
-pip install pytest pytest-asyncio cryptography ruff
+pip install pytest pytest-asyncio cryptography httpx ruff
 # for the Home Assistant integration tests:
 pip install homeassistant pytest-homeassistant-custom-component
 ```
@@ -32,8 +32,8 @@ deviceIds/keys — never a real device `localKey`, MAC, or LAN address (see [SEC
   (`set_grsetdac_field` raises otherwise) — keep it that way: don't widen the grSetDAC map without
   evidence for the new field/value.
 - **An unknown code is not a known one.** The cloud-state value in the UDISCOVERY reply is
-  module-firmware defined and undocumented: two values have been confirmed and the rest of the space
-  is unknown. So the decoder treats *only* the confirmed "connected" value as connected, keeps the
+  module-firmware defined and undocumented: three values have been confirmed (connected, retrying,
+  disconnected) and the rest of the space is unknown. So the decoder treats *only* the confirmed "connected" value as connected, keeps the
   raw number in an attribute, and reports "unknown" when a device says nothing at all — never a
   fabricated "disconnected". Telling someone their firewall works when nothing was measured is worse
   than saying nothing. Hold new fields on that channel to the same bar, and walk its TLVs by type
@@ -44,9 +44,11 @@ deviceIds/keys — never a real device `localKey`, MAC, or LAN address (see [SEC
   that reads "on" while the unit is off). And a reading a unit doesn't actually have must decode to
   *unavailable*, never a fabricated value: a missing temperature reads `0`, which naive maths turns
   into a confident −64 °C that then poisons long-term statistics. `parse_extended_status` and the
-  temperature helpers already guard this; keep new fields to the same bar. The extended report's byte
-  offsets are **per report family** — the ones in `parse_extended_status` are for the classic
-  (141-byte) family, so another family needs its own offsets confirmed before it can decode there.
+  temperature helpers already guard this; keep new fields to the same bar. The extended report is
+  decoded two ways: from the manufacturer's own field map where a family publishes one, and
+  otherwise end-anchored from the frame length, which is how the central cabinets' longer reply
+  decodes with no new table. A family that fits neither yields no telemetry rather than numbers;
+  keep new fields to that bar.
 - **A cumulative register reading zero is absent, not zero.** Whole classes of these units carry a
   counter and never populate it. Publishing that as a total gives someone a permanent 0 kWh in their
   Energy dashboard, which is worse than no sensor — so a counter decodes to *unavailable* until the
@@ -58,7 +60,7 @@ deviceIds/keys — never a real device `localKey`, MAC, or LAN address (see [SEC
   libraries vendored in. Don't edit it directly: change the source under `packages/`, then run
   `scripts/build-hacs.sh` and commit the regenerated component.
 
-  This is easy to get wrong, so three things now catch it. `scripts/build-hacs.sh` prints what it
+  This is easy to get wrong, so three things catch it. `scripts/build-hacs.sh` prints what it
   discarded if you had edited the generated tree; `scripts/check-hacs-build.sh` (also run by
   `scripts/test.sh`) fails if the committed tree does not match what the build would produce; and CI
   runs the same comparison. The suites alone will not catch it — they import the `packages/` copy, so

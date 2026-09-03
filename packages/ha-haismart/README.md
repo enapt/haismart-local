@@ -40,14 +40,18 @@ write path. No cloud at runtime.
 - **Profile-based entities**, generated from the model's `AttributeProfile` (not hardcoded per model):
   - `climate` — target temperature, HVAC mode (off / auto / cool / dry / fan-only, plus **heat** where
     the unit reports it can), fan speed, swing on both axes, **presets** (eco / sleep / boost), on/off.
-    Controls go *unavailable* in the states the unit's own model says it discards them in.
+    A setting the unit's own model says it discards in the current state stays readable and refuses
+    the command with the reason; the climate card hides only the setpoint, fan and horizontal-swing
+    features while they are locked. Reports what the unit is *doing* (`hvac_action`) from the
+    compressor flag.
   - `switch` — **strong** (rapid), **quiet** (mute), **health**, **sleep**, **lamp** (front display),
     plus every other function the vendor's own control panel renders a switch for and this unit
     declares (fresh air, electric heating, ambient light, energy saving, mould prevention, dry-out,
     heatstroke prevention). Offered the way the app offers them — declaration, not a capture apiece.
   - `select` — **eco** (off / level 1..3), **up-down** / **left-right vane**, each offering the stops
     that unit's model publishes on the families that pack a vane as a position rather than a flag,
-    and the panel's multi-state controls (presence-based airflow).
+    the panel's multi-state controls (presence-based airflow), the display's **temperature unit** and
+    the four-way cassette **louvres**, where a unit declares them.
   - `sensor` — indoor + outdoor temperature, and **who last changed it** (handset / panel / network).
   - `sensor` — **Energy** (kWh), on the units that keep a running total themselves. Most carry the
     register and never populate it; there it reads *unknown* rather than a permanent zero.
@@ -92,8 +96,9 @@ write path. No cloud at runtime.
 - **Repairs** (`homeassistant.helpers.issue_registry`): an actionable issue is raised when a `localKey`
   rotation forces a manual re-key (no cloud creds to auto-heal); it self-clears once a gateway refresh or a
   successful reauth restores a working key.
-- **Diagnostics** (`diagnostics.py`): redacted snapshot (keeps the decrypted status bytes for offset
-  debugging; redacts the key + device ID).
+- **Diagnostics** (`diagnostics.py`): redacted snapshot — keeps the decrypted status bytes for offset
+  debugging, every LAN frame kind seen, the uSS message trace, the raw feature codes and a summary of
+  the control channel; redacts the key, device ID, tokens and gateway credentials.
 
 ## Install
 

@@ -3,9 +3,13 @@
 Reference notes for the LAN protocol these air conditioners speak on **TCP port 56800**. Useful if
 you are adding a model, debugging a decode, or driving a unit without Home Assistant.
 
-This protocol is not publicly documented; the description here was worked out independently by
-[@enapt](https://github.com/enapt) for interoperability with hardware we own. The document mostly
-records what the code already encodes, plus what has been learned since.
+The transport — the handshake, the encryption and the framing — is not publicly documented; it was
+worked out independently by [@enapt](https://github.com/enapt) for interoperability with hardware we
+own. The attribute layouts inside the frames are a different matter: the manufacturer publishes, per
+product type, a device configuration that places every attribute at a word, bit and width in the
+report and names its single-setting command, and the maps here are checked against it (see *What the
+device's own model supplies*). The document mostly records what the code already encodes, plus what
+has been learned since.
 
 ## Layers
 
@@ -141,24 +145,43 @@ Besides the ordinary status query, units can be asked for an **extended status**
 
 ```
 request   ff ff 0a 00*6 01 4d fe 56          (read-only; changes nothing)
-reply     a second report, command word 7d01 — 141 bytes on the classic family
+          ff ff 0a 00*6 60 4d fe b5          (the same query in the other frame type)
+reply     a second report, command word 7d01 — 141 bytes on the classic family,
+          147 on the central cabinets
 ```
+
+Two request forms exist, differing only in the frame-type byte. The difference is between
+generations of one product line, not between capable and incapable units, and asking the wrong way
+looks exactly like asking a unit that cannot answer — so a unit that ignores one form is asked the
+other before it is concluded to have no telemetry.
 
 The reply repeats the ordinary status words and appends an engineering block. One request therefore
 returns *both* reports plus the fault bitmap in a single session, which matters because these units
 accept only one connection at a time — the integration folds this into its normal poll rather than
 opening a second one.
 
-Confirmed offsets (classic family, 141-byte reply):
+Confirmed offsets, given for the classic 141-byte reply. **The block is anchored to the end of the
+frame**: a longer reply of the same convention reads from this same table shifted by the extra
+length, which is how the central cabinets' 147-byte reply decodes six bytes further along with no
+table of its own (confirmed on a cabinet across idle, cruising and full load — frequency 0 / 40 /
+103 Hz with the coil and discharge temperatures tracking it). A frame shorter than 141 bytes is not
+read from its tail, since its block need not be there.
 
 | Field | Where | Decode |
 |---|---|---|
 | power | bytes 126–127 | BE16, watts |
 | indoor coil temperature | byte 128 | `byte * 0.5 - 20` |
 | compressor discharge temperature | byte 129 | `byte - 64` |
+| outdoor coil / outdoor inlet air / outdoor defrost temperature | bytes 130 / 131 / 132 | `byte - 64` each; `0` is an absent probe |
 | compressor frequency | byte 133 | Hz |
 | compressor current | bytes 134–135 | BE16, `/ 10` amps |
 | actuator states | bytes 136–137 | BE16 of six 2-bit states — see below |
+| expansion valve opening | bytes 138–139 | BE16, raw steps |
+
+Some families publish their block at **fixed word positions** instead, and the manufacturer's own
+telemetry map for those is carried and used: a reply whose payload is 20, 21, 23 or 43 words long
+is decoded from that published map (power sits at word 10, 15 or 37 depending on the family)
+rather than from the table above.
 
 The actuator word packs six two-bit states: compressor at bit 0, indoor fan at 2, reversing valve at
 4, indoor electric heating at 6, outdoor fan at 8, defrost at 10.
@@ -189,13 +212,25 @@ Two more things to know before relying on these:
   best treated as *absent* rather than as a real total: it is the signal that this firmware does not
   keep one.
 
+- **Not every family that answers measures the electrical quantities.** The three-phase central
+  cabinets report the compressor drive frequency and the refrigeration temperatures but park the
+  current field at its full-scale ceiling — `0x01FF`, 51.1 A, unchanged idle or at 103 Hz — with
+  power a flat zero beside it. A current railed at its ceiling with no power is read as *not
+  measured*: both values are dropped, and the integration removes those two entities rather than
+  leaving them unknown for the life of the install. Their published model carries no voltage,
+  per-phase or energy field, so nothing else can stand in for them.
+
 Not every unit answers the query. One that does not simply refuses this one frame — with a short
 reply carrying no data — and still sends normal status, so it is safe to ask unconditionally. The
-integration asks once, notes the answer, and stops asking if the unit does not support it.
+integration tries both forms, and concludes a unit does not answer only after three consecutive
+cycles that carried status but no extended report, so a single dropped reply is never held against
+it. A unit that answers with a `7d01` frame of a size no map describes is kept polled: the frame
+reaches a diagnostics download, which is what adding its map needs.
 
-A session can therefore return three different report kinds sharing the same container: status
-(`6d01`), the fault bitmap (`0f5a`, 101 bytes) and extended status (`7d01`). **Tell them apart by the
-command word, not by length or arrival order** — the fault frame is long enough to pass a status
+A session can therefore return several report kinds sharing the same container: status (`6d01`),
+the fault bitmap (`0f5a`, 101 bytes), extended status (`7d01`), a changed-parameters report (`6c01`,
+which carries no positional status) and, on a control session, a refusal (frame type `03`, see
+*Refusals*). **Tell them apart by the command word and frame type, not by length or arrival order** — the fault frame is long enough to pass a status
 parser's length checks and decodes into a plausible-looking powered-off unit with a 16 °C setpoint.
 
 ### Escaped bytes
@@ -349,12 +384,83 @@ watching the power and compressor-current readings; see [DEVICES.md](DEVICES.md)
 figures. The codes are confirmed for **this family only** — another model may map the levels
 differently, so don't widen the allowlist for a new model without a fresh single-attribute sweep.
 
+## One setting at a time
+
+Two families write without a group-set. Each change is its own op, with no word block to seed, and
+the state is read back from the attribute's own place in the report so the control shows what the
+unit did rather than what was sent.
+
+**Paired commands — the command is the value.** Compact-12 publishes per-attribute on/off commands
+beside its `4d5f` group-set: `4d05` switches electric heating on and `4d04` off, with no payload;
+self-clean is a start-only command with no off.
+
+**Value-carrying commands — the command names the attribute, the payload carries the value.** The
+187 `0d12` central cabinets publish **no group-set command at all**, and their firmware refuses one
+(`6001` draws a refusal). Every attribute they declare is individually settable, each written as
+
+```
+ff ff | len | 00*6 | 01 | 5D xx | value (BE16) | sum
+```
+
+where `xx` is the attribute's parameter id and the value is the attribute's own EPP code, the one it
+reads back with. A change touching several settings sends several frames. The ids are the
+manufacturer's own, read from its device configuration for this class:
+
+| id | attribute | standing |
+|---|---|---|
+| `01` | `onOffStatus` | accepted on hardware |
+| `02` | `targetTemperature` | accepted on hardware |
+| `03` | `windDirectionVertical` | accepted on hardware — the vane moved |
+| `04` | `operationMode` | accepted on hardware |
+| `05` | `windSpeed` | accepted on hardware |
+| `07` | `tempUnit` — the display's °C/°F | published; offered where the unit declares it |
+| `0B` | `healthMode` | accepted on hardware |
+| `0C` | `windDirectionHorizontal` | accepted on hardware — the vane moved |
+| `19` | `muteStatus` (quiet) | accepted on hardware |
+| `1A` | `rapidMode` (boost) | accepted on hardware |
+| `23` | `humanSensingStatus` — presence airflow | **provisional** |
+| `0F` `0E` `11` `10` | `4SidesWindDirection1..4` — cassette louvres | **provisional** |
+
+A **provisional** id is published the same way but has not been seen accepted by a unit, and a
+wrong id would not fail loudly: this channel names an attribute by number, so a number that means
+something else on a given firmware would be accepted and move that something else. The control is
+therefore offered only where the unit's own description declares the attribute, and the unit
+settles it on first use — the value is written, the attribute is read back from its own place in the
+report, and an id that draws a refusal or leaves the field unmoved is retired for good and the owner
+told. A single-setting write is confirmed the same way as a group-set: by the unit's updated status,
+not by the absence of a refusal.
+
+Reads on this class are the shared map at the classic displacement with a four-word block inserted
+at word 25, a 133-byte report keyed on the device class because an unrelated layout shares that
+length — see [`docs/report-layouts.md`](docs/report-layouts.md).
+
 ## Cross-attribute rules
 
-Some combinations are silently rejected — the AC drops the entire group-set and stays as it was. The
-known case is **fan-only combined with fan=auto**; the digital model's `constraints[]` block expresses
+Some combinations are rejected — the AC drops the entire group-set and stays as it was, and may say
+so (see *Refusals*). The known case is **fan-only combined with fan=auto**; the digital model's `constraints[]` block expresses
 this (and, on the reference unit, asks for `windSpeed=3` when entering fan-only). Heat needs no such
 rule, confirmed on hardware.
+
+### Refusals
+
+A command the unit declines can draw an explicit refusal: a frame of type `03` carrying a two-byte
+reason code where a command word would otherwise sit,
+
+```
+ff ff 0a 00*6 03 <code:2> <sum>          e.g. ff ff 0a 00*6 03 00 00 0d, drawn by a reserved subcommand
+```
+
+confirmed on hardware, checksum included. A unit that instead answers with its updated status has
+accepted the write, whatever else arrived alongside; the refusal frame is consulted only when no
+usable status came back. It is also the only direct evidence that a unit rejects a particular
+write — every other such verdict rests on writing a value and watching it not change.
+
+The code means whatever **this product's** published table says it means, and the same number
+reads differently on different products: 509 products publish `0` as "cannot operate while a fault
+is active", where a product that publishes no entry for `0` is using the protocol's own "command
+not recognised"; the central cabinets publish `1` as "this function is not supported". So the code
+is looked up against the appliance that sent it, never in a shared table, and the sentence is shown
+with the refusal.
 
 ## The families are one map
 
@@ -363,8 +469,8 @@ widths and scaling. What differs is mainly **where the block starts**. The bundl
 descriptions agree on it completely — same widths, same bits, same order, one whole-word displacement
 each — and
 [`canonical_map.py`](packages/haismart-hrdp/src/haismart_hrdp/canonical_map.py) carries that map,
-85 attributes of it. Across the full published catalogue there is one further wrinkle: **eleven
-families (248 products) keep a *different* attribute at a handful of the shared positions** — a
+85 attributes of it. Across the full published catalogue there is one further wrinkle: **fourteen
+families keep a *different* attribute at a handful of the shared positions** — a
 twin-tower cabinet's left vane and fan where a single-flow unit's own sit, sterilization where
 self-clean sits. Every such departure is unanimous within its family, and the integration refuses
 exactly those controls for exactly those families rather than commanding the wrong function.
@@ -375,6 +481,7 @@ exactly those controls for exactly those families rather than commanding the wro
 | extended-36 | the map exactly — its "media block" is the part classic units do not carry |
 | extended-46 | the map with a ten-word block inserted at word 25 |
 | compact-12 | genuinely different: one attribute per whole word |
+| central cabinet (`0d12`) | the map 19 words earlier with a four-word block inserted at word 25 — keyed on the device class, since an unrelated layout shares its 133-byte length |
 
 So a **new** model's layout is this map at some displacement, which makes the unknown one integer
 rather than a field table. See [`docs/new-model.md`](docs/new-model.md): three status captures in
@@ -435,6 +542,15 @@ Onboarding fetches two things about a device and uses both:
 
 The second is not fetched by name — the model is looked up in the account's resource service, which
 answers with a download URL carrying a build stamp, the file's version and its MD5.
+
+A third description exists and is used offline rather than at run time: the manufacturer's **device
+configuration**, published per product type without an account. For every attribute it gives the
+word, bit and width at which the attribute sits in the status report, the report command that
+carries it, and — for a class that writes one attribute at a time — the single-setting command
+number. It is the manufacturer's own byte map. The shared map, the telemetry maps and the central
+cabinets' parameter register are validated against it, and it is where the display-unit and
+cassette-louvre commands come from; the results ship as constants, so nothing is fetched from it
+when the integration runs.
 
 **Asked with an account token, that listing answers for the account rather than the request** — it
 returns the configs published for the caller's own devices and reports success whatever model,

@@ -28,10 +28,12 @@ import asyncio
 from haismart_extractor import HaierCloud, SEA_APP_CREDENTIALS, GatewayCreds, get_localkey_via_gateway
 
 async def main():
-    cloud = HaierCloud(SEA_APP_CREDENTIALS)
-    login = await cloud.login("you@example.com", "password", zone="66")
+    # zone_info is the dialling code of the country the account was registered in
+    cloud, login = await HaierCloud.login(
+        SEA_APP_CREDENTIALS, "you@example.com", "password", zone_info="66"
+    )
     creds = GatewayCreds.derive(usdk_client_id=login.client_id, access_token=login.access_token)
-    key = get_localkey_via_gateway(creds, "ACB722AABBCC")
+    key = get_localkey_via_gateway(creds, "A1B2C3D4E5F6")
     print(key)
 
 asyncio.run(main())

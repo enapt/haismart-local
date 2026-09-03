@@ -167,7 +167,8 @@ below rather than assuming.
    answer: the integration asks the *air conditioner* whether it can still reach Haier, over a local
    unauthenticated query on UDP `:7083` that never contacts Haier itself. When your block is working the
    sensor reads **off**. Give it ~2 minutes — the AC only notices once a keepalive expires, and its
-   `raw_state` attribute passes through `retrying` before settling on `disconnected`. (Coming back is
+   `state_name` attribute passes through `retrying` before settling on `disconnected` (`raw_state`
+   carries the number). (Coming back is
    faster: about 10 seconds.) If it stays **on**, the AC is still getting out → use Option B.
 2. Confirm local read/control still works right after blocking (some IoT gear sulks without cloud — these
    don't, but check): change the setpoint in HA.
@@ -232,8 +233,11 @@ an issue.
   **LAN** open.
 - **Sign-in rejected.** "No Haier account … in the country you selected" (retCode 30032) means the
   **country** is wrong: it is the one the account was *registered* in, which need not be where you
-  live or where the AC is. A missing-field error is retCode 10001. If sign-in succeeds but no
-  devices appear, the account has none bound — share the AC to it in the app first.
+  live or where the AC is. A missing-field error is retCode 10001. "Haier's servers could not be
+  reached" is not a credential problem: the Home Assistant host could not reach Haier at all (DNS,
+  a firewall rule, an outage) — check it can resolve and reach `uhome-sgp.haieriot.net`, then retry.
+  If sign-in succeeds but no devices appear, the account has none bound — share the AC to it in the
+  app first.
 
 ## Uninstall
 

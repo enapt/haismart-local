@@ -129,7 +129,7 @@ air-conditioner model declares **the same 51 faults at the same 51 positions**, 
 disagreements about a name, so the one shared table this integration applies to every family is
 justified by measurement rather than assumption.
 
-★★ **And the bit ordering is no longer untested either.** It was the one part of this item still
+★★ **The bit ordering has a second source too.** It was the one part of this item
 resting on our own reading: which byte carries positions 0..7, and which way the bits run inside it.
 An independent implementation of the same protocol decodes those frames too, and it was compared
 against ours frame by frame — 8 bitmap bytes read **last byte first**, least-significant bit first
@@ -138,7 +138,7 @@ fault list is **51 entries matching ours position for position**. So both halves
 have a second source.
 
 What is left is only that no unit here has ever reported a fault, so the decode has never run on a
-real one. That is now a confirmation waiting to happen rather than an open question, and the first
+real one. That is a confirmation waiting to happen rather than an open question, and the first
 faulted report still settles it for good.
 
 ### 8. The declared attributes that are still unreachable
@@ -146,7 +146,7 @@ faulted report still settles it for good.
 A unit declares three or four times the attributes any family map carries, and every one sits where
 the published map already says — so the extra readings are decoded into diagnostics
 (`model_declared_fields`), membership from the device's own model, position from the map. The
-user-facing ones have since been promoted to entities: the optional-feature sensors (item 4's gate),
+user-facing ones are entities: the optional-feature sensors (item 4's gate),
 the panel controls (item 36), and the air-quality suite (item 37). So have the maintenance and status
 readings the vendor's own panel renders **no** control for, which is its way of saying they are a
 status rather than a switch — the filter-change reminder (197 products declare it), the control-panel
@@ -185,7 +185,7 @@ where the field is.)
 The four independent louvres of a four-way cassette (52 products declare them) ship as four selects,
 offered on any cabinet that declares them and written one setting at a time: `5D0F`/`0E`/`11`/`10`,
 each std stop `0..6` mapped to the config's non-linear epp code. Both halves come from the
-manufacturer's own device config (`catalogue/configfiles/`, the master byte map): the write ids sit
+manufacturer's own device configuration (the master byte map): the write ids sit
 in the same per-attribute `eppCmd` column as the nine confirmed climate ids, and the read positions
 are the config's **word 6** — four nibbles filling that word, inside the report's inserted block.
 
@@ -196,14 +196,11 @@ read-back — a cabinet that actually moves its louvre confirms the position on 
 does not retires the control. **One report from a four-way cabinet with the louvres in four different
 positions confirms all four at once**, and that is the only thing still worth asking for.
 
-★ **A pre-config guess was corrected.** The louvres were once placed at w23, *substituting* for
-`windDirectionHorizontal`'s bits — a hypothesis held on arithmetic before the config was in hand.
-Haier's config puts them at word 6, independent of `windDirectionHorizontal` at word 4; the two
-coexist in the byte-map rather than sharing bits. The presence read-guard (item 42) that rested on
-the w23 story still holds by a different, still-valid fact (four-way cabinets do not declare
-presence), and its comment now says so.
+★ **Where the louvres sit.** Haier's config puts them at word 6, independent of
+`windDirectionHorizontal` at word 4; the two coexist in the byte map rather than sharing bits. The
+presence read-guard (item 42) rests on a separate fact: four-way cabinets do not declare presence.
 
-**Residue, recorded not parked** (all watched by `tools/re/validate_configfile_register.py`, which
+**Residue, recorded not parked** (all watched by the register oracle in the maintainer's tooling, which
 checks every id, read position, **value encoding** and big-data word against both config families and
 that every config id is accounted for):
 
@@ -324,7 +321,7 @@ via its per-attribute commands. What remains open is the residue that no source 
 * **five append-region booleans** — `constDehumidificationStatus`, `preventSupercooling`,
   `pvPowerSavingMode`, `uvSterilizationSwitch`, `windAvoidance`.
 
-  ✅ **`constDehumidificationStatus` is now derived with no free parameter**, along with the four
+  ✅ **`constDehumidificationStatus` is derived with no free parameter**, along with the four
   neighbours that share its run, at the same positions on all **159** products that publish it. The
   run is bounded by a confirmed position at each end and exactly one tiling fits it.
 
@@ -336,7 +333,7 @@ via its per-attribute commands. What remains open is the residue that no source 
   question publishes exactly that pair, so its width is settled by a population rather than by
   analogy to a single other field.
 
-  ⛔ **All five are nevertheless withheld — and the reason is now a measurement rather than caution.**
+  ⛔ **All five are nevertheless withheld — and the reason is a measurement rather than caution.**
   Each was checked against the shipped model bundle, one at a time:
 
   | derived position | why it is not surfaced |
@@ -363,7 +360,7 @@ via its per-attribute commands. What remains open is the residue that no source 
   known (ext46, w1/w2), but **no report we hold reads a tower back**, so they would be write-only
   controls. Blocked on one capture with a tower vane parked non-zero (the same capture item 3 wants).
 
-⚠️ **The per-attribute write channel does NOT rescue any of this, and that is now measured rather
+⚠️ **The per-attribute write channel does NOT rescue any of this, and that is measured rather
 than assumed.** Item 42 writes central cabinets one setting at a time without needing a
 position, so the obvious question is whether the same channel reaches these. It does not: across all
 174 bundled device descriptions — 5,054 per-attribute command declarations, 596 distinct attribute
@@ -392,9 +389,9 @@ units**) whose order has essentially **zero rank-correlation with the frame** (�
 layout, or a list published in some other discipline. Nothing anchors it, so nothing can be derived
 from it.
 
-These products were once offered the full frame-position control set; every one of those
-writes was a guess with substantial counter-evidence, and a guessed group-set runs wrong functions
-silently rather than failing. They are now **read-only** (their report decode is unaffected — report
+These products are **read-only**: every frame-position write for them would be a guess with
+substantial counter-evidence, and a guessed group-set runs wrong functions silently rather than
+failing (their report decode is unaffected — report
 layouts are verified against the report itself, and the read frame is not the write frame). What
 settles it: a diagnostics file or capture from any of these units, which would show whether their
 reports resolve to a known family and give the first anchor for whatever their write layout is.
@@ -446,7 +443,7 @@ the standard code — so their only job is to say which codes exist, and a code 
 not decode wrong, it **vanishes**. Downstream that reads as "the appliance did not report a fan
 speed", not as "we do not know this code", which is why nobody noticed.
 
-Both enums are now complete against the published catalogue, and — this is the part that took the
+Both enums are complete against the published catalogue, and — this is the part that took the
 longest to get right — **named by the manufacturer, not by us.** Its app ships an offline language
 bundle whose `seasia_home.AC_*` keys are exactly this vocabulary in 18 locales, so the English for
 each Chinese description is the vendor's own word. See **[`VENDOR_LABELS.md`](VENDOR_LABELS.md)**.
@@ -496,7 +493,7 @@ display unit (°C/°F) — offered where the cabinet's own model declares the at
 back from its own position in the report so it shows real state rather than an echo of the request —
 plus presence-based airflow and the four-way cassette louvres, on the provisional terms described at
 the end of this item and in item 13. All fifteen single-parameter ids are Haier's own, taken from
-its device config (`catalogue/configfiles/`) and checked by `tools/re/validate_configfile_register.py`.
+its device configuration and checked by the register oracle in the maintainer's tooling.
 
 ★ **A vane is read even where it cannot be commanded.** A vane is a position, not a switch,
 and the climate entity's swing control answers only "is it sweeping" — so a vane parked at a real
@@ -511,9 +508,9 @@ automatic: one of them reports a block of words between its settings and its sen
 published description mentions, so every ordinary offset is rejected on the room temperature alone
 and the appliance decodes almost nothing. That case is handled (see the 133-byte section of
 [`report-layouts.md`](report-layouts.md)): the size of the report settles how big the block is, so a
-cabinet resolves whether or not it can heat. ★ That last part matters — the flag previously used to
-settle it only ever answers for a **cooling-only** unit, and two of the three such cabinets on record
-are heat pumps and were left reading almost nothing. A cabinet reporting some *other* length with the
+cabinet resolves whether or not it can heat. ★ That last part matters — the heat-capability flag alone
+answers only for a **cooling-only** unit, and two of the three such cabinets on record are heat
+pumps, so the report's size is what settles the block. A cabinet reporting some *other* length with the
 same shape would still need its own measurement before the same arithmetic could be trusted for it.
 
 * **The command bytes** are the ones these appliances are observed to exchange, and the values need
@@ -573,20 +570,14 @@ with no health module must not be offered health merely because its class define
 #### Presence-based airflow on these cabinets — offered provisionally, on the vane terms above
 
 One of these cabinets reports its presence mode as *on* where three identical siblings report *off*,
-so the hardware is real and the reading has shipped for a while. The **control** is offered too now,
-as a select (off / avoid / follow / on), and how it is offered matters because its command number is
-**derived rather than observed**.
+so the hardware is real and the reading ships. The **control** is offered too, as a select (off /
+avoid / follow / on), and how it is offered matters because its command has not yet been watched
+being accepted.
 
-**Where the number comes from.** The manufacturer's own communication module drives these boards with
-a fixed burst of fourteen single-setting commands. Twelve are the ones the public reference table
-names; two are not named anywhere. On the one cabinet whose traffic was captured — which has no
-presence sensor — the board **refuses one of those two with the code that means "I recognise this
-command and do not have that hardware"** (item 49) and accepts the other. A command a sensorless
-board refuses for want of hardware, in the gap where presence must sit, is presence. That is an
-elimination on the vendor's own firmware, not a guess — but it has never been watched being
-*accepted*, and the numbering is assigned per appliance kind, so it cannot be looked up: the same
-number means something else on other appliance kinds, and where other kinds do publish a presence
-command it is a different number again.
+**Where the number comes from.** The command number is the manufacturer's own: its device
+configuration for both central-cabinet families gives `humanSensingStatus` the write command
+`5D23`, the same per-attribute column the nine confirmed climate ids come from. It is provisional
+only because the write has not yet been exercised on a cabinet, not because the number is a guess.
 
 **Why it is safe to offer anyway.** It is offered exactly as the vane commands were: the appliance
 reports the setting's own position in every status frame, so the first use writes the command and
@@ -595,12 +586,10 @@ or the setting did not move, the control is **withdrawn for good** and the failu
 cost of a wrong number is one command that changes nothing. A cabinet without the sensor withdraws it
 the first time anyone tries, which is the right outcome for that cabinet.
 
-**Who gets it.** The cabinet's cloud description does not list the attribute — the same
-under-declaration that hides its outdoor probe — so membership comes from the per-product description
-the vendor's app itself reads, which declares the setting **writable** with all four values for the
-product on record here. The control is offered on that fact, and only where the cabinet's own
-description does not put a different setting on those bits (some four-vane cassettes do, and a
-presence control there would be writing a vane).
+**Who gets it.** Membership is the class: every `0d12` cabinet carries the setting undeclared — the
+same under-declaration that hides its outdoor probe — so the control is offered on every one except
+a cabinet whose own description gives those bits to the four-way louvres (a presence control there
+would be writing a vane). Whether a given cabinet has the sensor is settled by the write itself.
 
 ⚠️ **Two things are called "presence" and they are not interchangeable.** The airflow *mode* — what a
 user changes — is an ordinary attribute of the main board, and that is what is commanded here. The
@@ -640,51 +629,12 @@ value travels in — the three loose ends a set-only test would have left. It wa
 
 ⚠️ **What it does not settle.** One appliance, of the wall generation — **not** the central cabinets
 that item 42 actually serves, which are the ones sending several ops. They have answered nothing.
-The evidence against is now strong (nothing in any of the 174 published device descriptions declares
+The evidence against is strong (nothing in any of the 174 published device descriptions declares
 either half, the reference implementation documents the pair without using it, and hardware of a
 neighbouring generation refuses both), so this is not worth a reporter's time on its own — but if a
 central cabinet is ever on the other end of a probe, the same two commands cost ten seconds.
 
 **Not a blocker for item 42.** Several ops is correct behaviour, just not the tidiest.
-
-### 46. The co-command rules that could never fire — fixed, and every one of them is back
-
-**What was wrong.** Products publish *co-command* rules: "when the request sets X, also send Y".
-Turning the unit off clears self-clean; asking for boost clears quiet; asking for quiet clears boost.
-The published rule states which values of X it applies to, and it states them using whichever
-vocabulary the setting has — one for a list of named modes, a different one for a plain on/off.
-**Our reader knew only the first**, so every rule triggered by an on/off setting arrived with an
-*empty* list of values to match, and an empty list matches nothing. Those rules parsed, validated,
-shipped, and never once fired. **3,139 of the 8,239 rules carried, across 847 of the 1,451
-products** — including the product this integration was first built against, where 4 of its 10 rules
-were inert.
-
-Two rules that differ only in the on/off value also collapsed into indistinguishable twins: power-on
-and power-off each carry their own follow-up commands, and both became the same empty condition.
-
-**How it behaves.** The reader takes every vocabulary the catalogue uses, and a trigger it cannot
-express drops its whole rule rather than shipping one that silently never matches — omitting one term
-of an AND would make a rule fire in states its author excluded, which is worse than not having it.
-Both regression tests were confirmed to fail against the previous behaviour.
-
-**What is repaired.** All of it. The shipped bundle had been built from data that was already
-through the faulty reader, so the original values were gone from it — but the published models can
-be asked for again, and were: **1,451 of 1,451 fetched, no failures**, and every product's rules
-re-derived from what its maker actually published. **3,139 rules across 847 products are live again,
-and no rule in the bundle now carries a condition that accepts no value** — asserted as a property
-rather than a count, so it keeps holding as the bundle grows.
-
-**Everything else was checked with the same instrument.** Finding one lossy reader is a reason to
-distrust its neighbours, so every section the bundle adapts was re-derived and compared: attributes,
-conditional-availability rules, fault names and reason codes. **The co-command rules were the only
-real loss.** The remaining differences are the bundle deliberately being smaller — it ships names and
-codes without the maker's description text — plus one product whose attributes are merely listed in a
-different order, and three reason codes no rule ever fires with.
-
-⚠️ **It was never visible as a fault.** Nothing displayed a wrong value and no command was refused;
-the unit simply did not receive the follow-up commands its maker pairs with a setting, so something
-expected to be cleared alongside another could stay on. Worth knowing when reading an old report of
-two comfort settings that would not release each other.
 
 ### 47. The lock explanations — restored and translated, with one residue
 
@@ -742,7 +692,7 @@ products** were parsed, valid and permanently inert — this project's own appli
 model says switching on quiet or sleep also clears boost, and which did not.
 
 The shipped rule bundle was built from the adapted output, so it was re-derived from the published
-models for all 1,451 products; re-running that repair is now a no-op. A test over the whole bundle
+models for all 1,451 products; re-running that repair is a no-op. A test over the whole bundle
 refuses any rule that locks a setting it only narrows, and asserts there are more than 500 such rules
 to get wrong — a guard over an empty set proves nothing.
 
@@ -773,7 +723,7 @@ question, and an appliance that does not understand it simply refuses.
 
 ### 53. Presence is a MODULE-side sensor with its own pipeline — and it reports distance
 
-The vendor's generated protocol document for `0D012` (`catalogue/profiles_0d12/0D012_UART通讯协议.txt`)
+The vendor's generated protocol document for `0D012`
 carries a second presence pipeline beside the board's 2-bit `sensingResult`: the **Wi-Fi module's
 own status frames** (§6.41 reply, §6.44 push — every 10 s in 人感模式, at once on change) include a
 **`0xA0` 人感 block** — bit0 `0 无人 / 1 有人`, bit1 start/stop, bit2 antenna status, plus **the
@@ -803,17 +753,17 @@ Consequences:
   experiment, and it shows that the board's presence MODE field reads "on" on a unit without the
   sensor. The control was offered by the CLASS gate (`CLASS_CARRIED_ENUM_FEATURES["0d12"]`,
   `_class_carried_controls`) — the product's constraintfile lists 9 attributes and no presence,
-  while the panel-embedded model fetched for this very product (`catalogue/panel_embedded_model_air_southaisask.json`, prodNo `AE2C52Q00`, 39 attributes keyed by name) DOES declare `humanSensingStatus` (感人模式, writable, marked not readable). **The manufacturer's own per-model witness** (a Haier Thailand brochure the
-  reporter supplied, `captures/issue12/brochure-human-sensor-models-2026-09-01.png`): "HUMAN SENSOR
+  while the panel-embedded model fetched for this very product (the per-product panel's embedded model for `AE2C52Q00`, 39 attributes keyed by name) DOES declare `humanSensingStatus` (感人模式, writable, marked not readable). **The manufacturer's own per-model witness** (a Haier Thailand brochure the
+  reporter supplied): "HUMAN SENSOR
   … *only on HCFI-36ETR32, HCFI-40ESR32, HCFI-40ETR32, HCFI-48ESR32 and HCFI-48ETR32*" — five
   models, all on the C/E-series family (`…00041410…`, shared-frame presence), none of them `0d12`;
   `HCFI-38XTR32F` is not on it. The brochure also refutes the constraintfile the other way: every
   C/E HCFI product declares `humanSensingStatus` (13CSR, 18CSR, 25ESR, 30CSR, …) while the brochure
   names five. So neither published model is a per-unit or even per-model witness for the sensor,
   and a per-product gate built from the panel would offer presence on exactly this reporter's
-  cabinet. The provisional `5D23` write (⚠️ **corrected from `5D08`** — Haier's own device config gives
-  `humanSensingStatus` the write command `5D23`; `5D08` is `halfDegreeSettingStatus`; see
-  `catalogue/configfiles/`) — offered, not yet tried on this unit — remains the only
+  cabinet. The provisional `5D23` write — the id Haier's own device configuration gives
+  `humanSensingStatus` (`5D08` is `halfDegreeSettingStatus`) — offered, not yet tried on this unit —
+  remains the only
   adjudicator on `0d12` (a `0001` "not supported" refusal withdraws the control); on the C/E family
   the five brochure names are the only allow-list held, scoped to one market's brochure. The
   experiment still needs a cabinet whose owner confirms the sensor is fitted — one of those five
@@ -1202,6 +1152,12 @@ did not even look stale. Detection was already right; only the precedence was wr
 checked first now, and the reply is still decoded so the seed baseline is refreshed either way.
 Regression test `test_a_refusal_is_not_masked_by_the_routine_status_push`, confirmed to fail against
 the old ordering.
+
+**46. The co-command rules that could never fire — fixed.** Rules triggered by an on/off setting
+were read in one vocabulary only, so 3,139 rules on 847 products parsed to an empty match set and
+never sent their paired command (switching off did not clear self-clean, boost did not clear quiet).
+The reader takes every vocabulary the settings use, the rule bundle is re-derived from the published
+models, and a bundle-wide test refuses an empty condition.
 
 
 ### 52. The roof cabinets' big-data telemetry — SETTLED: compressor frequency and temperatures are live; power/current are not reported

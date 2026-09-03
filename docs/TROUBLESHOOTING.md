@@ -24,6 +24,10 @@ was registered in, which may not be where you live now or where the AC is. If yo
 right, check whether your account is actually a Haier / Haismart one — hOn and Haier China accounts
 live on entirely different servers and no country code will work.
 
+**"Haier's servers could not be reached"** is a different failure and not a password problem: Home
+Assistant could not reach Haier at all — DNS, a firewall rule, or an outage. Check that the Home
+Assistant host itself can resolve and reach `uhome-sgp.haieriot.net`, then retry.
+
 </details>
 
 <details>
@@ -145,14 +149,8 @@ way, and this is the configuration the integration is built for.
 
 ### "This air conditioner is already being set up"
 
-**Update — this does not happen on a current version.** Adding an appliance deliberately takes
-precedence over the **Discovered** card your air conditioner raises by announcing itself, and the
-card clears itself.
-
-If you cannot update yet, **restart Home Assistant** and go straight to **Add Integration → Haismart
-→ sign in** before the unit announces itself again. Nothing is wrong with your account: sign-in
-succeeds and the refusal happens before a key is ever requested, which is why nothing appears in the
-log.
+Adding an appliance takes precedence over the **Discovered** card your air conditioner raises by
+announcing itself, and the card clears itself once the appliance is added.
 
 > Do **not** press *Ignore* on the Discovered card to get rid of it. That records the appliance as
 > one you have chosen not to add, and setup will then refuse with *"already configured"* instead,

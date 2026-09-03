@@ -39,7 +39,7 @@ setting's place in the report is unknown, that pairing can often locate it arith
 bits that already equal the value the manufacturer reports. It works best when the setting is
 actually switched on, which is what the states below are for.
 
-In every case, please open an issue either way — a model that now works without any capture is worth
+In every case, please open an issue either way — a model that works without any capture is worth
 recording just as much as one that doesn't.
 
 ## Why three captures
@@ -98,7 +98,7 @@ twice the reading, so it stands out at once (a few store whole degrees, which th
 Adding the layout is then usually a single table entry, and you will be asked to confirm the result
 on your unit before it ships.
 
-Much of that is now done for you inside the diagnostics file itself. When a report's layout isn't
+Much of that is done for you inside the diagnostics file itself. When a report's layout isn't
 recognised, the file carries a **ranked list of candidate layouts** — each naming a known model
 family, how far its fields are displaced, and the values it decodes from *your* captures. That is why
 three states are worth the trouble: one report is mostly zeros, so many candidate layouts explain it
@@ -107,7 +107,7 @@ equally well, and only a change of state tells them apart. A candidate has to ex
 The candidates are a starting point, not the answer — they are checked against the states you
 describe and against your unit's own published settings before anything ships.
 
-The file also now says **which device it came from** — the identifier your unit reports, the product
+The file also says **which device it came from** — the identifier your unit reports, the product
 class that identifier encodes, and the product code. That last one is worth a glance before you
 attach the file: if it is flagged as a fallback, it is a built-in default rather than your unit's own,
 and saying so in the report saves a round-trip. With a real product code the rest of your model's
@@ -124,8 +124,8 @@ The shipped catalogue covers **every published air conditioner: 1,451 product co
 model numbers**, collapsing to 26 hardware families — so the count is catalogue entries rather than
 distinct machines. (21 model numbers are carried by more than one product, and where those disagree
 about their rules the integration declines to guess between them and falls back to what their family
-agrees on.) Of the 100 countries the setup
-form offers, 94 publish at least one air conditioner and six publish none — Myanmar, Nigeria, Kenya,
+agrees on.) Of the 102 countries the setup
+form offers, 96 publish at least one air conditioner and six publish none — Myanmar, Nigeria, Kenya,
 Cambodia, Laos and Nepal — where the model shortlist simply is not narrowed by region.
 
 So before assuming your model is undocumented, make sure you are on a current release — the shipped

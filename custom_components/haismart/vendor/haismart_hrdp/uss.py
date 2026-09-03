@@ -1434,10 +1434,13 @@ def parse_extended_status(data: bytes) -> dict[str, Any]:
     also gives the expansion valve's opening the unit "Hz", so its labels are not authoritative
     where they conflict with the reading. Position from the map, name from the thermometer.
 
-    Returns ``{}`` for anything that is not the confirmed extended-report layout, so a device whose
-    extended report differs simply yields no telemetry rather than fabricated numbers. Only the
-    "classic" family's 141-byte report is confirmed; other families append their engineering block at
-    different offsets and need their own entry before this can decode them.
+    Returns ``{}`` for anything that is not a layout this decoder can place, so a device whose
+    extended report differs simply yields no telemetry rather than fabricated numbers. Two layouts
+    are placed: a payload whose word count matches a family in :data:`BIGDATA_MAPS` is read from
+    the manufacturer's own published field map; any other frame at least the classic 141 bytes long
+    is read END-ANCHORED -- the engineering block sits at the tail, so its offsets are taken from
+    the frame's length (the classic wall units at 141 bytes and the 0d012 cabinets at 147 decode
+    from the same table, six bytes apart). A shorter unrecognised frame is not decoded.
 
     Keys (each temperature omitted when the unit does not carry that probe):
       ``power_w``, ``compressor_current_a``, ``compressor_frequency_hz``,

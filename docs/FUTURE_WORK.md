@@ -21,6 +21,178 @@ keeps its own when it moves between the two sections. Expect the sequence to hav
 
 ## Open items
 
+### 58. The end-anchored telemetry decode assumes a tail block — five published families put it elsewhere
+
+`parse_extended_status` has two paths. A frame whose word count matches a family in `BIGDATA_MAPS`
+(20, 21, 23, 43 words) is read from the manufacturer's own field map. **Anything else at least 141
+bytes long is read END-ANCHORED**: the engineering block is assumed to sit at the tail, and every
+offset is derived from the frame's own length (`shift = len - 141`).
+
+That assumption is well-evidenced for everything it has met — the classic 141-byte wall units and
+the `0d012` cabinets at 147 bytes carry the identical block six bytes further along, confirmed
+across three captures on the issue #12 cabinet. The comment in the code says exactly that, and it is
+true of every family **confirmed on hardware**.
+
+The manufacturer's own byte map now supplies counter-examples. Five families place telemetry
+**after** the engineering block:
+
+| family | engineering block ends | frame runs to | words after the block |
+|---|---|---|---|
+| `…0212…1330…` 挂机通用 0D16 光伏 海外 | word 64 | 77 | **13** |
+| `…0212…1774…` 挂机通用 0D16 光伏 | word 64 | 77 | **13** |
+| `…0312…204042…` 柜机通用 0D17 光伏 | word 75 | 88 | **13** |
+| `…0d21…189448…` 柜嵌通用 0D14 光伏 | word 61 | 74 | **13** |
+| `…0212…1597…` 南亚光伏挂式空调2022 | word 23 | 30 | **7** |
+
+What sits after it is photovoltaic telemetry — `accumulatedUseMainsPower`,
+`accumulatedPhotovoltaicPower`, `pvInput`, `realTimeTotalPower`, `realTimeTotalPowerStorage` — all
+carrying `statusCmd 7D01`, so they are part of the same big-data frame. For comparison, both
+families the generator was built from end their engineering block one word before the frame ends
+(42 of 43, 22 of 23): genuinely at the tail.
+
+**The risk, stated no more strongly than the evidence supports.** If one of these units returns a
+big-data frame carrying its full declared block, its word count is not a `BIGDATA_MAPS` key and its
+length is well over 141, so it takes the end-anchored path — and `shift` would be 13 words (26
+bytes) too large. Power and current have plausibility ceilings that would reject some of the
+resulting nonsense, but **`compressor_frequency_hz` has no such veto** and would report whatever
+byte lands there. That is the failure this decoder is otherwise careful to avoid: not missing data,
+but confident wrong data.
+
+**It is not known to fire.** No unit of these families has ever given us an extended report. There
+is one capture from `…1774…` (issue #6), but it predates the frame-keeping diagnostics and carries
+no `7d01`. So this is a latent risk with a named test, not an observed defect.
+
+**What would settle it:** one diagnostics download from any 光伏 model with the compressor running —
+`lan_frames["06/7d01"]` present. If its payload is 78 words, the end-anchored path is wrong for it;
+if the unit sends a short block instead, the convention holds and this item closes.
+
+**The cheap guard, if it is wanted before that arrives:** the configFile says, per family, whether
+anything sits after the engineering block. Restricting the end-anchored path to lengths already
+confirmed (141 and 147), or consulting that fact, both close it without inventing a layout. Neither
+is done here: changing decode behaviour is a gated change (the oracle sweep and the stored-capture
+regression), and no user is known to be affected yet.
+
+⚠️ Note also that the PV telemetry itself is **not shipped and should not be shipped blind**: the
+one real unit of these families whose model we hold (issue #6) declares 82 attributes and **none of
+the PV names are among them**, so entities built from the byte map alone would be phantom — the same
+trap the declaration gate exists to prevent.
+
+### 57. Half-degree setpoints — the register is known, what asserting it MEANS is not
+
+Reported by the owner of a `0d12` roof cabinet: the unit's remote sets 24.0, 24.5, 25.0, while the
+integration steps in whole degrees. The step comes from the appliance's own model
+(`targetTemperature` `dataStep.step`), and the climate entity rounds a requested temperature to a
+whole degree before encoding it.
+
+**There are two half-degree mechanisms, and the manufacturer's byte map says which product uses
+which.** Either the setpoint field itself counts halves (`k = 0.5, c = 0`, i.e. °C × 2 — this is the
+209-byte family's encoding, already shipped, and 33 catalogued products declare `step: 0.5` that
+way), or the setpoint stays whole degrees (`k = 1, c = 16`) and a separate flag,
+`halfDegreeSettingStatus`, carries the half. No product declares both. The `0d12` cabinets and the
+classic families are the second kind.
+
+**On `0d12` the flag has its own single-parameter command.** The manufacturer's configuration for
+both `0d12` families gives `halfDegreeSettingStatus` word 3 bit 10, `eppCmd 5D08`, writable — and the
+funcModel makes it `writeType: I`. That is unusual and worth stating precisely: of the 19 device
+families whose funcModel carries this attribute at all, **only the two `0d12` families make it
+individually settable; the other 17 are group-only**. `0d12` is the class whose firmware refuses the
+group set, so the individual channel is the only one a control could use there.
+
+The position is agreed by four independent sources — the configuration, the vendor's own `0D012`
+UART document (its 附录D command table puts it at Byte5:Bit2, which is word 3 bit 10), the public
+`0D012` template, and prior art's byte map, whose eight bits of that word match the configuration
+8 of 8. The same UART document enumerates `targetTemperature` as fifteen whole-degree codes
+(16 °C … 30 °C) while enumerating halves elsewhere (`indoorTemperature` steps 0.5 °C), so on this
+class the flag is the only place a half degree can live.
+
+**What the wire shows.** Across every hON status report in the prior-art corpus — 598 frames — the
+flag is set in 7, all from one cabinet, and that cabinet is a `0d12`. The other 591, from the
+residential families, read 0. Every report this project holds reads 0. And the class splits: a
+second `0d12` cabinet refuses `5D08` outright, which its board reports as a command its control
+handler will not accept — that cabinet will not do halves whatever the flag means.
+
+⛔ **The blocker is semantic, not mechanical.** Every manufacturer surface documents this attribute
+as on/off and nothing more. The only statement anywhere of what asserting it does is prior art's
+implementation, which treats it as the setpoint's fraction: write the whole degrees and set the flag
+when the remainder is half, read the setpoint back as `value + 16 + 0.5 × flag`. If instead the flag
+merely enables a half-degree mode on the panel, the half never reaches the wire and no honest 0.5
+setpoint is possible on this class. The provisional-control mechanism does not close that gap: it
+retires an id on a refusal or an unmoved read-back, but under the mode-enable reading the flag reads
+back set and the integration would show 24.5 for a unit sitting at 24. A wrong setpoint is not
+something to ship.
+
+**What settles it — one report, no code.** Set a half degree on the unit's remote, leave it, then
+download diagnostics: the status frame is kept whole, and word 3 bit 10 is the answer. The flag set
+while the setpoint byte still reads the whole degree is the fraction reading, and confirms that
+cabinet has the function. The flag clear while the unit's own display shows the half means the half
+lives in the controller. Worth asking what the unit's display shows, since a two-character display
+rounds it away either way.
+
+**If it confirms**, every piece is already positioned: the flag has a read position on the shared
+frame and a write position in the published group-set order (559 of 1,451 products carry it there,
+528 of them the classic wall splits, though 554 of the 559 mark it invisible), and on `0d12` the
+coordinator already splits a multi-attribute change into separate single-parameter commands. The
+step would become a property rather than a fixed attribute, 0.5 only where the flag is usable — and
+it must fall back to whole degrees when a provisional control retires, or a user is left with a
+half-degree dial whose halves round away silently.
+
+#### ⚠️ A defect this turned up, independent of the flag
+
+The 33 products whose model declares `targetTemperature` `step: 0.5` already get a half-degree step
+in the UI, because the step is read straight from the model — while the write path rounds the value
+to a whole degree. Those units offer a step the write cannot express. The fix is either to encode
+the half (their setpoint field counts halves, so it can carry it) or to clamp the advertised step to
+what the encoder can send; the first is correct and needs one capture from such a unit to confirm the
+field is written the way it is read.
+
+### 56. The single-parameter register is CLASS-WIDE — the funcModel is the per-family witness
+
+The 2026-09-03 funcModel sweep (`catalogue/funcmodels/`, 164 families, 36 classes) showed the
+single-parameter write mechanism the project ships on `0d12` — `CONTROL + 0x5D00|id` — is **not a
+`0d12` special case**. Almost every AC class declares `writeType: I` attributes with an `eppCmd`, and
+**every class's ids sit on the same `5D` command page** (checked across all configFiles). So the
+addressable single-parameter surface spans most families; today we exploit it only on `0d12`.
+
+**What is witnessed vs what is not.** Haier's funcModel states, per family (per uPlusId), which
+attributes are single-parameter writable (`writeType` containing `I`). It is a **declaration, an
+INPUT** (METHOD Rule 40), not a hardware outcome. Support is per-uPlusId: within one class some
+families are `I`-rich and some are **G-only** (group-set only).
+
+★★ **Live probe (2026-09-03) — CONFIRMED board-predictive PER ATTRIBUTE.** The three-way split
+matters: across the 26 AC families, **12 are I-capable** (a full single-param register), **12 mark ONLY
+`onOffStatus` `I&G`** (single-param power, everything else `G`), and **2 are truly G-only** (the window
+units). The owner's family (`…02120011801256…`, 共空 0D07) is in the middle group: every attribute `G`
+**except `onOffStatus` (`I&G`)**. TWO live no-op probes of it, on the OFF Upstairs unit, settled it
+cleanly:
+* `0x5D02` (**setpoint — funcModel `G`**) → **REFUSED, frame `0x03`, code `0x0000`**.
+* `0x5D01` (**onOffStatus — funcModel `I&G`**, value 0=off, its current state) → **ACCEPTED, frame
+  `0x02` + a status report, no refusal**; unit stayed off.
+⇒ The board implements the `5D` page **SELECTIVELY, exactly as the funcModel `writeType` says**: it
+accepts the `I&G` attribute and refuses the `G` one, ON THE SAME UNIT. So `writeType` predicts board
+behaviour **per attribute**, not merely per family — the strongest validation yet for offering
+single-param strictly by the funcModel. (The `0x0000` on `5D02` meant "no single-param for THIS
+attribute", NOT "no `5D` page" — an earlier reading, now corrected.) Unit left off/23, unchanged.
+⚠️ Practical caveat: the 12 middle-tier families already control power via the **group-set**, so
+`5D01` single-param power is redundant THERE; the finding's value is the validated `writeType`→board
+link, which raises confidence for the 12 **I-capable** families whose `I` attributes have no group-set
+alternative. (Probe pattern: `async_send_op` a `build_epp_frame(0x01, 0x5D00|id, value)`, read
+`epp_frame_type` — accept `0x02` vs refuse `0x03`.)
+
+**Why not shipped for other families.** (1) `writeType: I` is unconfirmed on hardware for every non-
+`0d12` family — the write is only proven on `0d12` (prior-art issue #19 + a reporter). (2) Read-back /
+self-settling needs each family's report layout worked out, which is done for only a few families.
+(3) The owner's units are classic G-only and cannot exercise it. Shipping unverified single-param
+writes wholesale across dozens of families would violate Rule 8 ("the unit is the only authority on
+writes").
+
+**What would settle it, per target family:** a live single-param probe (tooling exists) on a unit of
+that family, OR a reporter's capture of the vendor module's own single-param traffic (the issue
+tracker is the capture corpus), then ship provisionally + self-settling exactly the way the
+four-sided louvres do on `0d12`. Tooling: `tools/re/fetch_funcmodel.py`, `sweep_funcmodels.py`, `funcmodel_coverage.py`;
+standing gate `tools/re/validate_configfile_register.py` check 6 (shipped ids must be `writeType: I`;
+a declared+writable+positioned attribute left unshipped FAILS). For `0d12` itself the register is
+COMPLETE against declarations — no gap but the already-deferred `ampereControl` (item unchanged).
+
 ### 1. Vane positions on a unit whose model understates it
 
 Both axes offer their positions as `select` entities beside the swing controls, built from the stops
@@ -804,6 +976,88 @@ compressor running) whose reversing-valve field reads 0 or 1 -- that fixes the p
 can then be decided from it. Defrost (`defrost_status`, same actuator word) can be published as
 `defrosting` the same way once one report shows it at 1.
 
+### 59. ⓘ A THIRD presence parameter exists in the SDK: the occupied→unoccupied DELAY (2026-09-06)
+
+Haier's own `wifibase` SDK manual (`catalogue/haigeek_refdocs/wifibase/`, §九 `uhepp.h`) declares three
+radar/人感 events on the module↔board UART:
+
+    UHEPP_RADAR_STATUS_GET       获取感知状态
+    UHEPP_RADAR_STATUS_SWITCH    人感开关状态切换
+    UHEPP_RADAR_SET_DELAY_TIME   ★ 设置人感有人到无人的延时时间
+
+We ship the presence **mode** (off/avoid/follow/on) and read `sensingResult`; the **delay time** —
+how long after the room empties before the appliance treats it as unoccupied — is a parameter we have
+never seen, in the byte maps or on the wire.
+
+⚠️ **Do NOT ship anything from this.** It is an SDK API surface, not a wire encoding: there is no
+attribute name, no `5Dxx` id and no byte position here, and no evidence our AC's board implements these
+events. It is recorded so that if a delay-like field ever turns up in a configFile or a capture, its
+meaning is already known. Related: memory `presence-sensor-is-module-side-with-distance`,
+`docs/LEFTOVER_UNKNOWNS_2026-08-31.md` §A2.
+
+
+### 60. ⓘ The appliance announces its own key rotation on `:56800` — an unhandled message type (2026-09-08)
+
+While a controller is connected, the appliance sends an unsolicited message with **info type 6**
+(`info_code 0xEA66`) when its key version changes. It is **header-only — an empty payload** — and is
+rate-limited to roughly one every five minutes. There is also a controller→appliance **type 4** that
+asks the appliance to refresh its key, answered with a **type 5** whose body is encrypted under the
+session key with the framing the integration already implements (`BE16 length ‖ data ‖ padding`,
+AES-CBC). The handshake types we do implement are 0–3, so **types 4, 5 and 6 are all unhandled**.
+
+Today the integration learns about a rotation only when biz-data fails to decrypt, and then re-keys.
+The appliance is willing to say so directly, and because the type-6 message carries no payload it
+remains readable with a stale key.
+
+⚠️ **Do not build on this yet.** Three things are unsettled: the message does **not** carry the new
+version (that arrives in the next handshake reply, which is fine — we already know how to re-key,
+what we lack is the trigger); it is unconfirmed on the firmware our reference units run; and the
+coordinator polls in short sessions, so a five-minute-debounced push will usually fire with nobody
+connected.
+
+▶ **The free first step, no hardware and no risk:** the frame ledger added in v0.66.0
+(`coordinator.lan_frames`, `uss.collect_session_blobs`) already keeps every frame kind seen. Record
+the **info type** of any inbound message that is not `1` or `3`, so one of these shows up in a
+diagnostics download instead of being silently dropped. If one is ever seen, its bytes settle the
+rest.
+
+### 61. ⓘ "i-Feel" (the handset measuring room temperature) is not visible to us — a caveat on `indoorTemperature` (2026-09-08)
+
+On many Haier remotes, a handset button makes the **remote** measure the room temperature and the
+appliance follow it instead of its own sensor. Asked whether we can see it: **no**, and the search
+that says so was scoped as follows.
+
+* **All 228 distinct attributes** across the 23 air-conditioner families in the published device
+  models were listed with their descriptions. The only temperature attributes are
+  `targetTemperature`, `indoorTemperature`, `outdoorTemperature` and `tempUnit`, plus comfort flags
+  (`autoTempCtrlStatus`, `constDehumidificationStatus`, `tempHumidDisplayMode`, `dualCtrlStatus`).
+  **Nothing indicates which sensor feeds the control loop.**
+* Nine Chinese HVAC terms for the concept (控温点 · 感温点 · 测温点 · 回风感温 · 温度来源 · 温度补偿
+  · 温控点 · 控温方式 · 温度控制方式) appear **nowhere** in the published models, the byte maps, the
+  vendor documentation set or the UART protocol specification.
+* ★ **The control that makes this a real negative:** Haier *does* model "control method" where it
+  wants to — **`humidityCtrMode` 湿度控制方式** exists. There is simply no temperature equivalent.
+* The vendor documentation set contains **no infrared protocol material** at all; the few mentions of
+  遥控器 are onboarding instructions ("set the remote to cooling mode") and a product category.
+* One reference unit declares 87 attributes, of which two are temperature.
+* ⛔ Not covered: the per-product panel bundles.
+
+⚠️ **Do not mistake `opSrc` for it.** `opSrc` (控制命令来源) enumerates `0 other / 1 remote /
+2 keypad / 3 network` — the source of the last **command**, not of the temperature reading.
+
+⚠️ **The caveat that matters for us.** The handset sends its reading to the appliance over infrared,
+and the appliance substitutes it for its own sensor internally. Nothing new appears on the wire —
+`indoorTemperature` is reported as usual, with **no indication that its source changed**. So while
+i-Feel is active our sensor may be reporting **the remote's location, not the unit's**. Worth a
+README line if a user ever reports the reading moving on its own.
+⛔ Nothing to implement: there is no attribute to read.
+
+▶ **One cheap test (a hypothesis, not a claim).** If the handset transmits its reading as an infrared
+*command*, `opSrc` may flip to **1 (remote)** periodically while i-Feel is on with nobody touching
+the remote — an indirect indicator. It is equally possible the appliance treats those frames as
+telemetry and never updates `opSrc`. The test costs nothing: enable i-Feel, leave the remote alone,
+and watch `opSrc` across two diagnostics downloads.
+
 ## Reference — not open items
 
 Kept because each looks like something to "fix" until you know why it is the way it is.
@@ -1300,15 +1554,19 @@ the frame-keeping build, and from Haier's own generated UART protocol for this c
     `HON_ALARM_MESSAGES` (all 51), and RICHER — we carry the service codes (`F1`/`E2`/`E14`/`E18`)
     esphome lacks; the only nit is esphome's "CBD" typo at idx13 where we correctly say "PCB". So
     "fault names right through position 50" is now independently confirmed for every bit.
-  * **★ Seven NEW candidate single-parameter controls for `0d12`.** esphome's `DataParameters` ids
-    `0x07/09/0A/0D/16/17/1B` each map to an attribute the `0D012` class DECLARES (附录H): `tempUnit`,
-    `screenDisplayStatus`(/`lightStatus`), `10degreeHeatingStatus`, `selfCleaningStatus`, `muteStatus`,
-    `lockStatus`, `silentSleepStatus`. We ship 9 confirmed `0d12` single-param ids + provisional
-    `5D08`; these are candidates (the CANONICAL ids are now in each family's config — `catalogue/configfiles/`; id from esphome's 9/9-matching register, attribute
-    from the class model). Add them as PROVISIONAL single-param controls (self-adjudicating —
-    a refusal/unmoved field withdraws) the same way `5D23` presence ships; `0x09` is ambiguous between
-    `screenDisplayStatus` and `lightStatus` — resolve on hardware. Needs a reporter's `0d12` to
-    confirm, but no capture — the provisional mechanism adjudicates on first use.
+  * ⛔ **~~Seven NEW candidate single-parameter controls for `0d12`~~ — SIX ARE PHANTOMS, and this
+    bullet's attribute names were guesses the configuration later corrected.** Prior art's
+    `DataParameters` ids `0x07/09/0A/0D/16/17/1B` are, per the manufacturer's own configuration for
+    this class, `tempUnit` · `screenDisplayStatus` · `10degreeHeatingStatus` · `selfCleaningStatus` ·
+    `echoStatus` · `lockStatus` · `electricHeatingStatus` — not the `muteStatus` / `silentSleepStatus`
+    this bullet guessed for `0x16` / `0x1B` (those are `19` and `18`, and `muteStatus` was already
+    shipped). **`0x07 tempUnit` ships**, because 19 products declare it. **No `0d12` product declares
+    any of the other six**, so the declaration gate would never surface them and wiring them would be
+    phantom controls; they are held in the register validator's byte-map-only list, which trips if a
+    configuration re-sweep ever makes one declarable. The same list holds `0x08`
+    `halfDegreeSettingStatus` — see item 57, and note the scope of "declared by no product" there.
+    The register today is **ten settled ids plus five provisional** (presence `5D23` and the four
+    cassette louvres).
   * **Per-unit feature detection — NOT in the hON handshake** (dug esphome, 2026-09-01). The
     device-version answer's `functions[1]` bitmap is PROTOCOL negotiation (CRC/interactive/multinode/
     roles), not an appliance-feature manifest; esphome gates nothing on it. Human-sensing has no

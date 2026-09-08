@@ -963,7 +963,13 @@ class HaierCloud:
 
     # -- known-good call --
     async def get_device_7d(self, device_id: str) -> dict:
-        """7-day device data (TLV device-data query)."""
+        """7-day device data (TLV device-data query).
+
+        ⛔ DEAD in SE-Asia (verified 2026-09-03): `/rcs/device/7d/query` returns
+        `retCode 1702404 网关未配置路由` ("gateway route not configured") on BOTH `uws-sgp` AND
+        `uws-sea`, with a valid signed envelope. It is not a host-asymmetry fix — the route is simply
+        not deployed in this region. Do not re-try it as an open lead.
+        """
         return self._checked(
             await self.post(self.domains.uws, "/rcs/device/7d/query", {"deviceId": device_id}),
             "device 7d",

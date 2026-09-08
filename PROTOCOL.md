@@ -46,6 +46,24 @@ does not extend it), and the AC accepts **one local session at a time**. It deli
 burst immediately and then holds the socket open and silent, so a collector should return on a short
 idle window rather than waiting out the full timeout.
 
+### Why the appliance goes quiet
+
+The silence after the burst is by design, one layer down. Between the appliance's main board and its
+Wi-Fi module, status is reported **only when something changed**: the board waits a configured
+interval, compares the status frame against the last one, and sends nothing if the values match. An
+unacknowledged report is retried twice at 300 ms, and each acknowledgement restarts the interval.
+Faults work the other way and are chatty — repeated every 300 ms until acknowledged.
+
+Both intervals are *set* by the module rather than fixed: command `7c` sets the status-report
+interval and `fa` the big-data interval, each carrying a two-byte value and answered by `7d`/`fb`.
+(Worth stating because the name invites the opposite reading: `7c` **sets a rate**, it does not
+fetch a device configuration — the byte map comes from the manufacturer's servers, not from the
+appliance.)
+
+None of this limits a local session: this integration asks for a full snapshot and gets one, so the
+polling interval you choose is the one that applies. It does explain the *cloud's* view of an
+appliance, which is change-driven at whatever rate the module set.
+
 ## The status report
 
 A decrypted full-status blob is:
@@ -53,8 +71,42 @@ A decrypted full-status blob is:
 ```
 [0:78]    CAE report prefix   (identical across models; [2:4] == 27 15 identifies it)
 [78:80]   inner frame length  (BE16)
-[80:]     EPP frame:  ff ff | len | flags | 5 reserved | type | data | checksum
+[80:]     EPP frame:  ff ff | len | address identifier (6) | type | data | checksum [| crc(2)]
 ```
+
+### The EPP frame, as the manufacturer publishes it
+
+The six bytes between the length and the frame type are an **address identifier**, and the frame can
+carry a trailing CRC. Haier's own module documentation draws the layout as
+
+```
+帧头 (2) | 帧长 (1) | 有效负荷 (7–253) | 累加校验和 (1) | CRC 校验和 (2)
+                     └─ 地址标识 (6) | 帧类型 (1) | 数据信息 (0–246)
+```
+
+with three rules worth having in one place:
+
+* **`len` counts the payload plus the accumulate checksum, and excludes the CRC.** Its range is
+  8–254.
+* **The CRC field is present only when the frame's CRC flag is set** — it is not a fixed part of the
+  frame, and the declared length does not grow to cover it. Every unit this project has seen sends
+  the flag clear and no CRC. Nothing here validates either checksum on the way in (reads key off the
+  declared length and fixed offsets), so a CRC-bearing frame would simply arrive two bytes longer
+  than its family's fixed length — the same failure mode as a frame that was never unescaped, and it
+  would want the same treatment: strip it before anything looks at a length.
+* The address identifier is all-zero on every frame our units send. It is not always zero in
+  general: the manufacturer's own worked example uses `41 02 03 04 05 06`, and its leading byte is
+  where the CRC flag lives, which is why older notes in this project called that byte "flags".
+
+That example is also a complete escaped frame, and a useful test vector:
+
+```
+ff ff 0d 41 02 03 04 05 06 02 6d 01 05 ff 55 ff 55 7f 9f 3c
+        └len 13 = 6 address + 1 type + 5 data + 1 checksum      └sum └crc
+```
+
+— data unescapes to `6d 01 05 ff ff`, the length is unchanged by escaping, and the checksum `7f`
+includes both inserted `0x55` bytes. See **Escaped bytes** below.
 
 The packed attribute vector always begins at **byte 92**, immediately after the `6d 01`
 getAllProperty response code. What varies by model is how many grSetDAC **control words** (2 bytes
@@ -243,6 +295,10 @@ This shows up in ordinary use: a report whose checksum happens to be `0xFF` arri
 than its family's fixed length. Unescape before anything looks at a length, or that report misses
 every length-keyed lookup — reads still work, but the write path refuses control on a perfectly good
 report and recovers on the next one.
+
+The rule is the manufacturer's, not an inference: its module documentation states it and works an
+example (reproduced under **The EPP frame** above) in which the declared length is unchanged by
+escaping and the accumulate checksum gains both inserted `0x55` bytes.
 
 ### Fault bitmap
 
@@ -455,6 +511,28 @@ accepted the write, whatever else arrived alongside; the refusal frame is consul
 usable status came back. It is also the only direct evidence that a unit rejects a particular
 write — every other such verdict rests on writing a value and watching it not change.
 
+#### Three outcomes, not two
+
+The manufacturer documents two acknowledgements, and they differ by *which* write you sent:
+
+| you send | success | refusal |
+|---|---|---|
+| `01` single command (`5Dxx`, one setting) | **`02`** — a full status report | `03` + reason code |
+| `60` group command (`grSetDAC`, many settings) | **`05`** — a bare ACK, with the new status pushed separately, unprompted | `03` + reason code |
+
+A unit is also required to answer a group command within 50 ms.
+
+Over this LAN transport there is a **third outcome the manufacturer's diagrams cannot show:
+silence**. On the appliance's own serial link every frame type is handled, so only accept and refuse
+exist there; across `:56800` the module relays some frame types and drops others without a word.
+Silence therefore means *the frame type is not carried here* — a different thing from `03`, which
+means the frame was understood and its subcommand declined. Measured on hardware, the relayed set is
+`01` and `73`; `61`, `70`, `7c`, `fc` and `69` are dropped.
+
+Because of that split, the integration treats **a usable status report as the acceptance signal**
+rather than looking for a particular acknowledgement byte, and consults the refusal frame only when
+no status came back. That is what makes both write paths work through one code path.
+
 The code means whatever **this product's** published table says it means, and the same number
 reads differently on different products: 509 products publish `0` as "cannot operate while a fault
 is active", where a product that publishes no entry for `0` is using the protocol's own "command
@@ -607,7 +685,7 @@ identifier before them is not checked.
 | `0x15` | 16 | deviceId (MAC, ASCII, NUL-padded) |
 | `0x25` | 32 | `uPlusId`, **BCD-packed** — hex-encoding reproduces the cloud device list's `wifiType` exactly |
 | `0x45` | 4 | BE32 TLV count |
-| `0x49` | … | TLV area, records of `type(1) | length(1) | value` |
+| `0x49` | … | TLV area, records of `type(1)` \| `length(1)` \| `value` |
 | `0xe5` | 16 | the device's own IP, ASCII |
 | `0xf5` | 2 | BE16 uSS control port (`56800`) |
 | `0xfd` | 5 | SDK version |

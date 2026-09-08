@@ -50,6 +50,31 @@ carrying `statusCmd 7D01`, so they are part of the same big-data frame. For comp
 families the generator was built from end their engineering block one word before the frame ends
 (42 of 43, 22 of 23): genuinely at the tail.
 
+#### The declaring set is EIGHT families, not five — and the three extra ones are SAFE (swept 2026-09-08)
+
+The five above were found by reading the families already suspected. A sweep of **all 191
+configFiles** for PV/solar field names (`pv[A-Z]`, `photov`, `solar`, `光伏`, enumerated over
+`Property`/`Bigdata`/`changeParas`/`Alarm`/`Event` rather than grepped for an expected name) finds
+**eleven** families mentioning PV at all: eight declaring PV **telemetry**, plus the unobserved 商空
+`0d12` family (`…0d122151860b57…`) which declares PV **alarms only**, and two `1d01` families whose
+only hit is `pValveErr` — a proportional-valve fault, a false positive on the pattern.
+
+The three newly-found telemetry families do **not** extend the risk set, because each ends its
+`Bigdata` map **on** `expansionValveOpenDegree` and puts its PV words *before* the engineering block:
+
+| family | `expansionValveOpenDegree` at word | last Bigdata word | words after the block |
+|---|---|---|---|
+| `…0212…1675…` | 29 | 29 | **0** — safe |
+| `…0d21…1916…` | 31 | 31 | **0** — safe |
+| `…0212…1890…` | 48 | 48 | **0** — safe |
+
+⇒ **the at-risk set stays exactly the five in the table above**, now positively confirmed rather than
+assumed complete. The 商空 `0d12` family is also safe on this axis (block ends at word 27 of 27),
+though it remains divergent for the reasons in item 13.
+
+⚠️ Scope: this is a statement about **what the configFiles declare**, not about hardware. It cannot
+say whether any such unit exists in the field or would return its full declared block.
+
 **The risk, stated no more strongly than the evidence supports.** If one of these units returns a
 big-data frame carrying its full declared block, its word count is not a `BIGDATA_MAPS` key and its
 length is well over 141, so it takes the end-anchored path — and `shift` would be 13 words (26
@@ -127,6 +152,82 @@ while the setpoint byte still reads the whole degree is the fraction reading, an
 cabinet has the function. The flag clear while the unit's own display shows the half means the half
 lives in the controller. Worth asking what the unit's display shows, since a two-character display
 rounds it away either way.
+
+#### ▶ THE REPORT ARRIVED 2026-09-08 — and the test did not register. Item stays OPEN.
+
+@nutkkc sent three diagnostics downloads from his `0d12` cabinet (`AE2C52Q00` / `HCFI-38XTR32F`,
+module `e_4.6.21 / R_6.0.01`), named `24.5` / `25` / `25.5`, taken on v0.69.1. He set the values
+**on the remote**, which offers 0.5 steps. They are in the parent tree as `24.5.json`, `25.json`,
+`25.5.json`.
+
+**What the wire says — the flag never moved, and neither did the setpoint.**
+
+| download | setpoint code (w1.b8) | `halfDegreeSettingStatus` (w3.b10) | decoded |
+|---|---|---|---|
+| `24.5` | 9 | 0 | 25.0 °C |
+| `25` | 9 | 0 | 25.0 °C |
+| `25.5` | 9 | 0 | 25.0 °C |
+
+A bit-level diff of **all four frame kinds** across the three captures shows only outdoor
+temperature (100 → 99 → 99, i.e. 36 → 35 °C), two outdoor probes in the `7d01`, and the checksums.
+`04/0f5a` and `02/6d01` are byte-identical. The captures are live and fresh — poll counts advance by
+three between files and outdoor temperature moved — so a change that had landed would be visible.
+
+**This is not "the half was dropped".** Under the mechanism above, 24.5 is code **8** + flag 1 and
+25.5 is code 9 + flag **1**. Neither the code nor the flag moved, and no rounding rule sends 25 for
+both 24.5 and 25.5 (24.5 truncates to 24; 25.5 rounds to 26). The board's setpoint simply did not
+change during the exercise.
+
+**Controls, so the conclusion is not just "nothing happened".**
+
+* No integration write occurred: `02/6d01` (the control-session reply) sits at **35 in all three**,
+  and `controls.last_control` is an earlier HA write of `targetTemperature: 9` at 06:51:56 UTC.
+* He could not have used Home Assistant anyway — his resolved profile is **`temp_step: 1.0`**.
+* He could not have used the app either: the app-facing model in his own diagnostics carries 12
+  attributes, `targetTemperature` is `STEP {min 16, max 30, step "1"}`, and
+  **`halfDegreeSettingStatus` is absent from it entirely**. (Note `indoorTemperature` *is* `step 0.5`
+  there — the app shows halves for the *reading*, which is a plausible source of confusion.)
+* Independent third witness: the cloud's own live mirror, `digital_model.reported_values_now`
+  (a fresh fetch — it differs from the cached `reported_values` on `windDirectionHorizontal`), reads
+  `targetTemperature: "25"` in all three.
+
+⇒ three independent paths — LAN status frame, LAN telemetry frame, cloud REST mirror — agree the
+unit sat at 25.0 throughout.
+
+**Two readings survive, and this capture cannot separate them.**
+
+1. **The handset's .5 is display-local** — it transmits only on whole-degree crossings, so stepping
+   25 → 24.5 → 25 → 25.5 sends the board nothing it acts on.
+2. **The remote was not registering on the board at all** during those windows.
+
+`opSrc` reads **3 = network** in all three (`{0: other, 1: remote, 2: panel, 3: network}`), i.e. the
+last change the board *recorded* was HA's earlier write. That **rules out a wall panel having set it
+and the board accepting it** (that latches 2), but it does not separate 1 from 2: `opSrc` only moves
+when a change is accepted, so a handset command treated as a no-op leaves it at 3 either way.
+
+**Corroborating scope — the flag has never been observed set on this hardware.** A sweep of every
+stored diagnostics file found **21 `0d12` captures** (133-byte frames, all `AE2C52Q00`), spanning
+months and setpoints 20/21/22/24/25 °C: `halfDegreeSettingStatus` reads **0 in every one**. Word 3
+itself is populated in those frames (`0x0201` — `screenDisplayStatus` 1, `onOffStatus` 1), so that is
+a real zero in a live word, not an unread region. ⚠️ **Bounded:** one product code, one module build.
+And the sweep's word origin (`byte 112 = outdoorTemperature`, hence word 0 at `len − 43`) is valid
+**only for the 133-byte `0d12` frames** — it self-validates there because the decoded setpoint matches
+each capture's filename, but applying it to the 117/165/175/209-byte families in the same corpus
+produces garbage, and any `half=1` printed for those is a wrong-offset artefact, not evidence.
+
+**⛔ Do not write down "the half never reaches the wire."** That is a negative stated past its
+evidence: it requires the whole-degree part to have been dropped too, which nothing here explains.
+
+**What settles it — one more download, and it is cheaper than the first.** Ask him to set a plainly
+whole-degree change on the remote, **25 → 28**, wait a minute, download again.
+
+* Code 9 → 12 ⇒ the remote does reach the board ⇒ reading 1 is confirmed, the half never leaves the
+  handset, and the 0.5 step must not ship on this class.
+* Code still 9 ⇒ the remote is not registering at all, and the half-degree test has to be re-run.
+
+Worth asking alongside, since either could settle it without another download: **what is he actually
+holding** — a wired wall controller, an IR handset, or both — and does the **indoor unit's own
+display** show the .5, or only the handset? If only the handset shows it, that is reading 1 outright.
 
 **If it confirms**, every piece is already positioned: the flag has a read position on the shared
 frame and a write position in the published group-set order (559 of 1,451 products carry it there,

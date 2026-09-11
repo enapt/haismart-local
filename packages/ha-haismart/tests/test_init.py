@@ -877,46 +877,34 @@ async def test_presets_absent_on_a_family_that_cannot_write_them(
     assert "preset_mode" not in climate.attributes
 
 
-async def test_horizontal_swing_moves_only_that_axis(hass: HomeAssistant, mock_uss) -> None:
-    """The axis-at-a-time control must leave the other vane where the user put it.
+async def test_swing_is_one_four_way_control(hass: HomeAssistant, mock_uss) -> None:
+    """Swing has exactly one owner: the four-way control Home Assistant's card has always shown.
 
-    Through the four-way control alone, "start left-right swing" has to be spelled
-    `swing_mode: both`, which also starts the up-down vane.
+    The left-right vane used to have a second one in `swing_horizontal_mode`, which writes the same
+    `windDirectionHorizontal` field this control writes -- and choosing an axis here turns the other
+    off, so the two could not be used together. It reached no state this control cannot either:
+    off/vertical/horizontal/both already covers every combination of the two axes. This guards
+    against the second control coming back by accident.
     """
-    mock_uss.read.return_value = [make_status_frame(swing=True)]   # vertical swinging
-    await _setup(hass)
-    climate = hass.states.get(CLIMATE)
-    assert climate.attributes["swing_horizontal_modes"] == ["off", "on"]
-    assert climate.attributes["swing_horizontal_mode"] == "off"
-    assert climate.attributes["swing_mode"] == "vertical"          # the old control is unchanged
-
-    mock_uss.send.baseline = make_status_frame(swing=True)
-    await hass.services.async_call(
-        "climate",
-        "set_swing_horizontal_mode",
-        {"entity_id": CLIMATE, "swing_horizontal_mode": "on"},
-        blocking=True,
-    )
-    assert _sent_field(mock_uss.send, "windDirectionHorizontal") == 0x07
-    # the vertical nibble goes back exactly as the AC reported it (8 = the swinging flag), rather
-    # than being rewritten to the 0x0c the encoder uses to turn it on
-    # the vertical axis is carried through untouched -- 0x0c is the sweep code the fixture set
-    assert _sent_field(mock_uss.send, "windDirectionVertical") == 0x0C
-
-
-async def test_horizontal_swing_absent_when_the_family_omits_it(
-    hass: HomeAssistant, mock_uss
-) -> None:
-    """extended-46 leaves windDirectionHorizontal out of its write map on purpose (the position is
-    not settled), so the control must not be offered on that family."""
-    from conftest import make_extended46_frame
-
-    mock_uss.read.return_value = [make_extended46_frame()]
     await _setup(hass)
 
     climate = hass.states.get(CLIMATE)
+    features = ClimateEntityFeature(climate.attributes["supported_features"])
+    assert features & ClimateEntityFeature.SWING_MODE
+    assert not features & ClimateEntityFeature.SWING_HORIZONTAL_MODE
+    assert climate.attributes["swing_modes"] == ["off", "vertical", "horizontal", "both"]
     assert "swing_horizontal_modes" not in climate.attributes
     assert "swing_horizontal_mode" not in climate.attributes
+
+    # the removed service fails cleanly rather than silently doing nothing, which is what an
+    # automation that used it needs to see
+    with pytest.raises(ServiceValidationError):
+        await hass.services.async_call(
+            "climate",
+            "set_swing_horizontal_mode",
+            {"entity_id": CLIMATE, "swing_horizontal_mode": "on"},
+            blocking=True,
+        )
 
 
 async def test_switch_toggles_confirmed_bit(hass: HomeAssistant, mock_uss) -> None:
@@ -999,8 +987,10 @@ async def test_vane_positions_come_from_the_units_own_model(
     # positions are numbered by their place in the model's list, not by their code: this model lists
     # 1..6 between fixed and auto, so the reported code 4 is the fourth stop it offers
     assert vane.state == "position_4"
-    # a parked vane is not a swinging one, and the climate control still says so
-    assert hass.states.get(CLIMATE).attributes["swing_horizontal_mode"] == "off"
+    # a parked vane is not a swinging one, and the climate control still says so: this frame has
+    # the up-down vane sweeping and the left-right one parked, which the four-way control reads as
+    # "vertical" -- not "both"
+    assert hass.states.get(CLIMATE).attributes["swing_mode"] == "vertical"
 
     await hass.services.async_call(
         "select", "select_option", {"entity_id": VANE_H, "option": "position_3"}, blocking=True,
@@ -4251,10 +4241,9 @@ async def test_a_family_offers_the_swing_axis_it_can_move(
     assert features & ClimateEntityFeature.SWING_MODE
     assert features & ClimateEntityFeature.FAN_MODE
     assert state.attributes["fan_modes"]
-    # ...but only the axis it can place: no "both", no "horizontal", and no separate left-right
-    # control either, since nothing in this family's report reads that vane back.
+    # ...but only the axis it can place: no "both" and no "horizontal", since nothing in this
+    # family's report reads that vane back.
     assert state.attributes["swing_modes"] == ["off", "vertical"]
-    assert not features & ClimateEntityFeature.SWING_HORIZONTAL_MODE
 
     # And the command sends only that axis -- handing the encoder the other one would raise and
     # take the whole group-set with it, which is the failure this family was already bitten by.
@@ -4288,7 +4277,6 @@ async def test_a_family_that_can_move_neither_vane_does_not_offer_a_swing_contro
             hass.states.get(CLIMATE).attributes["supported_features"]
         )
     assert not features & ClimateEntityFeature.SWING_MODE
-    assert not features & ClimateEntityFeature.SWING_HORIZONTAL_MODE
     # what it CAN write is still offered, so this is a gate and not a retreat
     assert features & ClimateEntityFeature.TARGET_TEMPERATURE
     assert features & ClimateEntityFeature.FAN_MODE

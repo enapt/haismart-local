@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "Haier-apparaat toevoegen",
-        "description": "Inloggen is de aanbevolen route: Home Assistant haalt de lokale sleutel op, vindt het apparaat op uw netwerk en leest het model uit, dus er valt niets te plakken. Daarna communiceert het rechtstreeks met het apparaat — en zodra alles is ingesteld kunt u het apparaat volledig van internet afsluiten; zie de README over volledig cloudonafhankelijk werken.\n\nGoogle-/Facebook-accounts: maak een apart Haier-account met e-mail en wachtwoord, deel uw apparaat's daarmee in de app en log daarna in met dat account.",
+        "description": "Inloggen is de aanbevolen route: Home Assistant haalt de lokale sleutel op, vindt het apparaat op uw netwerk en leest het model uit, dus er valt niets te plakken. Daarna communiceert het rechtstreeks met het apparaat — en zodra alles is ingesteld kunt u het apparaat volledig van internet afsluiten; zie de README over volledig cloudonafhankelijk werken.\n\nGoogle-/Facebook-accounts: maak een apart Haier-account met e-mail en wachtwoord, deel uw apparaten daarmee in de app en log daarna in met dat account.",
         "menu_options": {
           "account": "Het al toegevoegde Haier-account gebruiken (niets in te typen)",
           "login": "Inloggen met uw Haier-account (aanbevolen)",
@@ -124,7 +124,7 @@
       },
       "model": {
         "title": "Welk model is dit?",
-        "description": "Het apparaat heeft gemeld tot welke productfamilie hij behoort, wat het beperkt tot de modellen hieronder. Kies het model dat op het apparaat of het typeplaatje staat.\n\nKiezen ontgrendelt de storingsnamen, de beschikbaarheidsregels en de werkelijke functielijst van dit apparaat. Overslaan is prima — het apparaat is ook zonder volledig uit te lezen en te bedienen.",
+        "description": "Het apparaat heeft gemeld tot welke productfamilie het behoort, wat het beperkt tot de modellen hieronder. Kies het model dat op het apparaat of het typeplaatje staat.\n\nKiezen ontgrendelt de storingsnamen, de beschikbaarheidsregels en de werkelijke functielijst van dit apparaat. Overslaan is prima — het apparaat is ook zonder volledig uit te lezen en te bedienen.",
         "data": {
           "product_code": "Model"
         },
@@ -154,12 +154,12 @@
       "invalid_auth": "Het apparaat antwoordde, maar deze lokale sleutel ontsleutelt de status niet — de sleutel is onjuist of is gewisseld.",
       "cannot_connect": "Kon het apparaat niet bereiken op poort 56800. Controleer het IP-adres en of Home Assistant in hetzelfde netwerk zit.",
       "device_id_required": "Het apparaat reageerde niet op de identificatievraag, waardoor het apparaat-ID niet automatisch kon worden gelezen. Voer het handmatig in — het is het wifi-MAC-adres van de module, 12 hexadecimale tekens zonder scheidingstekens.",
-      "account_expired": "Het hier al ingestelde Haier-account kon niet worden gebruikt — de aanmelding is verlopen, of een aanmelding elders heeft deze vervangen. Hieronder opnieuw aanmelden lost dit op voor alle apparaat's die je hebt toegevoegd."
+      "account_expired": "Het hier al ingestelde Haier-account kon niet worden gebruikt — de aanmelding is verlopen, of een aanmelding elders heeft deze vervangen. Hieronder opnieuw aanmelden lost dit op voor alle apparaten die je hebt toegevoegd."
     },
     "abort": {
       "already_configured": "Dit apparaat is al geconfigureerd.",
       "reauth_successful": "De lokale sleutel is bijgewerkt.",
-      "all_configured": "Alle apparaat's van dit account zijn al aan Home Assistant toegevoegd.",
+      "all_configured": "Alle apparaten van dit account zijn al aan Home Assistant toegevoegd.",
       "unknown": "Onverwachte fout — de aankondiging van het apparaat werd niet begrepen.",
       "no_devices": "Aangemeld als {username}, maar dit Haier-account heeft geen apparaten. Meld je je in de app aan met Google of Facebook, deel het apparaat dan eerst met dit account in de app en probeer het daarna opnieuw.",
       "already_in_progress": "Dit apparaat wordt al ingesteld.",
@@ -556,7 +556,7 @@
     },
     "key_will_rotate": {
       "title": "{name}: de sleutel gaat veranderen en deze installatie kan dat niet volgen",
-      "description": "Dit apparaat bereikt de servers van Haier nog steeds en krijgt dus meerdere keren per dag een nieuwe lokale sleutel. Hij is toegevoegd zonder Haier-account, dus Home Assistant kan de nieuwe niet ophalen — bij de eerstvolgende herstart na een sleutelwijziging stopt het apparaat en lijkt het alsof de configuratie verloren is.\n\nTwee blijvende oplossingen, beide nu te doen nu alles nog werkt:\n\n- **Voeg uw Haier-account toe**: Instellingen → Apparaten en diensten → Haismart → het apparaat → Herconfigureren → *Haier-account toevoegen*. Sleutelwijzigingen worden dan automatisch opgehaald.\n- **Of blokkeer de internettoegang van het apparaat** op uw router. De sleutel verandert dan niet meer en de uwe blijft geldig. Lokale bediening blijft in beide gevallen werken.\n\nDeze melding verdwijnt vanzelf zodra een van beide waar is."
+      "description": "Dit apparaat bereikt de servers van Haier nog steeds en krijgt dus meerdere keren per dag een nieuwe lokale sleutel. Het is toegevoegd zonder Haier-account, dus Home Assistant kan de nieuwe niet ophalen — bij de eerstvolgende herstart na een sleutelwijziging stopt het apparaat en lijkt het alsof de configuratie verloren is.\n\nTwee blijvende oplossingen, beide nu te doen nu alles nog werkt:\n\n- **Voeg uw Haier-account toe**: Instellingen → Apparaten en diensten → Haismart → het apparaat → Herconfigureren → *Haier-account toevoegen*. Sleutelwijzigingen worden dan automatisch opgehaald.\n- **Of blokkeer de internettoegang van het apparaat** op uw router. De sleutel verandert dan niet meer en de uwe blijft geldig. Lokale bediening blijft in beide gevallen werken.\n\nDeze melding verdwijnt vanzelf zodra een van beide waar is."
     },
     "key_refresh_failed": {
       "title": "{name}: de sleutel is veranderd en automatisch ophalen lukte niet",

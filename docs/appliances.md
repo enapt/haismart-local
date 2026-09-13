@@ -108,6 +108,19 @@ speaks English attribute names — there is no bridge between the two. This affe
 products in otherwise-supported classes. These are the oldest entries in the catalogue and the
 fetcher requests the current format first, so a unit sold recently is unlikely to be affected.
 
+## Known rough edge: the setup screens say "air conditioner"
+
+The integration's own setup and repair screens were written when this was an air-conditioner
+integration, and they still say "air conditioner" in all 31 languages it ships. If you are adding a
+water heater or anything else, that wording is wrong — but only the wording. Nothing behaves
+differently, and the entities you get are built from your appliance's own model regardless of what
+the setup screen called it.
+
+This is deliberate for now rather than overlooked: the translations are machine-written and not
+natively reviewed, and rewording 25 strings across 31 locales without a native reader for each would
+trade a cosmetic problem for a correctness one. It is tracked in
+[`FUTURE_WORK.md`](FUTURE_WORK.md). Corrections from native speakers are very welcome.
+
 ## If your appliance is not decoded
 
 The integration will not invent entities it cannot justify: an appliance whose report it cannot

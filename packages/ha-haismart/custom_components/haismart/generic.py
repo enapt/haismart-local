@@ -85,9 +85,48 @@ class GenericEntity(HaismartEntity):
         self._attr_entity_registry_enabled_default = not spec.diagnostic
 
     @property
+    def _model_state(self) -> dict[str, Any]:
+        return (self.coordinator.data or {}).get("model_state") or {}
+
+    @property
     def native_value_raw(self) -> Any:
-        """The attribute's published value from the last report, or ``None``."""
-        return (self.coordinator.data or {}).get("model_state", {}).get(self.spec.attribute)
+        """The attribute's published value from the last report, or ``None``.
+
+        For a COLLAPSED series this is the summary line instead — see :attr:`EntitySpec.sources`.
+        """
+        if self.spec.sources:
+            return self._series_summary()
+        return self._model_state.get(self.spec.attribute)
+
+    def _series_summary(self) -> str | None:
+        """A schedule grid as one readable line: ``"06-09, 18-22"``, or ``"none"``.
+
+        Haier publishes a timer as one boolean per hour of the day (or per weekday), and the 786 gas
+        water heater has eight such grids -- 192 booleans. As 192 entities that is a wall; as eight
+        lines it is a schedule somebody can read. Contiguous runs are joined, because "06, 07, 08"
+        is the same fact written three times.
+        """
+        state = self._model_state
+        active = [
+            label
+            for source, label in zip(self.spec.sources, self.spec.source_labels, strict=False)
+            if state.get(source)
+        ]
+        if not any(source in state for source in self.spec.sources):
+            return None                       # nothing decoded yet: unknown, not "none"
+        if not active:
+            return "none"
+        if not all(label.isdigit() for label in active):
+            return ", ".join(active)          # weekdays: no runs to join
+        runs: list[tuple[int, int]] = []
+        for hour in (int(label) for label in active):
+            if runs and hour == runs[-1][1] + 1:
+                runs[-1] = (runs[-1][0], hour)
+            else:
+                runs.append((hour, hour))
+        return ", ".join(
+            f"{lo:02d}" if lo == hi else f"{lo:02d}-{hi:02d}" for lo, hi in runs
+        )
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
@@ -97,7 +136,10 @@ class GenericEntity(HaismartEntity):
         without the identifier it was generated from, and a user searching Haier's own
         documentation needs the same string.
         """
-        return {"haier_attribute": self.spec.attribute}
+        extra: dict[str, Any] = {"haier_attribute": self.spec.attribute}
+        if self.spec.sources:
+            extra["haier_attributes"] = list(self.spec.sources)
+        return extra
 
     async def async_write(self, value: Any) -> None:
         """Send a value, refusing first anything the unit's own rules say it would discard."""

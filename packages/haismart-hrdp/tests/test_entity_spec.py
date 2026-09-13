@@ -194,3 +194,63 @@ def test_the_classifier_produces_something_for_every_device_class_we_carry() -> 
         if not specs:
             empty.append(f"{device_class} ({typeid})")
     assert not empty, f"device classes that produce no entities at all: {empty}"
+
+
+def test_a_schedule_grid_collapses_into_one_entity() -> None:
+    """⛔ 192 booleans is not a feature, it is a wall.
+
+    Haier's 786 gas water heater publishes a timer as one boolean per hour of the day, eight times
+    over -- work hours, rest hours, and the same again for three other programmes. Left alone that
+    is 192 entities on one appliance; collapsed it is eight readable lines.
+    """
+    gas = next(
+        t for t in sorted(known_typeids()) if model_for(t).device_class == "1813"
+    )
+    model = model_for(gas)
+    assert model is not None
+    declared = [{"name": f.name} for f in model.fields_for()]
+    specs = specs_for(model, declared)
+
+    hours = [s for s in specs if s.attribute == "allRestHour"]
+    assert len(hours) == 1, "the 24 hour flags are one entity"
+    assert len(hours[0].sources) == 24
+    assert hours[0].source_labels[:3] == ("0", "1", "2")
+    # ...and none of the cells survives as an entity of its own.
+    assert not [s for s in specs if s.attribute.startswith("allRestHour") and s.sources == ()]
+
+    # A weekday grid collapses too, capitalised suffix and all (`allWorkDayMon`).
+    days = [s for s in specs if s.attribute == "allWorkDay"]
+    assert len(days) == 1 and len(days[0].sources) == 7
+    assert days[0].source_labels == ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+
+
+def test_a_writable_grid_is_left_alone() -> None:
+    """Collapsing a control into a read-only summary would remove the ability to set it.
+
+    Worse than the clutter it fixes, so the rule only applies where nothing can write the cells.
+    """
+    gas = next(
+        t for t in sorted(known_typeids()) if model_for(t).device_class == "1813"
+    )
+    model = model_for(gas)
+    assert model is not None
+    declared = [{"name": f.name} for f in model.fields_for()]
+    cells = [f.name for f in model.fields_for() if f.name.startswith("allRestHour")]
+    specs = specs_for(model, declared, writable=cells)
+    assert not [s for s in specs if s.attribute == "allRestHour"], "this grid is writable"
+    assert len([s for s in specs if s.attribute in cells]) == len(cells)
+    # ...while the grids that stayed read-only are still collapsed, so the rule is per grid and
+    # not a switch that turns the whole behaviour off.
+    assert [s for s in specs if s.attribute == "allWorkHour"]
+
+
+def test_a_short_indexed_run_is_not_a_grid() -> None:
+    """Two or three related settings read better as themselves than as a summary line."""
+    from haismart_hrdp.entity_spec import _series_key
+
+    assert _series_key("allRestHour7") == ("allRestHour", "7")
+    assert _series_key("allWorkDayMon") == ("allWorkDay", "mon")
+    assert _series_key("targetTemperature") is None
+    assert _series_key("resn1Temperature") is None
+    # An index outside a day/hour range is not a grid cell.
+    assert _series_key("someHour99") is None

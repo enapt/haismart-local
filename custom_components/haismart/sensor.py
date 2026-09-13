@@ -597,6 +597,8 @@ class HaismartGenericSensor(GenericEntity, SensorEntity):
         value = self.native_value_raw
         if value is None:
             return None
+        if self.spec.sources:
+            return str(value)        # a collapsed schedule grid: already a summary line
         if self._labels:
             # A value outside the declared set is dropped rather than shown raw: an enum sensor
             # whose state is not in `options` is invalid, and Home Assistant logs it every poll.

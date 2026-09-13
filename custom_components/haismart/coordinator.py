@@ -98,6 +98,7 @@ from haismart_hrdp import (
 )
 from haismart_hrdp.appliance import ApplianceKind, kind_for
 from haismart_hrdp.device_model import (
+    STATUS_BIGDATA,
     DeviceModel,
     model_for,
     model_from_record,
@@ -1406,7 +1407,16 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         declared = frozenset(declared_attribute_names(self.digital_model))
         if not declared:
             return {}
-        return model.decode(blob, only=declared)
+        state = model.decode(blob, only=declared)
+        # The extended/telemetry frame carries its own half of the map (Haier files those fields
+        # under `Bigdata`, read from `7D01`). Merged in where the appliance sent one: an appliance
+        # that never answers that query simply contributes nothing, which is why this needs no
+        # capability flag of its own.
+        if self.last_raw_extended:
+            state.update(
+                model.decode(self.last_raw_extended, status_cmd=STATUS_BIGDATA, only=declared)
+            )
+        return state
 
     def _note_unknown_layout(self, blob: bytes) -> None:
         """Record an unrecognised report length: log once, raise a repair, remember the blob.

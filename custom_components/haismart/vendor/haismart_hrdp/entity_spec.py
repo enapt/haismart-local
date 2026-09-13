@@ -292,6 +292,11 @@ class EntitySpec:
     #: For a select: the values this DEVICE declares, as ``(published value, label)``. Ordered as
     #: the device's own model orders them.
     options: tuple[tuple[Any, str], ...] = dataclass_field(default_factory=tuple)
+    #: For a COLLAPSED series: the attributes this one entity reads, in order. Empty for the
+    #: ordinary case of one entity per attribute. See :func:`_schedule_groups`.
+    sources: tuple[str, ...] = dataclass_field(default_factory=tuple)
+    #: Labels for a collapsed series, parallel to :attr:`sources` (``"00"`` … ``"23"``, ``"mon"`` …).
+    source_labels: tuple[str, ...] = dataclass_field(default_factory=tuple)
 
     @property
     def key(self) -> str:
@@ -348,6 +353,74 @@ def _numeric_bounds(
     if isinstance(field.variants, dict):
         step = float(field.variants.get("step") or 1)
     return bounds[0], bounds[1], step
+
+
+# A schedule grid: one boolean per hour of the day, or per day of the week, repeated for several
+# named programmes. Haier's 786 gas water heater publishes EIGHT such groups -- 192 booleans, which
+# as 192 entities is not a feature, it is a wall. Collapsed, each group is one readable line.
+_SERIES = re.compile(r"^(?P<prefix>.*?)(?:Hour|Day)(?P<index>\d{1,2}|[A-Za-z]{3})$")
+_WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+#: Below this, an indexed run is a handful of related settings and reads better as itself.
+_SERIES_MIN = 6
+
+
+def _series_key(name: str) -> tuple[str, str] | None:
+    """``(group, index label)`` if ``name`` is one cell of a schedule grid, else ``None``."""
+    match = _SERIES.match(name)
+    if not match:
+        return None
+    index = match.group("index")
+    if index.isdigit():
+        if not 0 <= int(index) <= 31:
+            return None
+        return match.group("prefix") + name[len(match.group("prefix")):-len(index)], index
+    if index.lower() in _WEEKDAYS:
+        return (
+            match.group("prefix") + name[len(match.group("prefix")):-len(index)],
+            index.lower(),
+        )
+    return None
+
+
+def _schedule_groups(
+    fields: Sequence[ModelField], declared: Mapping[str, Any]
+) -> dict[str, EntitySpec]:
+    """One spec per schedule grid, keyed by every attribute it swallows.
+
+    ⛔ Only where every cell is a BOOLEAN and none is writable. A writable grid is a control, and
+    collapsing a control into a read-only summary would remove the ability to set it -- worse than
+    the clutter it fixes.
+    """
+    groups: dict[str, list[ModelField]] = {}
+    for field in fields:
+        if field.name not in declared or field.data_type != "bool":
+            continue
+        key = _series_key(field.name)
+        if key is not None:
+            groups.setdefault(key[0], []).append(field)
+
+    out: dict[str, EntitySpec] = {}
+    for group, members in groups.items():
+        if len(members) < _SERIES_MIN:
+            continue
+        ordered = sorted(
+            members,
+            key=lambda f: (
+                int(_series_key(f.name)[1]) if _series_key(f.name)[1].isdigit()
+                else _WEEKDAYS.index(_series_key(f.name)[1])
+            ),
+        )
+        spec = EntitySpec(
+            attribute=group,
+            control=Control.SENSOR,
+            name=english_name(group),
+            writable=False,
+            sources=tuple(f.name for f in ordered),
+            source_labels=tuple(_series_key(f.name)[1] for f in ordered),
+        )
+        for field in ordered:
+            out[field.name] = spec
+    return out
 
 
 def _spec(
@@ -443,14 +516,25 @@ def specs_for(
         return ()
     writable_names = frozenset(writable)
     excluded = frozenset(exclude)
+    candidates = [
+        f for f in model.fields
+        if f.status_cmd == status_cmd and f.name not in excluded and f.name in by_name
+    ]
+    collapsed = {
+        name: spec
+        for name, spec in _schedule_groups(candidates, by_name).items()
+        if name not in writable_names
+    }
     specs: list[EntitySpec] = []
     seen: set[str] = set()
-    for field in model.fields:
-        if field.status_cmd != status_cmd or field.name in seen or field.name in excluded:
-            continue
-        if field.name not in by_name:
+    for field in candidates:
+        if field.name in seen:
             continue
         seen.add(field.name)
+        if (group := collapsed.get(field.name)) is not None:
+            if group not in specs:
+                specs.append(group)
+            continue
         spec = _spec(
             field, declared=by_name[field.name], writable=field.name in writable_names
         )

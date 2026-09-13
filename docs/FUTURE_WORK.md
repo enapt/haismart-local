@@ -253,6 +253,34 @@ the explicit ask for a read-back on their first setpoint write. ⛔ The group-wr
 **times** are called out there as deliberately read-only (see item 64).
 
 
+### 68. The setup and repair copy calls every appliance an "air conditioner", in 31 languages
+
+Raised 2026-09-13, when the integration stopped being air-conditioner-only. **25 strings** in
+`packages/ha-haismart/custom_components/haismart/strings.json` name the appliance as an air
+conditioner — every step title and description in the config flow, five of the errors, and the three
+key-rotation repair issues. Each is mirrored in **31 locale files**.
+
+Nothing behaves differently; the entity set is built from the appliance's own model whatever the
+setup screen says. But somebody adding a water heater is told, repeatedly, that they are adding an
+air conditioner, and one string a non-AC owner will actually hit reads *"This air conditioner needs
+a new key"*.
+
+⛔ **Not fixed with a find-and-replace, which is why it is filed rather than done.** The locale files
+are machine-translated and explicitly not natively reviewed, so rewriting 25 strings across 31
+languages without a native reader per language would swap a cosmetic fault for a correctness one in
+30 languages we cannot check. The English file could be reworded alone, but that leaves English
+saying "appliance" and every translation saying "air conditioner", which is worse than consistency.
+
+**What closes it:** reword the 25 English strings to name the appliance generically (and keep the
+AC-specific wording only where the text really is about an air conditioner), then get each locale
+reviewed — or accept machine translation for the rewritten subset with the same "not native-reviewed"
+caveat the `cloud_unreachable` strings already carry. ⓘ `scripts/check-translations.py` enforces key
+parity, not value parity, so a partial rewrite passes CI silently — the check will not catch a locale
+left behind.
+
+ⓘ The user-facing docs say this out loud rather than leaving it to be discovered:
+`docs/appliances.md` § *Known rough edge*.
+
 ### 67. The two decode paths apply DIFFERENT plausibility bands to the same reading
 
 Surfaced 2026-09-13 while building `haismart_hrdp.ac_view` to compare the two decoders. A sensor

@@ -292,9 +292,46 @@ diff is 2,260 insertions against 2,260 deletions, i.e. line-for-line with no str
   locale rewrite would too. **A value-drift check is the real open item here**, and it is what would
   have caught the stale title above years earlier. Filed as the remaining work, not done.
 
+⚠️ **A second QA pass found three artifacts the substitution itself introduced, and none of them
+would have been caught by reading a sample** — they were found by scanning every locale
+mechanically:
+* **Dutch pluralises `airco` with an apostrophe** (`airco's`), so the noun swap produced
+  **`apparaat's`** in three strings; the correct plural is `apparaten`.
+* **Dutch pronoun gender:** `airco` is a *de*-word and `apparaat` is a *het*-word, so two `hij`
+  referring to the appliance had to become `het`. ⓘ The other four `hij` in that file refer to
+  *de sleutel* (the key) and are correct — which is why this needed reading, not replacing.
+* **Indonesian capitalisation:** `AC` is capitalised at sentence start, so a word-for-word swap left
+  **13 strings beginning `perangkat`** in lower case.
+⇒ ★ **The general lesson: a noun swap has to answer for the noun's MORPHOLOGY (plural form, case) and
+for everything that AGREES with it (articles, pronouns, participles) — and for its CAPITALISATION,
+which is invisible until the word lands at the start of a sentence.**
+
 ⓘ The translations remain machine-written and not natively reviewed, exactly as before this change;
 corrections from native speakers are welcome. The tool that did the rewrite, with the per-language
 reasoning inline, is `delocalise_ac.py` (session scratchpad, not shipped).
+
+### 69. `check-translations.py` compares KEYS, not VALUES — an English rewording can silently skip 30 locales
+
+Raised 2026-09-13 by item 68, which found a concrete instance rather than a hypothetical one.
+
+`scripts/check-translations.py` asserts that all 31 locale files carry the same **287 keys**. It says
+nothing about whether a value still corresponds to the English it was translated from. So when
+`issues/unknown_report_layout/title` was reworded in English from "air conditioner" to "appliance"
+some sessions ago, **all 30 locale files kept the old wording and CI stayed green.** Nobody noticed
+until an unrelated sweep grepped the locales for the old noun. ⓘ Thai carried a second one
+(`config/step/host/description` names the appliance where the English uses a `{device}` placeholder).
+
+⚠️ **The failure is silent and it accumulates**: every future English edit that forgets the locales
+adds another stale string, and the only signal is somebody happening to read that language.
+
+**What would close it:** record a fingerprint of the English value each locale was translated from
+(a hash beside each key, or a `translations/.source-hashes.json`), and fail the check when the
+English has moved and the locale has not. That turns "this locale is stale" from something nobody
+can see into a CI failure naming the key. ⛔ It does **not** need a translation service — it only has
+to detect drift and say which keys to re-translate.
+
+ⓘ Cheap partial in the meantime: a lint that greps each locale for a small per-language list of
+words the English no longer uses. That is exactly what found this one, done by hand.
 
 ### 67. The two decode paths apply DIFFERENT plausibility bands to the same reading
 

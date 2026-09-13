@@ -1,5 +1,9 @@
 # How the controls behave
 
+> ⓘ **This page describes air-conditioner controls.** Other appliance categories get entities
+> generated from the manufacturer's byte map and their own declaration, and behave as the plain
+> Home Assistant entity they are — see [`appliances.md`](appliances.md).
+
 Why some controls appear on one unit and not another, what happens when your air conditioner ignores
 a setting, and how the energy and polling side works.
 

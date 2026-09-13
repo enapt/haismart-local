@@ -1,5 +1,12 @@
 # Adding support for a new model
 
+> ⓘ **This page is about air conditioners.** Their layouts have to be inferred, which is what the
+> capture procedure below is for. For any other appliance category nothing is inferred — the
+> manufacturer publishes the byte positions for the product class and the integration reads them
+> directly — so if a water heater, washer, fridge or anything else decodes oddly, **a diagnostics
+> download is the whole contribution**; no capture session is needed. See
+> [`appliances.md`](appliances.md).
+
 Many models are recognised automatically from their factory layout, so most air conditioners just
 work. If yours connects but some values look wrong — or Home Assistant reports `no decodable status`
 — its status report packs fields in a layout we haven't mapped yet. Working that out needs **no code

@@ -76,14 +76,19 @@ _CAPTURES = [
 ]
 
 
-def _same(decoded: object, published: str) -> bool:
-    """Compare a decoded value with the cloud's, which publishes everything as a string."""
-    if isinstance(decoded, bool):
-        return str(decoded).lower() == published.lower()
+def _same(decoded: object, published: object) -> bool:
+    """Compare across JSON/Python spellings: true/True, 48/48.0, "2"/2.
+
+    Symmetric on purpose. It was written against the cloud, whose values are all strings, and the
+    first caller that handed it two Python values crashed on `bool.lower()` — a comparison helper
+    that raises rather than answers is worse than one that is merely wrong.
+    """
+    if isinstance(decoded, bool) or isinstance(published, bool):
+        return str(decoded).lower() == str(published).lower()
     try:
         return abs(float(decoded) - float(published)) < 1e-9   # type: ignore[arg-type]
     except (TypeError, ValueError):
-        return str(decoded) == published
+        return str(decoded) == str(published)
 
 
 @pytest.mark.parametrize(("report", "published"), _CAPTURES)
@@ -355,3 +360,123 @@ def test_a_declaration_gate_is_honoured() -> None:
     gated = model.decode(WH_BASELINE, only=frozenset({"targetTemperature", "workStatus"}))
     assert set(gated) == {"targetTemperature", "workStatus"}
     assert len(everything) > len(gated)
+
+
+# --- the two decoders, checked against each other -------------------------------------------------
+
+@pytest.mark.parametrize(
+    ("typeid", "length", "family"),
+    [
+        # The owner's own units, and the other family whose shipped layout is FIXED.
+        ("2008610800820324021200118012560000000000000000000000000000000040", 127, "classic"),
+        ("2008610800820324021200118006915900000000000000000000000000000040", 165, "extended-36"),
+        # ⛔ The `0d12` cabinet (133 B) is NOT here, and the reason is worth stating: it has neither
+        # a confirmed layout-table entry nor a wire model, so its shipped path DERIVES the layout
+        # from the report and scores candidate displacements against the data. Fed noise it scores
+        # differently, which is a property of the probe and not a disagreement about the map — the
+        # two decoders agree on all four of its real captures, which is what
+        # `tools/re/configfile_decode.py --selftest` checks.
+    ],
+)
+def test_the_byte_map_and_the_hand_derived_decoder_agree_on_random_frames(
+    typeid: str, length: int, family: str
+) -> None:
+    """Two independent implementations, compared across randomised input.
+
+    The air-conditioner decoder was derived by hand from captures over months; the byte-map decoder
+    reads Haier's published positions and knows nothing about it. Twelve stored captures already
+    show they agree on real reports — this shows they agree on reports nobody has seen, which is the
+    case that matters when a new family arrives.
+
+    ⚠️ **One divergence is expected and is not a bug in either.** The hand-derived decoder applies a
+    physical plausibility band to a *sensor* reading (`uss._sensor_temp`, −30…70 °C, confirmed on
+    air-conditioner hardware) and drops anything outside it. The published map states only the
+    field's declared range, which for `outdoorTemperature` is −64…191 — the span of the byte, not a
+    temperature anything reaches. So a garbage byte reads as `None` on one side and as 169 °C on the
+    other. The byte-map decoder will not invent a band it cannot source: a water heater's reserve
+    goes to 80 °C and an oven far higher, and borrowing the air conditioner's band is exactly the
+    mistake that dropped a real 75 °C reading earlier. What is asserted instead is that wherever
+    BOTH produce a value, the values are identical.
+
+    Randomised rather than exhaustive, and seeded so a failure is reproducible.
+    """
+    import random
+
+    from haismart_hrdp import parse_full_status, profile_for
+
+    model = model_for(typeid)
+    assert model is not None
+    profile = profile_for("AAC1UKZ01")
+    pairs = [
+        ("power", "onOffStatus"),
+        ("target_temperature", "targetTemperature"),
+        ("current_temperature", "indoorTemperature"),
+        ("outdoor_temperature", "outdoorTemperature"),
+        ("operation_mode", "operationMode"),
+        ("wind_speed", "windSpeed"),
+    ]
+    # Keep this family's own indoor probe plausible, or the hand-derived decoder vetoes the frame
+    # and a vetoed frame compares nothing. Read from the map rather than hardcoded, so the test
+    # follows a family whose indoor temperature sits at a different word.
+    indoor = model.field("indoorTemperature")
+    assert indoor is not None
+    indoor_byte = ATTR_BASE + 2 * (indoor.word - 1)
+
+    random.seed(7)
+    disagreements: list[str] = []
+    one_sided = 0
+    compared = 0
+    for _ in range(120):
+        data = bytearray(length)
+        data[2:4] = b"\x27\x15"
+        for index in range(92, length):
+            data[index] = random.randrange(256)
+        data[92] = random.randrange(0, 15)                   # a setpoint code in range
+        data[indoor_byte] = random.randrange(20, 80)         # a plausible indoor reading
+        state = parse_full_status(bytes(data), profile, None, uplus_id=typeid)
+        if not state or state.get("partial"):
+            continue
+        decoded = model.decode(bytes(data))
+        for ours, theirs in pairs:
+            if state.get(ours) is None or decoded.get(theirs) is None:
+                # One side dropped it. That is the plausibility band at work and is asserted
+                # separately below, not smuggled in here as an agreement.
+                one_sided += 1
+                continue
+            compared += 1
+            if not _same(decoded[theirs], state[ours]):
+                disagreements.append(f"{ours}={state[ours]!r} vs {theirs}={decoded[theirs]!r}")
+    assert compared > 50, f"{family}: only {compared} comparisons -- the frames were all vetoed"
+    assert not disagreements, f"{family}: {disagreements[:5]}"
+
+
+def test_the_one_expected_divergence_is_the_plausibility_band_and_nothing_else() -> None:
+    """Named rather than left as a silent difference between two decoders.
+
+    A reading the hand-derived decoder drops as physically implausible is one the byte map happily
+    publishes, because the map's declared range for `outdoorTemperature` is the span of the byte.
+    ⛔ This is a real limit of a published map used on its own, and it is recorded here so the next
+    person to compare the two finds the answer instead of the question.
+    """
+    from haismart_hrdp import parse_full_status, profile_for
+
+    typeid = "2008610800820324021200118012560000000000000000000000000000000040"
+    model = model_for(typeid)
+    assert model is not None
+    outdoor = model.field("outdoorTemperature")
+    assert outdoor is not None
+    assert outdoor.bounds() == (-64.0, 191.0), "the byte's span, not a temperature"
+
+    data = bytearray(127)
+    data[2:4] = b"\x27\x15"
+    data[ATTR_BASE + 2 * (model.field("indoorTemperature").word - 1)] = 50     # 25 °C
+    data[ATTR_BASE + 2 * (outdoor.word - 1)] = 233                            # 169 °C
+    state = parse_full_status(bytes(data), profile_for("AAC1UKZ01"), None, uplus_id=typeid)
+    decoded = model.decode(bytes(data))
+
+    assert state.get("outdoor_temperature") is None, "the hand-derived decoder vetoes it"
+    assert decoded["outdoorTemperature"] == 169, "the map's own range permits it"
+    # ...and the sentinel rule still catches the case that actually occurs in the field, which is a
+    # unit with no outdoor probe reporting zero.
+    data[ATTR_BASE + 2 * (outdoor.word - 1)] = 0
+    assert "outdoorTemperature" not in model.decode(bytes(data))

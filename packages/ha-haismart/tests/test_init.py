@@ -784,25 +784,126 @@ async def test_heat_refused_on_a_unit_whose_model_excludes_it(
 
 
 async def test_set_swing_mode_sends_toggle(hass: HomeAssistant, mock_uss) -> None:
+    """An axis whose sweep state must change is written, with the vendor's auto/fixed codes."""
+    # Start parked: neither axis sweeping, so both requests below are real changes.
+    mock_uss.read.return_value = [
+        _with_fields(make_status_frame(), windDirectionVertical=0, windDirectionHorizontal=0)
+    ]
     await _setup(hass)
-    await hass.services.async_call(
-        "climate", "set_swing_mode", {"entity_id": CLIMATE, "swing_mode": "off"}, blocking=True
-    )
-    assert _sent_field(mock_uss.send, "windDirectionVertical") == 0
     await hass.services.async_call(
         "climate", "set_swing_mode", {"entity_id": CLIMATE, "swing_mode": "vertical"}, blocking=True
     )
     assert _sent_field(mock_uss.send, "windDirectionVertical") == 0x0C
 
+    mock_uss.read.return_value = [
+        _with_fields(make_status_frame(), windDirectionVertical=0x0C, windDirectionHorizontal=0)
+    ]
+    await hass.config_entries.async_reload(hass.config_entries.async_entries(DOMAIN)[0].entry_id)
+    await hass.async_block_till_done()
+    await hass.services.async_call(
+        "climate", "set_swing_mode", {"entity_id": CLIMATE, "swing_mode": "off"}, blocking=True
+    )
+    assert _sent_field(mock_uss.send, "windDirectionVertical") == 0
 
-def _with_fields(frame: bytes, **fields: int) -> bytes:
-    """A status frame with grSetDAC fields set, packed by the library rather than by hand here."""
+
+async def test_set_swing_mode_leaves_an_axis_that_is_already_right_alone(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """⛔ The regression this exists for: `windDirection*` is a POSITION enum, not a flag.
+
+    `on`/`off` are two of its 8-12 values (plain sweep, and `fixed`). The rest -- the fixed stops,
+    the alternate sweep, the half-range sweeps, the health-airflow stops -- are reachable only
+    through the vane selects, which write the SAME field. Writing an axis that is already in the
+    wanted sweep state overwrites whichever of those it is sitting in, silently, and the climate
+    card offers no way back.
+
+    Here the vertical vane sweeps and the horizontal vane is parked at one of its declared stops.
+    Asking for `vertical` is what the appliance is already doing, so nothing may be sent: flattening
+    the sweep, or knocking the horizontal vane off its stop, are losses the user did not ask for.
+
+    ⓘ The state below is not invented. `(V=12, H=3)` -- vertical sweeping, horizontal parked on a
+    stop -- is observed on real hardware in prior art, `captures/prior-art/haier-esphome-65-
+    logs_ac-bedroom_logs.txt`; and `haier-esphome-40-logs_klimatizace-c_logs.1.txt` shows the axes
+    moving independently throughout, `(10,3) (10,4) (10,5)` with vertical held and `(0,5) (8,5)`
+    with horizontal held.
+
+    ★ And it is the NORMAL state, not a corner one: across 20 reporter diagnostics the vane pairs
+    seen are `(0,0) (2,0) (2,3) (2,4) (2,6) (4,3) (8,7)` -- both axes parked on intermediate stops
+    in most of them. Before this, any of those users touching the swing control at all lost the
+    axis they had not asked about.
+    """
+    mock_uss.read.return_value = [
+        _with_fields(
+            make_status_frame(), model_values=(0, 3, 4, 5, 6, 7, 0x0C),
+            windDirectionVertical=0x0C, windDirectionHorizontal=3,
+        )
+    ]
+    entry = _entry(digital_model=json.dumps(
+        vane_positions_digital_model(vertical=(0, 2, 4, 5, 6, 8))
+    ))
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert hass.states.get(CLIMATE).attributes["swing_mode"] == "vertical"
+
+    mock_uss.send.last_frame = None
+    await hass.services.async_call(
+        "climate", "set_swing_mode", {"entity_id": CLIMATE, "swing_mode": "vertical"}, blocking=True
+    )
+    assert mock_uss.send.last_frame is None, (
+        "both axes were already as asked, so no grSetDAC should have been sent at all"
+    )
+
+
+async def test_set_swing_mode_writes_only_the_axis_that_changes(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Turning one axis on must not disturb a vane parked at a stop on the other.
+
+    Vertical sits at a declared stop (not sweeping) and horizontal is off. Asking for `horizontal`
+    changes only the horizontal axis; sending `windDirectionVertical: 0` alongside it would move a
+    vane the request never mentioned, from its stop to `fixed`.
+    """
+    parked = _with_fields(
+        make_status_frame(), model_values=(0, 4, 0x0C),
+        windDirectionVertical=4, windDirectionHorizontal=0,
+    )
+    mock_uss.read.return_value = [parked]
+    # The write path re-reads in-session and seeds the group-set from THAT, so the baseline the
+    # encoder starts from has to be the same parked state -- otherwise this asserts against the
+    # fixture's vane, not the one the test set up.
+    mock_uss.send.baseline = parked
+    entry = _entry(digital_model=json.dumps(
+        vane_positions_digital_model(vertical=(0, 2, 4, 5, 6, 8))
+    ))
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    await hass.services.async_call(
+        "climate", "set_swing_mode", {"entity_id": CLIMATE, "swing_mode": "horizontal"},
+        blocking=True,
+    )
+    assert _sent_field(mock_uss.send, "windDirectionHorizontal") == 0x07
+    # The vertical vane keeps its stop: the encoder seeds from the appliance's own baseline, so a
+    # field nobody asked about goes back out exactly as it came in.
+    assert _sent_field(mock_uss.send, "windDirectionVertical") == 4
+
+
+def _with_fields(frame: bytes, model_values: tuple[int, ...] = (), **fields: int) -> bytes:
+    """A status frame with grSetDAC fields set, packed by the library rather than by hand here.
+
+    ``model_values`` are the raw codes a device's digital model declares, for the fields whose
+    valid set is the DEVICE's rather than a fixed list -- the vane axes. Without it this helper can
+    only express the two values every unit has (``fixed`` and ``auto``), which is exactly the case
+    the vane-position tests are not about.
+    """
     from haismart_hrdp import uss
 
     layout = uss.status_layout(frame)
     words = uss.grsetdac_baseline_from_status(frame)
     for name, value in fields.items():
-        words = uss.set_grsetdac_field(words, name, value)
+        words = uss.set_grsetdac_field(words, name, value, model_values=model_values or None)
     out = bytearray(frame)
     out[layout.baseline] = words
     return bytes(out)

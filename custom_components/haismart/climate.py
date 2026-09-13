@@ -518,17 +518,40 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
         # A family that places only one of them gets only that one sent: the other would be handed
         # to an encoder that cannot place it, and the whole command would raise rather than the
         # half of it that this appliance can do.
+        #
+        # ⚠️ ONLY AN AXIS WHOSE SWEEP STATE ACTUALLY CHANGES IS WRITTEN, and that is not an
+        # optimisation -- it is the difference between this control being lossy and not.
+        # `windDirection*` is not a flag: it is the vendor's POSITION enum, 8 to 12 values wide, and
+        # `on`/`off` here are just two of them (plain sweep, and `fixed`). The others -- the eight
+        # fixed stops, the alternate sweep, the half-range sweeps, the health-airflow stops -- are
+        # reachable only through the vane selects. Writing an axis that is already in the wanted
+        # sweep state would overwrite whichever of those it happens to be sitting in: a vane on
+        # "auto (upper half)" would be flattened to a full sweep by asking for a swing it was
+        # already doing, and a vane parked at position 3 would be knocked to `fixed` by a request
+        # that only concerned the OTHER axis. Both are silent, and neither is recoverable from the
+        # climate card.
         wanted = {
             "windDirectionVertical": swing_mode in (SWING_VERTICAL, SWING_BOTH),
             "windDirectionHorizontal": swing_mode in (SWING_HORIZONTAL, SWING_BOTH),
         }
-        await self.coordinator.async_send_control(
-            {
-                field: GRSETDAC_ENUMS[field]["on" if on else "off"]
-                for field, on in wanted.items()
-                if self.coordinator.supports_field(field)
-            }
-        )
+        current = {
+            "windDirectionVertical": self._state.get("swing_vertical"),
+            "windDirectionHorizontal": self._state.get("swing_horizontal"),
+        }
+        changes = {
+            field: GRSETDAC_ENUMS[field]["on" if on else "off"]
+            for field, on in wanted.items()
+            if self.coordinator.supports_field(field)
+            # `None` means the axis was not decoded, so its sweep state is unknown and the
+            # request is the only thing to go on -- write it.
+            and current[field] is not bool(on)
+        }
+        if not changes:
+            # Every axis is already where it was asked to be. grSetDAC is a GROUP set seeded from
+            # the appliance's whole current state, so an empty change list is not a free no-op --
+            # it is a full command re-asserting every attribute, for nothing.
+            return
+        await self.coordinator.async_send_control(changes)
 
     async def async_turn_on(self) -> None:
         await self.coordinator.async_send_control({"onOffStatus": 1})

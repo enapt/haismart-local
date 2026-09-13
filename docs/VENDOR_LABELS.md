@@ -52,6 +52,37 @@ keyword — because offering it in one and not the other is the actual hazard.
 ★ `AC_quite` is the vendor's own spelling of the key. Its *value* is "Silent" in every locale, which
 is what we follow.
 
+## The vane positions — and why the swing control is not a switch
+
+The two vane fields are the place where the vendor's vocabulary matters most, because Home
+Assistant's `swing_mode` is a four-way choice and the appliance's field is nothing of the kind.
+`windDirectionVertical` and `windDirectionHorizontal` are **position enums**, and the manufacturer
+names every value in its published models:
+
+| `windDirectionVertical` | vendor's description | |
+|---|---|---|
+| 0 | 上下摆位置固定 | fixed |
+| **1** | **健康气流(上吹)** | **health airflow, up** |
+| 2 · 4 · 5 · 6 · 7 | 上下摆位置一 … 位置五 | positions 1–5 |
+| **3** | **健康气流(下吹)** | **health airflow, down** |
+| 8 | 上下摆自动 | **auto — the sweep** |
+| 9 | 上下摆自动2(特殊机型专用) | alternate sweep, specific models |
+
+`windDirectionHorizontal` is the same shape: 左右摆位置一 (固定) through 位置七, with **位置八 (自动)**
+the sweep. Families differ in how many of these they publish — between 8 and 12 values.
+
+⇒ ★ **Exactly one value per axis means "sweeping".** Everything else — the fixed stops and the two
+health-airflow modes — is a distinct position the appliance holds. That is why the vane **selects**
+exist: they are the only control that can reach those states, and they write the same field the
+climate entity's swing control writes.
+
+⇒ ⛔ **And it is why the swing control must not write an axis it is not changing.** Asking for a
+swing an axis is already doing, or turning the other axis on, used to send `fixed` or `auto` to
+both — flattening a health-airflow setting or knocking a vane off its stop, invisibly, with no way
+back from the climate card. Both axes resting on intermediate stops is the ordinary state of these
+machines, not a corner case: across 20 reporter diagnostics the pairs seen are `(0,0) (2,0) (2,3)
+(2,4) (2,6) (4,3) (8,7)`, and prior art shows the axes moving independently throughout.
+
 ## Why naming them mattered
 
 It is not cosmetic. Before these names existed, two different speeds were silently sharing one

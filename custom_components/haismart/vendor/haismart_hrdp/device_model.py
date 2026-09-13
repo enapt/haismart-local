@@ -88,12 +88,19 @@ _SENSOR_SENTINELS = (0x00, 0xFF)
 _CELSIUS = "\u2103"
 
 
-def read_field(data: bytes, word: int, bit: int, length: int) -> int | None:
+def read_field(
+    data: bytes, word: int, bit: int, length: int, *, base: int = ATTR_BASE
+) -> int | None:
     """The integer at ``(word, bit, length)``, or ``None`` if it falls outside ``data``.
 
     ``(word, bit)`` locates the field's LEAST-significant bit and significance grows **backwards**
     through the array — the convention :class:`haismart_hrdp.wire_models.WireField` documents and
     the published maps are written in.
+
+    ``base`` is where the word array starts, and it is a property of the **transport**, not of the
+    appliance: :data:`ATTR_BASE` (92) inside a uSS status message on the LAN, but **12** in a raw
+    board↔module UART frame (``FF FF · len · addr[6] · type · cmd[2]``). The same map decodes both,
+    which is how a washing machine captured on the UART by prior art could be read at all.
     """
     value = 0
     for index in range(length):
@@ -101,7 +108,7 @@ def read_field(data: bytes, word: int, bit: int, length: int) -> int | None:
         while source_bit > 15:
             source_bit -= 16
             source_word -= 1
-        offset = ATTR_BASE + 2 * (source_word - 1)
+        offset = base + 2 * (source_word - 1)
         if source_word < 1 or offset + 1 >= len(data):
             return None
         if ((data[offset] << 8 | data[offset + 1]) >> source_bit) & 1:
@@ -148,12 +155,17 @@ class ModelField:
             return float(self.variants["minValue"]), float(self.variants["maxValue"])
         return None
 
-    def read(self, data: bytes) -> Any:
+    @property
+    def last_word(self) -> int:
+        """The highest word this field touches (a field can span several)."""
+        return self.word + (self.length + 15) // 16 - 1
+
+    def read(self, data: bytes, *, base: int = ATTR_BASE) -> Any:
         """This field's published value in ``data``, or ``None`` if it cannot be read."""
-        raw = read_field(data, self.word, self.bit, self.length)
+        raw = read_field(data, self.word, self.bit, self.length, base=base)
         if raw is None:
             return None
-        return self.interpret(raw, data)
+        return self.interpret(raw, data, base=base)
 
     def encode(self, value: Any) -> int:
         """The raw wire value for a published ``value`` — the inverse of :meth:`interpret`.
@@ -186,7 +198,7 @@ class ModelField:
             raise ValueError(f"{self.name}: {value!r} does not fit the field's {self.length} bits")
         return raw
 
-    def interpret(self, raw: int, data: bytes | None = None) -> Any:
+    def interpret(self, raw: int, data: bytes | None = None, *, base: int = ATTR_BASE) -> Any:
         """Apply ``variants`` to a raw field value, per the ``caeType`` table above."""
         if self.cae_type in _OPAQUE_TYPES:
             return None
@@ -204,7 +216,9 @@ class ModelField:
                 if data is None:
                     return None
                 parts = [
-                    read_field(data, part["startWord"], part["startBit"], part["length"])
+                    read_field(
+                        data, part["startWord"], part["startBit"], part["length"], base=base
+                    )
                     for part in self.variants
                 ]
                 if any(part is None for part in parts):
@@ -213,7 +227,7 @@ class ModelField:
         return raw
 
 
-def absent_probe(field: ModelField, data: bytes) -> bool:
+def absent_probe(field: ModelField, data: bytes, *, base: int = ATTR_BASE) -> bool:
     """Whether ``field`` reads as a probe this unit does not have.
 
     The rule is ``uss._sensor_temp``'s, and it exists because a model without (say) an outdoor probe
@@ -238,13 +252,13 @@ def absent_probe(field: ModelField, data: bytes) -> bool:
     """
     if field.unit != _CELSIUS:
         return False
-    raw = read_field(data, field.word, field.bit, field.length)
+    raw = read_field(data, field.word, field.bit, field.length, base=base)
     if raw is None:
         return True
     offset = field.variants.get("c", 0) if isinstance(field.variants, dict) else 0
     if offset <= 0 and raw in _SENSOR_SENTINELS:
         return True
-    value = field.interpret(raw, data)
+    value = field.interpret(raw, data, base=base)
     if not isinstance(value, (int, float)):
         return False
     bounds = field.bounds()
@@ -298,6 +312,58 @@ class DeviceModel:
         raw = field.encode(value)
         return command, bytes(((raw >> 8) & 0xFF, raw & 0xFF))
 
+    def extent(self, status_cmd: str = STATUS_ALL) -> int:
+        """The highest word any field of ``status_cmd`` touches — how long a full report is."""
+        return max(
+            (f.last_word for f in self.fields if f.status_cmd == status_cmd), default=0
+        )
+
+    def first_omitted_word(self, status_cmd: str = STATUS_ALL) -> int | None:
+        """The start of the first RESERVED BLOCK a firmware might not send, or ``None``.
+
+        A map declares fields at some words and says nothing about others. A single undeclared word
+        is ordinary padding and every device sends it. A **run** of them is a reserved block, and
+        whether a given firmware emits it is a property of that firmware, not of the map — so when a
+        report comes up short, everything from such a run onward may have shifted and cannot be
+        placed. Prior art's washing machine is the case: its map declares w1–w34, then nothing until
+        w44, and the firmware simply omits w35–w43, putting the programme-name strings nine words
+        earlier than the map says. The numbers below w35 decode perfectly in the same frame.
+
+        Two words is the threshold. One-word gaps are common (the water heater has exactly one, the
+        `0d12` cabinet one) and are demonstrably sent, so treating those as suspect would refuse to
+        decode appliances that decode correctly today.
+        """
+        covered: set[int] = set()
+        for f in self.fields:
+            if f.status_cmd == status_cmd:
+                covered.update(range(f.word, f.last_word + 1))
+        run_start: int | None = None
+        for word in range(1, self.extent(status_cmd) + 1):
+            if word in covered:
+                if run_start is not None and word - run_start >= 2:
+                    return run_start
+                run_start = None
+            elif run_start is None:
+                run_start = word
+        return run_start
+
+    def placeable_limit(
+        self, report_length: int, *, base: int = ATTR_BASE, status_cmd: str = STATUS_ALL
+    ) -> int | None:
+        """Highest word this report can be TRUSTED to place, or ``None`` for no limit.
+
+        ⛔ The one thing a published map cannot tell you on its own. When the report carries every
+        word the map describes, the device sent the whole layout and there is nothing to doubt.
+        When it is shorter, a reserved block was omitted — and past that block every field is at an
+        unknown offset. Refusing to place them is the only safe answer, because the alternative is
+        a confident wrong value, which is what this decoder exists to avoid.
+        """
+        available = (report_length - base) // 2
+        if available >= self.extent(status_cmd):
+            return None
+        omitted = self.first_omitted_word(status_cmd)
+        return None if omitted is None else omitted - 1
+
     def decode(
         self,
         data: bytes,
@@ -305,22 +371,28 @@ class DeviceModel:
         status_cmd: str = STATUS_ALL,
         only: frozenset[str] | None = None,
         drop_absent_probes: bool = True,
+        base: int = ATTR_BASE,
     ) -> dict[str, Any]:
         """Decode ``data`` to ``{attribute name: published value}``.
 
         ``only`` is the declaration gate and should almost always be supplied: the class map lists
         every attribute the PLATFORM can carry, and a device declares a subset. Building entities
         from the map alone produces phantoms — the trap :mod:`haismart_hrdp.features` exists for.
+
+        Fields past :meth:`placeable_limit` are dropped rather than guessed at.
         """
+        limit = self.placeable_limit(len(data), base=base, status_cmd=status_cmd)
         out: dict[str, Any] = {}
         for field in self.fields:
             if field.status_cmd != status_cmd:
                 continue
             if only is not None and field.name not in only:
                 continue
-            if drop_absent_probes and absent_probe(field, data):
+            if limit is not None and field.last_word > limit:
                 continue
-            value = field.read(data)
+            if drop_absent_probes and absent_probe(field, data, base=base):
+                continue
+            value = field.read(data, base=base)
             if value is not None:
                 out[field.name] = value
         return out

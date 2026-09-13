@@ -35,6 +35,7 @@ from .device_rules import (
     rules_for,
     with_rules,
 )
+from .entity_spec import Control, EntitySpec, english_name, specs_for
 from .family_write import (
     WRITE_OVERRIDES,
     displaced_at,
@@ -187,6 +188,10 @@ __all__ = [
     "known_typeids",
     "device_classes",
     "absent_probe",
+    "Control",
+    "EntitySpec",
+    "specs_for",
+    "english_name",
     # READ
     "read_status",
     "async_read_status",

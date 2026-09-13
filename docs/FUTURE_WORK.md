@@ -219,6 +219,30 @@ rest. ⛔ Unverified on hardware: no write has been sent to this unit, and the r
 disabled today. The first write must be self-verifying and read back, as every other class was.
 
 
+### 67. The two decode paths apply DIFFERENT plausibility bands to the same reading
+
+Surfaced 2026-09-13 while building `haismart_hrdp.ac_view` to compare the two decoders. A sensor
+temperature is vetoed as implausible by a band, and there are two of them:
+
+| path | constant | band |
+|---|---|---|
+| the classic family, via `uss._sensor_temp` | `uss._PLAUSIBLE_TEMP_C` | **−70 … 150 °C** |
+| every `wire_models` family (ext-36, ext-46, compact-12, `0d12`) | `_PLAUSIBLE_SENSOR_C` | **−30 … 70 °C** |
+
+⇒ **An outdoor probe reading 100 °C is published by one path and dropped by the other, on two air
+conditioners, today.** Neither is wrong on its face — the wider one admits a discharge-line
+temperature, the narrower one is right for ambient air — but they are applied to the *same*
+attribute on different families, which nothing states and nothing tests.
+
+⚠️ **Not fixed here, deliberately.** `ac_view` reproduces both, per family, because its job is to
+show what ships; a flip that also changed a band would make any regression unattributable. Fixing it
+is a behaviour change for real units and belongs on its own, with the oracle and the stored-capture
+regression behind it.
+
+**What closes it:** decide which band an ambient sensor should have, apply it in both paths, and run
+the oracle plus `tools/re/decoder_equivalence.py` over every capture. ⓘ No capture on disk contains
+a reading in the disputed 70…150 °C range, so nothing observed is affected — this is latent.
+
 ### 64. Group-command writes are decoded but not offered — no capture of one exists
 
 A water heater's reservation times, a washing machine's programme settings and a fridge's zone

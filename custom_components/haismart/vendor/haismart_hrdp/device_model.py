@@ -84,8 +84,9 @@ _OPAQUE_TYPES = frozenset({13})
 
 # The raw values a unit reports for a probe it does not have (``uss._sensor_temp``'s sentinels).
 _SENSOR_SENTINELS = (0x00, 0xFF)
-# ⛔ There is deliberately no global plausibility band here. ``uss._PLAUSIBLE_TEMP_C`` is
-# (-30, 70) C, which is right for an air conditioner and WRONG the moment the appliance is not one:
+# ⛔ There is deliberately no global plausibility band here. ``wire_models._PLAUSIBLE_SENSOR_C`` is
+# (-30, 70) C -- ⚠️ and note `uss._PLAUSIBLE_TEMP_C` is a DIFFERENT band, (-70, 150), applied by the
+# classic family's path. Either is right for an air conditioner and wrong the moment it is not one:
 # it rejects issue #13's 75 C reservation temperature as implausible, and a water heater's own map
 # declares 30-80. The manufacturer states per-field bounds, so those are used instead of a constant.
 _CELSIUS = "\u2103"

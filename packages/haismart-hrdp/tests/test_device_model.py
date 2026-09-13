@@ -334,7 +334,7 @@ def test_an_absent_probe_reads_as_absent_not_as_minus_sixty_four() -> None:
 def test_the_air_conditioner_plausibility_band_does_not_reject_other_appliances() -> None:
     """A 75 C reservation temperature is real on a water heater and implausible on an AC.
 
-    `uss._PLAUSIBLE_TEMP_C` is (-30, 70) — correct for air conditioners and wrong the moment the
+    `wire_models._PLAUSIBLE_SENSOR_C` is (-30, 70) — correct for air conditioners and wrong the moment the
     appliance is not one. Carrying it across would have silently dropped two attributes the cloud
     reported in issue #13's fourth capture, which is how a decoder ends up confidently incomplete.
     The manufacturer's own per-field bounds are used instead.
@@ -389,9 +389,10 @@ def test_the_byte_map_and_the_hand_derived_decoder_agree_on_random_frames(
     case that matters when a new family arrives.
 
     ⚠️ **One divergence is expected and is not a bug in either.** The hand-derived decoder applies a
-    physical plausibility band to a *sensor* reading (`uss._sensor_temp`, −30…70 °C, confirmed on
-    air-conditioner hardware) and drops anything outside it. The published map states only the
-    field's declared range, which for `outdoorTemperature` is −64…191 — the span of the byte, not a
+    physical plausibility band to a *sensor* reading (`wire_models._PLAUSIBLE_SENSOR_C`,
+    −30…70 °C, confirmed on air-conditioner hardware) and drops anything outside it. The published
+    map states only the field's declared range, which for `outdoorTemperature` is −64…191 — the span of
+    the byte, not a
     temperature anything reaches. So a garbage byte reads as `None` on one side and as 169 °C on the
     other. The byte-map decoder will not invent a band it cannot source: a water heater's reserve
     goes to 80 °C and an oven far higher, and borrowing the air conditioner's band is exactly the

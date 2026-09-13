@@ -130,3 +130,38 @@ def test_the_rule_does_not_fire_on_appliances_that_already_decode(
     model = model_for(typeid)
     assert model is not None
     assert model.placeable_limit(report_length) is None, why
+
+
+def test_a_fault_is_named_from_the_appliances_own_list_not_an_air_conditioners() -> None:
+    """⛔ Fault 22 is `doorLockFail` on this washer and "Indoor PM2.5 sensor failure" on an AC.
+
+    The shared table is the wording every published AIR CONDITIONER agrees on for positions 0..50,
+    and it was consulted first for every appliance. A fault label is read by somebody deciding
+    whether to call an engineer, so a confident wrong one is worse than an honest unknown.
+    """
+    from haismart_hrdp.uss import alarm_label
+
+    model = model_for(WASHER)
+    assert model is not None
+    names = model.alarm_names()
+    assert alarm_label(22, names, shared_table=False) == "doorLockFail"
+    assert alarm_label(22, names) != "doorLockFail", "the AC table would have won"
+    # A position this appliance does not name stays honest rather than borrowing a neighbour's.
+    assert alarm_label(200, names, shared_table=False) == "Unknown fault 200"
+
+
+def test_alarm_positions_are_sparse_so_declaration_order_would_misname_them() -> None:
+    """Haier files each alarm with its POSITION, and the positions have gaps.
+
+    This washer's run 2..66 with holes, so a list built in declaration order would name every fault
+    after the first gap as its neighbour -- which is the failure mode this guards, not an absent
+    label but a wrong one.
+    """
+    model = model_for(WASHER)
+    assert model is not None
+    positions = [pos for _, pos in model.alarms]
+    assert min(positions) == 2, "the list does not start at 0"
+    assert len(positions) < max(positions) + 1, "the positions are sparse"
+    names = model.alarm_names()
+    assert names[2] == "fanErr" and names[22] == "doorLockFail"
+    assert names[0] == "" and names[1] == ""

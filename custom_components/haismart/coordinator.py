@@ -403,7 +403,7 @@ def _model_authorized_codes(model: dict[str, Any] | None) -> dict[str, set[int]]
 
 
 def _alarms_from(
-    blobs: list[bytes], names: Sequence[str] | None = None
+    blobs: list[bytes], names: Sequence[str] | None = None, *, shared_table: bool = True
 ) -> dict[str, Any]:
     """Active faults out of a session's blobs, or ``{}`` if it carried no fault frame.
 
@@ -413,9 +413,13 @@ def _alarms_from(
     ``names`` is this appliance's own positional fault list, for the positions the shared table does
     not reach. A central cabinet publishes 72 fault positions where the shared table carries 51, so
     without it a real fault on such a unit reports as "Unknown fault 71".
+
+    ⛔ ``shared_table`` must be False for anything that is not an air conditioner: that table IS an
+    air conditioner's list. Prior art's washing machine reports fault 22, which its own model calls
+    `doorLockFail` and the shared table calls "Indoor PM2.5 sensor failure".
     """
     for blob in blobs:
-        if (alarms := parse_alarm_frame(blob, names)) is not None:
+        if (alarms := parse_alarm_frame(blob, names, shared_table=shared_table)) is not None:
             return alarms
     return {}
 
@@ -781,7 +785,11 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         telemetry, extended_blob = _telemetry_from(blobs)
         if extended_blob is not None:
             self.last_raw_extended = extended_blob
-        alarms = self._held_alarms(_alarms_from(blobs, self._alarm_names()))
+        alarms = self._held_alarms(
+            _alarms_from(
+                blobs, self._alarm_names(), shared_table=self.uses_curated_ac_entities
+            )
+        )
         self._record_frames(blobs, "poll")
 
         for blob in blobs:
@@ -2403,7 +2411,15 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         Empty when no model is stored (the manual path), which leaves the shared table in charge --
         the behaviour every install had before, so nothing regresses without a model.
+
+        For an appliance that is not an air conditioner the byte map's own alarm list is used
+        instead, and it is the ONLY authority: the shared table is switched off for those, so a
+        position this list does not name reports as "Unknown fault N" rather than as a fault
+        belonging to a different kind of appliance.
         """
+        if not self.uses_curated_ac_entities and (model := self.device_model) is not None:
+            if names := model.alarm_names():
+                return names
         return positional_alarm_labels(self.digital_model)
 
     def vane_position_axes(self) -> list[tuple[str, str, frozenset[int]]]:

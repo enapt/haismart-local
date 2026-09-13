@@ -78,10 +78,14 @@ async def async_setup_entry(
     # not answer that query has no state for them and never will. See `coordinator.absent_readings`.
     absent = coordinator.absent_readings
     curated = coordinator.uses_curated_ac_entities
+    # `fault` is not an air conditioner's: every appliance publishes an alarm list and pushes a
+    # fault frame, and "is my washing machine reporting a problem" is the single most useful thing
+    # this integration can tell somebody. The rest of the curated set IS an AC's -- a compressor,
+    # an outdoor fan, a self-clean cycle -- and reads `unknown` for ever on anything else.
     entities: list[BinarySensorEntity] = [
         HaismartBinarySensor(coordinator, desc)
         for desc in BINARY_SENSORS
-        if curated and desc.key not in absent
+        if (curated or desc.key == "fault") and desc.key not in absent
     ]
     entities.append(HaismartCloudConnectionSensor(coordinator))
     # Read-only observability for the extra features a unit's own model declares -- the ones the app

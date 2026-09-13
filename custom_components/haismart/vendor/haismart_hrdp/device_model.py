@@ -280,6 +280,22 @@ class DeviceModel:
     alarms: tuple[tuple[str, int], ...]
     operations: tuple[tuple[str, int | None, str | None], ...]
 
+    def alarm_names(self) -> tuple[str, ...]:
+        """This appliance's own fault names, indexed by wire POSITION.
+
+        The list :func:`haismart_hrdp.uss.alarm_label` wants. Haier files each alarm with its
+        position rather than by order, and the positions are sparse (this washer's run 2..66 with
+        gaps), so an index-ordered list built from the declaration order would name every fault
+        after the first gap as its neighbour.
+        """
+        if not self.alarms:
+            return ()
+        out = [""] * (max(pos for _, pos in self.alarms) + 1)
+        for name, pos in self.alarms:
+            if 0 <= pos < len(out):
+                out[pos] = name
+        return tuple(out)
+
     def field(self, name: str) -> ModelField | None:
         return next((f for f in self.fields if f.name == name), None)
 

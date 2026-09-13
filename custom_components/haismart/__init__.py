@@ -16,6 +16,7 @@ import contextlib
 import logging
 
 from haismart_hrdp import preload as _preload_model_rules
+from haismart_hrdp.device_model import preload as _preload_device_models
 from homeassistant.core import HomeAssistant
 
 from .const import DEVICE_MAP_TIMEOUT, IDENTITY_TOPUP_TIMEOUT, PLATFORMS, platforms_for
@@ -28,7 +29,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> 
     # The coordinator reads the bundled model rules while it is being constructed, and the bundle is
     # a gzip file: decompressing it on the event loop is blocking I/O that HA flags. Warm the cache
     # in an executor first, so that one-off read happens off the loop (it is a no-op afterwards).
+    #
+    # ⚠️ BOTH bundles. The byte map is a second gzip, read the first time any appliance decodes, and
+    # shipping  without calling it is exactly what happened: Home Assistant
+    # reported "Detected blocking call to open … device_models.json.gz inside the event loop" on the
+    # first poll after deployment. A test suite does not catch this -- only a running instance does.
     await hass.async_add_executor_job(_preload_model_rules)
+    await hass.async_add_executor_job(_preload_device_models)
     coordinator = HaismartCoordinator(hass, entry)
     # Clear any repair raised under the old device-id-keyed scheme (the MAC leaked into the
     # diagnostics issue list through it); anything still true is re-raised under the new

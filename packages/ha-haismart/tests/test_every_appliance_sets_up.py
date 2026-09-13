@@ -207,3 +207,35 @@ async def test_unload_and_reload_leaves_nothing_behind(
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
     assert entry.state is ConfigEntryState.LOADED
+
+
+def test_every_shipped_gzip_bundle_is_preloaded_off_the_event_loop() -> None:
+    """⛔ Home Assistant flags a blocking `open` on the event loop, and a test suite does not.
+
+    The package ships its big tables as gzip files read behind an `lru_cache`, so the FIRST read
+    decompresses — on whichever thread asks. `model_rules` has been warmed in an executor at setup
+    since it was added; the byte map was not, because `device_model.preload` was written and never
+    called. A running instance reported it on the first poll after deployment:
+
+        Detected blocking call to open … device_models.json.gz inside the event loop
+
+    So this asserts the RULE rather than the two instances: every gzip the package ships must be
+    warmed by `async_setup_entry`, and the next one added fails here instead of in somebody's log.
+    """
+    import inspect
+    from pathlib import Path
+
+    import haismart_hrdp
+
+    from custom_components.haismart import async_setup_entry
+
+    package = Path(inspect.getfile(haismart_hrdp)).parent
+    bundles = sorted(p.name for p in package.glob("*.json.gz"))
+    assert bundles, "the premise: the package ships gzip bundles"
+
+    setup = inspect.getsource(async_setup_entry)
+    warmed = setup.count("async_add_executor_job")
+    assert warmed >= len(bundles), (
+        f"{len(bundles)} gzip bundles ship ({bundles}) but async_setup_entry warms only {warmed}; "
+        "an unwarmed one decompresses on the event loop"
+    )

@@ -1,4 +1,4 @@
-# Haismart Local — Haier air conditioners in Home Assistant, with no cloud
+# Haismart Local — Haier appliances in Home Assistant, with no cloud
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 [![Release](https://img.shields.io/github/v/release/enapt/haismart-local?color=green)](https://github.com/enapt/haismart-local/releases/latest)
@@ -26,11 +26,11 @@ English-only; the pages above cover install and setup._
 <details>
 <summary><b>Table of contents</b></summary>
 
-- [Is my air conditioner supported?](#is-my-air-conditioner-supported)
+- [Is my appliance supported?](#is-my-appliance-supported)
 - [What you get](#what-you-get)
 - [Before you install](#before-you-install)
 - [Installation](#installation)
-- [Set up your air conditioner](#set-up-your-air-conditioner)
+- [Set up your appliance](#set-up-your-appliance)
 - [Automation examples](#automation-examples)
 - [Going fully cloud-independent](#going-fully-cloud-independent)
 - [Something not working?](#something-not-working) — and the
@@ -43,16 +43,19 @@ English-only; the pages above cover install and setup._
 </details>
 
 > [!IMPORTANT]
-> Your Haier account is used **once**, during setup, to fetch your AC's local encryption key. From
-> then on Home Assistant talks directly to the air conditioner over TCP port 56800 on your LAN, and
-> keeps working if your internet does not.
+> Your Haier account is used **once**, during setup, to fetch your appliance's local encryption
+> key. From then on Home Assistant talks directly to the appliance over TCP port 56800 on your LAN,
+> and keeps working if your internet does not.
 
-## Is my air conditioner supported?
+## Is my appliance supported?
 
-**The app you use is what matters, not the country you're in.** If your AC pairs with the
+**The app you use is what matters, not the country you're in.** If your appliance pairs with the
 **Haier / Haismart** app (also branded *Haier U+* or *uHome*), you're in the right place. Despite the
 "SE-Asia" label the platform carries internally, accounts registered well outside that region work
 fine.
+
+Air conditioners are the best-supported and by far the best-tested case; the rest of the range is
+covered too, and the difference is set out under [Other appliances](#other-appliances) below.
 
 | Your app | Supported here? | Use instead |
 |---|---|---|
@@ -74,7 +77,7 @@ trusting the label. If something decodes oddly, that's a
 
 **Quick check:** if `nc -z <your-ac-ip> 56800` succeeds, the local protocol is listening.
 
-### Other appliances (built, not yet released)
+### Other appliances
 
 Air conditioners are what this integration was built for and where almost all of its testing lies.
 It now also carries **every other appliance category the manufacturer publishes a byte map for** —
@@ -103,7 +106,12 @@ Anything Haier sells that has **no Wi-Fi module of its own** — bulbs, sockets,
 motion sensors behind a gateway — is out of reach entirely. Those do not speak the local protocol
 this integration uses, and no amount of byte map changes that.
 
+➡️ **[Appliance support in detail](docs/appliances.md)** — every device class carried, which tier of
+evidence each sits in, and what is deliberately withheld.
+
 ## What you get
+
+### An air conditioner
 
 One device per air conditioner, with:
 
@@ -136,17 +144,54 @@ refused with the reason rather than the control being greyed out.
 ➡️ **[How the controls behave](docs/behaviour.md)** — mode-dependent settings, presets, vane
 positions, **energy monitoring** and **polling**, in detail.
 
+### Any other appliance
+
+There is no per-appliance code and no hand-written entity list. Your appliance's entities are built
+from two things: the manufacturer's published byte map for its product class, and **your unit's own
+declaration** of which of those fields it actually has. Nothing a unit does not declare becomes an
+entity, so you do not get a phantom control for a feature your model was never built with.
+
+Each declared field becomes the kind of entity it deserves, carrying the manufacturer's own unit,
+range and option list:
+
+| Haier says | You get |
+|---|---|
+| a writable number with a range | a **number**, clamped to *your unit's* declared range |
+| a writable option list | a **dropdown** with the manufacturer's own labels |
+| a writable on/off | a **switch** |
+| a reading with a unit | a **sensor**, with the right device class so it charts and totals correctly |
+| a read-only on/off | a **binary sensor** |
+| a fault table | a **fault** sensor naming the faults **that appliance** can raise |
+
+A **water heater** additionally gets a real `water_heater` entity — its own temperature range and
+its own operating modes, not a thermostat's. Categories with a natural Home Assistant entity get one
+as that support is confirmed; everything else is still fully readable and controllable through the
+entities above.
+
+Every generated entity also carries Haier's own identifier and description for the field
+(`haier_attribute`, `haier_description`) as attributes, so anything named oddly is easy to report
+precisely.
+
+**A worked example — the heat-pump water heater from [issue #13](https://github.com/enapt/haismart-local/issues/13):**
+27 entities, built with no water-heater-specific code. A `water_heater` entity at its declared
+35–75 °C with the eight modes that unit lists (instant heat, off-peak, three reservation
+combinations, keep-warm, Eco sterilise, adaptive); sensors for its working state and remaining hot
+water; a dual-source heating switch; the reservation schedule; and a fault sensor reading that
+appliance's own 32-fault table. Its decode agrees with Haier's own cloud on **every** value, across
+four separate downloads.
+
 ## Before you install
 
-- Home Assistant and the AC must be on the **same subnet**. There's no cloud relay to fall back on.
+- Home Assistant and the appliance must be on the **same subnet**. There's no cloud relay to fall
+  back on.
 - The AC accepts **one local session at a time**. Running another Haier local integration against
   the same unit will make both misbehave.
-- Installing this **does not stop your AC talking to Haier**. It keeps its own cloud connection
+- Installing this **does not stop your appliance talking to Haier**. It keeps its own cloud connection
   unless you firewall it — see [going fully cloud-independent](#going-fully-cloud-independent).
-- A **DHCP reservation** for the AC is optional: if its address moves, the integration finds the
+- A **DHCP reservation** is optional: if the appliance's address moves, the integration finds the
   unit again by its device ID and follows it.
 - Social logins (Google / Facebook) have no password to sign in with. Create an email/password
-  Haier account, **share the AC to it** in the app, and use that here — sharing grants the same
+  Haier account, **share the appliance to it** in the app, and use that here — sharing grants the same
   local access as ownership.
 
 ## Installation
@@ -182,7 +227,7 @@ It's fully self-contained — no `pip install` step, the helper libraries are bu
 
 </details>
 
-## Set up your air conditioner
+## Set up your appliance
 
 [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=haismart)
 
@@ -190,11 +235,11 @@ Or: **Settings → Devices & Services → + Add Integration → Haismart**. If i
 your browser (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>). Then pick one of the paths offered:
 
 **Sign in (recommended).** Enter your Haier account email (or phone), password, and the country your
-**account** was registered in. The integration lists your air conditioners, fetches the chosen one's
-key, finds it on your network, and reads which model it is — you won't paste or choose anything.
+**account** was registered in. The integration lists your appliances, fetches the chosen one's key,
+finds it on your network, and reads which model it is — you won't paste or choose anything.
 
 > The country field is the **phone dialling code of the country your Haier account was created in**
-> — not where the AC is installed, and not necessarily where you live now. Getting it wrong is the
+> — not where the appliance is installed, and not necessarily where you live now. Getting it wrong is the
 > single most common setup failure, because Haier's server reports it as "account not registered",
 > which reads like a wrong password.
 
@@ -208,7 +253,7 @@ product family, by the number printed on its label. Answering unlocks the fault 
 availability rules and your unit's real feature list. **Skipping is fine** — the rules every model
 in that family agrees on are used instead, which still covers every fault name.
 
-### Adding a second air conditioner
+### Adding another appliance
 
 The account from your first unit is stored, so **Add Integration → Haismart** offers a third choice,
 first in the list: **use the Haier account already added** — no password, no key, no address. It
@@ -252,19 +297,19 @@ automation:
 **The local key is the only thing that has to come from Haier.** Everything else — how to read the
 reports, the faults and rules of every published product, which model yours is — ships with the
 integration or comes from the appliance. The one remaining cloud dependency is that Haier's server
-can **rotate** the key, which the integration re-fetches. If you'd rather your AC never phoned home
-at all:
+can **rotate** the key, which the integration re-fetches. If you'd rather your appliance never
+phoned home at all:
 
 1. **Archive the key first.** Enable the *Local key* diagnostic sensor on the device page — its state
    is the key, its attributes carry the host, device ID and version, and it rides along in your
    Home Assistant backups.
-2. **Block the AC's internet access** at your router — the simplest rule that works is denying traffic
+2. **Block the appliance's internet access** at your router — the simplest rule that works is denying traffic
    to `43.156.75.60`, Haier's gateway. Keep the LAN open: Home Assistant still needs port 56800.
    DNS blocking is *not* reliable here (the units connect by a cached address), and router features
    called "MAC filtering" or "IP filtering" often cut the device off your LAN entirely.
 3. The key can then never rotate, so the copy you archived stays valid indefinitely, however long
    has passed. You can always re-add the unit later through the offline path with no cloud involved.
-4. **Check that it worked.** The **Cloud connection** diagnostic sensor asks the AC itself — over a
+4. **Check that it worked.** The **Cloud connection** diagnostic sensor asks the appliance itself — over a
    local query that never contacts Haier — whether it can still reach the cloud. Once your block is
    in place it turns **off** within a couple of minutes, and off is the state you want. Local control
    is unaffected the whole time.
@@ -291,6 +336,7 @@ fix, plus **what to include when you open an issue** so it can be answered in on
 | | |
 |---|---|
 | [`INSTALL.md`](INSTALL.md) | Installing, the cloud-independent setup, and the domains involved |
+| [`docs/appliances.md`](docs/appliances.md) | **Which appliances are supported, and how well** — the device classes, what is proven and what is not |
 | [`docs/behaviour.md`](docs/behaviour.md) | How the controls behave: mode-dependent settings, presets, vanes, energy, polling |
 | [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) | Every known failure and its fix, and what to include in an issue |
 | [`docs/new-model.md`](docs/new-model.md) | Getting an unsupported model working — what to send and why |
@@ -340,7 +386,7 @@ And to everyone who opens an issue, reports a model, or stars the repo. ⭐
 
 Setup uses the app's own sign-in flow with your own account: the integration signs a normal API
 request with the app-level identifiers shared by every install of the Haismart app, and Haier
-returns your AC's local key. Nothing is bypassed, and no per-user secret of anyone else's is
+returns your appliance's local key. Nothing is bypassed, and no per-user secret of anyone else's is
 involved — the same interoperability model [`banto6/haier`](https://github.com/banto6/haier) uses
 for Haier's mainland app and [pyhOn](https://github.com/Andre0512/pyhOn) for the hOn platform. Those
 identifiers ship as defaults and are overridable by environment variable (`HAISMART_APP_ID`,

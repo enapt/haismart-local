@@ -28,6 +28,7 @@ from haismart_extractor import (
     GatewayCreds,
     GatewayError,
     HaierCloud,
+    async_fetch_device_config,
     get_localkey_via_gateway,
 )
 from haismart_extractor.cloud import (
@@ -96,7 +97,12 @@ from haismart_hrdp import (
     declared_numeric_readings as numeric_reading_names,
 )
 from haismart_hrdp.appliance import ApplianceKind, kind_for
-from haismart_hrdp.device_model import DeviceModel, model_for
+from haismart_hrdp.device_model import (
+    DeviceModel,
+    model_for,
+    model_from_record,
+    project_config,
+)
 from haismart_hrdp.entity_spec import EntitySpec, specs_for
 from haismart_hrdp.uss import frame_key
 from homeassistant.config_entries import ConfigEntry
@@ -115,6 +121,7 @@ from .const import (
     CONF_APP_TYPE,
     CONF_CLOUD_CLIENT_ID,
     CONF_DEVICE_ID,
+    CONF_DEVICE_MAP,
     CONF_DEVICE_TYPE,
     CONF_DIGITAL_MODEL,
     CONF_GATEWAY_USERNAME,
@@ -636,6 +643,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # device_model path) rather than from a hand-written AC family. Suppresses the
         # unknown-layout repair -- see _note_unknown_layout.
         self.model_decoded: bool = False
+        # A byte map fetched for this entry (see `device_model`), built once and kept.
+        self._fetched_model: DeviceModel | None = None
         # The platforms this entry was forwarded, set by async_setup_entry and read by
         # async_unload_entry so the two cannot disagree (see __init__.py).
         self.platforms: list[Any] = []
@@ -1180,8 +1189,61 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     @property
     def device_model(self) -> DeviceModel | None:
-        """Haier's own byte map for this device's typeid, or ``None`` if the bundle lacks it."""
-        return model_for(self.uplus_id)
+        """Haier's own byte map for this device's typeid.
+
+        The shipped bundle first; then a map fetched for this entry, for a device class the bundle
+        does not carry. ``None`` where we have neither, and the appliance then decodes by the
+        air-conditioner path alone -- which is what every install did before any of this existed.
+        """
+        if (bundled := model_for(self.uplus_id)) is not None:
+            return bundled
+        record = self.config_entry.data.get(CONF_DEVICE_MAP)
+        if not record or not self.uplus_id:
+            return None
+        if self._fetched_model is None:
+            self._fetched_model = model_from_record(self.uplus_id, record)
+        return self._fetched_model
+
+    @property
+    def needs_device_map(self) -> bool:
+        """Whether this appliance's byte map is missing and worth fetching.
+
+        Only where the appliance has told us its class and neither source has it -- so a fetch
+        happens once per entry, never for a device the bundle covers, and never without a typeid to
+        key it on.
+        """
+        return bool(
+            self.uplus_id
+            and model_for(self.uplus_id) is None
+            and not self.config_entry.data.get(CONF_DEVICE_MAP)
+        )
+
+    async def async_fetch_device_map(self) -> bool:
+        """Fetch and store this device class's byte map. Returns whether it landed.
+
+        Unauthenticated and keyed by the typeid the appliance announces for itself, so it works on
+        an entry with no account. Best effort: a vendor CDN that cannot be reached must not stop an
+        appliance that is otherwise working, and the next start tries again.
+        """
+        typeid = self.uplus_id
+        if not typeid:
+            return False
+        config = await async_fetch_device_config(
+            typeid, transport=async_cloud_transport(self.hass)
+        )
+        record = project_config(config, typeid) if config else None
+        if record is None:
+            _LOGGER.debug("no published byte map for device class %s", typeid[16:20])
+            return False
+        self.hass.config_entries.async_update_entry(
+            self.config_entry, data={**self.config_entry.data, CONF_DEVICE_MAP: record}
+        )
+        self._fetched_model = None
+        _LOGGER.info(
+            "fetched Haier's byte map for %s (class %s): %d fields",
+            self.config_entry.title, typeid[16:20], len(record["fields"]),
+        )
+        return True
 
     @property
     def decodes_as_air_conditioner(self) -> bool:

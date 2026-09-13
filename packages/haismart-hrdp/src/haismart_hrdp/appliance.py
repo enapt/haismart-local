@@ -26,7 +26,14 @@ from collections.abc import Mapping
 from enum import StrEnum
 from types import MappingProxyType
 
-__all__ = ["ApplianceKind", "CLASS_KINDS", "class_of", "kind_for"]
+__all__ = [
+    "ApplianceKind",
+    "CLASS_KINDS",
+    "CLASS_LABELS",
+    "class_of",
+    "kind_for",
+    "label_for",
+]
 
 
 class ApplianceKind(StrEnum):
@@ -78,6 +85,41 @@ CLASS_KINDS: Mapping[str, ApplianceKind] = MappingProxyType({
 #   2101                      空气净化器 — air purifier
 #   3e01                      H3蒸烤箱 — steam oven
 #   0f01 3b01 150e 2702       智能电视 / 语音 / 体脂秤 / 陀螺仪 — TV, voice, scale, sensor
+
+# What each device class IS, in English. Separate from :class:`ApplianceKind` on purpose: a kind
+# decides which entities get built and there are only three, while a label is what a person reads
+# and there is one per class. Every entry is Haier's own `BasicInfo.name` for that class, translated
+# -- so "refrigerator" is not an inference from the class number, it is what the file says.
+CLASS_LABELS: Mapping[str, str] = MappingProxyType({
+    "0121": "Refrigerator", "0122": "Refrigerator", "0123": "Refrigerator",
+    "0124": "Refrigerator", "0128": "Refrigerator",
+    "0211": "Air conditioner", "0212": "Air conditioner", "0214": "Air conditioner",
+    "0312": "Air conditioner", "0d12": "Air conditioner", "0d21": "Air conditioner",
+    "3912": "Air conditioner",
+    "0501": "Washing machine",
+    "0612": "Water heater", "0616": "Water heater", "0618": "Water heater",
+    "0619": "Water heater", "061a": "Water heater",
+    "1812": "Gas water heater", "1813": "Gas water heater", "1814": "Gas water heater",
+    "1815": "Gas water heater", "1817": "Gas water heater",
+    "2001": "Heat-pump water heater",
+    "0901": "Cooker hood", "0902": "Cooker hood",
+    "0b11": "Sterilising cabinet", "0b12": "Sterilising cabinet",
+    "1a01": "Dishwasher",
+    "1d01": "Gas hob",
+    "2101": "Air purifier",
+    "3e01": "Steam oven",
+    "0f01": "Television",
+    "3b01": "Voice assistant",
+    "150e": "Body-composition scale",
+    "2702": "Sensor",
+})
+
+
+def label_for(uplus_id: str | None) -> str | None:
+    """What this device class is, in English, or ``None`` if we have no name for it."""
+    device_class = class_of(uplus_id)
+    return CLASS_LABELS.get(device_class) if device_class else None
+
 
 # The cloud's own category label, used ONLY when the typeid's class is unknown to us. Keys are the
 # `appTypeName` strings Haier's device list returns (`appTypeCode` in brackets for the record).

@@ -18,7 +18,7 @@ import logging
 from haismart_hrdp import preload as _preload_model_rules
 from homeassistant.core import HomeAssistant
 
-from .const import IDENTITY_TOPUP_TIMEOUT, PLATFORMS, platforms_for
+from .const import DEVICE_MAP_TIMEOUT, IDENTITY_TOPUP_TIMEOUT, PLATFORMS, platforms_for
 from .coordinator import HaismartConfigEntry, HaismartCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -68,6 +68,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> 
         entry.async_create_background_task(
             hass, coordinator.async_fetch_model_rules(), "haismart model rules"
         )
+
+    # Haier's byte map for this device class, where the shipped bundle does not carry it. Awaited,
+    # and before the platforms are chosen, because what it fetches decides WHICH entities exist --
+    # backgrounding it would set the appliance up as undecodable and only fix itself on the next
+    # restart. Bounded, and best effort: an unreachable CDN leaves the entry exactly as it is today.
+    if coordinator.needs_device_map:
+        with contextlib.suppress(TimeoutError):
+            async with asyncio.timeout(DEVICE_MAP_TIMEOUT):
+                if await coordinator.async_fetch_device_map():
+                    await coordinator.async_refresh()
 
     entry.runtime_data = coordinator
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))

@@ -101,3 +101,51 @@ def test_every_mapped_class_has_a_typeid_whose_map_names_the_appliance() -> None
     assert set(seen) == set(CLASS_KINDS), f"no named map for {sorted(set(CLASS_KINDS) - set(seen))}"
     assert "热泵热水器" in seen["2001"] or "热泵" in seen["2001"]
     assert "空调" in seen["0211"]
+
+
+def test_every_class_the_bundle_carries_has_an_english_name() -> None:
+    """A device the integration can decode must not be described to a user as unrecognised.
+
+    The picker used to label everything that was not an air conditioner "unsupported", which was
+    true when it was written and is not now. A label is separate from a kind on purpose: a kind
+    decides which entities get built and there are three of them, a label is what a person reads
+    and there is one per class.
+    """
+    from haismart_hrdp.appliance import CLASS_LABELS, label_for
+    from haismart_hrdp.device_model import device_classes
+
+    assert not device_classes() - set(CLASS_LABELS)
+    assert label_for(WATER_HEATER) == "Heat-pump water heater"
+    assert label_for(CLASSIC_AC) == "Air conditioner"
+    assert label_for(None) is None
+    assert label_for("0" * 64) is None
+
+
+def test_a_label_matches_the_manufacturers_own_name_for_the_class() -> None:
+    """Each label is a translation of Haier's `BasicInfo.name`, not an inference from the number.
+
+    Spot-checked against the shipped maps for the categories whose Chinese names are unambiguous,
+    so that a bundle regeneration which changed what a class contains would fail here.
+    """
+    from haismart_hrdp.appliance import CLASS_LABELS
+    from haismart_hrdp.device_model import known_typeids, model_for
+
+    expected = {
+        "0121": "BCD",          # 冰箱 model numbers all begin BCD_
+        "0501": "单滚筒",        # single-drum washer
+        "0612": "热水器",        # water heater
+        "0901": "烟机",          # cooker hood
+        "0b11": "消毒柜",        # sterilising cabinet
+        "1d01": "燃气灶",        # gas hob
+        "2001": "热泵",          # heat pump
+        "2101": "空气净化器",     # air purifier
+        "3e01": "蒸烤箱",        # steam oven
+    }
+    for device_class, marker in expected.items():
+        names = [
+            model_for(t).name or ""
+            for t in known_typeids()
+            if model_for(t).device_class == device_class
+        ]
+        assert any(marker in n for n in names), f"{device_class}: {names[:3]}"
+        assert device_class in CLASS_LABELS

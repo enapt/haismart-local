@@ -114,6 +114,10 @@ CONF_DEVICE_TYPE = "device_type"
 # class field is one we have no row for; never overrides the class field, which is what the
 # appliance announces for itself. Absent for a device added without an account.
 CONF_APP_TYPE = "app_type"
+# Haier's byte map for this device's class, fetched once when the shipped bundle does not carry it
+# and cached here so the appliance decodes offline afterwards. Stored as the same PROJECTION the
+# bundle holds -- positions only -- not the quarter-megabyte configFile.
+CONF_DEVICE_MAP = "device_map"
 # Human-readable identity from the cloud device list's `extendedInfo` (prodNo/model/brand). Shown on
 # the HA device page instead of the raw product code.
 CONF_MODEL_NAME = "model_name"
@@ -242,6 +246,12 @@ ISSUE_STALE_LOCALKEY = "stale_localkey_manual_reauth"
 # seconds at which Home Assistant starts warning about slow setup; the entry simply tries again on
 # the next restart, and nothing else depends on it having succeeded.
 IDENTITY_TOPUP_TIMEOUT = 6.0
+
+# How long setup will wait for this device class's byte map before carrying on without it. Awaited
+# rather than backgrounded because what it fetches decides which entities exist, and bounded well
+# under the ten seconds at which Home Assistant warns about a slow setup: the appliance is set up
+# either way and tries again on the next start.
+DEVICE_MAP_TIMEOUT = 8.0
 
 # Repairs: the key rotated and the automatic re-fetch was TRIED and failed, on an entry that does
 # have account credentials. Kept apart from the no-credentials case because the advice is opposite:

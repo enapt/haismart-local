@@ -473,3 +473,105 @@ async def test_a_device_we_cannot_decode_keeps_what_it_has_today(
     assert entry.runtime_data.uses_curated_ac_entities is True
     assert hass.states.get("sensor.mystery_indoor_temperature") is not None
     assert hass.states.get("climate.mystery") is not None
+
+
+# --- a device class the shipped bundle does not carry --------------------------------------------
+
+def _config_file_for(typeid: str) -> dict:
+    """Rebuild a configFile from a bundled map, so a fetch can be simulated with REAL positions.
+
+    The bundle ships a projection of Haier's own file; this puts it back into the shape the vendor
+    serves, so what the fetch path is fed is the manufacturer's actual byte map and only the
+    envelope is reconstructed.
+    """
+    from haismart_hrdp.device_model import model_for
+
+    model = model_for(typeid)
+    assert model is not None
+    return {
+        "Version": model.version,
+        "BasicInfo": {"name": model.name, "deviceType": None},
+        "Property": [
+            {
+                "name": f.name, "startWord": f.word, "startBit": f.bit, "length": f.length,
+                "caeType": f.cae_type, "statusCmd": f.status_cmd, "eppCmd": f.epp_cmd,
+                "writable": f.writable, "dataType": f.data_type, "variants": f.variants,
+            }
+            for f in model.fields
+        ],
+        "Bigdata": [],
+        "Alarm": [{"name": n, "pos": p} for n, p in model.alarms],
+        "Operation": [],
+    }
+
+
+# One hex digit from issue #13's typeid, so the shipped bundle does not carry it -- which is the
+# ordinary case for a product line nobody here has catalogued.
+UNBUNDLED = UPLUS_ID[:-1] + "1"
+
+
+async def test_a_device_class_we_do_not_ship_fetches_its_map_and_works(
+    hass: HomeAssistant, water_heater
+) -> None:
+    """The bundle covers 165 device classes, which is what the catalogue had -- not what exists.
+
+    A class it lacks would otherwise get no entities at all, so the map is fetched once at setup,
+    keyed by the typeid the appliance announces for itself, and cached on the entry. The call needs
+    no account, which matters: a manually-added appliance has none.
+    """
+    from unittest.mock import AsyncMock, patch
+
+    from haismart_hrdp.device_model import model_for
+
+    from custom_components.haismart.const import CONF_DEVICE_MAP
+
+    assert model_for(UNBUNDLED) is None, "the premise: this class is not shipped"
+    fetch = AsyncMock(return_value=_config_file_for(UPLUS_ID))
+    with patch("custom_components.haismart.coordinator.async_fetch_device_config", fetch):
+        entry = await _setup(hass, **{CONF_UPLUS_ID: UNBUNDLED})
+
+    assert fetch.await_count == 1
+    assert entry.data[CONF_DEVICE_MAP]["fields"], "the map is cached on the entry"
+    assert entry.runtime_data.model_decoded is True
+    # ...and the appliance is fully furnished from it.
+    assert hass.states.get(ENTITY).attributes[ATTR_TEMPERATURE] == 48.0
+    assert hass.states.get("sensor.hot_water_work_status").state == "Keep warm"
+
+
+async def test_a_cached_map_is_not_fetched_again(hass: HomeAssistant, water_heater) -> None:
+    """Once per entry. A vendor CDN hit on every restart would be rude and pointless."""
+    from unittest.mock import AsyncMock, patch
+
+    from haismart_hrdp.device_model import project_config
+
+    from custom_components.haismart.const import CONF_DEVICE_MAP
+
+    record = project_config(_config_file_for(UPLUS_ID), UNBUNDLED)
+    fetch = AsyncMock(return_value=None)
+    with patch("custom_components.haismart.coordinator.async_fetch_device_config", fetch):
+        entry = await _setup(hass, **{CONF_UPLUS_ID: UNBUNDLED, CONF_DEVICE_MAP: record})
+    assert fetch.await_count == 0
+    assert entry.runtime_data.model_decoded is True
+
+
+async def test_a_failed_fetch_leaves_a_working_appliance_working(
+    hass: HomeAssistant, water_heater
+) -> None:
+    """Best effort, and it has to be: this runs during setup of an appliance that is already paired.
+
+    An unreachable CDN, a class Haier publishes nothing for, a corrupted download -- each leaves the
+    entry exactly as it would have been, and the next start tries again.
+    """
+    from unittest.mock import AsyncMock, patch
+
+    from custom_components.haismart.const import CONF_DEVICE_MAP
+
+    for result in (None, {}, {"Property": []}):
+        fetch = AsyncMock(return_value=result)
+        with patch("custom_components.haismart.coordinator.async_fetch_device_config", fetch):
+            entry = await _setup(hass, **{CONF_UPLUS_ID: UNBUNDLED})
+        assert entry.state is ConfigEntryState.LOADED
+        assert CONF_DEVICE_MAP not in entry.data
+        assert entry.runtime_data.model_decoded is False
+        await hass.config_entries.async_unload(entry.entry_id)
+        await hass.async_block_till_done()

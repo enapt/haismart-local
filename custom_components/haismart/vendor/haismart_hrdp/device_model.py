@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import gzip
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -42,6 +43,8 @@ from typing import Any
 
 __all__ = [
     "ATTR_BASE",
+    "model_from_record",
+    "project_config",
     "DeviceModel",
     "ModelField",
     "absent_probe",
@@ -398,6 +401,68 @@ class DeviceModel:
         return out
 
 
+# --- building a map from a raw configFile ---------------------------------------------------------
+# The bundle ships a PROJECTION of Haier's configFile -- the positions and nothing else -- and the
+# same projection is what an on-demand fetch stores on a config entry. One implementation, used by
+# both, because two would drift and the drift would be silent (METHOD Rule 33).
+
+_SECTIONS = ("Property", "Bigdata")
+
+
+def _field_row(prop: Mapping[str, Any]) -> list[Any] | None:
+    """One field as a compact row, or ``None`` if it carries no usable position."""
+    for key in ("startWord", "startBit", "length"):
+        if not isinstance(prop.get(key), int):
+            return None
+    if prop["length"] <= 0 or prop["startWord"] < 1:
+        return None
+    return [
+        prop["name"], prop["startWord"], prop["startBit"], prop["length"],
+        prop.get("caeType"), prop.get("statusCmd"), prop.get("eppCmd"),
+        bool(prop.get("writable")), prop.get("dataType"), prop.get("variants"),
+    ]
+
+
+def project_config(config: Mapping[str, Any], typeid: str) -> dict[str, Any] | None:
+    """Haier's configFile reduced to what a decoder needs, or ``None`` if it places nothing.
+
+    Keeping only the positions matters for more than size: a config entry is written to disk and
+    shown in diagnostics, and the full file is a quarter of a megabyte of vendor metadata that
+    nothing reads.
+    """
+    fields = [
+        row
+        for section in _SECTIONS
+        for prop in (config.get(section) or [])
+        if (row := _field_row(prop)) is not None
+    ]
+    if not fields:
+        return None
+    return {
+        "name": (config.get("BasicInfo") or {}).get("name"),
+        "cls": typeid[16:20],
+        "ver": config.get("Version"),
+        "fields": fields,
+        "alarms": [[a["name"], a["pos"]] for a in (config.get("Alarm") or []) if "pos" in a],
+        "ops": [
+            [o["name"], o.get("frameType"), o.get("eppCmd")] for o in (config.get("Operation") or [])
+        ],
+    }
+
+
+def model_from_record(typeid: str, record: Mapping[str, Any]) -> DeviceModel:
+    """A :class:`DeviceModel` from a projected record — the bundle's, or one fetched on demand."""
+    return DeviceModel(
+        typeid=typeid.lower(),
+        name=record.get("name"),
+        device_class=record.get("cls", typeid[16:20]),
+        version=record.get("ver"),
+        fields=tuple(ModelField(*row) for row in record["fields"]),
+        alarms=tuple((name, pos) for name, pos in record.get("alarms", [])),
+        operations=tuple(tuple(op) for op in record.get("ops", [])),
+    )
+
+
 @lru_cache(maxsize=1)
 def _bundle() -> dict[str, Any]:
     with gzip.open(MODELS_PATH, "rt", encoding="utf-8") as handle:
@@ -425,17 +490,7 @@ def model_for(typeid: str | None) -> DeviceModel | None:
     if not typeid:
         return None
     raw = _bundle()["models"].get(typeid.lower())
-    if raw is None:
-        return None
-    return DeviceModel(
-        typeid=typeid.lower(),
-        name=raw.get("name"),
-        device_class=raw.get("cls", typeid[16:20]),
-        version=raw.get("ver"),
-        fields=tuple(ModelField(*row) for row in raw["fields"]),
-        alarms=tuple((name, pos) for name, pos in raw.get("alarms", [])),
-        operations=tuple(tuple(op) for op in raw.get("ops", [])),
-    )
+    return None if raw is None else model_from_record(typeid, raw)
 
 
 def known_typeids() -> frozenset[str]:

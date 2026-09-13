@@ -80,7 +80,7 @@ except ImportError:  # pragma: no cover - HA < 2025.2
 if TYPE_CHECKING:
     from homeassistant.components.dhcp import DhcpServiceInfo
 
-from haismart_hrdp.appliance import ApplianceKind, kind_for
+from haismart_hrdp.appliance import ApplianceKind, kind_for, label_for
 
 from .cloud_transport import async_cloud_transport
 from .const import (
@@ -342,14 +342,17 @@ def _device_label(device: Any) -> str:
     """
     name = device.name or device.device_id
     label = f"{name} ({device.device_id})"
-    kind = kind_for(getattr(device, "uplus_id", "") or "",
-                    getattr(device, "app_type_name", "") or "")
-    if kind is ApplianceKind.WATER_HEATER:
-        return f"{label} - water heater"
+    uplus_id = getattr(device, "uplus_id", "") or ""
+    kind = kind_for(uplus_id, getattr(device, "app_type_name", "") or "")
     if kind is ApplianceKind.AIR_CONDITIONER:
         return label
-    # Unidentified. Fall back to the deviceType byte before saying so, since an appliance whose
-    # uPlusId is absent from the device list still names its class there.
+    # Anything else: say what it is, where the class field names it. Every one of these is
+    # supported -- its entities are built from its own model -- so the label is information, not a
+    # warning.
+    if category := label_for(uplus_id):
+        return f"{label} - {category.lower()}"
+    # Nothing names the class. Fall back to the deviceType byte before saying so, since an
+    # appliance whose uPlusId the device list did not carry still names its class there.
     cls = (getattr(device, "device_type", "") or "")[:2].lower()
     if cls and cls in AC_DEVICE_CLASSES:
         return label

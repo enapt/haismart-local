@@ -55,7 +55,7 @@ is what we follow.
 ## The vane positions — and why the swing control is not a switch
 
 The two vane fields are the place where the vendor's vocabulary matters most, because Home
-Assistant's `swing_mode` is a four-way choice and the appliance's field is nothing of the kind.
+Assistant expresses swing as on/off per axis and the appliance's field is nothing of the kind.
 `windDirectionVertical` and `windDirectionHorizontal` are **position enums**, and the manufacturer
 names every value in its published models:
 

@@ -21,6 +21,616 @@ keeps its own when it moves between the two sections. Expect the sequence to hav
 
 ## Open items
 
+### 63. Issue #13 — a heat-pump WATER HEATER, 167-byte report, and the integration models it as an AC
+
+**Reported 2026-09-09 (issue #13), and it is the best-controlled report this project has had from a
+user.** A Haier heat-pump water heater in Taiwan, `product_code GK0GXZE0J`,
+`uplus_id 201c120000118674**2001**00418007574800000000000000000000000000000040`. Four diagnostics
+downloads with **one variable changed per capture** and ~2 min to settle, plus the reporter's own byte
+diff of `last_raw_status`.
+
+**What is wrong today:** the unit decodes as a `climate` entity with cool / dry / fan_only, fan and
+swing modes, a 16–30 °C clamp against a real 35–75 °C setpoint range, `current_temperature` null, and
+**writes disabled** — the 167-byte report matches no known length (we know 125 and 127).
+
+**The reporter's mapping** (0-indexed into the 167-byte frame), each value cross-checked against the
+cloud's `reported_values_now` in the same capture:
+
+| byte | meaning | evidence |
+|---|---|---|
+| 92 | current water temperature, raw °C | 49,49,49,50 ↔ `currentTemperature` |
+| 93 | **target temperature − 30** | 18,25,32,18 → 48,55,62,48 ↔ `targetTemperature` |
+| 97 | heat mode: 3 = eco, 4 = dual-source/instant | tracks `oddHotWater` / `dualHeaterMode` |
+| 108, 111 | reserve / off-peak temps `resn1`/`resn2`, also (°C − 30) | 0x14→50, 0x2d→75 |
+| 95 | clock minutes | 11/18/21/23 |
+| 128 | slowly drifting (RSSI?) | — |
+| 166 | checksum | varies with everything |
+
+✅ `workStatus` (1 = keep-warm/idle, 2 = heating) is at **word 36 bit 7** — see below. The earlier
+line here read *"its byte is not pinned"*; Haier's own map pins it, and it decodes 1/2/2/1 across the
+four captures, matching the app.
+
+#### ⛔⛔ CORRECTED 2026-09-13 — THE FETCH HAD ALREADY HAPPENED. WE HELD THE MAP ALL ALONG.
+
+This section read: *"⛔ **We do not hold this one** — `catalogue/configfiles/` has 193 files, all
+`201c1200…**0612**…` and friends; the reporter's class field is **`2001`**, a category we have never
+fetched."* **That is wrong in both halves.** `catalogue/configfiles/` **and** `catalogue/funcmodels/`
+each carry `201c120000118674200100418007574800000000000000000000000000000040` — the reporter's exact
+typeid — fetched **2026-09-01** in the same sweep as everything else (211 KB and 81 KB).
+
+⚠️ **The file's mtime no longer shows 2026-09-01 and that is not evidence against this** (checked
+2026-09-13, after it briefly looked like one): the configFile was **re-fetched on 2026-09-13**, which
+reset it. ★ **The control is the funcModel** — `catalogue/funcmodels/<same typeid>.json` is dated
+**2026-09-03** (the funcModel sweep) and has *not* been re-fetched, so the reporter's exact typeid was
+in our enumeration **six days before the issue was filed**. The configFile sweep enumerated the same
+**194 catalogue typeids** (`catalogue/configfiles/README.md`), and both `2001` typeids came back.
+⇒ Do not re-derive this from timestamps alone.
+
+⚠️ **What made it wrong is worth more than the fact:** the claim was a guess at a filename pattern
+that nobody enumerated (`METHOD.md` Rule 2 — enumerate a file's keys, never grep for the name you
+expect). A class histogram over the directory takes one line and gives **~44 device classes**, not
+"`0612` and friends": refrigerators (`0121`–`0128`), air conditioners (`0211`/`0212`/`0214`/`0312`/
+`0d12`/`0d21`/`3912`), washers (`0501`), electric water heaters (`0612`/`0616`/`0618`/`0619`/`061a`,
+76 files), gas water heaters (`1812`–`1817`), hoods (`0901`/`0902`), sterilisers (`0b11`/`0b12`),
+hobs (`1d01`), a TV (`0f01`), an oven (`3e01`), an air purifier (`2101`), a scale (`150e`) — and
+**heat-pump water heaters (`2001`, 2 files)**.
+
+**The endpoint is also still live** (re-fetched 2026-09-13, 210,675 B), so on-demand fetch per
+typeid remains available and the bundled catalogue is a floor, not a ceiling.
+
+#### ✅ AND HAIER'S MAP DECODES THE CAPTURES — 26/26 PER CAPTURE, INCLUDING THE FIELD THE REPORTER COULD NOT PIN
+
+A generic decoder that reads only `startWord`/`startBit`/`length`/`variants` from the configFile, at
+the **same `_ATTR_BASE = 92` word geometry the AC path already uses**, reproduces **every attribute
+the cloud mirror reports** — all 26 of them, on each of the four captures. Checkable:
+`tools/re/configfile_decode.py --selftest` (parent tree). A sample:
+
+| attribute | config position | capture 1–4 | cloud `reported_values_now` |
+|---|---|---|---|
+| `currentTemperature` | w1 b8 len8, k=1 c=0 | 49 / 49 / 49 / 50 | ✓ |
+| `targetTemperature` | w1 b0 len8, k=1 **c=30** | 48 / 55 / 62 / 48 | ✓ |
+| ★ `workStatus` | **w36 b7 len1** | 1 / 2 / 2 / 1 | ✓ |
+| `dualHeaterMode` | w36 b6 len1 | false / false / false / **true** | ✓ |
+| `oddHotWater` | w3 b0 len16 | 3 / 3 / 3 / 4 | ✓ |
+| `resn1Temperature` | w9 b8 len8, c=30 | 50 / 50 / 50 / 75 | ✓ |
+| `resn2Temperature` | w10 b0 len8, c=30 | 50 / 50 / 50 / 75 | ✓ |
+| `onOffStatus` | w36 b0 len1 | true ×4 | ✓ |
+| `runningMode` | w36 b1 len5 | 2 ×4 | ✓ |
+
+★ The reporter's byte numbers fall straight out of the same arithmetic (`byte = 92 + 2×(w−1)`,
+`+0` for bit≥8 and `+1` below): w1 b8 → 92, w1 b0 → 93, w3 → 96–97, w9 b8 → 108, w10 b0 → 111 —
+the 92/93/97/108/111 of the table above. **Four captures could not establish a frame layout; the
+manufacturer's map does, and the captures confirm it.**
+
+⚠️ Scope: **one** unit of **one** `2001` family, cross-checked against the cloud mirror in the same
+capture. It does not test the ~230 Properties the cloud was silent on, the `Bigdata`/`7D01` frame
+(never captured from this unit), the second `2001` family, or any write.
+
+⚠️ **And the check caught a real bug that a hand-check had passed.** Comparing nine chosen
+attributes succeeded; comparing **all** the cloud reports failed on `time`, because for `caeType`
+3/4/5 the `variants` list is a **composite part descriptor** (`[{startWord,startBit,length}, …]`),
+not an `eppValue` table — read as an enum it silently yields `None`. ★ `caeType` is the
+discriminator, and enumerating it over all **22,667** Property+Bigdata fields of the 164 V3
+configFiles gives **seven rows with no residue**: 1 and 6 = `raw*k + c` · 2 = enum · 3 = time
+`HH:MM` · 4 = time `HH:MM:SS` · 5 = date · 13 = opaque string. ⛔ Only caeType 3 is confirmed
+against ground truth (the cloud's `"22:11"` beside parts 22 and 11); 4 and 5 are rendered the same
+way by construction and **no capture in the corpus carries one with a cloud value beside it**.
+
+#### ★★★ AND THE SAME DECODER REPRODUCES THE SHIPPED AC DECODER — THREE CLASSES, FOUR LENGTHS
+
+This is the finding that outgrows item 63. The identical config-driven decoder was run against the
+stored AC captures with no per-family code at all:
+
+| capture | class | length | result |
+|---|---|---|---|
+| discord `AAD180E00` | `0212` ext-36 | 165 B | indoor 24.5 · target 24.0 · mode cool · fan high · power on · both vanes · `opSrc` network — **matches the shipped decode field for field** |
+| issue #12 ×7 | `0d12` cabinet | 133 B | power / target / mode (cool, dry, fan\_only) / fan (low, medium, high) / indoor — **7/7 captures** |
+| issue #13 ×4 | `2001` heat pump | 167 B | the table above — **a class the integration has never decoded** |
+
+**144/144 attribute comparisons, 12 captures, 3 device classes, 3 report lengths.**
+
+⇒ the `canonical_displacement` / `canonical_insert` / `length_inserts` machinery is a hand-derived
+restatement of what these files state outright. The 125-vs-127 split, derived here as "one inserted
+word", is simply **two different configFiles**: `挂机通用_V2D18S_0D02` puts `indoorTemperature` at
+byte 102, `共享空调_V2D18S_0D07` (the rental SKU) at byte 104 — both hardware-confirmed numbers.
+⚠️ Scope: three classes, three report lengths, twelve captures — **not** the 125-byte classic
+(no stored capture carries one) and not any `Bigdata`/`7D01` frame. It is not a claim that every
+configFile is correct for every unit, and the absent-probe rule (`outdoorTemperature` raw 0 →
+−64 °C) still has to be applied on top — `_sensor_temp`'s job, which the generic reader does not do
+for free.
+
+**The larger ask, stated plainly:** #13 request 3 is *"support heat-pump water heaters, not only air
+conditioners."* That is a **new platform** (`water_heater`), not a new layout — a real piece of work,
+and the first appliance category outside AC this integration would carry. The owner's call whether
+that is in scope. ⓘ Nothing about it is blocked: the wire is the same uSS/`:56800` path we already
+speak, and the localKey already works (the reporter has a live entity).
+
+#### ✅ SHIPPED 2026-09-13 — and it grew into support for every appliance category
+
+⇒ **The full account is `docs/MULTI_DEVICE_PLAN_2026-09-13.md` in the development tree.** Beyond the
+`water_heater` platform below, what shipped is a generic layer that gives **any** appliance its
+entities from its own declaration and Haier's published byte map: 165 device classes bundled, any
+other fetched on demand, and every field classified into a switch / select / number / sensor /
+binary sensor with the units, ranges, options and English name the manufacturer's data supports.
+Validated on a washing machine from prior art that nobody here owns, and swept across all 36 classes
+with `tools/re/simulate_appliances.py`.
+
+⛔ **Not shipped, deliberately — each is its own open item below: group-command writes (64) and the
+V2 text profile (66).**
+
+#### ✅ SWEPT 2026-09-13 — and the sweep found four defects nobody could have reported
+
+Checked against Home Assistant's own `DEVICE_CLASS_UNITS` and `DEVICE_CLASS_STATE_CLASSES` rather
+than a table copied out of them, and then by setting up a real config entry for **every one of the
+36 classes** and reading what came out:
+
+* **203 sensors** paired `device_class: volume` with `state_class: measurement`, which Home
+  Assistant refuses at write time — `volume` is a meter total and a tank's contents is
+  `volume_storage`. The two are now derived together, as a pair, valid by construction.
+* The **same attribute carries `ug/m³` on some classes and `ug/m3` on others** (96 fields against
+  52). The unit decides the device class, so the spelling silently cost **17 classes** their
+  air-quality classes. Units are normalised once, before anything is classified.
+* **Ambiguous units were read as semantics**: a formaldehyde probe was labelled "PM2.5" and a
+  carbon-monoxide probe "CO₂", because `µg/m³` and `ppm` each cover several gases. The name now
+  disambiguates, and where it cannot the reading keeps its unit and gets no class.
+* **`resnMode` publishes a single value** and had become a switch — an off position `encode_write`
+  refuses, i.e. a control that fails the first time it is used.
+
+All four are now permanent tests: every spec of every class against Home Assistant's constants,
+every control checked for a usable range or option set, every writable spec round-tripped through
+the encoder at both ends of its range, and a real entry per class asserting no log complaints, a
+serialisable diagnostics download and a clean unload/reload.
+
+#### ✅ the `water_heater` platform itself
+
+`water_heater.py`, plus the two layers under it that were the real work:
+
+* **`haismart_hrdp.device_model`** — Haier's published byte map for 165 typeids across 36 device
+  classes, bundled at **133 KiB gzipped**, generated by `tools/re/gen_device_models.py`. Decoding an
+  appliance stops being a hand-transcription job.
+* **`haismart_hrdp.appliance`** — what KIND a device is, from its typeid's class field first and the
+  cloud's `appTypeName` second, and `OTHER` where neither settles it. Platforms are now forwarded
+  **per entry**, so a water heater gets no thermostat.
+  ⚠️ With a no-regression clause that matters: a device of an unknown class whose report really
+  *does* decode as an air conditioner keeps its climate entity, because some working installs are in
+  exactly that state.
+* Writes go out on the `5Dxx` single-parameter channel, validated against the unit's own model
+  (35–75, not the class-wide 30–80) and refused before the wire for anything the map does not name.
+* The unknown-layout repair is no longer raised for an appliance the byte map decodes, and its
+  wording is no longer air-conditioner-specific.
+
+⛔ **Not confirmed on hardware: any write.** No byte has been sent to this appliance. The reporter's
+control is disabled today, so the first write is theirs to make, and it must be read back.
+
+#### ✅ BUILT AND PROVEN END TO END ON REAL HAOS (2026-09-13) — branch `feat/every-appliance-category`
+
+All three blockers are closed: ~~(1) the configFile + funcModel~~ ✅ held and validated (above);
+~~(2) the `water_heater` platform decision~~ ✅ **built**; ~~(3) a `workStatus` byte~~ ✅ **w36 b7**.
+
+★★ **The decode is cross-checked against Haier's OWN cloud, not against our decoder.** Each of the
+reporter's four downloads also carries `reported_values_now` — the live device shadow fetched from
+`uws-sgp.haieriot.net/shadow/v1/devdigitalmodels` while the file was written, independent of our byte
+map. **26 of 26 attributes agree on all four captures — 104/104, zero disagreements, zero unplaced.**
+⚠️ Compare against `reported_values_now`, **never `reported_values`**: the latter is the model stored
+at onboarding and is identical across all four files (it reads `targetTemperature 48` and
+`time 21:59` even in the capture where the setpoint is 62) — using it scores a spurious 91/104.
+
+**⟦LIVE⟧ Verified on the owner's HAOS box** by serving the reporter's own captured report back over
+uSS to a fake entry: **27 entities**, `water_heater.…` = `Instant heat`, min 35.0 / max 75.0,
+current 49.0, target 48.0, the 8 declared modes + off; `workStatus` = `Keep warm`;
+`hot_water_remaining` = 3 L (`volume_storage`); `dual_heater_mode` switch = off. Box then restored to
+its 54-entity baseline.
+
+**The entity set this unit actually generates** — ⛔ **corrected 2026-09-13; an earlier draft of this
+item predicted switches and numbers for the reservation fields and that is wrong.** The declaration
+gate leaves only **5** attributes writable (below), so the reservation fields are read-only:
+
+* `water_heater` (hero) — `currentTemperature`, `targetTemperature` (**35–75 °C from the device's own
+  declaration**, not the configFile's class-wide 30–80), `onOffStatus`, `runningMode` as the
+  operation list: 8 of the class's 19 modes (即热 · 动态夜电 · 预约1 / 预约2 / 预约1+2 · 中温保温 ·
+  Eco除菌 · 随温而动).
+* **1 switch** — `dualHeaterMode` (the only writable non-hero attribute).
+* **15 sensors** — `workStatus` (保温/加热), `oddHotWater` (L, `volume_storage`), `resn1`/`resn2Temperature`
+  (°C), the reservation and valley-period times, `heatModeMaxTemp`, `pumpModeMaxTemp`, `time`.
+* **6 binary sensors** — `resn1`/`resn2` running, cycle and result flags.
+* 32 alarms from the configFile, named from the device's own model.
+
+**Writes are single-parameter `5Dxx`** — the mechanism `0d12` already ships. ★ **The class map
+publishes 16 ids, but this unit declares only 5:** `onOffStatus 5D00` · `targetTemperature 5D01` ·
+`time 5D02` (composite ⇒ stays read-only) · `runningMode 5D04` · `dualHeaterMode 5D05`. The other
+eleven (`holidayLength 5D03`, `3dSetting 5D06`, `sterilizationMode 5D07`, `maxFluxMode 5D08`,
+`zeroColdWaterBookMode 5D09`, `tankWaterLevel 5D0A`, `sparklingWaterStatus 5D0B`,
+`smartPressurizeStatus 5D0C`, `quickWash3D 5D0D`, `zcwTimingCycleStatus 5D0E`, `fcMode 5D0F`) are
+features this model does not declare and are **not offered**. ⛔ An earlier line here listed
+`sterilizationMode`/`maxFluxMode` as if they applied to this unit — they do not.
+
+⛔ **Still unverified on hardware: any write.** No byte has ever been sent to a heat-pump water
+heater. The first write must be self-verifying and read back, as every other class was.
+
+▶ **Reported to the reporter 2026-09-13** — issue #13 comment `5651939563`: what was found, the byte
+positions including `workStatus`, the 104/104 cross-check, the 35–75 range, the four control ids, and
+the explicit ask for a read-back on their first setpoint write. ⛔ The group-written reservation
+**times** are called out there as deliberately read-only (see item 64).
+
+
+### 68. The setup and repair copy calls every appliance an "air conditioner", in 31 languages
+
+Raised 2026-09-13, when the integration stopped being air-conditioner-only. **25 strings** in
+`packages/ha-haismart/custom_components/haismart/strings.json` name the appliance as an air
+conditioner — every step title and description in the config flow, five of the errors, and the three
+key-rotation repair issues. Each is mirrored in **31 locale files**.
+
+Nothing behaves differently; the entity set is built from the appliance's own model whatever the
+setup screen says. But somebody adding a water heater is told, repeatedly, that they are adding an
+air conditioner, and one string a non-AC owner will actually hit reads *"This air conditioner needs
+a new key"*.
+
+⛔ **Not fixed with a find-and-replace, which is why it is filed rather than done.** The locale files
+are machine-translated and explicitly not natively reviewed, so rewriting 25 strings across 31
+languages without a native reader per language would swap a cosmetic fault for a correctness one in
+30 languages we cannot check. The English file could be reworded alone, but that leaves English
+saying "appliance" and every translation saying "air conditioner", which is worse than consistency.
+
+**What closes it:** reword the 25 English strings to name the appliance generically (and keep the
+AC-specific wording only where the text really is about an air conditioner), then get each locale
+reviewed — or accept machine translation for the rewritten subset with the same "not native-reviewed"
+caveat the `cloud_unreachable` strings already carry. ⓘ `scripts/check-translations.py` enforces key
+parity, not value parity, so a partial rewrite passes CI silently — the check will not catch a locale
+left behind.
+
+ⓘ The user-facing docs say this out loud rather than leaving it to be discovered:
+`docs/appliances.md` § *Known rough edge*.
+
+### 67. The two decode paths apply DIFFERENT plausibility bands to the same reading
+
+Surfaced 2026-09-13 while building `haismart_hrdp.ac_view` to compare the two decoders. A sensor
+temperature is vetoed as implausible by a band, and there are two of them:
+
+| path | constant | band |
+|---|---|---|
+| the classic family, via `uss._sensor_temp` | `uss._PLAUSIBLE_TEMP_C` | **−70 … 150 °C** |
+| every `wire_models` family (ext-36, ext-46, compact-12, `0d12`) | `_PLAUSIBLE_SENSOR_C` | **−30 … 70 °C** |
+
+⇒ **An outdoor probe reading 100 °C is published by one path and dropped by the other, on two air
+conditioners, today.** Neither is wrong on its face — the wider one admits a discharge-line
+temperature, the narrower one is right for ambient air — but they are applied to the *same*
+attribute on different families, which nothing states and nothing tests.
+
+⚠️ **Not fixed here, deliberately.** `ac_view` reproduces both, per family, because its job is to
+show what ships; a flip that also changed a band would make any regression unattributable. Fixing it
+is a behaviour change for real units and belongs on its own, with the oracle and the stored-capture
+regression behind it.
+
+**What closes it:** decide which band an ambient sensor should have, apply it in both paths, and run
+the oracle plus `tools/re/decoder_equivalence.py` over every capture. ⓘ No capture on disk contains
+a reading in the disputed 70…150 °C range, so nothing observed is affected — this is latent.
+
+### 64. Group-command writes are decoded but not offered — no capture of one exists
+
+A water heater's reservation times, a washing machine's programme settings and a fridge's zone
+setpoints are not written one parameter at a time. Haier publishes them as an `Operation`: a frame
+type, an EPP command and a list of `(name, startWord, startBit, length)` making up that op's own
+word array — `grSetResn1` on issue #13's heater, and eleven more on it alone.
+
+Everything needed to build one is in the map, and the integration reads those attributes today. It
+does not offer them as controls, and that is a decision rather than an omission.
+
+**Why.** The two write mechanisms are not equally forgiving. A single-parameter write names its
+attribute in the command and carries the value in the payload: a wrong id is refused with a NACK we
+can see, and nothing else moves. A group set packs a whole word block and the appliance acts on all
+of it — so a layout that is wrong by one word sets several settings at once, silently, and the unit
+has no way to tell us. On a gas water heater or a washing machine that is not a trivial mistake.
+
+⛔ **And there is no validation available.** No capture held by this project or found in prior art
+contains a group op being *sent* to a non-air-conditioner. The washing machine capture is a genuine
+both-directions UART tap and the only writes in it are `4d01` status queries. The air conditioners'
+`grSetDAC` was confirmed on hardware, which is exactly the evidence these lack.
+
+**What closes it:** one capture of a group op on the wire for any non-AC appliance — a UART tap, or
+a diagnostics download taken immediately after setting a reservation in the Haismart app, which
+would leave the op in `lan_frames`.
+
+### 65. A board can wipe its module's Wi-Fi configuration
+
+*(see `CLAUDE.md`; the `FD` 清除用户信息 field — a board that sends it takes the unit off the LAN and
+the integration sees the appliance vanish.)*
+
+### 66. Ten device classes are published only in the older V2 text profile
+
+`catalogue/configfiles/` holds 191 maps, of which 27 are not JSON but Haier's older text profile:
+
+    [冷藏显示温度]^601001#1&1,-38@!&!,!#6d01,1,8,8$
+
+It carries the identical four numbers — statusCmd, word, bit, length — plus the scaling, so decoding
+is not the problem. **Naming is.** The format keys its fields by a Chinese label and a base-36
+attribute id (`601001`), while the declaration gate speaks the digital model's English attribute
+names (`refrigeratorTemperatureC`), and this project holds no bridge between the two. `ATTR_IDS` is
+a different id space and was checked: none of those ids appears in it.
+
+⚠️ Ten classes have **only** V2 members — `0101 0102 0104 0202 0401 0502 0601 0602 0903 1801` — plus
+a minority of `0121` (fridges), `0501` (washers) and `0612` (water heaters). A device of one of
+those gets no byte map and falls back to exactly the behaviour it had before any of this existed.
+
+ⓘ It is probably smaller than it looks: those typeids are the 2019-era ones bundled in the app, and
+the on-demand fetcher asks for V3 first, so a current device of the same category would most likely
+be served a V3 map under its own typeid.
+
+**What closes it:** a label→name mapping (the panel resources may carry one), or one live device of
+those classes whose typeid does serve V3 — which would show the whole question is historical.
+
+### 58. The end-anchored telemetry decode assumes a tail block — five published families put it elsewhere
+
+`parse_extended_status` has two paths. A frame whose word count matches a family in `BIGDATA_MAPS`
+(20, 21, 23, 43 words) is read from the manufacturer's own field map. **Anything else at least 141
+bytes long is read END-ANCHORED**: the engineering block is assumed to sit at the tail, and every
+offset is derived from the frame's own length (`shift = len - 141`).
+
+That assumption is well-evidenced for everything it has met — the classic 141-byte wall units and
+the `0d012` cabinets at 147 bytes carry the identical block six bytes further along, confirmed
+across three captures on the issue #12 cabinet. The comment in the code says exactly that, and it is
+true of every family **confirmed on hardware**.
+
+The manufacturer's own byte map now supplies counter-examples. Five families place telemetry
+**after** the engineering block:
+
+| family | engineering block ends | frame runs to | words after the block |
+|---|---|---|---|
+| `…0212…1330…` 挂机通用 0D16 光伏 海外 | word 64 | 77 | **13** |
+| `…0212…1774…` 挂机通用 0D16 光伏 | word 64 | 77 | **13** |
+| `…0312…204042…` 柜机通用 0D17 光伏 | word 75 | 88 | **13** |
+| `…0d21…189448…` 柜嵌通用 0D14 光伏 | word 61 | 74 | **13** |
+| `…0212…1597…` 南亚光伏挂式空调2022 | word 23 | 30 | **7** |
+
+What sits after it is photovoltaic telemetry — `accumulatedUseMainsPower`,
+`accumulatedPhotovoltaicPower`, `pvInput`, `realTimeTotalPower`, `realTimeTotalPowerStorage` — all
+carrying `statusCmd 7D01`, so they are part of the same big-data frame. For comparison, both
+families the generator was built from end their engineering block one word before the frame ends
+(42 of 43, 22 of 23): genuinely at the tail.
+
+#### The declaring set is EIGHT families, not five — and the three extra ones are SAFE (swept 2026-09-08)
+
+The five above were found by reading the families already suspected. A sweep of **all 191
+configFiles** for PV/solar field names (`pv[A-Z]`, `photov`, `solar`, `光伏`, enumerated over
+`Property`/`Bigdata`/`changeParas`/`Alarm`/`Event` rather than grepped for an expected name) finds
+**eleven** families mentioning PV at all: eight declaring PV **telemetry**, plus the unobserved 商空
+`0d12` family (`…0d122151860b57…`) which declares PV **alarms only**, and two `1d01` families whose
+only hit is `pValveErr` — a proportional-valve fault, a false positive on the pattern.
+
+The three newly-found telemetry families do **not** extend the risk set, because each ends its
+`Bigdata` map **on** `expansionValveOpenDegree` and puts its PV words *before* the engineering block:
+
+| family | `expansionValveOpenDegree` at word | last Bigdata word | words after the block |
+|---|---|---|---|
+| `…0212…1675…` | 29 | 29 | **0** — safe |
+| `…0d21…1916…` | 31 | 31 | **0** — safe |
+| `…0212…1890…` | 48 | 48 | **0** — safe |
+
+⇒ **the at-risk set stays exactly the five in the table above**, now positively confirmed rather than
+assumed complete. The 商空 `0d12` family is also safe on this axis (block ends at word 27 of 27),
+though it remains divergent for the reasons in item 13.
+
+⚠️ Scope: this is a statement about **what the configFiles declare**, not about hardware. It cannot
+say whether any such unit exists in the field or would return its full declared block.
+
+**The risk, stated no more strongly than the evidence supports.** If one of these units returns a
+big-data frame carrying its full declared block, its word count is not a `BIGDATA_MAPS` key and its
+length is well over 141, so it takes the end-anchored path — and `shift` would be 13 words (26
+bytes) too large. Power and current have plausibility ceilings that would reject some of the
+resulting nonsense, but **`compressor_frequency_hz` has no such veto** and would report whatever
+byte lands there. That is the failure this decoder is otherwise careful to avoid: not missing data,
+but confident wrong data.
+
+**It is not known to fire.** No unit of these families has ever given us an extended report. There
+is one capture from `…1774…` (issue #6), but it predates the frame-keeping diagnostics and carries
+no `7d01`. So this is a latent risk with a named test, not an observed defect.
+
+**What would settle it:** one diagnostics download from any 光伏 model with the compressor running —
+`lan_frames["06/7d01"]` present. If its payload is 78 words, the end-anchored path is wrong for it;
+if the unit sends a short block instead, the convention holds and this item closes.
+
+**The cheap guard, if it is wanted before that arrives:** the configFile says, per family, whether
+anything sits after the engineering block. Restricting the end-anchored path to lengths already
+confirmed (141 and 147), or consulting that fact, both close it without inventing a layout. Neither
+is done here: changing decode behaviour is a gated change (the oracle sweep and the stored-capture
+regression), and no user is known to be affected yet.
+
+⚠️ Note also that the PV telemetry itself is **not shipped and should not be shipped blind**: the
+one real unit of these families whose model we hold (issue #6) declares 82 attributes and **none of
+the PV names are among them**, so entities built from the byte map alone would be phantom — the same
+trap the declaration gate exists to prevent.
+
+### 57. Half-degree setpoints — the register is known, what asserting it MEANS is not
+
+Reported by the owner of a `0d12` roof cabinet: the unit's remote sets 24.0, 24.5, 25.0, while the
+integration steps in whole degrees. The step comes from the appliance's own model
+(`targetTemperature` `dataStep.step`), and the climate entity rounds a requested temperature to a
+whole degree before encoding it.
+
+**There are two half-degree mechanisms, and the manufacturer's byte map says which product uses
+which.** Either the setpoint field itself counts halves (`k = 0.5, c = 0`, i.e. °C × 2 — this is the
+209-byte family's encoding, already shipped, and 33 catalogued products declare `step: 0.5` that
+way), or the setpoint stays whole degrees (`k = 1, c = 16`) and a separate flag,
+`halfDegreeSettingStatus`, carries the half. No product declares both. The `0d12` cabinets and the
+classic families are the second kind.
+
+**On `0d12` the flag has its own single-parameter command.** The manufacturer's configuration for
+both `0d12` families gives `halfDegreeSettingStatus` word 3 bit 10, `eppCmd 5D08`, writable — and the
+funcModel makes it `writeType: I`. That is unusual and worth stating precisely: of the 19 device
+families whose funcModel carries this attribute at all, **only the two `0d12` families make it
+individually settable; the other 17 are group-only**. `0d12` is the class whose firmware refuses the
+group set, so the individual channel is the only one a control could use there.
+
+The position is agreed by four independent sources — the configuration, the vendor's own `0D012`
+UART document (its 附录D command table puts it at Byte5:Bit2, which is word 3 bit 10), the public
+`0D012` template, and prior art's byte map, whose eight bits of that word match the configuration
+8 of 8. The same UART document enumerates `targetTemperature` as fifteen whole-degree codes
+(16 °C … 30 °C) while enumerating halves elsewhere (`indoorTemperature` steps 0.5 °C), so on this
+class the flag is the only place a half degree can live.
+
+**What the wire shows.** Across every hON status report in the prior-art corpus — 598 frames — the
+flag is set in 7, all from one cabinet, and that cabinet is a `0d12`. The other 591, from the
+residential families, read 0. Every report this project holds reads 0. And the class splits: a
+second `0d12` cabinet refuses `5D08` outright, which its board reports as a command its control
+handler will not accept — that cabinet will not do halves whatever the flag means.
+
+⛔ **The blocker is semantic, not mechanical.** Every manufacturer surface documents this attribute
+as on/off and nothing more. The only statement anywhere of what asserting it does is prior art's
+implementation, which treats it as the setpoint's fraction: write the whole degrees and set the flag
+when the remainder is half, read the setpoint back as `value + 16 + 0.5 × flag`. If instead the flag
+merely enables a half-degree mode on the panel, the half never reaches the wire and no honest 0.5
+setpoint is possible on this class. The provisional-control mechanism does not close that gap: it
+retires an id on a refusal or an unmoved read-back, but under the mode-enable reading the flag reads
+back set and the integration would show 24.5 for a unit sitting at 24. A wrong setpoint is not
+something to ship.
+
+**What settles it — one report, no code.** Set a half degree on the unit's remote, leave it, then
+download diagnostics: the status frame is kept whole, and word 3 bit 10 is the answer. The flag set
+while the setpoint byte still reads the whole degree is the fraction reading, and confirms that
+cabinet has the function. The flag clear while the unit's own display shows the half means the half
+lives in the controller. Worth asking what the unit's display shows, since a two-character display
+rounds it away either way.
+
+#### ▶ THE REPORT ARRIVED 2026-09-08 — and the test did not register. Item stays OPEN.
+
+@nutkkc sent three diagnostics downloads from his `0d12` cabinet (`AE2C52Q00` / `HCFI-38XTR32F`,
+module `e_4.6.21 / R_6.0.01`), named `24.5` / `25` / `25.5`, taken on v0.69.1. He set the values
+**on the remote**, which offers 0.5 steps. They are in the parent tree as `24.5.json`, `25.json`,
+`25.5.json`.
+
+**What the wire says — the flag never moved, and neither did the setpoint.**
+
+| download | setpoint code (w1.b8) | `halfDegreeSettingStatus` (w3.b10) | decoded |
+|---|---|---|---|
+| `24.5` | 9 | 0 | 25.0 °C |
+| `25` | 9 | 0 | 25.0 °C |
+| `25.5` | 9 | 0 | 25.0 °C |
+
+A bit-level diff of **all four frame kinds** across the three captures shows only outdoor
+temperature (100 → 99 → 99, i.e. 36 → 35 °C), two outdoor probes in the `7d01`, and the checksums.
+`04/0f5a` and `02/6d01` are byte-identical. The captures are live and fresh — poll counts advance by
+three between files and outdoor temperature moved — so a change that had landed would be visible.
+
+**This is not "the half was dropped".** Under the mechanism above, 24.5 is code **8** + flag 1 and
+25.5 is code 9 + flag **1**. Neither the code nor the flag moved, and no rounding rule sends 25 for
+both 24.5 and 25.5 (24.5 truncates to 24; 25.5 rounds to 26). The board's setpoint simply did not
+change during the exercise.
+
+**Controls, so the conclusion is not just "nothing happened".**
+
+* No integration write occurred: `02/6d01` (the control-session reply) sits at **35 in all three**,
+  and `controls.last_control` is an earlier HA write of `targetTemperature: 9` at 06:51:56 UTC.
+* He could not have used Home Assistant anyway — his resolved profile is **`temp_step: 1.0`**.
+* He could not have used the app either: the app-facing model in his own diagnostics carries 12
+  attributes, `targetTemperature` is `STEP {min 16, max 30, step "1"}`, and
+  **`halfDegreeSettingStatus` is absent from it entirely**. (Note `indoorTemperature` *is* `step 0.5`
+  there — the app shows halves for the *reading*, which is a plausible source of confusion.)
+* Independent third witness: the cloud's own live mirror, `digital_model.reported_values_now`
+  (a fresh fetch — it differs from the cached `reported_values` on `windDirectionHorizontal`), reads
+  `targetTemperature: "25"` in all three.
+
+⇒ three independent paths — LAN status frame, LAN telemetry frame, cloud REST mirror — agree the
+unit sat at 25.0 throughout.
+
+**Two readings survive, and this capture cannot separate them.**
+
+1. **The handset's .5 is display-local** — it transmits only on whole-degree crossings, so stepping
+   25 → 24.5 → 25 → 25.5 sends the board nothing it acts on.
+2. **The remote was not registering on the board at all** during those windows.
+
+`opSrc` reads **3 = network** in all three (`{0: other, 1: remote, 2: panel, 3: network}`), i.e. the
+last change the board *recorded* was HA's earlier write. That **rules out a wall panel having set it
+and the board accepting it** (that latches 2), but it does not separate 1 from 2: `opSrc` only moves
+when a change is accepted, so a handset command treated as a no-op leaves it at 3 either way.
+
+**Corroborating scope — the flag has never been observed set on this hardware.** A sweep of every
+stored diagnostics file found **21 `0d12` captures** (133-byte frames, all `AE2C52Q00`), spanning
+months and setpoints 20/21/22/24/25 °C: `halfDegreeSettingStatus` reads **0 in every one**. Word 3
+itself is populated in those frames (`0x0201` — `screenDisplayStatus` 1, `onOffStatus` 1), so that is
+a real zero in a live word, not an unread region. ⚠️ **Bounded:** one product code, one module build.
+And the sweep's word origin (`byte 112 = outdoorTemperature`, hence word 0 at `len − 43`) is valid
+**only for the 133-byte `0d12` frames** — it self-validates there because the decoded setpoint matches
+each capture's filename, but applying it to the 117/165/175/209-byte families in the same corpus
+produces garbage, and any `half=1` printed for those is a wrong-offset artefact, not evidence.
+
+**⛔ Do not write down "the half never reaches the wire."** That is a negative stated past its
+evidence: it requires the whole-degree part to have been dropped too, which nothing here explains.
+
+**What settles it — one more download, and it is cheaper than the first.** Ask him to set a plainly
+whole-degree change on the remote, **25 → 28**, wait a minute, download again.
+
+* Code 9 → 12 ⇒ the remote does reach the board ⇒ reading 1 is confirmed, the half never leaves the
+  handset, and the 0.5 step must not ship on this class.
+* Code still 9 ⇒ the remote is not registering at all, and the half-degree test has to be re-run.
+
+Worth asking alongside, since either could settle it without another download: **what is he actually
+holding** — a wired wall controller, an IR handset, or both — and does the **indoor unit's own
+display** show the .5, or only the handset? If only the handset shows it, that is reading 1 outright.
+
+**If it confirms**, every piece is already positioned: the flag has a read position on the shared
+frame and a write position in the published group-set order (559 of 1,451 products carry it there,
+528 of them the classic wall splits, though 554 of the 559 mark it invisible), and on `0d12` the
+coordinator already splits a multi-attribute change into separate single-parameter commands. The
+step would become a property rather than a fixed attribute, 0.5 only where the flag is usable — and
+it must fall back to whole degrees when a provisional control retires, or a user is left with a
+half-degree dial whose halves round away silently.
+
+#### ⚠️ A defect this turned up, independent of the flag
+
+The 33 products whose model declares `targetTemperature` `step: 0.5` already get a half-degree step
+in the UI, because the step is read straight from the model — while the write path rounds the value
+to a whole degree. Those units offer a step the write cannot express. The fix is either to encode
+the half (their setpoint field counts halves, so it can carry it) or to clamp the advertised step to
+what the encoder can send; the first is correct and needs one capture from such a unit to confirm the
+field is written the way it is read.
+
+### 56. The single-parameter register is CLASS-WIDE — the funcModel is the per-family witness
+
+The 2026-09-03 funcModel sweep (`catalogue/funcmodels/`, 164 families, 36 classes) showed the
+single-parameter write mechanism the project ships on `0d12` — `CONTROL + 0x5D00|id` — is **not a
+`0d12` special case**. Almost every AC class declares `writeType: I` attributes with an `eppCmd`, and
+**every class's ids sit on the same `5D` command page** (checked across all configFiles). So the
+addressable single-parameter surface spans most families; today we exploit it only on `0d12`.
+
+**What is witnessed vs what is not.** Haier's funcModel states, per family (per uPlusId), which
+attributes are single-parameter writable (`writeType` containing `I`). It is a **declaration, an
+INPUT** (METHOD Rule 40), not a hardware outcome. Support is per-uPlusId: within one class some
+families are `I`-rich and some are **G-only** (group-set only).
+
+★★ **Live probe (2026-09-03) — CONFIRMED board-predictive PER ATTRIBUTE.** The three-way split
+matters: across the 26 AC families, **12 are I-capable** (a full single-param register), **12 mark ONLY
+`onOffStatus` `I&G`** (single-param power, everything else `G`), and **2 are truly G-only** (the window
+units). The owner's family (`…02120011801256…`, 共空 0D07) is in the middle group: every attribute `G`
+**except `onOffStatus` (`I&G`)**. TWO live no-op probes of it, on the OFF Upstairs unit, settled it
+cleanly:
+* `0x5D02` (**setpoint — funcModel `G`**) → **REFUSED, frame `0x03`, code `0x0000`**.
+* `0x5D01` (**onOffStatus — funcModel `I&G`**, value 0=off, its current state) → **ACCEPTED, frame
+  `0x02` + a status report, no refusal**; unit stayed off.
+⇒ The board implements the `5D` page **SELECTIVELY, exactly as the funcModel `writeType` says**: it
+accepts the `I&G` attribute and refuses the `G` one, ON THE SAME UNIT. So `writeType` predicts board
+behaviour **per attribute**, not merely per family — the strongest validation yet for offering
+single-param strictly by the funcModel. (The `0x0000` on `5D02` meant "no single-param for THIS
+attribute", NOT "no `5D` page" — an earlier reading, now corrected.) Unit left off/23, unchanged.
+⚠️ Practical caveat: the 12 middle-tier families already control power via the **group-set**, so
+`5D01` single-param power is redundant THERE; the finding's value is the validated `writeType`→board
+link, which raises confidence for the 12 **I-capable** families whose `I` attributes have no group-set
+alternative. (Probe pattern: `async_send_op` a `build_epp_frame(0x01, 0x5D00|id, value)`, read
+`epp_frame_type` — accept `0x02` vs refuse `0x03`.)
+
+**Why not shipped for other families.** (1) `writeType: I` is unconfirmed on hardware for every non-
+`0d12` family — the write is only proven on `0d12` (prior-art issue #19 + a reporter). (2) Read-back /
+self-settling needs each family's report layout worked out, which is done for only a few families.
+(3) The owner's units are classic G-only and cannot exercise it. Shipping unverified single-param
+writes wholesale across dozens of families would violate Rule 8 ("the unit is the only authority on
+writes").
+
+**What would settle it, per target family:** a live single-param probe (tooling exists) on a unit of
+that family, OR a reporter's capture of the vendor module's own single-param traffic (the issue
+tracker is the capture corpus), then ship provisionally + self-settling exactly the way the
+four-sided louvres do on `0d12`. Tooling: `tools/re/fetch_funcmodel.py`, `sweep_funcmodels.py`, `funcmodel_coverage.py`;
+standing gate `tools/re/validate_configfile_register.py` check 6 (shipped ids must be `writeType: I`;
+a declared+writable+positioned attribute left unshipped FAILS). For `0d12` itself the register is
+COMPLETE against declarations — no gap but the already-deferred `ampereControl` (item unchanged).
+
 ### 1. Vane positions on a unit whose model understates it
 
 Both axes offer their positions as `select` entities beside the swing controls, built from the stops
@@ -804,6 +1414,88 @@ compressor running) whose reversing-valve field reads 0 or 1 -- that fixes the p
 can then be decided from it. Defrost (`defrost_status`, same actuator word) can be published as
 `defrosting` the same way once one report shows it at 1.
 
+### 59. ⓘ A THIRD presence parameter exists in the SDK: the occupied→unoccupied DELAY (2026-09-06)
+
+Haier's own `wifibase` SDK manual (`catalogue/haigeek_refdocs/wifibase/`, §九 `uhepp.h`) declares three
+radar/人感 events on the module↔board UART:
+
+    UHEPP_RADAR_STATUS_GET       获取感知状态
+    UHEPP_RADAR_STATUS_SWITCH    人感开关状态切换
+    UHEPP_RADAR_SET_DELAY_TIME   ★ 设置人感有人到无人的延时时间
+
+We ship the presence **mode** (off/avoid/follow/on) and read `sensingResult`; the **delay time** —
+how long after the room empties before the appliance treats it as unoccupied — is a parameter we have
+never seen, in the byte maps or on the wire.
+
+⚠️ **Do NOT ship anything from this.** It is an SDK API surface, not a wire encoding: there is no
+attribute name, no `5Dxx` id and no byte position here, and no evidence our AC's board implements these
+events. It is recorded so that if a delay-like field ever turns up in a configFile or a capture, its
+meaning is already known. Related: memory `presence-sensor-is-module-side-with-distance`,
+`docs/LEFTOVER_UNKNOWNS_2026-08-31.md` §A2.
+
+
+### 60. ⓘ The appliance announces its own key rotation on `:56800` — an unhandled message type (2026-09-08)
+
+While a controller is connected, the appliance sends an unsolicited message with **info type 6**
+(`info_code 0xEA66`) when its key version changes. It is **header-only — an empty payload** — and is
+rate-limited to roughly one every five minutes. There is also a controller→appliance **type 4** that
+asks the appliance to refresh its key, answered with a **type 5** whose body is encrypted under the
+session key with the framing the integration already implements (`BE16 length ‖ data ‖ padding`,
+AES-CBC). The handshake types we do implement are 0–3, so **types 4, 5 and 6 are all unhandled**.
+
+Today the integration learns about a rotation only when biz-data fails to decrypt, and then re-keys.
+The appliance is willing to say so directly, and because the type-6 message carries no payload it
+remains readable with a stale key.
+
+⚠️ **Do not build on this yet.** Three things are unsettled: the message does **not** carry the new
+version (that arrives in the next handshake reply, which is fine — we already know how to re-key,
+what we lack is the trigger); it is unconfirmed on the firmware our reference units run; and the
+coordinator polls in short sessions, so a five-minute-debounced push will usually fire with nobody
+connected.
+
+▶ **The free first step, no hardware and no risk:** the frame ledger added in v0.66.0
+(`coordinator.lan_frames`, `uss.collect_session_blobs`) already keeps every frame kind seen. Record
+the **info type** of any inbound message that is not `1` or `3`, so one of these shows up in a
+diagnostics download instead of being silently dropped. If one is ever seen, its bytes settle the
+rest.
+
+### 61. ⓘ "i-Feel" (the handset measuring room temperature) is not visible to us — a caveat on `indoorTemperature` (2026-09-08)
+
+On many Haier remotes, a handset button makes the **remote** measure the room temperature and the
+appliance follow it instead of its own sensor. Asked whether we can see it: **no**, and the search
+that says so was scoped as follows.
+
+* **All 228 distinct attributes** across the 23 air-conditioner families in the published device
+  models were listed with their descriptions. The only temperature attributes are
+  `targetTemperature`, `indoorTemperature`, `outdoorTemperature` and `tempUnit`, plus comfort flags
+  (`autoTempCtrlStatus`, `constDehumidificationStatus`, `tempHumidDisplayMode`, `dualCtrlStatus`).
+  **Nothing indicates which sensor feeds the control loop.**
+* Nine Chinese HVAC terms for the concept (控温点 · 感温点 · 测温点 · 回风感温 · 温度来源 · 温度补偿
+  · 温控点 · 控温方式 · 温度控制方式) appear **nowhere** in the published models, the byte maps, the
+  vendor documentation set or the UART protocol specification.
+* ★ **The control that makes this a real negative:** Haier *does* model "control method" where it
+  wants to — **`humidityCtrMode` 湿度控制方式** exists. There is simply no temperature equivalent.
+* The vendor documentation set contains **no infrared protocol material** at all; the few mentions of
+  遥控器 are onboarding instructions ("set the remote to cooling mode") and a product category.
+* One reference unit declares 87 attributes, of which two are temperature.
+* ⛔ Not covered: the per-product panel bundles.
+
+⚠️ **Do not mistake `opSrc` for it.** `opSrc` (控制命令来源) enumerates `0 other / 1 remote /
+2 keypad / 3 network` — the source of the last **command**, not of the temperature reading.
+
+⚠️ **The caveat that matters for us.** The handset sends its reading to the appliance over infrared,
+and the appliance substitutes it for its own sensor internally. Nothing new appears on the wire —
+`indoorTemperature` is reported as usual, with **no indication that its source changed**. So while
+i-Feel is active our sensor may be reporting **the remote's location, not the unit's**. Worth a
+README line if a user ever reports the reading moving on its own.
+⛔ Nothing to implement: there is no attribute to read.
+
+▶ **One cheap test (a hypothesis, not a claim).** If the handset transmits its reading as an infrared
+*command*, `opSrc` may flip to **1 (remote)** periodically while i-Feel is on with nobody touching
+the remote — an indirect indicator. It is equally possible the appliance treats those frames as
+telemetry and never updates `opSrc`. The test costs nothing: enable i-Feel, leave the remote alone,
+and watch `opSrc` across two diagnostics downloads.
+
 ## Reference — not open items
 
 Kept because each looks like something to "fix" until you know why it is the way it is.
@@ -1300,15 +1992,19 @@ the frame-keeping build, and from Haier's own generated UART protocol for this c
     `HON_ALARM_MESSAGES` (all 51), and RICHER — we carry the service codes (`F1`/`E2`/`E14`/`E18`)
     esphome lacks; the only nit is esphome's "CBD" typo at idx13 where we correctly say "PCB". So
     "fault names right through position 50" is now independently confirmed for every bit.
-  * **★ Seven NEW candidate single-parameter controls for `0d12`.** esphome's `DataParameters` ids
-    `0x07/09/0A/0D/16/17/1B` each map to an attribute the `0D012` class DECLARES (附录H): `tempUnit`,
-    `screenDisplayStatus`(/`lightStatus`), `10degreeHeatingStatus`, `selfCleaningStatus`, `muteStatus`,
-    `lockStatus`, `silentSleepStatus`. We ship 9 confirmed `0d12` single-param ids + provisional
-    `5D08`; these are candidates (the CANONICAL ids are now in each family's config — `catalogue/configfiles/`; id from esphome's 9/9-matching register, attribute
-    from the class model). Add them as PROVISIONAL single-param controls (self-adjudicating —
-    a refusal/unmoved field withdraws) the same way `5D23` presence ships; `0x09` is ambiguous between
-    `screenDisplayStatus` and `lightStatus` — resolve on hardware. Needs a reporter's `0d12` to
-    confirm, but no capture — the provisional mechanism adjudicates on first use.
+  * ⛔ **~~Seven NEW candidate single-parameter controls for `0d12`~~ — SIX ARE PHANTOMS, and this
+    bullet's attribute names were guesses the configuration later corrected.** Prior art's
+    `DataParameters` ids `0x07/09/0A/0D/16/17/1B` are, per the manufacturer's own configuration for
+    this class, `tempUnit` · `screenDisplayStatus` · `10degreeHeatingStatus` · `selfCleaningStatus` ·
+    `echoStatus` · `lockStatus` · `electricHeatingStatus` — not the `muteStatus` / `silentSleepStatus`
+    this bullet guessed for `0x16` / `0x1B` (those are `19` and `18`, and `muteStatus` was already
+    shipped). **`0x07 tempUnit` ships**, because 19 products declare it. **No `0d12` product declares
+    any of the other six**, so the declaration gate would never surface them and wiring them would be
+    phantom controls; they are held in the register validator's byte-map-only list, which trips if a
+    configuration re-sweep ever makes one declarable. The same list holds `0x08`
+    `halfDegreeSettingStatus` — see item 57, and note the scope of "declared by no product" there.
+    The register today is **ten settled ids plus five provisional** (presence `5D23` and the four
+    cassette louvres).
   * **Per-unit feature detection — NOT in the hON handshake** (dug esphome, 2026-09-01). The
     device-version answer's `functions[1]` bitmap is PROTOCOL negotiation (CRC/interactive/multinode/
     roles), not an appliance-feature manifest; esphome gates nothing on it. Human-sensing has no
@@ -1367,3 +2063,179 @@ than no figure at all.
 
 **What closes it:** one diagnostics file from an air conditioner that is decoded from a relative's
 layout *and* whose model lists the counter. The value can then be checked rather than assumed.
+
+### 62. Replicate the technician app's local surface as a CLI or web UI, for fully offline users
+
+> ## ✅ TIER 1 IS BUILT AND GATED (2026-09-10) — `tools/re/ble_advert.py` + `tools/re/discover.py`
+>
+> The discovery tier below is no longer a proposal. Two tools, both lint-clean, both self-tested,
+> **neither able to write to an appliance** — they carry no code for a BLE connection, GATT,
+> pairing, OTA or the factory-test channel, and `discover.py` never opens `:56800`, so it does not
+> contend with Home Assistant for the single control session.
+>
+> * **The advertisement decode now exists as code rather than prose.** Both TLV encodings, the
+>   `"U+"` header, fragment + scan-response reassembly, all 22 types, the 11 named flag bits, the
+>   ExtField in memory order. Its self-test asserts **the four independent reality checks**
+>   (`LocalkeyValid`, `Controllable`, `Configurable`, `isNeedAuth`) and pins `APConnected = 0`,
+>   which §23 then resolved: the module **never sets that bit**, so it is an unimplemented field
+>   rather than a wrong reading.
+>   Mutation-tested: two deliberate corruptions each produce four failures.
+> * ⟦LIVE⟧ **Run against both units 2026-09-10** — joined `LAN+BLE` on the MAC, `psk0`, `A91R6`,
+>   `e_4.3.00`/`R_6.0.01`, `cloud_state 1006`. Units left as found.
+>
+> ★★ **AND IT MEASURED THE GAP TO TIER 2, which is the more useful output.** Against the technician
+> client's own LAN property vocabulary (`cae_sr_uwt_reset_property_list`, `FW_BLE_ADVERT_DECODED.md`
+> §21 §2), the key-free surfaces fill **7 of 22** properties. The **15** out of reach are
+> `Protocol · ProtocolVers · ProductCode · swType · Busying · ReadyToBind · SupportPing · UDPPort ·
+> OfflineReason · IsMeshGW · ComplexDevType · SupportGetDevVerInfo · SUWTLibVer · SUWTDevVer ·
+> SupportAuxiliaryConfig`.
+> ⇒ **the cheapest instrument for most of them is LAN `0x5DC3` device-info** (reply `0x5DC4`,
+> 0x10 + 0x10 + 0x40 bytes of device/config fields) — a **read** on a channel we already speak, and
+> the natural content of tier 2. ⛔ Not sent by either tool.
+> ⛔⛔ **TESTED ⟦LIVE⟧ 2026-09-10 AND THE RECOMMENDATION ABOVE IS WITHDRAWN.** `0x5DC3`, `0x65BB` and
+> `0x659D` each **RESET the connection after send** — **bare AND inside a fully established uSS
+> session** (hello → hello_resp with `localkey_version 48` verified → hello_done → done_resp), with
+> the control that the very handshake our integration uses every 30 s worked on that same socket.
+> ⇒ **the whole `0x4E20+` command family is unreachable on these units**, so tier 2 has **no LAN
+> instrument** and those 15 properties stay out of reach. ⚠️ **[U] why** — a role byte, or a different
+> listener. `captures/module-firmware/analysis/FW_GATT_LIVE_2026-09-10.md`.
+> ⓘ Counting note: §21 prints 24 strings, two of which (`UWT_DEV`, `UWT_DEV_SAFE`) are its own
+> identification of the *values* of `Protocol`; hence 22 distinct properties. If that split is ever
+> shown wrong the count is 24 and nothing else changes.
+>
+> ▶ **What tier 1 still lacks:** a scanner. This host has no Bluetooth adapter, so `discover.py`
+> reads a scan **log** (the C# harness in `captures/ble-scan-2026-09-09/`) rather than driving a
+> radio. A packaged tool for an offline owner needs a `bleak`-based scanner on a machine that has
+> one — bounded work, no new protocol knowledge required.
+
+**The idea (owner, 2026-09-10):** everything the uAssistant technician app can do to a unit *without
+the cloud* is now enumerated, and none of it needs Haier's servers at the moment of use. Packaging
+that as a command-line tool or a small local web UI would give an owner who keeps their appliances
+firewalled the same diagnostic and control surface a technician has — with no account, no internet,
+and nothing installed on the appliance.
+
+**Why this is now realistic rather than speculative.** The surface is mapped, not guessed:
+
+* **97 `cae_localc_*` local-control functions** crawled with their literals
+  (`captures/module-firmware/analysis/APP_TECHNICIAN_API.md`) — security/key, bind, BLE bond and
+  auth, BLE transport, OTA, network/domain, device I/O, proxy lifecycle, mesh.
+* **The BLE GATT profile** — six services, 30 characteristics, every UUID from Haier's own symbols
+  (`FW_BLE_GATT_SURFACE.md`), including `ff20` **EPP req/rsp**, i.e. the same appliance frames we
+  already build for `:56800`.
+  ⚠️ **SCOPE CORRECTION ⟦LIVE⟧ 2026-09-10:** that is the profile **as the phone library defines it**.
+  The enumeration on Downstairs found **`ff00` AUTH and `ff50` STP served, and `ff10`/`ff20`/`ff30`/
+  `ff40` ABSENT**. ⇒ **`ff20` is not available on this build**; EPP over BLE would ride ucom `0x22`
+  over **STP** (`ff50`/`ff53`, both served and writable) instead. `FW_GATT_LIVE_2026-09-10.md`,
+  `FW_BLE_GATT_SURFACE.md` §29.2.
+* **The LAN command set** — all 13 commands on `:56800` decoded (`FW_LAN_SET_GATEWAY_26013.md` §10).
+* **The BLE scan-result field set** — `prepare_search_dev_info` … `prepare_search_ble_dev_event`,
+  58 keys, and the Java model `BleGbDeviceAddNotify` (`FW_BLE_ADVERT_DECODED.md` §17). A scan list
+  showing RSSI, config mode, bind state, key validity and the ExtField versions is buildable from a
+  **passive** scan plus one `SCAN_REQ`.
+* **UDISCOVERY** already gives deviceId, uPlusId, firmware, SDK version and cloud state, key-free.
+
+**What it would plausibly offer, in rising order of risk:**
+1. **Read-only, zero-touch:** discovery (UDP `:7083` + BLE scan), device inventory, firmware/hardware
+   versions, cloud state, bind state, the decoded ExtField, RSSI. *Nothing is written.*
+2. **Read-only over an authenticated session:** the LAN reads we already speak (status, extended
+   report). ⛔ **`0x5DC3` device info and `0x65BB` bind info are NOT available** — measured
+   ⟦LIVE⟧ 2026-09-10: both reset the connection even inside a valid uSS session (see the correction
+   in the tier-1 box above). **Tier 2 is therefore thinner than this list implied.**
+3. **Control:** what this integration already does — the EPP write path — but exposed outside Home
+   Assistant, and optionally **over BLE `ff20`** rather than the LAN.
+
+⛔ **Explicitly out of scope, and the reasons are on file:** OTA (`ff3x`, the only brick-capable
+action), the factory-test channel, `ff0a`/`ff09`/`ff12`/`ff15` writes, and anything that pairs or
+bonds. Those stay under the standing stop rules regardless of how convenient a UI would make them.
+
+⛔ **CORRECTED 2026-09-10 (owner: *"arent you confident in the write side?"*) — I was, and I wrote
+the gate too broadly.** The caution below belongs to **the BLE transport**, not to writing.
+
+✅ **The LAN write path is not speculative — it is the shipping product.** `packages/` writes
+setpoint, mode, fan and vane to two real appliances every day; **727 tests green** (2026-09-10);
+v0.69.1 is deployed and was **live-verified** (setpoint 23→24→23 on Upstairs, confirmed by the unit's
+own next poll). The single-parameter `5Dxx` path is confirmed **per attribute on real hardware** —
+`5D01` (`I&G`) accepted with a status report, `5D02` (`G`) refused `0x03/0x0000`, **same unit, same
+session**. And writes are **self-verifying**: the reply frame type is the acceptance oracle
+(`02` accept / `03` refuse), with per-product reason codes decoded. ⇒ **LAN control belongs in tier 1
+beside discovery, not behind it.**
+
+✅ **AND THE BLE TIER JUST GOT CHEAPER (2026-09-10):** EPP over BLE is wrapped with the **same uSS
+cipher and the same localKey** as our `:56800` biz-data, with the sequence number pinned to **0**
+(`FW_BLE_GATT_SURFACE.md` §19 — `psk0_encrpyt_data` → `safekey_2_key` → `uss_encrpyt_data` →
+`uss_encrpyt_data_with_sn(sn=0)`). ⇒ **no new cryptography is needed**: `haismart_hrdp.uss.biz_encrypt`
+/ `biz_decrypt` work unchanged at `sn = 0`, and the existing EPP frame builders are reusable. **Only
+the transport is new.**
+
+⚠️ **The gate that IS real, and it is narrow: the BLE transport.** **No byte has ever been sent over
+BLE to these units**, `ff20`-carries-EPP is inferred from characteristic names, and whether they serve
+the `ff00` family at all is `BLE_ROUTE_UNKNOWNS.md` **A1/A2**. ⇒ **BLE** is where "read-only first"
+applies, and one passive GATT enumeration answers both unknowns.
+ⓘ And the exclusions above (OTA, factory-test, `ff0a/09/12/15`, pairing) are **risk policy, not
+uncertainty** — they stay out however confident we are.
+
+
+## 64. ⟦LIVE⟧ ★★★★★ BLE control is PROVEN — scope it, and decide on disclosure
+
+**2026-09-11.** An **unpaired, unbonded, UNAUTHENTICATED** BLE peer changed a unit's setpoint and
+restored it, verified over the LAN both times. The chain is in
+`captures/module-firmware/analysis/FW_BLE_FIRST_CONTACT_2026-09-11.md` §13 and the builder is
+`tools/re/ble_control.py` (private tree only).
+
+⇒ **This makes `FUTURE_WORK` 62 (a technician-style offline CLI) realistic for CONTROL** — the BLE
+half needs no account, no internet and no credential. ⛔ It does **not** make takeover realistic:
+installing a localKey we choose is a different operation and is unchanged.
+
+**Open, all cheap and on the same rig:**
+1. Other EPP commands over BLE — mode, fan, power, swing. Only `grSetDAC` setpoint is proven.
+2. The second unit; persistence across a power cycle; a never-paired unit.
+3. Whether the module will *report* state over BLE (the outbound callback table at `0x100100a0` —
+   only `0x13 CFG_STATE RPT` is observed populated).
+
+⚠️⚠️ **And a decision that is not engineering: DISCLOSURE.** Anyone in BLE range can command these
+units with no credential. That is more serious than the three items already on that list (the
+`*-sessionKey` API, the RNG with no hardware entropy, the `libOSDK` debug localKey). **Owner's call.**
+⛔ **Nothing beyond the existing private tooling should be published**, and the builder must not go
+into the public repo.
+
+## 65. A unit can un-provision ITSELF on its mainboard's orders — `FD` 清除用户信息
+
+**2026-09-13, from the vendor UART spec + prior-art captures** (`captures/module-firmware/analysis/`
+`FW_LOCALKEY_STORE_2026-09-11.md` §70; `docs/PROTOCOL.md` §10.8).
+
+In **master-slave mode** — which is almost certainly what the owner's units and the `0d12` cabinets
+run (three independent lines agree; `docs/UART_SYSTEM_FRAMES.md` §9a) — the Wi-Fi module **polls its
+own appliance mainboard** for management instructions, roughly once per cycle: frame **`FC`** out
+(no payload), frame **`FD`** back (6 bytes). One of those bytes is **清除用户信息**, and the value
+**`0x02`** means *"清除模块中用户配置的WIFI信息等"* — **clear the user-configured Wi-Fi settings.**
+A sibling byte, **解除绑定状态 = `0x01`**, unbinds the appliance from its account, and **模式切换**
+can push the module into softAP / smartlink / WPS setup.
+
+⇒ **What this means for the integration:** an appliance can leave the network *without anything on
+the network doing anything wrong*. From Home Assistant's side the failure looks like a unit that
+simply **vanishes** — no error, no key rotation, no cloud event, no reachability at
+`192.168.x.x:56800` — because the module has discarded its Wi-Fi credentials and gone looking for a
+provisioner. A user would report it as "the integration stopped working"; the cause is on the other
+side of the module, in appliance firmware we have never held.
+
+**Why it is filed rather than fixed:** nothing here is actionable in code today.
+* ⛔ **Never observed in the wild.** In every prior-art capture the field is `0x00`: a `0212` cabinet
+  answers `00 00 00 00 00 00` and a `0d12` cabinet `00 00 00 01 00 00` (that `1` is 强制进设置, which
+  the spec says is **ignored** unless 模式切换 selects a config mode). **93 polls, 93 answers, not one
+  requesting anything.**
+* ⛔ **We cannot see it happen.** It is board↔module UART traffic; it never crosses `:56800`, and this
+  project has never taken a UART capture.
+* ⛔ **And we could not prevent it if we did** — it is the appliance obeying its own mainboard.
+
+**What would make it actionable, cheapest first:**
+1. **A user report matching the signature** — a unit that disappears from the LAN and, on inspection,
+   is back in pairing mode (Wi-Fi LED flashing rather than solid) with **no** router/DHCP change and
+   **no** power event. That distinguishes it from the ordinary causes (DHCP lease moved, AP band
+   steering, the unit unplugged).
+2. If it ever recurs on one unit: the diagnostic is the **Wi-Fi LED** — solid = paired and connected,
+   flashing = config mode — which needs no tooling at all.
+
+**What to do with it now:** keep it in `TROUBLESHOOTING.md`'s vocabulary. If a user reports a unit
+that vanished and came back needing re-pairing, this is a documented mechanism, not necessarily
+something they or we did wrong. ⚠️ Do **not** put it in user-facing docs as a likely cause — it has
+never been observed, and the ordinary explanations are overwhelmingly more common.

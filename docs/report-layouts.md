@@ -1,5 +1,9 @@
 # Status report layouts
 
+> ⓘ **This page is the air-conditioner layout inventory.** It exists because AC layouts are inferred
+> from related models. Other categories need none of it: Haier publishes the byte positions per
+> product class and the integration reads them directly — see [`appliances.md`](appliances.md).
+
 Every Haier AC answers a status query with the same envelope, and packs its attributes into an array
 of 16-bit big-endian words that starts at **byte 92** of the decrypted report. Word `N` (1-based)
 begins at byte `92 + 2*(N-1)`; bit 0 is the least-significant bit of the word. What differs between

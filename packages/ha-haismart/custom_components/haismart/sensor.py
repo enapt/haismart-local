@@ -20,6 +20,7 @@ from datetime import datetime
 from typing import Any
 
 from haismart_hrdp import OPTIONAL_ENUM_FEATURES, vane_position_name
+from haismart_hrdp.entity_spec import Control
 from homeassistant.components.sensor import (
     DOMAIN as SENSOR_DOMAIN,
 )
@@ -56,6 +57,13 @@ from .const import (
 )
 from .coordinator import _VANE_ENDS, HaismartConfigEntry, HaismartCoordinator
 from .entity import HaismartEntity
+from .generic import (
+    GenericEntity,
+    device_class_for,
+    specs_of,
+    state_class_for,
+    unit_for,
+)
 
 # Newer Home Assistant renamed these two air-quality units. The old flat constants still work but
 # log a deprecation warning, while the new UnitOf* names do not exist on the version this
@@ -286,8 +294,13 @@ async def async_setup_entry(
     # being created and removed again on every restart. Absence is never enough for this -- only a
     # refusal, which is what `absent_readings` records.
     absent = coordinator.absent_readings
+    # The curated set is an AIR CONDITIONER's -- indoor/outdoor temperature, compressor frequency,
+    # the self-clean history. On anything else every one of them reads `unknown` for ever.
+    curated = coordinator.uses_curated_ac_entities
     entities: list[SensorEntity] = [
-        HaismartSensor(coordinator, desc) for desc in SENSORS if desc.key not in absent
+        HaismartSensor(coordinator, desc)
+        for desc in SENSORS
+        if curated and desc.key not in absent
     ]
     # opt-in backup entity: exposes the localKey so it rides along in HA backups / can be copied.
     # It's a secret, so it's diagnostic + DISABLED by default (enable it, back it up, done).
@@ -297,12 +310,12 @@ async def async_setup_entry(
     # no control for. The ones it renders a select for (and this unit can write) become select
     # entities instead, so they are excluded here to avoid a select and a sensor for the same thing.
     promoted = set(coordinator.panel_select_fields())
-    for name in sorted(coordinator.declared_enum_features - promoted):
+    for name in sorted(coordinator.declared_enum_features - promoted) if curated else ():
         entities.append(HaismartFeatureEnumSensor(coordinator, name))
     # Air-quality/humidity readings, for the probes this unit's own model declares (and its family
     # can place). Not read-backed: zero means "absent" for these values, so existence comes from the
     # declaration and the value handles its own absence.
-    for name in sorted(coordinator.declared_numeric_readings):
+    for name in sorted(coordinator.declared_numeric_readings) if curated else ():
         if desc := OPTIONAL_READING_SENSORS.get(name):
             entities.append(HaismartSensor(coordinator, desc))
     # Where each vane points, for an axis this unit reports but cannot be commanded to move — the
@@ -311,8 +324,17 @@ async def async_setup_entry(
     for key, attribute, codes in coordinator.vane_position_axes():
         entities.append(HaismartVanePositionSensor(coordinator, key, attribute, codes))
     _drop_superseded_vane_sensors(hass, coordinator, reporting)
-    # "Last self-clean" — only where self-clean is a real control (same gate as the button).
-    if coordinator.supports_field("selfCleaningStatus"):
+    # Everything else: every reading an appliance that is not an air conditioner declares -- its
+    # numbers with their published units, and its multi-value states with the manufacturer's own
+    # labels. Empty for an AC, whose sensors are the curated ones above.
+    entities.extend(
+        HaismartGenericSensor(coordinator, spec)
+        for spec in specs_of(coordinator, Control.SENSOR)
+    )
+    # "Last self-clean" — only where self-clean is a real control (same gate as the button), and
+    # only on an air conditioner: `supports_field` asks the AC wire model, which answers for a
+    # water heater too and put a permanently-unknown sensor on one.
+    if curated and coordinator.supports_field("selfCleaningStatus"):
         entities.append(HaismartLastSelfCleanSensor(coordinator))
     async_add_entities(entities)
 
@@ -551,3 +573,36 @@ class HaismartLocalKeySensor(HaismartEntity, SensorEntity):
             # re-add decodes the AC exactly as a cloud-onboarded one would, with no account.
             CONF_UPLUS_ID: c.uplus_id,
         }
+
+
+class HaismartGenericSensor(GenericEntity, SensorEntity):
+    """A reading the appliance's own model declares, placed by the manufacturer's byte map."""
+
+    def __init__(self, coordinator: HaismartCoordinator, spec) -> None:
+        super().__init__(coordinator, spec)
+        self._attr_native_unit_of_measurement = unit_for(spec)
+        self._attr_device_class = device_class_for(spec)
+        self._attr_state_class = state_class_for(spec)
+        self._labels = {str(value): label for value, label in spec.options}
+        if self._labels:
+            # An enum reading is a state, not a measurement: no unit, no statistics, and Home
+            # Assistant must be told the value set or it records it as an arbitrary string.
+            self._attr_device_class = None
+            self._attr_state_class = None
+            self._attr_options = list(dict.fromkeys(self._labels.values()))
+            self._attr_device_class = SensorDeviceClass.ENUM
+
+    @property
+    def native_value(self) -> str | float | None:
+        value = self.native_value_raw
+        if value is None:
+            return None
+        if self.spec.sources:
+            return str(value)        # a collapsed schedule grid: already a summary line
+        if self._labels:
+            # A value outside the declared set is dropped rather than shown raw: an enum sensor
+            # whose state is not in `options` is invalid, and Home Assistant logs it every poll.
+            return self._labels.get(str(value))
+        if isinstance(value, bool):
+            return str(value).lower()
+        return value

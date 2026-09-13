@@ -1,10 +1,14 @@
 """Constants for the Haismart local integration."""
 from __future__ import annotations
 
+from haismart_hrdp.appliance import ApplianceKind
 from homeassistant.const import Platform
 
 DOMAIN = "haismart"
 
+# Every platform this integration has. Kept as the AIR CONDITIONER set below rather than used
+# directly: forwarding CLIMATE for every entry is what put an AC thermostat -- cool / dry /
+# fan_only, clamped 16-30 C -- on a heat-pump water heater whose real range is 35-75 (issue #13).
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
     Platform.BUTTON,
@@ -13,6 +17,62 @@ PLATFORMS: list[Platform] = [
     Platform.SWITCH,
     Platform.SELECT,
 ]
+
+# What each kind of appliance gets. The shared platforms (sensor, binary_sensor, switch, select,
+# button) are model-driven already and carry whatever a device declares; the HERO platform is the
+# one that differs, and getting it wrong is what a user sees first.
+PLATFORMS_BY_KIND: dict[ApplianceKind, list[Platform]] = {
+    ApplianceKind.AIR_CONDITIONER: PLATFORMS,
+    ApplianceKind.WATER_HEATER: [
+        Platform.BINARY_SENSOR,
+        Platform.BUTTON,
+        Platform.NUMBER,
+        Platform.SENSOR,
+        Platform.SWITCH,
+        Platform.SELECT,
+        Platform.WATER_HEATER,
+    ],
+}
+
+# Attributes a HERO platform already owns, so the generic layer does not build a second control
+# for the same setting beside it. A water heater's setpoint belongs to its `water_heater` entity.
+HERO_ATTRIBUTES: dict[ApplianceKind, frozenset[str]] = {
+    ApplianceKind.WATER_HEATER: frozenset(
+        {"currentTemperature", "targetTemperature", "onOffStatus", "runningMode"}
+    ),
+}
+
+# What a device we cannot identify gets. ⚠️ It is the full set MINUS climate, and the caller adds
+# climate back when the device actually decodes as an air conditioner -- see `platforms_for`. An
+# unidentified appliance still gets every model-driven platform, so nothing is lost by not knowing
+# what it is; what is withheld is the one entity that would be a confident lie.
+PLATFORMS_UNIDENTIFIED: list[Platform] = [
+    Platform.BINARY_SENSOR,
+    Platform.BUTTON,
+    Platform.NUMBER,
+    Platform.SENSOR,
+    Platform.SWITCH,
+    Platform.SELECT,
+]
+
+
+def platforms_for(kind: ApplianceKind, *, decodes_as_air_conditioner: bool) -> list[Platform]:
+    """The platforms to forward for one entry.
+
+    ``decodes_as_air_conditioner`` is the no-regression clause and it matters more than it looks.
+    A device of a class this integration has never catalogued resolves to ``OTHER``, and some of
+    those are working air conditioners today -- a family added to the wire maps by capture without
+    its class ever being named here. Withholding climate from them on the strength of "we have no
+    row for this class" would break installs to fix a classification. So the rule is: an unknown
+    device keeps its thermostat only while its report really decodes as one, and a device we have
+    positively identified as something else never gets one at all.
+    """
+    if kind in PLATFORMS_BY_KIND:
+        return list(PLATFORMS_BY_KIND[kind])
+    platforms = list(PLATFORMS_UNIDENTIFIED)
+    if decodes_as_air_conditioner:
+        platforms.append(Platform.CLIMATE)
+    return platforms
 
 CONF_HOST = "host"
 CONF_DEVICE_ID = "device_id"
@@ -49,6 +109,15 @@ CONF_UPLUS_ID = "uplus_id"
 # (a class can be derived from the uPlusId, the variant cannot). Kept for diagnostics, so a report
 # from unfamiliar hardware identifies itself precisely instead of by a derived class.
 CONF_DEVICE_TYPE = "device_type"
+# The cloud device list's `appTypeName` -- Haier's own category for the product ("Wall Mounted",
+# "Electric Water Heater", "Pump"). A fallback for deciding what an appliance IS when its uPlusId
+# class field is one we have no row for; never overrides the class field, which is what the
+# appliance announces for itself. Absent for a device added without an account.
+CONF_APP_TYPE = "app_type"
+# Haier's byte map for this device's class, fetched once when the shipped bundle does not carry it
+# and cached here so the appliance decodes offline afterwards. Stored as the same PROJECTION the
+# bundle holds -- positions only -- not the quarter-megabyte configFile.
+CONF_DEVICE_MAP = "device_map"
 # Human-readable identity from the cloud device list's `extendedInfo` (prodNo/model/brand). Shown on
 # the HA device page instead of the raw product code.
 CONF_MODEL_NAME = "model_name"
@@ -177,6 +246,12 @@ ISSUE_STALE_LOCALKEY = "stale_localkey_manual_reauth"
 # seconds at which Home Assistant starts warning about slow setup; the entry simply tries again on
 # the next restart, and nothing else depends on it having succeeded.
 IDENTITY_TOPUP_TIMEOUT = 6.0
+
+# How long setup will wait for this device class's byte map before carrying on without it. Awaited
+# rather than backgrounded because what it fetches decides which entities exist, and bounded well
+# under the ten seconds at which Home Assistant warns about a slow setup: the appliance is set up
+# either way and tries again on the next start.
+DEVICE_MAP_TIMEOUT = 8.0
 
 # Repairs: the key rotated and the automatic re-fetch was TRIED and failed, on an entry that does
 # have account credentials. Kept apart from the no-credentials case because the advice is opposite:

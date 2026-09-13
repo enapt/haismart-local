@@ -23,6 +23,7 @@ from .cloud import (
     encrypt_login_password,
     httpx_transport,
 )
+from .device_config import async_fetch_device_config
 from .gateway import (
     GatewayClient,
     GatewayCreds,
@@ -53,6 +54,7 @@ __all__ = [
     "LoginResult",
     "RefreshResult",
     "__version__",
+    "async_fetch_device_config",
     "derive_client_id",
     "derive_gateway_auth",
     "derive_gateway_password",

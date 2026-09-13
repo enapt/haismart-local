@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from haismart_hrdp import OPTIONAL_BOOL_FEATURES
+from haismart_hrdp.entity_spec import Control
 from haismart_hrdp.udiscovery import CLOUD_STATES
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -22,6 +23,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import HaismartConfigEntry, HaismartCoordinator
 from .entity import HaismartEntity
+from .generic import GenericEntity, specs_of
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -75,10 +77,15 @@ async def async_setup_entry(
     # fan states arrive in the same extended report as the power figures, so an appliance that does
     # not answer that query has no state for them and never will. See `coordinator.absent_readings`.
     absent = coordinator.absent_readings
+    curated = coordinator.uses_curated_ac_entities
+    # `fault` is not an air conditioner's: every appliance publishes an alarm list and pushes a
+    # fault frame, and "is my washing machine reporting a problem" is the single most useful thing
+    # this integration can tell somebody. The rest of the curated set IS an AC's -- a compressor,
+    # an outdoor fan, a self-clean cycle -- and reads `unknown` for ever on anything else.
     entities: list[BinarySensorEntity] = [
         HaismartBinarySensor(coordinator, desc)
         for desc in BINARY_SENSORS
-        if desc.key not in absent
+        if (curated or desc.key == "fault") and desc.key not in absent
     ]
     entities.append(HaismartCloudConnectionSensor(coordinator))
     # Read-only observability for the extra features a unit's own model declares -- the ones the app
@@ -87,8 +94,14 @@ async def async_setup_entry(
     # a switch and a sensor for the same thing. Which ones exist comes from the device model; where
     # each sits comes from the published map; only a confirmed-displacement family produces any.
     promoted = set(coordinator.panel_switch_fields())
-    for name in sorted(coordinator.declared_features - promoted):
+    for name in sorted(coordinator.declared_features - promoted) if curated else ():
         entities.append(HaismartFeatureSensor(coordinator, name))
+    # Everything else: a boolean an appliance that is not an air conditioner declares and which
+    # nothing can write, so it is a state rather than a control.
+    entities.extend(
+        HaismartGenericBinarySensor(coordinator, spec)
+        for spec in specs_of(coordinator, Control.BINARY_SENSOR)
+    )
     async_add_entities(entities)
 
 
@@ -195,3 +208,12 @@ class HaismartBinarySensor(HaismartEntity, BinarySensorEntity):
             # carries the whole set, so a disagreement is itself worth seeing
             "error_code": data.get("error_code"),
         }
+
+
+class HaismartGenericBinarySensor(GenericEntity, BinarySensorEntity):
+    """A boolean state the appliance's own model declares and publishes no way to write."""
+
+    @property
+    def is_on(self) -> bool | None:
+        value = self.native_value_raw
+        return None if value is None else bool(value)

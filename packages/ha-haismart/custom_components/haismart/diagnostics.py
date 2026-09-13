@@ -25,6 +25,7 @@ from homeassistant.core import HomeAssistant
 
 from .const import (
     CONF_ACCESS_TOKEN,
+    CONF_APP_TYPE,
     CONF_CLOUD_CLIENT_ID,
     CONF_DEVICE_ID,
     CONF_GATEWAY_PASSWORD,
@@ -176,6 +177,19 @@ async def async_get_config_entry_diagnostics(
         # leaves out on purpose: `sensingResult` 0 reads unknown in the entity, and only the raw
         # value tells that apart from a field the layout could not place.
         "feature_raw": _feature_raw(coordinator),
+        # What kind of appliance this is, and what the manufacturer's own byte map made of its
+        # report. For anything that is not an air conditioner this IS the decode, so a report about
+        # one is unreadable without it.
+        "appliance": {
+            "kind": str(coordinator.appliance_kind),
+            "device_class": (coordinator.uplus_id or "")[16:20] or None,
+            "app_type": coordinator.config_entry.data.get(CONF_APP_TYPE),
+            "byte_map": getattr(coordinator.device_model, "name", None),
+            "decoded_by_byte_map": coordinator.model_decoded,
+            "model_state": (coordinator.data or {}).get("model_state"),
+            "writable_attributes": sorted(coordinator.model_write_fields()),
+            "platforms": [str(p) for p in coordinator.platforms],
+        },
         # Everything a maintainer needs to add a layout, without a second round-trip.
         "report": {
             "length": len(coordinator.last_raw_status or b"") or None,

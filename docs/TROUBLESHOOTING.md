@@ -258,6 +258,15 @@ none is turned away before its report is looked at.** (The read-only thirty are 
 whose published order the shared packing cannot explain, so nothing is offered for them rather than
 guessed at.)
 
+**None of that layout-guessing applies to an appliance that is not an air conditioner.** There, the
+manufacturer publishes the byte positions outright for the product class, so nothing has to be
+inferred from a relative's offsets: the report is read at the positions Haier states, and your unit's
+own declaration decides which of those fields become entities. If your appliance decodes oddly, the
+useful thing is still a diagnostics download — it prints the class, the report, and which fields
+were and were not placed. See [`appliances.md`](appliances.md) for how far each category has been
+verified; for most of them the answer is "never seen on hardware here", and a report from you is
+exactly what changes that.
+
 **A capture is still the most valuable contribution** for such a unit, and it doesn't require writing
 any code — see [`docs/new-model.md`](new-model.md) for the short procedure. It is what promotes
 the layout to a confirmed family and unlocks the readings beyond the core climate block. When nothing

@@ -17,6 +17,14 @@ from __future__ import annotations
 
 from .attr_ids import ATTR_IDS, ATTR_NAMES, ATTR_WIDTHS, attr_id, attr_name
 from .canonical_map import CANONICAL, DISPLACEMENTS, CanonicalField
+from .device_model import (
+    DeviceModel,
+    ModelField,
+    absent_probe,
+    device_classes,
+    known_typeids,
+    model_for,
+)
 from .device_rules import (
     DEVICE_RULES,
     MERGED_SECTIONS,
@@ -27,6 +35,7 @@ from .device_rules import (
     rules_for,
     with_rules,
 )
+from .entity_spec import Control, EntitySpec, english_name, specs_for
 from .family_write import (
     WRITE_OVERRIDES,
     displaced_at,
@@ -171,6 +180,18 @@ __version__ = "0.1.0"
 
 __all__ = [
     "LocalKeyRotated",
+    # THE MANUFACTURER'S OWN BYTE MAP, per typeid — decodes any appliance class it carries,
+    # not only air conditioners. See device_model.py.
+    "DeviceModel",
+    "ModelField",
+    "model_for",
+    "known_typeids",
+    "device_classes",
+    "absent_probe",
+    "Control",
+    "EntitySpec",
+    "specs_for",
+    "english_name",
     # READ
     "read_status",
     "async_read_status",

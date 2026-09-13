@@ -1,7 +1,12 @@
 # Installing the Haismart integration on your Home Assistant
 
-Fully-local control of Haier ACs that pair with the **Haismart** (Haier U+/uHome SE‑Asia) app — no cloud at
-runtime after setup. This guide gets the integration onto a running Home Assistant for real use/testing.
+Fully-local control of Haier appliances that pair with the **Haismart** (Haier U+/uHome SE‑Asia) app
+— no cloud at runtime after setup. This guide gets the integration onto a running Home Assistant for
+real use/testing.
+
+> ⓘ Installing and signing in are the same whatever the appliance is, and this page is worded for air
+> conditioners because that is what most readers have. Which appliance categories are supported, and
+> how far each has been verified, is [`docs/appliances.md`](docs/appliances.md).
 
 > **HACS and the manual copy are self-contained.** The two helper libraries (`haismart-hrdp`,
 > `haismart-extractor`) are not on PyPI, so the installable component at the repo root carries them

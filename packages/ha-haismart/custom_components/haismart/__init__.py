@@ -3,19 +3,29 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import logging
 
 from haismart_hrdp import preload as _preload_model_rules
+from haismart_hrdp.device_model import preload as _preload_device_models
 from homeassistant.core import HomeAssistant
 
-from .const import IDENTITY_TOPUP_TIMEOUT, PLATFORMS
+from .const import DEVICE_MAP_TIMEOUT, IDENTITY_TOPUP_TIMEOUT, PLATFORMS, platforms_for
 from .coordinator import HaismartConfigEntry, HaismartCoordinator
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> bool:
     # The coordinator reads the bundled model rules while it is being constructed, and the bundle is
     # a gzip file: decompressing it on the event loop is blocking I/O that HA flags. Warm the cache
     # in an executor first, so that one-off read happens off the loop (it is a no-op afterwards).
+    #
+    # ⚠️ BOTH bundles. The byte map is a second gzip, read the first time any appliance decodes, and
+    # shipping  without calling it is exactly what happened: Home Assistant
+    # reported "Detected blocking call to open … device_models.json.gz inside the event loop" on the
+    # first poll after deployment. A test suite does not catch this -- only a running instance does.
     await hass.async_add_executor_job(_preload_model_rules)
+    await hass.async_add_executor_job(_preload_device_models)
     coordinator = HaismartCoordinator(hass, entry)
     # Clear any repair raised under the old device-id-keyed scheme (the MAC leaked into the
     # diagnostics issue list through it); anything still true is re-raised under the new
@@ -56,9 +66,35 @@ async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> 
             hass, coordinator.async_fetch_model_rules(), "haismart model rules"
         )
 
+    # Haier's byte map for this device class, where the shipped bundle does not carry it. Awaited,
+    # and before the platforms are chosen, because what it fetches decides WHICH entities exist --
+    # backgrounding it would set the appliance up as undecodable and only fix itself on the next
+    # restart. Bounded, and best effort: an unreachable CDN leaves the entry exactly as it is today.
+    if coordinator.needs_device_map:
+        with contextlib.suppress(TimeoutError):
+            async with asyncio.timeout(DEVICE_MAP_TIMEOUT):
+                if await coordinator.async_fetch_device_map():
+                    await coordinator.async_refresh()
+
     entry.runtime_data = coordinator
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    # Which platforms this appliance gets, rather than all of them. Decided AFTER the first refresh
+    # on purpose: identifying the device is a catalogue lookup and needs no poll, but the
+    # no-regression clause for a device we CANNOT identify asks whether its report actually decodes
+    # as an air conditioner, and that needs one.
+    platforms = platforms_for(
+        coordinator.appliance_kind,
+        decodes_as_air_conditioner=coordinator.decodes_as_air_conditioner,
+    )
+    # Remember what was forwarded: unload must be handed the same list, and the kind can change
+    # between setup and unload (the coordinator learns a uPlusId from the device at runtime).
+    # Unloading a platform that was never set up leaves entities behind on every reload.
+    coordinator.platforms = platforms
+    _LOGGER.debug(
+        "%s: %s -> %s", entry.title, coordinator.appliance_kind,
+        ", ".join(str(p) for p in platforms),
+    )
+    await hass.config_entries.async_forward_entry_setups(entry, platforms)
     return True
 
 
@@ -78,4 +114,7 @@ async def _async_update_listener(hass: HomeAssistant, entry: HaismartConfigEntry
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> bool:
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    # The list this entry was actually set up with -- see the note in async_setup_entry. Falling
+    # back to the full set would ask HA to unload platforms that were never forwarded.
+    platforms = getattr(entry.runtime_data, "platforms", None) or PLATFORMS
+    return await hass.config_entries.async_unload_platforms(entry, platforms)

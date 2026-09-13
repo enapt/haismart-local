@@ -13,9 +13,14 @@ diagnostics**, and attach the file.
 (If your unit is not yet added, or will not connect at all, then the model number off the sticker is
 the useful thing to quote.)
 
-The integration builds itself from the model description your AC's own cloud profile provides, so a
-model missing from this table will very likely still work. The table records what has actually been
-**observed**, not the limit of what is supported.
+The integration builds itself from the model description your appliance's own cloud profile
+provides, so a model missing from this table will very likely still work. The table records what has
+actually been **observed**, not the limit of what is supported.
+
+⚠️ **This page is mostly about air conditioners**, because that is what has been observed. Other
+appliance categories are supported by a different route — the manufacturer's published byte map plus
+the unit's own declaration — and how far that has been verified is set out in
+[`docs/appliances.md`](docs/appliances.md). Read that before relying on a non-AC appliance.
 
 That holds even for a report layout nobody has ever sent in: a unit whose Model ID
 resembles published models close to it is read using the offsets those relatives use, provided the
@@ -54,7 +59,7 @@ be declared with nowhere on the wire to read it. That is a gap in what the manuf
 not a fault in the unit or the download. That is usually enough to confirm a model belongs in this
 table without anyone here owning one.
 
-## Confirmed working
+## Confirmed working — air conditioners
 
 | Product code | Model | Report | Heat | Notes |
 |---|---|---|---|---|
@@ -66,6 +71,16 @@ table without anyone here owning one.
 | `AD0P34E00` | HW-10VCQ33-W | 109-byte window unit | ❌ | A window air conditioner (class `3912`). Its Model ID resembles no published model closely enough to inherit an offset, so its report is tried against every offset in use and picks the classic map for itself; the report is eight words long and carries **no outdoor probe**. Cooling-only, with no fan-only mode and no swing — its model marks the vane as hardware it lacks, and the remote confirms it. Its energy-saving mode is a mode code of its own, reached through the **eco preset** and shown as Cool. **Confirmed on hardware by the reporter**: setpoint and fan speed hold after a write, corroborated by the unit's own report. |
 | `AE2C52Q00` | HCFI-38XTR32F | 133-byte central cabinet | ❌ | `deviceType 0D012006`, OUI `3C:16:40`. A ceiling-suspended cabinet, cooling-only. Its report is the shared map at the classic offset with **four extra words inserted** before the sensors, so the room and outdoor temperatures sit four words further down than elsewhere. It publishes **no group-set command** and its firmware refuses one, so it is commanded a setting at a time: power, setpoint, mode, fan speed, health, quiet, boost, both vane axes and the display's temperature unit — **the owner confirmed both vanes moving on hardware**, and the command numbers are the manufacturer's own, from the device configuration that describes this class byte for byte. Presence-based airflow and the four-way cassette louvres are offered provisionally, where a unit declares them: each checks itself against the unit's own reading on first use and withdraws if the unit refuses it. The module relays the running-status report, so **compressor frequency, the coil and discharge temperatures and the compressor state are live**; power and current are not reported by this three-phase class, and those two entities are removed rather than left reading zero. |
 | `AAC1UKZ01` | HSU-24HFAB/013WUSDC(W)-T3 | 209-byte extended-46 | ✅ | OUI `5C:24:1F`. Extended-36 with a further ten-word block inserted at word 25, and a **half-degree setpoint**. Reading is confirmed against every captured state this project holds, fan speed included — it answers from the inserted block rather than the usual word. Control covers power, mode, temperature, fan speed and the up-down vane. On twin-airflow hardware the shared command's vane and fan bits belong to the **left tower**, so this family commands the appliance's own vane and fan from the appended part of its published settings list instead — the same words the report reads them back from. |
+
+## Confirmed working — other appliances
+
+| Product code | Model | Report | Notes |
+|---|---|---|---|
+| `GK0GXZE0J` | Heat-pump water heater (class `2001`) | 167-byte | Reported in [issue #13](https://github.com/enapt/haismart-local/issues/13) with four diagnostics downloads, one variable changed each. Decoded from Haier's published map for the class and **cross-checked against Haier's own cloud shadow: 26 of 26 attributes on every capture, 104/104, no disagreements.** Driven end to end through a real Home Assistant instance by replaying the reporter's own report: 27 entities, a `water_heater` at its declared **35–75 °C** with the 8 modes the unit lists, its working state, remaining hot water, dual-source heating, the reservation schedule and a 32-fault table. ⛔ **No command has been sent to this appliance** — the reporter's will be the first, and it must be read back. |
+
+> A washing machine (class `0501`) has also had its traffic decoded correctly — 90 attributes, from
+> a board-level capture published by another project — but it has never been driven through Home
+> Assistant and never commanded. It is not listed above because nothing here has run against one.
 
 > **"Report" is the status layout, not just a length.** Most models share the *classic* family (the
 > setpoint/mode/fan/power in a leading control-word block, sensors after it); the length only varies

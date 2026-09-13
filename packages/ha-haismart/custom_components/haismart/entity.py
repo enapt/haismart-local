@@ -84,7 +84,10 @@ class HaismartEntity(CoordinatorEntity[HaismartCoordinator]):
             translation_domain=DOMAIN,
             translation_key="unsupported_value",
             translation_placeholders={
-                "name": self.name or "this air conditioner",
+                # Not "this air conditioner": every entity whose name is the device's own reports
+                # , so that fallback was reached by the whole-device controls -- and
+                # it is now reached by water heaters too.
+                "name": self.name or self.coordinator.config_entry.title,
                 "value": str(value),
                 "field": field,
             },

@@ -30,7 +30,7 @@ async def async_setup_entry(
     coordinator = entry.runtime_data
     # Only where this unit's report family can actually write the flag. Same rule the switches
     # follow: a button that fires an op the family cannot place would silently do nothing.
-    if coordinator.supports_field(_SELF_CLEAN_FIELD):
+    if coordinator.uses_curated_ac_entities and coordinator.supports_field(_SELF_CLEAN_FIELD):
         async_add_entities([HaismartSelfCleanButton(coordinator)])
 
 

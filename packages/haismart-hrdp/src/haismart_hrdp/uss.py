@@ -1609,7 +1609,9 @@ ALARM_LABELS: tuple[str, ...] = (
 )
 
 
-def alarm_label(code: int, names: Sequence[str] | None = None) -> str:
+def alarm_label(
+    code: int, names: Sequence[str] | None = None, *, shared_table: bool = True
+) -> str:
     """The label for a fault position, preferring the shared table and falling back to ``names``.
 
     ``ALARM_LABELS`` is the wording this project carries for the positions **every** published air
@@ -1619,10 +1621,16 @@ def alarm_label(code: int, names: Sequence[str] | None = None) -> str:
     right as far as it goes, and **must not be extended from any one family's list** -- past its end
     the only authority is the appliance's own model, which is what ``names`` carries.
 
+    ⛔ **``shared_table=False`` for anything that is not an air conditioner.** That table is an air
+    conditioner's alarm list and nothing else's: prior art's washing machine reports fault 22, which
+    is `doorLockFail` in its own model and "Indoor PM2.5 sensor failure" in the shared one. A fault
+    label is read by somebody deciding whether to call an engineer, so a confident wrong one is
+    worse than "Unknown fault 22".
+
     ⚠️ ``names`` is indexed by wire POSITION, i.e. already offset past the model's "fault cleared"
     entry -- :func:`~haismart_hrdp.profiles.positional_alarm_labels` does that.
     """
-    if 0 <= code < len(ALARM_LABELS):
+    if shared_table and 0 <= code < len(ALARM_LABELS):
         return ALARM_LABELS[code]
     if names and 0 <= code < len(names) and names[code]:
         return names[code]
@@ -1630,12 +1638,15 @@ def alarm_label(code: int, names: Sequence[str] | None = None) -> str:
 
 
 def parse_alarm_frame(
-    data: bytes, names: Sequence[str] | None = None
+    data: bytes, names: Sequence[str] | None = None, *, shared_table: bool = True
 ) -> dict[str, Any] | None:
     """Decode a fault frame into active fault positions, or ``None`` if ``data`` is not one.
 
     Returns ``{"alarm_count", "alarm_codes", "alarm_labels"}``; an all-clear unit yields a count of 0
     and empty lists, which is a meaningful answer and distinct from ``None`` ("no fault frame here").
+
+    ⛔ Pass ``shared_table=False`` for anything that is not an air conditioner — see
+    :func:`alarm_label`.
     """
     at = data.find(EPP_FRAME_HEAD)
     if at < 0 or len(data) < at + 12 or data[at + 10:at + 12] != _EPP_RPT_ALARM:
@@ -1655,7 +1666,9 @@ def parse_alarm_frame(
     return {
         "alarm_count": len(codes),
         "alarm_codes": codes,
-        "alarm_labels": [alarm_label(code, names) for code in codes],
+        "alarm_labels": [
+            alarm_label(code, names, shared_table=shared_table) for code in codes
+        ],
     }
 
 

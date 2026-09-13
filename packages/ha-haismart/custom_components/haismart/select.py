@@ -25,6 +25,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from haismart_hrdp import GRSETDAC_ENUMS, PANEL_ENUM_CONTROLS
+from haismart_hrdp.entity_spec import Control
 from haismart_hrdp.wire_models import VANE_V_EPP_TO_MODEL, vane_position_name
 from homeassistant.components.select import SelectEntity
 from homeassistant.core import HomeAssistant
@@ -32,6 +33,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import HaismartConfigEntry, HaismartCoordinator
 from .entity import HaismartEntity
+from .generic import GenericEntity, specs_of
 
 _ECO = GRSETDAC_ENUMS["ecoMode"]              # token -> raw EPP code (off/level1/level2/level3)
 _ECO_REVERSE = {v: k for k, v in _ECO.items()}  # raw EPP code -> token
@@ -70,11 +72,12 @@ async def async_setup_entry(
 ) -> None:
     coordinator = entry.runtime_data
     entities: list[SelectEntity] = []
+    curated = coordinator.uses_curated_ac_entities
     # Not every family places the economy setting, and on the ones that reach it through the
     # published map it is offered only where the device itself declares it — see `supports_eco`.
-    if coordinator.supports_eco:
+    if curated and coordinator.supports_eco:
         entities.append(HaismartEcoSelect(coordinator))
-    for vane in _VANES:
+    for vane in (_VANES if curated else ()):
         # Only worth an entity where the model publishes stops the swing control cannot already
         # reach: a unit listing nothing but fixed and auto is fully served by the climate entity.
         codes = coordinator.field_codes(vane.field)
@@ -82,8 +85,14 @@ async def async_setup_entry(
             entities.append(HaismartVaneSelect(coordinator, vane, codes))
     # The panel's multi-state controls (presence-based airflow, fresh-air fan level): functions the
     # app renders a select for and this unit declares. Offered the way the app offers them.
-    for field in coordinator.panel_select_fields():
+    for field in (coordinator.panel_select_fields() if curated else ()):
         entities.append(HaismartPanelSelect(coordinator, field))
+    # Everything else: a multi-value setting an appliance that is not an air conditioner declares
+    # and publishes a write id for. Empty for an AC, whose selects are the curated ones above.
+    entities.extend(
+        HaismartGenericSelect(coordinator, spec)
+        for spec in specs_of(coordinator, Control.SELECT)
+    )
     async_add_entities(entities)
 
 
@@ -217,3 +226,27 @@ class HaismartPanelSelect(HaismartEntity, SelectEntity):
         if value is None:
             self.raise_unsupported_value(option, self._attr_translation_key or self._field)
         await self.coordinator.async_send_control({self._field: value})
+
+
+class HaismartGenericSelect(GenericEntity, SelectEntity):
+    """A multi-value setting, offering only the values THIS unit declares.
+
+    Labels are the manufacturer's own, translated where the vocabulary is known and shown verbatim
+    where it is not -- a Chinese label a user can look up beats a bare code number.
+    """
+
+    def __init__(self, coordinator: HaismartCoordinator, spec) -> None:
+        super().__init__(coordinator, spec)
+        self._by_label = {label: value for value, label in spec.options}
+        self._by_value = {str(value): label for value, label in spec.options}
+        self._attr_options = list(self._by_label)
+
+    @property
+    def current_option(self) -> str | None:
+        value = self.native_value_raw
+        return None if value is None else self._by_value.get(str(value))
+
+    async def async_select_option(self, option: str) -> None:
+        if option not in self._by_label:
+            self.raise_unsupported_value(option, self.spec.attribute)
+        await self.async_write(self._by_label[option])

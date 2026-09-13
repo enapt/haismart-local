@@ -1,7 +1,12 @@
 # The uSS local protocol
 
-Reference notes for the LAN protocol these air conditioners speak on **TCP port 56800**. Useful if
-you are adding a model, debugging a decode, or driving a unit without Home Assistant.
+Reference notes for the LAN protocol these appliances speak on **TCP port 56800**. Useful if you are
+adding a model, debugging a decode, or driving a unit without Home Assistant.
+
+Most of what follows was worked out on air conditioners and is written in their terms. The transport,
+the framing and the encryption are the same whatever the appliance is; what differs per category is
+only which attribute sits where, and that the manufacturer publishes (see *What the device's own
+model supplies*).
 
 The transport — the handshake, the encryption and the framing — is not publicly documented; it was
 worked out independently by [@enapt](https://github.com/enapt) for interoperability with hardware we
@@ -621,14 +626,25 @@ Onboarding fetches two things about a device and uses both:
 The second is not fetched by name — the model is looked up in the account's resource service, which
 answers with a download URL carrying a build stamp, the file's version and its MD5.
 
-A third description exists and is used offline rather than at run time: the manufacturer's **device
-configuration**, published per product type without an account. For every attribute it gives the
-word, bit and width at which the attribute sits in the status report, the report command that
-carries it, and — for a class that writes one attribute at a time — the single-setting command
-number. It is the manufacturer's own byte map. The shared map, the telemetry maps and the central
+A third description is the manufacturer's **device configuration**, published per product type
+without an account. For every attribute it gives the word, bit and width at which the attribute sits
+in the status report, the report command that carries it, and — for a class that writes one
+attribute at a time — the single-setting command number. It is the manufacturer's own byte map.
+
+For air conditioners it is used offline: the shared map, the telemetry maps and the central
 cabinets' parameter register are validated against it, and it is where the display-unit and
-cassette-louvre commands come from; the results ship as constants, so nothing is fetched from it
-when the integration runs.
+cassette-louvre commands come from, with the results shipping as constants.
+
+**For every other appliance category it is the decoder itself.** The integration carries the map for
+165 product types across 36 device classes, and a status report from one of those is read at the
+positions the manufacturer states rather than at positions inferred from a relative's layout. A
+class the bundle does not carry is fetched on demand — unauthenticated, keyed on the uPlusId the
+appliance itself announces, and verified against the published MD5 — then cached on the config
+entry. Which of the mapped fields become entities is not the map's decision but the appliance's: its
+own declaration is the gate, so a field the class can carry and the unit does not declare produces
+nothing. ⓘ The two decoders have been compared field for field over every capture this project
+holds: on air conditioners the byte map reproduces every wire field the hand-derived decoder reads,
+with no disagreements.
 
 **Asked with an account token, that listing answers for the account rather than the request** — it
 returns the configs published for the caller's own devices and reports success whatever model,

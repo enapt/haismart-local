@@ -1,11 +1,18 @@
 # ha-haismart
 
-Native Home Assistant integration for Haier ACs, built on [`haismart-hrdp`](../haismart-hrdp). No
-MQTT, no YAML.
+Native Home Assistant integration for Haier appliances, built on
+[`haismart-hrdp`](../haismart-hrdp). No MQTT, no YAML.
 
-**Full local control.** The integration handshakes each AC over uSS `:56800`, decrypts its status
-pushes, and both reads AND controls it locally (`iot_class: local_polling`) via the grSetDAC group-set
-write path. No cloud at runtime.
+**Full local control.** The integration handshakes each appliance over uSS `:56800`, decrypts its
+status pushes, and both reads AND controls it locally (`iot_class: local_polling`) — via the
+grSetDAC group-set write path on air conditioners, and the single-parameter path elsewhere. No cloud
+at runtime.
+
+**Platforms are per entry, not global.** `PLATFORMS_BY_KIND` forwards only what the appliance
+actually is, so a water heater is set up with `water_heater` and gets no thermostat, and an air
+conditioner's platform list is byte-for-byte what it always was. An air conditioner keeps its
+hand-built entity set; every other category has its entities generated from
+`haismart_hrdp.entity_spec` — see [`docs/appliances.md`](../../docs/appliances.md).
 
 ## What it provides
 

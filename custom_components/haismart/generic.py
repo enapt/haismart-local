@@ -16,13 +16,7 @@ from typing import Any
 
 from haismart_hrdp.entity_spec import Control, EntitySpec
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
-from homeassistant.const import (
-    CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
-    CONCENTRATION_MILLIGRAMS_PER_CUBIC_METER,
-    CONCENTRATION_PARTS_PER_BILLION,
-    CONCENTRATION_PARTS_PER_MILLION,
-    EntityCategory,
-)
+from homeassistant.const import EntityCategory
 from homeassistant.helpers.entity import EntityDescription
 
 from .coordinator import HaismartCoordinator
@@ -71,6 +65,34 @@ def state_class_for(spec: EntitySpec) -> SensorStateClass | None:
 # happens to use. ⓘ `haismart_hrdp` cannot do this itself: it is deliberately Home-Assistant-free,
 # so the canonical form is still decided once in `entity_spec.canonical_unit` and only exchanged
 # for Home Assistant's spelling here, at the boundary.
+# ⓘ And the constants MOVED as well as changing value: `UnitOfDensity`/`UnitOfRatio` replace the
+# `CONCENTRATION_*` names, which are deprecated from 2026.x and removed in HA Core 2027.8. Both are
+# read here, new first, so no release logs a deprecation warning at the user and none breaks later.
+# `sensor.py` has always done this for the curated sensors; matching it is the point.
+try:  # Home Assistant >= 2026.3-ish
+    from homeassistant.const import UnitOfDensity, UnitOfRatio
+
+    _UNITS: tuple[str, ...] = (
+        UnitOfDensity.MICROGRAMS_PER_CUBIC_METER,
+        UnitOfDensity.MILLIGRAMS_PER_CUBIC_METER,
+        UnitOfRatio.PARTS_PER_MILLION,
+        UnitOfRatio.PARTS_PER_BILLION,
+    )
+except ImportError:  # pragma: no cover - exercised on the older releases this still supports
+    from homeassistant.const import (  # noqa: I001
+        CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        CONCENTRATION_MILLIGRAMS_PER_CUBIC_METER,
+        CONCENTRATION_PARTS_PER_BILLION,
+        CONCENTRATION_PARTS_PER_MILLION,
+    )
+
+    _UNITS = (
+        CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        CONCENTRATION_MILLIGRAMS_PER_CUBIC_METER,
+        CONCENTRATION_PARTS_PER_MILLION,
+        CONCENTRATION_PARTS_PER_BILLION,
+    )
+
 _MU_FOLD = str.maketrans({"\u03bc": "\u00b5"})       # GREEK SMALL LETTER MU -> MICRO SIGN
 
 
@@ -78,15 +100,7 @@ def _fold(unit: str) -> str:
     return unit.translate(_MU_FOLD)
 
 
-_HA_UNITS: dict[str, str] = {
-    _fold(unit): unit
-    for unit in (
-        CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
-        CONCENTRATION_MILLIGRAMS_PER_CUBIC_METER,
-        CONCENTRATION_PARTS_PER_MILLION,
-        CONCENTRATION_PARTS_PER_BILLION,
-    )
-}
+_HA_UNITS: dict[str, str] = {_fold(unit): unit for unit in _UNITS}
 
 
 def unit_for(spec: EntitySpec) -> str | None:

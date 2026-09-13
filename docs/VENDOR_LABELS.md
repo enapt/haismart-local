@@ -76,12 +76,12 @@ health-airflow modes — is a distinct position the appliance holds. That is why
 exist: they are the only control that can reach those states, and they write the same field the
 climate entity's swing control writes.
 
-⇒ ⛔ **And it is why the swing control must not write an axis it is not changing.** Asking for a
-swing an axis is already doing, or turning the other axis on, used to send `fixed` or `auto` to
-both — flattening a health-airflow setting or knocking a vane off its stop, invisibly, with no way
-back from the climate card. Both axes resting on intermediate stops is the ordinary state of these
-machines, not a corner case: across 20 reporter diagnostics the pairs seen are `(0,0) (2,0) (2,3)
-(2,4) (2,6) (4,3) (8,7)`, and prior art shows the axes moving independently throughout.
+⇒ ⛔ **And it is why each axis has its own control, which sends nothing when the axis is already as
+asked.** A single four-way control had to command both axes on every use — flattening a
+health-airflow setting or knocking a vane off its stop, invisibly, with no way back from the climate
+card. Both axes resting on intermediate stops is the ordinary state of these machines, not a corner
+case: across 20 reporter diagnostics the pairs seen are `(0,0) (2,0) (2,3) (2,4) (2,6) (4,3) (8,7)`,
+and prior art shows the axes moving independently throughout.
 
 ## Why naming them mattered
 

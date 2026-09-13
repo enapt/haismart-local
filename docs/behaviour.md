@@ -53,20 +53,32 @@ and the Eco select remain for the individual fields and for choosing which eco l
 
 ## Swinging and pointing
 
-Swing is one control: the four-way choice Home Assistant's card has always shown (off / up-down /
-left-right / both). Home Assistant also has a separate `climate.set_swing_horizontal_mode`, and it
-is deliberately not offered here: it writes the same left-right field, while choosing an axis on the
-four-way control turns the other one off, so the two could not be used together — and the four-way
-control already reaches every combination of the two axes. Units whose left-right position is not
-confirmed get a control carrying only the positions they can reach.
+**Each vane axis has its own control.** *Swing* sweeps the up-down vane; *Horizontal swing* sweeps
+the left-right one. Both are simple on/off, and a unit is offered only the axes its family can
+actually move — a unit that can work one vane gets that control and is not shown the other.
 
-**Only the axis that changes is sent.** That matters more than it sounds, because the field behind
-each axis is not a switch: it is a position, and *sweeping* is only one of the values it can hold —
-alongside the fixed stops and, on many models, two health-airflow directions. Asking for a swing an
-axis is already doing, or turning the other axis on, therefore sends nothing to the axis that was
-not mentioned, and a vane aimed at a particular stop stays where you put it. (Before, both axes were
-written every time, so using the swing control at all could quietly move a vane you had positioned
-deliberately.)
+This is the shape Home Assistant asks for when an integration can move the axes separately, which
+this one can: they are independent fields on the wire. ⚠️ **It replaces the older four-way control**
+(off / up-down / left-right / both). If you have an automation that sets `swing_mode: both`,
+`vertical` or `horizontal`, it needs updating — see below.
+
+**Only the axis you touch is sent.** That matters more than it sounds, because the field behind each
+axis is not a switch: it is a position, and *sweeping* is only one of the values it can hold,
+alongside the fixed stops and — on many models — two health-airflow directions. Asking an axis for a
+sweep it is already doing sends nothing at all, so a vane aimed at a particular stop stays where you
+put it, and an alternate or half-range sweep is not flattened into a plain one.
+
+### Updating an automation from the old four-way control
+
+| Old | New |
+|---|---|
+| `swing_mode: off` | `swing_mode: off` **and** `swing_horizontal_mode: off` |
+| `swing_mode: vertical` | `swing_mode: on` + `swing_horizontal_mode: off` |
+| `swing_mode: horizontal` | `swing_mode: off` + `swing_horizontal_mode: on` |
+| `swing_mode: both` | `swing_mode: on` **and** `swing_horizontal_mode: on` |
+
+The horizontal axis is set with the `climate.set_swing_horizontal_mode` service. An automation that
+sends one of the old values now fails loudly rather than moving a vane it did not mean to.
 
 Swinging and pointing are different things, and a climate entity can only express the first. Where
 your unit publishes the stops a vane can hold, a **Left-right vane** or **Up-down vane** select

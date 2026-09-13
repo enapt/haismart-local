@@ -106,6 +106,26 @@ Anything Haier sells that has **no Wi-Fi module of its own** — bulbs, sockets,
 motion sensors behind a gateway — is out of reach entirely. Those do not speak the local protocol
 this integration uses, and no amount of byte map changes that.
 
+**What the bigger categories actually carry.** These are read from the manufacturer's maps, not a
+wish list — your unit gets the subset it declares:
+
+| Category | types | Some of what it reads and controls |
+|---|---:|---|
+| **Water heaters** (electric) | 76 | Target and current temperature · heating status · tank volume · power draw · reservation schedules with their own temperatures · changed-by |
+| **Refrigerators** | 16 | Fridge and freezer temperatures, targets and sensor readings · door status · quick-freeze and quick-chill · intelligence mode · interior light · ambient sensor |
+| **Washing machines** | 15 | Spin speed · cycle phase · remaining wash time · actual load weight · detergent level · water used · permanent-press and loosen options · child-lock |
+| **Gas water heaters** | 9 | Target and outlet temperature · water flow · valve and flow status · safety lock · energy saving · smart temperature sensing · methane alarm |
+| **Sterilising cabinets** | 5 | Air quality · humidity · air-cleaning status · door smart-open · lock · clock |
+| **Cooker hoods** | 4 | Fan speed (level and percent) · scene lighting · self-clean · smart wind and pressurise · gesture control · presence sensing |
+| **Gas hobs** | 3 | Per-burner ignition and flame status · per-burner target temperature and timers · child-lock |
+| **Heat-pump water heaters** | 2 | Target and current temperature · operating mode · electric-heating and auto-defrost · four reservation schedules · off-peak windows · energy saved |
+| **Dishwashers** · **Steam ovens** | 1 each | Cleaning/bake status and steps · probe and sensor temperatures · waste-water and water-hardness · standby |
+| **Air purifiers** | 1 | Air quality (dust and LED) · filter life · humidity · fan velocity · timer |
+
+⚠️ A few field names are still the manufacturer's raw identifier rather than English — the air
+purifier publishes two of its switches only in pinyin. Every entity carries Haier's own identifier
+and description as attributes, so anything odd is easy to report precisely.
+
 ➡️ **[Appliance support in detail](docs/appliances.md)** — every device class carried, which tier of
 evidence each sits in, and what is deliberately withheld.
 
@@ -117,7 +137,7 @@ One device per air conditioner, with:
 
 | Entity | What it does |
 |---|---|
-| **Climate** | Setpoint, mode (cool / heat / dry / fan-only / auto), fan speed, swing, presets (eco / sleep / boost), on/off. Heat is offered only when the unit itself reports it can heat. On units that report their compressor it also says what the unit is *doing* — cooling, idle, drying, heating, fan, off — which Home Assistant's tile card badges on the icon and the thermostat card prints under the temperature |
+| **Climate** | Setpoint, mode (cool / heat / dry / fan-only / auto), fan speed, **swing on each vane axis separately**, presets (eco / sleep / boost), on/off. Heat is offered only when the unit itself reports it can heat. On units that report their compressor it also says what the unit is *doing* — cooling, idle, drying, heating, fan, off — which Home Assistant's tile card badges on the icon and the thermostat card prints under the temperature |
 | **Indoor / outdoor temperature** | The AC's own room reading, and the outdoor probe on units that have one |
 | **Switches** | Strong, Quiet, Health, Sleep, Display light |
 | **Eco** | Eco level, on models where it's confirmed |

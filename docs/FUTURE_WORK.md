@@ -310,6 +310,38 @@ which is invisible until the word lands at the start of a sentence.**
 corrections from native speakers are welcome. The tool that did the rewrite, with the per-language
 reasoning inline, is `delocalise_ac.py` (session scratchpad, not shipped).
 
+### 70. ✅ SETTLED — swing moved to Home Assistant's modern shape: one control per axis
+
+Raised and settled 2026-09-13, from Home Assistant's own developer documentation:
+
+> *"This should only be implemented if the integration has independent control of vertical and
+> horizontal swing."* — on `SWING_HORIZONTAL_MODE`
+
+**We do have independent control** — the axes are separate fields on the wire
+(`windDirectionVertical` w1, `windDirectionHorizontal` w4) — so HA's intended shape applies:
+`swing_modes` = off/on for the up-down axis, `swing_horizontal_modes` = off/on for the left-right
+one. The four-way `{off, vertical, horizontal, both}` is HA's **legacy** shape, for integrations
+that can only move both axes together.
+
+⛔ **Two wrong shapes preceded this, and both were structural rather than careless.** The four-way
+*plus* a horizontal control (shipped for a while) gave `windDirectionHorizontal` two owners that
+fought and put two swing dropdowns on the card. The four-way *alone* meant asking for one axis
+silently commanded the other — and since the field is the vendor's position enum, that flattened
+health-airflow settings and knocked vanes off their stops. ⇒ ★ **One control per axis removes the
+whole class of problem by construction: each control writes exactly one field.**
+
+✅ **And a guard is still needed on top of it**, which is the part that is easy to miss: several
+codes READ as sweeping (the alternate sweep, the half-range sweeps), so re-asserting `on` over one
+would flatten it to the plain sweep. An axis already in the asked-for state is therefore not
+written at all.
+
+⚠️ **BREAKING for automations.** `swing_mode: both|vertical|horizontal` no longer exists; the
+migration table is in [`behaviour.md`](behaviour.md#swinging-and-pointing). An automation sending an
+old value now fails loudly rather than moving a vane it did not mean to, which is the right failure.
+
+ⓘ The vane **selects** are unaffected and remain the only control that reaches the fixed stops and
+the health-airflow modes — neither swing shape expresses those.
+
 ### 69. `check-translations.py` compares KEYS, not VALUES — an English rewording can silently skip 30 locales
 
 Raised 2026-09-13 by item 68, which found a concrete instance rather than a hypothetical one.

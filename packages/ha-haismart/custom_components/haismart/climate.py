@@ -15,10 +15,8 @@ from homeassistant.components.climate import (
     PRESET_ECO,
     PRESET_NONE,
     PRESET_SLEEP,
-    SWING_BOTH,
-    SWING_HORIZONTAL,
     SWING_OFF,
-    SWING_VERTICAL,
+    SWING_ON,
     ClimateEntity,
     ClimateEntityFeature,
     HVACAction,
@@ -149,17 +147,22 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
         ClimateEntityFeature.TARGET_TEMPERATURE
         | ClimateEntityFeature.FAN_MODE
         | ClimateEntityFeature.SWING_MODE
+        | ClimateEntityFeature.SWING_HORIZONTAL_MODE
         | ClimateEntityFeature.TURN_ON
         | ClimateEntityFeature.TURN_OFF
     )
-    # The two axes are independent fields on the wire (vertical = word1 low nibble, horizontal =
-    # word4 bits 0-2), but they are presented as ONE control with the conventional four-way choice.
+    # ONE CONTROL PER AXIS, which is what Home Assistant asks for when an integration can move the
+    # axes separately: "this should only be implemented if the integration has independent control
+    # of vertical and horizontal swing". These are independent fields on the wire -- vertical is
+    # word1's low nibble, horizontal is word4 bits 0-2 -- so each gets its own control.
     #
-    # Home Assistant's separate `swing_horizontal_mode` is deliberately not offered beside it: it
-    # writes the same `windDirectionHorizontal` field this control does, and choosing an axis here
-    # turns the other one off, so the two cannot be used together. It also reaches no state this
-    # control cannot -- off/vertical/horizontal/both already covers every combination of the axes.
-    _attr_swing_modes = [SWING_OFF, SWING_VERTICAL, SWING_HORIZONTAL, SWING_BOTH]
+    # ⓘ The four-way `off/vertical/horizontal/both` this replaced is Home Assistant's LEGACY shape,
+    # for integrations that can only move both axes at once. Offering it *and* a horizontal control
+    # (which is what shipped before) gave one wire field two owners that fought; offering only the
+    # four-way meant asking for one axis silently commanded the other. One control per axis has
+    # neither problem, by construction rather than by care.
+    _attr_swing_modes = [SWING_OFF, SWING_ON]              # the UP-DOWN axis
+    _attr_swing_horizontal_modes = [SWING_OFF, SWING_ON]   # the LEFT-RIGHT axis
     _enable_turn_on_off_backwards_compatibility = False
 
     def __init__(self, coordinator: HaismartCoordinator) -> None:
@@ -217,25 +220,15 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
         # field the family cannot place is a button that can only raise.
         if not coordinator.supports_field("windSpeed"):
             self._attr_supported_features &= ~ClimateEntityFeature.FAN_MODE
-        # The four-way swing goes only when NEITHER axis can move -- not when either cannot, which
-        # is what this gate said when it was written and is why a family that can work its up-down
-        # vane was left with no swing control at all. `supported_features` below has always had it
-        # the right way round for the locked case; the two now agree.
-        #
-        # A family that can move one axis keeps the control, offering only the positions it can
-        # actually reach, because `async_set_swing_mode` sends only the fields it has.
-        axes = [
-            field
-            for field in ("windDirectionVertical", "windDirectionHorizontal")
-            if coordinator.supports_field(field)
-        ]
-        if not axes:
-            self._attr_supported_features &= ~ClimateEntityFeature.SWING_MODE
-        elif len(axes) == 1:
-            self._attr_swing_modes = [
-                SWING_OFF,
-                SWING_VERTICAL if axes[0] == "windDirectionVertical" else SWING_HORIZONTAL,
-            ]
+        # One gate per axis, because there is now one control per axis: a family that can place
+        # only its up-down vane keeps that control and simply has no left-right one, instead of
+        # losing both or being offered a control for a field the encoder cannot place.
+        for field, flag in (
+            ("windDirectionVertical", ClimateEntityFeature.SWING_MODE),
+            ("windDirectionHorizontal", ClimateEntityFeature.SWING_HORIZONTAL_MODE),
+        ):
+            if not coordinator.supports_field(field):
+                self._attr_supported_features &= ~flag
 
     @property
     def extra_state_attributes(self) -> dict[str, str] | None:
@@ -272,9 +265,11 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
         ):
             if field in locked:
                 features &= ~flag
-        # the four-way control moves both vanes, so it only goes when neither axis will move
-        if {"windDirectionVertical", "windDirectionHorizontal"} <= locked:
+        # one control per axis, so each goes exactly when ITS OWN field is locked
+        if "windDirectionVertical" in locked:
             features &= ~ClimateEntityFeature.SWING_MODE
+        if "windDirectionHorizontal" in locked:
+            features &= ~ClimateEntityFeature.SWING_HORIZONTAL_MODE
         if not self.preset_modes:
             features &= ~ClimateEntityFeature.PRESET_MODE
         return features
@@ -387,17 +382,20 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
 
     @property
     def swing_mode(self) -> str | None:
+        """Whether the UP-DOWN vane is sweeping.
+
+        ⓘ Every sweeping code answers yes, not just the plain one: a vane on the alternate sweep or
+        a half-range sweep IS swinging, and reporting it as stationary would be a lie the card
+        would then invite the user to 'fix'.
+        """
         vertical = self._state.get("swing_vertical")
+        return None if vertical is None else (SWING_ON if vertical else SWING_OFF)
+
+    @property
+    def swing_horizontal_mode(self) -> str | None:
+        """Whether the LEFT-RIGHT vane is sweeping."""
         horizontal = self._state.get("swing_horizontal")
-        if vertical is None and horizontal is None:
-            return None
-        if vertical and horizontal:
-            return SWING_BOTH
-        if vertical:
-            return SWING_VERTICAL
-        if horizontal:
-            return SWING_HORIZONTAL
-        return SWING_OFF
+        return None if horizontal is None else (SWING_ON if horizontal else SWING_OFF)
 
     @property
     def preset_mode(self) -> str | None:
@@ -512,46 +510,37 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
         await self.coordinator.async_send_control({"windSpeed": fan_val})
 
     async def async_set_swing_mode(self, swing_mode: str) -> None:
-        # Both axes travel in ONE grSetDAC group-set, so off -> both can never land as a
-        # half-applied state, and picking one axis explicitly turns the other off.
-        #
-        # A family that places only one of them gets only that one sent: the other would be handed
-        # to an encoder that cannot place it, and the whole command would raise rather than the
-        # half of it that this appliance can do.
-        #
-        # ⚠️ ONLY AN AXIS WHOSE SWEEP STATE ACTUALLY CHANGES IS WRITTEN, and that is not an
-        # optimisation -- it is the difference between this control being lossy and not.
-        # `windDirection*` is not a flag: it is the vendor's POSITION enum, 8 to 12 values wide, and
-        # `on`/`off` here are just two of them (plain sweep, and `fixed`). The others -- the eight
-        # fixed stops, the alternate sweep, the half-range sweeps, the health-airflow stops -- are
-        # reachable only through the vane selects. Writing an axis that is already in the wanted
-        # sweep state would overwrite whichever of those it happens to be sitting in: a vane on
-        # "auto (upper half)" would be flattened to a full sweep by asking for a swing it was
-        # already doing, and a vane parked at position 3 would be knocked to `fixed` by a request
-        # that only concerned the OTHER axis. Both are silent, and neither is recoverable from the
-        # climate card.
-        wanted = {
-            "windDirectionVertical": swing_mode in (SWING_VERTICAL, SWING_BOTH),
-            "windDirectionHorizontal": swing_mode in (SWING_HORIZONTAL, SWING_BOTH),
-        }
-        current = {
-            "windDirectionVertical": self._state.get("swing_vertical"),
-            "windDirectionHorizontal": self._state.get("swing_horizontal"),
-        }
-        changes = {
-            field: GRSETDAC_ENUMS[field]["on" if on else "off"]
-            for field, on in wanted.items()
-            if self.coordinator.supports_field(field)
-            # `None` means the axis was not decoded, so its sweep state is unknown and the
-            # request is the only thing to go on -- write it.
-            and current[field] is not bool(on)
-        }
-        if not changes:
-            # Every axis is already where it was asked to be. grSetDAC is a GROUP set seeded from
-            # the appliance's whole current state, so an empty change list is not a free no-op --
-            # it is a full command re-asserting every attribute, for nothing.
+        """Sweep the UP-DOWN vane, or stop it."""
+        await self._async_set_axis("windDirectionVertical", "swing_vertical", swing_mode)
+
+    async def async_set_swing_horizontal_mode(self, swing_horizontal_mode: str) -> None:
+        """Sweep the LEFT-RIGHT vane, or stop it."""
+        await self._async_set_axis(
+            "windDirectionHorizontal", "swing_horizontal", swing_horizontal_mode
+        )
+
+    async def _async_set_axis(self, field: str, state_key: str, mode: str) -> None:
+        """Set one vane axis sweeping or not, touching nothing else.
+
+        ⚠️ NOTHING IS SENT IF THE AXIS IS ALREADY AS ASKED, and that is not an optimisation --
+        `windDirection*` is the vendor's POSITION enum, 8 to 12 values wide, and `on`/`off` here are
+        only two of them (the plain sweep, and `fixed`). The others are real states the appliance
+        holds and only the vane selects can reach: the numbered stops, the alternate sweep, and the
+        two health-airflow directions the manufacturer's own model names 健康气流(上吹)/(下吹).
+        Several of those READ as sweeping, so re-asserting `on` over one would quietly flatten an
+        alternate or half-range sweep into a plain one; re-asserting `off` over a vane parked on a
+        stop would drive it to `fixed`. Neither is recoverable from the climate card.
+        """
+        if not self.coordinator.supports_field(field):
+            # The encoder cannot place this field for this family, and handing it one raises for
+            # the whole command rather than the part of it this appliance cannot do.
             return
-        await self.coordinator.async_send_control(changes)
+        wanted = mode == SWING_ON
+        if self._state.get(state_key) is wanted:
+            return
+        await self.coordinator.async_send_control(
+            {field: GRSETDAC_ENUMS[field]["on" if wanted else "off"]}
+        )
 
     async def async_turn_on(self) -> None:
         await self.coordinator.async_send_control({"onOffStatus": 1})

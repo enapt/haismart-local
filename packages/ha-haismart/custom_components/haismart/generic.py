@@ -22,17 +22,6 @@ from homeassistant.helpers.entity import EntityDescription
 from .coordinator import HaismartCoordinator
 from .entity import HaismartEntity
 
-# Haier's unit strings, as Home Assistant spells them. Anything not here is passed through as the
-# manufacturer wrote it: a unit we do not recognise is still a true unit, and dropping it would
-# make the reading less informative rather than more correct.
-UNITS: dict[str, str] = {
-    "℃": "°C",
-    "kwh": "kWh",
-    "ug/m³": "µg/m³",
-    "PPM": "ppm",
-    "RPM": "rpm",
-}
-
 
 def device_class_for(spec: EntitySpec) -> SensorDeviceClass | None:
     """The Home Assistant device class, or ``None`` where this release has no such member.
@@ -59,7 +48,15 @@ def state_class_for(spec: EntitySpec) -> SensorStateClass | None:
 
 
 def unit_for(spec: EntitySpec) -> str | None:
-    return UNITS.get(spec.unit or "", spec.unit) or None
+    """The spec's unit, which is already canonical.
+
+    ⚠️ It is normalised in :func:`haismart_hrdp.entity_spec.canonical_unit`, at the ONE place the
+    field's unit is read -- not here. That matters because the unit decides the device class, and a
+    table on this side of the boundary would have the classifier reasoning about `ug/m3` while the
+    entity published `µg/m³`. It did, and 17 classes' air-quality sensors lost their device class
+    to the difference.
+    """
+    return spec.unit
 
 
 def category_for(spec: EntitySpec) -> EntityCategory | None:

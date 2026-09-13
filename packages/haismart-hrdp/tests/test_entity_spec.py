@@ -94,7 +94,10 @@ def test_a_number_carries_the_devices_own_range_not_the_classs() -> None:
 def test_a_read_only_number_is_a_sensor_with_its_unit_and_state_class() -> None:
     spec = _specs()["oddHotWater"]
     assert spec.control is Control.SENSOR
-    assert spec.unit == "L" and spec.device_class == "volume"
+    assert spec.unit == "L"
+    # `volume_storage`, not `volume`: what is in the tank NOW. Home Assistant accepts `measurement`
+    # for one and only `total`/`total_increasing` for the other, and refuses the state otherwise.
+    assert spec.device_class == "volume_storage"
     assert spec.state_class == "measurement"
 
 
@@ -189,7 +192,7 @@ def test_the_classifier_produces_something_for_every_device_class_we_carry() -> 
         )
         model = model_for(typeid)
         assert model is not None
-        declared = [{"name": f.name} for f in model.fields_for()]
+        declared = [{"name": f.name} for f in model.fields]
         specs = specs_for(model, declared, writable=[f.name for f in model.writable_fields()])
         if not specs:
             empty.append(f"{device_class} ({typeid})")
@@ -208,7 +211,7 @@ def test_a_schedule_grid_collapses_into_one_entity() -> None:
     )
     model = model_for(gas)
     assert model is not None
-    declared = [{"name": f.name} for f in model.fields_for()]
+    declared = [{"name": f.name} for f in model.fields]
     specs = specs_for(model, declared)
 
     hours = [s for s in specs if s.attribute == "allRestHour"]
@@ -234,7 +237,7 @@ def test_a_writable_grid_is_left_alone() -> None:
     )
     model = model_for(gas)
     assert model is not None
-    declared = [{"name": f.name} for f in model.fields_for()]
+    declared = [{"name": f.name} for f in model.fields]
     cells = [f.name for f in model.fields_for() if f.name.startswith("allRestHour")]
     specs = specs_for(model, declared, writable=cells)
     assert not [s for s in specs if s.attribute == "allRestHour"], "this grid is writable"
@@ -254,3 +257,81 @@ def test_a_short_indexed_run_is_not_a_grid() -> None:
     assert _series_key("resn1Temperature") is None
     # An index outside a day/hour range is not a grid cell.
     assert _series_key("someHour99") is None
+
+
+def test_haiers_unit_spellings_are_normalised_before_anything_is_classified() -> None:
+    """⛔ The same attribute carries `ug/m³` on some classes and `ug/m3` on others.
+
+    96 fields against 52, for `indoorPM2p5Value` among others. The unit decides the device class,
+    so an unnormalised spelling did not merely look wrong -- it silently cost 17 classes their
+    air-quality device classes. Normalised at the ONE place a field's unit is read.
+    """
+    from haismart_hrdp.entity_spec import canonical_unit
+
+    assert canonical_unit("ug/m3") == canonical_unit("ug/m³") == "µg/m³"
+    assert canonical_unit("℃") == "°C"
+    assert canonical_unit("kwh") == canonical_unit("KWh") == "kWh"
+    assert canonical_unit("w") == "W" and canonical_unit("kw") == "kW"
+    assert canonical_unit("RPM") == canonical_unit("r/min") == "rpm"
+    assert canonical_unit("PPM") == "ppm"
+    assert canonical_unit("分") == "min"          # a Chinese-labelled minute, on three classes
+    # An empty string is not a unit: 219 fields carry one, and it makes a reading look dimensioned.
+    assert canonical_unit("") is None and canonical_unit(None) is None and canonical_unit(" ") is None
+
+
+def test_every_unit_in_the_catalogue_survives_normalisation() -> None:
+    """A property over all 38 distinct unit strings, since a new bundle can introduce more.
+
+    What must hold is that normalising is idempotent and never invents a unit: a spelling this
+    project does not know is passed through as the manufacturer wrote it, because an unrecognised
+    unit is still a true one and dropping it makes the reading less informative, not more correct.
+    """
+    from haismart_hrdp.entity_spec import canonical_unit
+
+    for typeid in known_typeids():
+        model = model_for(typeid)
+        assert model is not None
+        for field in model.fields:
+            once = canonical_unit(field.unit)
+            assert canonical_unit(once) == once, f"{field.name}: {field.unit!r} -> {once!r}"
+
+
+def test_a_single_value_enum_is_not_a_switch() -> None:
+    """⛔ `resnMode` publishes exactly one value, `{1: 1}`, and became a switch.
+
+    A switch renders an off position, and `encode_write` refuses it -- a control that fails the
+    first time somebody uses it. A one-value field is a constant and reads as a sensor.
+    """
+    heater = next(
+        t for t in sorted(known_typeids()) if model_for(t).device_class == "061a"
+    )
+    model = model_for(heater)
+    assert model is not None
+    field = model.field("resnMode")
+    assert field is not None and len(field.variants) == 1
+    specs = {
+        s.attribute: s
+        for s in specs_for(
+            model,
+            [{"name": f.name} for f in model.fields],
+            writable=[f.name for f in model.writable_fields()],
+        )
+    }
+    assert specs["resnMode"].control is Control.SENSOR
+
+
+def test_the_telemetry_frame_gets_entities_too() -> None:
+    """`Bigdata`/`7D01` is where a washing machine's water and electricity totals live.
+
+    Covering only the ordinary report decoded them into state that nothing ever showed.
+    """
+    washer = "201c51890c31c30805010021800239584d000000000000000000000000000140"
+    model = model_for(washer)
+    assert model is not None
+    telemetry = [f.name for f in model.fields_for("7D01")]
+    assert telemetry, "this class does carry a telemetry frame"
+    specs = {
+        s.attribute
+        for s in specs_for(model, [{"name": n} for n in telemetry])
+    }
+    assert specs & set(telemetry), "telemetry attributes must produce entities"

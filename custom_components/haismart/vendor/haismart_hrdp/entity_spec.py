@@ -36,6 +36,7 @@ from .device_model import DeviceModel, ModelField
 __all__ = [
     "Control",
     "EntitySpec",
+    "canonical_unit",
     "english_name",
     "enum_label",
     "specs_for",
@@ -61,6 +62,7 @@ class Control(StrEnum):
 _ACRONYMS = frozenset({
     "tds", "hh", "mm", "ss", "pm25", "pm10", "co2", "eev", "led", "uv", "ph", "rpm", "ppm",
     "3d", "ai", "tv", "usb", "wifi", "ec", "io", "cl", "id", "eco", "hepa", "utc",
+    "pm2p5", "ch2o", "tvoc",
     "msa", "voc", "hcho", "uvc",
 })
 
@@ -109,6 +111,25 @@ _NAMES: Mapping[str, str] = MappingProxyType({
     "runPower": "Power draw",
     "actualPower": "Power draw",
     "vastMode": "Large-capacity mode",
+    # Air quality. Haier spells PM2.5 as "PM2p5", which no mechanical split reads well, and names
+    # the gases by formula -- `ch2oValue` is formaldehyde, and a label nobody recognises is a
+    # reading nobody acts on. These are the readings a safety-minded owner is looking for.
+    "indoorPM2p5Value": "Indoor PM2.5",
+    "outdoorPM2p5Value": "Outdoor PM2.5",
+    "pm2p5Level": "PM2.5 level",
+    "pm2p5CleaningStatus": "PM2.5 cleaning",
+    "pm2p5ExceedRemind": "PM2.5 high reminder",
+    "pm2p5WindSpeed": "PM2.5 fan speed",
+    "ch2oValue": "Formaldehyde",
+    "ch4Value": "Methane",
+    "co2Value": "Carbon dioxide",
+    "coValue": "Carbon monoxide",
+    "anion": "Negative ions",
+    "pmvStatus": "Comfort (PMV)",
+    "ffm": "Fat-free mass",
+    "runFanSpd": "Fan speed",
+    "curWaterFlux": "Water flow",
+    "waterFlux": "Water flow",
     "scene": "Scene",
     "volume": "Volume",
 })
@@ -129,31 +150,106 @@ _DIAGNOSTIC = re.compile(
     r"|MaintenanceStatus|Result|Src)$"
 )
 
-_UNIT_DEVICE_CLASS: Mapping[str, str] = MappingProxyType({
-    "℃": "temperature",
-    "W": "power",
-    "kW": "power",
-    "Wh": "energy",
-    "kwh": "energy",
-    "kWh": "energy",
-    "V": "voltage",
-    "A": "current",
-    "Hz": "frequency",
-    "Pa": "pressure",
-    "kPa": "pressure",
-    "h": "duration",
-    "min": "duration",
-    "s": "duration",
-    "L": "volume",
-    "ug/m³": "pm25",
-    "PPM": "carbon_dioxide",
+# Haier spells the same unit several ways across device classes, and the differences are not
+# cosmetic: they decide whether a reading gets a device class at all, and Home Assistant validates
+# the unit string it is given. `ug/m³` and `ug/m3` are both in the catalogue for the SAME attribute
+# on different classes -- 96 fields against 52 -- so 17 classes' air-quality sensors were silently
+# losing their class. Normalised once, here, before anything is classified.
+_CANONICAL_UNITS: Mapping[str, str] = MappingProxyType({
+    "℃": "°C",
+    "ug/m³": "µg/m³", "ug/m3": "µg/m³",
+    "PPM": "ppm",
+    "kwh": "kWh", "KWh": "kWh",
+    "w": "W", "kw": "kW",
+    "RPM": "rpm", "r/min": "rpm",
+    "Kcal": "kcal",
+    "分": "min",                 # a Chinese-labelled minute, on three classes
 })
 
-# Units whose reading only ever grows. `state_class` decides whether Home Assistant builds long-term
-# statistics as a total or a measurement, and getting it wrong makes the energy dashboard nonsense.
+
+def canonical_unit(unit: str | None) -> str | None:
+    """Haier's unit string as Home Assistant spells it, or ``None`` for no unit.
+
+    ⚠️ An EMPTY string is not a unit. 219 fields carry one, and passed through it makes a reading
+    look dimensioned when it is not.
+    """
+    if not unit or not unit.strip():
+        return None
+    return _CANONICAL_UNITS.get(unit, unit)
+
+
 _CLOCK_PART = re.compile(r"(HH|MM|SS)$")
-_TOTAL_UNITS = frozenset({"Wh", "kwh", "kWh", "MJ"})
-_TOTAL_NAMES = re.compile(r"(TotalTime|WorkingTime|RunTimes?|Times|Used|ActionNum|TotalNum)$")
+# Readings that only ever grow. `state_class` decides whether Home Assistant builds long-term
+# statistics as a total or a measurement, and getting it wrong makes the energy dashboard nonsense.
+_TOTAL_UNITS = frozenset({"Wh", "kWh", "MJ", "kcal"})
+_TOTAL_NAMES = re.compile(
+    r"(TotalTime|WorkingTime|RunTimes?|Times|Used|ActionNum|TotalNum|WaterL|GasL|Flux)$"
+)
+_MEASURED = "measurement"
+_TOTAL = "total_increasing"
+
+
+def _quantity(name: str, unit: str | None, cumulative: bool) -> tuple[str | None, str | None]:
+    """``(device class, state class)`` for a numeric reading, as a PAIR.
+
+    Derived together on purpose. Home Assistant validates the combination — `volume` accepts only a
+    total, `volume_storage` only a measurement — and it validates the unit against the class too, so
+    a table keyed on the unit alone produces pairs that are individually plausible and jointly
+    invalid. That is not a cosmetic failure: the entity's state is refused at write time.
+
+    ⚠️ **Several of Haier's units are ambiguous and the name disambiguates them.** `µg/m³` covers
+    PM2.5, PM10 *and* formaldehyde; `ppm` covers CO₂, carbon monoxide, methane, smoke and negative
+    ions; litres covers water used, hot water remaining and gas consumed. Assigning by unit alone
+    labelled a formaldehyde probe "PM2.5" and a carbon-monoxide probe "CO₂" — a wrong fact about a
+    safety sensor, which is the worst kind to publish. Where the name does not settle it, the
+    reading keeps its unit and gets no class.
+    """
+    lower = name.lower()
+    if unit in ("W", "kW"):
+        return "power", _MEASURED
+    if unit in _TOTAL_UNITS:
+        return "energy", _TOTAL
+    if unit == "°C":
+        return "temperature", _MEASURED
+    if unit == "V":
+        return "voltage", _MEASURED
+    if unit == "A":
+        return "current", _MEASURED
+    if unit == "Hz":
+        return "frequency", _MEASURED
+    if unit in ("Pa", "kPa"):
+        return "pressure", _MEASURED
+    if unit == "L/min":
+        return "volume_flow_rate", _MEASURED
+    if unit == "L":
+        if not cumulative:
+            return "volume_storage", _MEASURED      # what is in the tank now
+        return ("water" if "water" in lower else "volume"), _TOTAL
+    if unit == "µg/m³":
+        if "pm2" in lower:
+            return "pm25", _MEASURED
+        if "pm10" in lower:
+            return "pm10", _MEASURED
+        if "ch2o" in lower or "hcho" in lower or "formaldehyde" in lower:
+            return "volatile_organic_compounds", _MEASURED
+        return None, _MEASURED
+    if unit == "ppm":
+        if "co2" in lower:
+            return "carbon_dioxide", _MEASURED
+        if lower.startswith("co") and not lower.startswith("col"):
+            return "carbon_monoxide", _MEASURED
+        return None, _MEASURED
+    if unit == "%":
+        return ("humidity" if "humidity" in lower else None), _MEASURED
+    if unit == "m":
+        return ("distance" if "distance" in lower else None), _MEASURED
+    if unit in ("g", "kg"):
+        return ("weight" if "weight" in lower else None), _MEASURED
+    if unit in ("h", "min", "s"):
+        return "duration", (_TOTAL if cumulative else _MEASURED)
+    if cumulative:
+        return None, _TOTAL
+    return None, (_MEASURED if unit else None)
 
 
 def _split(name: str) -> list[str]:
@@ -435,8 +531,9 @@ def _spec(
         return None
     english = english_name(name)
     diagnostic = bool(_DIAGNOSTIC.search(name)) or field.is_composite
-    unit = field.unit
-    device_class = _UNIT_DEVICE_CLASS.get(unit or "")
+    unit = canonical_unit(field.unit)
+    cumulative = unit in _TOTAL_UNITS or bool(_TOTAL_NAMES.search(name))
+    device_class, state_class = _quantity(name, unit, cumulative)
 
     # A composite (a clock or a date) has no numeric meaning: it is a string reading.
     if field.is_composite:
@@ -446,11 +543,20 @@ def _spec(
 
     if field.is_enum:
         options = _declared_options(field, values)
+        # What the CLASS MAP can encode, which is not the same as what the device declares: a
+        # control has to be able to express both of its states, and this is where that is decided.
+        encodable = {
+            str(entry.get("stdValue")).lower()
+            for entry in field.variants
+            if entry.get("stdValue") is not None
+        }
         # Two-value booleans are a switch or a binary sensor, not a two-item dropdown. Haier models
         # 8,218 of them that way -- half the catalogue -- and every one would otherwise be a select.
-        boolean = field.data_type == "bool" or (
-            len(options) <= 2
-            and {str(v).lower() for v, _ in options} <= {"true", "false", "0", "1"}
+        # ⛔ Exactly two, not "at most two": `resnMode` publishes a SINGLE value (`{1: 1}`), and as a
+        # switch it rendered an off position that `encode_write` refuses -- a control that fails the
+        # first time somebody uses it. A one-value field is a constant, and it reads as a sensor.
+        boolean = len(encodable) == 2 and (
+            field.data_type == "bool" or encodable <= {"true", "false", "0", "1"}
         )
         if boolean:
             if writable:
@@ -458,7 +564,7 @@ def _spec(
             return EntitySpec(
                 name, Control.BINARY_SENSOR, english, False, diagnostic=diagnostic
             )
-        if writable and len(options) > 1:
+        if writable and len(options) > 1 and len(encodable) > 1:
             return EntitySpec(
                 name, Control.SELECT, english, True, options=options, diagnostic=diagnostic
             )
@@ -475,15 +581,12 @@ def _spec(
 
     minimum, maximum, step = _numeric_bounds(field, declared)
     if writable and minimum is not None and maximum is not None:
+        # A setting is not a statistic: a number entity carries no state class, and a device class
+        # only where the SETTING's own dimension is unambiguous.
         return EntitySpec(
             name, Control.NUMBER, english, True, unit=unit, device_class=device_class,
             minimum=minimum, maximum=maximum, step=step, diagnostic=diagnostic,
         )
-    state_class = None
-    if unit in _TOTAL_UNITS or _TOTAL_NAMES.search(name):
-        state_class = "total_increasing"
-    elif device_class is not None:
-        state_class = "measurement"
     return EntitySpec(
         name, Control.SENSOR, english, False, unit=unit, device_class=device_class,
         state_class=state_class, diagnostic=diagnostic,
@@ -496,7 +599,7 @@ def specs_for(
     *,
     writable: Iterable[str] = (),
     exclude: Iterable[str] = (),
-    status_cmd: str = "6D01",
+    status_cmd: Sequence[str] = ("6D01", "7D01"),
 ) -> tuple[EntitySpec, ...]:
     """Every entity this device should have, from what it declares and what the map places.
 
@@ -508,6 +611,12 @@ def specs_for(
     ⛔ Returns nothing at all when the device has declared nothing. That is the safe direction: a
     device whose model has not been fetched yet gets no entities rather than the whole class map,
     and picks them up on the next refresh.
+
+    Both status frames are covered: the ordinary report (``6D01``) and the extended telemetry one
+    (``7D01``, which Haier files under ``Bigdata``). The second is where a washing machine's water
+    and electricity totals live, and covering only the first decoded them into state that nothing
+    ever showed. A name appearing in both keeps its ``6D01`` reading, which is the one that arrives
+    on every poll.
     """
     if model is None:
         return ()
@@ -516,9 +625,10 @@ def specs_for(
         return ()
     writable_names = frozenset(writable)
     excluded = frozenset(exclude)
+    wanted = (status_cmd,) if isinstance(status_cmd, str) else tuple(status_cmd)
     candidates = [
-        f for f in model.fields
-        if f.status_cmd == status_cmd and f.name not in excluded and f.name in by_name
+        f for command in wanted for f in model.fields
+        if f.status_cmd == command and f.name not in excluded and f.name in by_name
     ]
     collapsed = {
         name: spec

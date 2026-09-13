@@ -335,3 +335,40 @@ def test_the_telemetry_frame_gets_entities_too() -> None:
         for s in specs_for(model, [{"name": n} for n in telemetry])
     }
     assert specs & set(telemetry), "telemetry attributes must produce entities"
+
+
+def test_the_manufacturers_own_description_is_carried_verbatim() -> None:
+    """⚠️ Carried, not translated — and the reason is a measurement, not a preference.
+
+    83% of the catalogue's 1,679 attribute names have a description in Haier's models and **all but
+    four are Chinese**, so it cannot be the entity's name for an English-speaking user. The vendor's
+    English UI strings do exist, in the app's own panel bundles, and were measured too: they name
+    **15** of the 1,679, and those are per-model marketing names — `vtRoomTemperature` is "Magic
+    Zone" on one fridge — rather than descriptions of the attribute.
+
+    So the generated English name stands, and the vendor's words ride along beside it for anyone
+    searching Haier's documentation or improving a name.
+    """
+    declared = [
+        {"name": "targetTemperature", "desc": "目标温度",
+         "valueRange": {"type": "STEP", "dataStep": {"minValue": "35", "maxValue": "75"}}},
+        {"name": "dualHeaterMode", "desc": "双源速热模式",
+         "valueRange": {"type": "LIST", "dataList": [{"data": "false"}, {"data": "true"}]}},
+    ]
+    specs = {
+        s.attribute: s
+        for s in specs_for(model_for(WATER_HEATER), declared, writable=["dualHeaterMode"])
+    }
+    assert specs["dualHeaterMode"].description == "双源速热模式"
+    assert specs["dualHeaterMode"].name == "Dual heater mode"      # the generated English stands
+    assert specs["targetTemperature"].description == "目标温度"
+
+
+def test_an_attribute_with_no_description_simply_has_none() -> None:
+    """Most of a class map's attributes are never declared by a device, and a device's own model is
+    where descriptions come from — so absence is ordinary and must not become an empty string."""
+    specs = {
+        s.attribute: s
+        for s in specs_for(model_for(WATER_HEATER), [{"name": "targetTemperature"}])
+    }
+    assert specs["targetTemperature"].description is None

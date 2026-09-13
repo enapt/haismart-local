@@ -393,6 +393,15 @@ class EntitySpec:
     sources: tuple[str, ...] = dataclass_field(default_factory=tuple)
     #: Labels for a collapsed series, parallel to :attr:`sources` (``"00"`` … ``"23"``, ``"mon"`` …).
     source_labels: tuple[str, ...] = dataclass_field(default_factory=tuple)
+    #: The manufacturer's OWN description of this attribute, verbatim.
+    #:
+    #: Carried rather than translated. 83% of the catalogue's 1,679 attribute names have one and
+    #: **all but four are Chinese**, so it cannot be the entity's name for an English-speaking user
+    #: — but it is the vendor's own words, it is what their app shows, and it is what somebody
+    #: searching Haier's documentation or improving a name needs. ⓘ The vendor's English UI strings
+    #: exist too and were measured: they name **15** of the 1,679, and those are per-model marketing
+    #: names ("Magic Zone" for `vtRoomTemperature`) rather than descriptions of the attribute.
+    description: str | None = None
 
     @property
     def key(self) -> str:
@@ -530,6 +539,8 @@ def _spec(
     if name in _SKIP or field.cae_type == 13:
         return None
     english = english_name(name)
+    # The manufacturer's own words for this attribute, where its model carries them.
+    vendor = (declared or {}).get("desc") or (declared or {}).get("description") or None
     diagnostic = bool(_DIAGNOSTIC.search(name)) or field.is_composite
     unit = canonical_unit(field.unit)
     cumulative = unit in _TOTAL_UNITS or bool(_TOTAL_NAMES.search(name))
@@ -537,7 +548,7 @@ def _spec(
 
     # A composite (a clock or a date) has no numeric meaning: it is a string reading.
     if field.is_composite:
-        return EntitySpec(name, Control.SENSOR, english, False, diagnostic=True)
+        return EntitySpec(name, Control.SENSOR, english, False, description=vendor, diagnostic=True)
 
     values = ((declared or {}).get("valueRange") or {}).get("dataList") or []
 
@@ -560,16 +571,20 @@ def _spec(
         )
         if boolean:
             if writable:
-                return EntitySpec(name, Control.SWITCH, english, True, diagnostic=diagnostic)
+                return EntitySpec(
+                    name, Control.SWITCH, english, True,
+                    description=vendor, diagnostic=diagnostic,
+                )
             return EntitySpec(
-                name, Control.BINARY_SENSOR, english, False, diagnostic=diagnostic
+                name, Control.BINARY_SENSOR, english, False, description=vendor, diagnostic=diagnostic
             )
         if writable and len(options) > 1 and len(encodable) > 1:
             return EntitySpec(
-                name, Control.SELECT, english, True, options=options, diagnostic=diagnostic
+                name, Control.SELECT, english, True, description=vendor,
+                options=options, diagnostic=diagnostic,
             )
         return EntitySpec(
-            name, Control.SENSOR, english, False, options=options, diagnostic=diagnostic
+            name, Control.SENSOR, english, False, description=vendor, options=options, diagnostic=diagnostic
         )
 
     # A clock COMPONENT is not a quantity. Haier declares `resn1TimeHH` with unit "h" and
@@ -577,18 +592,18 @@ def _spec(
     # a duration Home Assistant shows "6 h" for six o'clock. They keep their name ("Reservation 1
     # hour") and lose the unit, rather than being given a device class that is false.
     if _CLOCK_PART.search(name):
-        return EntitySpec(name, Control.SENSOR, english, False, diagnostic=diagnostic)
+        return EntitySpec(name, Control.SENSOR, english, False, description=vendor, diagnostic=diagnostic)
 
     minimum, maximum, step = _numeric_bounds(field, declared)
     if writable and minimum is not None and maximum is not None:
         # A setting is not a statistic: a number entity carries no state class, and a device class
         # only where the SETTING's own dimension is unambiguous.
         return EntitySpec(
-            name, Control.NUMBER, english, True, unit=unit, device_class=device_class,
+            name, Control.NUMBER, english, True, description=vendor, unit=unit, device_class=device_class,
             minimum=minimum, maximum=maximum, step=step, diagnostic=diagnostic,
         )
     return EntitySpec(
-        name, Control.SENSOR, english, False, unit=unit, device_class=device_class,
+        name, Control.SENSOR, english, False, description=vendor, unit=unit, device_class=device_class,
         state_class=state_class, diagnostic=diagnostic,
     )
 

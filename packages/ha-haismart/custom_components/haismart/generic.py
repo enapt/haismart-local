@@ -127,13 +127,18 @@ class GenericEntity(HaismartEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
-        """The manufacturer's own name for this attribute.
+        """The manufacturer's own identifier and description for this attribute.
 
         Worth carrying: these entities are generated, so a bug report about one is unreadable
-        without the identifier it was generated from, and a user searching Haier's own
-        documentation needs the same string.
+        without the identifier it was generated from.
         """
         extra: dict[str, Any] = {"haier_attribute": self.spec.attribute}
+        if self.spec.description:
+            # The manufacturer's own words, verbatim. 83% of the catalogue's attributes have one and
+            # all but four are Chinese, so it cannot BE the name for an English-speaking user — but
+            # it is what Haier's own app shows, and it is what somebody searching their
+            # documentation, or improving one of these names, actually needs.
+            extra["haier_description"] = self.spec.description
         if self.spec.sources:
             extra["haier_attributes"] = list(self.spec.sources)
         return extra

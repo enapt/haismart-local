@@ -15,15 +15,17 @@ import collections
 
 import pytest
 from haismart_hrdp.device_model import known_typeids, model_for
-from haismart_hrdp.entity_spec import Control, specs_for
+from haismart_hrdp.entity_spec import Control, EntitySpec, specs_for
 from homeassistant.components.number import NumberDeviceClass
 from homeassistant.components.number.const import DEVICE_CLASS_UNITS as NUMBER_UNITS
+from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.components.sensor.const import (
     DEVICE_CLASS_STATE_CLASSES,
 )
 from homeassistant.components.sensor.const import (
     DEVICE_CLASS_UNITS as SENSOR_UNITS,
 )
+from homeassistant.const import CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
 
 from custom_components.haismart.generic import (
     device_class_for,
@@ -61,6 +63,35 @@ def test_no_sensor_pairs_a_device_class_with_a_unit_home_assistant_refuses() -> 
         and (unit := unit_for(spec)) not in allowed
     ]
     assert not bad, bad[:10]
+
+
+def test_units_are_home_assistants_own_spelling_not_a_literal() -> None:
+    """A unit we publish must be what Home Assistant validates against, character for character.
+
+    ⛔ This exists because Home Assistant CHANGED the micro sign between releases:
+
+        2025.1.4  CONCENTRATION_MICROGRAMS_PER_CUBIC_METER = 'µg/m³'  U+00B5 MICRO SIGN
+        2026.2.3  CONCENTRATION_MICROGRAMS_PER_CUBIC_METER = 'μg/m³'  U+03BC GREEK SMALL LETTER MU
+
+    The two are indistinguishable on screen, so a hardcoded literal passes review, passes a local
+    test run, and is rejected on the other release with nothing to see. The test above catches it
+    only when the installed Home Assistant happens to be the newer one -- which no developer here
+    had. This one catches it on either, by asserting the value came from Home Assistant rather than
+    from us.
+    """
+    ug = CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
+    other_mu = ug.translate(str.maketrans({"\u00b5": "\u03bc", "\u03bc": "\u00b5"}))
+    assert other_mu != ug, "both spellings must differ, or this test proves nothing"
+
+    # Whichever spelling the byte map produced, what we publish is Home Assistant's own.
+    for spelling in (ug, other_mu):
+        spec = EntitySpec(
+            attribute="x", control=Control.SENSOR, name="X", writable=False, unit=spelling
+        )
+        assert unit_for(spec) == ug, f"{spelling!r} was published as-is instead of HA's constant"
+
+    # And it really is accepted by the table the other test checks.
+    assert ug in SENSOR_UNITS[SensorDeviceClass.PM25]
 
 
 def test_no_sensor_pairs_a_device_class_with_a_state_class_home_assistant_refuses() -> None:

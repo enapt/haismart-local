@@ -16,7 +16,13 @@ from typing import Any
 
 from haismart_hrdp.entity_spec import Control, EntitySpec
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
-from homeassistant.const import EntityCategory
+from homeassistant.const import (
+    CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+    CONCENTRATION_MILLIGRAMS_PER_CUBIC_METER,
+    CONCENTRATION_PARTS_PER_BILLION,
+    CONCENTRATION_PARTS_PER_MILLION,
+    EntityCategory,
+)
 from homeassistant.helpers.entity import EntityDescription
 
 from .coordinator import HaismartCoordinator
@@ -47,16 +53,58 @@ def state_class_for(spec: EntitySpec) -> SensorStateClass | None:
         return None
 
 
-def unit_for(spec: EntitySpec) -> str | None:
-    """The spec's unit, which is already canonical.
+# Home Assistant's own unit strings, for the units it VALIDATES against `DEVICE_CLASS_UNITS`.
+#
+# ⛔⛔ Publishing an equal-LOOKING literal is not the same as publishing the right one. Home
+# Assistant changed the micro sign in `CONCENTRATION_MICROGRAMS_PER_CUBIC_METER` between releases:
+#
+#     2025.1.4  'µg/m³'  U+00B5 MICRO SIGN
+#     2026.2.3  'μg/m³'  U+03BC GREEK SMALL LETTER MU
+#
+# The two render identically in every editor, diff and terminal. A hardcoded literal therefore
+# matches on one release and is rejected on the other, and the entity loses its device class --
+# silently, because nothing about the string looks wrong. That is the third time a micro-gram
+# spelling has cost this integration a device class (`ug/m3` vs `ug/m³` was the first two).
+#
+# So the value returned is always HOME ASSISTANT'S OWN constant, and the lookup is keyed on a form
+# with both mu characters folded together, which makes it stable whichever character either side
+# happens to use. ⓘ `haismart_hrdp` cannot do this itself: it is deliberately Home-Assistant-free,
+# so the canonical form is still decided once in `entity_spec.canonical_unit` and only exchanged
+# for Home Assistant's spelling here, at the boundary.
+_MU_FOLD = str.maketrans({"\u03bc": "\u00b5"})       # GREEK SMALL LETTER MU -> MICRO SIGN
 
-    ⚠️ It is normalised in :func:`haismart_hrdp.entity_spec.canonical_unit`, at the ONE place the
-    field's unit is read -- not here. That matters because the unit decides the device class, and a
-    table on this side of the boundary would have the classifier reasoning about `ug/m3` while the
-    entity published `µg/m³`. It did, and 17 classes' air-quality sensors lost their device class
-    to the difference.
+
+def _fold(unit: str) -> str:
+    return unit.translate(_MU_FOLD)
+
+
+_HA_UNITS: dict[str, str] = {
+    _fold(unit): unit
+    for unit in (
+        CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        CONCENTRATION_MILLIGRAMS_PER_CUBIC_METER,
+        CONCENTRATION_PARTS_PER_MILLION,
+        CONCENTRATION_PARTS_PER_BILLION,
+    )
+}
+
+
+def unit_for(spec: EntitySpec) -> str | None:
+    """The spec's unit, in the spelling THIS Home Assistant validates against.
+
+    ⚠️ The unit is normalised in :func:`haismart_hrdp.entity_spec.canonical_unit`, at the ONE place
+    the field's unit is read -- not here. That matters because the unit decides the device class,
+    and a table on this side of the boundary would have the classifier reasoning about `ug/m3`
+    while the entity published `µg/m³`. It did, and 17 classes' air-quality sensors lost their
+    device class to the difference.
+
+    What happens here is only the last step: exchanging that one canonical spelling for Home
+    Assistant's own constant, so a release that changes the constant -- as 2026.x did, see above --
+    cannot reject an entity over a character nobody can see.
     """
-    return spec.unit
+    if spec.unit is None:
+        return None
+    return _HA_UNITS.get(_fold(spec.unit), spec.unit)
 
 
 def category_for(spec: EntitySpec) -> EntityCategory | None:

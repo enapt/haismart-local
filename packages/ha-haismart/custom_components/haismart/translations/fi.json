@@ -1,10 +1,10 @@
 {
   "config": {
-    "flow_title": "Haier-ilmastointilaite {device_id}",
+    "flow_title": "Haier-laite {device_id}",
     "step": {
       "user": {
-        "title": "Lisää Haier-ilmastointilaite",
-        "description": "Sisäänkirjautuminen on suositeltu tapa: Home Assistant hakee paikallisen avaimen, löytää laitteen verkostasi ja lukee sen mallin, joten mitään ei tarvitse liittää. Sen jälkeen se keskustelee suoraan ilmastointilaitteen kanssa — ja kun kaikki on määritetty, voit estää laitteen internetyhteyden kokonaan; katso README täydestä pilviriippumattomuudesta.\n\nGoogle-/Facebook-tilit: luo erillinen Haier-tili sähköpostilla ja salasanalla, jaa ilmastointilaitteesi sille sovelluksessa ja kirjaudu sitten sisään sillä tilillä.",
+        "title": "Lisää Haier-laite",
+        "description": "Sisäänkirjautuminen on suositeltu tapa: Home Assistant hakee paikallisen avaimen, löytää laitteen verkostasi ja lukee sen mallin, joten mitään ei tarvitse liittää. Sen jälkeen se keskustelee suoraan laitteen kanssa — ja kun kaikki on määritetty, voit estää laitteen internetyhteyden kokonaan; katso README täydestä pilviriippumattomuudesta.\n\nGoogle-/Facebook-tilit: luo erillinen Haier-tili sähköpostilla ja salasanalla, jaa laitteesi sille sovelluksessa ja kirjaudu sitten sisään sillä tilillä.",
         "menu_options": {
           "account": "Käytä jo lisättyä Haier-tiliä (ei mitään kirjoitettavaa)",
           "login": "Kirjaudu Haier-tililläsi (suositeltu)",
@@ -13,7 +13,7 @@
       },
       "login": {
         "title": "Kirjaudu Haier-tilillesi",
-        "description": "Käytä samaa tiliä kuin Haier- / Haismart-sovelluksessa. Kirjautuminen tapahtuu vain kerran – sen jälkeen Home Assistant keskustelee vain verkossasi olevan ilmastointilaitteen kanssa.\n\nKirjaudutko Googlella tai Facebookilla? Niillä tileillä ei ole salasanaa. Luo Haier-tili sähköpostilla ja salasanalla, jaa laite sille sovelluksessa ja kirjaudu sitten täällä sisään sillä tilillä.",
+        "description": "Käytä samaa tiliä kuin Haier- / Haismart-sovelluksessa. Kirjautuminen tapahtuu vain kerran – sen jälkeen Home Assistant keskustelee vain verkossasi olevan laitteen kanssa.\n\nKirjaudutko Googlella tai Facebookilla? Niillä tileillä ei ole salasanaa. Luo Haier-tili sähköpostilla ja salasanalla, jaa laite sille sovelluksessa ja kirjaudu sitten täällä sisään sillä tilillä.",
         "data": {
           "username": "Sähköposti tai puhelinnumero",
           "password": "Salasana",
@@ -30,11 +30,11 @@
         "data": {
           "device_id": "Laite"
         },
-        "description": "Valitse lisättävä ilmastointilaite. Sen avain haetaan pilvestä ja IP-osoite löydetään verkostasi automaattisesti – mitään ei tarvitse liittää."
+        "description": "Valitse lisättävä laite. Sen avain haetaan pilvestä ja IP-osoite löydetään verkostasi automaattisesti – mitään ei tarvitse liittää."
       },
       "manual": {
         "title": "Laitteen tiedot",
-        "description": "Ainoa tarvitsemasi asia on tämän laitteen paikallinen avain — aiemman asennuksen ”Paikallinen avain” -anturista tai varmuuskopiosta. Home Assistant etsii ilmastointilaitteen verkostasi ja kysyy siltä kaiken muun.\n\nAvainta ei voi lukea itse laitteesta. Jos sinulla ei ole tallennettua avainta, palaa takaisin ja kirjaudu sisään — silloin se haetaan puolestasi.",
+        "description": "Ainoa tarvitsemasi asia on tämän laitteen paikallinen avain — aiemman asennuksen ”Paikallinen avain” -anturista tai varmuuskopiosta. Home Assistant etsii laitteen verkostasi ja kysyy siltä kaiken muun.\n\nAvainta ei voi lukea itse laitteesta. Jos sinulla ei ole tallennettua avainta, palaa takaisin ja kirjaudu sisään — silloin se haetaan puolestasi.",
         "data": {
           "host": "IP-osoite",
           "device_id": "Laitetunnus",
@@ -42,15 +42,15 @@
           "name": "Nimi"
         },
         "data_description": {
-          "host": "Ilmastointilaitteen IP-osoite verkossasi, esim. 192.168.1.50. DHCP-varaus estää sitä muuttumasta.",
-          "device_id": "Jätetään yleensä tyhjäksi — tämä kysytään suoraan ilmastointilaitteelta. Se on moduulin Wi-Fi-MAC-osoite, jos joudut kuitenkin syöttämään sen.",
+          "host": "Laitteen IP-osoite verkossasi, esim. 192.168.1.50. DHCP-varaus estää sitä muuttumasta.",
+          "device_id": "Jätetään yleensä tyhjäksi — tämä kysytään suoraan laitteelta. Se on moduulin Wi-Fi-MAC-osoite, jos joudut kuitenkin syöttämään sen.",
           "local_key": "32-merkkinen avain, jolla laite salaa tilatietonsa. Haierin pilvi myöntää sen laitekohtaisesti – kirjautumispolku hakee sen puolestasi.",
-          "name": "Valinnainen. Tämän ilmastointilaitteen nimi Home Assistantissa."
+          "name": "Valinnainen. Tämän laitteen nimi Home Assistantissa."
         }
       },
       "reauth_confirm": {
         "title": "Paikallinen avain on vaihtunut",
-        "description": "Ilmastointilaite {device_id} ilmoittaa uudemmasta localKey-versiosta – tallennettu avain ei enää pura sen tilatietoja. Syötä laitteen nykyinen localKey yhteyden palauttamiseksi.",
+        "description": "Laite {device_id} ilmoittaa uudemmasta localKey-versiosta – tallennettu avain ei enää pura sen tilatietoja. Syötä laitteen nykyinen localKey yhteyden palauttamiseksi.",
         "data": {
           "local_key": "Paikallinen avain (32 heksamerkkiä)"
         },
@@ -59,7 +59,7 @@
         }
       },
       "host": {
-        "title": "Syötä ilmastointilaitteen IP-osoite",
+        "title": "Syötä laitteen IP-osoite",
         "description": "Kirjautuminen onnistui ja avain haettiin automaattisesti – Home Assistant ei vain löytänyt laitetta {device} verkosta itse. Syötä sen paikallinen IP-osoite (esim. 192.168.1.50). Vinkki: DHCP-varaus pitää sen vakaana.",
         "data": {
           "host": "IP-osoite"
@@ -70,14 +70,14 @@
       },
       "key_failed": {
         "title": "Avainta ei voitu hakea automaattisesti",
-        "description": "Home Assistant kirjautui sisään, mutta ei saanut haettua tämän ilmastointilaitteen paikallista avainta Haierin palvelimilta — tai saatu avain ei pura laitteen tilaa.{note}\n\nTämä on usein tilapäistä, joten uudelleenyritys kannattaa yleensä. Jos virhe toistuu, voit syöttää tiedot käsin, mutta avainta ei voi lukea laitteesta — tarvitsisit sen aiemman asennuksen ”Paikallinen avain” -anturista tai varmuuskopiosta.",
+        "description": "Home Assistant kirjautui sisään, mutta ei saanut haettua tämän laitteen paikallista avainta Haierin palvelimilta — tai saatu avain ei pura laitteen tilaa.{note}\n\nTämä on usein tilapäistä, joten uudelleenyritys kannattaa yleensä. Jos virhe toistuu, voit syöttää tiedot käsin, mutta avainta ei voi lukea laitteesta — tarvitsisit sen aiemman asennuksen ”Paikallinen avain” -anturista tai varmuuskopiosta.",
         "menu_options": {
           "key_retry": "Yritä hakea avain uudelleen",
           "manual": "Syötä tiedot sen sijaan käsin"
         }
       },
       "reconfigure": {
-        "title": "Määritä tämä ilmastointilaite uudelleen",
+        "title": "Määritä tämä laite uudelleen",
         "description": "Muuta tapaa, jolla Home Assistant tavoittaa tämän laitteen, ilman että poistat sen ja menetät sen historian.",
         "menu_options": {
           "reconfigure_host": "Vaihda IP-osoite",
@@ -86,7 +86,7 @@
       },
       "reconfigure_host": {
         "title": "Vaihda IP-osoite",
-        "description": "Uusi osoite tarkistetaan ilmastointilaitetta vasten ennen tallennusta.",
+        "description": "Uusi osoite tarkistetaan laitetta vasten ennen tallennusta.",
         "data": {
           "host": "IP-osoite"
         },
@@ -96,7 +96,7 @@
       },
       "reconfigure_cloud": {
         "title": "Lisää Haier-tilisi",
-        "description": "Tämä ilmastointilaite lisättiin käsin, joten Home Assistantilla ei ole keinoa uusia avainta, kun Haier vaihtaa sen – siksi sinulta pyydetään uutta avainta aika ajoin. Kirjaudu kerran, niin avain uusiutuu jatkossa itsestään.",
+        "description": "Tämä laite lisättiin käsin, joten Home Assistantilla ei ole keinoa uusia avainta, kun Haier vaihtaa sen – siksi sinulta pyydetään uutta avainta aika ajoin. Kirjaudu kerran, niin avain uusiutuu jatkossa itsestään.",
         "data": {
           "username": "Sähköposti tai puhelinnumero",
           "password": "Salasana",
@@ -107,7 +107,7 @@
         }
       },
       "reauth": {
-        "title": "Tämä ilmastointilaite tarvitsee uuden avaimen",
+        "title": "Tämä laite tarvitsee uuden avaimen",
         "description": "Haier vaihtoi tämän laitteen paikallisen avaimen, joten Home Assistant ei enää pysty lukemaan sen tilaa. Uudelleenkirjautuminen hakee uuden avaimen puolestasi – se on lähes aina oikea valinta. Avaimen syöttäminen käsin on hyödyllistä vain, jos se on jo hallussasi.",
         "menu_options": {
           "reauth_cloud": "Kirjaudu ja hae uusi avain automaattisesti",
@@ -124,7 +124,7 @@
       },
       "model": {
         "title": "Mikä malli tämä on?",
-        "description": "Ilmastointilaite ilmoitti, mihin tuoteperheeseen se kuuluu, mikä rajaa vaihtoehdot alla oleviin malleihin. Valitse se, joka on merkitty laitteeseen tai sen tyyppikilpeen.\n\nValinta avaa vikojen nimet, käytettävyyssäännöt ja tämän laitteen todellisen ominaisuusluettelon. Ohittaminen on aivan hyväksyttävää — ilmastointilaitetta luetaan ja ohjataan täysin ilman sitäkin.",
+        "description": "Laite ilmoitti, mihin tuoteperheeseen se kuuluu, mikä rajaa vaihtoehdot alla oleviin malleihin. Valitse se, joka on merkitty laitteeseen tai sen tyyppikilpeen.\n\nValinta avaa vikojen nimet, käytettävyyssäännöt ja tämän laitteen todellisen ominaisuusluettelon. Ohittaminen on aivan hyväksyttävää — laitetta luetaan ja ohjataan täysin ilman sitäkin.",
         "data": {
           "product_code": "Malli"
         },
@@ -133,37 +133,37 @@
         }
       },
       "pick_local": {
-        "title": "Verkostasi löytyneet ilmastointilaitteet",
+        "title": "Verkostasi löytyneet laitteet",
         "description": "Nämä vastasivat verkossasi, joten niiden osoitteet ja tunnukset ovat jo tiedossa — tarvitset vain paikallisen avaimen.\n\nEikö omaasi näy? Palaa takaisin, niin kysytään sen sijaan IP-osoitetta. Jo lisättyjä laitteita ei näytetä.",
         "data": {
-          "host": "Ilmastointilaite"
+          "host": "Laite"
         }
       },
       "discovery_confirm": {
-        "title": "Määritä tämä ilmastointilaite",
-        "description": "Home Assistant löysi Haier-ilmastointilaitteen osoitteesta {host} (`{device_id}`).\n\nSen paikallinen avain haetaan jo lisäämältäsi Haier-tililtä, joten mitään ei tarvitse kirjoittaa. Lisää se valitsemalla **Lähetä**."
+        "title": "Määritä tämä laite",
+        "description": "Home Assistant löysi Haier-laitteen osoitteesta {host} (`{device_id}`).\n\nSen paikallinen avain haetaan jo lisäämältäsi Haier-tililtä, joten mitään ei tarvitse kirjoittaa. Lisää se valitsemalla **Lähetä**."
       }
     },
     "error": {
-      "account_not_in_region": "Haier-tiliä ”{username}” ei löytynyt valitsemastasi maasta (+{zone}). Kyse on maasta, johon tili rekisteröitiin; se ei välttämättä ole asuinmaasi eikä laitteen sijaintimaa. Valitse oikea ja yritä uudelleen. Jos ilmastointilaitteesi käyttää hOn- tai Haier China -sovellusta, tämä integraatio ei pysty kirjautumaan noille tileille lainkaan.",
+      "account_not_in_region": "Haier-tiliä ”{username}” ei löytynyt valitsemastasi maasta (+{zone}). Kyse on maasta, johon tili rekisteröitiin; se ei välttämättä ole asuinmaasi eikä laitteen sijaintimaa. Valitse oikea ja yritä uudelleen. Jos laitteesi käyttää hOn- tai Haier China -sovellusta, tämä integraatio ei pysty kirjautumaan noille tileille lainkaan.",
       "missing_field": "Haier hylkäsi kirjautumisen, koska jokin kenttä puuttui tai oli tyhjä.",
       "cloud_auth": "Kirjautuminen epäonnistui. Tarkista sähköpostisi tai puhelinnumerosi ja salasanasi.",
       "cannot_connect_cloud": "Kirjautuminen onnistui, mutta Haierin palvelimiin ei saatu yhteyttä laiteluettelon hakemiseksi. Tämä on yleensä tilapäistä – yritä hetken kuluttua uudelleen.",
       "cloud_unreachable": "Haierin palvelimiin ei saatu yhteyttä. Tarkista, että Home Assistant pääsee internetiin ja pystyy selvittämään Haierin osoitteen – DNS- tai palomuuriongelma Home Assistant -koneella näyttää täsmälleen tältä – ja yritä uudelleen.",
       "invalid_key": "Paikallisen avaimen on oltava 32 merkin heksadesimaalimerkkijono.",
-      "invalid_auth": "Ilmastointilaite vastasi, mutta tämä paikallinen avain ei pura sen tilatietoja – avain on väärä tai se on vaihdettu.",
-      "cannot_connect": "Ilmastointilaitteeseen ei saatu yhteyttä portissa 56800. Tarkista IP-osoite ja se, että Home Assistant on samassa verkossa.",
-      "device_id_required": "Ilmastointilaite ei vastannut tunnistuskyselyyn, joten sen laitetunnusta ei voitu lukea automaattisesti. Syötä se käsin — se on moduulin Wi-Fi-MAC-osoite, 12 heksadesimaalimerkkiä ilman erottimia.",
-      "account_expired": "Tässä jo määritettyä Haier-tiliä ei voitu käyttää — sen kirjautuminen on vanhentunut tai muualla tehty kirjautuminen on korvannut sen. Uudelleenkirjautuminen alla korjaa tämän kaikille lisäämillesi ilmastointilaitteille."
+      "invalid_auth": "Laite vastasi, mutta tämä paikallinen avain ei pura sen tilatietoja – avain on väärä tai se on vaihdettu.",
+      "cannot_connect": "Laitteeseen ei saatu yhteyttä portissa 56800. Tarkista IP-osoite ja se, että Home Assistant on samassa verkossa.",
+      "device_id_required": "Laite ei vastannut tunnistuskyselyyn, joten sen laitetunnusta ei voitu lukea automaattisesti. Syötä se käsin — se on moduulin Wi-Fi-MAC-osoite, 12 heksadesimaalimerkkiä ilman erottimia.",
+      "account_expired": "Tässä jo määritettyä Haier-tiliä ei voitu käyttää — sen kirjautuminen on vanhentunut tai muualla tehty kirjautuminen on korvannut sen. Uudelleenkirjautuminen alla korjaa tämän kaikille lisäämillesi laitteille."
     },
     "abort": {
       "already_configured": "Tämä laite on jo määritetty.",
       "reauth_successful": "Paikallinen avain päivitettiin.",
-      "all_configured": "Kaikki tämän tilin ilmastointilaitteet on jo lisätty Home Assistantiin.",
+      "all_configured": "Kaikki tämän tilin laitteet on jo lisätty Home Assistantiin.",
       "unknown": "Odottamaton virhe – laitteen ilmoitusta ei ymmärretty.",
-      "no_devices": "Kirjauduttu tunnuksella {username}, mutta tällä Haier-tilillä ei ole laitteita. Jos kirjaudut sovellukseen Googlella tai Facebookilla, jaa ilmastointilaite ensin tälle tilille sovelluksessa ja yritä sitten uudelleen.",
-      "already_in_progress": "Tämän ilmastointilaitteen määritys on jo käynnissä.",
-      "account_no_devices": "Tässä jo määritetty Haier-tili ei enää listaa laitteita. Tarkista, että ilmastointilaite on yhä Haier-sovelluksessa tällä tilillä, ja yritä uudelleen."
+      "no_devices": "Kirjauduttu tunnuksella {username}, mutta tällä Haier-tilillä ei ole laitteita. Jos kirjaudut sovellukseen Googlella tai Facebookilla, jaa laite ensin tälle tilille sovelluksessa ja yritä sitten uudelleen.",
+      "already_in_progress": "Tämän laitteen määritys on jo käynnissä.",
+      "account_no_devices": "Tässä jo määritetty Haier-tili ei enää listaa laitteita. Tarkista, että laite on yhä Haier-sovelluksessa tällä tilillä, ja yritä uudelleen."
     }
   },
   "options": {
@@ -548,19 +548,19 @@
   "issues": {
     "stale_localkey_manual_reauth": {
       "title": "{name}: localKey vaihtui – avain on syötettävä käsin",
-      "description": "Ilmastointilaite vaihtoi paikallisen avaimensa (v{old} → v{new}), eikä tälle laitteelle ole tallennettu Haier-tilin tunnuksia, joten Home Assistant ei voinut uusia avainta itse ja joutui pyytämään sitä sinulta.\n\nJotta tämä ei toistuisi, avaa laite, valitse **Määritä uudelleen** ja lisää Haier-tilisi. Avain uusiutuu tämän jälkeen itsestään jokaisen vaihdon yhteydessä."
+      "description": "Laite vaihtoi paikallisen avaimensa (v{old} → v{new}), eikä tälle laitteelle ole tallennettu Haier-tilin tunnuksia, joten Home Assistant ei voinut uusia avainta itse ja joutui pyytämään sitä sinulta.\n\nJotta tämä ei toistuisi, avaa laite, valitse **Määritä uudelleen** ja lisää Haier-tilisi. Avain uusiutuu tämän jälkeen itsestään jokaisen vaihdon yhteydessä."
     },
     "unknown_report_layout": {
-      "title": "{name}: tämän ilmastointilaitteen tilamuotoa ei vielä tunnisteta",
+      "title": "{name}: tämän laitteen tilamuotoa ei vielä tunnisteta",
       "description": "{name} lähettää {length} tavun tilaraportin, jolle tällä integraatiolla ei ole vahvistettua asettelua (tuotekoodi: {product_code}).\n\nLämpötila, tila, puhaltimen nopeus sekä päälle/pois toimivat edelleen. Sisä- ja ulkolämpötila eivät ole käytettävissä, ja komentojen lähetys on poistettu käytöstä – asetusten paikan arvaaminen tuntemattomasta muodosta voisi kirjoittaa anturilukeman takaisin laitteeseen asetuksena.\n\nTuen lisääminen ei vaadi koodia, vain kolme lyhyttä tallennetta sinulta. Seuraa linkitettyä ohjetta ja avaa ilmoitus; kyse on yleensä yhden rivin korjauksesta."
     },
     "key_will_rotate": {
       "title": "{name}: avain vaihtuu, eikä tämä asennus pysy perässä",
-      "description": "Tämä ilmastointilaite tavoittaa yhä Haierin palvelimet, joten se saa uuden paikallisen avaimen useita kertoja päivässä. Se lisättiin ilman Haier-tiliä, joten Home Assistant ei voi hakea uutta — seuraavan avaimenvaihdon jälkeisellä uudelleenkäynnistyksellä laite lakkaa toimimasta ja näyttää menettäneen asetuksensa.\n\nKaksi pysyvää ratkaisua, molemmat kannattaa tehdä nyt kun kaikki toimii:\n\n- **Lisää Haier-tilisi**: Asetukset → Laitteet ja palvelut → Haismart → laite → Määritä uudelleen → *Lisää Haier-tilisi*. Avaimenvaihdot haetaan tämän jälkeen automaattisesti.\n- **Tai estä laitteen internetyhteys** reitittimessäsi. Avain lakkaa vaihtumasta ja nykyinen pysyy voimassa. Paikallinen ohjaus toimii kummassakin tapauksessa.\n\nTämä viesti katoaa itsestään heti kun jompikumpi toteutuu."
+      "description": "Tämä laite tavoittaa yhä Haierin palvelimet, joten se saa uuden paikallisen avaimen useita kertoja päivässä. Se lisättiin ilman Haier-tiliä, joten Home Assistant ei voi hakea uutta — seuraavan avaimenvaihdon jälkeisellä uudelleenkäynnistyksellä laite lakkaa toimimasta ja näyttää menettäneen asetuksensa.\n\nKaksi pysyvää ratkaisua, molemmat kannattaa tehdä nyt kun kaikki toimii:\n\n- **Lisää Haier-tilisi**: Asetukset → Laitteet ja palvelut → Haismart → laite → Määritä uudelleen → *Lisää Haier-tilisi*. Avaimenvaihdot haetaan tämän jälkeen automaattisesti.\n- **Tai estä laitteen internetyhteys** reitittimessäsi. Avain lakkaa vaihtumasta ja nykyinen pysyy voimassa. Paikallinen ohjaus toimii kummassakin tapauksessa.\n\nTämä viesti katoaa itsestään heti kun jompikumpi toteutuu."
     },
     "key_refresh_failed": {
       "title": "{name}: avain vaihtui, eikä automaattinen haku onnistunut",
-      "description": "Ilmastointilaite sai uuden paikallisen avaimen (v{old} → v{new}). Haier-tilisi on tallennettu tälle laitteelle, joten Home Assistant yritti hakea uuden itse — eikä onnistunut, siksi se kysyi sinulta.\n\n**Tilitietosi on jo tallennettu, mitään ei tarvitse lisätä.** Uudelleenkirjautuminen kehotteesta korjaa asian nyt. Jos ongelma toistuu, automaattinen reitti on estetty eikä väärin määritetty; tavalliset syyt:\n\n- Reitittimesi tai operaattorisi estää Haierin avainpalvelun, vaikka tavallinen kirjautuminen toimii yhä.\n- Tallennettua kirjautumista ei enää hyväksytä — Haier-sovellukseen kirjautuminen voi päättää muut istunnot. Kirjautuminen täällä uudelleen palauttaa sen.\n\n**Pysyvä ratkaisu:** estä ilmastointilaitteen internetyhteys reitittimessä. Avain lakkaa vaihtumasta ja nykyinen pysyy voimassa toistaiseksi — katso README. Paikallinen ohjaus ei muutu."
+      "description": "Laite sai uuden paikallisen avaimen (v{old} → v{new}). Haier-tilisi on tallennettu tälle laitteelle, joten Home Assistant yritti hakea uuden itse — eikä onnistunut, siksi se kysyi sinulta.\n\n**Tilitietosi on jo tallennettu, mitään ei tarvitse lisätä.** Uudelleenkirjautuminen kehotteesta korjaa asian nyt. Jos ongelma toistuu, automaattinen reitti on estetty eikä väärin määritetty; tavalliset syyt:\n\n- Reitittimesi tai operaattorisi estää Haierin avainpalvelun, vaikka tavallinen kirjautuminen toimii yhä.\n- Tallennettua kirjautumista ei enää hyväksytä — Haier-sovellukseen kirjautuminen voi päättää muut istunnot. Kirjautuminen täällä uudelleen palauttaa sen.\n\n**Pysyvä ratkaisu:** estä laitteen internetyhteys reitittimessä. Avain lakkaa vaihtumasta ja nykyinen pysyy voimassa toistaiseksi — katso README. Paikallinen ohjaus ei muutu."
     }
   },
   "exceptions": {

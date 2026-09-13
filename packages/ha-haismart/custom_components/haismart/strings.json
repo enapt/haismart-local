@@ -1,10 +1,10 @@
 {
   "config": {
-    "flow_title": "Haier AC {device_id}",
+    "flow_title": "Haier appliance {device_id}",
     "step": {
       "user": {
-        "title": "Add a Haier AC",
-        "description": "Signing in is the recommended route: Home Assistant fetches the local key, finds the unit on your network and reads its model, so there is nothing to paste. It talks to the air conditioner directly from then on — and once it is set up you can block the unit from the internet entirely; see the README on going fully cloud-independent.\n\nGoogle/Facebook accounts: create a throwaway email/password Haier account, share your AC(s) to it in the app, then sign in with that account.",
+        "title": "Add a Haier appliance",
+        "description": "Signing in is the recommended route: Home Assistant fetches the local key, finds the unit on your network and reads its model, so there is nothing to paste. It talks to the appliance directly from then on — and once it is set up you can block the unit from the internet entirely; see the README on going fully cloud-independent.\n\nGoogle/Facebook accounts: create a throwaway email/password Haier account, share your appliance(s) to it in the app, then sign in with that account.",
         "menu_options": {
           "account": "Use the Haier account already added (nothing to type)",
           "login": "Sign in with your Haier account (recommended)",
@@ -13,7 +13,7 @@
       },
       "login": {
         "title": "Sign in to your Haier account",
-        "description": "Use the same account you use in the Haier / Haismart app. Sign-in happens once — after this, Home Assistant talks only to the air conditioner on your network.\n\nSigning in with Google or Facebook? Those accounts have no password. Create a Haier account with an email and password, share the AC to it in the app, then sign in with that one here.",
+        "description": "Use the same account you use in the Haier / Haismart app. Sign-in happens once — after this, Home Assistant talks only to the appliance on your network.\n\nSigning in with Google or Facebook? Those accounts have no password. Create a Haier account with an email and password, share the appliance to it in the app, then sign in with that one here.",
         "data": {
           "username": "Email or phone number",
           "password": "Password",
@@ -22,7 +22,7 @@
         "data_description": {
           "username": "Whichever you use to sign in to the Haier app.",
           "password": "Your Haier account password — not your Home Assistant password.",
-          "zone_info": "The country you chose when you created the Haier account, which is not necessarily where the air conditioner is installed or where you live now. Home Assistant has pre-selected your configured country; change it if your account was registered elsewhere."
+          "zone_info": "The country you chose when you created the Haier account, which is not necessarily where the appliance is installed or where you live now. Home Assistant has pre-selected your configured country; change it if your account was registered elsewhere."
         }
       },
       "pick_device": {
@@ -30,11 +30,11 @@
         "data": {
           "device_id": "Device"
         },
-        "description": "Choose which AC to add. Its key is fetched from the cloud and its IP found on your network automatically — you won't need to paste anything."
+        "description": "Choose which appliance to add. Its key is fetched from the cloud and its IP found on your network automatically — you won't need to paste anything."
       },
       "manual": {
         "title": "Device details",
-        "description": "The only thing you need is this unit's local key — from a previous install's Local key sensor, or a backup. Home Assistant looks for the air conditioner on your network and asks it for everything else.\n\nThere is no way to read the key off the unit itself. If you do not have one saved, go back and sign in — that fetches it for you.",
+        "description": "The only thing you need is this unit's local key — from a previous install's Local key sensor, or a backup. Home Assistant looks for the appliance on your network and asks it for everything else.\n\nThere is no way to read the key off the unit itself. If you do not have one saved, go back and sign in — that fetches it for you.",
         "data": {
           "host": "IP address",
           "device_id": "Device ID",
@@ -42,24 +42,24 @@
           "name": "Name"
         },
         "data_description": {
-          "host": "The air conditioner's IP address on your network, e.g. 192.168.1.50. A DHCP reservation keeps it from changing.",
-          "device_id": "Usually left blank — the air conditioner is asked for this directly. It is the module's Wi-Fi MAC address if you ever need to enter it.",
-          "local_key": "The 32-character key the AC encrypts its status with. It is issued by Haier's cloud per device — the Sign in path fetches it for you.",
-          "name": "Optional. What to call this air conditioner in Home Assistant."
+          "host": "The appliance's IP address on your network, e.g. 192.168.1.50. A DHCP reservation keeps it from changing.",
+          "device_id": "Usually left blank — the appliance is asked for this directly. It is the module's Wi-Fi MAC address if you ever need to enter it.",
+          "local_key": "The 32-character key the appliance encrypts its status with. It is issued by Haier's cloud per device — the Sign in path fetches it for you.",
+          "name": "Optional. What to call this appliance in Home Assistant."
         }
       },
       "reauth_confirm": {
         "title": "Local key rotated",
-        "description": "The AC {device_id} reports a newer localKey version — the cached key no longer decrypts its status. Enter the AC's current localKey to reconnect.",
+        "description": "The appliance {device_id} reports a newer localKey version — the cached key no longer decrypts its status. Enter the appliance's current localKey to reconnect.",
         "data": {
           "local_key": "Local key (32-char hex)"
         },
         "data_description": {
-          "local_key": "Enable the Local key diagnostic sensor on the device page to read the current one, or re-add the AC with your Haier account to have it fetched automatically."
+          "local_key": "Enable the Local key diagnostic sensor on the device page to read the current one, or re-add the appliance with your Haier account to have it fetched automatically."
         }
       },
       "host": {
-        "title": "Enter the AC's IP address",
+        "title": "Enter the appliance's IP address",
         "description": "Signed in and the key was fetched automatically — Home Assistant just couldn't find {device} on the network by itself. Enter its local IP address (e.g. 192.168.1.50). Tip: a DHCP reservation keeps it stable.",
         "data": {
           "host": "IP address"
@@ -70,14 +70,14 @@
       },
       "key_failed": {
         "title": "Could not fetch the key automatically",
-        "description": "Home Assistant signed in, but could not retrieve this air conditioner's local key from Haier's servers — or the key it got does not decrypt the unit's status.{note}\n\nThis is often temporary, so trying again is usually worth it. If it keeps failing you can enter the details by hand, though the key is not something you can read off the unit — you would need it from a previous install's Local key sensor or a backup.",
+        "description": "Home Assistant signed in, but could not retrieve this appliance's local key from Haier's servers — or the key it got does not decrypt the unit's status.{note}\n\nThis is often temporary, so trying again is usually worth it. If it keeps failing you can enter the details by hand, though the key is not something you can read off the unit — you would need it from a previous install's Local key sensor or a backup.",
         "menu_options": {
           "key_retry": "Try fetching the key again",
           "manual": "Enter the details by hand instead"
         }
       },
       "reconfigure": {
-        "title": "Reconfigure this air conditioner",
+        "title": "Reconfigure this appliance",
         "description": "Change how Home Assistant reaches this unit, without removing it and losing its history.",
         "menu_options": {
           "reconfigure_host": "Change the IP address",
@@ -86,7 +86,7 @@
       },
       "reconfigure_host": {
         "title": "Change the IP address",
-        "description": "The new address is checked against the air conditioner before it is saved.",
+        "description": "The new address is checked against the appliance before it is saved.",
         "data": {
           "host": "IP address"
         },
@@ -96,18 +96,18 @@
       },
       "reconfigure_cloud": {
         "title": "Add your Haier account",
-        "description": "This air conditioner was added by hand, so Home Assistant has no way to refresh its key when Haier rotates it — which is why you get asked for a new key from time to time. Sign in once and it will refresh itself from then on.",
+        "description": "This appliance was added by hand, so Home Assistant has no way to refresh its key when Haier rotates it — which is why you get asked for a new key from time to time. Sign in once and it will refresh itself from then on.",
         "data": {
           "username": "Email or phone number",
           "password": "Password",
           "zone_info": "Country your Haier account is registered in"
         },
         "data_description": {
-          "zone_info": "The country the account was created in, which may not be where you live or where the AC is installed."
+          "zone_info": "The country the account was created in, which may not be where you live or where the appliance is installed."
         }
       },
       "reauth": {
-        "title": "This air conditioner needs a new key",
+        "title": "This appliance needs a new key",
         "description": "Haier rotated this unit's local key, so Home Assistant can no longer read its status. Signing in again fetches the new key for you — that is almost always the right choice. Entering a key by hand is only useful if you already have it.",
         "menu_options": {
           "reauth_cloud": "Sign in and fetch the new key automatically",
@@ -124,7 +124,7 @@
       },
       "model": {
         "title": "Which model is this?",
-        "description": "The air conditioner reported which product family it belongs to, which narrows it to the models below. Pick the one printed on the unit or its label.\n\nChoosing unlocks the fault names, the availability rules and this unit's real feature list. Skipping is fine — the air conditioner still reads and controls completely without it.",
+        "description": "The appliance reported which product family it belongs to, which narrows it to the models below. Pick the one printed on the unit or its label.\n\nChoosing unlocks the fault names, the availability rules and this unit's real feature list. Skipping is fine — the appliance still reads and controls completely without it.",
         "data": {
           "product_code": "Model"
         },
@@ -133,37 +133,37 @@
         }
       },
       "pick_local": {
-        "title": "Air conditioners found on your network",
+        "title": "Haier appliances found on your network",
         "description": "These answered on your network, so their addresses and IDs are already known — you only need the local key.\n\nNot listed? Go back and it will ask for an IP address instead. Units already added are not shown.",
         "data": {
-          "host": "Air conditioner"
+          "host": "Appliance"
         }
       },
       "discovery_confirm": {
-        "title": "Set up this air conditioner",
-        "description": "Home Assistant found a Haier air conditioner at {host} (`{device_id}`).\n\nIts local key will be fetched from the Haier account you have already added, so there is nothing to type. Select **Submit** to add it."
+        "title": "Set up this appliance",
+        "description": "Home Assistant found a Haier appliance at {host} (`{device_id}`).\n\nIts local key will be fetched from the Haier account you have already added, so there is nothing to type. Select **Submit** to add it."
       }
     },
     "error": {
-      "account_not_in_region": "No Haier account “{username}” was found in the country you selected (+{zone}). This is the country the account was registered in, which may not be where you live or where the AC is. Pick the right one and try again. If your AC uses the hOn or Haier China app instead, this integration cannot sign in to those at all.",
+      "account_not_in_region": "No Haier account “{username}” was found in the country you selected (+{zone}). This is the country the account was registered in, which may not be where you live or where the appliance is. Pick the right one and try again. If your appliance uses the hOn or Haier China app instead, this integration cannot sign in to those at all.",
       "missing_field": "Haier rejected the sign-in because a field was missing or empty.",
       "cloud_auth": "Sign-in failed. Check your email or phone number and your password.",
       "cannot_connect_cloud": "Signed in successfully, but Haier's servers could not be reached to list your devices. This is usually temporary — try again in a moment.",
       "cloud_unreachable": "Haier's servers could not be reached. Check that Home Assistant can reach the internet and resolve Haier's address — a DNS or firewall problem on the Home Assistant host looks exactly like this — then try again.",
       "invalid_key": "The local key must be a 32-character hex string.",
-      "invalid_auth": "The air conditioner answered, but this local key does not decrypt its status — the key is wrong, or it has been rotated.",
-      "cannot_connect": "Could not reach the air conditioner on port 56800. Check the IP address, and that Home Assistant is on the same network.",
-      "device_id_required": "The air conditioner did not answer the identification query, so its device ID could not be read automatically. Enter it manually — it is the module's Wi-Fi MAC address, 12 hex characters with no separators.",
-      "account_expired": "The Haier account already set up here could not be used — its sign-in has expired, or signing in elsewhere replaced it. Signing in again below fixes it for every air conditioner you have added."
+      "invalid_auth": "The appliance answered, but this local key does not decrypt its status — the key is wrong, or it has been rotated.",
+      "cannot_connect": "Could not reach the appliance on port 56800. Check the IP address, and that Home Assistant is on the same network.",
+      "device_id_required": "The appliance did not answer the identification query, so its device ID could not be read automatically. Enter it manually — it is the module's Wi-Fi MAC address, 12 hex characters with no separators.",
+      "account_expired": "The Haier account already set up here could not be used — its sign-in has expired, or signing in elsewhere replaced it. Signing in again below fixes it for every appliance you have added."
     },
     "abort": {
       "already_configured": "This device is already configured.",
       "reauth_successful": "The local key was updated.",
-      "all_configured": "All of this account's ACs are already added to Home Assistant.",
+      "all_configured": "All of this account's appliances are already added to Home Assistant.",
       "unknown": "Unexpected error — the device announcement wasn't understood.",
-      "no_devices": "Signed in as {username}, but this Haier account has no devices. If you sign in to the app with Google or Facebook, share the air conditioner to this account in the app first, then try again.",
-      "already_in_progress": "This air conditioner is already being set up.",
-      "account_no_devices": "The Haier account already set up here no longer lists any devices. Check the air conditioner is still in the Haier app under this account, then try again."
+      "no_devices": "Signed in as {username}, but this Haier account has no devices. If you sign in to the app with Google or Facebook, share the appliance to this account in the app first, then try again.",
+      "already_in_progress": "This appliance is already being set up.",
+      "account_no_devices": "The Haier account already set up here no longer lists any devices. Check the appliance is still in the Haier app under this account, then try again."
     }
   },
   "options": {
@@ -174,7 +174,7 @@
           "scan_interval": "Status poll interval (seconds)"
         },
         "data_description": {
-          "scan_interval": "How often to ask the AC for its state. Each poll is a full local session, and it exists only to notice changes made with the remote or the app — commands you send from Home Assistant update instantly regardless."
+          "scan_interval": "How often to ask the appliance for its state. Each poll is a full local session, and it exists only to notice changes made with the remote or the app — commands you send from Home Assistant update instantly regardless."
         }
       }
     }
@@ -548,7 +548,7 @@
   "issues": {
     "stale_localkey_manual_reauth": {
       "title": "{name}: localKey rotated — manual re-key needed",
-      "description": "The air conditioner rotated its local key (v{old} → v{new}) and this device has no Haier account credentials stored, so Home Assistant could not refresh the key by itself and had to ask you for one.\n\nTo stop this happening again, open the device, choose **Reconfigure**, and add your Haier account. The key will then refresh itself on every rotation."
+      "description": "The appliance rotated its local key (v{old} → v{new}) and this device has no Haier account credentials stored, so Home Assistant could not refresh the key by itself and had to ask you for one.\n\nTo stop this happening again, open the device, choose **Reconfigure**, and add your Haier account. The key will then refresh itself on every rotation."
     },
     "unknown_report_layout": {
       "title": "{name}: this appliance's status format is not recognised yet",
@@ -556,11 +556,11 @@
     },
     "key_will_rotate": {
       "title": "{name}: its key will change and this setup cannot follow",
-      "description": "This air conditioner can still reach Haier's servers, which means it is issued a new local key several times a day. It was added without a Haier account, so Home Assistant has no way to fetch the new one — the next time you restart after a key change, the air conditioner will stop working and look as though its configuration was lost. Re-adding it by hand fixes it only until the next change.\n\nTwo ways to settle it for good, both worth doing while everything still works:\n\n- **Add your Haier account** to this air conditioner: Settings → Devices & Services → Haismart → the device → Reconfigure → *Add your Haier account*. Key changes are then fetched automatically and you are never asked again.\n- **Or block the air conditioner from the internet** at your router. Its key then stops changing altogether and the one you have stays valid — see the README on going fully cloud-independent. Local control is unaffected either way.\n\nThis message disappears on its own once either is true."
+      "description": "This appliance can still reach Haier's servers, which means it is issued a new local key several times a day. It was added without a Haier account, so Home Assistant has no way to fetch the new one — the next time you restart after a key change, the appliance will stop working and look as though its configuration was lost. Re-adding it by hand fixes it only until the next change.\n\nTwo ways to settle it for good, both worth doing while everything still works:\n\n- **Add your Haier account** to this appliance: Settings → Devices & Services → Haismart → the device → Reconfigure → *Add your Haier account*. Key changes are then fetched automatically and you are never asked again.\n- **Or block the appliance from the internet** at your router. Its key then stops changing altogether and the one you have stays valid — see the README on going fully cloud-independent. Local control is unaffected either way.\n\nThis message disappears on its own once either is true."
     },
     "key_refresh_failed": {
       "title": "{name}: its key changed and the automatic re-fetch did not work",
-      "description": "The air conditioner was issued a new local key (v{old} → v{new}). This device does have your Haier account, so Home Assistant tried to fetch the new key by itself — and could not, which is why it asked you instead.\n\n**Your account details are already stored, so there is nothing to add.** Signing in again from the prompt fixes it now. If it keeps coming back, the automatic path is being blocked rather than misconfigured, and these are the usual reasons:\n\n- Your router or ISP is blocking Haier's key service, while ordinary sign-in still works.\n- The stored sign-in is no longer accepted — signing in to the Haier app can end other sessions. Signing in again here restores it.\n\n**The permanent fix, if you would rather not depend on it at all:** block the air conditioner from the internet at your router. Its key then stops changing and the one you have stays valid indefinitely — see the README on going fully cloud-independent. Local control is unaffected."
+      "description": "The appliance was issued a new local key (v{old} → v{new}). This device does have your Haier account, so Home Assistant tried to fetch the new key by itself — and could not, which is why it asked you instead.\n\n**Your account details are already stored, so there is nothing to add.** Signing in again from the prompt fixes it now. If it keeps coming back, the automatic path is being blocked rather than misconfigured, and these are the usual reasons:\n\n- Your router or ISP is blocking Haier's key service, while ordinary sign-in still works.\n- The stored sign-in is no longer accepted — signing in to the Haier app can end other sessions. Signing in again here restores it.\n\n**The permanent fix, if you would rather not depend on it at all:** block the appliance from the internet at your router. Its key then stops changing and the one you have stays valid indefinitely — see the README on going fully cloud-independent. Local control is unaffected."
     }
   },
   "exceptions": {

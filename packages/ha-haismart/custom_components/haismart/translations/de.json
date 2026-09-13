@@ -1,10 +1,10 @@
 {
   "config": {
-    "flow_title": "Haier-Klimagerät {device_id}",
+    "flow_title": "Haier-Gerät {device_id}",
     "step": {
       "user": {
-        "title": "Haier-Klimagerät hinzufügen",
-        "description": "Die Anmeldung ist der empfohlene Weg: Home Assistant holt den lokalen Schlüssel, findet das Gerät in Ihrem Netzwerk und liest sein Modell aus, sodass nichts eingefügt werden muss. Danach kommuniziert es direkt mit dem Klimagerät — und sobald alles eingerichtet ist, können Sie das Gerät vollständig vom Internet trennen; siehe die README zum vollständig cloudunabhängigen Betrieb.\n\nGoogle-/Facebook-Konten: Legen Sie ein separates Haier-Konto mit E-Mail und Passwort an, teilen Sie Ihre Klimageräte in der App mit diesem Konto und melden Sie sich dann damit an.",
+        "title": "Haier-Gerät hinzufügen",
+        "description": "Die Anmeldung ist der empfohlene Weg: Home Assistant holt den lokalen Schlüssel, findet das Gerät in Ihrem Netzwerk und liest sein Modell aus, sodass nichts eingefügt werden muss. Danach kommuniziert es direkt mit dem Gerät — und sobald alles eingerichtet ist, können Sie das Gerät vollständig vom Internet trennen; siehe die README zum vollständig cloudunabhängigen Betrieb.\n\nGoogle-/Facebook-Konten: Legen Sie ein separates Haier-Konto mit E-Mail und Passwort an, teilen Sie Ihre Geräte in der App mit diesem Konto und melden Sie sich dann damit an.",
         "menu_options": {
           "account": "Bereits hinzugefügtes Haier-Konto verwenden (nichts einzugeben)",
           "login": "Mit Ihrem Haier-Konto anmelden (empfohlen)",
@@ -13,7 +13,7 @@
       },
       "login": {
         "title": "Bei deinem Haier-Konto anmelden",
-        "description": "Verwende dasselbe Konto wie in der Haier-/Haismart-App. Die Anmeldung erfolgt nur einmal – danach kommuniziert Home Assistant ausschließlich mit dem Klimagerät in deinem Netzwerk.\n\nDu meldest dich mit Google oder Facebook an? Diese Konten haben kein Passwort. Lege ein Haier-Konto mit E-Mail-Adresse und Passwort an, teile das Klimagerät in der App mit diesem Konto und melde dich hier damit an.",
+        "description": "Verwende dasselbe Konto wie in der Haier-/Haismart-App. Die Anmeldung erfolgt nur einmal – danach kommuniziert Home Assistant ausschließlich mit dem Gerät in deinem Netzwerk.\n\nDu meldest dich mit Google oder Facebook an? Diese Konten haben kein Passwort. Lege ein Haier-Konto mit E-Mail-Adresse und Passwort an, teile das Gerät in der App mit diesem Konto und melde dich hier damit an.",
         "data": {
           "username": "E-Mail-Adresse oder Telefonnummer",
           "password": "Passwort",
@@ -22,7 +22,7 @@
         "data_description": {
           "username": "Was auch immer du zur Anmeldung in der Haier-App verwendest.",
           "password": "Das Passwort deines Haier-Kontos – nicht dein Home-Assistant-Passwort.",
-          "zone_info": "Das Land, das du bei der Erstellung des Haier-Kontos gewählt hast. Das ist nicht zwingend das Land, in dem das Klimagerät installiert ist oder in dem du heute lebst. Home Assistant hat dein konfiguriertes Land vorausgewählt; ändere es, falls dein Konto anderswo registriert wurde."
+          "zone_info": "Das Land, das du bei der Erstellung des Haier-Kontos gewählt hast. Das ist nicht zwingend das Land, in dem das Gerät installiert ist oder in dem du heute lebst. Home Assistant hat dein konfiguriertes Land vorausgewählt; ändere es, falls dein Konto anderswo registriert wurde."
         }
       },
       "pick_device": {
@@ -30,11 +30,11 @@
         "data": {
           "device_id": "Gerät"
         },
-        "description": "Wähle das hinzuzufügende Klimagerät aus. Sein Schlüssel wird aus der Cloud geholt und seine IP-Adresse automatisch in deinem Netzwerk gefunden – du musst nichts einfügen."
+        "description": "Wähle das hinzuzufügende Gerät aus. Sein Schlüssel wird aus der Cloud geholt und seine IP-Adresse automatisch in deinem Netzwerk gefunden – du musst nichts einfügen."
       },
       "manual": {
         "title": "Gerätedaten",
-        "description": "Sie brauchen nur den lokalen Schlüssel dieses Geräts — aus dem Sensor „Lokaler Schlüssel“ einer früheren Installation oder aus einem Backup. Home Assistant sucht das Klimagerät in Ihrem Netzwerk und fragt alles Übrige direkt beim Gerät ab.\n\nDer Schlüssel lässt sich dem Gerät selbst nicht entnehmen. Wenn Sie keinen gespeichert haben, gehen Sie zurück und melden Sie sich an — damit wird er für Sie abgerufen.",
+        "description": "Sie brauchen nur den lokalen Schlüssel dieses Geräts — aus dem Sensor „Lokaler Schlüssel“ einer früheren Installation oder aus einem Backup. Home Assistant sucht das Gerät in Ihrem Netzwerk und fragt alles Übrige direkt beim Gerät ab.\n\nDer Schlüssel lässt sich dem Gerät selbst nicht entnehmen. Wenn Sie keinen gespeichert haben, gehen Sie zurück und melden Sie sich an — damit wird er für Sie abgerufen.",
         "data": {
           "host": "IP-Adresse",
           "device_id": "Geräte-ID",
@@ -42,24 +42,24 @@
           "name": "Name"
         },
         "data_description": {
-          "host": "Die IP-Adresse des Klimageräts in deinem Netzwerk, z. B. 192.168.1.50. Eine DHCP-Reservierung verhindert, dass sie sich ändert.",
-          "device_id": "Bleibt normalerweise leer — das Klimagerät wird direkt danach gefragt. Es ist die WLAN-MAC-Adresse des Moduls, falls Sie sie doch eingeben müssen.",
-          "local_key": "Der 32-stellige Schlüssel, mit dem das Klimagerät seinen Status verschlüsselt. Er wird von Haiers Cloud je Gerät ausgestellt – der Anmeldeweg holt ihn für dich.",
-          "name": "Optional. Wie dieses Klimagerät in Home Assistant heißen soll."
+          "host": "Die IP-Adresse des Geräts in deinem Netzwerk, z. B. 192.168.1.50. Eine DHCP-Reservierung verhindert, dass sie sich ändert.",
+          "device_id": "Bleibt normalerweise leer — das Gerät wird direkt danach gefragt. Es ist die WLAN-MAC-Adresse des Moduls, falls Sie sie doch eingeben müssen.",
+          "local_key": "Der 32-stellige Schlüssel, mit dem das Gerät seinen Status verschlüsselt. Er wird von Haiers Cloud je Gerät ausgestellt – der Anmeldeweg holt ihn für dich.",
+          "name": "Optional. Wie dieses Gerät in Home Assistant heißen soll."
         }
       },
       "reauth_confirm": {
         "title": "Lokaler Schlüssel wurde gewechselt",
-        "description": "Das Klimagerät {device_id} meldet eine neuere localKey-Version – der gespeicherte Schlüssel entschlüsselt seinen Status nicht mehr. Gib den aktuellen localKey des Geräts ein, um die Verbindung wiederherzustellen.",
+        "description": "Das Gerät {device_id} meldet eine neuere localKey-Version – der gespeicherte Schlüssel entschlüsselt seinen Status nicht mehr. Gib den aktuellen localKey des Geräts ein, um die Verbindung wiederherzustellen.",
         "data": {
           "local_key": "Lokaler Schlüssel (32 Hex-Zeichen)"
         },
         "data_description": {
-          "local_key": "Aktiviere den Diagnosesensor „Lokaler Schlüssel“ auf der Geräteseite, um den aktuellen Schlüssel abzulesen, oder füge das Klimagerät erneut mit deinem Haier-Konto hinzu, damit er automatisch geholt wird."
+          "local_key": "Aktiviere den Diagnosesensor „Lokaler Schlüssel“ auf der Geräteseite, um den aktuellen Schlüssel abzulesen, oder füge das Gerät erneut mit deinem Haier-Konto hinzu, damit er automatisch geholt wird."
         }
       },
       "host": {
-        "title": "IP-Adresse des Klimageräts eingeben",
+        "title": "IP-Adresse des Geräts eingeben",
         "description": "Anmeldung erfolgreich und der Schlüssel wurde automatisch geholt – Home Assistant konnte {device} nur nicht selbst im Netzwerk finden. Gib die lokale IP-Adresse ein (z. B. 192.168.1.50). Tipp: Eine DHCP-Reservierung hält sie stabil.",
         "data": {
           "host": "IP-Adresse"
@@ -70,14 +70,14 @@
       },
       "key_failed": {
         "title": "Schlüssel konnte nicht automatisch geholt werden",
-        "description": "Home Assistant hat sich angemeldet, konnte den lokalen Schlüssel dieses Klimageräts aber nicht von Haiers Servern abrufen — oder der erhaltene Schlüssel entschlüsselt den Status des Geräts nicht.{note}\n\nDas ist oft vorübergehend, ein erneuter Versuch lohnt sich meist. Wenn es weiterhin fehlschlägt, können Sie die Daten von Hand eingeben; den Schlüssel können Sie dem Gerät allerdings nicht entnehmen — Sie bräuchten ihn aus dem Sensor „Lokaler Schlüssel“ einer früheren Installation oder aus einem Backup.",
+        "description": "Home Assistant hat sich angemeldet, konnte den lokalen Schlüssel dieses Geräts aber nicht von Haiers Servern abrufen — oder der erhaltene Schlüssel entschlüsselt den Status des Geräts nicht.{note}\n\nDas ist oft vorübergehend, ein erneuter Versuch lohnt sich meist. Wenn es weiterhin fehlschlägt, können Sie die Daten von Hand eingeben; den Schlüssel können Sie dem Gerät allerdings nicht entnehmen — Sie bräuchten ihn aus dem Sensor „Lokaler Schlüssel“ einer früheren Installation oder aus einem Backup.",
         "menu_options": {
           "key_retry": "Erneut versuchen, den Schlüssel zu holen",
           "manual": "Stattdessen die Daten von Hand eingeben"
         }
       },
       "reconfigure": {
-        "title": "Dieses Klimagerät neu konfigurieren",
+        "title": "Dieses Gerät neu konfigurieren",
         "description": "Ändere, wie Home Assistant dieses Gerät erreicht, ohne es zu entfernen und seinen Verlauf zu verlieren.",
         "menu_options": {
           "reconfigure_host": "IP-Adresse ändern",
@@ -86,7 +86,7 @@
       },
       "reconfigure_host": {
         "title": "IP-Adresse ändern",
-        "description": "Die neue Adresse wird vor dem Speichern am Klimagerät geprüft.",
+        "description": "Die neue Adresse wird vor dem Speichern am Gerät geprüft.",
         "data": {
           "host": "IP-Adresse"
         },
@@ -96,18 +96,18 @@
       },
       "reconfigure_cloud": {
         "title": "Dein Haier-Konto hinzufügen",
-        "description": "Dieses Klimagerät wurde von Hand hinzugefügt, daher hat Home Assistant keine Möglichkeit, den Schlüssel zu erneuern, wenn Haier ihn wechselt – deshalb wirst du von Zeit zu Zeit nach einem neuen Schlüssel gefragt. Melde dich einmal an, danach erneuert er sich von selbst.",
+        "description": "Dieses Gerät wurde von Hand hinzugefügt, daher hat Home Assistant keine Möglichkeit, den Schlüssel zu erneuern, wenn Haier ihn wechselt – deshalb wirst du von Zeit zu Zeit nach einem neuen Schlüssel gefragt. Melde dich einmal an, danach erneuert er sich von selbst.",
         "data": {
           "username": "E-Mail-Adresse oder Telefonnummer",
           "password": "Passwort",
           "zone_info": "Land, in dem dein Haier-Konto registriert ist"
         },
         "data_description": {
-          "zone_info": "Das Land, in dem das Konto erstellt wurde. Es kann sich von deinem Wohnort oder dem Standort des Klimageräts unterscheiden."
+          "zone_info": "Das Land, in dem das Konto erstellt wurde. Es kann sich von deinem Wohnort oder dem Standort des Geräts unterscheiden."
         }
       },
       "reauth": {
-        "title": "Dieses Klimagerät braucht einen neuen Schlüssel",
+        "title": "Dieses Gerät braucht einen neuen Schlüssel",
         "description": "Haier hat den lokalen Schlüssel dieses Geräts gewechselt, daher kann Home Assistant seinen Status nicht mehr lesen. Eine erneute Anmeldung holt den neuen Schlüssel für dich – das ist fast immer die richtige Wahl. Einen Schlüssel von Hand einzugeben ist nur sinnvoll, wenn du ihn bereits hast.",
         "menu_options": {
           "reauth_cloud": "Anmelden und den neuen Schlüssel automatisch holen",
@@ -124,7 +124,7 @@
       },
       "model": {
         "title": "Um welches Modell handelt es sich?",
-        "description": "Das Klimagerät hat gemeldet, zu welcher Produktfamilie es gehört; das grenzt es auf die folgenden Modelle ein. Wählen Sie das Modell, das auf dem Gerät oder seinem Typenschild steht.\n\nDie Auswahl schaltet die Fehlernamen, die Verfügbarkeitsregeln und die tatsächliche Funktionsliste dieses Geräts frei. Überspringen ist in Ordnung — das Klimagerät lässt sich auch ohne Auswahl vollständig auslesen und steuern.",
+        "description": "Das Gerät hat gemeldet, zu welcher Produktfamilie es gehört; das grenzt es auf die folgenden Modelle ein. Wählen Sie das Modell, das auf dem Gerät oder seinem Typenschild steht.\n\nDie Auswahl schaltet die Fehlernamen, die Verfügbarkeitsregeln und die tatsächliche Funktionsliste dieses Geräts frei. Überspringen ist in Ordnung — das Gerät lässt sich auch ohne Auswahl vollständig auslesen und steuern.",
         "data": {
           "product_code": "Modell"
         },
@@ -133,37 +133,37 @@
         }
       },
       "pick_local": {
-        "title": "In Ihrem Netzwerk gefundene Klimageräte",
+        "title": "In Ihrem Netzwerk gefundene Geräte",
         "description": "Diese haben in Ihrem Netzwerk geantwortet, ihre Adressen und IDs sind also bereits bekannt — Sie benötigen nur noch den lokalen Schlüssel.\n\nNicht aufgeführt? Gehen Sie zurück, dann wird stattdessen nach einer IP-Adresse gefragt. Bereits hinzugefügte Geräte werden nicht angezeigt.",
         "data": {
-          "host": "Klimagerät"
+          "host": "Gerät"
         }
       },
       "discovery_confirm": {
-        "title": "Dieses Klimagerät einrichten",
-        "description": "Home Assistant hat ein Haier-Klimagerät unter {host} (`{device_id}`) gefunden.\n\nSein lokaler Schlüssel wird aus dem bereits hinzugefügten Haier-Konto abgerufen, es ist also nichts einzugeben. Wählen Sie **Absenden**, um es hinzuzufügen."
+        "title": "Dieses Gerät einrichten",
+        "description": "Home Assistant hat ein Haier-Gerät unter {host} (`{device_id}`) gefunden.\n\nSein lokaler Schlüssel wird aus dem bereits hinzugefügten Haier-Konto abgerufen, es ist also nichts einzugeben. Wählen Sie **Absenden**, um es hinzuzufügen."
       }
     },
     "error": {
-      "account_not_in_region": "Im gewählten Land (+{zone}) wurde kein Haier-Konto „{username}“ gefunden. Gemeint ist das Land, in dem das Konto registriert wurde – es kann sich von deinem Wohnort oder dem Standort des Klimageräts unterscheiden. Wähle das richtige Land und versuche es erneut. Falls dein Klimagerät stattdessen die hOn- oder die Haier-China-App nutzt, kann sich diese Integration bei diesen Konten überhaupt nicht anmelden.",
+      "account_not_in_region": "Im gewählten Land (+{zone}) wurde kein Haier-Konto „{username}“ gefunden. Gemeint ist das Land, in dem das Konto registriert wurde – es kann sich von deinem Wohnort oder dem Standort des Geräts unterscheiden. Wähle das richtige Land und versuche es erneut. Falls dein Gerät stattdessen die hOn- oder die Haier-China-App nutzt, kann sich diese Integration bei diesen Konten überhaupt nicht anmelden.",
       "missing_field": "Haier hat die Anmeldung abgelehnt, weil ein Feld fehlte oder leer war.",
       "cloud_auth": "Anmeldung fehlgeschlagen. Prüfe deine E-Mail-Adresse bzw. Telefonnummer und dein Passwort.",
       "cannot_connect_cloud": "Anmeldung erfolgreich, aber Haiers Server waren nicht erreichbar, um deine Geräte aufzulisten. Das ist meist vorübergehend – versuche es gleich noch einmal.",
       "cloud_unreachable": "Haiers Server waren nicht erreichbar. Prüfe, ob Home Assistant ins Internet kommt und Haiers Adresse auflösen kann – ein DNS- oder Firewall-Problem auf dem Home-Assistant-Host sieht genau so aus – und versuche es dann noch einmal.",
       "invalid_key": "Der lokale Schlüssel muss eine 32-stellige Hex-Zeichenkette sein.",
-      "invalid_auth": "Das Klimagerät hat geantwortet, aber dieser lokale Schlüssel entschlüsselt seinen Status nicht – der Schlüssel ist falsch oder wurde gewechselt.",
-      "cannot_connect": "Das Klimagerät war über Port 56800 nicht erreichbar. Prüfe die IP-Adresse und ob Home Assistant im selben Netzwerk ist.",
-      "device_id_required": "Das Klimagerät hat auf die Identifikationsabfrage nicht geantwortet, daher konnte seine Geräte-ID nicht automatisch gelesen werden. Geben Sie sie manuell ein — es ist die WLAN-MAC-Adresse des Moduls, 12 Hex-Zeichen ohne Trennzeichen.",
-      "account_expired": "Das hier bereits eingerichtete Haier-Konto konnte nicht verwendet werden — die Anmeldung ist abgelaufen oder wurde durch eine Anmeldung an anderer Stelle ersetzt. Eine erneute Anmeldung unten behebt das für alle hinzugefügten Klimageräte."
+      "invalid_auth": "Das Gerät hat geantwortet, aber dieser lokale Schlüssel entschlüsselt seinen Status nicht – der Schlüssel ist falsch oder wurde gewechselt.",
+      "cannot_connect": "Das Gerät war über Port 56800 nicht erreichbar. Prüfe die IP-Adresse und ob Home Assistant im selben Netzwerk ist.",
+      "device_id_required": "Das Gerät hat auf die Identifikationsabfrage nicht geantwortet, daher konnte seine Geräte-ID nicht automatisch gelesen werden. Geben Sie sie manuell ein — es ist die WLAN-MAC-Adresse des Moduls, 12 Hex-Zeichen ohne Trennzeichen.",
+      "account_expired": "Das hier bereits eingerichtete Haier-Konto konnte nicht verwendet werden — die Anmeldung ist abgelaufen oder wurde durch eine Anmeldung an anderer Stelle ersetzt. Eine erneute Anmeldung unten behebt das für alle hinzugefügten Geräte."
     },
     "abort": {
       "already_configured": "Dieses Gerät ist bereits konfiguriert.",
       "reauth_successful": "Der lokale Schlüssel wurde aktualisiert.",
-      "all_configured": "Alle Klimageräte dieses Kontos sind bereits zu Home Assistant hinzugefügt.",
+      "all_configured": "Alle Geräte dieses Kontos sind bereits zu Home Assistant hinzugefügt.",
       "unknown": "Unerwarteter Fehler – die Ankündigung des Geräts wurde nicht verstanden.",
-      "no_devices": "Als {username} angemeldet, aber dieses Haier-Konto hat keine Geräte. Wenn du dich in der App mit Google oder Facebook anmeldest, teile das Klimagerät zuerst in der App mit diesem Konto und versuche es dann erneut.",
-      "already_in_progress": "Dieses Klimagerät wird bereits eingerichtet.",
-      "account_no_devices": "Das hier bereits eingerichtete Haier-Konto führt keine Geräte mehr auf. Prüfen Sie, ob das Klimagerät in der Haier-App noch unter diesem Konto liegt, und versuchen Sie es erneut."
+      "no_devices": "Als {username} angemeldet, aber dieses Haier-Konto hat keine Geräte. Wenn du dich in der App mit Google oder Facebook anmeldest, teile das Gerät zuerst in der App mit diesem Konto und versuche es dann erneut.",
+      "already_in_progress": "Dieses Gerät wird bereits eingerichtet.",
+      "account_no_devices": "Das hier bereits eingerichtete Haier-Konto führt keine Geräte mehr auf. Prüfen Sie, ob das Gerät in der Haier-App noch unter diesem Konto liegt, und versuchen Sie es erneut."
     }
   },
   "options": {
@@ -174,7 +174,7 @@
           "scan_interval": "Abfrageintervall für den Status (Sekunden)"
         },
         "data_description": {
-          "scan_interval": "Wie oft das Klimagerät nach seinem Zustand gefragt wird. Jede Abfrage ist eine vollständige lokale Sitzung und dient allein dazu, Änderungen über die Fernbedienung oder die App mitzubekommen – Befehle, die du aus Home Assistant sendest, werden ohnehin sofort übernommen."
+          "scan_interval": "Wie oft das Gerät nach seinem Zustand gefragt wird. Jede Abfrage ist eine vollständige lokale Sitzung und dient allein dazu, Änderungen über die Fernbedienung oder die App mitzubekommen – Befehle, die du aus Home Assistant sendest, werden ohnehin sofort übernommen."
         }
       }
     }
@@ -548,19 +548,19 @@
   "issues": {
     "stale_localkey_manual_reauth": {
       "title": "{name}: localKey gewechselt – manuelle Schlüsseleingabe nötig",
-      "description": "Das Klimagerät hat seinen lokalen Schlüssel gewechselt (v{old} → v{new}) und für dieses Gerät sind keine Haier-Kontodaten hinterlegt. Home Assistant konnte den Schlüssel daher nicht selbst erneuern und musste dich danach fragen.\n\nDamit das nicht wieder passiert, öffne das Gerät, wähle **Neu konfigurieren** und füge dein Haier-Konto hinzu. Der Schlüssel erneuert sich dann bei jedem Wechsel von selbst."
+      "description": "Das Gerät hat seinen lokalen Schlüssel gewechselt (v{old} → v{new}) und für dieses Gerät sind keine Haier-Kontodaten hinterlegt. Home Assistant konnte den Schlüssel daher nicht selbst erneuern und musste dich danach fragen.\n\nDamit das nicht wieder passiert, öffne das Gerät, wähle **Neu konfigurieren** und füge dein Haier-Konto hinzu. Der Schlüssel erneuert sich dann bei jedem Wechsel von selbst."
     },
     "unknown_report_layout": {
-      "title": "{name}: Das Statusformat dieses Klimageräts ist noch nicht bekannt",
+      "title": "{name}: Das Statusformat dieses Geräts ist noch nicht bekannt",
       "description": "{name} sendet einen {length} Byte langen Statusbericht, für den diese Integration kein bestätigtes Layout hat (Produktcode: {product_code}).\n\nTemperatur, Modus, Lüfterstufe und Ein/Aus funktionieren weiterhin. Innen- und Außentemperatur sind nicht verfügbar und das Senden von Befehlen ist deaktiviert – zu raten, wo die Einstellungen in einem unbekannten Format liegen, birgt das Risiko, einen Sensorwert als Einstellung an das Gerät zurückzuschreiben.\n\nFür die Unterstützung ist kein Code nötig, nur drei kurze Mitschnitte von dir. Folge der verlinkten Anleitung und erstelle einen Bericht; meist genügt eine einzige Zeile."
     },
     "key_will_rotate": {
       "title": "{name}: Der Schlüssel wird sich ändern und diese Einrichtung kann nicht folgen",
-      "description": "Dieses Klimagerät erreicht noch Haiers Server, erhält also mehrmals täglich einen neuen lokalen Schlüssel. Es wurde ohne Haier-Konto hinzugefügt, daher kann Home Assistant den neuen nicht abrufen — beim nächsten Neustart nach einem Schlüsselwechsel hört das Gerät auf zu funktionieren und wirkt, als sei seine Konfiguration verloren.\n\nZwei dauerhafte Lösungen, beide jetzt durchzuführen, solange alles funktioniert:\n\n- **Haier-Konto hinzufügen**: Einstellungen → Geräte & Dienste → Haismart → Gerät → Neu konfigurieren → *Haier-Konto hinzufügen*. Schlüsselwechsel werden dann automatisch abgerufen.\n- **Oder das Gerät im Router vom Internet trennen**. Der Schlüssel ändert sich dann nicht mehr und der vorhandene bleibt gültig. Die lokale Steuerung bleibt in beiden Fällen unberührt.\n\nDiese Meldung verschwindet von selbst, sobald eines von beidem zutrifft."
+      "description": "Dieses Gerät erreicht noch Haiers Server, erhält also mehrmals täglich einen neuen lokalen Schlüssel. Es wurde ohne Haier-Konto hinzugefügt, daher kann Home Assistant den neuen nicht abrufen — beim nächsten Neustart nach einem Schlüsselwechsel hört das Gerät auf zu funktionieren und wirkt, als sei seine Konfiguration verloren.\n\nZwei dauerhafte Lösungen, beide jetzt durchzuführen, solange alles funktioniert:\n\n- **Haier-Konto hinzufügen**: Einstellungen → Geräte & Dienste → Haismart → Gerät → Neu konfigurieren → *Haier-Konto hinzufügen*. Schlüsselwechsel werden dann automatisch abgerufen.\n- **Oder das Gerät im Router vom Internet trennen**. Der Schlüssel ändert sich dann nicht mehr und der vorhandene bleibt gültig. Die lokale Steuerung bleibt in beiden Fällen unberührt.\n\nDiese Meldung verschwindet von selbst, sobald eines von beidem zutrifft."
     },
     "key_refresh_failed": {
       "title": "{name}: Der Schlüssel hat sich geändert und das automatische Abrufen hat nicht funktioniert",
-      "description": "Das Klimagerät hat einen neuen lokalen Schlüssel erhalten (v{old} → v{new}). Ihr Haier-Konto ist bei diesem Gerät hinterlegt, Home Assistant hat also versucht, den neuen Schlüssel selbst abzurufen — und konnte es nicht, deshalb die Nachfrage bei Ihnen.\n\n**Ihre Kontodaten sind bereits gespeichert, es ist nichts hinzuzufügen.** Eine erneute Anmeldung über die Abfrage behebt es jetzt. Kommt es immer wieder, wird der automatische Weg blockiert und nicht falsch konfiguriert — die üblichen Gründe:\n\n- Ihr Router oder Anbieter blockiert Haiers Schlüsseldienst, während die normale Anmeldung weiterhin funktioniert.\n- Die gespeicherte Anmeldung wird nicht mehr akzeptiert — eine Anmeldung in der Haier-App kann andere Sitzungen beenden. Eine erneute Anmeldung hier stellt sie wieder her.\n\n**Die dauerhafte Lösung:** Trennen Sie das Klimagerät im Router vom Internet. Sein Schlüssel ändert sich dann nicht mehr und der vorhandene bleibt unbegrenzt gültig — siehe README. Die lokale Steuerung bleibt unberührt."
+      "description": "Das Gerät hat einen neuen lokalen Schlüssel erhalten (v{old} → v{new}). Ihr Haier-Konto ist bei diesem Gerät hinterlegt, Home Assistant hat also versucht, den neuen Schlüssel selbst abzurufen — und konnte es nicht, deshalb die Nachfrage bei Ihnen.\n\n**Ihre Kontodaten sind bereits gespeichert, es ist nichts hinzuzufügen.** Eine erneute Anmeldung über die Abfrage behebt es jetzt. Kommt es immer wieder, wird der automatische Weg blockiert und nicht falsch konfiguriert — die üblichen Gründe:\n\n- Ihr Router oder Anbieter blockiert Haiers Schlüsseldienst, während die normale Anmeldung weiterhin funktioniert.\n- Die gespeicherte Anmeldung wird nicht mehr akzeptiert — eine Anmeldung in der Haier-App kann andere Sitzungen beenden. Eine erneute Anmeldung hier stellt sie wieder her.\n\n**Die dauerhafte Lösung:** Trennen Sie das Gerät im Router vom Internet. Sein Schlüssel ändert sich dann nicht mehr und der vorhandene bleibt unbegrenzt gültig — siehe README. Die lokale Steuerung bleibt unberührt."
     }
   },
   "exceptions": {

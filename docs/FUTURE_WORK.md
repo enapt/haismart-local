@@ -253,33 +253,48 @@ the explicit ask for a read-back on their first setpoint write. ⛔ The group-wr
 **times** are called out there as deliberately read-only (see item 64).
 
 
-### 68. The setup and repair copy calls every appliance an "air conditioner", in 31 languages
+### 68. ✅ SETTLED — the setup and repair copy no longer calls every appliance an "air conditioner"
 
-Raised 2026-09-13, when the integration stopped being air-conditioner-only. **25 strings** in
-`packages/ha-haismart/custom_components/haismart/strings.json` name the appliance as an air
-conditioner — every step title and description in the config flow, five of the errors, and the three
-key-rotation repair issues. Each is mirrored in **31 locale files**.
+Raised and settled 2026-09-13. **38 English strings** named the appliance as an air conditioner —
+every config-flow step title and description, five errors, four aborts, the poll-interval help and
+the three key-rotation repair issues — each mirrored across **31 locales**.
 
-Nothing behaves differently; the entity set is built from the appliance's own model whatever the
-setup screen says. But somebody adding a water heater is told, repeatedly, that they are adding an
-air conditioner, and one string a non-AC owner will actually hit reads *"This air conditioner needs
-a new key"*.
+✅ **Done, 1,052 strings across 30 locales plus English.** ⛔ **Not by find-and-replace, and the
+first attempt proved why.** Substituting a "device" word wherever the AC word appeared produced
+grammatical wreckage in the inflected languages, because the replacement noun usually has a
+different gender and everything agreeing with it then has to change too: pl *"To urządzenie jest już
+**konfigurowany**"*, cs *"Toto zařízení **byla přidána**"*, el *"**Όλα οι** συσκευές"*, and a
+malformed *"urządzenie**owi**"* invented by suffixing a case ending onto the wrong stem.
 
-⛔ **Not fixed with a find-and-replace, which is why it is filed rather than done.** The locale files
-are machine-translated and explicitly not natively reviewed, so rewriting 25 strings across 31
-languages without a native reader per language would swap a cosmetic fault for a correctness one in
-30 languages we cannot check. The English file could be reworded alone, but that leaves English
-saying "appliance" and every translation saying "air conditioner", which is worse than consistency.
+⇒ ★ **The rule that made it tractable: choose a replacement noun of the SAME GENDER as the word it
+replaces, and all of that agreement stays correct by construction.** cs/sk *klimatizace/klimatizácia*
+(fem) → **jednotka** (fem) · pl *klimatyzator* (masc) → **sprzęt** (masc) · ru *кондиционер* (masc,
+hard) → **прибор** (masc, hard — the identical declension class, so a 1:1 map per case) · el
+*κλιματιστικό* (neut) → **μηχάνημα** (neut, so every article is untouched). Where gender already
+matched, the obvious word was kept (de *Gerät*, fr *appareil*, uk *пристрій*, bg *уред*).
+⚠️ Czech and Slovak still needed the **case** pinned per context — case cannot be read off the noun
+alone, and *klimatizace* is simultaneously nominative and genitive — so those two carry an explicit
+30-context map rather than a bare noun swap.
 
-**What closes it:** reword the 25 English strings to name the appliance generically (and keep the
-AC-specific wording only where the text really is about an air conditioner), then get each locale
-reviewed — or accept machine translation for the rewritten subset with the same "not native-reviewed"
-caveat the `cloud_unreachable` strings already carry. ⓘ `scripts/check-translations.py` enforces key
-parity, not value parity, so a partial rewrite passes CI silently — the check will not catch a locale
-left behind.
+✅ **Checked rather than assumed:** a before/after fingerprint of **8,897 strings** across all 31
+files confirms **every `{placeholder}`, every `**bold**` run, every backtick and every newline is
+byte-identical** — only nouns moved. `check-translations.py` 287 keys × 31 files in parity, and the
+diff is 2,260 insertions against 2,260 deletions, i.e. line-for-line with no structural change.
 
-ⓘ The user-facing docs say this out loud rather than leaving it to be discovered:
-`docs/appliances.md` § *Known rough edge*.
+⇒ **Two by-products worth keeping:**
+* ⛔ **A STALE TRANSLATION THE SWEEP FOUND BY ACCIDENT.** `issues/unknown_report_layout/title` was
+  reworded to "this appliance's status format" in English some sessions ago and **all 30 locale files
+  were left saying "air conditioner"** — nobody noticed, because the parity check compares KEYS, not
+  values. Thai had a second one (`config/step/host/description`, which names the appliance where the
+  English uses a `{device}` placeholder). Both are now correct.
+* ⚠️ ★ **`scripts/check-translations.py` cannot catch this class of drift at all** — it enforces key
+  parity only, so an English rewording that skips the locales passes CI silently, and a partial
+  locale rewrite would too. **A value-drift check is the real open item here**, and it is what would
+  have caught the stale title above years earlier. Filed as the remaining work, not done.
+
+ⓘ The translations remain machine-written and not natively reviewed, exactly as before this change;
+corrections from native speakers are welcome. The tool that did the rewrite, with the per-language
+reasoning inline, is `delocalise_ac.py` (session scratchpad, not shipped).
 
 ### 67. The two decode paths apply DIFFERENT plausibility bands to the same reading
 

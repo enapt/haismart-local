@@ -1,10 +1,10 @@
 {
   "config": {
-    "flow_title": "Ar-condicionado Haier {device_id}",
+    "flow_title": "Aparelho Haier {device_id}",
     "step": {
       "user": {
-        "title": "Adicionar um ar-condicionado Haier",
-        "description": "Fazer login é o caminho recomendado: o Home Assistant obtém a chave local, encontra a unidade na sua rede e lê o modelo dela, então não há nada para colar. A partir daí ele fala diretamente com o ar-condicionado — e, depois de configurado, você pode bloquear totalmente o acesso da unidade à internet; veja o README sobre independência total da nuvem.\n\nContas Google/Facebook: crie uma conta Haier separada com e-mail e senha, compartilhe seus aparelhos com ela no aplicativo e faça login com essa conta.",
+        "title": "Adicionar um aparelho Haier",
+        "description": "Fazer login é o caminho recomendado: o Home Assistant obtém a chave local, encontra a unidade na sua rede e lê o modelo dela, então não há nada para colar. A partir daí ele fala diretamente com o aparelho — e, depois de configurado, você pode bloquear totalmente o acesso da unidade à internet; veja o README sobre independência total da nuvem.\n\nContas Google/Facebook: crie uma conta Haier separada com e-mail e senha, compartilhe seus aparelhos com ela no aplicativo e faça login com essa conta.",
         "menu_options": {
           "account": "Usar a conta Haier já adicionada (nada para digitar)",
           "login": "Entrar com sua conta Haier (recomendado)",
@@ -13,7 +13,7 @@
       },
       "login": {
         "title": "Entre na sua conta Haier",
-        "description": "Use a mesma conta que você usa no aplicativo Haier / Haismart. O login acontece uma única vez — depois disso, o Home Assistant conversa apenas com o ar-condicionado na sua rede.\n\nVocê entra com Google ou Facebook? Essas contas não têm senha. Crie uma conta Haier com e-mail e senha, compartilhe o aparelho com ela no aplicativo e depois entre aqui com essa conta.",
+        "description": "Use a mesma conta que você usa no aplicativo Haier / Haismart. O login acontece uma única vez — depois disso, o Home Assistant conversa apenas com o aparelho na sua rede.\n\nVocê entra com Google ou Facebook? Essas contas não têm senha. Crie uma conta Haier com e-mail e senha, compartilhe o aparelho com ela no aplicativo e depois entre aqui com essa conta.",
         "data": {
           "username": "E-mail ou número de telefone",
           "password": "Senha",
@@ -30,11 +30,11 @@
         "data": {
           "device_id": "Dispositivo"
         },
-        "description": "Escolha qual ar-condicionado adicionar. A chave dele é obtida da nuvem e o IP é encontrado na sua rede automaticamente — você não precisará colar nada."
+        "description": "Escolha qual aparelho adicionar. A chave dele é obtida da nuvem e o IP é encontrado na sua rede automaticamente — você não precisará colar nada."
       },
       "manual": {
         "title": "Dados do dispositivo",
-        "description": "A única coisa de que você precisa é a chave local desta unidade — do sensor “Chave local” de uma instalação anterior, ou de um backup. O Home Assistant procura o ar-condicionado na sua rede e pergunta todo o resto a ele.\n\nNão há como ler a chave na própria unidade. Se você não tiver uma salva, volte e faça login — assim ela é obtida para você.",
+        "description": "A única coisa de que você precisa é a chave local desta unidade — do sensor “Chave local” de uma instalação anterior, ou de um backup. O Home Assistant procura o aparelho na sua rede e pergunta todo o resto a ele.\n\nNão há como ler a chave na própria unidade. Se você não tiver uma salva, volte e faça login — assim ela é obtida para você.",
         "data": {
           "host": "Endereço IP",
           "device_id": "ID do dispositivo",
@@ -42,10 +42,10 @@
           "name": "Nome"
         },
         "data_description": {
-          "host": "O endereço IP do ar-condicionado na sua rede, por exemplo 192.168.1.50. Uma reserva DHCP impede que ele mude.",
-          "device_id": "Normalmente deixado em branco: isso é perguntado diretamente ao ar-condicionado. É o endereço MAC Wi-Fi do módulo, caso você precise digitá-lo.",
+          "host": "O endereço IP do aparelho na sua rede, por exemplo 192.168.1.50. Uma reserva DHCP impede que ele mude.",
+          "device_id": "Normalmente deixado em branco: isso é perguntado diretamente ao aparelho. É o endereço MAC Wi-Fi do módulo, caso você precise digitá-lo.",
           "local_key": "A chave de 32 caracteres com que o aparelho criptografa seu estado. Ela é emitida pela nuvem da Haier para cada dispositivo — o caminho com login a obtém para você.",
-          "name": "Opcional. Como chamar este ar-condicionado no Home Assistant."
+          "name": "Opcional. Como chamar este aparelho no Home Assistant."
         }
       },
       "reauth_confirm": {
@@ -70,14 +70,14 @@
       },
       "key_failed": {
         "title": "Não foi possível obter a chave automaticamente",
-        "description": "O Home Assistant fez login, mas não conseguiu obter a chave local deste ar-condicionado nos servidores da Haier — ou a chave obtida não descriptografa o status da unidade.{note}\n\nIsso costuma ser temporário, então geralmente vale a pena tentar de novo. Se continuar falhando, você pode inserir os dados manualmente, embora a chave não possa ser lida na unidade: você precisaria dela pelo sensor “Chave local” de uma instalação anterior ou por um backup.",
+        "description": "O Home Assistant fez login, mas não conseguiu obter a chave local deste aparelho nos servidores da Haier — ou a chave obtida não descriptografa o status da unidade.{note}\n\nIsso costuma ser temporário, então geralmente vale a pena tentar de novo. Se continuar falhando, você pode inserir os dados manualmente, embora a chave não possa ser lida na unidade: você precisaria dela pelo sensor “Chave local” de uma instalação anterior ou por um backup.",
         "menu_options": {
           "key_retry": "Tentar obter a chave novamente",
           "manual": "Informar os dados manualmente"
         }
       },
       "reconfigure": {
-        "title": "Reconfigurar este ar-condicionado",
+        "title": "Reconfigurar este aparelho",
         "description": "Altere como o Home Assistant alcança este aparelho, sem removê-lo e perder o histórico.",
         "menu_options": {
           "reconfigure_host": "Alterar o endereço IP",
@@ -86,7 +86,7 @@
       },
       "reconfigure_host": {
         "title": "Alterar o endereço IP",
-        "description": "O novo endereço é verificado junto ao ar-condicionado antes de ser salvo.",
+        "description": "O novo endereço é verificado junto ao aparelho antes de ser salvo.",
         "data": {
           "host": "Endereço IP"
         },
@@ -96,7 +96,7 @@
       },
       "reconfigure_cloud": {
         "title": "Adicione sua conta Haier",
-        "description": "Este ar-condicionado foi adicionado manualmente, então o Home Assistant não tem como renovar a chave quando a Haier a troca — é por isso que de tempos em tempos pedimos uma chave nova. Faça login uma vez e, daí em diante, ela se renova sozinha.",
+        "description": "Este aparelho foi adicionado manualmente, então o Home Assistant não tem como renovar a chave quando a Haier a troca — é por isso que de tempos em tempos pedimos uma chave nova. Faça login uma vez e, daí em diante, ela se renova sozinha.",
         "data": {
           "username": "E-mail ou número de telefone",
           "password": "Senha",
@@ -107,7 +107,7 @@
         }
       },
       "reauth": {
-        "title": "Este ar-condicionado precisa de uma nova chave",
+        "title": "Este aparelho precisa de uma nova chave",
         "description": "A Haier trocou a chave local deste aparelho, então o Home Assistant não consegue mais ler o estado dele. Entrar novamente obtém a nova chave para você — quase sempre é a escolha certa. Digitar uma chave manualmente só é útil se você já a tiver.",
         "menu_options": {
           "reauth_cloud": "Entrar e obter a nova chave automaticamente",
@@ -124,7 +124,7 @@
       },
       "model": {
         "title": "Qual é este modelo?",
-        "description": "O ar-condicionado informou a qual família de produtos pertence, o que o restringe aos modelos abaixo. Escolha o que está impresso na unidade ou na etiqueta.\n\nEscolher libera os nomes das falhas, as regras de disponibilidade e a lista real de recursos desta unidade. Pular não é problema: o ar-condicionado continua sendo lido e controlado por completo.",
+        "description": "O aparelho informou a qual família de produtos pertence, o que o restringe aos modelos abaixo. Escolha o que está impresso na unidade ou na etiqueta.\n\nEscolher libera os nomes das falhas, as regras de disponibilidade e a lista real de recursos desta unidade. Pular não é problema: o aparelho continua sendo lido e controlado por completo.",
         "data": {
           "product_code": "Modelo"
         },
@@ -133,27 +133,27 @@
         }
       },
       "pick_local": {
-        "title": "Ar-condicionados encontrados na sua rede",
+        "title": "Aparelhos encontrados na sua rede",
         "description": "Estes responderam na sua rede, então os endereços e IDs já são conhecidos — você só precisa da chave local.\n\nO seu não está na lista? Volte e será solicitado um endereço IP. Unidades já adicionadas não aparecem.",
         "data": {
-          "host": "Ar-condicionado"
+          "host": "Aparelho"
         }
       },
       "discovery_confirm": {
-        "title": "Configurar este ar-condicionado",
-        "description": "O Home Assistant encontrou um ar-condicionado Haier em {host} (`{device_id}`).\n\nA chave local dele será obtida da conta Haier que você já adicionou, então não há nada para digitar. Selecione **Enviar** para adicioná-lo."
+        "title": "Configurar este aparelho",
+        "description": "O Home Assistant encontrou um aparelho Haier em {host} (`{device_id}`).\n\nA chave local dele será obtida da conta Haier que você já adicionou, então não há nada para digitar. Selecione **Enviar** para adicioná-lo."
       }
     },
     "error": {
-      "account_not_in_region": "Nenhuma conta Haier «{username}» foi encontrada no país selecionado (+{zone}). Este é o país em que a conta foi registrada, que pode não ser onde você mora nem onde o aparelho está. Escolha o correto e tente de novo. Se o seu ar-condicionado usa o aplicativo hOn ou Haier China, esta integração não consegue entrar nessas contas de jeito nenhum.",
+      "account_not_in_region": "Nenhuma conta Haier «{username}» foi encontrada no país selecionado (+{zone}). Este é o país em que a conta foi registrada, que pode não ser onde você mora nem onde o aparelho está. Escolha o correto e tente de novo. Se o seu aparelho usa o aplicativo hOn ou Haier China, esta integração não consegue entrar nessas contas de jeito nenhum.",
       "missing_field": "A Haier recusou o login porque um campo estava faltando ou vazio.",
       "cloud_auth": "Falha ao entrar. Confira seu e-mail ou número de telefone e sua senha.",
       "cannot_connect_cloud": "Login feito com sucesso, mas não foi possível alcançar os servidores da Haier para listar seus dispositivos. Isso costuma ser temporário — tente de novo em instantes.",
       "cloud_unreachable": "Não foi possível alcançar os servidores da Haier. Confira se o Home Assistant tem acesso à internet e consegue resolver o endereço da Haier — um problema de DNS ou de firewall no host do Home Assistant se parece exatamente com isso — e tente de novo.",
       "invalid_key": "A chave local precisa ser uma sequência hexadecimal de 32 caracteres.",
-      "invalid_auth": "O ar-condicionado respondeu, mas esta chave local não descriptografa o estado dele — a chave está errada ou foi trocada.",
-      "cannot_connect": "Não foi possível alcançar o ar-condicionado na porta 56800. Confira o endereço IP e se o Home Assistant está na mesma rede.",
-      "device_id_required": "O ar-condicionado não respondeu à consulta de identificação, então o ID do dispositivo não pôde ser lido automaticamente. Digite-o manualmente: é o endereço MAC Wi-Fi do módulo, 12 caracteres hexadecimais sem separadores.",
+      "invalid_auth": "O aparelho respondeu, mas esta chave local não descriptografa o estado dele — a chave está errada ou foi trocada.",
+      "cannot_connect": "Não foi possível alcançar o aparelho na porta 56800. Confira o endereço IP e se o Home Assistant está na mesma rede.",
+      "device_id_required": "O aparelho não respondeu à consulta de identificação, então o ID do dispositivo não pôde ser lido automaticamente. Digite-o manualmente: é o endereço MAC Wi-Fi do módulo, 12 caracteres hexadecimais sem separadores.",
       "account_expired": "Não foi possível usar a conta Haier já configurada aqui: o login expirou ou um login em outro lugar o substituiu. Entrar novamente abaixo resolve isso para todos os ares-condicionados que você adicionou."
     },
     "abort": {
@@ -161,9 +161,9 @@
       "reauth_successful": "A chave local foi atualizada.",
       "all_configured": "Todos os aparelhos desta conta já foram adicionados ao Home Assistant.",
       "unknown": "Erro inesperado — o anúncio do dispositivo não foi compreendido.",
-      "no_devices": "Conectado como {username}, mas esta conta Haier não tem dispositivos. Se você entra no aplicativo com Google ou Facebook, compartilhe primeiro o ar-condicionado com esta conta no aplicativo e tente de novo.",
-      "already_in_progress": "Este ar-condicionado já está sendo configurado.",
-      "account_no_devices": "A conta Haier já configurada aqui não lista mais nenhum dispositivo. Verifique se o ar-condicionado ainda está no aplicativo Haier nesta conta e tente de novo."
+      "no_devices": "Conectado como {username}, mas esta conta Haier não tem dispositivos. Se você entra no aplicativo com Google ou Facebook, compartilhe primeiro o aparelho com esta conta no aplicativo e tente de novo.",
+      "already_in_progress": "Este aparelho já está sendo configurado.",
+      "account_no_devices": "A conta Haier já configurada aqui não lista mais nenhum dispositivo. Verifique se o aparelho ainda está no aplicativo Haier nesta conta e tente de novo."
     }
   },
   "options": {
@@ -548,19 +548,19 @@
   "issues": {
     "stale_localkey_manual_reauth": {
       "title": "{name}: localKey trocada — é preciso informar a chave manualmente",
-      "description": "O ar-condicionado trocou sua chave local (v{old} → v{new}) e este dispositivo não tem credenciais de conta Haier armazenadas, então o Home Assistant não pôde renovar a chave sozinho e teve que pedir uma a você.\n\nPara que isso não se repita, abra o dispositivo, escolha **Reconfigurar** e adicione sua conta Haier. A chave passará então a se renovar sozinha a cada troca."
+      "description": "O aparelho trocou sua chave local (v{old} → v{new}) e este dispositivo não tem credenciais de conta Haier armazenadas, então o Home Assistant não pôde renovar a chave sozinho e teve que pedir uma a você.\n\nPara que isso não se repita, abra o dispositivo, escolha **Reconfigurar** e adicione sua conta Haier. A chave passará então a se renovar sozinha a cada troca."
     },
     "unknown_report_layout": {
-      "title": "{name}: o formato de estado deste ar-condicionado ainda não é reconhecido",
+      "title": "{name}: o formato de estado deste aparelho ainda não é reconhecido",
       "description": "{name} envia um relatório de estado de {length} bytes, para o qual esta integração não tem nenhum layout confirmado (código do produto: {product_code}).\n\nTemperatura, modo, velocidade do ventilador e liga/desliga continuam funcionando. As temperaturas interna e externa ficam indisponíveis e o envio de comandos está desativado — adivinhar onde ficam os ajustes em um formato desconhecido corre o risco de gravar de volta no aparelho a leitura de um sensor como se fosse um ajuste.\n\nAdicionar suporte não exige código, apenas três capturas curtas da sua parte. Siga o guia vinculado e abra um relato; normalmente é uma correção de uma linha."
     },
     "key_will_rotate": {
       "title": "{name}: a chave vai mudar e esta configuração não consegue acompanhar",
-      "description": "Este ar-condicionado ainda alcança os servidores da Haier, então recebe uma nova chave local várias vezes ao dia. Ele foi adicionado sem uma conta Haier, então o Home Assistant não consegue obter a nova — na próxima reinicialização após uma troca de chave o aparelho deixará de funcionar e parecerá ter perdido a configuração.\n\nDuas soluções definitivas, ambas para fazer enquanto tudo funciona:\n\n- **Adicione sua conta Haier**: Configurações → Dispositivos e serviços → Haismart → o dispositivo → Reconfigurar → *Adicionar sua conta Haier*. As trocas de chave passam a ser obtidas automaticamente.\n- **Ou bloqueie o acesso do aparelho à internet** no seu roteador. A chave deixa de mudar e a que você tem continua válida. O controle local não é afetado em nenhum dos casos.\n\nEsta mensagem desaparece sozinha assim que uma das duas for verdadeira."
+      "description": "Este aparelho ainda alcança os servidores da Haier, então recebe uma nova chave local várias vezes ao dia. Ele foi adicionado sem uma conta Haier, então o Home Assistant não consegue obter a nova — na próxima reinicialização após uma troca de chave o aparelho deixará de funcionar e parecerá ter perdido a configuração.\n\nDuas soluções definitivas, ambas para fazer enquanto tudo funciona:\n\n- **Adicione sua conta Haier**: Configurações → Dispositivos e serviços → Haismart → o dispositivo → Reconfigurar → *Adicionar sua conta Haier*. As trocas de chave passam a ser obtidas automaticamente.\n- **Ou bloqueie o acesso do aparelho à internet** no seu roteador. A chave deixa de mudar e a que você tem continua válida. O controle local não é afetado em nenhum dos casos.\n\nEsta mensagem desaparece sozinha assim que uma das duas for verdadeira."
     },
     "key_refresh_failed": {
       "title": "{name}: a chave mudou e a obtenção automática não funcionou",
-      "description": "O ar-condicionado recebeu uma nova chave local (v{old} → v{new}). Sua conta Haier está guardada neste dispositivo, então o Home Assistant tentou obter a nova sozinho — e não conseguiu, por isso pediu a você.\n\n**Seus dados de conta já estão guardados, não há nada a adicionar.** Entrar novamente pelo aviso resolve agora. Se voltar a acontecer, o caminho automático está bloqueado e não mal configurado; as causas usuais:\n\n- Seu roteador ou provedor bloqueia o serviço de chaves da Haier, enquanto o login comum ainda funciona.\n- O login guardado não é mais aceito — entrar no aplicativo Haier pode encerrar outras sessões. Entrar de novo aqui restaura.\n\n**A solução definitiva:** bloqueie o acesso do ar-condicionado à internet no roteador. A chave para de mudar e a que você tem continua válida indefinidamente — veja o README. O controle local não é afetado."
+      "description": "O aparelho recebeu uma nova chave local (v{old} → v{new}). Sua conta Haier está guardada neste dispositivo, então o Home Assistant tentou obter a nova sozinho — e não conseguiu, por isso pediu a você.\n\n**Seus dados de conta já estão guardados, não há nada a adicionar.** Entrar novamente pelo aviso resolve agora. Se voltar a acontecer, o caminho automático está bloqueado e não mal configurado; as causas usuais:\n\n- Seu roteador ou provedor bloqueia o serviço de chaves da Haier, enquanto o login comum ainda funciona.\n- O login guardado não é mais aceito — entrar no aplicativo Haier pode encerrar outras sessões. Entrar de novo aqui restaura.\n\n**A solução definitiva:** bloqueie o acesso do aparelho à internet no roteador. A chave para de mudar e a que você tem continua válida indefinidamente — veja o README. O controle local não é afetado."
     }
   },
   "exceptions": {

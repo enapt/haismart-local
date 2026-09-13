@@ -1,10 +1,10 @@
 {
   "config": {
-    "flow_title": "Haier klíma {device_id}",
+    "flow_title": "Haier készülék {device_id}",
     "step": {
       "user": {
-        "title": "Haier klíma hozzáadása",
-        "description": "A bejelentkezés az ajánlott út: a Home Assistant lekéri a helyi kulcsot, megtalálja a készüléket a hálózatán és beolvassa a modelljét, így nincs mit beilleszteni. Ezután közvetlenül a klímaberendezéssel kommunikál — a beállítás után pedig teljesen letilthatja a készülék internet-hozzáférését; lásd a README teljes felhőfüggetlenségről szóló részét.\n\nGoogle-/Facebook-fiókok: hozzon létre egy külön Haier-fiókot e-mail-címmel és jelszóval, ossza meg vele a klímaberendezéseit az alkalmazásban, majd jelentkezzen be azzal a fiókkal.",
+        "title": "Haier készülék hozzáadása",
+        "description": "A bejelentkezés az ajánlott út: a Home Assistant lekéri a helyi kulcsot, megtalálja a készüléket a hálózatán és beolvassa a modelljét, így nincs mit beilleszteni. Ezután közvetlenül a készülékkel kommunikál — a beállítás után pedig teljesen letilthatja a készülék internet-hozzáférését; lásd a README teljes felhőfüggetlenségről szóló részét.\n\nGoogle-/Facebook-fiókok: hozzon létre egy külön Haier-fiókot e-mail-címmel és jelszóval, ossza meg vele a készülékeit az alkalmazásban, majd jelentkezzen be azzal a fiókkal.",
         "menu_options": {
           "account": "A már hozzáadott Haier-fiók használata (nincs mit beírni)",
           "login": "Bejelentkezés Haier-fiókkal (ajánlott)",
@@ -13,7 +13,7 @@
       },
       "login": {
         "title": "Jelentkezz be a Haier-fiókodba",
-        "description": "Használd ugyanazt a fiókot, amelyet a Haier / Haismart alkalmazásban. A bejelentkezés csak egyszer történik meg – utána a Home Assistant kizárólag a hálózatodon lévő klímával kommunikál.\n\nGoogle- vagy Facebook-fiókkal jelentkezel be? Azoknak nincs jelszavuk. Hozz létre egy Haier-fiókot e-mail-címmel és jelszóval, oszd meg vele a klímát az alkalmazásban, majd itt azzal jelentkezz be.",
+        "description": "Használd ugyanazt a fiókot, amelyet a Haier / Haismart alkalmazásban. A bejelentkezés csak egyszer történik meg – utána a Home Assistant kizárólag a hálózatodon lévő készülékkel kommunikál.\n\nGoogle- vagy Facebook-fiókkal jelentkezel be? Azoknak nincs jelszavuk. Hozz létre egy Haier-fiókot e-mail-címmel és jelszóval, oszd meg vele a készüléket az alkalmazásban, majd itt azzal jelentkezz be.",
         "data": {
           "username": "E-mail-cím vagy telefonszám",
           "password": "Jelszó",
@@ -22,7 +22,7 @@
         "data_description": {
           "username": "Amelyiket a Haier alkalmazásba való belépéshez használod.",
           "password": "A Haier-fiókod jelszava – nem a Home Assistant jelszavad.",
-          "zone_info": "Az az ország, amelyet a Haier-fiók létrehozásakor választottál. Nem feltétlenül az, ahol a klíma fel van szerelve, vagy ahol most laksz. A Home Assistant előre kiválasztotta a beállított országodat; módosítsd, ha a fiókod máshol lett regisztrálva."
+          "zone_info": "Az az ország, amelyet a Haier-fiók létrehozásakor választottál. Nem feltétlenül az, ahol a készülék fel van szerelve, vagy ahol most laksz. A Home Assistant előre kiválasztotta a beállított országodat; módosítsd, ha a fiókod máshol lett regisztrálva."
         }
       },
       "pick_device": {
@@ -30,11 +30,11 @@
         "data": {
           "device_id": "Eszköz"
         },
-        "description": "Válaszd ki, melyik klímát szeretnéd hozzáadni. A kulcsát a felhőből tölti le, az IP-címét pedig automatikusan megtalálja a hálózatodon – semmit sem kell beillesztened."
+        "description": "Válaszd ki, melyik készüléket szeretnéd hozzáadni. A kulcsát a felhőből tölti le, az IP-címét pedig automatikusan megtalálja a hálózatodon – semmit sem kell beillesztened."
       },
       "manual": {
         "title": "Eszközadatok",
-        "description": "Csak a készülék helyi kulcsára van szüksége — egy korábbi telepítés „Helyi kulcs” érzékelőjéből vagy biztonsági mentésből. A Home Assistant megkeresi a klímaberendezést a hálózatán, és minden mást magától a készüléktől kérdez meg.\n\nA kulcs magáról a készülékről nem olvasható le. Ha nincs elmentve, lépjen vissza és jelentkezzen be — így a rendszer lekéri Ön helyett.",
+        "description": "Csak a készülék helyi kulcsára van szüksége — egy korábbi telepítés „Helyi kulcs” érzékelőjéből vagy biztonsági mentésből. A Home Assistant megkeresi a készüléket a hálózatán, és minden mást magától a készüléktől kérdez meg.\n\nA kulcs magáról a készülékről nem olvasható le. Ha nincs elmentve, lépjen vissza és jelentkezzen be — így a rendszer lekéri Ön helyett.",
         "data": {
           "host": "IP-cím",
           "device_id": "Eszközazonosító",
@@ -42,24 +42,24 @@
           "name": "Név"
         },
         "data_description": {
-          "host": "A klíma IP-címe a hálózatodon, pl. 192.168.1.50. A DHCP-foglalás megakadályozza, hogy megváltozzon.",
-          "device_id": "Általában üresen marad — ezt közvetlenül a klímaberendezéstől kérdezi meg a rendszer. Ez a modul Wi-Fi MAC-címe, ha mégis meg kellene adnia.",
-          "local_key": "A 32 karakteres kulcs, amellyel a klíma titkosítja az állapotát. A Haier felhője adja ki eszközönként – a bejelentkezéses út lekéri helyetted.",
-          "name": "Nem kötelező. Hogyan hívják ezt a klímát a Home Assistantban."
+          "host": "A készülék IP-címe a hálózatodon, pl. 192.168.1.50. A DHCP-foglalás megakadályozza, hogy megváltozzon.",
+          "device_id": "Általában üresen marad — ezt közvetlenül a készüléketől kérdezi meg a rendszer. Ez a modul Wi-Fi MAC-címe, ha mégis meg kellene adnia.",
+          "local_key": "A 32 karakteres kulcs, amellyel a készülék titkosítja az állapotát. A Haier felhője adja ki eszközönként – a bejelentkezéses út lekéri helyetted.",
+          "name": "Nem kötelező. Hogyan hívják ezt a készüléket a Home Assistantban."
         }
       },
       "reauth_confirm": {
         "title": "A helyi kulcs megváltozott",
-        "description": "A(z) {device_id} klíma újabb localKey-verziót jelez – az eltárolt kulcs már nem fejti vissza az állapotát. Add meg a klíma aktuális localKey értékét az újracsatlakozáshoz.",
+        "description": "A(z) {device_id} készülék újabb localKey-verziót jelez – az eltárolt kulcs már nem fejti vissza az állapotát. Add meg a készülék aktuális localKey értékét az újracsatlakozáshoz.",
         "data": {
           "local_key": "Helyi kulcs (32 hexadecimális karakter)"
         },
         "data_description": {
-          "local_key": "Kapcsold be az eszköz oldalán a „Helyi kulcs” diagnosztikai érzékelőt az aktuális kulcs leolvasásához, vagy add hozzá újra a klímát a Haier-fiókoddal, hogy automatikusan letöltődjön."
+          "local_key": "Kapcsold be az eszköz oldalán a „Helyi kulcs” diagnosztikai érzékelőt az aktuális kulcs leolvasásához, vagy add hozzá újra a készüléket a Haier-fiókoddal, hogy automatikusan letöltődjön."
         }
       },
       "host": {
-        "title": "Add meg a klíma IP-címét",
+        "title": "Add meg a készülék IP-címét",
         "description": "A bejelentkezés megtörtént, a kulcs automatikusan letöltődött – a Home Assistant csak nem találta meg magától a(z) {device} eszközt a hálózaton. Add meg a helyi IP-címét (pl. 192.168.1.50). Tipp: a DHCP-foglalás stabilan tartja.",
         "data": {
           "host": "IP-cím"
@@ -70,14 +70,14 @@
       },
       "key_failed": {
         "title": "A kulcs automatikus letöltése nem sikerült",
-        "description": "A Home Assistant bejelentkezett, de nem tudta lekérni ennek a klímaberendezésnek a helyi kulcsát a Haier kiszolgálóiról — vagy a kapott kulcs nem fejti vissza a készülék állapotát.{note}\n\nEz gyakran átmeneti, ezért általában érdemes újrapróbálni. Ha továbbra is sikertelen, kézzel is megadhatja az adatokat, a kulcs azonban a készülékről nem olvasható le — egy korábbi telepítés „Helyi kulcs” érzékelőjéből vagy biztonsági mentésből lenne rá szüksége.",
+        "description": "A Home Assistant bejelentkezett, de nem tudta lekérni ennek a készüléknek a helyi kulcsát a Haier kiszolgálóiról — vagy a kapott kulcs nem fejti vissza a készülék állapotát.{note}\n\nEz gyakran átmeneti, ezért általában érdemes újrapróbálni. Ha továbbra is sikertelen, kézzel is megadhatja az adatokat, a kulcs azonban a készülékről nem olvasható le — egy korábbi telepítés „Helyi kulcs” érzékelőjéből vagy biztonsági mentésből lenne rá szüksége.",
         "menu_options": {
           "key_retry": "A kulcs letöltésének újbóli megkísérlése",
           "manual": "Inkább kézzel adom meg az adatokat"
         }
       },
       "reconfigure": {
-        "title": "A klíma újrakonfigurálása",
+        "title": "A készülék újrakonfigurálása",
         "description": "Módosítsd, hogyan éri el a Home Assistant ezt az egységet, anélkül hogy eltávolítanád és elveszítenéd az előzményeit.",
         "menu_options": {
           "reconfigure_host": "IP-cím módosítása",
@@ -86,7 +86,7 @@
       },
       "reconfigure_host": {
         "title": "IP-cím módosítása",
-        "description": "Az új címet mentés előtt ellenőrzi a rendszer a klímán.",
+        "description": "Az új címet mentés előtt ellenőrzi a rendszer a készüléken.",
         "data": {
           "host": "IP-cím"
         },
@@ -96,18 +96,18 @@
       },
       "reconfigure_cloud": {
         "title": "Add hozzá a Haier-fiókodat",
-        "description": "Ezt a klímát kézzel adták hozzá, így a Home Assistantnak nincs módja frissíteni a kulcsot, amikor a Haier lecseréli – ezért kér tőled időnként új kulcsot. Jelentkezz be egyszer, és onnantól magától frissül.",
+        "description": "Ezt a készüléket kézzel adták hozzá, így a Home Assistantnak nincs módja frissíteni a kulcsot, amikor a Haier lecseréli – ezért kér tőled időnként új kulcsot. Jelentkezz be egyszer, és onnantól magától frissül.",
         "data": {
           "username": "E-mail-cím vagy telefonszám",
           "password": "Jelszó",
           "zone_info": "Az az ország, ahol a Haier-fiókod regisztrálva van"
         },
         "data_description": {
-          "zone_info": "Az az ország, ahol a fiókot létrehozták; nem feltétlenül ott laksz, és nem feltétlenül ott van a klíma."
+          "zone_info": "Az az ország, ahol a fiókot létrehozták; nem feltétlenül ott laksz, és nem feltétlenül ott van a készülék."
         }
       },
       "reauth": {
-        "title": "Ennek a klímának új kulcsra van szüksége",
+        "title": "Ennek a készüléknek új kulcsra van szüksége",
         "description": "A Haier lecserélte ennek az egységnek a helyi kulcsát, így a Home Assistant már nem tudja olvasni az állapotát. Az ismételt bejelentkezés lekéri helyetted az új kulcsot – szinte mindig ez a helyes választás. A kulcs kézi megadása csak akkor hasznos, ha már megvan neked.",
         "menu_options": {
           "reauth_cloud": "Bejelentkezés és az új kulcs automatikus lekérése",
@@ -124,7 +124,7 @@
       },
       "model": {
         "title": "Melyik modell ez?",
-        "description": "A klímaberendezés jelezte, melyik termékcsaládba tartozik, ami az alábbi modellekre szűkíti a kört. Válassza ki azt, amely a készüléken vagy az adattábláján szerepel.\n\nA választás feloldja a hibanevek, az elérhetőségi szabályok és a készülék tényleges funkciólistájának használatát. A kihagyás sem gond — a klímaberendezés enélkül is teljesen kiolvasható és vezérelhető.",
+        "description": "A készülék jelezte, melyik termékcsaládba tartozik, ami az alábbi modellekre szűkíti a kört. Válassza ki azt, amely a készüléken vagy az adattábláján szerepel.\n\nA választás feloldja a hibanevek, az elérhetőségi szabályok és a készülék tényleges funkciólistájának használatát. A kihagyás sem gond — a készülék enélkül is teljesen kiolvasható és vezérelhető.",
         "data": {
           "product_code": "Modell"
         },
@@ -133,37 +133,37 @@
         }
       },
       "pick_local": {
-        "title": "A hálózatán talált klímaberendezések",
+        "title": "A hálózatán talált készülékek",
         "description": "Ezek válaszoltak a hálózatán, így a címük és az azonosítójuk már ismert — csak a helyi kulcsra van szüksége.\n\nNincs a listán? Lépjen vissza, és a rendszer helyette IP-címet fog kérni. A már hozzáadott készülékek nem jelennek meg.",
         "data": {
-          "host": "Klímaberendezés"
+          "host": "Készülék"
         }
       },
       "discovery_confirm": {
-        "title": "Klímaberendezés beállítása",
-        "description": "A Home Assistant Haier klímaberendezést talált a következő címen: {host} (`{device_id}`).\n\nA helyi kulcsát a már hozzáadott Haier-fiókból tölti le, így nincs mit beírni. A hozzáadáshoz válassza a **Küldés** lehetőséget."
+        "title": "Készülék beállítása",
+        "description": "A Home Assistant Haier készüléket talált a következő címen: {host} (`{device_id}`).\n\nA helyi kulcsát a már hozzáadott Haier-fiókból tölti le, így nincs mit beírni. A hozzáadáshoz válassza a **Küldés** lehetőséget."
       }
     },
     "error": {
-      "account_not_in_region": "Nem található „{username}” nevű Haier-fiók a kiválasztott országban (+{zone}). Ez az az ország, ahol a fiókot regisztrálták, ami nem feltétlenül ott van, ahol laksz vagy ahol a klíma található. Válaszd ki a megfelelőt, és próbáld újra. Ha a klímád a hOn vagy a Haier China alkalmazást használja, ez az integráció egyáltalán nem tud bejelentkezni azokba a fiókokba.",
+      "account_not_in_region": "Nem található „{username}” nevű Haier-fiók a kiválasztott országban (+{zone}). Ez az az ország, ahol a fiókot regisztrálták, ami nem feltétlenül ott van, ahol laksz vagy ahol a készülék található. Válaszd ki a megfelelőt, és próbáld újra. Ha a készüléked a hOn vagy a Haier China alkalmazást használja, ez az integráció egyáltalán nem tud bejelentkezni azokba a fiókokba.",
       "missing_field": "A Haier elutasította a bejelentkezést, mert egy mező hiányzott vagy üres volt.",
       "cloud_auth": "A bejelentkezés nem sikerült. Ellenőrizd az e-mail-címedet vagy telefonszámodat és a jelszavadat.",
       "cannot_connect_cloud": "A bejelentkezés sikerült, de a Haier szerverei nem voltak elérhetők az eszközeid listázásához. Ez általában átmeneti – próbáld újra egy pillanat múlva.",
       "cloud_unreachable": "A Haier szerverei nem voltak elérhetők. Ellenőrizd, hogy a Home Assistant eléri-e az internetet és fel tudja-e oldani a Haier címét – a Home Assistant gépén egy DNS- vagy tűzfalprobléma pontosan így néz ki –, majd próbáld újra.",
       "invalid_key": "A helyi kulcsnak 32 karakteres hexadecimális karakterláncnak kell lennie.",
-      "invalid_auth": "A klíma válaszolt, de ez a helyi kulcs nem fejti vissza az állapotát – a kulcs hibás, vagy lecserélték.",
-      "cannot_connect": "Nem sikerült elérni a klímát az 56800-as porton. Ellenőrizd az IP-címet, és hogy a Home Assistant ugyanazon a hálózaton van-e.",
-      "device_id_required": "A klímaberendezés nem válaszolt az azonosítási lekérdezésre, ezért az eszközazonosítója nem volt automatikusan beolvasható. Adja meg kézzel — ez a modul Wi-Fi MAC-címe, 12 hexadecimális karakter elválasztók nélkül.",
-      "account_expired": "Az itt már beállított Haier-fiók nem volt használható — a bejelentkezése lejárt, vagy egy máshol történt bejelentkezés váltotta fel. Az alábbi ismételt bejelentkezés ezt minden hozzáadott klímaberendezésnél megoldja."
+      "invalid_auth": "A készülék válaszolt, de ez a helyi kulcs nem fejti vissza az állapotát – a kulcs hibás, vagy lecserélték.",
+      "cannot_connect": "Nem sikerült elérni a készüléket az 56800-as porton. Ellenőrizd az IP-címet, és hogy a Home Assistant ugyanazon a hálózaton van-e.",
+      "device_id_required": "A készülék nem válaszolt az azonosítási lekérdezésre, ezért az eszközazonosítója nem volt automatikusan beolvasható. Adja meg kézzel — ez a modul Wi-Fi MAC-címe, 12 hexadecimális karakter elválasztók nélkül.",
+      "account_expired": "Az itt már beállított Haier-fiók nem volt használható — a bejelentkezése lejárt, vagy egy máshol történt bejelentkezés váltotta fel. Az alábbi ismételt bejelentkezés ezt minden hozzáadott készüléknél megoldja."
     },
     "abort": {
       "already_configured": "Ez az eszköz már konfigurálva van.",
       "reauth_successful": "A helyi kulcs frissítve lett.",
-      "all_configured": "Ennek a fióknak az összes klímája már hozzá van adva a Home Assistanthoz.",
+      "all_configured": "Ennek a fióknak az összes készüléke már hozzá van adva a Home Assistanthoz.",
       "unknown": "Váratlan hiba – az eszköz bejelentkezési üzenete értelmezhetetlen volt.",
-      "no_devices": "Bejelentkezve mint {username}, de ehhez a Haier-fiókhoz nem tartozik eszköz. Ha az alkalmazásba Google- vagy Facebook-fiókkal lépsz be, előbb oszd meg a klímát ezzel a fiókkal az alkalmazásban, majd próbáld újra.",
-      "already_in_progress": "Ennek a klímának a beállítása már folyamatban van.",
-      "account_no_devices": "Az itt már beállított Haier-fiók már nem sorol fel eszközöket. Ellenőrizze, hogy a klímaberendezés még mindig ebben a fiókban szerepel-e a Haier alkalmazásban, majd próbálja újra."
+      "no_devices": "Bejelentkezve mint {username}, de ehhez a Haier-fiókhoz nem tartozik eszköz. Ha az alkalmazásba Google- vagy Facebook-fiókkal lépsz be, előbb oszd meg a készüléket ezzel a fiókkal az alkalmazásban, majd próbáld újra.",
+      "already_in_progress": "Ennek a készüléknek a beállítása már folyamatban van.",
+      "account_no_devices": "Az itt már beállított Haier-fiók már nem sorol fel eszközöket. Ellenőrizze, hogy a készülék még mindig ebben a fiókban szerepel-e a Haier alkalmazásban, majd próbálja újra."
     }
   },
   "options": {
@@ -174,7 +174,7 @@
           "scan_interval": "Állapotlekérdezés gyakorisága (másodperc)"
         },
         "data_description": {
-          "scan_interval": "Milyen gyakran kérdezze le a klíma állapotát. Minden lekérdezés egy teljes helyi munkamenet, és kizárólag azért van, hogy észrevegye a távirányítóval vagy az alkalmazással végzett módosításokat – a Home Assistantból küldött parancsok amúgy is azonnal frissülnek."
+          "scan_interval": "Milyen gyakran kérdezze le a készülék állapotát. Minden lekérdezés egy teljes helyi munkamenet, és kizárólag azért van, hogy észrevegye a távirányítóval vagy az alkalmazással végzett módosításokat – a Home Assistantból küldött parancsok amúgy is azonnal frissülnek."
         }
       }
     }
@@ -548,19 +548,19 @@
   "issues": {
     "stale_localkey_manual_reauth": {
       "title": "{name}: a localKey lecserélődött – kézi kulcsmegadás szükséges",
-      "description": "A klíma lecserélte a helyi kulcsát (v{old} → v{new}), és ehhez az eszközhöz nincsenek eltárolva Haier-fiókadatok, így a Home Assistant nem tudta magától frissíteni a kulcsot, és kérnie kellett tőled egyet.\n\nHogy ez ne forduljon elő újra, nyisd meg az eszközt, válaszd az **Újrakonfigurálás** lehetőséget, és add hozzá a Haier-fiókodat. A kulcs ezután minden cserekor magától frissül."
+      "description": "A készülék lecserélte a helyi kulcsát (v{old} → v{new}), és ehhez az eszközhöz nincsenek eltárolva Haier-fiókadatok, így a Home Assistant nem tudta magától frissíteni a kulcsot, és kérnie kellett tőled egyet.\n\nHogy ez ne forduljon elő újra, nyisd meg az eszközt, válaszd az **Újrakonfigurálás** lehetőséget, és add hozzá a Haier-fiókodat. A kulcs ezután minden cserekor magától frissül."
     },
     "unknown_report_layout": {
-      "title": "{name}: ennek a klímának az állapotformátuma még nem ismert",
+      "title": "{name}: ennek a készüléknek az állapotformátuma még nem ismert",
       "description": "A(z) {name} {length} bájtos állapotjelentést küld, amelyhez ennek az integrációnak nincs megerősített elrendezése (termékkód: {product_code}).\n\nA hőmérséklet, az üzemmód, a ventilátorfokozat és a be-/kikapcsolás továbbra is működik. A beltéri és kültéri hőmérséklet nem érhető el, a parancsküldés pedig le van tiltva – ismeretlen formátumban megtippelni a beállítások helyét azzal a kockázattal jár, hogy egy érzékelő mért értéke beállításként íródik vissza az egységbe.\n\nA támogatás hozzáadásához nem kell kód, csak három rövid felvétel tőled. Kövesd a hivatkozott útmutatót, és nyiss egy bejelentést; általában egysoros javításról van szó."
     },
     "key_will_rotate": {
       "title": "{name}: a kulcs meg fog változni, és ez a beállítás nem tudja követni",
-      "description": "Ez a klímaberendezés még eléri a Haier kiszolgálóit, ezért naponta többször új helyi kulcsot kap. Haier-fiók nélkül lett hozzáadva, így a Home Assistant nem tudja lekérni az újat — a kulcscsere utáni első újraindításkor a készülék leáll, és úgy tűnik majd, mintha elvesztette volna a beállításait.\n\nKét tartós megoldás, mindkettőt érdemes most elvégezni, amíg minden működik:\n\n- **Adja hozzá Haier-fiókját**: Beállítások → Eszközök és szolgáltatások → Haismart → az eszköz → Újrakonfigurálás → *Haier-fiók hozzáadása*. A kulcscserék ezután automatikusan lekérésre kerülnek.\n- **Vagy tiltsa le a készülék internet-hozzáférését** az útválasztón. A kulcs ekkor nem változik többé, és a meglévő érvényes marad. A helyi vezérlést egyik eset sem érinti.\n\nEz az üzenet magától eltűnik, amint bármelyik teljesül."
+      "description": "Ez a készülék még eléri a Haier kiszolgálóit, ezért naponta többször új helyi kulcsot kap. Haier-fiók nélkül lett hozzáadva, így a Home Assistant nem tudja lekérni az újat — a kulcscsere utáni első újraindításkor a készülék leáll, és úgy tűnik majd, mintha elvesztette volna a beállításait.\n\nKét tartós megoldás, mindkettőt érdemes most elvégezni, amíg minden működik:\n\n- **Adja hozzá Haier-fiókját**: Beállítások → Eszközök és szolgáltatások → Haismart → az eszköz → Újrakonfigurálás → *Haier-fiók hozzáadása*. A kulcscserék ezután automatikusan lekérésre kerülnek.\n- **Vagy tiltsa le a készülék internet-hozzáférését** az útválasztón. A kulcs ekkor nem változik többé, és a meglévő érvényes marad. A helyi vezérlést egyik eset sem érinti.\n\nEz az üzenet magától eltűnik, amint bármelyik teljesül."
     },
     "key_refresh_failed": {
       "title": "{name}: a kulcs megváltozott, és az automatikus lekérés nem működött",
-      "description": "A klímaberendezés új helyi kulcsot kapott (v{old} → v{new}). A Haier-fiókja el van mentve ehhez az eszközhöz, ezért a Home Assistant megpróbálta magától lekérni az újat — és nem sikerült, ezért kérdezte meg Önt.\n\n**A fiókadatai már el vannak mentve, nincs mit hozzáadni.** Az üzenetből történő újbóli bejelentkezés most megoldja. Ha visszatér, az automatikus út blokkolva van, nem pedig rosszul beállítva; a szokásos okok:\n\n- Az útválasztója vagy a szolgáltatója blokkolja a Haier kulcsszolgáltatását, miközben a rendes bejelentkezés még működik.\n- A tárolt bejelentkezést már nem fogadják el — a Haier alkalmazásba való belépés megszüntetheti a többi munkamenetet. Az itteni újbóli bejelentkezés helyreállítja.\n\n**A végleges megoldás:** tiltsa le a klímaberendezés internet-hozzáférését az útválasztón. A kulcs ekkor nem változik többé, a meglévő pedig határozatlan ideig érvényes marad — lásd a README-t. A helyi vezérlést ez nem érinti."
+      "description": "A készülék új helyi kulcsot kapott (v{old} → v{new}). A Haier-fiókja el van mentve ehhez az eszközhöz, ezért a Home Assistant megpróbálta magától lekérni az újat — és nem sikerült, ezért kérdezte meg Önt.\n\n**A fiókadatai már el vannak mentve, nincs mit hozzáadni.** Az üzenetből történő újbóli bejelentkezés most megoldja. Ha visszatér, az automatikus út blokkolva van, nem pedig rosszul beállítva; a szokásos okok:\n\n- Az útválasztója vagy a szolgáltatója blokkolja a Haier kulcsszolgáltatását, miközben a rendes bejelentkezés még működik.\n- A tárolt bejelentkezést már nem fogadják el — a Haier alkalmazásba való belépés megszüntetheti a többi munkamenetet. Az itteni újbóli bejelentkezés helyreállítja.\n\n**A végleges megoldás:** tiltsa le a készülék internet-hozzáférését az útválasztón. A kulcs ekkor nem változik többé, a meglévő pedig határozatlan ideig érvényes marad — lásd a README-t. A helyi vezérlést ez nem érinti."
     }
   },
   "exceptions": {

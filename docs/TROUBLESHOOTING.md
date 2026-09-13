@@ -147,7 +147,7 @@ the key you have stays valid indefinitely — see
 [going fully cloud-independent](../README.md#going-fully-cloud-independent). Local control is unaffected either
 way, and this is the configuration the integration is built for.
 
-### "This air conditioner is already being set up"
+### "This appliance is already being set up"
 
 Adding an appliance takes precedence over the **Discovered** card your air conditioner raises by
 announcing itself, and the card clears itself once the appliance is added.

@@ -1,10 +1,10 @@
 {
   "config": {
-    "flow_title": "Klimatizácia Haier {device_id}",
+    "flow_title": "Jednotka Haier {device_id}",
     "step": {
       "user": {
-        "title": "Pridať klimatizáciu Haier",
-        "description": "Prihlásenie je odporúčaná cesta: Home Assistant získa lokálny kľúč, nájde jednotku vo vašej sieti a načíta jej model, takže nie je čo vkladať. Odvtedy komunikuje s klimatizáciou priamo — a keď je všetko nastavené, môžete jednotke úplne zablokovať prístup na internet; pozrite README o plnej nezávislosti od cloudu.\n\nÚčty Google/Facebook: vytvorte si samostatný účet Haier s e-mailom a heslom, zdieľajte s ním v aplikácii svoje klimatizácie a potom sa prihláste týmto účtom.",
+        "title": "Pridať jednotku Haier",
+        "description": "Prihlásenie je odporúčaná cesta: Home Assistant získa lokálny kľúč, nájde jednotku vo vašej sieti a načíta jej model, takže nie je čo vkladať. Odvtedy komunikuje s jednotkou priamo — a keď je všetko nastavené, môžete jednotke úplne zablokovať prístup na internet; pozrite README o plnej nezávislosti od cloudu.\n\nÚčty Google/Facebook: vytvorte si samostatný účet Haier s e-mailom a heslom, zdieľajte s ním v aplikácii svoje jednotky a potom sa prihláste týmto účtom.",
         "menu_options": {
           "account": "Použiť už pridaný účet Haier (nič netreba zadávať)",
           "login": "Prihlásiť sa účtom Haier (odporúčané)",
@@ -13,7 +13,7 @@
       },
       "login": {
         "title": "Prihláste sa do svojho účtu Haier",
-        "description": "Použite rovnaký účet ako v aplikácii Haier / Haismart. Prihlásenie prebehne len raz – potom Home Assistant komunikuje výhradne s klimatizáciou vo vašej sieti.\n\nPrihlasujete sa cez Google alebo Facebook? Tieto účty nemajú heslo. Vytvorte si účet Haier s e-mailom a heslom, zdieľajte s ním v aplikácii klimatizáciu a potom sa tu prihláste týmto účtom.",
+        "description": "Použite rovnaký účet ako v aplikácii Haier / Haismart. Prihlásenie prebehne len raz – potom Home Assistant komunikuje výhradne s jednotkou vo vašej sieti.\n\nPrihlasujete sa cez Google alebo Facebook? Tieto účty nemajú heslo. Vytvorte si účet Haier s e-mailom a heslom, zdieľajte s ním v aplikácii jednotku a potom sa tu prihláste týmto účtom.",
         "data": {
           "username": "E-mail alebo telefónne číslo",
           "password": "Heslo",
@@ -22,7 +22,7 @@
         "data_description": {
           "username": "To, čím sa prihlasujete do aplikácie Haier.",
           "password": "Heslo vášho účtu Haier – nie heslo do Home Assistanta.",
-          "zone_info": "Krajina zvolená pri vytváraní účtu Haier, ktorá nemusí byť tou, kde je klimatizácia nainštalovaná alebo kde teraz bývate. Home Assistant predvybral nastavenú krajinu; zmeňte ju, ak bol váš účet zaregistrovaný inde."
+          "zone_info": "Krajina zvolená pri vytváraní účtu Haier, ktorá nemusí byť tou, kde je jednotka nainštalovaná alebo kde teraz bývate. Home Assistant predvybral nastavenú krajinu; zmeňte ju, ak bol váš účet zaregistrovaný inde."
         }
       },
       "pick_device": {
@@ -30,11 +30,11 @@
         "data": {
           "device_id": "Zariadenie"
         },
-        "description": "Vyberte klimatizáciu, ktorú chcete pridať. Jej kľúč sa stiahne z cloudu a IP adresa sa vo vašej sieti nájde automaticky – nič nebudete musieť vkladať."
+        "description": "Vyberte jednotku, ktorú chcete pridať. Jej kľúč sa stiahne z cloudu a IP adresa sa vo vašej sieti nájde automaticky – nič nebudete musieť vkladať."
       },
       "manual": {
         "title": "Údaje o zariadení",
-        "description": "Jediné, čo potrebujete, je lokálny kľúč tejto jednotky — zo senzora „Lokálny kľúč“ predchádzajúcej inštalácie alebo zo zálohy. Home Assistant klimatizáciu vo vašej sieti vyhľadá sám a na všetko ostatné sa spýta priamo jej.\n\nKľúč sa z jednotky prečítať nedá. Ak žiadny uložený nemáte, vráťte sa a prihláste sa — tým sa získa za vás.",
+        "description": "Jediné, čo potrebujete, je lokálny kľúč tejto jednotky — zo senzora „Lokálny kľúč“ predchádzajúcej inštalácie alebo zo zálohy. Home Assistant jednotku vo vašej sieti vyhľadá sám a na všetko ostatné sa spýta priamo jej.\n\nKľúč sa z jednotky prečítať nedá. Ak žiadny uložený nemáte, vráťte sa a prihláste sa — tým sa získa za vás.",
         "data": {
           "host": "IP adresa",
           "device_id": "ID zariadenia",
@@ -42,24 +42,24 @@
           "name": "Názov"
         },
         "data_description": {
-          "host": "IP adresa klimatizácie vo vašej sieti, napr. 192.168.1.50. Rezervácia DHCP zabráni jej zmene.",
-          "device_id": "Zvyčajne sa necháva prázdne — dotaz ide priamo na klimatizáciu. Je to MAC adresa Wi-Fi modulu, ak by ste ju predsa len potrebovali zadať.",
-          "local_key": "32-znakový kľúč, ktorým klimatizácia šifruje svoj stav. Vydáva ho cloud Haier pre každé zariadenie zvlášť – cesta s prihlásením ho získa za vás.",
-          "name": "Voliteľné. Ako sa má táto klimatizácia volať v Home Assistantovi."
+          "host": "IP adresa jednotky vo vašej sieti, napr. 192.168.1.50. Rezervácia DHCP zabráni jej zmene.",
+          "device_id": "Zvyčajne sa necháva prázdne — dotaz ide priamo na jednotku. Je to MAC adresa Wi-Fi modulu, ak by ste ju predsa len potrebovali zadať.",
+          "local_key": "32-znakový kľúč, ktorým jednotka šifruje svoj stav. Vydáva ho cloud Haier pre každé zariadenie zvlášť – cesta s prihlásením ho získa za vás.",
+          "name": "Voliteľné. Ako sa má táto jednotka volať v Home Assistantovi."
         }
       },
       "reauth_confirm": {
         "title": "Lokálny kľúč bol zmenený",
-        "description": "Klimatizácia {device_id} hlási novšiu verziu localKey – uložený kľúč už jej stav nedešifruje. Zadajte aktuálny localKey klimatizácie na opätovné pripojenie.",
+        "description": "Jednotka {device_id} hlási novšiu verziu localKey – uložený kľúč už jej stav nedešifruje. Zadajte aktuálny localKey jednotky na opätovné pripojenie.",
         "data": {
           "local_key": "Lokálny kľúč (32 hexadecimálnych znakov)"
         },
         "data_description": {
-          "local_key": "Na stránke zariadenia zapnite diagnostický senzor „Lokálny kľúč“ a prečítajte si ten aktuálny, alebo klimatizáciu pridajte znova so svojím účtom Haier, aby sa získaval automaticky."
+          "local_key": "Na stránke zariadenia zapnite diagnostický senzor „Lokálny kľúč“ a prečítajte si ten aktuálny, alebo jednotku pridajte znova so svojím účtom Haier, aby sa získaval automaticky."
         }
       },
       "host": {
-        "title": "Zadajte IP adresu klimatizácie",
+        "title": "Zadajte IP adresu jednotky",
         "description": "Prihlásenie prebehlo a kľúč sa získal automaticky – Home Assistant len sám nedokázal nájsť {device} v sieti. Zadajte jej lokálnu IP adresu (napr. 192.168.1.50). Tip: rezervácia DHCP ju udrží stabilnú.",
         "data": {
           "host": "IP adresa"
@@ -70,14 +70,14 @@
       },
       "key_failed": {
         "title": "Kľúč sa nepodarilo získať automaticky",
-        "description": "Home Assistant sa prihlásil, ale nepodarilo sa mu získať lokálny kľúč tejto klimatizácie zo serverov Haier — alebo získaný kľúč nedešifruje stav jednotky.{note}\n\nBýva to často dočasné, takže sa zvyčajne oplatí skúsiť to znova. Ak to zlyháva opakovane, môžete údaje zadať ručne, kľúč sa však z jednotky prečítať nedá — potrebovali by ste ho zo senzora „Lokálny kľúč“ predchádzajúcej inštalácie alebo zo zálohy.",
+        "description": "Home Assistant sa prihlásil, ale nepodarilo sa mu získať lokálny kľúč tejto jednotky zo serverov Haier — alebo získaný kľúč nedešifruje stav jednotky.{note}\n\nBýva to často dočasné, takže sa zvyčajne oplatí skúsiť to znova. Ak to zlyháva opakovane, môžete údaje zadať ručne, kľúč sa však z jednotky prečítať nedá — potrebovali by ste ho zo senzora „Lokálny kľúč“ predchádzajúcej inštalácie alebo zo zálohy.",
         "menu_options": {
           "key_retry": "Skúsiť získať kľúč znova",
           "manual": "Zadať údaje ručne"
         }
       },
       "reconfigure": {
-        "title": "Znova nastaviť túto klimatizáciu",
+        "title": "Znova nastaviť túto jednotku",
         "description": "Zmeňte spôsob, akým sa Home Assistant k tejto jednotke pripája, bez toho, aby ste ju odstránili a prišli o jej históriu.",
         "menu_options": {
           "reconfigure_host": "Zmeniť IP adresu",
@@ -86,7 +86,7 @@
       },
       "reconfigure_host": {
         "title": "Zmeniť IP adresu",
-        "description": "Nová adresa sa pred uložením overí proti klimatizácii.",
+        "description": "Nová adresa sa pred uložením overí proti jednotke.",
         "data": {
           "host": "IP adresa"
         },
@@ -96,18 +96,18 @@
       },
       "reconfigure_cloud": {
         "title": "Pridajte svoj účet Haier",
-        "description": "Táto klimatizácia bola pridaná ručne, takže Home Assistant nemá ako obnoviť kľúč, keď ho Haier zmení – preto vás čas od času žiada o nový. Prihláste sa raz a odvtedy sa bude obnovovať sám.",
+        "description": "Táto jednotka bola pridaná ručne, takže Home Assistant nemá ako obnoviť kľúč, keď ho Haier zmení – preto vás čas od času žiada o nový. Prihláste sa raz a odvtedy sa bude obnovovať sám.",
         "data": {
           "username": "E-mail alebo telefónne číslo",
           "password": "Heslo",
           "zone_info": "Krajina, v ktorej je váš účet Haier zaregistrovaný"
         },
         "data_description": {
-          "zone_info": "Krajina, v ktorej bol účet vytvorený; nemusí ísť o krajinu, kde bývate alebo kde je klimatizácia nainštalovaná."
+          "zone_info": "Krajina, v ktorej bol účet vytvorený; nemusí ísť o krajinu, kde bývate alebo kde je jednotka nainštalovaná."
         }
       },
       "reauth": {
-        "title": "Táto klimatizácia potrebuje nový kľúč",
+        "title": "Táto jednotka potrebuje nový kľúč",
         "description": "Haier zmenil lokálny kľúč tejto jednotky, takže Home Assistant už nedokáže čítať jej stav. Opätovné prihlásenie nový kľúč získa za vás – takmer vždy je to správna voľba. Zadávať kľúč ručne má zmysel, len ak ho už máte.",
         "menu_options": {
           "reauth_cloud": "Prihlásiť sa a získať nový kľúč automaticky",
@@ -124,7 +124,7 @@
       },
       "model": {
         "title": "O aký model ide?",
-        "description": "Klimatizácia oznámila, do ktorej produktovej rodiny patrí, čo výber zužuje na modely nižšie. Vyberte ten, ktorý je uvedený na jednotke alebo jej štítku.\n\nVýber odomkne názvy porúch, pravidlá dostupnosti a skutočný zoznam funkcií tejto jednotky. Preskočenie nevadí — klimatizácia sa aj tak plne načítava a ovláda.",
+        "description": "Jednotka oznámila, do ktorej produktovej rodiny patrí, čo výber zužuje na modely nižšie. Vyberte ten, ktorý je uvedený na jednotke alebo jej štítku.\n\nVýber odomkne názvy porúch, pravidlá dostupnosti a skutočný zoznam funkcií tejto jednotky. Preskočenie nevadí — jednotka sa aj tak plne načítava a ovláda.",
         "data": {
           "product_code": "Model"
         },
@@ -133,37 +133,37 @@
         }
       },
       "pick_local": {
-        "title": "Klimatizácie nájdené vo vašej sieti",
+        "title": "Jednotky nájdené vo vašej sieti",
         "description": "Tieto odpovedali vo vašej sieti, takže ich adresy a ID sú už známe — potrebujete len lokálny kľúč.\n\nTá vaša tu nie je? Vráťte sa späť a budete namiesto toho požiadaní o IP adresu. Už pridané jednotky sa nezobrazujú.",
         "data": {
-          "host": "Klimatizácia"
+          "host": "Jednotka"
         }
       },
       "discovery_confirm": {
-        "title": "Nastaviť túto klimatizáciu",
-        "description": "Home Assistant našiel klimatizáciu Haier na adrese {host} (`{device_id}`).\n\nJej lokálny kľúč sa načíta z účtu Haier, ktorý ste už pridali, takže netreba nič zadávať. Pridajte ju voľbou **Odoslať**."
+        "title": "Nastaviť túto jednotku",
+        "description": "Home Assistant našiel jednotku Haier na adrese {host} (`{device_id}`).\n\nJej lokálny kľúč sa načíta z účtu Haier, ktorý ste už pridali, takže netreba nič zadávať. Pridajte ju voľbou **Odoslať**."
       }
     },
     "error": {
-      "account_not_in_region": "Vo vybranej krajine (+{zone}) sa nenašiel žiadny účet Haier „{username}“. Ide o krajinu, v ktorej bol účet zaregistrovaný; nemusí byť totožná s tou, kde bývate alebo kde je klimatizácia. Vyberte správnu a skúste to znova. Ak vaša klimatizácia používa aplikáciu hOn alebo Haier China, táto integrácia sa do takých účtov vôbec prihlásiť nedokáže.",
+      "account_not_in_region": "Vo vybranej krajine (+{zone}) sa nenašiel žiadny účet Haier „{username}“. Ide o krajinu, v ktorej bol účet zaregistrovaný; nemusí byť totožná s tou, kde bývate alebo kde je jednotka. Vyberte správnu a skúste to znova. Ak vaša jednotka používa aplikáciu hOn alebo Haier China, táto integrácia sa do takých účtov vôbec prihlásiť nedokáže.",
       "missing_field": "Haier prihlásenie odmietol, pretože niektoré pole chýbalo alebo bolo prázdne.",
       "cloud_auth": "Prihlásenie sa nepodarilo. Skontrolujte e-mail alebo telefónne číslo a heslo.",
       "cannot_connect_cloud": "Prihlásenie prebehlo úspešne, ale servery Haier neboli dostupné na načítanie zoznamu vašich zariadení. Býva to dočasné – skúste to o chvíľu znova.",
       "cloud_unreachable": "Servery Haier neboli dostupné. Skontrolujte, či sa Home Assistant dostane na internet a dokáže preložiť adresu Haier – problém s DNS alebo firewallom na hostiteľovi Home Assistant vyzerá presne takto – a skúste to znova.",
       "invalid_key": "Lokálny kľúč musí byť hexadecimálny reťazec s 32 znakmi.",
-      "invalid_auth": "Klimatizácia odpovedala, ale tento lokálny kľúč jej stav nedešifruje – kľúč je nesprávny, alebo bol zmenený.",
-      "cannot_connect": "Klimatizáciu sa nepodarilo kontaktovať na porte 56800. Skontrolujte IP adresu a to, že je Home Assistant v rovnakej sieti.",
-      "device_id_required": "Klimatizácia neodpovedala na identifikačný dotaz, takže jej ID zariadenia sa nepodarilo načítať automaticky. Zadajte ho ručne — je to MAC adresa Wi-Fi modulu, 12 hexadecimálnych znakov bez oddeľovačov.",
-      "account_expired": "Účet Haier, ktorý je tu už nastavený, sa nepodarilo použiť — jeho prihlásenie vypršalo alebo ho nahradilo prihlásenie inde. Opätovné prihlásenie nižšie to napraví pre všetky pridané klimatizácie."
+      "invalid_auth": "Jednotka odpovedala, ale tento lokálny kľúč jej stav nedešifruje – kľúč je nesprávny, alebo bol zmenený.",
+      "cannot_connect": "Jednotku sa nepodarilo kontaktovať na porte 56800. Skontrolujte IP adresu a to, že je Home Assistant v rovnakej sieti.",
+      "device_id_required": "Jednotka neodpovedala na identifikačný dotaz, takže jej ID zariadenia sa nepodarilo načítať automaticky. Zadajte ho ručne — je to MAC adresa Wi-Fi modulu, 12 hexadecimálnych znakov bez oddeľovačov.",
+      "account_expired": "Účet Haier, ktorý je tu už nastavený, sa nepodarilo použiť — jeho prihlásenie vypršalo alebo ho nahradilo prihlásenie inde. Opätovné prihlásenie nižšie to napraví pre všetky pridané jednotky."
     },
     "abort": {
       "already_configured": "Toto zariadenie je už nakonfigurované.",
       "reauth_successful": "Lokálny kľúč bol aktualizovaný.",
-      "all_configured": "Všetky klimatizácie tohto účtu sú už v Home Assistantovi pridané.",
+      "all_configured": "Všetky jednotky tohto účtu sú už v Home Assistantovi pridané.",
       "unknown": "Neočakávaná chyba – ohlásenie zariadenia nebolo zrozumiteľné.",
-      "no_devices": "Prihlásené ako {username}, ale tento účet Haier nemá žiadne zariadenia. Ak sa do aplikácie prihlasujete cez Google alebo Facebook, najprv v aplikácii zdieľajte klimatizáciu s týmto účtom a potom to skúste znova.",
-      "already_in_progress": "Táto klimatizácia sa už nastavuje.",
-      "account_no_devices": "Účet Haier, ktorý je tu už nastavený, už neuvádza žiadne zariadenia. Skontrolujte, či je klimatizácia v aplikácii Haier stále pod týmto účtom, a skúste to znova."
+      "no_devices": "Prihlásené ako {username}, ale tento účet Haier nemá žiadne zariadenia. Ak sa do aplikácie prihlasujete cez Google alebo Facebook, najprv v aplikácii zdieľajte jednotku s týmto účtom a potom to skúste znova.",
+      "already_in_progress": "Táto jednotka sa už nastavuje.",
+      "account_no_devices": "Účet Haier, ktorý je tu už nastavený, už neuvádza žiadne zariadenia. Skontrolujte, či je jednotka v aplikácii Haier stále pod týmto účtom, a skúste to znova."
     }
   },
   "options": {
@@ -174,7 +174,7 @@
           "scan_interval": "Interval dopytovania na stav (sekundy)"
         },
         "data_description": {
-          "scan_interval": "Ako často sa klimatizácie pýtať na jej stav. Každý dopyt je plnohodnotná lokálna relácia a existuje len preto, aby zachytil zmeny vykonané diaľkovým ovládačom alebo aplikáciou – príkazy odoslané z Home Assistanta sa prejavia okamžite tak či tak."
+          "scan_interval": "Ako často sa jednotky pýtať na jej stav. Každý dopyt je plnohodnotná lokálna relácia a existuje len preto, aby zachytil zmeny vykonané diaľkovým ovládačom alebo aplikáciou – príkazy odoslané z Home Assistanta sa prejavia okamžite tak či tak."
         }
       }
     }
@@ -548,19 +548,19 @@
   "issues": {
     "stale_localkey_manual_reauth": {
       "title": "{name}: localKey zmenený – kľúč treba zadať ručne",
-      "description": "Klimatizácia zmenila svoj lokálny kľúč (v{old} → v{new}) a pre toto zariadenie nie sú uložené prihlasovacie údaje k účtu Haier, takže Home Assistant nemohol kľúč obnoviť sám a musel vás oň požiadať.\n\nAby sa to neopakovalo, otvorte zariadenie, zvoľte **Znova nastaviť** a pridajte svoj účet Haier. Kľúč sa potom bude pri každej zmene obnovovať sám."
+      "description": "Jednotka zmenila svoj lokálny kľúč (v{old} → v{new}) a pre toto zariadenie nie sú uložené prihlasovacie údaje k účtu Haier, takže Home Assistant nemohol kľúč obnoviť sám a musel vás oň požiadať.\n\nAby sa to neopakovalo, otvorte zariadenie, zvoľte **Znova nastaviť** a pridajte svoj účet Haier. Kľúč sa potom bude pri každej zmene obnovovať sám."
     },
     "unknown_report_layout": {
-      "title": "{name}: formát stavu tejto klimatizácie zatiaľ nie je rozpoznaný",
+      "title": "{name}: formát stavu tejto jednotky zatiaľ nie je rozpoznaný",
       "description": "{name} posiela hlásenie o stave s dĺžkou {length} bajtov, pre ktoré táto integrácia nemá potvrdené rozloženie (kód produktu: {product_code}).\n\nTeplota, režim, rýchlosť ventilátora a zapnutie/vypnutie naďalej fungujú. Vnútorná a vonkajšia teplota nie sú dostupné a odosielanie príkazov je vypnuté – hádať, kde v neznámom formáte ležia nastavenia, hrozí zápisom nameranej hodnoty späť do jednotky ako nastavenia.\n\nPridanie podpory nevyžaduje kód, stačia tri krátke záznamy od vás. Postupujte podľa odkazovaného návodu a založte hlásenie; zvyčajne ide o opravu na jednom riadku."
     },
     "key_will_rotate": {
       "title": "{name}: kľúč sa zmení a toto nastavenie ho nedokáže nasledovať",
-      "description": "Táto klimatizácia stále dosiahne na servery Haier, takže dostáva nový lokálny kľúč niekoľkokrát denne. Bola pridaná bez účtu Haier, takže Home Assistant nový kľúč nezíska — pri najbližšom reštarte po zmene kľúča zariadenie prestane fungovať a bude to vyzerať, že prišlo o konfiguráciu.\n\nDve trvalé riešenia, obe vykonajte, kým všetko funguje:\n\n- **Pridajte účet Haier**: Nastavenia → Zariadenia a služby → Haismart → zariadenie → Znovu nastaviť → *Pridať účet Haier*. Zmeny kľúča sa potom sťahujú automaticky.\n- **Alebo zariadeniu na smerovači zablokujte prístup na internet**. Kľúč sa potom prestane meniť a ten, ktorý máte, zostane platný. Miestne ovládanie v oboch prípadoch funguje ďalej.\n\nTáto správa zmizne sama, len čo bude platiť jedno z toho."
+      "description": "Táto jednotka stále dosiahne na servery Haier, takže dostáva nový lokálny kľúč niekoľkokrát denne. Bola pridaná bez účtu Haier, takže Home Assistant nový kľúč nezíska — pri najbližšom reštarte po zmene kľúča zariadenie prestane fungovať a bude to vyzerať, že prišlo o konfiguráciu.\n\nDve trvalé riešenia, obe vykonajte, kým všetko funguje:\n\n- **Pridajte účet Haier**: Nastavenia → Zariadenia a služby → Haismart → zariadenie → Znovu nastaviť → *Pridať účet Haier*. Zmeny kľúča sa potom sťahujú automaticky.\n- **Alebo zariadeniu na smerovači zablokujte prístup na internet**. Kľúč sa potom prestane meniť a ten, ktorý máte, zostane platný. Miestne ovládanie v oboch prípadoch funguje ďalej.\n\nTáto správa zmizne sama, len čo bude platiť jedno z toho."
     },
     "key_refresh_failed": {
       "title": "{name}: kľúč sa zmenil a automatické načítanie nefungovalo",
-      "description": "Klimatizácia dostala nový lokálny kľúč (v{old} → v{new}). Váš účet Haier je pri tomto zariadení uložený, takže Home Assistant sa pokúsil nový kľúč získať sám — a nepodarilo sa mu to, preto sa obrátil na vás.\n\n**Údaje k účtu už sú uložené, nie je čo pridávať.** Opätovné prihlásenie z výzvy to teraz vyrieši. Ak sa problém vracia, automatická cesta je blokovaná, nie zle nastavená; obvyklé príčiny:\n\n- Smerovač alebo poskytovateľ blokuje službu kľúčov Haier, zatiaľ čo bežné prihlásenie stále funguje.\n- Uložené prihlásenie sa už neprijíma — prihlásenie v aplikácii Haier môže ukončiť ostatné relácie. Opätovné prihlásenie tu ho obnoví.\n\n**Trvalé riešenie:** zablokujte klimatizácii prístup na internet na smerovači. Kľúč sa prestane meniť a ten, ktorý máte, zostane platný natrvalo — pozrite README. Miestne ovládanie zostáva nezmenené."
+      "description": "Jednotka dostala nový lokálny kľúč (v{old} → v{new}). Váš účet Haier je pri tomto zariadení uložený, takže Home Assistant sa pokúsil nový kľúč získať sám — a nepodarilo sa mu to, preto sa obrátil na vás.\n\n**Údaje k účtu už sú uložené, nie je čo pridávať.** Opätovné prihlásenie z výzvy to teraz vyrieši. Ak sa problém vracia, automatická cesta je blokovaná, nie zle nastavená; obvyklé príčiny:\n\n- Smerovač alebo poskytovateľ blokuje službu kľúčov Haier, zatiaľ čo bežné prihlásenie stále funguje.\n- Uložené prihlásenie sa už neprijíma — prihlásenie v aplikácii Haier môže ukončiť ostatné relácie. Opätovné prihlásenie tu ho obnoví.\n\n**Trvalé riešenie:** zablokujte jednotke prístup na internet na smerovači. Kľúč sa prestane meniť a ten, ktorý máte, zostane platný natrvalo — pozrite README. Miestne ovládanie zostáva nezmenené."
     }
   },
   "exceptions": {

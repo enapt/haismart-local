@@ -1,10 +1,10 @@
 {
   "config": {
-    "flow_title": "Điều hòa Haier {device_id}",
+    "flow_title": "Thiết bị Haier {device_id}",
     "step": {
       "user": {
-        "title": "Thêm điều hòa Haier",
-        "description": "Đăng nhập là cách được khuyến nghị: Home Assistant lấy khóa cục bộ, tìm máy trong mạng của bạn và đọc model của nó, nên bạn không phải dán gì cả. Từ đó nó giao tiếp trực tiếp với điều hòa — và sau khi cài đặt xong, bạn có thể chặn hoàn toàn máy truy cập internet; xem README về việc hoàn toàn độc lập với đám mây.\n\nTài khoản Google/Facebook: hãy tạo một tài khoản Haier riêng bằng email và mật khẩu, chia sẻ điều hòa của bạn cho tài khoản đó trong ứng dụng, rồi đăng nhập bằng tài khoản ấy.",
+        "title": "Thêm thiết bị Haier",
+        "description": "Đăng nhập là cách được khuyến nghị: Home Assistant lấy khóa cục bộ, tìm máy trong mạng của bạn và đọc model của nó, nên bạn không phải dán gì cả. Từ đó nó giao tiếp trực tiếp với thiết bị — và sau khi cài đặt xong, bạn có thể chặn hoàn toàn máy truy cập internet; xem README về việc hoàn toàn độc lập với đám mây.\n\nTài khoản Google/Facebook: hãy tạo một tài khoản Haier riêng bằng email và mật khẩu, chia sẻ thiết bị của bạn cho tài khoản đó trong ứng dụng, rồi đăng nhập bằng tài khoản ấy.",
         "menu_options": {
           "account": "Dùng tài khoản Haier đã thêm (không phải nhập gì)",
           "login": "Đăng nhập bằng tài khoản Haier (khuyến nghị)",
@@ -13,7 +13,7 @@
       },
       "login": {
         "title": "Đăng nhập tài khoản Haier của bạn",
-        "description": "Dùng đúng tài khoản bạn dùng trong ứng dụng Haier / Haismart. Việc đăng nhập chỉ diễn ra một lần — sau đó Home Assistant chỉ giao tiếp với điều hòa trong mạng của bạn.\n\nBạn đang đăng nhập bằng Google hoặc Facebook? Những tài khoản đó không có mật khẩu. Hãy tạo một tài khoản Haier bằng email và mật khẩu, chia sẻ điều hòa sang tài khoản đó trong ứng dụng, rồi đăng nhập bằng tài khoản đó tại đây.",
+        "description": "Dùng đúng tài khoản bạn dùng trong ứng dụng Haier / Haismart. Việc đăng nhập chỉ diễn ra một lần — sau đó Home Assistant chỉ giao tiếp với thiết bị trong mạng của bạn.\n\nBạn đang đăng nhập bằng Google hoặc Facebook? Những tài khoản đó không có mật khẩu. Hãy tạo một tài khoản Haier bằng email và mật khẩu, chia sẻ thiết bị sang tài khoản đó trong ứng dụng, rồi đăng nhập bằng tài khoản đó tại đây.",
         "data": {
           "username": "Email hoặc số điện thoại",
           "password": "Mật khẩu",
@@ -22,7 +22,7 @@
         "data_description": {
           "username": "Thông tin nào bạn dùng để đăng nhập ứng dụng Haier.",
           "password": "Mật khẩu tài khoản Haier của bạn — không phải mật khẩu Home Assistant.",
-          "zone_info": "Quốc gia bạn đã chọn khi tạo tài khoản Haier, không nhất thiết là nơi lắp đặt điều hòa hay nơi bạn đang sống. Home Assistant đã chọn sẵn quốc gia trong cấu hình của bạn; hãy đổi lại nếu tài khoản được đăng ký ở nơi khác."
+          "zone_info": "Quốc gia bạn đã chọn khi tạo tài khoản Haier, không nhất thiết là nơi lắp đặt thiết bị hay nơi bạn đang sống. Home Assistant đã chọn sẵn quốc gia trong cấu hình của bạn; hãy đổi lại nếu tài khoản được đăng ký ở nơi khác."
         }
       },
       "pick_device": {
@@ -30,11 +30,11 @@
         "data": {
           "device_id": "Thiết bị"
         },
-        "description": "Chọn điều hòa cần thêm. Khóa của nó được lấy từ đám mây và địa chỉ IP được tìm thấy trong mạng của bạn một cách tự động — bạn không cần dán bất cứ thứ gì."
+        "description": "Chọn thiết bị cần thêm. Khóa của nó được lấy từ đám mây và địa chỉ IP được tìm thấy trong mạng của bạn một cách tự động — bạn không cần dán bất cứ thứ gì."
       },
       "manual": {
         "title": "Thông tin thiết bị",
-        "description": "Thứ duy nhất bạn cần là khóa cục bộ của máy này — từ cảm biến “Khóa cục bộ” của lần cài đặt trước, hoặc từ bản sao lưu. Home Assistant sẽ tìm điều hòa trong mạng của bạn và hỏi chính nó mọi thứ còn lại.\n\nKhông có cách nào đọc khóa từ chính chiếc máy. Nếu bạn không lưu khóa nào, hãy quay lại và đăng nhập — cách đó sẽ lấy khóa giúp bạn.",
+        "description": "Thứ duy nhất bạn cần là khóa cục bộ của máy này — từ cảm biến “Khóa cục bộ” của lần cài đặt trước, hoặc từ bản sao lưu. Home Assistant sẽ tìm thiết bị trong mạng của bạn và hỏi chính nó mọi thứ còn lại.\n\nKhông có cách nào đọc khóa từ chính chiếc máy. Nếu bạn không lưu khóa nào, hãy quay lại và đăng nhập — cách đó sẽ lấy khóa giúp bạn.",
         "data": {
           "host": "Địa chỉ IP",
           "device_id": "ID thiết bị",
@@ -42,24 +42,24 @@
           "name": "Tên"
         },
         "data_description": {
-          "host": "Địa chỉ IP của điều hòa trong mạng của bạn, ví dụ 192.168.1.50. Đặt trước DHCP sẽ giữ cho địa chỉ không thay đổi.",
-          "device_id": "Thường để trống — thông tin này được hỏi trực tiếp từ điều hòa. Đó là địa chỉ MAC Wi-Fi của mô-đun, nếu có lúc bạn cần nhập.",
-          "local_key": "Khóa 32 ký tự mà điều hòa dùng để mã hóa trạng thái của nó. Khóa do đám mây của Haier cấp riêng cho từng thiết bị — luồng Đăng nhập sẽ lấy giúp bạn.",
-          "name": "Tùy chọn. Tên gọi của điều hòa này trong Home Assistant."
+          "host": "Địa chỉ IP của thiết bị trong mạng của bạn, ví dụ 192.168.1.50. Đặt trước DHCP sẽ giữ cho địa chỉ không thay đổi.",
+          "device_id": "Thường để trống — thông tin này được hỏi trực tiếp từ thiết bị. Đó là địa chỉ MAC Wi-Fi của mô-đun, nếu có lúc bạn cần nhập.",
+          "local_key": "Khóa 32 ký tự mà thiết bị dùng để mã hóa trạng thái của nó. Khóa do đám mây của Haier cấp riêng cho từng thiết bị — luồng Đăng nhập sẽ lấy giúp bạn.",
+          "name": "Tùy chọn. Tên gọi của thiết bị này trong Home Assistant."
         }
       },
       "reauth_confirm": {
         "title": "Khóa cục bộ đã được thay đổi",
-        "description": "Điều hòa {device_id} báo một phiên bản localKey mới hơn — khóa đã lưu không còn giải mã được trạng thái của nó. Hãy nhập localKey hiện tại của điều hòa để kết nối lại.",
+        "description": "Thiết bị {device_id} báo một phiên bản localKey mới hơn — khóa đã lưu không còn giải mã được trạng thái của nó. Hãy nhập localKey hiện tại của thiết bị để kết nối lại.",
         "data": {
           "local_key": "Khóa cục bộ (32 ký tự hex)"
         },
         "data_description": {
-          "local_key": "Bật cảm biến chẩn đoán Khóa cục bộ trên trang thiết bị để đọc khóa hiện tại, hoặc thêm lại điều hòa bằng tài khoản Haier của bạn để khóa được lấy tự động."
+          "local_key": "Bật cảm biến chẩn đoán Khóa cục bộ trên trang thiết bị để đọc khóa hiện tại, hoặc thêm lại thiết bị bằng tài khoản Haier của bạn để khóa được lấy tự động."
         }
       },
       "host": {
-        "title": "Nhập địa chỉ IP của điều hòa",
+        "title": "Nhập địa chỉ IP của thiết bị",
         "description": "Đã đăng nhập và khóa đã được lấy tự động — chỉ là Home Assistant không tự tìm được {device} trong mạng. Hãy nhập địa chỉ IP nội bộ của nó (ví dụ 192.168.1.50). Mẹo: đặt trước DHCP sẽ giữ địa chỉ ổn định.",
         "data": {
           "host": "Địa chỉ IP"
@@ -70,14 +70,14 @@
       },
       "key_failed": {
         "title": "Không thể lấy khóa tự động",
-        "description": "Home Assistant đã đăng nhập, nhưng không lấy được khóa cục bộ của điều hòa này từ máy chủ Haier — hoặc khóa nhận được không giải mã được trạng thái của máy.{note}\n\nĐiều này thường chỉ là tạm thời, nên thử lại thường có ích. Nếu vẫn lỗi, bạn có thể nhập thông tin thủ công, tuy nhiên khóa không thể đọc được từ máy — bạn sẽ cần lấy từ cảm biến “Khóa cục bộ” của lần cài đặt trước hoặc từ bản sao lưu.",
+        "description": "Home Assistant đã đăng nhập, nhưng không lấy được khóa cục bộ của thiết bị này từ máy chủ Haier — hoặc khóa nhận được không giải mã được trạng thái của máy.{note}\n\nĐiều này thường chỉ là tạm thời, nên thử lại thường có ích. Nếu vẫn lỗi, bạn có thể nhập thông tin thủ công, tuy nhiên khóa không thể đọc được từ máy — bạn sẽ cần lấy từ cảm biến “Khóa cục bộ” của lần cài đặt trước hoặc từ bản sao lưu.",
         "menu_options": {
           "key_retry": "Thử lấy khóa lại",
           "manual": "Tự nhập thông tin thay thế"
         }
       },
       "reconfigure": {
-        "title": "Cấu hình lại điều hòa này",
+        "title": "Cấu hình lại thiết bị này",
         "description": "Thay đổi cách Home Assistant kết nối tới máy này mà không phải xóa đi và mất lịch sử của nó.",
         "menu_options": {
           "reconfigure_host": "Đổi địa chỉ IP",
@@ -86,7 +86,7 @@
       },
       "reconfigure_host": {
         "title": "Đổi địa chỉ IP",
-        "description": "Địa chỉ mới sẽ được kiểm tra với điều hòa trước khi lưu.",
+        "description": "Địa chỉ mới sẽ được kiểm tra với thiết bị trước khi lưu.",
         "data": {
           "host": "Địa chỉ IP"
         },
@@ -96,18 +96,18 @@
       },
       "reconfigure_cloud": {
         "title": "Thêm tài khoản Haier của bạn",
-        "description": "Điều hòa này được thêm thủ công, nên Home Assistant không có cách nào làm mới khóa khi Haier thay đổi nó — đó là lý do thỉnh thoảng bạn bị hỏi khóa mới. Chỉ cần đăng nhập một lần và từ đó khóa sẽ tự làm mới.",
+        "description": "Thiết bị này được thêm thủ công, nên Home Assistant không có cách nào làm mới khóa khi Haier thay đổi nó — đó là lý do thỉnh thoảng bạn bị hỏi khóa mới. Chỉ cần đăng nhập một lần và từ đó khóa sẽ tự làm mới.",
         "data": {
           "username": "Email hoặc số điện thoại",
           "password": "Mật khẩu",
           "zone_info": "Quốc gia nơi tài khoản Haier của bạn được đăng ký"
         },
         "data_description": {
-          "zone_info": "Quốc gia nơi tài khoản được tạo, có thể không phải nơi bạn sống hay nơi lắp đặt điều hòa."
+          "zone_info": "Quốc gia nơi tài khoản được tạo, có thể không phải nơi bạn sống hay nơi lắp đặt thiết bị."
         }
       },
       "reauth": {
-        "title": "Điều hòa này cần một khóa mới",
+        "title": "Thiết bị này cần một khóa mới",
         "description": "Haier đã thay khóa cục bộ của máy này, nên Home Assistant không còn đọc được trạng thái của nó. Đăng nhập lại sẽ lấy khóa mới giúp bạn — hầu như luôn là lựa chọn đúng. Việc tự nhập khóa chỉ hữu ích nếu bạn đã có sẵn khóa.",
         "menu_options": {
           "reauth_cloud": "Đăng nhập và lấy khóa mới tự động",
@@ -124,7 +124,7 @@
       },
       "model": {
         "title": "Đây là model nào?",
-        "description": "Điều hòa đã cho biết nó thuộc dòng sản phẩm nào, thu hẹp lại còn các model dưới đây. Hãy chọn model được in trên máy hoặc trên nhãn của máy.\n\nViệc chọn sẽ mở khóa tên các lỗi, quy tắc khả dụng và danh sách tính năng thực tế của máy này. Bỏ qua cũng không sao — điều hòa vẫn đọc và điều khiển được đầy đủ.",
+        "description": "Thiết bị đã cho biết nó thuộc dòng sản phẩm nào, thu hẹp lại còn các model dưới đây. Hãy chọn model được in trên máy hoặc trên nhãn của máy.\n\nViệc chọn sẽ mở khóa tên các lỗi, quy tắc khả dụng và danh sách tính năng thực tế của máy này. Bỏ qua cũng không sao — thiết bị vẫn đọc và điều khiển được đầy đủ.",
         "data": {
           "product_code": "Model"
         },
@@ -133,37 +133,37 @@
         }
       },
       "pick_local": {
-        "title": "Điều hòa tìm thấy trong mạng của bạn",
+        "title": "Thiết bị tìm thấy trong mạng của bạn",
         "description": "Những máy này đã phản hồi trong mạng của bạn, nên địa chỉ và ID của chúng đã được biết — bạn chỉ cần khóa cục bộ.\n\nKhông thấy máy của bạn? Hãy quay lại, khi đó hệ thống sẽ hỏi địa chỉ IP. Các máy đã thêm sẽ không hiển thị.",
         "data": {
-          "host": "Điều hòa"
+          "host": "Thiết bị"
         }
       },
       "discovery_confirm": {
-        "title": "Thiết lập máy điều hòa này",
-        "description": "Home Assistant đã tìm thấy một máy điều hòa Haier tại {host} (`{device_id}`).\n\nKhóa cục bộ của máy sẽ được lấy từ tài khoản Haier bạn đã thêm, nên không phải nhập gì. Chọn **Gửi** để thêm máy."
+        "title": "Thiết lập máy thiết bị này",
+        "description": "Home Assistant đã tìm thấy một máy thiết bị Haier tại {host} (`{device_id}`).\n\nKhóa cục bộ của máy sẽ được lấy từ tài khoản Haier bạn đã thêm, nên không phải nhập gì. Chọn **Gửi** để thêm máy."
       }
     },
     "error": {
-      "account_not_in_region": "Không tìm thấy tài khoản Haier “{username}” ở quốc gia bạn đã chọn (+{zone}). Đây là quốc gia nơi tài khoản được đăng ký, có thể không phải nơi bạn sống hay nơi đặt điều hòa. Hãy chọn đúng quốc gia rồi thử lại. Nếu điều hòa của bạn dùng ứng dụng hOn hoặc Haier China, tích hợp này hoàn toàn không thể đăng nhập vào những tài khoản đó.",
+      "account_not_in_region": "Không tìm thấy tài khoản Haier “{username}” ở quốc gia bạn đã chọn (+{zone}). Đây là quốc gia nơi tài khoản được đăng ký, có thể không phải nơi bạn sống hay nơi đặt thiết bị. Hãy chọn đúng quốc gia rồi thử lại. Nếu thiết bị của bạn dùng ứng dụng hOn hoặc Haier China, tích hợp này hoàn toàn không thể đăng nhập vào những tài khoản đó.",
       "missing_field": "Haier từ chối đăng nhập vì có một trường bị thiếu hoặc để trống.",
       "cloud_auth": "Đăng nhập thất bại. Hãy kiểm tra lại email hoặc số điện thoại và mật khẩu của bạn.",
       "cannot_connect_cloud": "Đăng nhập thành công, nhưng không kết nối được tới máy chủ Haier để liệt kê thiết bị của bạn. Việc này thường chỉ là tạm thời — hãy thử lại sau ít phút.",
       "cloud_unreachable": "Không kết nối được tới máy chủ Haier. Hãy kiểm tra Home Assistant có truy cập được Internet và phân giải được địa chỉ của Haier không — sự cố DNS hoặc tường lửa trên máy chạy Home Assistant trông đúng như thế này — rồi thử lại.",
       "invalid_key": "Khóa cục bộ phải là một chuỗi hex gồm 32 ký tự.",
-      "invalid_auth": "Điều hòa có phản hồi, nhưng khóa cục bộ này không giải mã được trạng thái của nó — khóa sai, hoặc đã bị thay đổi.",
-      "cannot_connect": "Không kết nối được tới điều hòa ở cổng 56800. Hãy kiểm tra địa chỉ IP, và bảo đảm Home Assistant ở cùng mạng.",
-      "device_id_required": "Điều hòa không phản hồi truy vấn nhận dạng, nên không thể đọc tự động ID thiết bị. Hãy nhập thủ công — đó là địa chỉ MAC Wi-Fi của mô-đun, 12 ký tự thập lục phân không có dấu phân cách.",
-      "account_expired": "Không dùng được tài khoản Haier đã thiết lập ở đây — phiên đăng nhập đã hết hạn, hoặc một lần đăng nhập ở nơi khác đã thay thế nó. Đăng nhập lại bên dưới sẽ khắc phục cho mọi máy điều hòa bạn đã thêm."
+      "invalid_auth": "Thiết bị có phản hồi, nhưng khóa cục bộ này không giải mã được trạng thái của nó — khóa sai, hoặc đã bị thay đổi.",
+      "cannot_connect": "Không kết nối được tới thiết bị ở cổng 56800. Hãy kiểm tra địa chỉ IP, và bảo đảm Home Assistant ở cùng mạng.",
+      "device_id_required": "Thiết bị không phản hồi truy vấn nhận dạng, nên không thể đọc tự động ID thiết bị. Hãy nhập thủ công — đó là địa chỉ MAC Wi-Fi của mô-đun, 12 ký tự thập lục phân không có dấu phân cách.",
+      "account_expired": "Không dùng được tài khoản Haier đã thiết lập ở đây — phiên đăng nhập đã hết hạn, hoặc một lần đăng nhập ở nơi khác đã thay thế nó. Đăng nhập lại bên dưới sẽ khắc phục cho mọi máy thiết bị bạn đã thêm."
     },
     "abort": {
       "already_configured": "Thiết bị này đã được cấu hình.",
       "reauth_successful": "Khóa cục bộ đã được cập nhật.",
-      "all_configured": "Tất cả điều hòa của tài khoản này đã được thêm vào Home Assistant.",
+      "all_configured": "Tất cả thiết bị của tài khoản này đã được thêm vào Home Assistant.",
       "unknown": "Lỗi ngoài dự kiến — không hiểu được thông báo tự giới thiệu của thiết bị.",
-      "no_devices": "Đã đăng nhập với tên {username}, nhưng tài khoản Haier này không có thiết bị nào. Nếu bạn đăng nhập ứng dụng bằng Google hoặc Facebook, hãy chia sẻ điều hòa sang tài khoản này trong ứng dụng trước, rồi thử lại.",
-      "already_in_progress": "Điều hòa này đang trong quá trình thiết lập.",
-      "account_no_devices": "Tài khoản Haier đã thiết lập ở đây không còn liệt kê thiết bị nào. Hãy kiểm tra máy điều hòa vẫn nằm trong ứng dụng Haier với tài khoản này, rồi thử lại."
+      "no_devices": "Đã đăng nhập với tên {username}, nhưng tài khoản Haier này không có thiết bị nào. Nếu bạn đăng nhập ứng dụng bằng Google hoặc Facebook, hãy chia sẻ thiết bị sang tài khoản này trong ứng dụng trước, rồi thử lại.",
+      "already_in_progress": "Thiết bị này đang trong quá trình thiết lập.",
+      "account_no_devices": "Tài khoản Haier đã thiết lập ở đây không còn liệt kê thiết bị nào. Hãy kiểm tra máy thiết bị vẫn nằm trong ứng dụng Haier với tài khoản này, rồi thử lại."
     }
   },
   "options": {
@@ -174,7 +174,7 @@
           "scan_interval": "Chu kỳ đọc trạng thái (giây)"
         },
         "data_description": {
-          "scan_interval": "Tần suất hỏi trạng thái của điều hòa. Mỗi lần đọc là một phiên cục bộ đầy đủ, và chỉ nhằm phát hiện những thay đổi thực hiện bằng điều khiển từ xa hoặc ứng dụng — các lệnh bạn gửi từ Home Assistant vẫn cập nhật ngay lập tức."
+          "scan_interval": "Tần suất hỏi trạng thái của thiết bị. Mỗi lần đọc là một phiên cục bộ đầy đủ, và chỉ nhằm phát hiện những thay đổi thực hiện bằng điều khiển từ xa hoặc ứng dụng — các lệnh bạn gửi từ Home Assistant vẫn cập nhật ngay lập tức."
         }
       }
     }
@@ -548,19 +548,19 @@
   "issues": {
     "stale_localkey_manual_reauth": {
       "title": "{name}: localKey đã thay đổi — cần nhập lại khóa thủ công",
-      "description": "Điều hòa đã thay khóa cục bộ của nó (v{old} → v{new}) và thiết bị này không lưu thông tin tài khoản Haier, nên Home Assistant không thể tự làm mới khóa và phải hỏi bạn.\n\nĐể việc này không lặp lại, hãy mở thiết bị, chọn **Cấu hình lại**, và thêm tài khoản Haier của bạn. Từ đó khóa sẽ tự làm mới mỗi lần thay đổi."
+      "description": "Thiết bị đã thay khóa cục bộ của nó (v{old} → v{new}) và thiết bị này không lưu thông tin tài khoản Haier, nên Home Assistant không thể tự làm mới khóa và phải hỏi bạn.\n\nĐể việc này không lặp lại, hãy mở thiết bị, chọn **Cấu hình lại**, và thêm tài khoản Haier của bạn. Từ đó khóa sẽ tự làm mới mỗi lần thay đổi."
     },
     "unknown_report_layout": {
-      "title": "{name}: định dạng trạng thái của điều hòa này chưa được nhận diện",
+      "title": "{name}: định dạng trạng thái của thiết bị này chưa được nhận diện",
       "description": "{name} gửi báo cáo trạng thái dài {length} byte, mà tích hợp này chưa có bố cục đã xác nhận cho nó (mã sản phẩm: {product_code}).\n\nNhiệt độ, chế độ, tốc độ quạt và bật/tắt vẫn hoạt động. Nhiệt độ trong nhà và ngoài trời không khả dụng, và việc gửi lệnh bị vô hiệu hóa — đoán vị trí các thiết lập trong một định dạng chưa biết có nguy cơ ghi ngược giá trị đọc từ cảm biến vào máy như một thiết lập.\n\nViệc bổ sung hỗ trợ không cần viết mã, chỉ cần ba bản ghi ngắn từ bạn. Hãy làm theo hướng dẫn được liên kết và mở một báo cáo; thường chỉ cần sửa một dòng."
     },
     "key_will_rotate": {
       "title": "{name}: khóa sẽ thay đổi và thiết lập này không theo kịp",
-      "description": "Điều hòa này vẫn kết nối được tới máy chủ Haier, nên được cấp khóa cục bộ mới vài lần mỗi ngày. Máy được thêm mà không có tài khoản Haier, nên Home Assistant không thể lấy khóa mới — lần khởi động lại kế tiếp sau khi khóa đổi, máy sẽ ngừng hoạt động và trông như đã mất cấu hình.\n\nHai cách khắc phục lâu dài, nên làm ngay khi mọi thứ còn hoạt động:\n\n- **Thêm tài khoản Haier của bạn**: Cài đặt → Thiết bị và dịch vụ → Haismart → thiết bị → Cấu hình lại → *Thêm tài khoản Haier*. Khóa đổi sẽ được lấy tự động.\n- **Hoặc chặn máy truy cập internet** trên bộ định tuyến. Khóa sẽ ngừng thay đổi và khóa bạn đang có vẫn hợp lệ. Điều khiển cục bộ không bị ảnh hưởng trong cả hai trường hợp.\n\nThông báo này tự biến mất ngay khi một trong hai điều trên thành hiện thực."
+      "description": "Thiết bị này vẫn kết nối được tới máy chủ Haier, nên được cấp khóa cục bộ mới vài lần mỗi ngày. Máy được thêm mà không có tài khoản Haier, nên Home Assistant không thể lấy khóa mới — lần khởi động lại kế tiếp sau khi khóa đổi, máy sẽ ngừng hoạt động và trông như đã mất cấu hình.\n\nHai cách khắc phục lâu dài, nên làm ngay khi mọi thứ còn hoạt động:\n\n- **Thêm tài khoản Haier của bạn**: Cài đặt → Thiết bị và dịch vụ → Haismart → thiết bị → Cấu hình lại → *Thêm tài khoản Haier*. Khóa đổi sẽ được lấy tự động.\n- **Hoặc chặn máy truy cập internet** trên bộ định tuyến. Khóa sẽ ngừng thay đổi và khóa bạn đang có vẫn hợp lệ. Điều khiển cục bộ không bị ảnh hưởng trong cả hai trường hợp.\n\nThông báo này tự biến mất ngay khi một trong hai điều trên thành hiện thực."
     },
     "key_refresh_failed": {
       "title": "{name}: khóa đã đổi và việc tự động lấy khóa không thành công",
-      "description": "Điều hòa được cấp khóa cục bộ mới (v{old} → v{new}). Tài khoản Haier của bạn đã lưu cho thiết bị này, nên Home Assistant đã thử tự lấy khóa mới — nhưng không được, vì vậy nó hỏi bạn.\n\n**Thông tin tài khoản đã được lưu, không cần thêm gì cả.** Đăng nhập lại từ lời nhắc sẽ khắc phục ngay. Nếu vẫn lặp lại, đường tự động đang bị chặn chứ không phải cấu hình sai; các nguyên nhân thường gặp:\n\n- Bộ định tuyến hoặc nhà mạng chặn dịch vụ khóa của Haier, trong khi đăng nhập thông thường vẫn hoạt động.\n- Phiên đăng nhập đã lưu không còn được chấp nhận — đăng nhập vào ứng dụng Haier có thể kết thúc các phiên khác. Đăng nhập lại ở đây sẽ khôi phục.\n\n**Cách khắc phục lâu dài:** chặn điều hòa truy cập internet trên bộ định tuyến. Khóa sẽ ngừng thay đổi và khóa bạn đang có vẫn hợp lệ vô thời hạn — xem README. Điều khiển cục bộ không bị ảnh hưởng."
+      "description": "Thiết bị được cấp khóa cục bộ mới (v{old} → v{new}). Tài khoản Haier của bạn đã lưu cho thiết bị này, nên Home Assistant đã thử tự lấy khóa mới — nhưng không được, vì vậy nó hỏi bạn.\n\n**Thông tin tài khoản đã được lưu, không cần thêm gì cả.** Đăng nhập lại từ lời nhắc sẽ khắc phục ngay. Nếu vẫn lặp lại, đường tự động đang bị chặn chứ không phải cấu hình sai; các nguyên nhân thường gặp:\n\n- Bộ định tuyến hoặc nhà mạng chặn dịch vụ khóa của Haier, trong khi đăng nhập thông thường vẫn hoạt động.\n- Phiên đăng nhập đã lưu không còn được chấp nhận — đăng nhập vào ứng dụng Haier có thể kết thúc các phiên khác. Đăng nhập lại ở đây sẽ khôi phục.\n\n**Cách khắc phục lâu dài:** chặn thiết bị truy cập internet trên bộ định tuyến. Khóa sẽ ngừng thay đổi và khóa bạn đang có vẫn hợp lệ vô thời hạn — xem README. Điều khiển cục bộ không bị ảnh hưởng."
     }
   },
   "exceptions": {

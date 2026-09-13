@@ -1,10 +1,10 @@
 {
   "config": {
-    "flow_title": "AC Haier {device_id}",
+    "flow_title": "perangkat Haier {device_id}",
     "step": {
       "user": {
-        "title": "Tambahkan AC Haier",
-        "description": "Masuk adalah cara yang disarankan: Home Assistant mengambil kunci lokal, menemukan unit di jaringan Anda, dan membaca modelnya, jadi tidak ada yang perlu ditempel. Setelah itu ia berbicara langsung dengan AC — dan begitu selesai disiapkan, Anda dapat memblokir akses internet unit sepenuhnya; lihat README tentang menjadi sepenuhnya mandiri dari cloud.\n\nAkun Google/Facebook: buat akun Haier terpisah dengan email dan kata sandi, bagikan AC Anda ke akun itu di aplikasi, lalu masuk dengan akun tersebut.",
+        "title": "Tambahkan perangkat Haier",
+        "description": "Masuk adalah cara yang disarankan: Home Assistant mengambil kunci lokal, menemukan unit di jaringan Anda, dan membaca modelnya, jadi tidak ada yang perlu ditempel. Setelah itu ia berbicara langsung dengan perangkat — dan begitu selesai disiapkan, Anda dapat memblokir akses internet unit sepenuhnya; lihat README tentang menjadi sepenuhnya mandiri dari cloud.\n\nAkun Google/Facebook: buat akun Haier terpisah dengan email dan kata sandi, bagikan perangkat Anda ke akun itu di aplikasi, lalu masuk dengan akun tersebut.",
         "menu_options": {
           "account": "Gunakan akun Haier yang sudah ditambahkan (tidak perlu mengetik apa pun)",
           "login": "Masuk dengan akun Haier Anda (disarankan)",
@@ -13,7 +13,7 @@
       },
       "login": {
         "title": "Masuk ke akun Haier Anda",
-        "description": "Gunakan akun yang sama seperti di aplikasi Haier / Haismart. Proses masuk hanya dilakukan sekali — setelah itu, Home Assistant hanya berkomunikasi dengan AC di jaringan Anda.\n\nMasuk dengan Google atau Facebook? Akun tersebut tidak memiliki kata sandi. Buat akun Haier dengan email dan kata sandi, bagikan AC ke akun itu di aplikasi, lalu masuk dengan akun tersebut di sini.",
+        "description": "Gunakan akun yang sama seperti di aplikasi Haier / Haismart. Proses masuk hanya dilakukan sekali — setelah itu, Home Assistant hanya berkomunikasi dengan perangkat di jaringan Anda.\n\nMasuk dengan Google atau Facebook? Akun tersebut tidak memiliki kata sandi. Buat akun Haier dengan email dan kata sandi, bagikan perangkat ke akun itu di aplikasi, lalu masuk dengan akun tersebut di sini.",
         "data": {
           "username": "Email atau nomor telepon",
           "password": "Kata sandi",
@@ -22,7 +22,7 @@
         "data_description": {
           "username": "Yang mana pun yang Anda gunakan untuk masuk ke aplikasi Haier.",
           "password": "Kata sandi akun Haier Anda — bukan kata sandi Home Assistant.",
-          "zone_info": "Negara yang Anda pilih saat membuat akun Haier, yang belum tentu sama dengan lokasi pemasangan AC atau tempat tinggal Anda sekarang. Home Assistant telah memilih negara yang dikonfigurasi untuk Anda; ubah jika akun Anda didaftarkan di negara lain."
+          "zone_info": "Negara yang Anda pilih saat membuat akun Haier, yang belum tentu sama dengan lokasi pemasangan perangkat atau tempat tinggal Anda sekarang. Home Assistant telah memilih negara yang dikonfigurasi untuk Anda; ubah jika akun Anda didaftarkan di negara lain."
         }
       },
       "pick_device": {
@@ -30,11 +30,11 @@
         "data": {
           "device_id": "Perangkat"
         },
-        "description": "Pilih AC yang ingin ditambahkan. Kuncinya diambil dari cloud dan alamat IP-nya ditemukan di jaringan Anda secara otomatis — Anda tidak perlu menempelkan apa pun."
+        "description": "Pilih perangkat yang ingin ditambahkan. Kuncinya diambil dari cloud dan alamat IP-nya ditemukan di jaringan Anda secara otomatis — Anda tidak perlu menempelkan apa pun."
       },
       "manual": {
         "title": "Detail perangkat",
-        "description": "Satu-satunya yang Anda perlukan adalah kunci lokal unit ini — dari sensor “Kunci lokal” pemasangan sebelumnya, atau dari cadangan. Home Assistant mencari AC di jaringan Anda dan menanyakan sisanya langsung kepada perangkat.\n\nKunci tidak dapat dibaca dari unit itu sendiri. Jika Anda tidak menyimpannya, kembali dan masuk — dengan begitu kunci diambilkan untuk Anda.",
+        "description": "Satu-satunya yang Anda perlukan adalah kunci lokal unit ini — dari sensor “Kunci lokal” pemasangan sebelumnya, atau dari cadangan. Home Assistant mencari perangkat di jaringan Anda dan menanyakan sisanya langsung kepada perangkat.\n\nKunci tidak dapat dibaca dari unit itu sendiri. Jika Anda tidak menyimpannya, kembali dan masuk — dengan begitu kunci diambilkan untuk Anda.",
         "data": {
           "host": "Alamat IP",
           "device_id": "ID perangkat",
@@ -42,24 +42,24 @@
           "name": "Nama"
         },
         "data_description": {
-          "host": "Alamat IP AC di jaringan Anda, misalnya 192.168.1.50. Reservasi DHCP mencegahnya berubah.",
-          "device_id": "Biasanya dibiarkan kosong — hal ini ditanyakan langsung kepada AC. Ini adalah alamat MAC Wi-Fi modul, jika suatu saat Anda perlu memasukkannya.",
-          "local_key": "Kunci 32 karakter yang digunakan AC untuk mengenkripsi statusnya. Kunci ini diterbitkan oleh cloud Haier per perangkat — jalur Masuk akan mengambilnya untuk Anda.",
-          "name": "Opsional. Nama untuk AC ini di Home Assistant."
+          "host": "Alamat IP perangkat di jaringan Anda, misalnya 192.168.1.50. Reservasi DHCP mencegahnya berubah.",
+          "device_id": "Biasanya dibiarkan kosong — hal ini ditanyakan langsung kepada perangkat. Ini adalah alamat MAC Wi-Fi modul, jika suatu saat Anda perlu memasukkannya.",
+          "local_key": "Kunci 32 karakter yang digunakan perangkat untuk mengenkripsi statusnya. Kunci ini diterbitkan oleh cloud Haier per perangkat — jalur Masuk akan mengambilnya untuk Anda.",
+          "name": "Opsional. Nama untuk perangkat ini di Home Assistant."
         }
       },
       "reauth_confirm": {
         "title": "Kunci lokal telah berganti",
-        "description": "AC {device_id} melaporkan versi localKey yang lebih baru — kunci yang tersimpan tidak lagi dapat mendekripsi statusnya. Masukkan localKey AC saat ini untuk menyambung kembali.",
+        "description": "perangkat {device_id} melaporkan versi localKey yang lebih baru — kunci yang tersimpan tidak lagi dapat mendekripsi statusnya. Masukkan localKey perangkat saat ini untuk menyambung kembali.",
         "data": {
           "local_key": "Kunci lokal (32 karakter heksadesimal)"
         },
         "data_description": {
-          "local_key": "Aktifkan sensor diagnostik Kunci lokal di halaman perangkat untuk membaca kunci saat ini, atau tambahkan ulang AC dengan akun Haier Anda agar diambil secara otomatis."
+          "local_key": "Aktifkan sensor diagnostik Kunci lokal di halaman perangkat untuk membaca kunci saat ini, atau tambahkan ulang perangkat dengan akun Haier Anda agar diambil secara otomatis."
         }
       },
       "host": {
-        "title": "Masukkan alamat IP AC",
+        "title": "Masukkan alamat IP perangkat",
         "description": "Anda sudah masuk dan kuncinya berhasil diambil otomatis — Home Assistant hanya tidak dapat menemukan {device} di jaringan dengan sendirinya. Masukkan alamat IP lokalnya (misalnya 192.168.1.50). Tips: reservasi DHCP membuatnya tetap stabil.",
         "data": {
           "host": "Alamat IP"
@@ -70,14 +70,14 @@
       },
       "key_failed": {
         "title": "Tidak dapat mengambil kunci secara otomatis",
-        "description": "Home Assistant berhasil masuk, tetapi tidak dapat mengambil kunci lokal AC ini dari server Haier — atau kunci yang didapat tidak dapat mendekripsi status unit.{note}\n\nIni sering bersifat sementara, jadi mencoba lagi biasanya sepadan. Jika terus gagal, Anda dapat memasukkan detailnya secara manual, meski kunci tidak dapat dibaca dari unit — Anda memerlukannya dari sensor “Kunci lokal” pemasangan sebelumnya atau dari cadangan.",
+        "description": "Home Assistant berhasil masuk, tetapi tidak dapat mengambil kunci lokal perangkat ini dari server Haier — atau kunci yang didapat tidak dapat mendekripsi status unit.{note}\n\nIni sering bersifat sementara, jadi mencoba lagi biasanya sepadan. Jika terus gagal, Anda dapat memasukkan detailnya secara manual, meski kunci tidak dapat dibaca dari unit — Anda memerlukannya dari sensor “Kunci lokal” pemasangan sebelumnya atau dari cadangan.",
         "menu_options": {
           "key_retry": "Coba ambil kunci lagi",
           "manual": "Masukkan detailnya secara manual saja"
         }
       },
       "reconfigure": {
-        "title": "Konfigurasi ulang AC ini",
+        "title": "Konfigurasi ulang perangkat ini",
         "description": "Ubah cara Home Assistant menjangkau unit ini, tanpa menghapusnya dan kehilangan riwayatnya.",
         "menu_options": {
           "reconfigure_host": "Ubah alamat IP",
@@ -86,7 +86,7 @@
       },
       "reconfigure_host": {
         "title": "Ubah alamat IP",
-        "description": "Alamat baru akan diperiksa terhadap AC sebelum disimpan.",
+        "description": "Alamat baru akan diperiksa terhadap perangkat sebelum disimpan.",
         "data": {
           "host": "Alamat IP"
         },
@@ -96,18 +96,18 @@
       },
       "reconfigure_cloud": {
         "title": "Tambahkan akun Haier Anda",
-        "description": "AC ini ditambahkan secara manual, sehingga Home Assistant tidak memiliki cara untuk memperbarui kuncinya saat Haier menggantinya — itulah sebabnya Anda diminta kunci baru dari waktu ke waktu. Masuk sekali dan kunci akan diperbarui sendiri mulai saat itu.",
+        "description": "perangkat ini ditambahkan secara manual, sehingga Home Assistant tidak memiliki cara untuk memperbarui kuncinya saat Haier menggantinya — itulah sebabnya Anda diminta kunci baru dari waktu ke waktu. Masuk sekali dan kunci akan diperbarui sendiri mulai saat itu.",
         "data": {
           "username": "Email atau nomor telepon",
           "password": "Kata sandi",
           "zone_info": "Negara tempat akun Haier Anda terdaftar"
         },
         "data_description": {
-          "zone_info": "Negara tempat akun dibuat, yang mungkin berbeda dari tempat tinggal Anda atau lokasi pemasangan AC."
+          "zone_info": "Negara tempat akun dibuat, yang mungkin berbeda dari tempat tinggal Anda atau lokasi pemasangan perangkat."
         }
       },
       "reauth": {
-        "title": "AC ini memerlukan kunci baru",
+        "title": "perangkat ini memerlukan kunci baru",
         "description": "Haier mengganti kunci lokal unit ini, sehingga Home Assistant tidak lagi dapat membaca statusnya. Masuk kembali akan mengambil kunci baru untuk Anda — hampir selalu ini pilihan yang tepat. Memasukkan kunci secara manual hanya berguna jika Anda sudah memilikinya.",
         "menu_options": {
           "reauth_cloud": "Masuk dan ambil kunci baru secara otomatis",
@@ -124,7 +124,7 @@
       },
       "model": {
         "title": "Ini model yang mana?",
-        "description": "AC melaporkan termasuk keluarga produk mana dirinya, sehingga pilihan menyempit ke model-model di bawah ini. Pilih yang tertera pada unit atau label-nya.\n\nMemilih akan membuka nama-nama kerusakan, aturan ketersediaan, dan daftar fitur sebenarnya dari unit ini. Melewatinya tidak masalah — AC tetap terbaca dan terkendali sepenuhnya.",
+        "description": "perangkat melaporkan termasuk keluarga produk mana dirinya, sehingga pilihan menyempit ke model-model di bawah ini. Pilih yang tertera pada unit atau label-nya.\n\nMemilih akan membuka nama-nama kerusakan, aturan ketersediaan, dan daftar fitur sebenarnya dari unit ini. Melewatinya tidak masalah — perangkat tetap terbaca dan terkendali sepenuhnya.",
         "data": {
           "product_code": "Model"
         },
@@ -133,37 +133,37 @@
         }
       },
       "pick_local": {
-        "title": "AC yang ditemukan di jaringan Anda",
+        "title": "perangkat yang ditemukan di jaringan Anda",
         "description": "Perangkat ini menjawab di jaringan Anda, jadi alamat dan ID-nya sudah diketahui — Anda hanya perlu kunci lokalnya.\n\nMilik Anda tidak tercantum? Kembali, dan Anda akan diminta alamat IP sebagai gantinya. Unit yang sudah ditambahkan tidak ditampilkan.",
         "data": {
-          "host": "AC"
+          "host": "perangkat"
         }
       },
       "discovery_confirm": {
-        "title": "Siapkan AC ini",
-        "description": "Home Assistant menemukan AC Haier di {host} (`{device_id}`).\n\nKunci lokalnya akan diambil dari akun Haier yang sudah Anda tambahkan, jadi tidak ada yang perlu diketik. Pilih **Kirim** untuk menambahkannya."
+        "title": "Siapkan perangkat ini",
+        "description": "Home Assistant menemukan perangkat Haier di {host} (`{device_id}`).\n\nKunci lokalnya akan diambil dari akun Haier yang sudah Anda tambahkan, jadi tidak ada yang perlu diketik. Pilih **Kirim** untuk menambahkannya."
       }
     },
     "error": {
-      "account_not_in_region": "Tidak ditemukan akun Haier “{username}” di negara yang Anda pilih (+{zone}). Ini adalah negara tempat akun didaftarkan, yang mungkin berbeda dari tempat tinggal Anda atau lokasi AC. Pilih yang benar lalu coba lagi. Jika AC Anda menggunakan aplikasi hOn atau Haier China, integrasi ini sama sekali tidak dapat masuk ke akun tersebut.",
+      "account_not_in_region": "Tidak ditemukan akun Haier “{username}” di negara yang Anda pilih (+{zone}). Ini adalah negara tempat akun didaftarkan, yang mungkin berbeda dari tempat tinggal Anda atau lokasi perangkat. Pilih yang benar lalu coba lagi. Jika perangkat Anda menggunakan aplikasi hOn atau Haier China, integrasi ini sama sekali tidak dapat masuk ke akun tersebut.",
       "missing_field": "Haier menolak proses masuk karena ada kolom yang kosong atau tidak terisi.",
       "cloud_auth": "Gagal masuk. Periksa email atau nomor telepon dan kata sandi Anda.",
       "cannot_connect_cloud": "Berhasil masuk, tetapi server Haier tidak dapat dihubungi untuk menampilkan daftar perangkat Anda. Biasanya ini bersifat sementara — coba lagi sebentar lagi.",
       "cloud_unreachable": "Server Haier tidak dapat dihubungi. Pastikan Home Assistant dapat mengakses internet dan me-resolve alamat Haier — masalah DNS atau firewall pada host Home Assistant terlihat persis seperti ini — lalu coba lagi.",
       "invalid_key": "Kunci lokal harus berupa string heksadesimal 32 karakter.",
-      "invalid_auth": "AC merespons, tetapi kunci lokal ini tidak dapat mendekripsi statusnya — kuncinya salah, atau sudah diganti.",
-      "cannot_connect": "Tidak dapat menjangkau AC di port 56800. Periksa alamat IP-nya, dan pastikan Home Assistant berada di jaringan yang sama.",
-      "device_id_required": "AC tidak menjawab kueri identifikasi, sehingga ID perangkatnya tidak dapat dibaca otomatis. Masukkan secara manual — ini adalah alamat MAC Wi-Fi modul, 12 karakter heksadesimal tanpa pemisah.",
-      "account_expired": "Akun Haier yang sudah disiapkan di sini tidak dapat digunakan — masa masuknya telah berakhir, atau masuk di tempat lain telah menggantikannya. Masuk lagi di bawah ini memperbaikinya untuk semua AC yang sudah Anda tambahkan."
+      "invalid_auth": "perangkat merespons, tetapi kunci lokal ini tidak dapat mendekripsi statusnya — kuncinya salah, atau sudah diganti.",
+      "cannot_connect": "Tidak dapat menjangkau perangkat di port 56800. Periksa alamat IP-nya, dan pastikan Home Assistant berada di jaringan yang sama.",
+      "device_id_required": "perangkat tidak menjawab kueri identifikasi, sehingga ID perangkatnya tidak dapat dibaca otomatis. Masukkan secara manual — ini adalah alamat MAC Wi-Fi modul, 12 karakter heksadesimal tanpa pemisah.",
+      "account_expired": "Akun Haier yang sudah disiapkan di sini tidak dapat digunakan — masa masuknya telah berakhir, atau masuk di tempat lain telah menggantikannya. Masuk lagi di bawah ini memperbaikinya untuk semua perangkat yang sudah Anda tambahkan."
     },
     "abort": {
       "already_configured": "Perangkat ini sudah dikonfigurasi.",
       "reauth_successful": "Kunci lokal telah diperbarui.",
-      "all_configured": "Semua AC pada akun ini sudah ditambahkan ke Home Assistant.",
+      "all_configured": "Semua perangkat pada akun ini sudah ditambahkan ke Home Assistant.",
       "unknown": "Kesalahan tak terduga — pengumuman perangkat tidak dapat dipahami.",
-      "no_devices": "Masuk sebagai {username}, tetapi akun Haier ini tidak memiliki perangkat. Jika Anda masuk ke aplikasi dengan Google atau Facebook, bagikan AC ke akun ini terlebih dahulu di aplikasi, lalu coba lagi.",
-      "already_in_progress": "AC ini sedang dalam proses penyiapan.",
-      "account_no_devices": "Akun Haier yang sudah disiapkan di sini tidak lagi mencantumkan perangkat apa pun. Periksa apakah AC masih ada di aplikasi Haier dengan akun ini, lalu coba lagi."
+      "no_devices": "Masuk sebagai {username}, tetapi akun Haier ini tidak memiliki perangkat. Jika Anda masuk ke aplikasi dengan Google atau Facebook, bagikan perangkat ke akun ini terlebih dahulu di aplikasi, lalu coba lagi.",
+      "already_in_progress": "perangkat ini sedang dalam proses penyiapan.",
+      "account_no_devices": "Akun Haier yang sudah disiapkan di sini tidak lagi mencantumkan perangkat apa pun. Periksa apakah perangkat masih ada di aplikasi Haier dengan akun ini, lalu coba lagi."
     }
   },
   "options": {
@@ -174,7 +174,7 @@
           "scan_interval": "Interval pemeriksaan status (detik)"
         },
         "data_description": {
-          "scan_interval": "Seberapa sering menanyakan status AC. Setiap pemeriksaan adalah satu sesi lokal penuh, dan tujuannya hanya untuk mendeteksi perubahan yang dibuat lewat remote atau aplikasi — perintah yang Anda kirim dari Home Assistant tetap langsung diperbarui."
+          "scan_interval": "Seberapa sering menanyakan status perangkat. Setiap pemeriksaan adalah satu sesi lokal penuh, dan tujuannya hanya untuk mendeteksi perubahan yang dibuat lewat remote atau aplikasi — perintah yang Anda kirim dari Home Assistant tetap langsung diperbarui."
         }
       }
     }
@@ -548,19 +548,19 @@
   "issues": {
     "stale_localkey_manual_reauth": {
       "title": "{name}: localKey berganti — perlu memasukkan kunci baru secara manual",
-      "description": "AC mengganti kunci lokalnya (v{old} → v{new}) dan perangkat ini tidak menyimpan kredensial akun Haier, sehingga Home Assistant tidak dapat memperbarui kunci sendiri dan harus meminta kunci baru dari Anda.\n\nAgar ini tidak terjadi lagi, buka perangkat, pilih **Konfigurasi ulang**, lalu tambahkan akun Haier Anda. Setelah itu kunci akan diperbarui sendiri setiap kali berganti."
+      "description": "perangkat mengganti kunci lokalnya (v{old} → v{new}) dan perangkat ini tidak menyimpan kredensial akun Haier, sehingga Home Assistant tidak dapat memperbarui kunci sendiri dan harus meminta kunci baru dari Anda.\n\nAgar ini tidak terjadi lagi, buka perangkat, pilih **Konfigurasi ulang**, lalu tambahkan akun Haier Anda. Setelah itu kunci akan diperbarui sendiri setiap kali berganti."
     },
     "unknown_report_layout": {
-      "title": "{name}: format status AC ini belum dikenali",
+      "title": "{name}: format status perangkat ini belum dikenali",
       "description": "{name} mengirim laporan status sebesar {length} byte, yang belum memiliki tata letak terkonfirmasi pada integrasi ini (kode produk: {product_code}).\n\nSuhu, mode, kecepatan kipas, dan nyala/mati tetap berfungsi. Suhu dalam dan luar ruangan tidak tersedia, dan pengiriman perintah dinonaktifkan — menebak letak pengaturan pada format yang tidak dikenal berisiko menuliskan pembacaan sensor kembali ke unit sebagai pengaturan.\n\nMenambahkan dukungan tidak memerlukan kode, hanya tiga rekaman singkat dari Anda. Ikuti panduan yang ditautkan lalu buat laporan; biasanya cukup diperbaiki dengan satu baris."
     },
     "key_will_rotate": {
       "title": "{name}: kuncinya akan berubah dan penyiapan ini tidak bisa mengikutinya",
-      "description": "AC ini masih dapat menghubungi server Haier, sehingga menerima kunci lokal baru beberapa kali sehari. Perangkat ditambahkan tanpa akun Haier, jadi Home Assistant tidak dapat mengambil yang baru — pada mulai ulang berikutnya setelah kunci berubah, perangkat akan berhenti bekerja dan tampak seperti kehilangan konfigurasinya.\n\nDua solusi permanen, keduanya sebaiknya dilakukan selagi semuanya masih berfungsi:\n\n- **Tambahkan akun Haier Anda**: Pengaturan → Perangkat & layanan → Haismart → perangkat → Konfigurasi ulang → *Tambahkan akun Haier Anda*. Perubahan kunci akan diambil otomatis.\n- **Atau blokir akses internet perangkat** di router Anda. Kuncinya berhenti berubah dan yang Anda miliki tetap berlaku. Kendali lokal tidak terpengaruh dalam kedua kasus.\n\nPesan ini hilang dengan sendirinya begitu salah satunya terpenuhi."
+      "description": "perangkat ini masih dapat menghubungi server Haier, sehingga menerima kunci lokal baru beberapa kali sehari. Perangkat ditambahkan tanpa akun Haier, jadi Home Assistant tidak dapat mengambil yang baru — pada mulai ulang berikutnya setelah kunci berubah, perangkat akan berhenti bekerja dan tampak seperti kehilangan konfigurasinya.\n\nDua solusi permanen, keduanya sebaiknya dilakukan selagi semuanya masih berfungsi:\n\n- **Tambahkan akun Haier Anda**: Pengaturan → Perangkat & layanan → Haismart → perangkat → Konfigurasi ulang → *Tambahkan akun Haier Anda*. Perubahan kunci akan diambil otomatis.\n- **Atau blokir akses internet perangkat** di router Anda. Kuncinya berhenti berubah dan yang Anda miliki tetap berlaku. Kendali lokal tidak terpengaruh dalam kedua kasus.\n\nPesan ini hilang dengan sendirinya begitu salah satunya terpenuhi."
     },
     "key_refresh_failed": {
       "title": "{name}: kuncinya berubah dan pengambilan otomatis tidak berhasil",
-      "description": "AC menerima kunci lokal baru (v{old} → v{new}). Akun Haier Anda tersimpan untuk perangkat ini, jadi Home Assistant mencoba mengambil yang baru sendiri — dan gagal, karena itu ia bertanya kepada Anda.\n\n**Detail akun Anda sudah tersimpan, tidak ada yang perlu ditambahkan.** Masuk kembali dari permintaan tersebut menyelesaikannya sekarang. Jika terus berulang, jalur otomatis sedang diblokir, bukan salah dikonfigurasi; penyebab yang biasa:\n\n- Router atau ISP Anda memblokir layanan kunci Haier, sementara masuk biasa masih berfungsi.\n- Sesi masuk yang tersimpan tidak lagi diterima — masuk ke aplikasi Haier dapat mengakhiri sesi lain. Masuk kembali di sini memulihkannya.\n\n**Solusi permanen:** blokir akses internet AC di router Anda. Kuncinya berhenti berubah dan yang Anda miliki tetap berlaku tanpa batas — lihat README. Kendali lokal tidak terpengaruh."
+      "description": "perangkat menerima kunci lokal baru (v{old} → v{new}). Akun Haier Anda tersimpan untuk perangkat ini, jadi Home Assistant mencoba mengambil yang baru sendiri — dan gagal, karena itu ia bertanya kepada Anda.\n\n**Detail akun Anda sudah tersimpan, tidak ada yang perlu ditambahkan.** Masuk kembali dari permintaan tersebut menyelesaikannya sekarang. Jika terus berulang, jalur otomatis sedang diblokir, bukan salah dikonfigurasi; penyebab yang biasa:\n\n- Router atau ISP Anda memblokir layanan kunci Haier, sementara masuk biasa masih berfungsi.\n- Sesi masuk yang tersimpan tidak lagi diterima — masuk ke aplikasi Haier dapat mengakhiri sesi lain. Masuk kembali di sini memulihkannya.\n\n**Solusi permanen:** blokir akses internet perangkat di router Anda. Kuncinya berhenti berubah dan yang Anda miliki tetap berlaku tanpa batas — lihat README. Kendali lokal tidak terpengaruh."
     }
   },
   "exceptions": {

@@ -1,10 +1,10 @@
 {
   "config": {
-    "flow_title": "Haier-klimaanlegg {device_id}",
+    "flow_title": "Haier-apparat {device_id}",
     "step": {
       "user": {
-        "title": "Legg til et Haier-klimaanlegg",
-        "description": "Å logge inn er den anbefalte veien: Home Assistant henter den lokale nøkkelen, finner enheten på nettverket ditt og leser av modellen, så det er ingenting å lime inn. Deretter snakker den direkte med klimaanlegget — og når alt er satt opp, kan du blokkere enhetens internettilgang helt; se README om å bli helt skyuavhengig.\n\nGoogle-/Facebook-kontoer: opprett en egen Haier-konto med e-post og passord, del klimaanleggene dine med den i appen, og logg deretter inn med den kontoen.",
+        "title": "Legg til et Haier-apparat",
+        "description": "Å logge inn er den anbefalte veien: Home Assistant henter den lokale nøkkelen, finner enheten på nettverket ditt og leser av modellen, så det er ingenting å lime inn. Deretter snakker den direkte med apparatet — og når alt er satt opp, kan du blokkere enhetens internettilgang helt; se README om å bli helt skyuavhengig.\n\nGoogle-/Facebook-kontoer: opprett en egen Haier-konto med e-post og passord, del apparatene dine med den i appen, og logg deretter inn med den kontoen.",
         "menu_options": {
           "account": "Bruk Haier-kontoen som allerede er lagt til (ingenting å skrive)",
           "login": "Logg inn med Haier-kontoen din (anbefales)",
@@ -13,7 +13,7 @@
       },
       "login": {
         "title": "Logg inn på Haier-kontoen din",
-        "description": "Bruk den samme kontoen som i Haier-/Haismart-appen. Innloggingen skjer bare én gang – etter det snakker Home Assistant kun med klimaanlegget på nettverket ditt.\n\nLogger du inn med Google eller Facebook? De kontoene har ikke passord. Opprett en Haier-konto med e-post og passord, del anlegget med den i appen, og logg deretter inn her med den kontoen.",
+        "description": "Bruk den samme kontoen som i Haier-/Haismart-appen. Innloggingen skjer bare én gang – etter det snakker Home Assistant kun med apparatet på nettverket ditt.\n\nLogger du inn med Google eller Facebook? De kontoene har ikke passord. Opprett en Haier-konto med e-post og passord, del anlegget med den i appen, og logg deretter inn her med den kontoen.",
         "data": {
           "username": "E-post eller telefonnummer",
           "password": "Passord",
@@ -30,11 +30,11 @@
         "data": {
           "device_id": "Enhet"
         },
-        "description": "Velg hvilket klimaanlegg som skal legges til. Nøkkelen hentes fra skyen, og IP-adressen finnes automatisk på nettverket ditt – du trenger ikke lime inn noe."
+        "description": "Velg hvilket apparat som skal legges til. Nøkkelen hentes fra skyen, og IP-adressen finnes automatisk på nettverket ditt – du trenger ikke lime inn noe."
       },
       "manual": {
         "title": "Enhetsopplysninger",
-        "description": "Det eneste du trenger, er denne enhetens lokale nøkkel — fra sensoren «Lokal nøkkel» i en tidligere installasjon, eller fra en sikkerhetskopi. Home Assistant leter etter klimaanlegget på nettverket ditt og spør det om alt annet.\n\nNøkkelen kan ikke leses av på selve enheten. Har du ingen lagret, gå tilbake og logg inn — da hentes den for deg.",
+        "description": "Det eneste du trenger, er denne enhetens lokale nøkkel — fra sensoren «Lokal nøkkel» i en tidligere installasjon, eller fra en sikkerhetskopi. Home Assistant leter etter apparatet på nettverket ditt og spør det om alt annet.\n\nNøkkelen kan ikke leses av på selve enheten. Har du ingen lagret, gå tilbake og logg inn — da hentes den for deg.",
         "data": {
           "host": "IP-adresse",
           "device_id": "Enhets-ID",
@@ -42,15 +42,15 @@
           "name": "Navn"
         },
         "data_description": {
-          "host": "Klimaanleggets IP-adresse på nettverket ditt, f.eks. 192.168.1.50. En DHCP-reservasjon hindrer at den endrer seg.",
-          "device_id": "Står vanligvis tomt — klimaanlegget blir spurt direkte. Det er modulens Wi-Fi-MAC-adresse, hvis du likevel må skrive den inn.",
+          "host": "Apparatets IP-adresse på nettverket ditt, f.eks. 192.168.1.50. En DHCP-reservasjon hindrer at den endrer seg.",
+          "device_id": "Står vanligvis tomt — apparatet blir spurt direkte. Det er modulens Wi-Fi-MAC-adresse, hvis du likevel må skrive den inn.",
           "local_key": "Nøkkelen på 32 tegn som anlegget krypterer statusen sin med. Den utstedes av Haiers sky per enhet – innloggingsveien henter den for deg.",
-          "name": "Valgfritt. Hva dette klimaanlegget skal hete i Home Assistant."
+          "name": "Valgfritt. Hva dette apparatet skal hete i Home Assistant."
         }
       },
       "reauth_confirm": {
         "title": "Den lokale nøkkelen er byttet",
-        "description": "Klimaanlegget {device_id} melder om en nyere localKey-versjon – den lagrede nøkkelen dekrypterer ikke lenger statusen. Skriv inn anleggets nåværende localKey for å koble til igjen.",
+        "description": "Apparatet {device_id} melder om en nyere localKey-versjon – den lagrede nøkkelen dekrypterer ikke lenger statusen. Skriv inn anleggets nåværende localKey for å koble til igjen.",
         "data": {
           "local_key": "Lokal nøkkel (32 hex-tegn)"
         },
@@ -59,7 +59,7 @@
         }
       },
       "host": {
-        "title": "Skriv inn IP-adressen til klimaanlegget",
+        "title": "Skriv inn IP-adressen til apparatet",
         "description": "Innlogget, og nøkkelen ble hentet automatisk – Home Assistant klarte bare ikke å finne {device} på egen hånd på nettverket. Skriv inn den lokale IP-adressen (f.eks. 192.168.1.50). Tips: en DHCP-reservasjon holder den stabil.",
         "data": {
           "host": "IP-adresse"
@@ -70,14 +70,14 @@
       },
       "key_failed": {
         "title": "Kunne ikke hente nøkkelen automatisk",
-        "description": "Home Assistant logget inn, men klarte ikke å hente dette klimaanleggets lokale nøkkel fra Haiers servere — eller nøkkelen den fikk dekrypterer ikke enhetens status.{note}\n\nDette er ofte midlertidig, så det er som regel verdt å prøve igjen. Hvis det fortsetter å feile, kan du legge inn opplysningene manuelt, men nøkkelen kan ikke leses av på enheten — du trenger den fra sensoren «Lokal nøkkel» i en tidligere installasjon eller fra en sikkerhetskopi.",
+        "description": "Home Assistant logget inn, men klarte ikke å hente dette apparatets lokale nøkkel fra Haiers servere — eller nøkkelen den fikk dekrypterer ikke enhetens status.{note}\n\nDette er ofte midlertidig, så det er som regel verdt å prøve igjen. Hvis det fortsetter å feile, kan du legge inn opplysningene manuelt, men nøkkelen kan ikke leses av på enheten — du trenger den fra sensoren «Lokal nøkkel» i en tidligere installasjon eller fra en sikkerhetskopi.",
         "menu_options": {
           "key_retry": "Prøv å hente nøkkelen på nytt",
           "manual": "Skriv heller inn opplysningene for hånd"
         }
       },
       "reconfigure": {
-        "title": "Konfigurer dette klimaanlegget på nytt",
+        "title": "Konfigurer dette apparatet på nytt",
         "description": "Endre hvordan Home Assistant når denne enheten, uten å fjerne den og miste historikken.",
         "menu_options": {
           "reconfigure_host": "Endre IP-adressen",
@@ -86,7 +86,7 @@
       },
       "reconfigure_host": {
         "title": "Endre IP-adressen",
-        "description": "Den nye adressen kontrolleres mot klimaanlegget før den lagres.",
+        "description": "Den nye adressen kontrolleres mot apparatet før den lagres.",
         "data": {
           "host": "IP-adresse"
         },
@@ -96,7 +96,7 @@
       },
       "reconfigure_cloud": {
         "title": "Legg til Haier-kontoen din",
-        "description": "Dette klimaanlegget ble lagt til for hånd, så Home Assistant har ingen måte å fornye nøkkelen på når Haier bytter den – derfor blir du bedt om en ny nøkkel fra tid til annen. Logg inn én gang, så fornyer den seg selv fra da av.",
+        "description": "Dette apparatet ble lagt til for hånd, så Home Assistant har ingen måte å fornye nøkkelen på når Haier bytter den – derfor blir du bedt om en ny nøkkel fra tid til annen. Logg inn én gang, så fornyer den seg selv fra da av.",
         "data": {
           "username": "E-post eller telefonnummer",
           "password": "Passord",
@@ -107,7 +107,7 @@
         }
       },
       "reauth": {
-        "title": "Dette klimaanlegget trenger en ny nøkkel",
+        "title": "Dette apparatet trenger en ny nøkkel",
         "description": "Haier har byttet den lokale nøkkelen til denne enheten, så Home Assistant kan ikke lenger lese statusen. Å logge inn på nytt henter den nye nøkkelen for deg – det er nesten alltid det riktige valget. Å skrive inn en nøkkel for hånd er bare nyttig hvis du allerede har den.",
         "menu_options": {
           "reauth_cloud": "Logg inn og hent den nye nøkkelen automatisk",
@@ -124,7 +124,7 @@
       },
       "model": {
         "title": "Hvilken modell er dette?",
-        "description": "Klimaanlegget har oppgitt hvilken produktfamilie det tilhører, noe som avgrenser det til modellene nedenfor. Velg den som står på enheten eller merkeskiltet.\n\nÅ velge låser opp feilnavnene, tilgjengelighetsreglene og enhetens faktiske funksjonsliste. Å hoppe over går fint — klimaanlegget leses av og styres fullt ut likevel.",
+        "description": "Apparatet har oppgitt hvilken produktfamilie det tilhører, noe som avgrenser det til modellene nedenfor. Velg den som står på enheten eller merkeskiltet.\n\nÅ velge låser opp feilnavnene, tilgjengelighetsreglene og enhetens faktiske funksjonsliste. Å hoppe over går fint — apparatet leses av og styres fullt ut likevel.",
         "data": {
           "product_code": "Modell"
         },
@@ -133,37 +133,37 @@
         }
       },
       "pick_local": {
-        "title": "Klimaanlegg funnet på nettverket ditt",
+        "title": "Apparat funnet på nettverket ditt",
         "description": "Disse svarte på nettverket ditt, så adressene og ID-ene deres er allerede kjent — du trenger bare den lokale nøkkelen.\n\nStår ikke ditt der? Gå tilbake, så blir du i stedet bedt om en IP-adresse. Enheter som allerede er lagt til, vises ikke.",
         "data": {
-          "host": "Klimaanlegg"
+          "host": "Apparat"
         }
       },
       "discovery_confirm": {
-        "title": "Sett opp dette klimaanlegget",
-        "description": "Home Assistant fant et Haier-klimaanlegg på {host} (`{device_id}`).\n\nDen lokale nøkkelen hentes fra Haier-kontoen du allerede har lagt til, så det er ingenting å skrive. Velg **Send inn** for å legge det til."
+        "title": "Sett opp dette apparatet",
+        "description": "Home Assistant fant et Haier-apparat på {host} (`{device_id}`).\n\nDen lokale nøkkelen hentes fra Haier-kontoen du allerede har lagt til, så det er ingenting å skrive. Velg **Send inn** for å legge det til."
       }
     },
     "error": {
-      "account_not_in_region": "Fant ingen Haier-konto «{username}» i landet du valgte (+{zone}). Dette er landet kontoen ble registrert i, som kanskje ikke er der du bor eller der anlegget står. Velg riktig land og prøv igjen. Hvis klimaanlegget ditt bruker hOn- eller Haier China-appen i stedet, kan ikke denne integrasjonen logge inn på de kontoene i det hele tatt.",
+      "account_not_in_region": "Fant ingen Haier-konto «{username}» i landet du valgte (+{zone}). Dette er landet kontoen ble registrert i, som kanskje ikke er der du bor eller der anlegget står. Velg riktig land og prøv igjen. Hvis apparatet ditt bruker hOn- eller Haier China-appen i stedet, kan ikke denne integrasjonen logge inn på de kontoene i det hele tatt.",
       "missing_field": "Haier avviste innloggingen fordi et felt manglet eller var tomt.",
       "cloud_auth": "Innloggingen mislyktes. Kontroller e-posten eller telefonnummeret ditt og passordet.",
       "cannot_connect_cloud": "Innloggingen gikk bra, men Haiers servere kunne ikke nås for å hente listen over enhetene dine. Dette er som regel forbigående – prøv igjen om et øyeblikk.",
       "cloud_unreachable": "Haiers servere kunne ikke nås. Kontroller at Home Assistant har tilgang til internett og kan slå opp Haiers adresse – et DNS- eller brannmurproblem på Home Assistant-verten ser akkurat slik ut – og prøv igjen.",
       "invalid_key": "Den lokale nøkkelen må være en hex-streng på 32 tegn.",
-      "invalid_auth": "Klimaanlegget svarte, men denne lokale nøkkelen dekrypterer ikke statusen – nøkkelen er feil, eller den er byttet.",
-      "cannot_connect": "Fikk ikke kontakt med klimaanlegget på port 56800. Kontroller IP-adressen, og at Home Assistant er på samme nettverk.",
-      "device_id_required": "Klimaanlegget svarte ikke på identifikasjonsforespørselen, så enhets-ID-en kunne ikke leses automatisk. Skriv den inn manuelt — det er modulens Wi-Fi-MAC-adresse, 12 heksadesimale tegn uten skilletegn.",
-      "account_expired": "Haier-kontoen som allerede er satt opp her, kunne ikke brukes — innloggingen er utløpt, eller en innlogging et annet sted har erstattet den. Å logge inn på nytt nedenfor retter dette for alle klimaanleggene du har lagt til."
+      "invalid_auth": "Apparatet svarte, men denne lokale nøkkelen dekrypterer ikke statusen – nøkkelen er feil, eller den er byttet.",
+      "cannot_connect": "Fikk ikke kontakt med apparatet på port 56800. Kontroller IP-adressen, og at Home Assistant er på samme nettverk.",
+      "device_id_required": "Apparatet svarte ikke på identifikasjonsforespørselen, så enhets-ID-en kunne ikke leses automatisk. Skriv den inn manuelt — det er modulens Wi-Fi-MAC-adresse, 12 heksadesimale tegn uten skilletegn.",
+      "account_expired": "Haier-kontoen som allerede er satt opp her, kunne ikke brukes — innloggingen er utløpt, eller en innlogging et annet sted har erstattet den. Å logge inn på nytt nedenfor retter dette for alle apparatene du har lagt til."
     },
     "abort": {
       "already_configured": "Denne enheten er allerede konfigurert.",
       "reauth_successful": "Den lokale nøkkelen er oppdatert.",
-      "all_configured": "Alle klimaanleggene på denne kontoen er allerede lagt til i Home Assistant.",
+      "all_configured": "Alle apparatene på denne kontoen er allerede lagt til i Home Assistant.",
       "unknown": "Uventet feil – kunngjøringen fra enheten ble ikke forstått.",
-      "no_devices": "Logget inn som {username}, men denne Haier-kontoen har ingen enheter. Hvis du logger inn i appen med Google eller Facebook, del først klimaanlegget med denne kontoen i appen, og prøv så igjen.",
-      "already_in_progress": "Dette klimaanlegget settes allerede opp.",
-      "account_no_devices": "Haier-kontoen som allerede er satt opp her, viser ingen enheter lenger. Kontroller at klimaanlegget fortsatt ligger under denne kontoen i Haier-appen, og prøv igjen."
+      "no_devices": "Logget inn som {username}, men denne Haier-kontoen har ingen enheter. Hvis du logger inn i appen med Google eller Facebook, del først apparatet med denne kontoen i appen, og prøv så igjen.",
+      "already_in_progress": "Dette apparatet settes allerede opp.",
+      "account_no_devices": "Haier-kontoen som allerede er satt opp her, viser ingen enheter lenger. Kontroller at apparatet fortsatt ligger under denne kontoen i Haier-appen, og prøv igjen."
     }
   },
   "options": {
@@ -548,19 +548,19 @@
   "issues": {
     "stale_localkey_manual_reauth": {
       "title": "{name}: localKey byttet – nøkkelen må skrives inn manuelt",
-      "description": "Klimaanlegget byttet den lokale nøkkelen sin (v{old} → v{new}), og det er ikke lagret noen Haier-kontoopplysninger for denne enheten, så Home Assistant kunne ikke fornye nøkkelen selv og måtte be deg om en.\n\nFor å unngå dette videre: åpne enheten, velg **Konfigurer på nytt**, og legg til Haier-kontoen din. Nøkkelen fornyer seg da selv ved hvert bytte."
+      "description": "Apparatet byttet den lokale nøkkelen sin (v{old} → v{new}), og det er ikke lagret noen Haier-kontoopplysninger for denne enheten, så Home Assistant kunne ikke fornye nøkkelen selv og måtte be deg om en.\n\nFor å unngå dette videre: åpne enheten, velg **Konfigurer på nytt**, og legg til Haier-kontoen din. Nøkkelen fornyer seg da selv ved hvert bytte."
     },
     "unknown_report_layout": {
-      "title": "{name}: statusformatet til dette klimaanlegget gjenkjennes ikke ennå",
+      "title": "{name}: statusformatet til dette apparatet gjenkjennes ikke ennå",
       "description": "{name} sender en statusrapport på {length} byte, som denne integrasjonen ikke har noe bekreftet oppsett for (produktkode: {product_code}).\n\nTemperatur, modus, viftehastighet og på/av virker fortsatt. Inne- og utetemperatur er utilgjengelige, og sending av kommandoer er slått av – å gjette hvor innstillingene ligger i et ukjent format risikerer å skrive en sensoravlesning tilbake til anlegget som om det var en innstilling.\n\nÅ legge til støtte krever ingen kode, bare tre korte opptak fra deg. Følg den lenkede veiledningen og opprett en rapport; det pleier å være en rettelse på én linje."
     },
     "key_will_rotate": {
       "title": "{name}: nøkkelen kommer til å endres, og dette oppsettet kan ikke følge med",
-      "description": "Dette klimaanlegget når fortsatt Haiers servere og får derfor en ny lokal nøkkel flere ganger om dagen. Det ble lagt til uten en Haier-konto, så Home Assistant kan ikke hente den nye — ved neste omstart etter et nøkkelbytte slutter enheten å virke og ser ut til å ha mistet oppsettet sitt.\n\nTo varige løsninger, begge bør gjøres mens alt fungerer:\n\n- **Legg til Haier-kontoen din**: Innstillinger → Enheter og tjenester → Haismart → enheten → Konfigurer på nytt → *Legg til Haier-kontoen din*. Nøkkelbytter hentes da automatisk.\n- **Eller blokker enhetens internettilgang** i ruteren. Nøkkelen slutter da å endre seg, og den du har forblir gyldig. Lokal styring påvirkes ikke i noen av tilfellene.\n\nDenne meldingen forsvinner av seg selv så snart ett av dem stemmer."
+      "description": "Dette apparatet når fortsatt Haiers servere og får derfor en ny lokal nøkkel flere ganger om dagen. Det ble lagt til uten en Haier-konto, så Home Assistant kan ikke hente den nye — ved neste omstart etter et nøkkelbytte slutter enheten å virke og ser ut til å ha mistet oppsettet sitt.\n\nTo varige løsninger, begge bør gjøres mens alt fungerer:\n\n- **Legg til Haier-kontoen din**: Innstillinger → Enheter og tjenester → Haismart → enheten → Konfigurer på nytt → *Legg til Haier-kontoen din*. Nøkkelbytter hentes da automatisk.\n- **Eller blokker enhetens internettilgang** i ruteren. Nøkkelen slutter da å endre seg, og den du har forblir gyldig. Lokal styring påvirkes ikke i noen av tilfellene.\n\nDenne meldingen forsvinner av seg selv så snart ett av dem stemmer."
     },
     "key_refresh_failed": {
       "title": "{name}: nøkkelen ble endret, og den automatiske hentingen virket ikke",
-      "description": "Klimaanlegget fikk en ny lokal nøkkel (v{old} → v{new}). Haier-kontoen din er lagret for denne enheten, så Home Assistant prøvde å hente den nye selv — og klarte det ikke, derfor ble du spurt.\n\n**Kontoopplysningene dine er allerede lagret, det er ingenting å legge til.** Å logge inn igjen fra meldingen løser det nå. Kommer det stadig tilbake, blir den automatiske veien blokkert snarere enn feil satt opp; de vanlige årsakene:\n\n- Ruteren eller leverandøren din blokkerer Haiers nøkkeltjeneste, mens vanlig innlogging fortsatt virker.\n- Den lagrede innloggingen godtas ikke lenger — å logge inn i Haier-appen kan avslutte andre økter. Logg inn igjen her, så gjenopprettes den.\n\n**Den varige løsningen:** blokker klimaanleggets internettilgang i ruteren. Nøkkelen slutter da å endre seg, og den du har forblir gyldig på ubestemt tid — se README. Lokal styring påvirkes ikke."
+      "description": "Apparatet fikk en ny lokal nøkkel (v{old} → v{new}). Haier-kontoen din er lagret for denne enheten, så Home Assistant prøvde å hente den nye selv — og klarte det ikke, derfor ble du spurt.\n\n**Kontoopplysningene dine er allerede lagret, det er ingenting å legge til.** Å logge inn igjen fra meldingen løser det nå. Kommer det stadig tilbake, blir den automatiske veien blokkert snarere enn feil satt opp; de vanlige årsakene:\n\n- Ruteren eller leverandøren din blokkerer Haiers nøkkeltjeneste, mens vanlig innlogging fortsatt virker.\n- Den lagrede innloggingen godtas ikke lenger — å logge inn i Haier-appen kan avslutte andre økter. Logg inn igjen her, så gjenopprettes den.\n\n**Den varige løsningen:** blokker apparatets internettilgang i ruteren. Nøkkelen slutter da å endre seg, og den du har forblir gyldig på ubestemt tid — se README. Lokal styring påvirkes ikke."
     }
   },
   "exceptions": {

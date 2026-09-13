@@ -1,10 +1,10 @@
 {
   "config": {
-    "flow_title": "Haier klima {device_id}",
+    "flow_title": "Haier cihaz {device_id}",
     "step": {
       "user": {
-        "title": "Haier klima ekle",
-        "description": "Oturum açmak önerilen yoldur: Home Assistant yerel anahtarı alır, cihazı ağınızda bulur ve modelini okur; yani yapıştırmanız gereken hiçbir şey yoktur. Bundan sonra doğrudan klimayla konuşur — kurulum tamamlandığında ise cihazın internet erişimini tamamen engelleyebilirsiniz; tam bulut bağımsızlığı için README dosyasına bakın.\n\nGoogle/Facebook hesapları: e-posta ve parolayla ayrı bir Haier hesabı oluşturun, uygulamada klimalarınızı bu hesapla paylaşın ve ardından o hesapla oturum açın.",
+        "title": "Haier cihaz ekle",
+        "description": "Oturum açmak önerilen yoldur: Home Assistant yerel anahtarı alır, cihazı ağınızda bulur ve modelini okur; yani yapıştırmanız gereken hiçbir şey yoktur. Bundan sonra doğrudan cihazla konuşur — kurulum tamamlandığında ise cihazın internet erişimini tamamen engelleyebilirsiniz; tam bulut bağımsızlığı için README dosyasına bakın.\n\nGoogle/Facebook hesapları: e-posta ve parolayla ayrı bir Haier hesabı oluşturun, uygulamada cihazlarınızı bu hesapla paylaşın ve ardından o hesapla oturum açın.",
         "menu_options": {
           "account": "Zaten eklenmiş Haier hesabını kullan (yazılacak bir şey yok)",
           "login": "Haier hesabınızla oturum açın (önerilir)",
@@ -13,7 +13,7 @@
       },
       "login": {
         "title": "Haier hesabınızda oturum açın",
-        "description": "Haier / Haismart uygulamasında kullandığınız hesabın aynısını kullanın. Oturum açma yalnızca bir kez gerçekleşir; bundan sonra Home Assistant sadece ağınızdaki klimayla konuşur.\n\nGoogle veya Facebook ile mi giriş yapıyorsunuz? O hesapların parolası yoktur. E-posta ve parolayla bir Haier hesabı oluşturun, uygulamada klimayı bu hesapla paylaşın, sonra burada o hesapla oturum açın.",
+        "description": "Haier / Haismart uygulamasında kullandığınız hesabın aynısını kullanın. Oturum açma yalnızca bir kez gerçekleşir; bundan sonra Home Assistant sadece ağınızdaki cihazla konuşur.\n\nGoogle veya Facebook ile mi giriş yapıyorsunuz? O hesapların parolası yoktur. E-posta ve parolayla bir Haier hesabı oluşturun, uygulamada cihazı bu hesapla paylaşın, sonra burada o hesapla oturum açın.",
         "data": {
           "username": "E-posta veya telefon numarası",
           "password": "Parola",
@@ -22,7 +22,7 @@
         "data_description": {
           "username": "Haier uygulamasında oturum açmak için hangisini kullanıyorsanız o.",
           "password": "Haier hesabınızın parolası — Home Assistant parolanız değil.",
-          "zone_info": "Haier hesabını oluştururken seçtiğiniz ülke; klimanın kurulu olduğu ya da şu anda yaşadığınız yer olmak zorunda değildir. Home Assistant yapılandırdığınız ülkeyi önceden seçti; hesabınız başka bir yerde kayıtlıysa değiştirin."
+          "zone_info": "Haier hesabını oluştururken seçtiğiniz ülke; cihazın kurulu olduğu ya da şu anda yaşadığınız yer olmak zorunda değildir. Home Assistant yapılandırdığınız ülkeyi önceden seçti; hesabınız başka bir yerde kayıtlıysa değiştirin."
         }
       },
       "pick_device": {
@@ -30,11 +30,11 @@
         "data": {
           "device_id": "Cihaz"
         },
-        "description": "Hangi klimanın ekleneceğini seçin. Anahtarı buluttan alınır ve IP adresi ağınızda otomatik olarak bulunur — hiçbir şey yapıştırmanız gerekmez."
+        "description": "Hangi cihazın ekleneceğini seçin. Anahtarı buluttan alınır ve IP adresi ağınızda otomatik olarak bulunur — hiçbir şey yapıştırmanız gerekmez."
       },
       "manual": {
         "title": "Cihaz bilgileri",
-        "description": "İhtiyacınız olan tek şey bu cihazın yerel anahtarı — önceki bir kurulumun “Yerel anahtar” sensöründen veya bir yedekten. Home Assistant klimayı ağınızda arar ve geri kalan her şeyi doğrudan ona sorar.\n\nAnahtar cihazın kendisinden okunamaz. Kayıtlı bir anahtarınız yoksa geri dönüp oturum açın — böylece sizin için alınır.",
+        "description": "İhtiyacınız olan tek şey bu cihazın yerel anahtarı — önceki bir kurulumun “Yerel anahtar” sensöründen veya bir yedekten. Home Assistant cihazı ağınızda arar ve geri kalan her şeyi doğrudan ona sorar.\n\nAnahtar cihazın kendisinden okunamaz. Kayıtlı bir anahtarınız yoksa geri dönüp oturum açın — böylece sizin için alınır.",
         "data": {
           "host": "IP adresi",
           "device_id": "Cihaz kimliği",
@@ -42,24 +42,24 @@
           "name": "Ad"
         },
         "data_description": {
-          "host": "Klimanın ağınızdaki IP adresi, örn. 192.168.1.50. DHCP rezervasyonu adresin değişmesini önler.",
-          "device_id": "Genellikle boş bırakılır — bu doğrudan klimaya sorulur. Yine de girmeniz gerekirse, modülün Wi-Fi MAC adresidir.",
-          "local_key": "Klimanın durumunu şifrelediği 32 karakterlik anahtar. Haier'in bulutu tarafından cihaz başına verilir — oturum açma yolu bunu sizin için alır.",
-          "name": "İsteğe bağlı. Bu klimanın Home Assistant'taki adı."
+          "host": "Cihazın ağınızdaki IP adresi, örn. 192.168.1.50. DHCP rezervasyonu adresin değişmesini önler.",
+          "device_id": "Genellikle boş bırakılır — bu doğrudan cihaza sorulur. Yine de girmeniz gerekirse, modülün Wi-Fi MAC adresidir.",
+          "local_key": "Cihazın durumunu şifrelediği 32 karakterlik anahtar. Haier'in bulutu tarafından cihaz başına verilir — oturum açma yolu bunu sizin için alır.",
+          "name": "İsteğe bağlı. Bu cihazın Home Assistant'taki adı."
         }
       },
       "reauth_confirm": {
         "title": "Yerel anahtar değişti",
-        "description": "{device_id} kliması daha yeni bir localKey sürümü bildiriyor — saklanan anahtar artık durumunu çözemiyor. Yeniden bağlanmak için klimanın güncel localKey değerini girin.",
+        "description": "{device_id} cihazsı daha yeni bir localKey sürümü bildiriyor — saklanan anahtar artık durumunu çözemiyor. Yeniden bağlanmak için cihazın güncel localKey değerini girin.",
         "data": {
           "local_key": "Yerel anahtar (32 karakterlik onaltılık)"
         },
         "data_description": {
-          "local_key": "Güncel anahtarı okumak için cihaz sayfasındaki «Yerel anahtar» tanılama sensörünü etkinleştirin veya otomatik alınması için klimayı Haier hesabınızla yeniden ekleyin."
+          "local_key": "Güncel anahtarı okumak için cihaz sayfasındaki «Yerel anahtar» tanılama sensörünü etkinleştirin veya otomatik alınması için cihazı Haier hesabınızla yeniden ekleyin."
         }
       },
       "host": {
-        "title": "Klimanın IP adresini girin",
+        "title": "Cihazın IP adresini girin",
         "description": "Oturum açıldı ve anahtar otomatik olarak alındı — Home Assistant yalnızca {device} cihazını ağda kendi başına bulamadı. Yerel IP adresini girin (örn. 192.168.1.50). İpucu: DHCP rezervasyonu adresi sabit tutar.",
         "data": {
           "host": "IP adresi"
@@ -70,14 +70,14 @@
       },
       "key_failed": {
         "title": "Anahtar otomatik olarak alınamadı",
-        "description": "Home Assistant oturum açtı ancak bu klimanın yerel anahtarını Haier sunucularından alamadı — ya da aldığı anahtar cihazın durumunu çözemiyor.{note}\n\nBu çoğu zaman geçicidir, bu yüzden yeniden denemek genellikle işe yarar. Sorun devam ederse bilgileri elle girebilirsiniz; ancak anahtar cihaz üzerinden okunamaz — önceki bir kurulumun “Yerel anahtar” sensöründen veya bir yedekten almanız gerekir.",
+        "description": "Home Assistant oturum açtı ancak bu cihazın yerel anahtarını Haier sunucularından alamadı — ya da aldığı anahtar cihazın durumunu çözemiyor.{note}\n\nBu çoğu zaman geçicidir, bu yüzden yeniden denemek genellikle işe yarar. Sorun devam ederse bilgileri elle girebilirsiniz; ancak anahtar cihaz üzerinden okunamaz — önceki bir kurulumun “Yerel anahtar” sensöründen veya bir yedekten almanız gerekir.",
         "menu_options": {
           "key_retry": "Anahtarı almayı yeniden dene",
           "manual": "Bunun yerine bilgileri elle gir"
         }
       },
       "reconfigure": {
-        "title": "Bu klimayı yeniden yapılandır",
+        "title": "Bu cihazı yeniden yapılandır",
         "description": "Home Assistant'ın bu cihaza nasıl ulaştığını, cihazı kaldırıp geçmişini kaybetmeden değiştirin.",
         "menu_options": {
           "reconfigure_host": "IP adresini değiştir",
@@ -86,7 +86,7 @@
       },
       "reconfigure_host": {
         "title": "IP adresini değiştir",
-        "description": "Yeni adres kaydedilmeden önce klima üzerinde doğrulanır.",
+        "description": "Yeni adres kaydedilmeden önce cihaz üzerinde doğrulanır.",
         "data": {
           "host": "IP adresi"
         },
@@ -96,18 +96,18 @@
       },
       "reconfigure_cloud": {
         "title": "Haier hesabınızı ekleyin",
-        "description": "Bu klima elle eklendi, bu yüzden Haier anahtarı değiştirdiğinde Home Assistant'ın onu yenilemesinin bir yolu yok — zaman zaman sizden yeni anahtar istenmesinin nedeni bu. Bir kez oturum açın, bundan sonra anahtar kendini yeniler.",
+        "description": "Bu cihaz elle eklendi, bu yüzden Haier anahtarı değiştirdiğinde Home Assistant'ın onu yenilemesinin bir yolu yok — zaman zaman sizden yeni anahtar istenmesinin nedeni bu. Bir kez oturum açın, bundan sonra anahtar kendini yeniler.",
         "data": {
           "username": "E-posta veya telefon numarası",
           "password": "Parola",
           "zone_info": "Haier hesabınızın kayıtlı olduğu ülke"
         },
         "data_description": {
-          "zone_info": "Hesabın oluşturulduğu ülke; yaşadığınız yer veya klimanın kurulu olduğu yer olmayabilir."
+          "zone_info": "Hesabın oluşturulduğu ülke; yaşadığınız yer veya cihazın kurulu olduğu yer olmayabilir."
         }
       },
       "reauth": {
-        "title": "Bu klimanın yeni bir anahtara ihtiyacı var",
+        "title": "Bu cihazın yeni bir anahtara ihtiyacı var",
         "description": "Haier bu cihazın yerel anahtarını değiştirdi, bu yüzden Home Assistant artık durumunu okuyamıyor. Yeniden oturum açmak yeni anahtarı sizin için alır — neredeyse her zaman doğru seçim budur. Anahtarı elle girmek yalnızca zaten elinizde varsa işe yarar.",
         "menu_options": {
           "reauth_cloud": "Oturum aç ve yeni anahtarı otomatik al",
@@ -124,7 +124,7 @@
       },
       "model": {
         "title": "Bu hangi model?",
-        "description": "Klima hangi ürün ailesine ait olduğunu bildirdi; bu da seçimi aşağıdaki modellere daraltıyor. Cihazın üzerinde veya etiketinde yazan modeli seçin.\n\nSeçim yapmak arıza adlarını, kullanılabilirlik kurallarını ve bu cihazın gerçek özellik listesini açar. Atlamak da sorun değil — klima yine de tam olarak okunur ve kumanda edilir.",
+        "description": "Cihaz hangi ürün ailesine ait olduğunu bildirdi; bu da seçimi aşağıdaki modellere daraltıyor. Cihazın üzerinde veya etiketinde yazan modeli seçin.\n\nSeçim yapmak arıza adlarını, kullanılabilirlik kurallarını ve bu cihazın gerçek özellik listesini açar. Atlamak da sorun değil — cihaz yine de tam olarak okunur ve kumanda edilir.",
         "data": {
           "product_code": "Model"
         },
@@ -133,37 +133,37 @@
         }
       },
       "pick_local": {
-        "title": "Ağınızda bulunan klimalar",
+        "title": "Ağınızda bulunan cihazlar",
         "description": "Bunlar ağınızda yanıt verdi, dolayısıyla adresleri ve kimlikleri zaten biliniyor — yalnızca yerel anahtara ihtiyacınız var.\n\nListede yok mu? Geri dönün, bunun yerine IP adresi istenecektir. Daha önce eklenmiş cihazlar gösterilmez.",
         "data": {
-          "host": "Klima"
+          "host": "Cihaz"
         }
       },
       "discovery_confirm": {
-        "title": "Bu klimayı kur",
-        "description": "Home Assistant, {host} (`{device_id}`) adresinde bir Haier klima buldu.\n\nYerel anahtarı, hâlihazırda eklediğiniz Haier hesabından alınacak; yani yazılacak bir şey yok. Eklemek için **Gönder**'i seçin."
+        "title": "Bu cihazı kur",
+        "description": "Home Assistant, {host} (`{device_id}`) adresinde bir Haier cihaz buldu.\n\nYerel anahtarı, hâlihazırda eklediğiniz Haier hesabından alınacak; yani yazılacak bir şey yok. Eklemek için **Gönder**'i seçin."
       }
     },
     "error": {
-      "account_not_in_region": "Seçtiğiniz ülkede (+{zone}) «{username}» adlı bir Haier hesabı bulunamadı. Burada kastedilen, hesabın kayıtlı olduğu ülkedir; yaşadığınız yer ya da klimanın bulunduğu yer olmayabilir. Doğrusunu seçip yeniden deneyin. Klimanız bunun yerine hOn veya Haier China uygulamasını kullanıyorsa, bu entegrasyon o hesaplara hiçbir şekilde giriş yapamaz.",
+      "account_not_in_region": "Seçtiğiniz ülkede (+{zone}) «{username}» adlı bir Haier hesabı bulunamadı. Burada kastedilen, hesabın kayıtlı olduğu ülkedir; yaşadığınız yer ya da cihazın bulunduğu yer olmayabilir. Doğrusunu seçip yeniden deneyin. Cihazınız bunun yerine hOn veya Haier China uygulamasını kullanıyorsa, bu entegrasyon o hesaplara hiçbir şekilde giriş yapamaz.",
       "missing_field": "Haier oturum açmayı reddetti: bir alan eksik veya boştu.",
       "cloud_auth": "Oturum açılamadı. E-postanızı veya telefon numaranızı ve parolanızı kontrol edin.",
       "cannot_connect_cloud": "Oturum açma başarılı, ancak cihazlarınızı listelemek için Haier sunucularına ulaşılamadı. Bu genellikle geçicidir — birazdan yeniden deneyin.",
       "cloud_unreachable": "Haier sunucularına ulaşılamadı. Home Assistant'ın internete erişebildiğini ve Haier'in adresini çözebildiğini kontrol edin — Home Assistant ana makinesindeki bir DNS veya güvenlik duvarı sorunu tam olarak böyle görünür — sonra yeniden deneyin.",
       "invalid_key": "Yerel anahtar 32 karakterlik onaltılık bir dize olmalıdır.",
-      "invalid_auth": "Klima yanıt verdi, ancak bu yerel anahtar durumunu çözmüyor — anahtar yanlış ya da değiştirilmiş.",
-      "cannot_connect": "Klimaya 56800 numaralı bağlantı noktasından ulaşılamadı. IP adresini ve Home Assistant'ın aynı ağda olup olmadığını kontrol edin.",
-      "device_id_required": "Klima, kimlik sorgusuna yanıt vermedi; bu nedenle cihaz kimliği otomatik olarak okunamadı. Elle girin — bu, modülün Wi-Fi MAC adresidir: ayırıcı içermeyen 12 onaltılık karakter.",
-      "account_expired": "Burada zaten kurulu olan Haier hesabı kullanılamadı — oturumunun süresi doldu ya da başka bir yerde yapılan giriş onun yerini aldı. Aşağıdan yeniden giriş yapmak, eklediğiniz tüm klimalar için bunu düzeltir."
+      "invalid_auth": "Cihaz yanıt verdi, ancak bu yerel anahtar durumunu çözmüyor — anahtar yanlış ya da değiştirilmiş.",
+      "cannot_connect": "Cihaza 56800 numaralı bağlantı noktasından ulaşılamadı. IP adresini ve Home Assistant'ın aynı ağda olup olmadığını kontrol edin.",
+      "device_id_required": "Cihaz, kimlik sorgusuna yanıt vermedi; bu nedenle cihaz kimliği otomatik olarak okunamadı. Elle girin — bu, modülün Wi-Fi MAC adresidir: ayırıcı içermeyen 12 onaltılık karakter.",
+      "account_expired": "Burada zaten kurulu olan Haier hesabı kullanılamadı — oturumunun süresi doldu ya da başka bir yerde yapılan giriş onun yerini aldı. Aşağıdan yeniden giriş yapmak, eklediğiniz tüm cihazlar için bunu düzeltir."
     },
     "abort": {
       "already_configured": "Bu cihaz zaten yapılandırılmış.",
       "reauth_successful": "Yerel anahtar güncellendi.",
-      "all_configured": "Bu hesaptaki tüm klimalar Home Assistant'a zaten eklenmiş.",
+      "all_configured": "Bu hesaptaki tüm cihazlar Home Assistant'a zaten eklenmiş.",
       "unknown": "Beklenmeyen hata — cihazın duyurusu anlaşılamadı.",
-      "no_devices": "{username} olarak oturum açıldı, ancak bu Haier hesabında hiç cihaz yok. Uygulamaya Google veya Facebook ile giriyorsanız, önce uygulamada klimayı bu hesapla paylaşın, sonra yeniden deneyin.",
-      "already_in_progress": "Bu klima zaten kuruluyor.",
-      "account_no_devices": "Burada zaten kurulu olan Haier hesabı artık hiçbir cihaz listelemiyor. Klimanın Haier uygulamasında hâlâ bu hesapta olduğunu kontrol edip tekrar deneyin."
+      "no_devices": "{username} olarak oturum açıldı, ancak bu Haier hesabında hiç cihaz yok. Uygulamaya Google veya Facebook ile giriyorsanız, önce uygulamada cihazı bu hesapla paylaşın, sonra yeniden deneyin.",
+      "already_in_progress": "Bu cihaz zaten kuruluyor.",
+      "account_no_devices": "Burada zaten kurulu olan Haier hesabı artık hiçbir cihaz listelemiyor. Cihazın Haier uygulamasında hâlâ bu hesapta olduğunu kontrol edip tekrar deneyin."
     }
   },
   "options": {
@@ -174,7 +174,7 @@
           "scan_interval": "Durum sorgulama aralığı (saniye)"
         },
         "data_description": {
-          "scan_interval": "Klimaya durumunun ne sıklıkla sorulacağı. Her sorgulama tam bir yerel oturumdur ve yalnızca kumandayla veya uygulamayla yapılan değişiklikleri fark etmek için vardır — Home Assistant'tan gönderdiğiniz komutlar zaten anında yansır."
+          "scan_interval": "Cihaza durumunun ne sıklıkla sorulacağı. Her sorgulama tam bir yerel oturumdur ve yalnızca kumandayla veya uygulamayla yapılan değişiklikleri fark etmek için vardır — Home Assistant'tan gönderdiğiniz komutlar zaten anında yansır."
         }
       }
     }
@@ -548,19 +548,19 @@
   "issues": {
     "stale_localkey_manual_reauth": {
       "title": "{name}: localKey değişti — anahtarı elle girmek gerekiyor",
-      "description": "Klima yerel anahtarını değiştirdi (v{old} → v{new}) ve bu cihaz için kayıtlı bir Haier hesabı bilgisi yok; bu yüzden Home Assistant anahtarı kendi başına yenileyemedi ve size sormak zorunda kaldı.\n\nBunun tekrarlanmaması için cihazı açın, **Yeniden yapılandır** seçeneğini seçin ve Haier hesabınızı ekleyin. Anahtar bundan sonra her değişimde kendini yenileyecek."
+      "description": "Cihaz yerel anahtarını değiştirdi (v{old} → v{new}) ve bu cihaz için kayıtlı bir Haier hesabı bilgisi yok; bu yüzden Home Assistant anahtarı kendi başına yenileyemedi ve size sormak zorunda kaldı.\n\nBunun tekrarlanmaması için cihazı açın, **Yeniden yapılandır** seçeneğini seçin ve Haier hesabınızı ekleyin. Anahtar bundan sonra her değişimde kendini yenileyecek."
     },
     "unknown_report_layout": {
-      "title": "{name}: bu klimanın durum biçimi henüz tanınmıyor",
+      "title": "{name}: bu cihazın durum biçimi henüz tanınmıyor",
       "description": "{name} {length} baytlık bir durum raporu gönderiyor; bu entegrasyonun bu rapor için doğrulanmış bir yerleşimi yok (ürün kodu: {product_code}).\n\nSıcaklık, mod, fan hızı ve açma/kapama çalışmaya devam ediyor. İç ve dış ortam sıcaklığı kullanılamıyor ve komut gönderme devre dışı — bilinmeyen bir biçimde ayarların nerede olduğunu tahmin etmek, bir sensör okumasını ayar olarak cihaza geri yazma riski taşır.\n\nDestek eklemek kod gerektirmez, sizden yalnızca üç kısa kayıt yeterlidir. Bağlantıdaki kılavuzu izleyip bir rapor açın; genellikle tek satırlık bir düzeltmedir."
     },
     "key_will_rotate": {
       "title": "{name}: anahtarı değişecek ve bu kurulum bunu takip edemez",
-      "description": "Bu klima hâlâ Haier sunucularına ulaşabiliyor, dolayısıyla günde birkaç kez yeni bir yerel anahtar alıyor. Haier hesabı olmadan eklendiği için Home Assistant yenisini alamaz — anahtar değişiminden sonraki ilk yeniden başlatmada cihaz çalışmayı bırakacak ve yapılandırmasını kaybetmiş gibi görünecektir.\n\nKalıcı iki çözüm, ikisi de her şey çalışırken yapılmalı:\n\n- **Haier hesabınızı ekleyin**: Ayarlar → Cihazlar ve servisler → Haismart → cihaz → Yeniden yapılandır → *Haier hesabınızı ekleyin*. Anahtar değişiklikleri bundan sonra otomatik alınır.\n- **Ya da yönlendiricinizde cihazın internet erişimini engelleyin**. Anahtar artık değişmez ve elinizdeki geçerli kalır. Yerel kontrol her iki durumda da etkilenmez.\n\nBu ileti, ikisinden biri sağlandığı anda kendiliğinden kaybolur."
+      "description": "Bu cihaz hâlâ Haier sunucularına ulaşabiliyor, dolayısıyla günde birkaç kez yeni bir yerel anahtar alıyor. Haier hesabı olmadan eklendiği için Home Assistant yenisini alamaz — anahtar değişiminden sonraki ilk yeniden başlatmada cihaz çalışmayı bırakacak ve yapılandırmasını kaybetmiş gibi görünecektir.\n\nKalıcı iki çözüm, ikisi de her şey çalışırken yapılmalı:\n\n- **Haier hesabınızı ekleyin**: Ayarlar → Cihazlar ve servisler → Haismart → cihaz → Yeniden yapılandır → *Haier hesabınızı ekleyin*. Anahtar değişiklikleri bundan sonra otomatik alınır.\n- **Ya da yönlendiricinizde cihazın internet erişimini engelleyin**. Anahtar artık değişmez ve elinizdeki geçerli kalır. Yerel kontrol her iki durumda da etkilenmez.\n\nBu ileti, ikisinden biri sağlandığı anda kendiliğinden kaybolur."
     },
     "key_refresh_failed": {
       "title": "{name}: anahtarı değişti ve otomatik alma çalışmadı",
-      "description": "Klimaya yeni bir yerel anahtar verildi (v{old} → v{new}). Haier hesabınız bu cihaz için kayıtlı, bu yüzden Home Assistant yenisini kendisi almayı denedi — başaramadı ve bu nedenle size sordu.\n\n**Hesap bilgileriniz zaten kayıtlı, eklenecek bir şey yok.** İstemden yeniden oturum açmak sorunu şimdi çözer. Tekrar tekrar oluyorsa otomatik yol yanlış yapılandırılmış değil, engelleniyordur; olağan nedenler:\n\n- Yönlendiriciniz veya operatörünüz Haier'in anahtar servisini engelliyor, sıradan oturum açma ise çalışmaya devam ediyor.\n- Kayıtlı oturum artık kabul edilmiyor — Haier uygulamasında oturum açmak diğer oturumları sonlandırabilir. Burada yeniden oturum açmak bunu geri getirir.\n\n**Kalıcı çözüm:** yönlendiricinizde klimanın internet erişimini engelleyin. Anahtarı artık değişmez ve elinizdeki süresiz geçerli kalır — README'ye bakın. Yerel kontrol etkilenmez."
+      "description": "Cihaza yeni bir yerel anahtar verildi (v{old} → v{new}). Haier hesabınız bu cihaz için kayıtlı, bu yüzden Home Assistant yenisini kendisi almayı denedi — başaramadı ve bu nedenle size sordu.\n\n**Hesap bilgileriniz zaten kayıtlı, eklenecek bir şey yok.** İstemden yeniden oturum açmak sorunu şimdi çözer. Tekrar tekrar oluyorsa otomatik yol yanlış yapılandırılmış değil, engelleniyordur; olağan nedenler:\n\n- Yönlendiriciniz veya operatörünüz Haier'in anahtar servisini engelliyor, sıradan oturum açma ise çalışmaya devam ediyor.\n- Kayıtlı oturum artık kabul edilmiyor — Haier uygulamasında oturum açmak diğer oturumları sonlandırabilir. Burada yeniden oturum açmak bunu geri getirir.\n\n**Kalıcı çözüm:** yönlendiricinizde cihazın internet erişimini engelleyin. Anahtarı artık değişmez ve elinizdeki süresiz geçerli kalır — README'ye bakın. Yerel kontrol etkilenmez."
     }
   },
   "exceptions": {

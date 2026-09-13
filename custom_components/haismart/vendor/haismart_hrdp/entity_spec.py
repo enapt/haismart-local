@@ -37,6 +37,7 @@ __all__ = [
     "Control",
     "EntitySpec",
     "english_name",
+    "enum_label",
     "specs_for",
 ]
 
@@ -200,6 +201,75 @@ def english_name(attribute: str) -> str:
     return " ".join(out)
 
 
+# --- enum labels ---------------------------------------------------------------------------------
+# An enum value's human label comes from the DEVICE's own model (`valueRange.dataList[].desc`), and
+# Haier publishes those in Chinese. ⚠️ Not for want of asking: the cloud client already sends
+# `language: en-us` on every request and issue #13's model came back with `即热模式` regardless.
+# Scope of that: one account, one product, one fetch -- it is not established that no product or
+# account ever gets English.
+#
+# So: translate what recurs, and fall back to the manufacturer's own label rather than to a bare
+# number. A Chinese label a user can paste into a search engine is more use than "Mode 19".
+# ⓘ The frequency ranking behind this table was taken over the catalogue's AC models, which is the
+# only corpus with enum descriptions in it -- so it is strongest on the terms every appliance
+# shares (on/off, high/medium/low, auto, locked) and thinnest on category-specific programme names.
+_ENUM_LABELS: Mapping[str, str] = MappingProxyType({
+    # the universals -- 10,500 occurrences of the first two alone
+    "开": "On", "关": "Off", "开机": "On", "关机": "Off", "开启": "On", "关闭": "Off",
+    "有": "Yes", "无": "No", "有效": "Enabled", "无效": "Disabled",
+    "高": "High", "中": "Medium", "低": "Low", "自动": "Auto",
+    "高风": "High", "中风": "Medium", "低风": "Low",
+    "锁定": "Locked", "解锁": "Unlocked", "未锁定": "Unlocked",
+    "正常": "Normal", "标准": "Standard", "清零": "Reset",
+    "摄氏度": "Celsius", "华氏度": "Fahrenheit",
+    # modes that recur across categories
+    "节能": "Energy saving", "强力": "Boost", "静音": "Quiet", "快速": "Rapid",
+    "除菌": "Sterilise", "杀菌": "Sterilise", "保温": "Keep warm", "预约": "Scheduled",
+    "即热": "Instant heat", "即热模式": "Instant heat", "智能": "Smart", "舒适": "Comfort",
+    "睡眠": "Sleep", "假期": "Holiday", "童锁": "Child lock", "烘干": "Dry",
+    "加热": "Heating", "制冷": "Cooling", "制热": "Heating", "除湿": "Dehumidify",
+    "送风": "Fan only", "通风": "Ventilate", "待机": "Standby", "运行": "Running",
+    "暂停": "Paused", "结束": "Finished", "故障": "Fault", "停止": "Stopped",
+    "中温保温": "Mid-temperature keep warm", "动态夜电模式": "Off-peak",
+    "随温而动": "Adaptive", "Eco除菌": "Eco sterilise",
+    "单预约": "One schedule", "双预约": "Two schedules",
+})
+
+
+# Labels that are a word plus a number. A table cannot hold "预约1", "预约2", "预约1+2" and the
+# eight positions of a vane separately for every appliance; the pattern does.
+_LABEL_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (re.compile(r"^预约\s*([\d+\s]+)$"), r"Schedule \1"),
+    (re.compile(r"^位置\s*([一二三四五六七八九十\d]+)$"), r"Position \1"),
+    (re.compile(r"^(\d+)档$"), r"Level \1"),
+)
+_CHINESE_NUMERALS = {"一": "1", "二": "2", "三": "3", "四": "4", "五": "5",
+                     "六": "6", "七": "7", "八": "8", "九": "9", "十": "10"}
+
+
+def enum_label(value: Any, description: str | None) -> str:
+    """A human label for one enum value.
+
+    Order: a translation of the manufacturer's own description, then a pattern for the
+    word-plus-number labels a table cannot enumerate, then that description verbatim, then the bare
+    value. ⛔ Never an invented name — a value this project cannot name is shown as what the
+    manufacturer calls it, not as a guess at what it does.
+    """
+    if not description:
+        return str(value)
+    text = description.strip()
+    if text in _ENUM_LABELS:
+        return _ENUM_LABELS[text]
+    for pattern, replacement in _LABEL_PATTERNS:
+        match = pattern.match(text)
+        if match:
+            out = pattern.sub(replacement, text).strip()
+            for cn, arabic in _CHINESE_NUMERALS.items():
+                out = out.replace(cn, arabic)
+            return out
+    return text
+
+
 @dataclass(frozen=True)
 class EntitySpec:
     """One attribute, as the entity it should become.
@@ -230,24 +300,27 @@ class EntitySpec:
 
 
 def _declared_options(
-    field: ModelField, declared_values: Sequence[Any] | None
+    field: ModelField, declared: Sequence[Mapping[str, Any]] | None
 ) -> tuple[tuple[Any, str], ...]:
     """The enum values to offer, as ``(value, label)``.
 
     The DEVICE's list wins where it has one -- issue #13's heater declares 8 of its class's 19
     running modes -- and the class map is the fallback for a device whose model lists no values.
+    ⛔ A value the CLASS MAP cannot encode is dropped whatever the device says about it: offering
+    an option no write could express is a control that fails when it is used.
     """
-    labels: dict[Any, str] = {}
-    for entry in field.variants if isinstance(field.variants, list) else ():
-        std = entry.get("stdValue")
-        if std is not None:
-            labels[str(std)] = f"{std}"
-    source = declared_values if declared_values else list(labels)
+    encodable = {
+        str(entry.get("stdValue"))
+        for entry in (field.variants if isinstance(field.variants, list) else ())
+        if entry.get("stdValue") is not None
+    }
+    source: Sequence[Mapping[str, Any]] = declared or [{"data": v} for v in sorted(encodable)]
     out: list[tuple[Any, str]] = []
-    for value in source:
-        if str(value) not in labels:
-            continue            # a value the class map cannot encode is not offerable
-        out.append((value, str(value)))
+    for entry in source:
+        value = entry.get("data")
+        if value is None or str(value) not in encodable:
+            continue
+        out.append((value, enum_label(value, entry.get("desc"))))
     return tuple(out)
 
 
@@ -297,10 +370,9 @@ def _spec(
         return EntitySpec(name, Control.SENSOR, english, False, diagnostic=True)
 
     values = ((declared or {}).get("valueRange") or {}).get("dataList") or []
-    declared_values = [entry.get("data") for entry in values if entry.get("data") is not None]
 
     if field.is_enum:
-        options = _declared_options(field, declared_values)
+        options = _declared_options(field, values)
         # Two-value booleans are a switch or a binary sensor, not a two-item dropdown. Haier models
         # 8,218 of them that way -- half the catalogue -- and every one would otherwise be a select.
         boolean = field.data_type == "bool" or (

@@ -342,3 +342,134 @@ async def test_an_existing_unknown_layout_repair_is_cleared_once_the_map_decodes
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
     assert registry.async_get_issue(DOMAIN, issue_id) is None
+
+
+# --- the generic entity layer -------------------------------------------------------------------
+
+async def test_it_gets_an_entity_for_everything_its_own_model_declares(
+    hass: HomeAssistant, water_heater
+) -> None:
+    """The point of the whole exercise: an appliance nobody here owns comes up furnished.
+
+    None of these is hand-written. Each is an attribute the unit's own model declares, placed by
+    Haier's byte map and classified by its published type — a switch for a writable boolean, a
+    read-only boolean as a binary sensor, an enum as a labelled sensor, a number with its unit.
+    """
+    await _setup(hass)
+
+    # A writable boolean with a published write id -> a switch, and it reads real state.
+    dual = hass.states.get("switch.hot_water_dual_heater_mode")
+    assert dual is not None and dual.state == "off"
+
+    # A read-only boolean -> a binary sensor, not a switch that would silently fail.
+    assert hass.states.get("binary_sensor.hot_water_reservation_1_running_status").state == "off"
+    assert hass.states.get("binary_sensor.hot_water_reservation_1_cycle_status").state == "on"
+
+    # An enum, labelled from the manufacturer's own description rather than shown as a code.
+    work = hass.states.get("sensor.hot_water_work_status")
+    assert work is not None and work.state == "Keep warm"
+
+    # A number with its unit, and the class map's own scaling applied.
+    reserve = hass.states.get("sensor.hot_water_reservation_1_temperature")
+    assert reserve is not None and float(reserve.state) == 50.0
+
+    # Every generated entity carries the manufacturer's identifier, because a bug report about one
+    # is unreadable without the string it was generated from.
+    assert dual.attributes["haier_attribute"] == "dualHeaterMode"
+
+
+async def test_it_is_not_given_air_conditioner_entities(
+    hass: HomeAssistant, water_heater
+) -> None:
+    """⛔ The phantom problem, arriving from the other direction.
+
+    The curated entity sets are an air conditioner's and were created unconditionally, so a water
+    heater was issued a compressor, a coil temperature, a discharge temperature, a swing preset, a
+    self-clean button and five AC mode switches. Every one read `unknown` for ever.
+    """
+    await _setup(hass)
+    for phantom in (
+        "binary_sensor.hot_water_compressor",
+        "binary_sensor.hot_water_fan",
+        "sensor.hot_water_coil_temperature",
+        "sensor.hot_water_discharge_temperature",
+        "sensor.hot_water_indoor_temperature",
+        "sensor.hot_water_outdoor_temperature",
+        "sensor.hot_water_last_self_clean",
+        "select.hot_water_eco",
+        "switch.hot_water_quiet",
+        "switch.hot_water_strong",
+        "switch.hot_water_sleep",
+        "switch.hot_water_health",
+        "button.hot_water_start_self_clean",
+    ):
+        assert hass.states.get(phantom) is None, f"{phantom} is an air conditioner's"
+
+
+async def test_an_air_conditioner_keeps_every_curated_entity(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The other half of that gate, and the one that must not regress.
+
+    An air conditioner gets its hand-built set and NO generic duplicates of it — running both
+    layers would give every AC a second, worse copy of its own controls.
+    """
+    from conftest import make_status_frame
+
+    mock_uss.read.return_value = [make_status_frame()]
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Downstairs AC",
+        unique_id="A1B2C3D4E5F6",
+        data={
+            CONF_HOST: "192.168.1.50",
+            CONF_DEVICE_ID: "A1B2C3D4E5F6",
+            CONF_LOCAL_KEY: "00112233445566778899aabbccddeeff",
+            CONF_PRODUCT_CODE: "AAC1UKZ01",
+            CONF_LOCALKEY_VERSION: 4,
+        },
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("sensor.downstairs_ac_indoor_temperature") is not None
+    assert hass.states.get("switch.downstairs_ac_quiet") is not None
+    assert entry.runtime_data.uses_curated_ac_entities is True
+    assert entry.runtime_data.entity_specs == ()
+
+
+async def test_a_device_we_cannot_decode_keeps_what_it_has_today(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The no-regression clause, asserted rather than assumed.
+
+    A device whose class we cannot identify AND whose report the byte map cannot decode is exactly
+    the install that works today by virtue of the AC path. It must lose nothing: there is no model
+    to build replacement entities from, so withholding the curated set would leave it with none.
+    """
+    from conftest import make_status_frame
+
+    mock_uss.read.return_value = [make_status_frame()]
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Mystery",
+        unique_id="A1B2C3D4E5F6",
+        data={
+            CONF_HOST: "192.168.1.50",
+            CONF_DEVICE_ID: "A1B2C3D4E5F6",
+            CONF_LOCAL_KEY: "00112233445566778899aabbccddeeff",
+            CONF_PRODUCT_CODE: "AAC1UKZ01",
+            CONF_LOCALKEY_VERSION: 4,
+            # A class that is in no catalogue, so no byte map and no kind.
+            CONF_UPLUS_ID: "2008610800820324" + "ffff" + "0" * 44,
+        },
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.runtime_data.model_decoded is False
+    assert entry.runtime_data.uses_curated_ac_entities is True
+    assert hass.states.get("sensor.mystery_indoor_temperature") is not None
+    assert hass.states.get("climate.mystery") is not None

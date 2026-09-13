@@ -10,12 +10,14 @@ from dataclasses import dataclass
 from typing import Any
 
 from haismart_hrdp import PANEL_BOOL_CONTROLS
+from haismart_hrdp.entity_spec import Control
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import HaismartConfigEntry, HaismartCoordinator
 from .entity import HaismartEntity
+from .generic import GenericEntity, specs_of
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -49,10 +51,11 @@ async def async_setup_entry(
     # five; compact-12 has none of them, and creating a switch there produced a control that read
     # `unknown` forever and raised the moment it was touched. Same rule the readings follow: expose
     # what the unit really has, not a button that does nothing.
+    curated = coordinator.uses_curated_ac_entities
     entities = [
         HaismartSwitch(coordinator, desc)
         for desc in SWITCHES
-        if coordinator.supports_field(desc.field)
+        if curated and coordinator.supports_field(desc.field)
     ]
     # The rest of the panel's boolean control surface: functions the app renders a switch for and
     # this unit declares (not invisible), positioned by the invariant frame. Offered the way the app
@@ -66,7 +69,14 @@ async def async_setup_entry(
                 translation_key=PANEL_BOOL_CONTROLS[field],
             ),
         )
-        for field in coordinator.panel_switch_fields()
+        for field in (coordinator.panel_switch_fields() if curated else ())
+    )
+    # Everything else: an appliance that is not an air conditioner gets a switch for every boolean
+    # its own model declares and the manufacturer publishes a write id for. `specs_of` is empty for
+    # an AC, so the curated set above stays the whole story there.
+    entities.extend(
+        HaismartGenericSwitch(coordinator, spec)
+        for spec in specs_of(coordinator, Control.SWITCH)
     )
     async_add_entities(entities)
 
@@ -109,3 +119,18 @@ class HaismartSwitch(HaismartEntity, SwitchEntity):
     async def async_turn_off(self, **kwargs: Any) -> None:
         self.raise_if_locked(self.entity_description.field)
         await self.coordinator.async_send_control({self.entity_description.field: 0})
+
+
+class HaismartGenericSwitch(GenericEntity, SwitchEntity):
+    """A boolean the appliance's own model declares, written one parameter at a time."""
+
+    @property
+    def is_on(self) -> bool | None:
+        value = self.native_value_raw
+        return None if value is None else bool(value)
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        await self.async_write(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        await self.async_write(False)

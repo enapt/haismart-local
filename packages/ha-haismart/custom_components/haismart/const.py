@@ -26,11 +26,20 @@ PLATFORMS_BY_KIND: dict[ApplianceKind, list[Platform]] = {
     ApplianceKind.WATER_HEATER: [
         Platform.BINARY_SENSOR,
         Platform.BUTTON,
+        Platform.NUMBER,
         Platform.SENSOR,
         Platform.SWITCH,
         Platform.SELECT,
         Platform.WATER_HEATER,
     ],
+}
+
+# Attributes a HERO platform already owns, so the generic layer does not build a second control
+# for the same setting beside it. A water heater's setpoint belongs to its `water_heater` entity.
+HERO_ATTRIBUTES: dict[ApplianceKind, frozenset[str]] = {
+    ApplianceKind.WATER_HEATER: frozenset(
+        {"currentTemperature", "targetTemperature", "onOffStatus", "runningMode"}
+    ),
 }
 
 # What a device we cannot identify gets. ⚠️ It is the full set MINUS climate, and the caller adds
@@ -40,6 +49,7 @@ PLATFORMS_BY_KIND: dict[ApplianceKind, list[Platform]] = {
 PLATFORMS_UNIDENTIFIED: list[Platform] = [
     Platform.BINARY_SENSOR,
     Platform.BUTTON,
+    Platform.NUMBER,
     Platform.SENSOR,
     Platform.SWITCH,
     Platform.SELECT,

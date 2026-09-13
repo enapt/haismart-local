@@ -97,6 +97,7 @@ from haismart_hrdp import (
 )
 from haismart_hrdp.appliance import ApplianceKind, kind_for
 from haismart_hrdp.device_model import DeviceModel, model_for
+from haismart_hrdp.entity_spec import EntitySpec, specs_for
 from haismart_hrdp.uss import frame_key
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -131,6 +132,7 @@ from .const import (
     DOMAIN,
     EXTENDED_MISSES,
     EXTENDED_READING_KEYS,
+    HERO_ATTRIBUTES,
     ISSUE_KEY_REFRESH_FAILED,
     ISSUE_KEY_WILL_ROTATE,
     ISSUE_STALE_LOCALKEY,
@@ -1232,6 +1234,43 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return frozenset(
             f.name for f in model.writable_fields()
             if not declared or f.name in declared
+        )
+
+    @property
+    def uses_curated_ac_entities(self) -> bool:
+        """Whether this device gets the hand-built air-conditioner entity set.
+
+        Those entities are created unconditionally and read ``unknown`` on anything that is not an
+        air conditioner: a water heater was given a compressor, a coil temperature, a swing preset
+        and five AC mode switches, none of which it has. That is the phantom-entity problem the
+        declaration gate exists to prevent, arriving from the other direction.
+
+        ⚠️ The second clause is the no-regression clause, and it is why this is not simply
+        ``kind is AIR_CONDITIONER``: a device whose class we cannot identify **and** whose report
+        the byte map cannot decode keeps exactly what it has today. Only an appliance we can build
+        entities for from its own model loses the curated set — and it loses nothing, because
+        everything it really has arrives instead.
+        """
+        return self.appliance_kind is ApplianceKind.AIR_CONDITIONER or not self.model_decoded
+
+    @property
+    def entity_specs(self) -> tuple[EntitySpec, ...]:
+        """Entities this appliance should have, from its own declaration and the published map.
+
+        ⛔ Empty for an air conditioner, deliberately. The AC entity set is hand-built and carries
+        behaviour no generic rule reproduces -- vane positions, swing axes, presets, co-commands --
+        and running both layers would give every AC a second, worse copy of its own controls.
+
+        Also empty for any device the byte map did not decode, which is the safe direction: entities
+        are created from what a report actually yielded, not from what a class could carry.
+        """
+        if self.appliance_kind is ApplianceKind.AIR_CONDITIONER or not self.model_decoded:
+            return ()
+        return specs_for(
+            self.device_model,
+            (self.digital_model or {}).get("attributes"),
+            writable=self.model_write_fields(),
+            exclude=HERO_ATTRIBUTES.get(self.appliance_kind, frozenset()),
         )
 
     def model_attribute_range(self, name: str) -> tuple[float, float, float] | None:

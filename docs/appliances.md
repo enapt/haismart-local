@@ -1,8 +1,8 @@
 # Appliance support
 
 This integration was built for air conditioners and that is where nearly all of its testing lies.
-It now covers the rest of the Haier range as well, through a different mechanism — and the
-difference matters when you are deciding whether to trust it, so it is set out plainly here.
+The rest of the Haier range is covered through a different mechanism — and the difference matters
+when you are deciding whether to trust it, so it is set out plainly here.
 
 ## How non-air-conditioner support works
 

@@ -7,10 +7,10 @@
 [![Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/EFfknne8Bm)
 
 _Control your Haier appliance from Home Assistant entirely over your own network. You sign in once
-so the integration can fetch your unit's key; after that it talks only to the appliance, on your LAN.
-Everything else it needs, including the published details of **every air conditioner in the range**
-and the byte-level model of **every other appliance category Haier documents**, ships with it — keep
-a copy of that key and setup works with no internet at all._
+so the integration can fetch your unit's key; after that it talks only to the appliance, on your
+LAN. Everything else it needs ships with it — the published details of **every air conditioner in
+the range**, and the byte-level model of **every other appliance category Haier documents**. Keep a
+copy of that key and setup works with no internet at all._
 
 > **This is the home of the project.** Releases are cut and issues answered at
 > [`enapt/haismart-local`](https://github.com/enapt/haismart-local). Copies exist elsewhere, with
@@ -26,19 +26,19 @@ English-only; the pages above cover install and setup._
 <details>
 <summary><b>Table of contents</b></summary>
 
-- [Is my appliance supported?](#is-my-appliance-supported)
-- [What you get](#what-you-get)
+- [Is my appliance supported?](#is-my-appliance-supported) —
+  [air conditioners](#air-conditioners) · [everything else](#everything-else)
+- [What you get](#what-you-get) —
+  [an air conditioner](#an-air-conditioner) · [any other appliance](#any-other-appliance)
 - [Before you install](#before-you-install)
 - [Installation](#installation)
 - [Set up your appliance](#set-up-your-appliance)
 - [Automation examples](#automation-examples)
 - [Going fully cloud-independent](#going-fully-cloud-independent)
-- [Something not working?](#something-not-working) — and the
-  [full troubleshooting guide](docs/TROUBLESHOOTING.md)
-- [Contributing](#contributing)
-- [Credits](#credits)
-- [How sign-in works](#how-sign-in-works)
-- [Disclaimer](#disclaimer)
+- [Something not working?](#something-not-working)
+- [Documentation](#documentation) — every guide in this repository
+- [Contributing](#contributing) · [Credits](#credits)
+- [How sign-in works](#how-sign-in-works) · [Disclaimer](#disclaimer)
 
 </details>
 
@@ -54,9 +54,6 @@ English-only; the pages above cover install and setup._
 "SE-Asia" label the platform carries internally, accounts registered well outside that region work
 fine.
 
-Air conditioners are the best-supported and by far the best-tested case; the rest of the range is
-covered too, and the difference is set out under [Other appliances](#other-appliances) below.
-
 | Your app | Supported here? | Use instead |
 |---|---|---|
 | **Haier / Haismart / Haier U+ / uHome** | ✅ **Yes** | — |
@@ -65,66 +62,48 @@ covered too, and the difference is set out under [Other appliances](#other-appli
 | SmartHQ (US / GE Appliances) | ❌ No — different platform entirely | — |
 | SmartAir2 / Smart Clima (older units) | ❌ No — same port, older unencrypted protocol | [oxystin/homebridge-haier-air-conditioner](https://github.com/oxystin/homebridge-haier-air-conditioner) |
 
-**Confirmed working units** are listed in [`DEVICES.md`](DEVICES.md). Yours not there? It will very
-likely still work, and not by luck: the integration carries the published description of **every air
-conditioner in the manufacturer's catalogue — 1,451 product codes covering 1,416 model numbers**, in
-every region and category, window units included. Which settings each has, what its faults are
-called, which controls it ignores in which state — so it configures itself for a unit nobody here has
-ever seen. Many of those entries are the same unit in another colour or market, and 21 model names
-are shared by more than one product, which is why setup asks which product yours is rather than
-trusting the label. If something decodes oddly, that's a
+**Quick check:** if `nc -z <your-appliance-ip> 56800` succeeds, the local protocol is listening.
+
+Anything with **no Wi-Fi module of its own** is out of reach whatever app it uses — bulbs, sockets,
+curtains, door and motion sensors sitting behind a Haier gateway have no address of their own and do
+not speak this protocol.
+
+### Air conditioners
+
+The case this was built for, and by far the best tested. Confirmed units are listed in
+[`DEVICES.md`](DEVICES.md) — but yours will very likely work even if it isn't there, and not by
+luck: the integration carries the published description of **every air conditioner in the
+manufacturer's catalogue, 1,451 product codes covering 1,416 model numbers**, in every region and
+category, window units included. Which settings each has, what its faults are called, which controls
+it ignores in which state — so it configures itself for a unit nobody here has ever seen.
+
+Many of those entries are the same unit in another colour or market, and 21 model names are shared
+by more than one product, which is why setup asks which product yours is rather than trusting the
+label. If something decodes oddly, that's a
 [great issue to open](docs/TROUBLESHOOTING.md#before-you-open-an-issue).
 
-**Quick check:** if `nc -z <your-ac-ip> 56800` succeeds, the local protocol is listening.
+### Everything else
 
-### Other appliances
+Water heaters (electric, gas and heat-pump), refrigerators, washing machines, dishwashers, cooker
+hoods, gas hobs, sterilising cabinets, ovens and air purifiers are covered too — **165 product types
+across 36 device classes** — but through a different mechanism, and the difference is worth knowing
+before you rely on it.
 
-Air conditioners are what this integration was built for and where almost all of its testing lies.
-It now also carries **every other appliance category the manufacturer publishes a byte map for** —
-water heaters (electric, gas and heat-pump), refrigerators, washing machines, dishwashers, cooker
-hoods, gas hobs, sterilising cabinets, ovens and air purifiers.
+There is no appliance-specific code behind any of them. Haier publishes, per product type, the
+position and meaning of every field in a status report; the integration ships those maps and fetches
+one for a type it does not already carry. Your appliance's own model then says which of those fields
+it actually has, and each becomes an entity of the right kind — see
+[any other appliance](#any-other-appliance) for what that produces.
 
-Not one of those has appliance-specific code behind it. Haier publishes, per product type, the
-position and meaning of every field in a status report; the integration ships that map for **165
-product types across 36 device classes** and fetches it for any it does not have. Your appliance's own model then says which of those
-fields it actually has, and each becomes an entity of the right kind — a switch for a setting it can
-write, a sensor for a reading, a dropdown for a mode, a number for a temperature, with the units,
-ranges and options the manufacturer states. A water heater gets a `water_heater` entity with its own
-range and operating modes; nothing gets a thermostat unless it is one.
-
-⚠️ **What that does and does not mean.** The maps are the manufacturer's and the decode is checked
-against every capture this project holds — two air conditioners, a heat-pump water heater and a
-washing machine — but **most categories have never been seen on real hardware here**, and no
-non-AC unit has ever had a command written to it. If you have one, it should come up correctly and
-its diagnostics will say exactly what was decoded; please
+⚠️ **The maps are the manufacturer's, but most categories have never been seen on real hardware
+here**, and no non-air-conditioner has ever had a command written to it by this project. The decode
+is checked against every capture held here — two air conditioners, a heat-pump water heater and a
+washing machine. If you own one of the rest, it should come up correctly and its diagnostics will
+say exactly what was decoded; please
 [open an issue](docs/TROUBLESHOOTING.md#before-you-open-an-issue) either way, including one that
 just works. Two things are deliberately withheld until somebody can verify them: settings written
-through a *group* command (a water heater's reservation times, a washer's programme), and any
-appliance whose class Haier only publishes in its older profile format.
-
-Anything Haier sells that has **no Wi-Fi module of its own** — bulbs, sockets, curtains, door and
-motion sensors behind a gateway — is out of reach entirely. Those do not speak the local protocol
-this integration uses, and no amount of byte map changes that.
-
-**What the bigger categories actually carry.** These are read from the manufacturer's maps, not a
-wish list — your unit gets the subset it declares:
-
-| Category | types | Some of what it reads and controls |
-|---|---:|---|
-| **Water heaters** (electric) | 76 | Target and current temperature · heating status · tank volume · power draw · reservation schedules with their own temperatures · changed-by |
-| **Refrigerators** | 16 | Fridge and freezer temperatures, targets and sensor readings · door status · quick-freeze and quick-chill · intelligence mode · interior light · ambient sensor |
-| **Washing machines** | 15 | Spin speed · cycle phase · remaining wash time · actual load weight · detergent level · water used · permanent-press and loosen options · child-lock |
-| **Gas water heaters** | 9 | Target and outlet temperature · water flow · valve and flow status · safety lock · energy saving · smart temperature sensing · methane alarm |
-| **Sterilising cabinets** | 5 | Air quality · humidity · air-cleaning status · door smart-open · lock · clock |
-| **Cooker hoods** | 4 | Fan speed (level and percent) · scene lighting · self-clean · smart wind and pressurise · gesture control · presence sensing |
-| **Gas hobs** | 3 | Per-burner ignition and flame status · per-burner target temperature and timers · child-lock |
-| **Heat-pump water heaters** | 2 | Target and current temperature · operating mode · electric-heating and auto-defrost · four reservation schedules · off-peak windows · energy saved |
-| **Dishwashers** · **Steam ovens** | 1 each | Cleaning/bake status and steps · probe and sensor temperatures · waste-water and water-hardness · standby |
-| **Air purifiers** | 1 | Air quality (dust and LED) · filter life · humidity · fan velocity · timer |
-
-⚠️ A few field names are still the manufacturer's raw identifier rather than English — the air
-purifier publishes two of its switches only in pinyin. Every entity carries Haier's own identifier
-and description as attributes, so anything odd is easy to report precisely.
+through a *group* command (a water heater's reservation times, a washer's programme), and the 27
+product types Haier publishes only in an older profile format.
 
 ➡️ **[Appliance support in detail](docs/appliances.md)** — every device class carried, which tier of
 evidence each sits in, and what is deliberately withheld.
@@ -166,10 +145,10 @@ positions, **energy monitoring** and **polling**, in detail.
 
 ### Any other appliance
 
-There is no per-appliance code and no hand-written entity list. Your appliance's entities are built
-from two things: the manufacturer's published byte map for its product class, and **your unit's own
-declaration** of which of those fields it actually has. Nothing a unit does not declare becomes an
-entity, so you do not get a phantom control for a feature your model was never built with.
+Your appliance's entities are built from two things: the manufacturer's published byte map for its
+product class, and **your unit's own declaration** of which of those fields it actually has. Nothing
+a unit does not declare becomes an entity, so you do not get a phantom control for a feature your
+model was never built with.
 
 Each declared field becomes the kind of entity it deserves, carrying the manufacturer's own unit,
 range and option list:
@@ -190,7 +169,24 @@ entities above.
 
 Every generated entity also carries Haier's own identifier and description for the field
 (`haier_attribute`, `haier_description`) as attributes, so anything named oddly is easy to report
-precisely.
+precisely. A few names are that raw identifier rather than English: the air purifier publishes two
+of its switches only in pinyin.
+
+**What the bigger categories actually carry.** These are read from the manufacturer's maps, not a
+wish list — your unit gets the subset it declares:
+
+| Category | types | Some of what it reads and controls |
+|---|---:|---|
+| **Water heaters** (electric) | 76 | Target and current temperature · heating status · tank volume · power draw · reservation schedules with their own temperatures · changed-by |
+| **Refrigerators** | 16 | Fridge and freezer temperatures, targets and sensor readings · door status · quick-freeze and quick-chill · intelligence mode · interior light · ambient sensor |
+| **Washing machines** | 15 | Spin speed · cycle phase · remaining wash time · actual load weight · detergent level · water used · permanent-press and loosen options · child-lock |
+| **Gas water heaters** | 9 | Target and outlet temperature · water flow · valve and flow status · safety lock · energy saving · smart temperature sensing · methane alarm |
+| **Sterilising cabinets** | 5 | Air quality · humidity · air-cleaning status · door smart-open · lock · clock |
+| **Cooker hoods** | 4 | Fan speed (level and percent) · scene lighting · self-clean · smart wind and pressurise · gesture control · presence sensing |
+| **Gas hobs** | 3 | Per-burner ignition and flame status · per-burner target temperature and timers · child-lock |
+| **Heat-pump water heaters** | 2 | Target and current temperature · operating mode · electric-heating and auto-defrost · four reservation schedules · off-peak windows · energy saved |
+| **Dishwashers** · **Steam ovens** | 1 each | Cleaning/bake status and steps · probe and sensor temperatures · waste-water and water-hardness · standby |
+| **Air purifiers** | 1 | Air quality (dust and LED) · filter life · humidity · fan velocity · timer |
 
 **A worked example — the heat-pump water heater from [issue #13](https://github.com/enapt/haismart-local/issues/13):**
 27 entities, built with no water-heater-specific code. A `water_heater` entity at its declared

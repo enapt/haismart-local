@@ -200,8 +200,8 @@ four separate downloads.
 
 - Home Assistant and the appliance must be on the **same subnet**. There's no cloud relay to fall
   back on.
-- The AC accepts **one local session at a time**. Running another Haier local integration against
-  the same unit will make both misbehave.
+- The appliance accepts **one local session at a time**. Running another Haier local integration
+  against the same unit will make both misbehave.
 - Installing this **does not stop your appliance talking to Haier**. It keeps its own cloud connection
   unless you firewall it — see [going fully cloud-independent](#going-fully-cloud-independent).
 - A **DHCP reservation** is optional: if the appliance's address moves, the integration finds the
@@ -338,11 +338,11 @@ Three things cover most of it:
 
 * **Sign-in fails** — it is almost always the **country code**: the dialling code of the country your
   Haier account was registered in, which may not be where you live.
-* **It keeps asking for the key** — the key rotates, and a firewalled AC cannot be re-keyed
+* **It keeps asking for the key** — the key rotates, and a firewalled appliance cannot be re-keyed
   automatically. [Going fully cloud-independent](#going-fully-cloud-independent) explains the
   trade-off; the troubleshooting guide explains how to get a fresh key by hand.
-* **The AC changed IP** — handled for you. The integration follows it by MAC, usually within the
-  same poll.
+* **The appliance changed IP** — handled for you. The integration follows it by MAC, usually within
+  the same poll.
 
 ➡️ **[Full troubleshooting guide](docs/TROUBLESHOOTING.md)** — every known failure, its cause and its
 fix, plus **what to include when you open an issue** so it can be answered in one round trip.

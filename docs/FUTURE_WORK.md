@@ -58,6 +58,14 @@ fetched."* **That is wrong in both halves.** `catalogue/configfiles/` **and** `c
 each carry `201c120000118674200100418007574800000000000000000000000000000040` — the reporter's exact
 typeid — fetched **2026-09-01** in the same sweep as everything else (211 KB and 81 KB).
 
+⚠️ **The file's mtime no longer shows 2026-09-01 and that is not evidence against this** (checked
+2026-09-13, after it briefly looked like one): the configFile was **re-fetched on 2026-09-13**, which
+reset it. ★ **The control is the funcModel** — `catalogue/funcmodels/<same typeid>.json` is dated
+**2026-09-03** (the funcModel sweep) and has *not* been re-fetched, so the reporter's exact typeid was
+in our enumeration **six days before the issue was filed**. The configFile sweep enumerated the same
+**194 catalogue typeids** (`catalogue/configfiles/README.md`), and both `2001` typeids came back.
+⇒ Do not re-derive this from timestamps alone.
+
 ⚠️ **What made it wrong is worth more than the fact:** the claim was a guess at a filename pattern
 that nobody enumerated (`METHOD.md` Rule 2 — enumerate a file's keys, never grep for the name you
 expect). A class histogram over the directory takes one line and gives **~44 device classes**, not
@@ -194,29 +202,55 @@ serialisable diagnostics download and a clean unload/reload.
 ⛔ **Not confirmed on hardware: any write.** No byte has been sent to this appliance. The reporter's
 control is disabled today, so the first write is theirs to make, and it must be read back.
 
-**What closes it — restated 2026-09-13, with (1) and (3) already done:**
-~~(1) the configFile + funcModel for that typeid~~ ✅ **held since 2026-09-01 and validated above**;
-(2) a decision on the `water_heater` platform — **the only remaining blocker, and it is a scope
-call, not a research one**; ~~(3) a `workStatus` byte~~ ✅ **w36 b7, no fifth capture needed**.
+#### ✅ BUILT AND PROVEN END TO END ON REAL HAOS (2026-09-13) — branch `feat/every-appliance-category`
 
-**What the platform would carry, read from this unit's own declaration** (26 of its 29 declared
-attributes are placed by the configFile; the other 3 are Operations, not Properties):
+All three blockers are closed: ~~(1) the configFile + funcModel~~ ✅ held and validated (above);
+~~(2) the `water_heater` platform decision~~ ✅ **built**; ~~(3) a `workStatus` byte~~ ✅ **w36 b7**.
 
-* `water_heater` — `currentTemperature` (49 °C), `targetTemperature` (**35–75 °C from the device's
-  own model**, not the configFile's class-wide 30–80), `onOffStatus`, and `runningMode` as the
-  operation list: the unit declares 8 of the class's 19 modes (即热 instant-heat · 动态夜电 dynamic
-  off-peak · 预约1 / 预约2 / 预约1+2 schedules · 中温保温 mid-temp keep-warm · Eco除菌 · 随温而动).
-* sensors — `workStatus` (保温 / 加热), `oddHotWater` (remaining hot water).
-* switches — `dualHeaterMode`, `resn1`/`resn2RunningStatus`, `resn1`/`resn2CycleStatus`.
-* numbers — `resn1`/`resn2Temperature`, the valley-period and reservation times.
-* 32 alarms with positions in the configFile; 33 in the device's model, with descriptions.
+★★ **The decode is cross-checked against Haier's OWN cloud, not against our decoder.** Each of the
+reporter's four downloads also carries `reported_values_now` — the live device shadow fetched from
+`uws-sgp.haieriot.net/shadow/v1/devdigitalmodels` while the file was written, independent of our byte
+map. **26 of 26 attributes agree on all four captures — 104/104, zero disagreements, zero unplaced.**
+⚠️ Compare against `reported_values_now`, **never `reported_values`**: the latter is the model stored
+at onboarding and is identical across all four files (it reads `targetTemperature 48` and
+`time 21:59` even in the capture where the setpoint is 62) — using it scores a spurious 91/104.
 
-**Writes are single-parameter `5Dxx`, the mechanism `0d12` already ships** (`ValueParam` /
-`value_param_fields`): the funcModel marks 15 attributes `I` and 1 `I&G`, matching the configFile's
-16 writable Properties one for one — `onOffStatus 5D00` · `targetTemperature 5D01` ·
-`runningMode 5D04` · `dualHeaterMode 5D05` · `sterilizationMode 5D07` · `maxFluxMode 5D08` and the
-rest. ⛔ Unverified on hardware: no write has been sent to this unit, and the reporter's control is
-disabled today. The first write must be self-verifying and read back, as every other class was.
+**⟦LIVE⟧ Verified on the owner's HAOS box** by serving the reporter's own captured report back over
+uSS to a fake entry: **27 entities**, `water_heater.…` = `Instant heat`, min 35.0 / max 75.0,
+current 49.0, target 48.0, the 8 declared modes + off; `workStatus` = `Keep warm`;
+`hot_water_remaining` = 3 L (`volume_storage`); `dual_heater_mode` switch = off. Box then restored to
+its 54-entity baseline.
+
+**The entity set this unit actually generates** — ⛔ **corrected 2026-09-13; an earlier draft of this
+item predicted switches and numbers for the reservation fields and that is wrong.** The declaration
+gate leaves only **5** attributes writable (below), so the reservation fields are read-only:
+
+* `water_heater` (hero) — `currentTemperature`, `targetTemperature` (**35–75 °C from the device's own
+  declaration**, not the configFile's class-wide 30–80), `onOffStatus`, `runningMode` as the
+  operation list: 8 of the class's 19 modes (即热 · 动态夜电 · 预约1 / 预约2 / 预约1+2 · 中温保温 ·
+  Eco除菌 · 随温而动).
+* **1 switch** — `dualHeaterMode` (the only writable non-hero attribute).
+* **15 sensors** — `workStatus` (保温/加热), `oddHotWater` (L, `volume_storage`), `resn1`/`resn2Temperature`
+  (°C), the reservation and valley-period times, `heatModeMaxTemp`, `pumpModeMaxTemp`, `time`.
+* **6 binary sensors** — `resn1`/`resn2` running, cycle and result flags.
+* 32 alarms from the configFile, named from the device's own model.
+
+**Writes are single-parameter `5Dxx`** — the mechanism `0d12` already ships. ★ **The class map
+publishes 16 ids, but this unit declares only 5:** `onOffStatus 5D00` · `targetTemperature 5D01` ·
+`time 5D02` (composite ⇒ stays read-only) · `runningMode 5D04` · `dualHeaterMode 5D05`. The other
+eleven (`holidayLength 5D03`, `3dSetting 5D06`, `sterilizationMode 5D07`, `maxFluxMode 5D08`,
+`zeroColdWaterBookMode 5D09`, `tankWaterLevel 5D0A`, `sparklingWaterStatus 5D0B`,
+`smartPressurizeStatus 5D0C`, `quickWash3D 5D0D`, `zcwTimingCycleStatus 5D0E`, `fcMode 5D0F`) are
+features this model does not declare and are **not offered**. ⛔ An earlier line here listed
+`sterilizationMode`/`maxFluxMode` as if they applied to this unit — they do not.
+
+⛔ **Still unverified on hardware: any write.** No byte has ever been sent to a heat-pump water
+heater. The first write must be self-verifying and read back, as every other class was.
+
+▶ **Reported to the reporter 2026-09-13** — issue #13 comment `5651939563`: what was found, the byte
+positions including `workStatus`, the 104/104 cross-check, the 35–75 range, the four control ids, and
+the explicit ask for a read-back on their first setpoint write. ⛔ The group-written reservation
+**times** are called out there as deliberately read-only (see item 64).
 
 
 ### 67. The two decode paths apply DIFFERENT plausibility bands to the same reading

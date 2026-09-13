@@ -11,8 +11,8 @@ reading a capture: the classic family really does use 5/6/7, while another spend
 same setting and counts them 1/2/3.
 
 Both vanes are position codes rather than flags, so where a unit's model publishes the stops between
-"fixed" and "auto" they can be selected. The climate entity's swing controls stay as they are and
-still express the two ends; these add the stops in between, which no climate feature can carry.
+"fixed" and "auto" they can be selected. The climate entity's swing control stays as it is and
+still expresses the two ends; these add the stops in between, which no climate feature can carry.
 
 The options are built per device from its own model, and named for the position's place in that
 model's list — its "position one" is the first stop it offers, whatever code that stop happens to

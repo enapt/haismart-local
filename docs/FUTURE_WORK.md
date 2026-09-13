@@ -365,6 +365,15 @@ to detect drift and say which keys to re-translate.
 ⓘ Cheap partial in the meantime: a lint that greps each locale for a small per-language list of
 words the English no longer uses. That is exactly what found this one, done by hand.
 
+⚠️ **There is a second surface with the same problem and no check at all: the five translated
+READMEs** under `docs/i18n/` (Indonesian, Thai, Vietnamese, Malay, Filipino). They are hand-written
+prose, not key/value files, so `check-translations.py` never looks at them. All five described an
+air-conditioner-only integration — title, support section and entity list — for as long as it took
+somebody to read one; they were brought into line on 2026-09-13. A value-fingerprint check for the
+locale JSONs would not catch this one, because there are no keys to fingerprint. The realistic guard
+is a rule rather than a tool: **a README edit that changes what the integration supports is not
+finished until the five pages under `docs/i18n/` say the same thing.**
+
 ### 67. The two decode paths apply DIFFERENT plausibility bands to the same reading
 
 Surfaced 2026-09-13 while building `haismart_hrdp.ac_view` to compare the two decoders. A sensor

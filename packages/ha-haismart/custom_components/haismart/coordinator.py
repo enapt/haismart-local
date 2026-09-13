@@ -1209,7 +1209,11 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         record = self.config_entry.data.get(CONF_DEVICE_MAP)
         if not record or not self.uplus_id:
             return None
-        if self._fetched_model is None:
+        # Keyed on the typeid, not merely cached: `uplus_id` can change under us. The appliance
+        # announces it on the discovery channel and `_learn_identity` adopts it, so an entry added
+        # without one picks it up on a later poll -- and a model built from the old id would then
+        # be a different device's map, held for as long as the entry stays loaded.
+        if self._fetched_model is None or self._fetched_model.typeid != self.uplus_id.lower():
             self._fetched_model = model_from_record(self.uplus_id, record)
         return self._fetched_model
 

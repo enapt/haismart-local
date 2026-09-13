@@ -575,3 +575,54 @@ async def test_a_failed_fetch_leaves_a_working_appliance_working(
         assert entry.runtime_data.model_decoded is False
         await hass.config_entries.async_unload(entry.entry_id)
         await hass.async_block_till_done()
+
+
+async def test_a_fetched_map_is_dropped_when_the_appliance_reports_a_different_typeid(
+    hass: HomeAssistant, water_heater
+) -> None:
+    """`uplus_id` is not fixed at setup: the appliance announces it and the coordinator adopts it.
+
+    A map built from the old id and merely cached would then be a different device's byte map, held
+    for as long as the entry stayed loaded — so the cache is keyed on the typeid rather than on
+    "have we built one yet".
+    """
+    from unittest.mock import AsyncMock, patch
+
+    from haismart_hrdp.device_model import project_config
+
+    from custom_components.haismart.const import CONF_DEVICE_MAP
+
+    record = project_config(_config_file_for(UPLUS_ID), UNBUNDLED)
+    fetch = AsyncMock(return_value=None)
+    with patch("custom_components.haismart.coordinator.async_fetch_device_config", fetch):
+        entry = await _setup(hass, **{CONF_UPLUS_ID: UNBUNDLED, CONF_DEVICE_MAP: record})
+
+    coordinator = entry.runtime_data
+    assert coordinator.device_model.typeid == UNBUNDLED
+
+    coordinator.uplus_id = UPLUS_ID          # the appliance says it is something else
+    assert coordinator.device_model.typeid == UPLUS_ID
+
+
+async def test_a_generic_control_writes_the_published_command(
+    hass: HomeAssistant, water_heater
+) -> None:
+    """The generic switch path, end to end through Home Assistant's own service call.
+
+    `encode_write` is unit-tested for every writable spec of every class; this is the other half —
+    that the entity reaches it at all, with the value the user asked for.
+    """
+    from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
+    from homeassistant.const import SERVICE_TURN_ON
+
+    await _setup(hass)
+    entity = "switch.hot_water_dual_heater_mode"
+    assert hass.states.get(entity).state == "off"
+
+    await hass.services.async_call(
+        SWITCH_DOMAIN, SERVICE_TURN_ON, {ATTR_ENTITY_ID: entity}, blocking=True
+    )
+    frame = water_heater.send.last_frame
+    assert frame is not None
+    # 5D05 is `dualHeaterMode`'s published single-parameter id, and the payload is its epp value.
+    assert b"\x5d\x05" in frame and b"\x00\x01" in frame

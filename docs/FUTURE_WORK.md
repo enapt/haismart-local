@@ -137,7 +137,20 @@ and the first appliance category outside AC this integration would carry. The ow
 that is in scope. ⓘ Nothing about it is blocked: the wire is the same uSS/`:56800` path we already
 speak, and the localKey already works (the reporter has a live entity).
 
-#### ✅ SHIPPED 2026-09-13 — the platform is built, and the only thing left is a user's confirmation
+#### ✅ SHIPPED 2026-09-13 — and it grew into support for every appliance category
+
+⇒ **The full account is `docs/MULTI_DEVICE_PLAN_2026-09-13.md` in the development tree.** Beyond the
+`water_heater` platform below, what shipped is a generic layer that gives **any** appliance its
+entities from its own declaration and Haier's published byte map: 165 device classes bundled, any
+other fetched on demand, and every field classified into a switch / select / number / sensor /
+binary sensor with the units, ranges, options and English name the manufacturer's data supports.
+Validated on a washing machine from prior art that nobody here owns, and swept across all 36 classes
+with `tools/re/simulate_appliances.py`.
+
+⛔ **Not shipped, deliberately — each is its own open item below: group-command writes (64) and the
+V2 text profile (66).**
+
+#### ✅ the `water_heater` platform itself
 
 `water_heater.py`, plus the two layers under it that were the real work:
 
@@ -182,6 +195,59 @@ attributes are placed by the configFile; the other 3 are Operations, not Propert
 rest. ⛔ Unverified on hardware: no write has been sent to this unit, and the reporter's control is
 disabled today. The first write must be self-verifying and read back, as every other class was.
 
+
+### 64. Group-command writes are decoded but not offered — no capture of one exists
+
+A water heater's reservation times, a washing machine's programme settings and a fridge's zone
+setpoints are not written one parameter at a time. Haier publishes them as an `Operation`: a frame
+type, an EPP command and a list of `(name, startWord, startBit, length)` making up that op's own
+word array — `grSetResn1` on issue #13's heater, and eleven more on it alone.
+
+Everything needed to build one is in the map, and the integration reads those attributes today. It
+does not offer them as controls, and that is a decision rather than an omission.
+
+**Why.** The two write mechanisms are not equally forgiving. A single-parameter write names its
+attribute in the command and carries the value in the payload: a wrong id is refused with a NACK we
+can see, and nothing else moves. A group set packs a whole word block and the appliance acts on all
+of it — so a layout that is wrong by one word sets several settings at once, silently, and the unit
+has no way to tell us. On a gas water heater or a washing machine that is not a trivial mistake.
+
+⛔ **And there is no validation available.** No capture held by this project or found in prior art
+contains a group op being *sent* to a non-air-conditioner. The washing machine capture is a genuine
+both-directions UART tap and the only writes in it are `4d01` status queries. The air conditioners'
+`grSetDAC` was confirmed on hardware, which is exactly the evidence these lack.
+
+**What closes it:** one capture of a group op on the wire for any non-AC appliance — a UART tap, or
+a diagnostics download taken immediately after setting a reservation in the Haismart app, which
+would leave the op in `lan_frames`.
+
+### 65. A board can wipe its module's Wi-Fi configuration
+
+*(see `CLAUDE.md`; the `FD` 清除用户信息 field — a board that sends it takes the unit off the LAN and
+the integration sees the appliance vanish.)*
+
+### 66. Ten device classes are published only in the older V2 text profile
+
+`catalogue/configfiles/` holds 191 maps, of which 27 are not JSON but Haier's older text profile:
+
+    [冷藏显示温度]^601001#1&1,-38@!&!,!#6d01,1,8,8$
+
+It carries the identical four numbers — statusCmd, word, bit, length — plus the scaling, so decoding
+is not the problem. **Naming is.** The format keys its fields by a Chinese label and a base-36
+attribute id (`601001`), while the declaration gate speaks the digital model's English attribute
+names (`refrigeratorTemperatureC`), and this project holds no bridge between the two. `ATTR_IDS` is
+a different id space and was checked: none of those ids appears in it.
+
+⚠️ Ten classes have **only** V2 members — `0101 0102 0104 0202 0401 0502 0601 0602 0903 1801` — plus
+a minority of `0121` (fridges), `0501` (washers) and `0612` (water heaters). A device of one of
+those gets no byte map and falls back to exactly the behaviour it had before any of this existed.
+
+ⓘ It is probably smaller than it looks: those typeids are the 2019-era ones bundled in the app, and
+the on-demand fetcher asks for V3 first, so a current device of the same category would most likely
+be served a V3 map under its own typeid.
+
+**What closes it:** a label→name mapping (the panel resources may carry one), or one live device of
+those classes whose typeid does serve V3 — which would show the whole question is historical.
 
 ### 58. The end-anchored telemetry decode assumes a tail block — five published families put it elsewhere
 

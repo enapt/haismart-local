@@ -6,10 +6,11 @@
 [![License](https://img.shields.io/github/license/enapt/haismart-local)](LICENSE)
 [![Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/EFfknne8Bm)
 
-_Control your Haier air conditioner from Home Assistant entirely over your own network. You sign in
-once so the integration can fetch your unit's key; after that it talks only to the AC, on your LAN.
-Everything else it needs, including the published details of **every air conditioner in the range**,
-ships with it — keep a copy of that key and setup works with no internet at all._
+_Control your Haier appliance from Home Assistant entirely over your own network. You sign in once
+so the integration can fetch your unit's key; after that it talks only to the appliance, on your LAN.
+Everything else it needs, including the published details of **every air conditioner in the range**
+and the byte-level model of **every other appliance category Haier documents**, ships with it — keep
+a copy of that key and setup works with no internet at all._
 
 > **This is the home of the project.** Releases are cut and issues answered at
 > [`enapt/haismart-local`](https://github.com/enapt/haismart-local). Copies exist elsewhere, with
@@ -73,25 +74,34 @@ trusting the label. If something decodes oddly, that's a
 
 **Quick check:** if `nc -z <your-ac-ip> 56800` succeeds, the local protocol is listening.
 
-### Other appliances — water heaters (built, not yet released)
+### Other appliances (built, not yet released)
 
-Air conditioners are what this integration was built for and what almost all of it has been tested
-on. It now also carries **water heaters** — electric, gas and heat-pump — because the manufacturer
-publishes the byte-level layout of a device's status report per product class, and the same
-published map that describes an air conditioner describes those too. A water heater gets a
-`water_heater` entity with its own temperature range and operating modes, not a thermostat.
+Air conditioners are what this integration was built for and where almost all of its testing lies.
+It now also carries **every other appliance category the manufacturer publishes a byte map for** —
+water heaters (electric, gas and heat-pump), refrigerators, washing machines, dishwashers, cooker
+hoods, gas hobs, sterilising cabinets, ovens and air purifiers.
 
-⚠️ **Honestly: one heat-pump water heater has been decoded, from four controlled captures a
-reporter sent, and no write has yet been confirmed on real hardware.** If you have one, it should
-come up correctly and the integration will say so in its diagnostics — please
+Not one of those has appliance-specific code behind it. Haier publishes, per product class, the
+position and meaning of every field in a status report; the integration ships that map for 165
+classes and fetches it for any it does not have. Your appliance's own model then says which of those
+fields it actually has, and each becomes an entity of the right kind — a switch for a setting it can
+write, a sensor for a reading, a dropdown for a mode, a number for a temperature, with the units,
+ranges and options the manufacturer states. A water heater gets a `water_heater` entity with its own
+range and operating modes; nothing gets a thermostat unless it is one.
+
+⚠️ **What that does and does not mean.** The maps are the manufacturer's and the decode is checked
+against every capture this project holds — two air conditioners, a heat-pump water heater and a
+washing machine — but **most categories have never been seen on real hardware here**, and no
+non-AC unit has ever had a command written to it. If you have one, it should come up correctly and
+its diagnostics will say exactly what was decoded; please
 [open an issue](docs/TROUBLESHOOTING.md#before-you-open-an-issue) either way, including one that
-just works.
+just works. Two things are deliberately withheld until somebody can verify them: settings written
+through a *group* command (a water heater's reservation times, a washer's programme), and any
+appliance whose class Haier only publishes in its older profile format.
 
-Other categories in the same catalogue — refrigerators, washing machines, cooker hoods, hobs,
-dishwashers, ovens — are **not** supported yet. Their maps are carried, so the groundwork is done,
-but each needs its own Home Assistant entity design and a first reporter. Anything Haier sells that
-has no Wi-Fi module of its own (bulbs, sockets, door and motion sensors behind a gateway) is out of
-reach entirely: those do not speak the local protocol this integration uses.
+Anything Haier sells that has **no Wi-Fi module of its own** — bulbs, sockets, curtains, door and
+motion sensors behind a gateway — is out of reach entirely. Those do not speak the local protocol
+this integration uses, and no amount of byte map changes that.
 
 ## What you get
 

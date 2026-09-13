@@ -101,11 +101,12 @@ changes and a wrong one is rejected, whereas a group write sends a whole block, 
 would change several settings at once with nothing to report it. These stay read-only until one can
 be verified against a real appliance.
 
-**Classes published only in Haier's older profile format.** 28 of the 193 catalogue entries use a
-V2 text profile which keys fields by a Chinese label and a base-36 id, where the declaration gate
-speaks English attribute names — there is no bridge between the two. This affects classes `0101`,
-`0102`, `0104`, `0202`, `0401`, `0502`, `0601`, `0602`, `0903` and `1801`, plus a few individual
-products in otherwise-supported classes. These are the oldest entries in the catalogue and the
+**Classes published only in Haier's older profile format.** Of the 192 product types the
+manufacturer publishes a configuration for, **165 use the current format and are carried; the other
+27 use an older V2 text profile** which keys fields by a Chinese label and a base-36 id, where the
+declaration gate speaks English attribute names — there is no bridge between the two. This affects
+classes `0101`, `0102`, `0104`, `0202`, `0401`, `0502`, `0601`, `0602`, `0903` and `1801`, plus a few
+individual products in otherwise-supported classes. These are the oldest entries in the catalogue and the
 fetcher requests the current format first, so a unit sold recently is unlikely to be affected.
 
 ## If your appliance is not decoded

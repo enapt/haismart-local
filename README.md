@@ -84,9 +84,9 @@ It now also carries **every other appliance category the manufacturer publishes 
 water heaters (electric, gas and heat-pump), refrigerators, washing machines, dishwashers, cooker
 hoods, gas hobs, sterilising cabinets, ovens and air purifiers.
 
-Not one of those has appliance-specific code behind it. Haier publishes, per product class, the
-position and meaning of every field in a status report; the integration ships that map for 165
-classes and fetches it for any it does not have. Your appliance's own model then says which of those
+Not one of those has appliance-specific code behind it. Haier publishes, per product type, the
+position and meaning of every field in a status report; the integration ships that map for **165
+product types across 36 device classes** and fetches it for any it does not have. Your appliance's own model then says which of those
 fields it actually has, and each becomes an entity of the right kind — a switch for a setting it can
 write, a sensor for a reading, a dropdown for a mode, a number for a temperature, with the units,
 ranges and options the manufacturer states. A water heater gets a `water_heater` entity with its own

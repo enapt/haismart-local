@@ -73,6 +73,26 @@ trusting the label. If something decodes oddly, that's a
 
 **Quick check:** if `nc -z <your-ac-ip> 56800` succeeds, the local protocol is listening.
 
+### Other appliances — water heaters (built, not yet released)
+
+Air conditioners are what this integration was built for and what almost all of it has been tested
+on. It now also carries **water heaters** — electric, gas and heat-pump — because the manufacturer
+publishes the byte-level layout of a device's status report per product class, and the same
+published map that describes an air conditioner describes those too. A water heater gets a
+`water_heater` entity with its own temperature range and operating modes, not a thermostat.
+
+⚠️ **Honestly: one heat-pump water heater has been decoded, from four controlled captures a
+reporter sent, and no write has yet been confirmed on real hardware.** If you have one, it should
+come up correctly and the integration will say so in its diagnostics — please
+[open an issue](docs/TROUBLESHOOTING.md#before-you-open-an-issue) either way, including one that
+just works.
+
+Other categories in the same catalogue — refrigerators, washing machines, cooker hoods, hobs,
+dishwashers, ovens — are **not** supported yet. Their maps are carried, so the groundwork is done,
+but each needs its own Home Assistant entity design and a first reporter. Anything Haier sells that
+has no Wi-Fi module of its own (bulbs, sockets, door and motion sensors behind a gateway) is out of
+reach entirely: those do not speak the local protocol this integration uses.
+
 ## What you get
 
 One device per air conditioner, with:

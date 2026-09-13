@@ -1,0 +1,1113 @@
+{
+ "alarms": [
+  {
+   "clear": true,
+   "desc": "告警解除",
+   "name": "alarmCancel"
+  },
+  {
+   "clear": false,
+   "desc": "漏电报警",
+   "name": "leakageAlarm"
+  },
+  {
+   "clear": false,
+   "desc": "超温报警",
+   "name": "tempExceedAlarm"
+  },
+  {
+   "clear": false,
+   "desc": "胆内温度传感器故障",
+   "name": "innerTempSensorErr"
+  },
+  {
+   "clear": false,
+   "desc": "环境温度传感器故障",
+   "name": "envTempSensorErr"
+  },
+  {
+   "clear": false,
+   "desc": "蒸发温度传感器故障",
+   "name": "evaporationTempSensorErr"
+  },
+  {
+   "clear": false,
+   "desc": "排气温度传感器故障",
+   "name": "outAirTempSensorErr"
+  },
+  {
+   "clear": false,
+   "desc": "显示板通讯故障",
+   "name": "displayBoardCommunicationErr"
+  },
+  {
+   "clear": false,
+   "desc": "压力开关保护",
+   "name": "pressureSwitchProtection"
+  },
+  {
+   "clear": false,
+   "desc": "环境温度保护",
+   "name": "envTempProtection"
+  },
+  {
+   "clear": false,
+   "desc": "记忆芯片故障",
+   "name": "memoryChipErr"
+  },
+  {
+   "clear": false,
+   "desc": "线控器通讯故障",
+   "name": "lineCtrCommunicationErr"
+  },
+  {
+   "clear": false,
+   "desc": "吸气温度传感器故障",
+   "name": "inAirTempSensorErr"
+  },
+  {
+   "clear": false,
+   "desc": "用户回水温度传感器故障",
+   "name": "backWaterTempSensorErr"
+  },
+  {
+   "clear": false,
+   "desc": "压机保护F2",
+   "name": "pressProtectionF2"
+  },
+  {
+   "clear": false,
+   "desc": "压机保护F3",
+   "name": "pressProtectionF3"
+  },
+  {
+   "clear": false,
+   "desc": "压机保护F5",
+   "name": "pressProtectionF5"
+  },
+  {
+   "clear": false,
+   "desc": "压机保护F6",
+   "name": "pressProtectionF6"
+  },
+  {
+   "clear": false,
+   "desc": "压缩机保护",
+   "name": "compressorProtection"
+  },
+  {
+   "clear": false,
+   "desc": "低压开关保护",
+   "name": "undervoltageSwitchProtection"
+  },
+  {
+   "clear": false,
+   "desc": "水循环系统异常",
+   "name": "waterCycleErr"
+  },
+  {
+   "clear": false,
+   "desc": "冷媒循环系统异常",
+   "name": "refrigerantCycleErr"
+  },
+  {
+   "clear": false,
+   "desc": "PFC异常",
+   "name": "pfcErr"
+  },
+  {
+   "clear": false,
+   "desc": "CT断线异常",
+   "name": "ctDisconnectionErr"
+  },
+  {
+   "clear": false,
+   "desc": "高电压异常",
+   "name": "overvoltageErr"
+  },
+  {
+   "clear": false,
+   "desc": "综合电流异常",
+   "name": "compositiveCurrentErr"
+  },
+  {
+   "clear": false,
+   "desc": "风机故障",
+   "name": "fanErr"
+  },
+  {
+   "clear": false,
+   "desc": "水泵异常",
+   "name": "pumpErr"
+  },
+  {
+   "clear": false,
+   "desc": "水箱水位开关故障",
+   "name": "tankWaterlevelSwitchErr"
+  },
+  {
+   "clear": false,
+   "desc": "水流开关异常",
+   "name": "flowSwitchErr"
+  },
+  {
+   "clear": false,
+   "desc": "水压开关保护",
+   "name": "waterPressureSwitchProtection"
+  },
+  {
+   "clear": false,
+   "desc": "防冻保护异常",
+   "name": "antifreezingErr"
+  },
+  {
+   "clear": false,
+   "desc": "低谷电开关故障",
+   "name": "valleyElectricSwitchErr"
+  }
+ ],
+ "attributes": [
+  {
+   "defaultValue": "true",
+   "desc": "预约2循环状态",
+   "invisible": false,
+   "name": "resn2CycleStatus",
+   "operationType": "G",
+   "readable": true,
+   "value": "true",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "循环"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "0",
+   "desc": "预约1时间分钟",
+   "invisible": false,
+   "name": "resn1TimeMM",
+   "operationType": "G",
+   "readable": true,
+   "value": "0",
+   "valueRange": {
+    "dataStep": {
+     "dataType": "Integer",
+     "maxValue": "59",
+     "minValue": "0",
+     "step": "1"
+    },
+    "type": "STEP"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "0",
+   "desc": "低谷时段1(动态夜电)停止时间分钟",
+   "invisible": false,
+   "name": "valley1StopTimeMM",
+   "operationType": "G",
+   "readable": true,
+   "value": "0",
+   "valueRange": {
+    "dataStep": {
+     "dataType": "Integer",
+     "maxValue": "59",
+     "minValue": "0",
+     "step": "1"
+    },
+    "type": "STEP"
+   },
+   "writable": true
+  },
+  {
+   "desc": "运行模式",
+   "invisible": false,
+   "name": "runningMode",
+   "operationType": "I",
+   "readable": true,
+   "value": "2",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "2",
+      "desc": "即热模式"
+     },
+     {
+      "data": "3",
+      "desc": "动态夜电模式"
+     },
+     {
+      "data": "4",
+      "desc": "预约1"
+     },
+     {
+      "data": "5",
+      "desc": "预约2"
+     },
+     {
+      "data": "6",
+      "desc": "预约1+2"
+     },
+     {
+      "data": "19",
+      "desc": "中温保温"
+     },
+     {
+      "data": "20",
+      "desc": "Eco除菌"
+     },
+     {
+      "data": "22",
+      "desc": "随温而动"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "0",
+   "desc": "预约2时间小时",
+   "invisible": false,
+   "name": "resn2TimeHH",
+   "operationType": "G",
+   "readable": true,
+   "value": "0",
+   "valueRange": {
+    "dataStep": {
+     "dataType": "Integer",
+     "maxValue": "23",
+     "minValue": "0",
+     "step": "1"
+    },
+    "type": "STEP"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "35",
+   "desc": "预约2温度",
+   "invisible": false,
+   "name": "resn2Temperature",
+   "operationType": "G",
+   "readable": true,
+   "value": "50",
+   "valueRange": {
+    "dataStep": {
+     "dataType": "Integer",
+     "maxValue": "75",
+     "minValue": "35",
+     "step": "1"
+    },
+    "type": "STEP"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "false",
+   "desc": "预约1启停",
+   "invisible": false,
+   "name": "resn1RunningStatus",
+   "operationType": "G",
+   "readable": true,
+   "value": "false",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "false",
+      "desc": "停止预约"
+     },
+     {
+      "data": "true",
+      "desc": "启用预约"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "desc": "目标温度",
+   "invisible": false,
+   "name": "targetTemperature",
+   "operationType": "I",
+   "readable": true,
+   "value": "48",
+   "valueRange": {
+    "dataStep": {
+     "dataType": "Integer",
+     "maxValue": "75",
+     "minValue": "35",
+     "step": "1"
+    },
+    "type": "STEP"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "true",
+   "desc": "预约1循环状态",
+   "invisible": false,
+   "name": "resn1CycleStatus",
+   "operationType": "G",
+   "readable": true,
+   "value": "true",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "循环"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "0",
+   "desc": "低谷时段1(动态夜电)开始时间小时",
+   "invisible": false,
+   "name": "valley1StartTimeHH",
+   "operationType": "G",
+   "readable": true,
+   "value": "0",
+   "valueRange": {
+    "dataStep": {
+     "dataType": "Integer",
+     "maxValue": "23",
+     "minValue": "0",
+     "step": "1"
+    },
+    "type": "STEP"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "35",
+   "desc": "预约1温度",
+   "invisible": false,
+   "name": "resn1Temperature",
+   "operationType": "G",
+   "readable": true,
+   "value": "50",
+   "valueRange": {
+    "dataStep": {
+     "dataType": "Integer",
+     "maxValue": "75",
+     "minValue": "35",
+     "step": "1"
+    },
+    "type": "STEP"
+   },
+   "writable": true
+  },
+  {
+   "desc": "预约2执行结果",
+   "invisible": false,
+   "name": "resn2Result",
+   "readable": true,
+   "value": "true",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "false",
+      "desc": "预约执行失败"
+     },
+     {
+      "data": "true",
+      "desc": "正常执行"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": false
+  },
+  {
+   "desc": "双源速热模式",
+   "invisible": false,
+   "name": "dualHeaterMode",
+   "operationType": "I",
+   "readable": true,
+   "value": "false",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "false",
+      "desc": "关"
+     },
+     {
+      "data": "true",
+      "desc": "开"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "desc": "开关机状态",
+   "invisible": false,
+   "name": "onOffStatus",
+   "operationType": "I",
+   "readable": true,
+   "value": "true",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "false",
+      "desc": "关机"
+     },
+     {
+      "data": "true",
+      "desc": "开机"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "desc": "查询所有属性",
+   "invisible": true,
+   "name": "getAllProperty",
+   "operationType": "I",
+   "readable": true,
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "getAllProperty"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "desc": "工作状态",
+   "invisible": false,
+   "name": "workStatus",
+   "readable": true,
+   "value": "1",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "1",
+      "desc": "保温"
+     },
+     {
+      "data": "2",
+      "desc": "加热"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": false
+  },
+  {
+   "desc": "速热模式最高设定温度",
+   "invisible": false,
+   "name": "heatModeMaxTemp",
+   "readable": true,
+   "value": "1",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "0",
+      "desc": "80℃"
+     },
+     {
+      "data": "1",
+      "desc": "75℃"
+     },
+     {
+      "data": "2",
+      "desc": "65℃"
+     },
+     {
+      "data": "3",
+      "desc": "55℃"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": false
+  },
+  {
+   "desc": "当前温度",
+   "invisible": false,
+   "name": "currentTemperature",
+   "readable": true,
+   "value": "49",
+   "valueRange": {
+    "dataStep": {
+     "dataType": "Integer",
+     "maxValue": "75",
+     "minValue": "0",
+     "step": "1"
+    },
+    "type": "STEP"
+   },
+   "writable": false
+  },
+  {
+   "defaultValue": "0",
+   "desc": "预约1时间小时",
+   "invisible": false,
+   "name": "resn1TimeHH",
+   "operationType": "G",
+   "readable": true,
+   "value": "0",
+   "valueRange": {
+    "dataStep": {
+     "dataType": "Integer",
+     "maxValue": "23",
+     "minValue": "0",
+     "step": "1"
+    },
+    "type": "STEP"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "0",
+   "desc": "低谷时段1(动态夜电)停止时间小时",
+   "invisible": false,
+   "name": "valley1StopTimeHH",
+   "operationType": "G",
+   "readable": true,
+   "value": "6",
+   "valueRange": {
+    "dataStep": {
+     "dataType": "Integer",
+     "maxValue": "23",
+     "minValue": "0",
+     "step": "1"
+    },
+    "type": "STEP"
+   },
+   "writable": true
+  },
+  {
+   "desc": "停止报警",
+   "invisible": true,
+   "name": "stopCurrentAlarm",
+   "operationType": "I",
+   "readable": true,
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "stopCurrentAlarm"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "0",
+   "desc": "预约2时间分钟",
+   "invisible": false,
+   "name": "resn2TimeMM",
+   "operationType": "G",
+   "readable": true,
+   "value": "0",
+   "valueRange": {
+    "dataStep": {
+     "dataType": "Integer",
+     "maxValue": "59",
+     "minValue": "0",
+     "step": "1"
+    },
+    "type": "STEP"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "false",
+   "desc": "预约2启停",
+   "invisible": false,
+   "name": "resn2RunningStatus",
+   "operationType": "G",
+   "readable": true,
+   "value": "false",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "false",
+      "desc": "停止预约"
+     },
+     {
+      "data": "true",
+      "desc": "启用预约"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "desc": "预约1执行结果",
+   "invisible": false,
+   "name": "resn1Result",
+   "readable": true,
+   "value": "true",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "false",
+      "desc": "预约执行失败"
+     },
+     {
+      "data": "true",
+      "desc": "正常执行"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": false
+  },
+  {
+   "desc": "热泵模式最高设定温度",
+   "invisible": false,
+   "name": "pumpModeMaxTemp",
+   "readable": true,
+   "value": "1",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "0",
+      "desc": "80℃"
+     },
+     {
+      "data": "1",
+      "desc": "75℃"
+     },
+     {
+      "data": "2",
+      "desc": "65℃"
+     },
+     {
+      "data": "3",
+      "desc": "55℃"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": false
+  },
+  {
+   "defaultValue": "0",
+   "desc": "低谷时段1(动态夜电)开始时间分钟",
+   "invisible": false,
+   "name": "valley1StartTimeMM",
+   "operationType": "G",
+   "readable": true,
+   "value": "0",
+   "valueRange": {
+    "dataStep": {
+     "dataType": "Integer",
+     "maxValue": "59",
+     "minValue": "0",
+     "step": "1"
+    },
+    "type": "STEP"
+   },
+   "writable": true
+  },
+  {
+   "desc": "查询所有报警",
+   "invisible": true,
+   "name": "getAllAlarm",
+   "operationType": "I",
+   "readable": true,
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "getAllAlarm"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "desc": "当前时间",
+   "invisible": false,
+   "name": "time",
+   "operationType": "I",
+   "readable": true,
+   "value": "21:59",
+   "valueRange": {
+    "dataTime": {
+     "format": "HH:mm",
+     "maxHour": 23,
+     "maxMinute": 59,
+     "maxSecond": 0,
+     "minHour": 0,
+     "minMinute": 0,
+     "minSecond": 0
+    },
+    "type": "TIME"
+   },
+   "writable": true
+  },
+  {
+   "desc": "剩余热水量",
+   "invisible": false,
+   "name": "oddHotWater",
+   "readable": true,
+   "value": "3",
+   "valueRange": {
+    "dataStep": {
+     "dataType": "Integer",
+     "maxValue": "65535",
+     "minValue": "0",
+     "step": "1"
+    },
+    "type": "STEP"
+   },
+   "writable": false
+  }
+ ],
+ "groupCommands": [
+  {
+   "attrNameList": [
+    "resn1TimeHH",
+    "resn1TimeMM",
+    "resn1Temperature",
+    "resn1RunningStatus",
+    "resn1CycleStatus"
+   ],
+   "desc": "预约1设置",
+   "name": "grSetResn1"
+  },
+  {
+   "attrNameList": [
+    "resn2TimeHH",
+    "resn2TimeMM",
+    "resn2Temperature",
+    "resn2RunningStatus",
+    "resn2CycleStatus"
+   ],
+   "desc": "预约2设置",
+   "name": "grSetResn2"
+  },
+  {
+   "attrNameList": [
+    "valley1StartTimeHH",
+    "valley1StartTimeMM",
+    "valley1StopTimeHH",
+    "valley1StopTimeMM"
+   ],
+   "desc": "低谷时段1（动态夜电）设置",
+   "name": "grSetValley1"
+  }
+ ],
+ "invisible_attributes": [
+  "getAllAlarm",
+  "getAllProperty",
+  "stopCurrentAlarm"
+ ],
+ "modifiers": [
+  {
+   "actions": [
+    {
+     "defaultValue": null,
+     "name": "targetTemperature",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    },
+    {
+     "defaultValue": null,
+     "name": "dualHeaterMode",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    },
+    {
+     "defaultValue": null,
+     "name": "resn1TimeHH",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    },
+    {
+     "defaultValue": null,
+     "name": "resn1TimeMM",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    },
+    {
+     "defaultValue": null,
+     "name": "resn1Temperature",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    },
+    {
+     "defaultValue": null,
+     "name": "resn2TimeHH",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    },
+    {
+     "defaultValue": null,
+     "name": "resn2TimeMM",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    },
+    {
+     "defaultValue": null,
+     "name": "resn2Temperature",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    },
+    {
+     "defaultValue": null,
+     "name": "runningMode",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    }
+   ],
+   "priority": 2,
+   "trigger": {
+    "conditions": {
+     "onOffStatus": [
+      "false"
+     ]
+    },
+    "operator": "AND"
+   }
+  },
+  {
+   "actions": [
+    {
+     "defaultValue": null,
+     "name": "targetTemperature",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    },
+    {
+     "defaultValue": null,
+     "name": "dualHeaterMode",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    },
+    {
+     "defaultValue": null,
+     "name": "onOffStatus",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    },
+    {
+     "defaultValue": null,
+     "name": "resn1TimeHH",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    },
+    {
+     "defaultValue": null,
+     "name": "resn1TimeMM",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    },
+    {
+     "defaultValue": null,
+     "name": "resn1Temperature",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    },
+    {
+     "defaultValue": null,
+     "name": "resn2TimeHH",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    },
+    {
+     "defaultValue": null,
+     "name": "resn2TimeMM",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    },
+    {
+     "defaultValue": null,
+     "name": "resn2Temperature",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    },
+    {
+     "defaultValue": null,
+     "name": "resn2CycleStatus",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    },
+    {
+     "defaultValue": null,
+     "name": "resn2RunningStatus",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    },
+    {
+     "defaultValue": null,
+     "name": "runningMode",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    }
+   ],
+   "priority": 3,
+   "trigger": {
+    "alarms": [
+     "leakageAlarm",
+     "tempExceedAlarm",
+     "innerTempSensorErr",
+     "envTempSensorErr",
+     "evaporationTempSensorErr",
+     "outAirTempSensorErr",
+     "displayBoardCommunicationErr",
+     "pressureSwitchProtection",
+     "envTempProtection",
+     "memoryChipErr",
+     "lineCtrCommunicationErr",
+     "inAirTempSensorErr",
+     "backWaterTempSensorErr",
+     "pressProtectionF2",
+     "pressProtectionF3",
+     "pressProtectionF5",
+     "pressProtectionF6",
+     "compressorProtection",
+     "undervoltageSwitchProtection",
+     "waterCycleErr",
+     "refrigerantCycleErr",
+     "pfcErr",
+     "ctDisconnectionErr",
+     "overvoltageErr",
+     "compositiveCurrentErr",
+     "fanErr",
+     "pumpErr",
+     "tankWaterlevelSwitchErr",
+     "flowSwitchErr",
+     "waterPressureSwitchProtection",
+     "antifreezingErr",
+     "valleyElectricSwitchErr"
+    ],
+    "conditions": {},
+    "operator": "OR"
+   }
+  },
+  {
+   "actions": [
+    {
+     "defaultValue": null,
+     "name": "targetTemperature",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    }
+   ],
+   "priority": 1,
+   "trigger": {
+    "conditions": {
+     "resn1RunningStatus": [
+      "true"
+     ],
+     "resn2RunningStatus": [
+      "true"
+     ]
+    },
+    "operator": "AND"
+   }
+  },
+  {
+   "actions": [
+    {
+     "defaultValue": null,
+     "name": "targetTemperature",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    }
+   ],
+   "priority": 4,
+   "trigger": {
+    "conditions": {
+     "runningMode": [
+      "19"
+     ]
+    },
+    "operator": "AND"
+   }
+  },
+  {
+   "actions": [
+    {
+     "defaultValue": null,
+     "name": "targetTemperature",
+     "rewriteFields": "W",
+     "valueRange": null,
+     "writable": false
+    }
+   ],
+   "priority": 5,
+   "trigger": {
+    "conditions": {
+     "runningMode": [
+      "20"
+     ]
+    },
+    "operator": "AND"
+   }
+  },
+  {
+   "actions": [
+    {
+     "defaultValue": null,
+     "name": "targetTemperature",
+     "rewriteFields": "WV",
+     "valueRange": {
+      "dataStep": {
+       "dataType": "Integer",
+       "maxValue": "75",
+       "minValue": "35",
+       "step": "1"
+      },
+      "type": "STEP"
+     },
+     "writable": true
+    }
+   ],
+   "priority": 0,
+   "trigger": {
+    "conditions": {
+     "onOffStatus": [
+      "false",
+      "true"
+     ]
+    },
+    "operator": "AND"
+   }
+  }
+ ]
+}

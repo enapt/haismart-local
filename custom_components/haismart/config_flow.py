@@ -80,10 +80,13 @@ except ImportError:  # pragma: no cover - HA < 2025.2
 if TYPE_CHECKING:
     from homeassistant.components.dhcp import DhcpServiceInfo
 
+from haismart_hrdp.appliance import ApplianceKind, kind_for
+
 from .cloud_transport import async_cloud_transport
 from .const import (
     AC_DEVICE_CLASSES,
     CONF_ACCESS_TOKEN,
+    CONF_APP_TYPE,
     CONF_CLOUD_CLIENT_ID,
     CONF_DEVICE_ID,
     CONF_DEVICE_TYPE,
@@ -326,20 +329,31 @@ def _login_error_for(err: Exception) -> str:
 
 
 def _device_label(device: Any) -> str:
-    """Label a device for the picker, flagging anything that is not an air conditioner.
+    """Label a device for the picker, saying what it is rather than only what it is not.
 
-    Haier's `deviceType` encodes the appliance class in its first byte as hex, so a fridge or an air
-    purifier on the same account is identifiable. Such devices are still listed rather than
-    hidden --
-    the class map may be incomplete, and hiding a unit the user can see in the app would be worse
-    than warning about it -- but they are clearly marked so nobody picks one expecting it to work.
+    Devices are listed whatever their kind, never hidden: the class map may be incomplete, and
+    hiding a unit the user can see in the app is worse than saying we are unsure about it. What the
+    label must not do is mislead, and it did until 2026-09-13 -- every non-AC read "not an air
+    conditioner, unsupported", including the water heaters this integration now supports.
+
+    The uPlusId's class field decides, because it is the key the byte maps are filed under, i.e.
+    exactly the thing that determines whether we can decode the device at all. Haier's `deviceType`
+    first byte is the fallback for a device whose uPlusId the list did not carry.
     """
     name = device.name or device.device_id
     label = f"{name} ({device.device_id})"
+    kind = kind_for(getattr(device, "uplus_id", "") or "",
+                    getattr(device, "app_type_name", "") or "")
+    if kind is ApplianceKind.WATER_HEATER:
+        return f"{label} - water heater"
+    if kind is ApplianceKind.AIR_CONDITIONER:
+        return label
+    # Unidentified. Fall back to the deviceType byte before saying so, since an appliance whose
+    # uPlusId is absent from the device list still names its class there.
     cls = (getattr(device, "device_type", "") or "")[:2].lower()
-    if cls and cls not in AC_DEVICE_CLASSES:
-        return f"{label} - not an air conditioner, unsupported"
-    return label
+    if cls and cls in AC_DEVICE_CLASSES:
+        return label
+    return f"{label} - appliance type not recognised, may not work"
 
 
 class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -502,12 +516,17 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         * ``uplus_id`` selects the wire map, so the decoder need not key on report length;
         * ``device_type`` names the variant a uPlusId can only give the class of;
         * ``prod_no`` is the product code the rules, the fault names and the real feature set are
-          all keyed by -- dropping it leaves a built-in default that looks exactly like a real one.
+          all keyed by -- dropping it leaves a built-in default that looks exactly like a real one;
+        * ``app_type_name`` is Haier's own category for the product, and it decides which entities
+          an appliance gets when its uPlusId class field is one we have no row for. It was parsed
+          out of the device list and thrown away until 2026-09-13, which is part of why a water
+          heater arrived as an air conditioner.
         """
         for attr, key in (
             ("uplus_id", CONF_UPLUS_ID),
             ("device_type", CONF_DEVICE_TYPE),
             ("prod_no", CONF_PRODUCT_CODE),
+            ("app_type_name", CONF_APP_TYPE),
         ):
             if value := getattr(picked, attr, ""):
                 self._cloud_data[key] = value

@@ -95,6 +95,8 @@ from haismart_hrdp import (
 from haismart_hrdp import (
     declared_numeric_readings as numeric_reading_names,
 )
+from haismart_hrdp.appliance import ApplianceKind, kind_for
+from haismart_hrdp.device_model import DeviceModel, model_for
 from haismart_hrdp.uss import frame_key
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -109,6 +111,7 @@ from .cloud_transport import async_cloud_transport
 from .const import (
     CONF_ABSENT_READINGS,
     CONF_ACCESS_TOKEN,
+    CONF_APP_TYPE,
     CONF_CLOUD_CLIENT_ID,
     CONF_DEVICE_ID,
     CONF_DEVICE_TYPE,
@@ -627,6 +630,13 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Snapshot of the options this coordinator was built with, so the entry's update listener
         # can tell an options change (reload) from the runtime data writes below (do not reload).
         self.options: dict[str, Any] = dict(entry.options)
+        # True when the last report was decoded from Haier's own byte map for this typeid (the
+        # device_model path) rather than from a hand-written AC family. Suppresses the
+        # unknown-layout repair -- see _note_unknown_layout.
+        self.model_decoded: bool = False
+        # The platforms this entry was forwarded, set by async_setup_entry and read by
+        # async_unload_entry so the two cannot disagree (see __init__.py).
+        self.platforms: list[Any] = []
         self.supports_udiscovery: bool | None = None
         self._udiscovery_next = 0.0
         self._udiscovery_misses = 0
@@ -773,6 +783,13 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             ):
                 self._misses = 0
                 self.last_raw_status = blob
+                # Haier's own byte map, where we have one for this typeid. Added BESIDE the
+                # air-conditioner decode rather than instead of it, under its own key, so nothing
+                # downstream can confuse a manufacturer attribute name with a normalised AC one.
+                model_state = self._model_state(blob)
+                self.model_decoded = bool(model_state)
+                if model_state:
+                    state["model_state"] = model_state
                 if state.get("partial"):
                     # Decoded, but only the layout-independent fields: this model's report
                     # length has no confirmed layout. Keeping the blob matters -- it is exactly
@@ -1149,6 +1166,42 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
     @property
+    def appliance_kind(self) -> ApplianceKind:
+        """What kind of appliance this is — see :mod:`haismart_hrdp.appliance`.
+
+        From the uPlusId's device-class field first (the appliance announces it on the key-free
+        discovery channel, so it is known offline and before any poll) and the cloud's own category
+        second. ``OTHER`` where neither settles it, and ``OTHER`` must never be read as "air
+        conditioner": issue #13 is what that costs.
+        """
+        return kind_for(self.uplus_id, self.config_entry.data.get(CONF_APP_TYPE))
+
+    @property
+    def device_model(self) -> DeviceModel | None:
+        """Haier's own byte map for this device's typeid, or ``None`` if the bundle lacks it."""
+        return model_for(self.uplus_id)
+
+    @property
+    def decodes_as_air_conditioner(self) -> bool:
+        """Whether the last report really read as an air conditioner's.
+
+        The no-regression clause behind :func:`~.const.platforms_for`. A device whose class we have
+        never catalogued resolves to ``OTHER``, and some of those are working air conditioners
+        today — a family added to the wire maps by capture without its class being named. This asks
+        the report rather than the catalogue: a setpoint AND a mode, from a layout we recognise.
+
+        Deliberately conservative in the direction of keeping the thermostat: it is consulted only
+        for devices we could NOT identify, so a false positive preserves today's behaviour and a
+        false negative would remove a working entity.
+        """
+        if self.unknown_layout is not None:
+            return False
+        state = self.data or {}
+        has_setpoint = state.get("target_temperature") is not None
+        has_mode = state.get("mode") is not None or state.get("operation_mode") is not None
+        return bool(has_setpoint and has_mode)
+
+    @property
     def recent_reports(self) -> tuple[bytes, ...]:
         """Distinct status reports seen while the layout was unrecognised (diagnostics)."""
         return tuple(self._recent_reports)
@@ -1166,9 +1219,103 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._recent_reports.append(blob)
         del self._recent_reports[:-_RECENT_REPORTS]
 
+    def model_write_fields(self) -> frozenset[str]:
+        """Attributes this device's class publishes a single-parameter write id for.
+
+        Empty unless the byte map is the decoder in use. A hand-written AC family keeps its own
+        write path; this is for the appliances that have no such family.
+        """
+        model = self.device_model
+        if model is None or not self.model_decoded:
+            return frozenset()
+        declared = frozenset(declared_attribute_names(self.digital_model))
+        return frozenset(
+            f.name for f in model.writable_fields()
+            if not declared or f.name in declared
+        )
+
+    def model_attribute_range(self, name: str) -> tuple[float, float, float] | None:
+        """``(min, max, step)`` for a numeric attribute, from the DEVICE's model first.
+
+        ⚠️ Not :attr:`profile`. ``profile_from_device_config`` requires an ``operationMode`` enum
+        and a water heater has none, so the profile falls back to the built-in AC defaults --
+        16-30 C, which is exactly the wrong clamp issue #13 reported against a 35-75 C setpoint.
+
+        Two sources, narrower first: the unit's own digital model (35-75 for the reporter's
+        heater), then the class-wide byte map (30-80 for its whole class). The device's own is the
+        one a user would recognise as their appliance's limits.
+        """
+        model = self.digital_model or {}
+        for attribute in model.get("attributes", []):
+            if attribute.get("name") != name:
+                continue
+            step = ((attribute.get("valueRange") or {}).get("dataStep")) or {}
+            try:
+                return float(step["minValue"]), float(step["maxValue"]), float(step.get("step", 1))
+            except (KeyError, TypeError, ValueError):
+                break
+        device_model = self.device_model
+        field = device_model.field(name) if device_model is not None else None
+        bounds = field.bounds() if field is not None else None
+        if bounds is None or field is None:
+            return None
+        step = 1.0
+        if isinstance(field.variants, dict):
+            step = float(field.variants.get("step", 1) or 1)
+        return bounds[0], bounds[1], step
+
+    def model_attribute_options(self, name: str) -> tuple[Any, ...]:
+        """The values this DEVICE declares for an enum attribute, in the model's own order.
+
+        The class map lists every value the platform defines -- 19 running modes for issue #13's
+        class -- and the unit declares 8. Offering the class list would put controls on a device
+        that discards them.
+        """
+        for attribute in (self.digital_model or {}).get("attributes", []):
+            if attribute.get("name") != name:
+                continue
+            data_list = (attribute.get("valueRange") or {}).get("dataList") or []
+            return tuple(entry.get("data") for entry in data_list if entry.get("data") is not None)
+        return ()
+
+    def _model_state(self, blob: bytes) -> dict[str, Any]:
+        """Decode ``blob`` with Haier's own byte map for this typeid.
+
+        This is what lets an appliance the integration has no hand-written family for decode
+        anyway: the manufacturer publishes the position of every attribute per device class, and it
+        is the same word array (base 92) the air-conditioner path reads. See
+        :mod:`haismart_hrdp.device_model`.
+
+        **Declaration-gated.** The class map lists every attribute the PLATFORM can carry; a device
+        declares a subset, and building state from the map alone produces attributes no real unit
+        has -- the phantom-entity trap the whole feature layer exists to avoid. Where the device
+        has told us nothing (no digital model yet) this returns nothing rather than everything.
+        """
+        model = self.device_model
+        if model is None:
+            return {}
+        declared = frozenset(declared_attribute_names(self.digital_model))
+        if not declared:
+            return {}
+        return model.decode(blob, only=declared)
+
     def _note_unknown_layout(self, blob: bytes) -> None:
-        """Record an unrecognised report length: log once, raise a repair, remember the blob."""
+        """Record an unrecognised report length: log once, raise a repair, remember the blob.
+
+        ⚠️ A report the manufacturer's own byte map decodes is NOT unknown to the user, and must
+        raise no repair -- but its length is still unknown to the *group-set* encoder, which is a
+        different question and the one ``unknown_layout`` guards. Both are true at once for a water
+        heater, so the length is recorded either way and only the notification is withheld.
+        """
         self._remember_report(blob)
+        if self.model_decoded:
+            self.unknown_layout = len(blob)
+            # An appliance that used to be undecodable and now is not must LOSE the notification,
+            # not merely stop getting new ones. The reporter of issue #13 is in exactly that state:
+            # their entry raised this repair for days, and it would otherwise sit there for ever
+            # telling them to send captures for a device that now works.
+            ir.async_delete_issue(self.hass, DOMAIN, self._issue_id(ISSUE_UNKNOWN_LAYOUT))
+            return
         if self.unknown_layout == len(blob):
             return      # already reported; do not repeat every poll
         self.unknown_layout = len(blob)
@@ -1252,7 +1399,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
     async def async_send_control(
-        self, changes: dict[str, int], *, _already_expanded: bool = False
+        self, changes: dict[str, Any], *, _already_expanded: bool = False
     ) -> None:
         """Apply ``{field_name: raw_epp_value}`` to the state and send it as one grSetDAC op.
 
@@ -1270,12 +1417,25 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # product constraints reject an out-of-range temperature or an unsupported enum. Only
         # fields mapping 1:1 to a model attribute are checked; device-specific ones (swing/eco) stay
         # gated by the encoder allowlist alone.
-        if not _already_expanded:
+        # Decided first, because it changes what the values in ``changes`` MEAN. The air-conditioner
+        # paths take raw EPP values; a byte-map write takes the attribute's PUBLISHED value (48 for
+        # 48 C, std 19 for a named mode) and does its own scaling, because that is the
+        # representation the device's own model states ranges and enums in. Mixing them is not
+        # hypothetical: the AC validator converts `targetTemperature` as `epp + 16`, so a water
+        # heater's 30 C would be range-checked as 46.
+        model_writes = self.model_write_fields()
+        writes_by_model = bool(changes) and all(n in model_writes for n in changes)
+
+        if not _already_expanded and not writes_by_model:
             # Only on the way in. A change this method splits into several ops re-enters here, and
             # re-expanding an already-expanded set would keep producing the same several fields for
             # ever -- so the split below hands its parts back with the expansion already done.
+            # ⛔ Skipped for byte-map writes: the co-command rules are the AC families' own.
             changes = self._with_required_co_commands(changes)
-        self._validate_against_model(changes)
+        if writes_by_model:
+            self._validate_model_write(changes)
+        else:
+            self._validate_against_model(changes)
 
         # A device class written one parameter at a time has no group set, so several changes
         # cannot be packed into one op: each attribute is its own command, separately accepted or
@@ -1288,9 +1448,11 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # turn it off". Everything else keeps insertion order.
         wm = self._wire_model
         if (
-            wm is not None
-            and len(changes) > 1
-            and all(n in wm.value_param_fields for n in changes)
+            len(changes) > 1
+            and (
+                writes_by_model
+                or (wm is not None and all(n in wm.value_param_fields for n in changes))
+            )
         ):
             rest = [n for n in changes if n != "onOffStatus"]
             power = changes.get("onOffStatus")
@@ -1317,10 +1479,16 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 },
             )
 
-        if self.unknown_layout is not None:
+        if self.unknown_layout is not None and not writes_by_model:
             # Reads degrade gracefully on an unrecognised report; writes must not. The size of the
             # control-word block is exactly what could not be determined, so a group-set built from
             # it could send a read-only sensor byte back to the AC as a setting.
+            #
+            # ⚠️ Exactly why `writes_by_model` is allowed past: that danger is the GROUP-SET's. A
+            # single-parameter write names its attribute in the command and carries the value in
+            # the payload -- it seeds nothing from the report and packs no word block, so an
+            # unknown block size cannot make it write to the wrong place. The appliance is still
+            # the authority on whether it accepts the id, and the read-back still decides.
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="layout_unknown",
@@ -1380,6 +1548,16 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if wm is not None and changes and all(n in wm.value_param_fields for n in changes):
                 (name, value), = changes.items()
                 cmd, payload = wm.encode_value_param(name, value)
+                return build_epp_frame(0x01, cmd, payload)
+            # Haier's own byte map, for an appliance with no hand-written family: one command
+            # per attribute, the value in the payload. Placed BEFORE the group-set fallbacks
+            # because those end in `grsetdac_baseline_from_status`, which would read this report
+            # as an air conditioner's.
+            if writes_by_model:
+                model = self.device_model
+                assert model is not None                # writes_by_model implies it
+                (name, value), = changes.items()
+                cmd, payload = model.encode_write(name, value)
                 return build_epp_frame(0x01, cmd, payload)
             if wm is not None and wm.group_cmd is not None:
                 # Non-classic family: pack via its own wire model + group-set command. The encoder
@@ -1838,6 +2016,36 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER.debug("model requires %s=%s alongside %s", field, epp, sorted(changes))
             merged[field] = epp
         return merged
+
+    def _validate_model_write(self, changes: dict[str, Any]) -> None:
+        """Gate a byte-map write against the device's OWN model, in published values.
+
+        Two ranges exist and the narrower one is the device's. Issue #13's water heater is declared
+        30-80 C by its class map and **35-75 by the unit's own model** -- so this check is not a
+        duplicate of the encoder's, it is the tighter of the two, and it is the one a user would
+        recognise as their appliance's limits.
+        """
+        model = self.digital_model
+        if model is None:
+            return
+        described = {a.get("name") for a in model.get("attributes", [])}
+        for name, value in changes.items():
+            if name not in described:
+                continue
+            # The model spells booleans "true"/"false"; Python's bool stringifies to "True", which
+            # this check would reject as an unsupported value -- refusing a legal write before the
+            # appliance ever sees it, and reporting it as the appliance's refusal.
+            checked = str(value).lower() if isinstance(value, bool) else value
+            ok, reason = validate_write(model, name, checked, require_writable=False)
+            if not ok:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="control_rejected",
+                    translation_placeholders={
+                        "name": self.config_entry.title,
+                        "error": reason,
+                    },
+                )
 
     def _validate_against_model(self, changes: dict[str, int]) -> None:
         """Reject a control change the device's digital model forbids (out-of-range temperature, an

@@ -551,8 +551,8 @@
       "description": "The air conditioner rotated its local key (v{old} → v{new}) and this device has no Haier account credentials stored, so Home Assistant could not refresh the key by itself and had to ask you for one.\n\nTo stop this happening again, open the device, choose **Reconfigure**, and add your Haier account. The key will then refresh itself on every rotation."
     },
     "unknown_report_layout": {
-      "title": "{name}: this air conditioner's status format is not recognised yet",
-      "description": "{name} sends a {length}-byte status report, which this integration has no confirmed layout for (product code: {product_code}).\n\nTemperature, mode, fan speed and on/off still work. Indoor and outdoor temperature are unavailable, and sending commands is disabled — guessing where the settings sit in an unknown format risks writing a sensor reading back to the unit as a setting.\n\nAdding support needs no code, just three short captures from you. Follow the linked guide and open a report; it is usually a one-line fix."
+      "title": "{name}: this appliance's status format is not recognised yet",
+      "description": "{name} sends a {length}-byte status report, which this integration has no confirmed layout for (product code: {product_code}).\n\nThe settings it does recognise still work. Anything it could not place is unavailable, and sending commands is disabled — guessing where the settings sit in an unknown format risks writing a sensor reading back to the unit as a setting.\n\nAdding support needs no code, just three short captures from you. Follow the linked guide and open a report; it is usually a one-line fix."
     },
     "key_will_rotate": {
       "title": "{name}: its key will change and this setup cannot follow",

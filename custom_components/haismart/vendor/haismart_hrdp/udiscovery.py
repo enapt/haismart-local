@@ -42,9 +42,17 @@ PORT = 7083
 MAGIC = b"Haier"
 HEADER_LEN = 0x15
 
-# The only request the appliances answer. Two other codes in this family (0x6851 diagnose, 0x6853
-# biz transparent-transmission) get no reply at any payload shape -- they appear to address
-# sub-devices behind a gateway -- so they are deliberately not implemented.
+# The only request THIS CLIENT sends. Two other codes in the family were probed and got no reply,
+# and that negative is now BOUNDED (2026-09-10): the payload shape matters. `0x6853` is a
+# transparent-transmission channel whose payload is `[kind:1][...]`, and the module implements
+# **kind 7** in BOTH directions -- it builds such datagrams and parses them (receiver 0x9b01e6fe,
+# sender 0x9b01e844). The receiver is CALLED BY the search handler itself, at 0x9b02ddb8, BEFORE
+# its 0x6915 compare -- so this port serves two commands, not one.
+# The vendor's app sends **kind 1** = "list the unprovisioned devices you can see" -- the LAN face
+# of Haier's device-to-device 改密回连. `0x6851` (diagnose) still looks genuinely absent: zero code
+# sites against one each for 0x6915/0x684D. Neither is implemented here because neither is needed
+# to find an appliance -- not because the module ignores them.
+# Detail: captures/module-firmware/analysis/FW_UDISCOVERY_BIZ_0x6853.md
 CMD_SEARCH = 0x6915
 CMD_DEVICE_INFO = 0x684D
 
@@ -53,6 +61,13 @@ CMD_DEVICE_INFO = 0x684D
 CLIENT_VERSION = b"2.0.0"
 CLIENT_TAG = b"UDISCOVERY_SDK"
 
+# The module emits at most four, in this order (builder `0x9b02d5fc`):
+#   0x01  len 0x20  the deviceId               -- always
+#   0x03  len 4     cloud state, htonl'd       -- only when the value is non-zero
+#   0x04  len 1     the literal 5              -- only when an identity flag is set
+#   0x05  len 1     the literal 2              -- same condition
+# Our units emit exactly the first two, which the flags word at 0x09 (`0x020a`) independently
+# predicts: its 0x100 bit is clear, and that bit is the very condition gating TLVs 4 and 5.
 TLV_DEVICE_ID = 0x01
 TLV_CLOUD_STATE = 0x03
 
@@ -62,7 +77,23 @@ CLOUD_STATE_CONNECTED = 1000
 #: The confirmed values, observed across a full disconnect/reconnect cycle sampled at 1 Hz. Losing
 #: the cloud is not a single step: the module reports ``1010`` for a couple of minutes before
 #: settling on ``1006``. Anything absent from this map is unknown and must still count as "not
-#: connected" -- these three are what has been seen, not a documented enum.
+#: connected" -- these three are what has been SEEN.
+#:
+#: ★ But the namespace now has a RULE, read from the firmware (2026-09-10,
+#: ``captures/module-firmware/analysis/FW_LAN_SET_GATEWAY_26013.md`` §12.6). The producer adds a
+#: constant to an internal code before reporting it, and WHICH constant is a flag:
+#:
+#:     if (code in 0..999):  code += (psk_len == 0) ? 4000 : 1000
+#:     else:                 report code unchanged
+#:
+#: where ``psk_len`` is the module's stored pre-shared-key length (``config+0x3CB``, capped at 64).
+#: ⇒ a ``1xxx`` value means the module HOLDS a PSK; a ``4xxx`` value means its PSK store is EMPTY.
+#: ⇒ the owner's two units report ``1006``, so both hold a non-empty PSK -- a fact that was
+#: previously unknown and is readable with no key, no account and no session.
+#: ⚠️ The decode is read from instructions; the attribution of that field to THIS TLV is a strong
+#: inference, not proven -- every value ever observed lies in the 1000-range, which is what makes it
+#: strong, and a unit reporting 4xxx would confirm it. Treating unrecognised values as
+#: "not connected" (below) is correct either way, so nothing here changes behaviour.
 CLOUD_STATES = {
     1000: "connected",
     1010: "retrying",      # connection lost, module still trying
@@ -72,7 +103,22 @@ CLOUD_STATES = {
 # Fixed field offsets in the reply, from the start of the datagram.
 _OFF_DEVICE_ID = 0x15
 _OFF_UPLUS_ID = 0x25
+# ⚠️⚠️ NOT ACTUALLY A BE32 COUNT -- corrected 2026-09-10 by reading the module's own reply builder
+# (`0x9b02d5fc`; `FW_LAN_SET_GATEWAY_26013.md` §12.7). Bytes 0x45..0x48 are THREE separate fields,
+# written by different arms of a block the module skips entirely when its bind-window latch is 0:
+#     0x45  u16   0, or htons(x) in one mode
+#     0x47  byte  0, or [cfg+0x555] in two other modes
+#     0x48  byte  the literal 2, when an internal device-type byte == 3
+# Reading a BE32 here therefore yields a HUGE number on a unit in those modes. We keep doing it --
+# and it is safe -- only because `_walk_tlvs` caps at min(count, 32) and stops on kind == 0. Both
+# guards predate this finding; either alone makes the mis-read harmless. The comment is corrected,
+# the code deliberately is not.
+# ⛔ [U] whether 0x48 is semantically "the count": it is a literal, not computed from how many TLVs
+# get emitted, so its agreement with the two our units send may be structural or coincidence.
 _OFF_TLV_COUNT = 0x45
+# ✅ Every offset in this layout was confirmed against the module's builder on 2026-09-10:
+# 0x25 uPlusId, 0x49 TLV area, 0xE5 IP, 0xF5 port (htons(0xdde0) = 56800), 0xFD SDK, 0x105/0x10D
+# firmware, 0x115 protocol tag. ⓘ One field we do NOT read: a htons(0x600) at 0x103.
 _OFF_TLV_AREA = 0x49
 _OFF_IP = 0xE5
 _OFF_PORT = 0xF5

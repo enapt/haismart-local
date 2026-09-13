@@ -21,6 +21,168 @@ keeps its own when it moves between the two sections. Expect the sequence to hav
 
 ## Open items
 
+### 63. Issue #13 — a heat-pump WATER HEATER, 167-byte report, and the integration models it as an AC
+
+**Reported 2026-09-09 (issue #13), and it is the best-controlled report this project has had from a
+user.** A Haier heat-pump water heater in Taiwan, `product_code GK0GXZE0J`,
+`uplus_id 201c120000118674**2001**00418007574800000000000000000000000000000040`. Four diagnostics
+downloads with **one variable changed per capture** and ~2 min to settle, plus the reporter's own byte
+diff of `last_raw_status`.
+
+**What is wrong today:** the unit decodes as a `climate` entity with cool / dry / fan_only, fan and
+swing modes, a 16–30 °C clamp against a real 35–75 °C setpoint range, `current_temperature` null, and
+**writes disabled** — the 167-byte report matches no known length (we know 125 and 127).
+
+**The reporter's mapping** (0-indexed into the 167-byte frame), each value cross-checked against the
+cloud's `reported_values_now` in the same capture:
+
+| byte | meaning | evidence |
+|---|---|---|
+| 92 | current water temperature, raw °C | 49,49,49,50 ↔ `currentTemperature` |
+| 93 | **target temperature − 30** | 18,25,32,18 → 48,55,62,48 ↔ `targetTemperature` |
+| 97 | heat mode: 3 = eco, 4 = dual-source/instant | tracks `oddHotWater` / `dualHeaterMode` |
+| 108, 111 | reserve / off-peak temps `resn1`/`resn2`, also (°C − 30) | 0x14→50, 0x2d→75 |
+| 95 | clock minutes | 11/18/21/23 |
+| 128 | slowly drifting (RSSI?) | — |
+| 166 | checksum | varies with everything |
+
+✅ `workStatus` (1 = keep-warm/idle, 2 = heating) is at **word 36 bit 7** — see below. The earlier
+line here read *"its byte is not pinned"*; Haier's own map pins it, and it decodes 1/2/2/1 across the
+four captures, matching the app.
+
+#### ⛔⛔ CORRECTED 2026-09-13 — THE FETCH HAD ALREADY HAPPENED. WE HELD THE MAP ALL ALONG.
+
+This section read: *"⛔ **We do not hold this one** — `catalogue/configfiles/` has 193 files, all
+`201c1200…**0612**…` and friends; the reporter's class field is **`2001`**, a category we have never
+fetched."* **That is wrong in both halves.** `catalogue/configfiles/` **and** `catalogue/funcmodels/`
+each carry `201c120000118674200100418007574800000000000000000000000000000040` — the reporter's exact
+typeid — fetched **2026-09-01** in the same sweep as everything else (211 KB and 81 KB).
+
+⚠️ **What made it wrong is worth more than the fact:** the claim was a guess at a filename pattern
+that nobody enumerated (`METHOD.md` Rule 2 — enumerate a file's keys, never grep for the name you
+expect). A class histogram over the directory takes one line and gives **~44 device classes**, not
+"`0612` and friends": refrigerators (`0121`–`0128`), air conditioners (`0211`/`0212`/`0214`/`0312`/
+`0d12`/`0d21`/`3912`), washers (`0501`), electric water heaters (`0612`/`0616`/`0618`/`0619`/`061a`,
+76 files), gas water heaters (`1812`–`1817`), hoods (`0901`/`0902`), sterilisers (`0b11`/`0b12`),
+hobs (`1d01`), a TV (`0f01`), an oven (`3e01`), an air purifier (`2101`), a scale (`150e`) — and
+**heat-pump water heaters (`2001`, 2 files)**.
+
+**The endpoint is also still live** (re-fetched 2026-09-13, 210,675 B), so on-demand fetch per
+typeid remains available and the bundled catalogue is a floor, not a ceiling.
+
+#### ✅ AND HAIER'S MAP DECODES THE CAPTURES — 26/26 PER CAPTURE, INCLUDING THE FIELD THE REPORTER COULD NOT PIN
+
+A generic decoder that reads only `startWord`/`startBit`/`length`/`variants` from the configFile, at
+the **same `_ATTR_BASE = 92` word geometry the AC path already uses**, reproduces **every attribute
+the cloud mirror reports** — all 26 of them, on each of the four captures. Checkable:
+`tools/re/configfile_decode.py --selftest` (parent tree). A sample:
+
+| attribute | config position | capture 1–4 | cloud `reported_values_now` |
+|---|---|---|---|
+| `currentTemperature` | w1 b8 len8, k=1 c=0 | 49 / 49 / 49 / 50 | ✓ |
+| `targetTemperature` | w1 b0 len8, k=1 **c=30** | 48 / 55 / 62 / 48 | ✓ |
+| ★ `workStatus` | **w36 b7 len1** | 1 / 2 / 2 / 1 | ✓ |
+| `dualHeaterMode` | w36 b6 len1 | false / false / false / **true** | ✓ |
+| `oddHotWater` | w3 b0 len16 | 3 / 3 / 3 / 4 | ✓ |
+| `resn1Temperature` | w9 b8 len8, c=30 | 50 / 50 / 50 / 75 | ✓ |
+| `resn2Temperature` | w10 b0 len8, c=30 | 50 / 50 / 50 / 75 | ✓ |
+| `onOffStatus` | w36 b0 len1 | true ×4 | ✓ |
+| `runningMode` | w36 b1 len5 | 2 ×4 | ✓ |
+
+★ The reporter's byte numbers fall straight out of the same arithmetic (`byte = 92 + 2×(w−1)`,
+`+0` for bit≥8 and `+1` below): w1 b8 → 92, w1 b0 → 93, w3 → 96–97, w9 b8 → 108, w10 b0 → 111 —
+the 92/93/97/108/111 of the table above. **Four captures could not establish a frame layout; the
+manufacturer's map does, and the captures confirm it.**
+
+⚠️ Scope: **one** unit of **one** `2001` family, cross-checked against the cloud mirror in the same
+capture. It does not test the ~230 Properties the cloud was silent on, the `Bigdata`/`7D01` frame
+(never captured from this unit), the second `2001` family, or any write.
+
+⚠️ **And the check caught a real bug that a hand-check had passed.** Comparing nine chosen
+attributes succeeded; comparing **all** the cloud reports failed on `time`, because for `caeType`
+3/4/5 the `variants` list is a **composite part descriptor** (`[{startWord,startBit,length}, …]`),
+not an `eppValue` table — read as an enum it silently yields `None`. ★ `caeType` is the
+discriminator, and enumerating it over all **22,667** Property+Bigdata fields of the 164 V3
+configFiles gives **seven rows with no residue**: 1 and 6 = `raw*k + c` · 2 = enum · 3 = time
+`HH:MM` · 4 = time `HH:MM:SS` · 5 = date · 13 = opaque string. ⛔ Only caeType 3 is confirmed
+against ground truth (the cloud's `"22:11"` beside parts 22 and 11); 4 and 5 are rendered the same
+way by construction and **no capture in the corpus carries one with a cloud value beside it**.
+
+#### ★★★ AND THE SAME DECODER REPRODUCES THE SHIPPED AC DECODER — THREE CLASSES, FOUR LENGTHS
+
+This is the finding that outgrows item 63. The identical config-driven decoder was run against the
+stored AC captures with no per-family code at all:
+
+| capture | class | length | result |
+|---|---|---|---|
+| discord `AAD180E00` | `0212` ext-36 | 165 B | indoor 24.5 · target 24.0 · mode cool · fan high · power on · both vanes · `opSrc` network — **matches the shipped decode field for field** |
+| issue #12 ×7 | `0d12` cabinet | 133 B | power / target / mode (cool, dry, fan\_only) / fan (low, medium, high) / indoor — **7/7 captures** |
+| issue #13 ×4 | `2001` heat pump | 167 B | the table above — **a class the integration has never decoded** |
+
+**144/144 attribute comparisons, 12 captures, 3 device classes, 3 report lengths.**
+
+⇒ the `canonical_displacement` / `canonical_insert` / `length_inserts` machinery is a hand-derived
+restatement of what these files state outright. The 125-vs-127 split, derived here as "one inserted
+word", is simply **two different configFiles**: `挂机通用_V2D18S_0D02` puts `indoorTemperature` at
+byte 102, `共享空调_V2D18S_0D07` (the rental SKU) at byte 104 — both hardware-confirmed numbers.
+⚠️ Scope: three classes, three report lengths, twelve captures — **not** the 125-byte classic
+(no stored capture carries one) and not any `Bigdata`/`7D01` frame. It is not a claim that every
+configFile is correct for every unit, and the absent-probe rule (`outdoorTemperature` raw 0 →
+−64 °C) still has to be applied on top — `_sensor_temp`'s job, which the generic reader does not do
+for free.
+
+**The larger ask, stated plainly:** #13 request 3 is *"support heat-pump water heaters, not only air
+conditioners."* That is a **new platform** (`water_heater`), not a new layout — a real piece of work,
+and the first appliance category outside AC this integration would carry. The owner's call whether
+that is in scope. ⓘ Nothing about it is blocked: the wire is the same uSS/`:56800` path we already
+speak, and the localKey already works (the reporter has a live entity).
+
+#### ✅ SHIPPED 2026-09-13 — the platform is built, and the only thing left is a user's confirmation
+
+`water_heater.py`, plus the two layers under it that were the real work:
+
+* **`haismart_hrdp.device_model`** — Haier's published byte map for 164 typeids across 36 device
+  classes, bundled at **130 KiB gzipped**, generated by `tools/re/gen_device_models.py`. Decoding an
+  appliance stops being a hand-transcription job.
+* **`haismart_hrdp.appliance`** — what KIND a device is, from its typeid's class field first and the
+  cloud's `appTypeName` second, and `OTHER` where neither settles it. Platforms are now forwarded
+  **per entry**, so a water heater gets no thermostat.
+  ⚠️ With a no-regression clause that matters: a device of an unknown class whose report really
+  *does* decode as an air conditioner keeps its climate entity, because some working installs are in
+  exactly that state.
+* Writes go out on the `5Dxx` single-parameter channel, validated against the unit's own model
+  (35–75, not the class-wide 30–80) and refused before the wire for anything the map does not name.
+* The unknown-layout repair is no longer raised for an appliance the byte map decodes, and its
+  wording is no longer air-conditioner-specific.
+
+⛔ **Not confirmed on hardware: any write.** No byte has been sent to this appliance. The reporter's
+control is disabled today, so the first write is theirs to make, and it must be read back.
+
+**What closes it — restated 2026-09-13, with (1) and (3) already done:**
+~~(1) the configFile + funcModel for that typeid~~ ✅ **held since 2026-09-01 and validated above**;
+(2) a decision on the `water_heater` platform — **the only remaining blocker, and it is a scope
+call, not a research one**; ~~(3) a `workStatus` byte~~ ✅ **w36 b7, no fifth capture needed**.
+
+**What the platform would carry, read from this unit's own declaration** (26 of its 29 declared
+attributes are placed by the configFile; the other 3 are Operations, not Properties):
+
+* `water_heater` — `currentTemperature` (49 °C), `targetTemperature` (**35–75 °C from the device's
+  own model**, not the configFile's class-wide 30–80), `onOffStatus`, and `runningMode` as the
+  operation list: the unit declares 8 of the class's 19 modes (即热 instant-heat · 动态夜电 dynamic
+  off-peak · 预约1 / 预约2 / 预约1+2 schedules · 中温保温 mid-temp keep-warm · Eco除菌 · 随温而动).
+* sensors — `workStatus` (保温 / 加热), `oddHotWater` (remaining hot water).
+* switches — `dualHeaterMode`, `resn1`/`resn2RunningStatus`, `resn1`/`resn2CycleStatus`.
+* numbers — `resn1`/`resn2Temperature`, the valley-period and reservation times.
+* 32 alarms with positions in the configFile; 33 in the device's model, with descriptions.
+
+**Writes are single-parameter `5Dxx`, the mechanism `0d12` already ships** (`ValueParam` /
+`value_param_fields`): the funcModel marks 15 attributes `I` and 1 `I&G`, matching the configFile's
+16 writable Properties one for one — `onOffStatus 5D00` · `targetTemperature 5D01` ·
+`runningMode 5D04` · `dualHeaterMode 5D05` · `sterilizationMode 5D07` · `maxFluxMode 5D08` and the
+rest. ⛔ Unverified on hardware: no write has been sent to this unit, and the reporter's control is
+disabled today. The first write must be self-verifying and read back, as every other class was.
+
+
 ### 58. The end-anchored telemetry decode assumes a tail block — five published families put it elsewhere
 
 `parse_extended_status` has two paths. A frame whose word count matches a family in `BIGDATA_MAPS`
@@ -1726,3 +1888,179 @@ than no figure at all.
 
 **What closes it:** one diagnostics file from an air conditioner that is decoded from a relative's
 layout *and* whose model lists the counter. The value can then be checked rather than assumed.
+
+### 62. Replicate the technician app's local surface as a CLI or web UI, for fully offline users
+
+> ## ✅ TIER 1 IS BUILT AND GATED (2026-09-10) — `tools/re/ble_advert.py` + `tools/re/discover.py`
+>
+> The discovery tier below is no longer a proposal. Two tools, both lint-clean, both self-tested,
+> **neither able to write to an appliance** — they carry no code for a BLE connection, GATT,
+> pairing, OTA or the factory-test channel, and `discover.py` never opens `:56800`, so it does not
+> contend with Home Assistant for the single control session.
+>
+> * **The advertisement decode now exists as code rather than prose.** Both TLV encodings, the
+>   `"U+"` header, fragment + scan-response reassembly, all 22 types, the 11 named flag bits, the
+>   ExtField in memory order. Its self-test asserts **the four independent reality checks**
+>   (`LocalkeyValid`, `Controllable`, `Configurable`, `isNeedAuth`) and pins `APConnected = 0`,
+>   which §23 then resolved: the module **never sets that bit**, so it is an unimplemented field
+>   rather than a wrong reading.
+>   Mutation-tested: two deliberate corruptions each produce four failures.
+> * ⟦LIVE⟧ **Run against both units 2026-09-10** — joined `LAN+BLE` on the MAC, `psk0`, `A91R6`,
+>   `e_4.3.00`/`R_6.0.01`, `cloud_state 1006`. Units left as found.
+>
+> ★★ **AND IT MEASURED THE GAP TO TIER 2, which is the more useful output.** Against the technician
+> client's own LAN property vocabulary (`cae_sr_uwt_reset_property_list`, `FW_BLE_ADVERT_DECODED.md`
+> §21 §2), the key-free surfaces fill **7 of 22** properties. The **15** out of reach are
+> `Protocol · ProtocolVers · ProductCode · swType · Busying · ReadyToBind · SupportPing · UDPPort ·
+> OfflineReason · IsMeshGW · ComplexDevType · SupportGetDevVerInfo · SUWTLibVer · SUWTDevVer ·
+> SupportAuxiliaryConfig`.
+> ⇒ **the cheapest instrument for most of them is LAN `0x5DC3` device-info** (reply `0x5DC4`,
+> 0x10 + 0x10 + 0x40 bytes of device/config fields) — a **read** on a channel we already speak, and
+> the natural content of tier 2. ⛔ Not sent by either tool.
+> ⛔⛔ **TESTED ⟦LIVE⟧ 2026-09-10 AND THE RECOMMENDATION ABOVE IS WITHDRAWN.** `0x5DC3`, `0x65BB` and
+> `0x659D` each **RESET the connection after send** — **bare AND inside a fully established uSS
+> session** (hello → hello_resp with `localkey_version 48` verified → hello_done → done_resp), with
+> the control that the very handshake our integration uses every 30 s worked on that same socket.
+> ⇒ **the whole `0x4E20+` command family is unreachable on these units**, so tier 2 has **no LAN
+> instrument** and those 15 properties stay out of reach. ⚠️ **[U] why** — a role byte, or a different
+> listener. `captures/module-firmware/analysis/FW_GATT_LIVE_2026-09-10.md`.
+> ⓘ Counting note: §21 prints 24 strings, two of which (`UWT_DEV`, `UWT_DEV_SAFE`) are its own
+> identification of the *values* of `Protocol`; hence 22 distinct properties. If that split is ever
+> shown wrong the count is 24 and nothing else changes.
+>
+> ▶ **What tier 1 still lacks:** a scanner. This host has no Bluetooth adapter, so `discover.py`
+> reads a scan **log** (the C# harness in `captures/ble-scan-2026-09-09/`) rather than driving a
+> radio. A packaged tool for an offline owner needs a `bleak`-based scanner on a machine that has
+> one — bounded work, no new protocol knowledge required.
+
+**The idea (owner, 2026-09-10):** everything the uAssistant technician app can do to a unit *without
+the cloud* is now enumerated, and none of it needs Haier's servers at the moment of use. Packaging
+that as a command-line tool or a small local web UI would give an owner who keeps their appliances
+firewalled the same diagnostic and control surface a technician has — with no account, no internet,
+and nothing installed on the appliance.
+
+**Why this is now realistic rather than speculative.** The surface is mapped, not guessed:
+
+* **97 `cae_localc_*` local-control functions** crawled with their literals
+  (`captures/module-firmware/analysis/APP_TECHNICIAN_API.md`) — security/key, bind, BLE bond and
+  auth, BLE transport, OTA, network/domain, device I/O, proxy lifecycle, mesh.
+* **The BLE GATT profile** — six services, 30 characteristics, every UUID from Haier's own symbols
+  (`FW_BLE_GATT_SURFACE.md`), including `ff20` **EPP req/rsp**, i.e. the same appliance frames we
+  already build for `:56800`.
+  ⚠️ **SCOPE CORRECTION ⟦LIVE⟧ 2026-09-10:** that is the profile **as the phone library defines it**.
+  The enumeration on Downstairs found **`ff00` AUTH and `ff50` STP served, and `ff10`/`ff20`/`ff30`/
+  `ff40` ABSENT**. ⇒ **`ff20` is not available on this build**; EPP over BLE would ride ucom `0x22`
+  over **STP** (`ff50`/`ff53`, both served and writable) instead. `FW_GATT_LIVE_2026-09-10.md`,
+  `FW_BLE_GATT_SURFACE.md` §29.2.
+* **The LAN command set** — all 13 commands on `:56800` decoded (`FW_LAN_SET_GATEWAY_26013.md` §10).
+* **The BLE scan-result field set** — `prepare_search_dev_info` … `prepare_search_ble_dev_event`,
+  58 keys, and the Java model `BleGbDeviceAddNotify` (`FW_BLE_ADVERT_DECODED.md` §17). A scan list
+  showing RSSI, config mode, bind state, key validity and the ExtField versions is buildable from a
+  **passive** scan plus one `SCAN_REQ`.
+* **UDISCOVERY** already gives deviceId, uPlusId, firmware, SDK version and cloud state, key-free.
+
+**What it would plausibly offer, in rising order of risk:**
+1. **Read-only, zero-touch:** discovery (UDP `:7083` + BLE scan), device inventory, firmware/hardware
+   versions, cloud state, bind state, the decoded ExtField, RSSI. *Nothing is written.*
+2. **Read-only over an authenticated session:** the LAN reads we already speak (status, extended
+   report). ⛔ **`0x5DC3` device info and `0x65BB` bind info are NOT available** — measured
+   ⟦LIVE⟧ 2026-09-10: both reset the connection even inside a valid uSS session (see the correction
+   in the tier-1 box above). **Tier 2 is therefore thinner than this list implied.**
+3. **Control:** what this integration already does — the EPP write path — but exposed outside Home
+   Assistant, and optionally **over BLE `ff20`** rather than the LAN.
+
+⛔ **Explicitly out of scope, and the reasons are on file:** OTA (`ff3x`, the only brick-capable
+action), the factory-test channel, `ff0a`/`ff09`/`ff12`/`ff15` writes, and anything that pairs or
+bonds. Those stay under the standing stop rules regardless of how convenient a UI would make them.
+
+⛔ **CORRECTED 2026-09-10 (owner: *"arent you confident in the write side?"*) — I was, and I wrote
+the gate too broadly.** The caution below belongs to **the BLE transport**, not to writing.
+
+✅ **The LAN write path is not speculative — it is the shipping product.** `packages/` writes
+setpoint, mode, fan and vane to two real appliances every day; **727 tests green** (2026-09-10);
+v0.69.1 is deployed and was **live-verified** (setpoint 23→24→23 on Upstairs, confirmed by the unit's
+own next poll). The single-parameter `5Dxx` path is confirmed **per attribute on real hardware** —
+`5D01` (`I&G`) accepted with a status report, `5D02` (`G`) refused `0x03/0x0000`, **same unit, same
+session**. And writes are **self-verifying**: the reply frame type is the acceptance oracle
+(`02` accept / `03` refuse), with per-product reason codes decoded. ⇒ **LAN control belongs in tier 1
+beside discovery, not behind it.**
+
+✅ **AND THE BLE TIER JUST GOT CHEAPER (2026-09-10):** EPP over BLE is wrapped with the **same uSS
+cipher and the same localKey** as our `:56800` biz-data, with the sequence number pinned to **0**
+(`FW_BLE_GATT_SURFACE.md` §19 — `psk0_encrpyt_data` → `safekey_2_key` → `uss_encrpyt_data` →
+`uss_encrpyt_data_with_sn(sn=0)`). ⇒ **no new cryptography is needed**: `haismart_hrdp.uss.biz_encrypt`
+/ `biz_decrypt` work unchanged at `sn = 0`, and the existing EPP frame builders are reusable. **Only
+the transport is new.**
+
+⚠️ **The gate that IS real, and it is narrow: the BLE transport.** **No byte has ever been sent over
+BLE to these units**, `ff20`-carries-EPP is inferred from characteristic names, and whether they serve
+the `ff00` family at all is `BLE_ROUTE_UNKNOWNS.md` **A1/A2**. ⇒ **BLE** is where "read-only first"
+applies, and one passive GATT enumeration answers both unknowns.
+ⓘ And the exclusions above (OTA, factory-test, `ff0a/09/12/15`, pairing) are **risk policy, not
+uncertainty** — they stay out however confident we are.
+
+
+## 64. ⟦LIVE⟧ ★★★★★ BLE control is PROVEN — scope it, and decide on disclosure
+
+**2026-09-11.** An **unpaired, unbonded, UNAUTHENTICATED** BLE peer changed a unit's setpoint and
+restored it, verified over the LAN both times. The chain is in
+`captures/module-firmware/analysis/FW_BLE_FIRST_CONTACT_2026-09-11.md` §13 and the builder is
+`tools/re/ble_control.py` (private tree only).
+
+⇒ **This makes `FUTURE_WORK` 62 (a technician-style offline CLI) realistic for CONTROL** — the BLE
+half needs no account, no internet and no credential. ⛔ It does **not** make takeover realistic:
+installing a localKey we choose is a different operation and is unchanged.
+
+**Open, all cheap and on the same rig:**
+1. Other EPP commands over BLE — mode, fan, power, swing. Only `grSetDAC` setpoint is proven.
+2. The second unit; persistence across a power cycle; a never-paired unit.
+3. Whether the module will *report* state over BLE (the outbound callback table at `0x100100a0` —
+   only `0x13 CFG_STATE RPT` is observed populated).
+
+⚠️⚠️ **And a decision that is not engineering: DISCLOSURE.** Anyone in BLE range can command these
+units with no credential. That is more serious than the three items already on that list (the
+`*-sessionKey` API, the RNG with no hardware entropy, the `libOSDK` debug localKey). **Owner's call.**
+⛔ **Nothing beyond the existing private tooling should be published**, and the builder must not go
+into the public repo.
+
+## 65. A unit can un-provision ITSELF on its mainboard's orders — `FD` 清除用户信息
+
+**2026-09-13, from the vendor UART spec + prior-art captures** (`captures/module-firmware/analysis/`
+`FW_LOCALKEY_STORE_2026-09-11.md` §70; `docs/PROTOCOL.md` §10.8).
+
+In **master-slave mode** — which is almost certainly what the owner's units and the `0d12` cabinets
+run (three independent lines agree; `docs/UART_SYSTEM_FRAMES.md` §9a) — the Wi-Fi module **polls its
+own appliance mainboard** for management instructions, roughly once per cycle: frame **`FC`** out
+(no payload), frame **`FD`** back (6 bytes). One of those bytes is **清除用户信息**, and the value
+**`0x02`** means *"清除模块中用户配置的WIFI信息等"* — **clear the user-configured Wi-Fi settings.**
+A sibling byte, **解除绑定状态 = `0x01`**, unbinds the appliance from its account, and **模式切换**
+can push the module into softAP / smartlink / WPS setup.
+
+⇒ **What this means for the integration:** an appliance can leave the network *without anything on
+the network doing anything wrong*. From Home Assistant's side the failure looks like a unit that
+simply **vanishes** — no error, no key rotation, no cloud event, no reachability at
+`192.168.x.x:56800` — because the module has discarded its Wi-Fi credentials and gone looking for a
+provisioner. A user would report it as "the integration stopped working"; the cause is on the other
+side of the module, in appliance firmware we have never held.
+
+**Why it is filed rather than fixed:** nothing here is actionable in code today.
+* ⛔ **Never observed in the wild.** In every prior-art capture the field is `0x00`: a `0212` cabinet
+  answers `00 00 00 00 00 00` and a `0d12` cabinet `00 00 00 01 00 00` (that `1` is 强制进设置, which
+  the spec says is **ignored** unless 模式切换 selects a config mode). **93 polls, 93 answers, not one
+  requesting anything.**
+* ⛔ **We cannot see it happen.** It is board↔module UART traffic; it never crosses `:56800`, and this
+  project has never taken a UART capture.
+* ⛔ **And we could not prevent it if we did** — it is the appliance obeying its own mainboard.
+
+**What would make it actionable, cheapest first:**
+1. **A user report matching the signature** — a unit that disappears from the LAN and, on inspection,
+   is back in pairing mode (Wi-Fi LED flashing rather than solid) with **no** router/DHCP change and
+   **no** power event. That distinguishes it from the ordinary causes (DHCP lease moved, AP band
+   steering, the unit unplugged).
+2. If it ever recurs on one unit: the diagnostic is the **Wi-Fi LED** — solid = paired and connected,
+   flashing = config mode — which needs no tooling at all.
+
+**What to do with it now:** keep it in `TROUBLESHOOTING.md`'s vocabulary. If a user reports a unit
+that vanished and came back needing re-pairing, this is a documented mechanism, not necessarily
+something they or we did wrong. ⚠️ Do **not** put it in user-facing docs as a likely cause — it has
+never been observed, and the ordinary explanations are overwhelmingly more common.

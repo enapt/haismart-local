@@ -3,12 +3,15 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import logging
 
 from haismart_hrdp import preload as _preload_model_rules
 from homeassistant.core import HomeAssistant
 
-from .const import IDENTITY_TOPUP_TIMEOUT, PLATFORMS
+from .const import IDENTITY_TOPUP_TIMEOUT, PLATFORMS, platforms_for
 from .coordinator import HaismartConfigEntry, HaismartCoordinator
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> bool:
@@ -58,7 +61,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> 
 
     entry.runtime_data = coordinator
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    # Which platforms this appliance gets, rather than all of them. Decided AFTER the first refresh
+    # on purpose: identifying the device is a catalogue lookup and needs no poll, but the
+    # no-regression clause for a device we CANNOT identify asks whether its report actually decodes
+    # as an air conditioner, and that needs one.
+    platforms = platforms_for(
+        coordinator.appliance_kind,
+        decodes_as_air_conditioner=coordinator.decodes_as_air_conditioner,
+    )
+    # Remember what was forwarded: unload must be handed the same list, and the kind can change
+    # between setup and unload (the coordinator learns a uPlusId from the device at runtime).
+    # Unloading a platform that was never set up leaves entities behind on every reload.
+    coordinator.platforms = platforms
+    _LOGGER.debug(
+        "%s: %s -> %s", entry.title, coordinator.appliance_kind,
+        ", ".join(str(p) for p in platforms),
+    )
+    await hass.config_entries.async_forward_entry_setups(entry, platforms)
     return True
 
 
@@ -78,4 +97,7 @@ async def _async_update_listener(hass: HomeAssistant, entry: HaismartConfigEntry
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> bool:
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    # The list this entry was actually set up with -- see the note in async_setup_entry. Falling
+    # back to the full set would ask HA to unload platforms that were never forwarded.
+    platforms = getattr(entry.runtime_data, "platforms", None) or PLATFORMS
+    return await hass.config_entries.async_unload_platforms(entry, platforms)

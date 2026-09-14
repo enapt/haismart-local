@@ -57,8 +57,10 @@ kundi ang opisyal na byte map ng Haier para sa uring iyon, sinala ng deklarasyon
 unit kung alin sa mga iyon ang talagang mayroon ito.
 
 ⚠️ Sa gumawa nanggaling ang mga mapa, **ngunit karamihan sa mga kategoryang iyon ay hindi pa
-nasusubukan sa tunay na kagamitan dito**, at wala pang kahit isang utos na naipadala sa appliance na
-hindi aircon. Kung mayroon kayo ng alinman sa mga ito, mangyaring
+nasusubukan sa tunay na kagamitan dito**. Sa ngayon ay **isang** setting pa lamang sa appliance na
+hindi aircon ang matagumpay na naipadalhan ng utos — ang itinakdang temperatura ng isang heat-pump
+water heater, na tinanggap ng appliance at nabasa muli bilang kumpirmasyon. Hindi pa napapatunayan
+ang iba. Kung mayroon kayo ng alinman sa mga ito, mangyaring
 [iulat ninyo ito](../TROUBLESHOOTING.md#before-you-open-an-issue) — pati na kung maayos ang lahat.
 Nasa [Appliance support in detail](../appliances.md) (Ingles) ang mga detalye.
 

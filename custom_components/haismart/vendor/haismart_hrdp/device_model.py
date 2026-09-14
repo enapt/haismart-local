@@ -10,7 +10,7 @@ Why it exists
 Hand-derivation is what limited the integration to air conditioners. The published map is the same
 map: a decoder reading only ``startWord``/``startBit``/``length``/``caeType``/``variants``
 reproduces the shipped decoder field for field on the classic/ext-36 family and on the ``0d12``
-cabinets, **and** decodes classes this project has never captured — 144/144 attribute comparisons
+cabinets, **and** decodes classes this project has never captured — 185/185 attribute comparisons
 over 12 stored captures, 3 device classes and 3 report lengths
 (``tools/re/configfile_decode.py --selftest`` in the development tree).
 

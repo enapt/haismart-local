@@ -125,15 +125,15 @@ stored AC captures with no per-family code at all:
 |---|---|---|---|
 | discord `AAD180E00` | `0212` ext-36 | 165 B | indoor 24.5 · target 24.0 · mode cool · fan high · power on · both vanes · `opSrc` network — **matches the shipped decode field for field** |
 | issue #12 ×7 | `0d12` cabinet | 133 B | power / target / mode (cool, dry, fan\_only) / fan (low, medium, high) / indoor — **7/7 captures** |
-| issue #13 ×4 | `2001` heat pump | 167 B | the table above — **a class the integration has never decoded** |
+| issue #13 ×5 | `2001` heat pump | 167 B | the table above — **a class the integration had never decoded**, and the fifth capture carries **our own accepted write** |
 
-**144/144 attribute comparisons, 12 captures, 3 device classes, 3 report lengths.**
+**185/185 attribute comparisons, 16 captures, 4 device classes, 4 report lengths.**
 
 ⇒ the `canonical_displacement` / `canonical_insert` / `length_inserts` machinery is a hand-derived
 restatement of what these files state outright. The 125-vs-127 split, derived here as "one inserted
 word", is simply **two different configFiles**: `挂机通用_V2D18S_0D02` puts `indoorTemperature` at
 byte 102, `共享空调_V2D18S_0D07` (the rental SKU) at byte 104 — both hardware-confirmed numbers.
-⚠️ Scope: three classes, three report lengths, twelve captures — **not** the 125-byte classic
+⚠️ Scope: four classes, four report lengths, sixteen captures — **not** the 125-byte classic
 (no stored capture carries one) and not any `Bigdata`/`7D01` frame. It is not a claim that every
 configFile is correct for every unit, and the absent-probe rule (`outdoorTemperature` raw 0 →
 −64 °C) still has to be applied on top — `_sensor_temp`'s job, which the generic reader does not do
@@ -199,8 +199,10 @@ serialisable diagnostics download and a clean unload/reload.
 * The unknown-layout repair is no longer raised for an appliance the byte map decodes, and its
   wording is no longer air-conditioner-specific.
 
-⛔ **Not confirmed on hardware: any write.** No byte has been sent to this appliance. The reporter's
-control is disabled today, so the first write is theirs to make, and it must be read back.
+⛔ ~~**Not confirmed on hardware: any write.**~~ ✅✅ **CONFIRMED 2026-09-14 — see the CONFIRMED
+block at the end of this item.** The reporter set the setpoint +1 °C from Home Assistant and the
+appliance **accepted it**: `reply_frame_types ["0x02", "0x06"]`, `refused false`, and **51 °C on the
+wire**. This is the project's **first confirmed write to a non-air-conditioner**.
 
 #### ✅ BUILT AND PROVEN END TO END ON REAL HAOS (2026-09-13) — branch `feat/every-appliance-category`
 
@@ -210,7 +212,8 @@ All three blockers are closed: ~~(1) the configFile + funcModel~~ ✅ held and v
 ★★ **The decode is cross-checked against Haier's OWN cloud, not against our decoder.** Each of the
 reporter's four downloads also carries `reported_values_now` — the live device shadow fetched from
 `uws-sgp.haieriot.net/shadow/v1/devdigitalmodels` while the file was written, independent of our byte
-map. **26 of 26 attributes agree on all four captures — 104/104, zero disagreements, zero unplaced.**
+map. **26 of 26 attributes agree on all five captures — 130/130, zero disagreements, zero unplaced**
+(104/104 over the original four, plus 26/26 on the 2026-09-14 write capture).
 ⚠️ Compare against `reported_values_now`, **never `reported_values`**: the latter is the model stored
 at onboarding and is identical across all four files (it reads `targetTemperature 48` and
 `time 21:59` even in the capture where the setpoint is 62) — using it scores a spurious 91/104.
@@ -244,13 +247,54 @@ eleven (`holidayLength 5D03`, `3dSetting 5D06`, `sterilizationMode 5D07`, `maxFl
 features this model does not declare and are **not offered**. ⛔ An earlier line here listed
 `sterilizationMode`/`maxFluxMode` as if they applied to this unit — they do not.
 
-⛔ **Still unverified on hardware: any write.** No byte has ever been sent to a heat-pump water
-heater. The first write must be self-verifying and read back, as every other class was.
+⛔ ~~**Still unverified on hardware: any write.**~~ ✅✅ **CONFIRMED 2026-09-14 — `targetTemperature`
+(`5D01`) only.** ⚠️ The other four declared ids (`onOffStatus 5D00`, `runningMode 5D04`,
+`dualHeaterMode 5D05`; `time 5D02` is composite and stays read-only) are **still unexercised** — one
+attribute proven is not the register proven.
 
 ▶ **Reported to the reporter 2026-09-13** — issue #13 comment `5651939563`: what was found, the byte
 positions including `workStatus`, the 104/104 cross-check, the 35–75 range, the four control ids, and
 the explicit ask for a read-back on their first setpoint write. ⛔ The group-written reservation
 **times** are called out there as deliberately read-only (see item 64).
+
+#### ✅✅✅ CONFIRMED ON HARDWARE 2026-09-14 — THE FIRST WRITE THIS PROJECT HAS LANDED ON A NON-AC APPLIANCE
+
+The reporter updated (HACS gave them **v0.71.0**, not the v0.70.0 their comment names), restarted,
+confirmed the `water_heater` entity at 35–75 °C and the repair cleared, then **changed the setpoint
+by 1 °C and it stuck**. Capture: `captures/issue13/diag-5-firstwrite-v0.71.0.json`.
+
+⇒ **Verified from the file, not taken on report** — three independent legs:
+
+1. **The appliance ACCEPTED it.** `controls.last_control` = `{targetTemperature: 51.0}`,
+   `reply_frame_types` **`["0x02", "0x06"]`**, `refused false`, `refusal_code null`. `0x02` is the
+   accept half of the published `0x01`→`0x02`/`0x03` oracle — **the board's own ACK**.
+2. **The value reached the wire.** `last_raw_status` byte **93 = 21 ⇒ +30 = 51 °C**; `lan_frames`
+   gains `02/6d01` in the **control** session for the first time.
+3. **Haier's cloud agrees.** `reported_values_now` vs the byte-map decode: **26/26**.
+
+✅ `unusable_params: []` — **no control retired**, so the self-withdrawing machinery had nothing to
+withdraw. `issues: []`, `locked_fields: []`.
+
+⚠️ **Scope, stated rather than implied.** This proves **one attribute on one unit of one `2001`
+family**: `targetTemperature` via `5D01`. It does **not** prove the other four declared ids, the
+other eleven class ids (which this model does not declare), the group-written reservation times
+(item 64, deliberately withheld), or any other appliance category. What it does settle is the
+**mechanism**: a `5Dxx` single-parameter write derived from Haier's published map, on an appliance
+class nobody here owns, is accepted by real hardware.
+
+★ **A by-product worth keeping — the two-form extended-status rotation is exercised on real hardware
+for the first time.** This unit **refuses** the `4DFE` telemetry query rather than ignoring it:
+`03/0006` ×6 = **3 per form**, both published forms tried, then correctly written off
+(`extended_status.supported false`). The frame checksum-validates (`0x0A+0x03+0x06 = 0x13`, Rule 67).
+⚠️ Reason code `0x0006` is **unexplained** — this product publishes **no `invalid_reasons` table at
+all**, so the code is the board's and is in no catalogue we hold.
+
+⚠️ **Diagnostic residue, not a defect:** `data.state` still carries the hand-derived AC decoder's
+speculative reading of the 167-byte frame (`target_temperature 63.0` where the real setpoint is 51,
+plus `mode: auto` / `fan_mode: high`), under `layout: "unknown", partial: true`. It **cannot reach an
+entity** — `water_heater.py` reads `model_state` exclusively and `climate` is not in this appliance
+kind's platform list — but a reader diffing two diagnostics files would otherwise chase a
+twelve-degree discrepancy that does not exist.
 
 
 ### 68. ✅ SETTLED — the setup and repair copy no longer calls every appliance an "air conditioner"
@@ -709,8 +753,12 @@ link, which raises confidence for the 12 **I-capable** families whose `I` attrib
 alternative. (Probe pattern: `async_send_op` a `build_epp_frame(0x01, 0x5D00|id, value)`, read
 `epp_frame_type` — accept `0x02` vs refuse `0x03`.)
 
-**Why not shipped for other families.** (1) `writeType: I` is unconfirmed on hardware for every non-
-`0d12` family — the write is only proven on `0d12` (prior-art issue #19 + a reporter). (2) Read-back /
+**Why not shipped for other families.** (1) ⛔ ~~`writeType: I` is unconfirmed on hardware for every
+non-`0d12` family~~ — **CORRECTED 2026-09-14: it is now confirmed on one other class.** A
+`writeType: I` single-parameter write (`targetTemperature`/`5D01`) was accepted by a **`2001`
+heat-pump water heater** (issue #13), so the mechanism is no longer `0d12`-only. ⚠️ It remains
+unconfirmed on every **AC** family other than `0d12`, which is what this item is about, and one
+attribute on one `2001` unit does not generalise to the other 34 classes. (2) Read-back /
 self-settling needs each family's report layout worked out, which is done for only a few families.
 (3) The owner's units are classic G-only and cannot exercise it. Shipping unverified single-param
 writes wholesale across dozens of families would violate Rule 8 ("the unit is the only authority on

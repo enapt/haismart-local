@@ -27,14 +27,14 @@ Be aware of which tier your appliance falls into.
 
 | Tier | What it means | Classes |
 |---|---|---|
-| **Confirmed on hardware** | Real units, commanded and read back | Air conditioners `0212`, `0d12` |
-| **Confirmed end to end from a real report** | A real unit's captured report, decoded and driven through Home Assistant; cross-checked against Haier's own cloud | Heat-pump water heater `2001` |
+| **Confirmed on hardware** | Real units, commanded and read back | Air conditioners `0212`, `0d12` (fully); heat-pump water heater `2001` (**setpoint only** — its other settings are decoded but have never been commanded) |
 | **Decode validated against a real capture** | A real unit's traffic decoded correctly; never driven through Home Assistant, never commanded | Washing machine `0501` |
 | **By construction** | The manufacturer's map and your unit's declaration; **never seen on hardware here** | every other class below |
 
-⚠️ **No command has ever been sent to a non-air-conditioner appliance by this project.** Writes for
-those classes use exactly the same single-parameter mechanism that is proven on air conditioners,
-with the command ids Haier publishes for that class — but *published is not the same as proven*. If
+⚠️ **Only one non-air-conditioner setting has ever been commanded successfully** — a heat-pump
+water heater's setpoint, accepted by the appliance and read back (2026-09-14). Every other write on
+every other class is still *published, not proven*: they use the same single-parameter mechanism
+that works on air conditioners, with the command ids Haier publishes for that class. If
 your appliance refuses a command, the integration records the refusal and retires that control
 rather than continuing to offer something that does not work.
 

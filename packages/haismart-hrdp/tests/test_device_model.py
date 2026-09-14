@@ -9,7 +9,9 @@ Two kinds of check, deliberately:
 * **Across the whole bundle.** Properties every one of the 164 shipped maps must satisfy. A bundle
   is added to by regenerating a file, and a regenerated file cannot be reviewed into correctness.
 
-⛔ What these do NOT establish: any write (no write has ever been sent to a non-AC unit), the
+⛔ What these do NOT establish: any write beyond the single confirmed one (a ``2001`` water
+heater's ``targetTemperature``/``5D01``, accepted by real hardware 2026-09-14 — issue #13; every
+other non-AC write is still unexercised), the
 ``Bigdata``/``7D01`` frame on a non-AC class (never captured), or that a map is right for a unit of
 some other family. The parent tree's ``tools/re/configfile_decode.py --selftest`` carries the wider
 comparison against the stored AC captures, which are too large to vendor here.

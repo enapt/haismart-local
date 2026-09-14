@@ -95,8 +95,10 @@ one for a type it does not already carry. Your appliance's own model then says w
 it actually has, and each becomes an entity of the right kind — see
 [any other appliance](#any-other-appliance) for what that produces.
 
-⚠️ **The maps are the manufacturer's, but most categories have never been seen on real hardware
-here**, and no non-air-conditioner has ever had a command written to it by this project. The decode
+⚠️ **The maps are the manufacturer's, and most categories have never been seen on real hardware
+here.** One non-air-conditioner has now been commanded successfully — a heat-pump water heater's
+setpoint, accepted by the appliance and read back — but that is one attribute on one unit, not a
+guarantee for the rest. The decode
 is checked against every capture held here — two air conditioners, a heat-pump water heater and a
 washing machine. If you own one of the rest, it should come up correctly and its diagnostics will
 say exactly what was decoded; please
@@ -194,7 +196,8 @@ wish list — your unit gets the subset it declares:
 combinations, keep-warm, Eco sterilise, adaptive); sensors for its working state and remaining hot
 water; a dual-source heating switch; the reservation schedule; and a fault sensor reading that
 appliance's own 32-fault table. Its decode agrees with Haier's own cloud on **every** value, across
-four separate downloads.
+five separate downloads — and the fifth confirms a setpoint change sent *from* Home Assistant being
+accepted by the appliance.
 
 ## Before you install
 

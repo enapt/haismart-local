@@ -54,8 +54,9 @@ perangkat, melainkan peta byte resmi Haier untuk tipe produk itu, disaring oleh 
 sendiri tentang fitur apa yang benar-benar dimilikinya.
 
 ⚠️ Petanya berasal dari pabrikan, **tetapi sebagian besar kategori tersebut belum pernah diuji pada
-perangkat nyata di sini**, dan belum pernah ada satu perintah pun yang dikirim ke perangkat selain
-AC. Jika Anda memiliki salah satunya, mohon
+perangkat nyata di sini**. Sejauh ini hanya **satu** pengaturan pada perangkat selain AC yang pernah
+berhasil dikirim — suhu setelan pemanas air pompa kalor, yang diterima oleh perangkat itu dan
+dibaca ulang. Selebihnya belum terbukti. Jika Anda memiliki salah satunya, mohon
 [laporkan](../TROUBLESHOOTING.md#before-you-open-an-issue) — termasuk bila semuanya berjalan lancar.
 Rinciannya ada di [Appliance support in detail](../appliances.md) (bahasa Inggris).
 

@@ -52,8 +52,10 @@ thức của Haier cho loại sản phẩm đó, lọc qua phần khai báo củ
 thực sự có.
 
 ⚠️ Bản đồ đó là của nhà sản xuất, **nhưng phần lớn các danh mục chưa từng được thử trên máy thật ở
-đây**, và chưa một lệnh nào từng được gửi tới thiết bị không phải điều hòa. Nếu bạn có một trong số
-đó, xin hãy [báo lại](../TROUBLESHOOTING.md#before-you-open-an-issue) — kể cả khi mọi thứ chạy tốt.
+đây**. Cho đến nay chỉ **một** thiết lập trên thiết bị không phải điều hòa từng được gửi thành công
+— nhiệt độ cài đặt của một máy nước nóng bơm nhiệt, được thiết bị chấp nhận và đọc lại để xác nhận.
+Phần còn lại vẫn chưa được kiểm chứng. Nếu bạn có một trong số đó, xin hãy
+[báo lại](../TROUBLESHOOTING.md#before-you-open-an-issue) — kể cả khi mọi thứ chạy tốt.
 Chi tiết: [Appliance support in detail](../appliances.md) (tiếng Anh).
 
 ## Bạn nhận được gì

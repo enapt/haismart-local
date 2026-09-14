@@ -57,8 +57,9 @@ setiap perkakas, sebaliknya peta bait rasmi Haier bagi jenis produk itu, ditapis
 unit anda sendiri tentang ciri yang benar-benar ada padanya.
 
 ⚠️ Petanya datang daripada pengeluar, **tetapi kebanyakan kategori itu belum pernah diuji pada
-perkakas sebenar di sini**, dan belum pernah satu arahan pun dihantar kepada perkakas selain
-penghawa dingin. Jika anda memiliki salah satunya, sila
+perkakas sebenar di sini**. Setakat ini hanya **satu** tetapan pada perkakas selain penghawa dingin
+pernah berjaya dihantar — suhu tetapan pemanas air pam haba, yang diterima oleh perkakas itu dan
+disahkan semula. Selebihnya masih belum terbukti. Jika anda memiliki salah satunya, sila
 [laporkan](../TROUBLESHOOTING.md#before-you-open-an-issue) — termasuk jika semuanya berjalan lancar.
 Perinciannya ada dalam [Appliance support in detail](../appliances.md) (bahasa Inggeris).
 

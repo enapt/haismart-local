@@ -1,0 +1,250 @@
+{
+ "attributes": [
+  {
+   "name": "getAllProperty",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "getAllProperty"
+     }
+    ],
+    "type": "LIST"
+   }
+  },
+  {
+   "name": "operationMode",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "0",
+      "desc": "智能/自动/舒适"
+     },
+     {
+      "data": "1",
+      "desc": "制冷"
+     },
+     {
+      "data": "2",
+      "desc": "除湿"
+     },
+     {
+      "data": "6",
+      "desc": "送风"
+     }
+    ],
+    "type": "LIST"
+   }
+  },
+  {
+   "name": "stopCurrentAlarm",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "stopCurrentAlarm"
+     }
+    ],
+    "type": "LIST"
+   }
+  },
+  {
+   "name": "targetTemperature",
+   "valueRange": {
+    "dataStep": {
+     "dataType": "Double",
+     "maxValue": "30",
+     "minValue": "16",
+     "step": "1"
+    },
+    "type": "STEP"
+   }
+  },
+  {
+   "name": "windDirectionHorizontal",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "0",
+      "desc": "左右摆位置一(固定)"
+     },
+     {
+      "data": "1",
+      "desc": "左右摆位置二"
+     },
+     {
+      "data": "2",
+      "desc": "左右摆位置三"
+     },
+     {
+      "data": "3",
+      "desc": "左右摆位置四"
+     },
+     {
+      "data": "4",
+      "desc": "左右摆位置五"
+     },
+     {
+      "data": "5",
+      "desc": "左右摆位置六"
+     },
+     {
+      "data": "6",
+      "desc": "左右摆位置七"
+     },
+     {
+      "data": "7",
+      "desc": "左右摆位置八(自动)"
+     }
+    ],
+    "type": "LIST"
+   }
+  },
+  {
+   "name": "muteStatus",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "false",
+      "desc": "关"
+     },
+     {
+      "data": "true",
+      "desc": "开"
+     }
+    ],
+    "type": "LIST"
+   }
+  },
+  {
+   "name": "rapidMode",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "false",
+      "desc": "关"
+     },
+     {
+      "data": "true",
+      "desc": "开"
+     }
+    ],
+    "type": "LIST"
+   }
+  },
+  {
+   "name": "getAllAlarm",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "getAllAlarm"
+     }
+    ],
+    "type": "LIST"
+   }
+  },
+  {
+   "name": "windDirectionVertical",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "0",
+      "desc": "上下摆位置固定"
+     },
+     {
+      "data": "1",
+      "desc": "健康气流(上吹)"
+     },
+     {
+      "data": "2",
+      "desc": "上下摆位置一"
+     },
+     {
+      "data": "3",
+      "desc": "健康气流(下吹)"
+     },
+     {
+      "data": "4",
+      "desc": "上下摆位置二"
+     },
+     {
+      "data": "5",
+      "desc": "上下摆位置三"
+     },
+     {
+      "data": "6",
+      "desc": "上下摆位置四"
+     },
+     {
+      "data": "7",
+      "desc": "上下摆位置五"
+     },
+     {
+      "data": "8",
+      "desc": "上下摆自动"
+     },
+     {
+      "data": "9",
+      "desc": "上下摆自动2(特殊机型专用)"
+     }
+    ],
+    "type": "LIST"
+   }
+  },
+  {
+   "name": "indoorTemperature",
+   "valueRange": {
+    "dataStep": {
+     "dataType": "Double",
+     "maxValue": "55.0",
+     "minValue": "0.0",
+     "step": "0.5"
+    },
+    "type": "STEP"
+   }
+  },
+  {
+   "name": "windSpeed",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "1",
+      "desc": "高风"
+     },
+     {
+      "data": "2",
+      "desc": "中风"
+     },
+     {
+      "data": "3",
+      "desc": "低风"
+     },
+     {
+      "data": "5",
+      "desc": "自动"
+     }
+    ],
+    "type": "LIST"
+   }
+  },
+  {
+   "name": "onOffStatus",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "false",
+      "desc": "关机"
+     },
+     {
+      "data": "true",
+      "desc": "开机"
+     }
+    ],
+    "type": "LIST"
+   }
+  }
+ ],
+ "invisible_attributes": [
+  "getAllAlarm",
+  "getAllProperty",
+  "stopCurrentAlarm"
+ ]
+}

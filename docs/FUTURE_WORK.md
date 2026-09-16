@@ -354,6 +354,48 @@ which is invisible until the word lands at the start of a sentence.**
 corrections from native speakers are welcome. The tool that did the rewrite, with the per-language
 reasoning inline, is `delocalise_ac.py` (session scratchpad, not shipped).
 
+### 71. ✅ SETTLED — air conditioners kept their own write path
+
+Raised as issue #15 and settled 2026-09-15. Turning an air conditioner off from Home Assistant
+failed with `onOffStatus='0' not in allowed ['false', 'true']`, and nothing reached the unit.
+
+**The cause was one gate keyed on the wrong condition.** When the byte-map decoder arrived, every
+appliance gained a decoder built from Haier's published map. Air conditioners already had a
+hand-built one, and the READ side keeps them on it. The WRITE side asked a different question:
+`model_write_fields()` was gated on "did the byte map decode this report" rather than on "is this
+an air conditioner", and an air conditioner's report decodes both ways. So a change made of
+model-writable fields alone was routed to the byte-map write path, which speaks a different
+**representation** (the model's published values, not raw EPP) and builds a different **frame** (a
+single-parameter write, not the group set).
+
+⇒ The gate is now the same condition the read side uses, so the two cannot drift apart again.
+
+⚠️ **The blast radius was per family, and it was not small.** 26 of the 28 air-conditioner families
+in the shipped bundle mark `onOffStatus` writable, so power was diverted on almost all of them —
+including the hardware this project develops against. On a `0d12` commercial cabinet, whose byte map
+marks 42 attributes writable, **eight of its declared controls** were diverted: power, setpoint,
+mode, fan, both vanes, quiet and boost. A setpoint failed differently from power and is the sharper
+illustration — 22 °C is EPP 6, so the byte-map validator rejected an ordinary temperature as out of
+range `[16, 30]`.
+
+⇒ ★ **Turning on appeared to work, which is why this looked narrower than it was.** Setting a mode
+carries `operationMode` as well as power, and most families do not mark that attribute writable, so
+the whole change fell back to the air-conditioner path by luck. `climate.turn_on`, a single-field
+change, was refused exactly like `turn_off`.
+
+⛔ **Refusing the write was only the visible half.** Teaching the validator to convert `0` to
+`"false"` would have let the change through — and then sent it as a `5Dxx` single-parameter write,
+which is unconfirmed on the classic families: their published write type is group-only for every
+attribute but power, and a live probe found the setpoint id refused by the appliance while the
+power id was accepted, on the same unit in the same session. Making the values agree would have
+replaced a loud failure with a quiet one.
+
+⇒ ★★ **Two blind spots in the suite let this ship, and both are now closed by
+`test_ac_write_path.py`.** No air-conditioner test set a `uplus_id`, so no air-conditioner test ever
+loaded a byte map; and the shared model fixture omits `invisible_attributes`, without which the
+declaration gate returns nothing and the byte map decodes nothing. Either alone was enough to hide
+the gate. **Every test in that file fails against the old code** — checked, not assumed.
+
 ### 70. ✅ SETTLED — swing moved to Home Assistant's modern shape: one control per axis
 
 Raised and settled 2026-09-13, from Home Assistant's own developer documentation:

@@ -1301,9 +1301,25 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         Empty unless the byte map is the decoder in use. A hand-written AC family keeps its own
         write path; this is for the appliances that have no such family.
+
+        ⛔ Gated on ``uses_curated_ac_entities``, not merely on ``model_decoded`` -- issue #15, and
+        the docstring above was already the intent. An air conditioner's byte map decodes too, so
+        keying on ``model_decoded`` alone diverted its writes to a path that speaks a different
+        REPRESENTATION (the model's published values, not raw EPP) and builds a different FRAME (a
+        ``5Dxx`` single-parameter write, not the group set). 26 of the 28 air-conditioner families
+        in the bundle mark ``onOffStatus`` writable, so ``climate.turn_off`` -- a single-field
+        change -- was refused before it reached the appliance: ``onOffStatus='0' not in allowed
+        ['false', 'true']``. Turn-on survived only where it travelled with ``operationMode``, which
+        most of those families do not mark writable, so the whole change fell back by luck.
+
+        ⚠️ This deliberately does NOT give air conditioners a new capability. A ``5Dxx`` write is
+        unconfirmed on the classic families -- the owner's own unit refuses ``5D02`` (setpoint) and
+        accepts only ``5D01``, probed live 2026-09-03 -- so the byte map is the decoder for reads
+        and the hand-built families stay the authority for writes. This is the same condition
+        ``entity_specs`` uses, so reads and writes cannot drift apart again.
         """
         model = self.device_model
-        if model is None or not self.model_decoded:
+        if model is None or self.uses_curated_ac_entities:
             return frozenset()
         declared = frozenset(declared_attribute_names(self.digital_model))
         return frozenset(

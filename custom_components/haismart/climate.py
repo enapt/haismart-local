@@ -11,6 +11,7 @@ from typing import Any
 
 from haismart_hrdp import GRSETDAC_ENUMS
 from homeassistant.components.climate import (
+    ATTR_HVAC_MODE,
     PRESET_BOOST,
     PRESET_ECO,
     PRESET_NONE,
@@ -22,7 +23,7 @@ from homeassistant.components.climate import (
     HVACAction,
     HVACMode,
 )
-from homeassistant.const import UnitOfTemperature
+from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -464,9 +465,13 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
         return GRSETDAC_ENUMS["windSpeed"].get(token)
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
+        await self.coordinator.async_send_control(self._hvac_mode_changes(hvac_mode))
+
+    def _hvac_mode_changes(self, hvac_mode: HVACMode) -> dict[str, int]:
+        """The fields that select ``hvac_mode``, for one group-set -- shared with set_temperature,
+        whose optional ``hvac_mode`` must land in the same write as the setpoint."""
         if hvac_mode == HVACMode.OFF:
-            await self.coordinator.async_send_control({"onOffStatus": 0})
-            return
+            return {"onOffStatus": 0}
         token = _HVAC_TO_MODE.get(hvac_mode)
         mode_val = self._mode_code(token)
         if mode_val is None:
@@ -489,15 +494,39 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
             fallback = self._fan_code(_FAN_ONLY_DEFAULT_SPEED)
             if fallback is not None:
                 changes["windSpeed"] = fallback
-        await self.coordinator.async_send_control(changes)
+        return changes
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
-        temp = kwargs.get("temperature")
+        """Set the setpoint -- and the mode, when the call names one, in the SAME group-set.
+
+        `hvac_mode` is part of the service schema; dropping it gave an automation asking for "heat
+        at 24" a 24 in whatever mode the unit was already in.
+        """
+        hvac_mode = kwargs.get(ATTR_HVAC_MODE)
+        temp = kwargs.get(ATTR_TEMPERATURE)
         if temp is None:
+            if hvac_mode is not None:
+                await self.async_set_hvac_mode(hvac_mode)
             return
-        await self.coordinator.async_send_control(
-            {"targetTemperature": int(round(temp)) - 16}
-        )
+        changes = {"targetTemperature": self._temperature_code(temp)}
+        if hvac_mode is not None:
+            changes = {**self._hvac_mode_changes(hvac_mode), **changes}
+        await self.coordinator.async_send_control(changes)
+
+    def _temperature_code(self, temp: float) -> int:
+        """The raw setpoint, ``°C - 16`` in whole degrees, refusing what that cannot hold.
+
+        The profile's range and step come from the device's own model, which may declare a floor
+        below 16 or half-degree steps; the wire holds neither. Encoded anyway, 12 °C became a
+        negative code and 22.5 silently became 22. A sub-degree remainder is still rounded where the
+        model's step is whole degrees: that is a Fahrenheit conversion (72 °F = 22.2 °C), not a
+        request for precision the unit lacks.
+        """
+        whole = int(round(temp))
+        step = self.target_temperature_step or 1.0
+        if whole < 16 or (step % 1 and abs(temp - whole) > 0.01):
+            self.raise_unsupported_value(temp, "target temperature")
+        return whole - 16
 
     async def async_set_fan_mode(self, fan_mode: str) -> None:
         # In fan-only mode the unit rejects fan=auto (see async_set_hvac_mode), so coerce it to a

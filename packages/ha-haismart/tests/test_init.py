@@ -2376,7 +2376,7 @@ async def test_diagnostics_carry_cloud_reachability(
         "raw_state": 1000,
         "state_name": "connected",
         "supported": True,
-        "reported_host": "192.168.1.50",
+        "reported_host": "**REDACTED**",
         "reported_port": 56800,
         "host_matches": True,
         # The protocol the appliance names for itself. `None` here because the fixture's reply
@@ -2404,7 +2404,7 @@ async def test_diagnostics_flags_an_ac_that_moved_on_dhcp(
     entry = await _setup(hass)
     diag = await async_get_config_entry_diagnostics(hass, entry)
 
-    assert diag["cloud"]["reported_host"] == "192.168.1.77"
+    assert diag["cloud"]["reported_host"] == "**REDACTED**"
     assert diag["cloud"]["host_matches"] is False
 
 

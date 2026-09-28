@@ -22,6 +22,7 @@ arrive.
 """
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass
 
 from haismart_hrdp import GRSETDAC_ENUMS, PANEL_ENUM_CONTROLS
@@ -237,8 +238,17 @@ class HaismartGenericSelect(GenericEntity, SelectEntity):
 
     def __init__(self, coordinator: HaismartCoordinator, spec) -> None:
         super().__init__(coordinator, spec)
-        self._by_label = {label: value for value, label in spec.options}
-        self._by_value = {str(value): label for value, label in spec.options}
+        # Two values may share a label -- the shipped maps are tested free of that, a fetched one is
+        # not -- and keyed on the label, the first became unselectable while choosing the label
+        # wrote the other value. A clashing label is told apart by its value; the rest stay as-is.
+        seen = Counter(label for _, label in spec.options)
+        self._by_value = {
+            str(value): label if seen[label] == 1 else f"{label} ({value})"
+            for value, label in spec.options
+        }
+        self._by_label = {
+            self._by_value[str(value)]: value for value, _ in spec.options
+        }
         self._attr_options = list(self._by_label)
 
     @property

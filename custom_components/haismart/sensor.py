@@ -552,6 +552,9 @@ class HaismartLocalKeySensor(HaismartEntity, SensorEntity):
     _attr_entity_registry_enabled_default = False
     _attr_translation_key = "local_key"
     _attr_icon = "mdi:key-variant"
+    # The backup attributes are for copying out, not for history: the recorder would keep every
+    # value of the unit's LAN address and MAC for as long as it keeps anything.
+    _unrecorded_attributes = frozenset({CONF_HOST, "device_id"})
 
     def __init__(self, coordinator: HaismartCoordinator) -> None:
         super().__init__(coordinator)

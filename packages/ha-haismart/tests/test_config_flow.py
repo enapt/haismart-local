@@ -2344,3 +2344,110 @@ async def test_the_screen_stays_quiet_when_there_is_nothing_to_report(
     with patch.object(HaismartConfigFlow, "_async_query_device", return_value=None):
         result = await flow.async_step_key_failed()
     assert result["description_placeholders"]["note"] == ""
+
+
+# --- review fixes: a typo'd address, and a key fetch refused because the account lacks the unit ---
+
+
+async def test_manual_readd_with_a_bad_address_leaves_the_entry_alone(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The unique-id check used to run BEFORE validation, with `updates={host: ...}`: re-adding a
+    configured unit with a typo'd IP rewrote the working entry's host and reported only "already
+    configured". Now the address has to answer first, as reconfigure_host already required."""
+    entry = _entry()
+    entry.add_to_hass(hass)
+    mock_uss.probe.side_effect = OSError("no route to host")
+    flow_id = await _start_manual(hass)
+    result = await hass.config_entries.flow.async_configure(
+        flow_id, {**USER_INPUT, CONF_HOST: "192.168.1.99"}
+    )
+    assert result["type"] == FlowResultType.FORM
+    assert result["errors"] == {"base": "cannot_connect"}
+    assert entry.data[CONF_HOST] == "192.168.1.50", "a failed validation rewrote the entry"
+
+
+async def test_manual_readd_at_a_working_address_updates_the_host(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    entry = _entry()
+    entry.add_to_hass(hass)
+    flow_id = await _start_manual(hass)
+    result = await hass.config_entries.flow.async_configure(
+        flow_id, {**USER_INPUT, CONF_HOST: "192.168.1.99"}
+    )
+    assert result["type"] == FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+    assert entry.data[CONF_HOST] == "192.168.1.99"
+
+
+async def _reauth_cloud_with_failing_fetch(hass, devices):
+    """Drive reauth_cloud to a key fetch that fails, with the account listing ``devices``."""
+    from unittest.mock import patch
+
+    from haismart_extractor.cloud import SEA_APP_CREDENTIALS, HaierCloud
+    from haismart_extractor.gateway import GatewayError
+
+    CONF_ACCESS_TOKEN, CONF_CLOUD_CLIENT_ID, _, CONF_REFRESH_TOKEN, CONF_ZONE_INFO = _cloud_consts()
+    entry = _cloud_entry()
+    entry.add_to_hass(hass)
+    entry.async_start_reauth(hass)
+    await hass.async_block_till_done()
+    flow_id = hass.config_entries.flow.async_progress_by_handler(DOMAIN)[0]["flow_id"]
+    await hass.config_entries.flow.async_configure(flow_id)
+    await hass.config_entries.flow.async_configure(flow_id, {"next_step_id": "reauth_cloud"})
+    cloud_data = {
+        CONF_REFRESH_TOKEN: "2_RT", CONF_ACCESS_TOKEN: "2_FRESH",
+        CONF_CLOUD_CLIENT_ID: "A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4", CONF_ZONE_INFO: "66",
+    }
+    client = HaierCloud(SEA_APP_CREDENTIALS, "2_FRESH")
+    list_patch = (
+        patch("custom_components.haismart.config_flow.HaierCloud.list_devices_v2",
+              side_effect=devices)
+        if isinstance(devices, Exception)
+        else patch("custom_components.haismart.config_flow.HaierCloud.list_devices_v2",
+                   return_value=devices)
+    )
+    with patch(
+        "custom_components.haismart.config_flow._async_login_cloud",
+        return_value=(client, cloud_data),
+    ), patch(
+        "custom_components.haismart.config_flow._async_fetch_localkey",
+        side_effect=GatewayError("gateway errNo=110 for A1B2C3D4E5F6"),
+    ), list_patch:
+        return await hass.config_entries.flow.async_configure(
+            flow_id, {CONF_USERNAME: "someone@example.test", CONF_PASSWORD: "pw",
+                      "zone_info": "66"},
+        )
+
+
+async def test_reauth_names_an_account_that_does_not_own_the_unit(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Signing in with the wrong account used to read "Haier's servers could not be reached" --
+    advice to debug a firewall that was never the problem. The gateway's errNo is not a documented
+    code, so the account's own device list is what decides it."""
+    from haismart_extractor.cloud import CloudDevice
+
+    other = [CloudDevice("0A0B0C0D0E0F", "Elsewhere", "0201203a", "UPLUS", True)]
+    result = await _reauth_cloud_with_failing_fetch(hass, other)
+    assert result["type"] == FlowResultType.FORM
+    assert result["errors"] == {"base": "device_not_on_account"}
+
+
+async def test_reauth_keeps_unreachable_when_the_account_does_list_the_unit(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    from haismart_extractor.cloud import CloudDevice
+
+    owned = [CloudDevice("a1b2c3d4e5f6", "Downstairs", "0201203a", "UPLUS", True)]
+    result = await _reauth_cloud_with_failing_fetch(hass, owned)
+    assert result["errors"] == {"base": "cloud_unreachable"}
+
+
+async def test_reauth_keeps_unreachable_when_the_device_list_fails_too(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """No answer is not "the account lacks it": only a list that answers can say that."""
+    result = await _reauth_cloud_with_failing_fetch(hass, CloudError("HTTP 503"))
+    assert result["errors"] == {"base": "cloud_unreachable"}

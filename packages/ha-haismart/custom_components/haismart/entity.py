@@ -7,7 +7,7 @@ from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, DeviceInfo, format_mac
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_BRAND, CONF_MODEL_NAME, DOMAIN, MANUFACTURER
+from .const import CONF_BRAND, CONF_MODEL_NAME, CONF_PRODUCT_CODE, DOMAIN, MANUFACTURER
 from .coordinator import HaismartCoordinator
 
 _MAC_ID = re.compile(r"^[0-9A-Fa-f]{12}$")
@@ -28,14 +28,18 @@ class HaismartEntity(CoordinatorEntity[HaismartCoordinator]):
             else set()
         )
         entry_data = coordinator.config_entry.data
+        # The STORED code, not `coordinator.product_code`: that falls back to a built-in default
+        # when none is known, and the device page then named it as this unit's model -- reading
+        # exactly like a real one. Unknown shows as unknown.
+        product_code = entry_data.get(CONF_PRODUCT_CODE) or None
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, device_id)},
             connections=connections,
             # `brand`/`model` come from the cloud device list's extendedInfo when available, so the
             # device page shows "PRO X INV-42/3PH" rather than a raw product code like AACRL2E00.
             manufacturer=entry_data.get(CONF_BRAND) or MANUFACTURER,
-            model=entry_data.get(CONF_MODEL_NAME) or coordinator.product_code,
-            model_id=coordinator.product_code,
+            model=entry_data.get(CONF_MODEL_NAME) or product_code,
+            model_id=product_code,
             name=coordinator.config_entry.title,
             # Reported by the AC over the key-free UDISCOVERY query; absent on units that don't
             # answer it, in which case HA simply shows no firmware version.

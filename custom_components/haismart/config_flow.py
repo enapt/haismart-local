@@ -244,6 +244,23 @@ async def _async_fetch_localkey(
     return local_key.key, local_key.version
 
 
+async def _async_account_lacks(cloud: HaierCloud, device_id: str) -> bool:
+    """Whether the signed-in account's device list answers WITHOUT this appliance.
+
+    Asked only after a key fetch failed, to tell "wrong account" from "no route to Haier" -- which
+    otherwise read alike, and the second's advice (check DNS and the firewall) sends the owner of
+    the first nowhere. The gateway's refusal is only an undocumented errNo, so the list decides.
+    ``False`` when it cannot answer: only a list that replies can say the unit is not on it.
+    """
+    try:
+        devices = await cloud.list_devices_v2()
+    except Exception as err:  # noqa: BLE001 - a second opinion; never the error shown
+        _LOGGER.debug("could not list devices to explain a failed key fetch: %s", err)
+        return False
+    wanted = _clean_device_id(device_id)
+    return all(_clean_device_id(d.device_id) != wanted for d in devices)
+
+
 def _describe_key_failure(err: Exception) -> str:
     """One line naming why the key could not be fetched, safe to put in front of a user.
 
@@ -1135,7 +1152,6 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
             # Same reasoning as the account path: a pending Discovered card holds this unique ID,
             # and someone typing an address in deliberately must not be turned away by it.
             await self.async_set_unique_id(device_id, raise_on_progress=False)
-            self._abort_if_unique_id_configured(updates={CONF_HOST: host})
             try:
                 local_key = _clean_key(user_input[CONF_LOCAL_KEY])
                 version = await _async_validate(self.hass, host, device_id, local_key)
@@ -1146,6 +1162,10 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
             except CannotConnect:
                 errors["base"] = "cannot_connect"
             else:
+                # Only now, with the address proven to answer: checked before validation, this
+                # rewrote a working entry's host with whatever was typed, typo included, and
+                # reported only "already configured" (see async_step_reconfigure_host).
+                self._abort_if_unique_id_configured(updates={CONF_HOST: host})
                 self._pending_manual = {
                     CONF_HOST: host,
                     CONF_DEVICE_ID: device_id,
@@ -1406,9 +1426,9 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Point an existing entry at a new IP, validating BEFORE committing.
 
-        Re-running the manual flow with the same device id also updates the host, but it does so
-        before validating, so a typo silently took a working entry offline while reporting only
-        "already configured".
+        Re-running the manual flow with the same device id also updates the host -- after
+        validating, since it once did so before, and a typo silently took a working entry offline
+        while reporting only "already configured".
         """
         entry = self._get_reconfigure_entry()
         errors: dict[str, str] = {}
@@ -1556,6 +1576,7 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             zone = str(user_input.get(CONF_ZONE_INFO, "")).strip().lstrip("+")
             device_id = entry.data[CONF_DEVICE_ID]
+            _cloud: HaierCloud | None = None
             try:
                 _cloud, cloud_data = await _async_login_cloud(
                     user_input[CONF_USERNAME],
@@ -1574,7 +1595,10 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                 placeholders = {"username": user_input[CONF_USERNAME], "zone": zone}
             except (CloudError, GatewayError, KeyError, OSError, RuntimeError, TimeoutError) as err:
                 _LOGGER.warning("re-fetching the localKey for %s failed: %s", device_id, err)
-                errors["base"] = "cloud_unreachable"
+                if _cloud is not None and await _async_account_lacks(_cloud, device_id):
+                    errors["base"] = "device_not_on_account"
+                else:
+                    errors["base"] = "cloud_unreachable"
             else:
                 return self.async_update_reload_and_abort(
                     entry,

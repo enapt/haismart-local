@@ -27,6 +27,9 @@ from .const import HAIER_OUIS
 _LOGGER = logging.getLogger(__name__)
 
 BROADCAST_TIMEOUT = 3.0
+#: Bound on an ARP sweep. It runs inline in a failed poll (and on a form someone is waiting on), so
+#: a sweep that hangs must count as finding nothing rather than stall the cycle behind it.
+ARP_TIMEOUT = 5.0
 
 
 async def async_resolve_host_arp(device_id: str) -> str | None:
@@ -35,8 +38,9 @@ async def async_resolve_host_arp(device_id: str) -> str | None:
     try:
         from aiodiscover import DiscoverHosts
 
-        hosts = await DiscoverHosts().async_discover()
-    except Exception:  # noqa: BLE001 - best-effort; aiodiscover ships with the dhcp component
+        async with asyncio.timeout(ARP_TIMEOUT):
+            hosts = await DiscoverHosts().async_discover()
+    except Exception:  # noqa: BLE001 - best-effort (a timeout included); ships with `dhcp`
         return None
     for host in hosts:
         if str(host.get("macaddress", "")).replace(":", "").lower() == target:
@@ -86,7 +90,9 @@ async def async_scan_for_appliances(
     try:
         from aiodiscover import DiscoverHosts
 
-        for host in await DiscoverHosts().async_discover():
+        async with asyncio.timeout(ARP_TIMEOUT):
+            hosts = await DiscoverHosts().async_discover()
+        for host in hosts:
             mac = str(host.get("macaddress", "")).replace(":", "").upper()
             if mac.startswith(HAIER_OUIS) and host.get("ip"):
                 candidates.append(str(host["ip"]))

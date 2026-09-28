@@ -150,6 +150,7 @@
       "cloud_auth": "Logowanie nie powiodło się. Sprawdź adres e-mail lub numer telefonu oraz hasło.",
       "cannot_connect_cloud": "Zalogowano pomyślnie, ale nie udało się połączyć z serwerami Haiera, aby pobrać listę urządzeń. Zwykle jest to przejściowe — spróbuj ponownie za chwilę.",
       "cloud_unreachable": "Nie udało się połączyć z serwerami Haiera. Sprawdź, czy Home Assistant ma dostęp do internetu i potrafi rozwiązać adres Haiera — problem z DNS lub zaporą na hoście Home Assistant wygląda dokładnie tak — i spróbuj ponownie.",
+      "device_not_on_account": "Zalogowano, ale to urządzenie nie jest przypisane do tego konta Haier, więc nie można pobrać jego klucza. Zaloguj się na konto, do którego dodano urządzenie — albo najpierw udostępnij je temu kontu w aplikacji Haier — i spróbuj ponownie.",
       "invalid_key": "Klucz lokalny musi być 32-znakowym ciągiem szesnastkowym.",
       "invalid_auth": "Sprzęt odpowiedział, ale ten klucz lokalny nie odszyfrowuje jego stanu — klucz jest nieprawidłowy albo został zmieniony.",
       "cannot_connect": "Nie udało się połączyć ze sprzętem na porcie 56800. Sprawdź adres IP oraz to, czy Home Assistant jest w tej samej sieci.",

@@ -150,6 +150,7 @@
       "cloud_auth": "Prihlásenie sa nepodarilo. Skontrolujte e-mail alebo telefónne číslo a heslo.",
       "cannot_connect_cloud": "Prihlásenie prebehlo úspešne, ale servery Haier neboli dostupné na načítanie zoznamu vašich zariadení. Býva to dočasné – skúste to o chvíľu znova.",
       "cloud_unreachable": "Servery Haier neboli dostupné. Skontrolujte, či sa Home Assistant dostane na internet a dokáže preložiť adresu Haier – problém s DNS alebo firewallom na hostiteľovi Home Assistant vyzerá presne takto – a skúste to znova.",
+      "device_not_on_account": "Prihlásenie prebehlo, ale toto zariadenie nie je v tomto účte Haier, takže jeho kľúč nemožno získať. Prihláste sa účtom, do ktorého bolo zariadenie pridané — alebo ho najprv v aplikácii Haier zdieľajte s týmto účtom — a skúste to znova.",
       "invalid_key": "Lokálny kľúč musí byť hexadecimálny reťazec s 32 znakmi.",
       "invalid_auth": "Jednotka odpovedala, ale tento lokálny kľúč jej stav nedešifruje – kľúč je nesprávny, alebo bol zmenený.",
       "cannot_connect": "Jednotku sa nepodarilo kontaktovať na porte 56800. Skontrolujte IP adresu a to, že je Home Assistant v rovnakej sieti.",

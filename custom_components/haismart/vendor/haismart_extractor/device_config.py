@@ -14,6 +14,7 @@ and it discloses nothing about the user: the typeid identifies a product line, n
 """
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import logging
@@ -45,7 +46,13 @@ async def async_fetch_device_config(
     otherwise working, and a vendor CDN being unreachable must not stop it. The caller retries on
     the next start.
     """
-    send = transport or _httpx_transport
+    raw_send = transport or _httpx_transport
+
+    async def send(request: Request) -> Response:
+        # per request: the injected transport has no timeout of its own to honour
+        async with asyncio.timeout(timeout):
+            return await raw_send(request)
+
     if not typeid or len(typeid) != 64:
         return None
     for formatver in FORMATS:

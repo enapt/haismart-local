@@ -1002,3 +1002,40 @@ def test_the_co_command_operator_comes_from_the_request_group() -> None:
         "action": [{"name": "targetTemperature", "rewriteFields": "W", "writable": False}],
     }])
     assert limit[0]["trigger"]["operator"] == "OR"
+
+
+async def test_a_catalogue_that_ignores_paging_does_not_loop_forever() -> None:
+    """A server that answers every index with the same full page must end the sweep, not spin."""
+    same = json.dumps({"retCode": "00000", "data": {"prodInfos": [
+        {"prodNo": f"AAA{n:05d}", "model": f"M{n}"} for n in range(20)]}})
+    calls = 0
+
+    async def transport(request: Request) -> Response:
+        nonlocal calls
+        calls += 1
+        assert calls < 200, "catalogue sweep did not terminate"
+        return Response(200, same)
+
+    cloud = HaierCloud(AppCredentials("a", "k", "c"), "T", transport=transport)
+    rows = await cloud.list_ac_products()
+    assert len(rows) == 20
+
+
+async def test_a_refresh_without_an_access_token_does_not_echo_the_refresh_token() -> None:
+    cap = Capture(Response(200, json.dumps(
+        {"retCode": "00000", "retInfo": "ok", "data": {"refreshToken": "2_SECRET_RT"}})))
+    cloud = HaierCloud(AppCredentials("a", "k", "c"), "T", transport=cap)
+    with pytest.raises(CloudError) as err:
+        await cloud.refresh_token("2_SECRET_RT")
+    assert "2_SECRET_RT" not in str(err.value)
+    assert "refreshToken" in str(err.value)     # the keys it did send are still named
+
+
+async def test_a_login_without_tokens_does_not_echo_the_response_values() -> None:
+    cap = Capture(Response(200, json.dumps(
+        {"retCode": "00000", "data": {"tokenInfo": {"uhomeUserId": "SECRET_USER_1"}}})))
+    with pytest.raises(CloudError) as err:
+        await HaierCloud.login(
+            AppCredentials("a", "k", "c"), "me@x.com", "pw", transport=cap
+        )
+    assert "SECRET_USER_1" not in str(err.value)

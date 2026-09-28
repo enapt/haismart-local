@@ -36,7 +36,7 @@ import json
 import sys
 from typing import Any
 
-from .cloud import SEA_APP_CREDENTIALS, CloudError, HaierCloud
+from .cloud import SEA_APP_CREDENTIALS, CloudConnectionError, CloudError, HaierCloud
 from .gateway import GatewayClient, GatewayCreds, GatewayError
 
 # Long enough for a TLS connect plus one round trip per appliance, short enough that somebody
@@ -191,6 +191,10 @@ async def run(args: argparse.Namespace, password: str) -> int:
         result, devices = await _collect(
             args.username, password, str(args.region).strip().lstrip("+")
         )
+    except CloudConnectionError as err:
+        # a subclass of CloudError, so it goes first: a DNS failure is not a wrong password
+        print(f"error: could not reach Haier -- {err}", file=sys.stderr)
+        return 1
     except CloudError as err:
         print(f"error: sign-in failed -- {err}", file=sys.stderr)
         if "30032" in str(err):

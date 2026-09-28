@@ -21,6 +21,7 @@ caller supplies the product code, or asks. What a uPlusId *does* key reliably is
 
 from __future__ import annotations
 
+import copy
 import gzip
 import json
 from functools import lru_cache
@@ -175,7 +176,11 @@ def product_for_model(model: str | None) -> str | None:
     """
     if not model:
         return None
-    codes = _by_model().get(model.strip().upper()) or []
+    return _derived("product", model.strip().upper(), _product_for_model)
+
+
+def _product_for_model(model: str) -> str | None:
+    codes = _by_model().get(model) or []
     if len(codes) == 1:
         return codes[0]
     if not codes:
@@ -186,6 +191,24 @@ def product_for_model(model: str | None) -> str | None:
         for c in codes
     }
     return codes[0] if len(shapes) == 1 else None
+
+
+# Answers derived from the bundle, memoised: `family_rules` serialises every rule of every member
+# to intersect them, and Home Assistant asks it on the event loop. Keyed on the bundle OBJECT, not
+# just the argument, so a bundle that is ever swapped (a test patching `_bundle`, a future reload)
+# discards the lot instead of serving the old one's answers.
+_DERIVED: dict[tuple[str, str], Any] = {}
+_DERIVED_FROM: list[Any] = [None]
+
+
+def _derived(kind: str, key: str, compute: Any) -> Any:
+    bundle = _bundle()
+    if _DERIVED_FROM[0] is not bundle:
+        _DERIVED.clear()
+        _DERIVED_FROM[0] = bundle
+    if (kind, key) not in _DERIVED:
+        _DERIVED[(kind, key)] = compute(key)
+    return _DERIVED[(kind, key)]
 
 
 def family_rules(uplus_id: str | None) -> dict[str, Any] | None:
@@ -215,7 +238,15 @@ def family_rules(uplus_id: str | None) -> dict[str, Any] | None:
     control for hardware a unit does not have is the one failure mode this layer exists to prevent.
 
     Returns ``None`` when the family is unknown, and the single model's rules when it has only one.
+    A fresh copy each call: callers merge into what they get, and the answer is memoised.
     """
+    if not uplus_id:
+        return None
+    # deep, because the sections are lists of dicts a caller may edit in place
+    return copy.deepcopy(_derived("family", uplus_id, _family_rules))
+
+
+def _family_rules(uplus_id: str) -> dict[str, Any] | None:
     products = products_for_uplus_id(uplus_id)
     if not products:
         return None

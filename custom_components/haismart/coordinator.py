@@ -150,6 +150,7 @@ from .const import (
     OUTDOOR_TEMP_MAX_AGE,
     READ_TIMEOUT,
     REDISCOVER_COOLDOWN,
+    ROTATION_OUTAGE_GRACE,
     STATUS_HOLD_MAX_AGE,
     STATUS_MISSES_HELD,
     TELEMETRY_MAX_AGE,
@@ -625,6 +626,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Whether the last localKey re-fetch failed on the network rather than the account (see
         # `_raise_rotation_unhealed`).
         self._refresh_unreachable = False
+        # When the current run of unreachable re-fetches began (loop time), or None outside one.
+        self._outage_since: float | None = None
         # Cloud reachability, from the key-free UDISCOVERY query (see const.py). `None` = not known
         # (never answered, or the unit does not implement it) -- deliberately NOT False, so a device
         # that cannot tell us reads "unknown" rather than being reported as cut off.
@@ -1775,9 +1778,9 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         },
                     ) from again
             else:
-                # No repair for an unreachable key service: that is not the owner's to fix, and
-                # the next poll re-fetches (see `_raise_rotation_unhealed`).
-                if not self._refresh_unreachable:
+                # No repair for a key service that has only just become unreachable: the next poll
+                # re-fetches (see `_raise_rotation_unhealed`).
+                if not self._rotation_outage_excused():
                     self._raise_stale_localkey_issue(err.held_version, err.device_version)
                 raise HomeAssistantError(
                     translation_domain=DOMAIN,
@@ -2811,9 +2814,10 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         nothing wrong with it -- a reauth flow there asks someone to sign in again because their
         internet blinked -- so that is an ordinary failed cycle, retried on the next poll. No
         account, or an account the service refused, genuinely needs a person: raise the repair
-        (which says which of the two it was) and the reauth.
+        (which says which of the two it was) and the reauth. So does an outage that outlasts
+        `ROTATION_OUTAGE_GRACE`: by then it is a block the owner can fix, or a refusal in disguise.
         """
-        if self._refresh_unreachable:
+        if self._rotation_outage_excused():
             raise UpdateFailed(
                 f"localKey rotated on the AC (v{old} -> v{current}) and the key service is "
                 "unreachable; retrying next cycle"
@@ -2823,6 +2827,16 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             f"localKey rotated on the AC (v{old} -> v{current}) and no cloud auto-refresh "
             "succeeded; a fresh key is needed"
         ) from cause
+
+    def _rotation_outage_excused(self) -> bool:
+        """Whether the last failed re-fetch was the network, within the grace period of its run."""
+        if not self._refresh_unreachable:
+            self._outage_since = None
+            return False
+        now = self.hass.loop.time()
+        if self._outage_since is None:
+            self._outage_since = now
+        return now - self._outage_since < ROTATION_OUTAGE_GRACE
 
     def _issue_id(self, key: str) -> str:
         """A repair-issue id for this appliance, keyed on the config ENTRY, not the device id.
@@ -3286,6 +3300,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         access_token = data.get(CONF_ACCESS_TOKEN)
         refresh_token = data.get(CONF_REFRESH_TOKEN)
+        refresh_unreachable = False
         if refresh_token:
             # mint a fresh accessToken from the durable refreshToken (accessTokens expire ~daily)
             try:
@@ -3299,12 +3314,13 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 access_token = (await cloud.refresh_token(refresh_token)).access_token
             except (CloudError, OSError, RuntimeError) as err:
                 _LOGGER.warning("token refresh failed (%s); trying the stored access token", err)
-                # Only decisive when there is no stored token to fall back on; otherwise the
-                # gateway attempt below says whether this was the network or the account.
-                self._refresh_unreachable = isinstance(err, (CloudConnectionError, OSError))
+                # Carried through the gateway attempt below: the stored token it falls back on is
+                # usually a day old and expired, so the broker's refusal of THAT says nothing about
+                # the account -- the refresh that would have renewed it never reached Haier.
+                refresh_unreachable = isinstance(err, (CloudConnectionError, OSError))
+        self._refresh_unreachable = refresh_unreachable
         if not access_token:
             return False
-        self._refresh_unreachable = False
 
         creds = GatewayCreds.derive(
             usdk_client_id=usdk_client_id,
@@ -3320,11 +3336,15 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # A socket-level failure (DNS, refused, timed out) or a broker that hung up says nothing
             # about the credentials; any other GatewayError is the broker answering -- a CONNACK
             # refusal, an errNo -- or staying silent about this device, which a reauth may fix.
-            self._refresh_unreachable = isinstance(err, (OSError, GatewayConnectionError))
+            self._refresh_unreachable = refresh_unreachable or isinstance(
+                err, (OSError, GatewayConnectionError)
+            )
             return False
 
         self._local_key = local_key.key
         self.localkey_version = local_key.version
+        self._refresh_unreachable = False
+        self._outage_since = None
         updates: dict[str, Any] = {
             CONF_LOCAL_KEY: local_key.key,
             CONF_LOCALKEY_VERSION: local_key.version,

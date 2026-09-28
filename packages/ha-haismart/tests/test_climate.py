@@ -88,25 +88,33 @@ async def test_a_plain_temperature_leaves_the_mode_alone(hass: HomeAssistant, mo
     assert send.await_args.args[0] == {"targetTemperature": 22 - 16}
 
 
+async def test_the_advertised_range_is_what_the_wire_can_carry(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A model declaring a floor of 8 and half-degree steps must not get a UI offering 12 or 22.5:
+    the setpoint travels as whole degrees above 16, so those could only ever be refused."""
+    await _setup(hass, _model(minValue="8", maxValue="30", step="0.5"))
+    attrs = hass.states.get(CLIMATE).attributes
+    assert attrs["min_temp"] == 16
+    assert attrs["target_temp_step"] == 1.0
+
+
 async def test_a_temperature_below_the_wire_floor_is_refused(
     hass: HomeAssistant, mock_uss
 ) -> None:
-    """The raw value is °C − 16, so a model declaring a lower minimum would let 12 °C through as a
-    negative code. Refused, with nothing sent, rather than encoded wrong."""
+    """The raw value is °C − 16, so 12 °C would be a negative code. Refused, with nothing sent."""
     coordinator = await _setup(hass, _model(minValue="8", maxValue="30", step="1"))
     with pytest.raises(ServiceValidationError):
-        send = await _set_temperature(hass, coordinator, temperature=12)
+        await _set_temperature(hass, coordinator, temperature=12)
     send = await _set_temperature(hass, coordinator, temperature=16)
     assert send.await_args.args[0] == {"targetTemperature": 0}
 
 
-async def test_a_half_degree_the_wire_cannot_carry_is_refused(
+async def test_a_fahrenheit_conversion_is_rounded_even_on_a_half_step_model(
     hass: HomeAssistant, mock_uss
 ) -> None:
-    """A model declaring half-degree steps gets a half-degree slider; the wire holds whole degrees,
-    and rounding 22.5 would silently write 22."""
+    """72 °F arrives as 22.2 °C. Refusing it because the model once declared half-degree steps left
+    every imperial install unable to set a temperature."""
     coordinator = await _setup(hass, _model(minValue="16", maxValue="30", step="0.5"))
-    with pytest.raises(ServiceValidationError):
-        await _set_temperature(hass, coordinator, temperature=22.5)
-    send = await _set_temperature(hass, coordinator, temperature=23.0)
-    assert send.await_args.args[0] == {"targetTemperature": 7}
+    send = await _set_temperature(hass, coordinator, temperature=22.2222)
+    assert send.await_args.args[0] == {"targetTemperature": 6}

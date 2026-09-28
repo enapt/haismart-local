@@ -10,7 +10,8 @@ from unittest.mock import patch
 
 import pytest
 from conftest import make_status_frame
-from haismart_extractor import GatewayConnectionError, GatewayError
+from haismart_extractor import GatewayConnectionError, GatewayError, LocalKey
+from haismart_extractor.cloud import CloudConnectionError
 from haismart_hrdp import LocalKeyRotated
 from homeassistant.components.water_heater import DOMAIN as WATER_HEATER_DOMAIN
 from homeassistant.config_entries import SOURCE_REAUTH
@@ -27,9 +28,14 @@ from test_water_heater import (
 from test_water_heater import _setup as _setup_water_heater
 
 from custom_components.haismart import discovery
-from custom_components.haismart.const import CONF_LOCALKEY_VERSION, DOMAIN
+from custom_components.haismart.const import (
+    CONF_LOCALKEY_VERSION,
+    DOMAIN,
+    ROTATION_OUTAGE_GRACE,
+)
 
 GATEWAY = "custom_components.haismart.coordinator.get_localkey_via_gateway"
+REFRESH = "custom_components.haismart.coordinator.HaierCloud.refresh_token"
 
 
 def _gateway_entry(**extra):
@@ -151,6 +157,45 @@ async def test_the_probe_path_reauths_a_rejected_account(hass: HomeAssistant, mo
             await coordinator._check_localkey_rotation()
     flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
     assert not flows or flows[0]["context"]["source"] == SOURCE_REAUTH
+
+
+async def test_an_unreachable_token_refresh_is_not_blamed_on_the_stale_token(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The refresh could not reach Haier, so the gateway was handed yesterday's (expired) token and
+    refused it. That refusal is about the token nobody could renew, not the account: retry."""
+    coordinator = await _setup_entry(hass, _gateway_entry(refresh_token="rt-durable"))
+    mock_uss.read.side_effect = LocalKeyRotated(device_version=5, held_version=4)
+    with (
+        patch(REFRESH, side_effect=CloudConnectionError("POST uhome: ConnectError")),
+        patch(GATEWAY, side_effect=GatewayError("gateway errNo=110001 for dev")),
+    ):
+        with pytest.raises(UpdateFailed):
+            await coordinator._async_read_cycle()
+    assert not hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+
+
+async def test_an_outage_that_outlasts_the_grace_period_escalates(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Retrying quietly forever hid a DNS/firewall block -- or a broker refusing by hanging up --
+    behind an AC that was simply unavailable. Past the grace period it escalates."""
+    coordinator = await _setup_entry(hass, _gateway_entry())
+    mock_uss.read.side_effect = LocalKeyRotated(device_version=5, held_version=4)
+    with patch(GATEWAY, side_effect=OSError("network unreachable")):
+        with pytest.raises(UpdateFailed):
+            await coordinator._async_read_cycle()
+        coordinator._outage_since = hass.loop.time() - ROTATION_OUTAGE_GRACE - 1
+        with pytest.raises(ConfigEntryAuthFailed):
+            await coordinator._async_read_cycle()
+
+
+async def test_a_healed_refresh_ends_the_outage_run(hass: HomeAssistant, mock_uss) -> None:
+    coordinator = await _setup_entry(hass, _gateway_entry())
+    coordinator._outage_since = hass.loop.time() - ROTATION_OUTAGE_GRACE - 1
+    with patch(GATEWAY, return_value=LocalKey(key="0123456789abcdef0123456789abcdef", version=5)):
+        assert await coordinator._async_gateway_refresh()
+    assert coordinator._outage_since is None
 
 
 async def test_no_probe_without_a_held_version(hass: HomeAssistant, mock_uss) -> None:

@@ -176,9 +176,10 @@ def product_for_model(model: str | None) -> str | None:
     """
     if not model:
         return None
-    return _derived("product", model.strip().upper(), _product_for_model)
+    return _product_for_model(model.strip().upper())
 
 
+@lru_cache(maxsize=256)   # bounded: the argument is whatever someone typed off a label
 def _product_for_model(model: str) -> str | None:
     codes = _by_model().get(model) or []
     if len(codes) == 1:
@@ -191,24 +192,6 @@ def _product_for_model(model: str) -> str | None:
         for c in codes
     }
     return codes[0] if len(shapes) == 1 else None
-
-
-# Answers derived from the bundle, memoised: `family_rules` serialises every rule of every member
-# to intersect them, and Home Assistant asks it on the event loop. Keyed on the bundle OBJECT, not
-# just the argument, so a bundle that is ever swapped (a test patching `_bundle`, a future reload)
-# discards the lot instead of serving the old one's answers.
-_DERIVED: dict[tuple[str, str], Any] = {}
-_DERIVED_FROM: list[Any] = [None]
-
-
-def _derived(kind: str, key: str, compute: Any) -> Any:
-    bundle = _bundle()
-    if _DERIVED_FROM[0] is not bundle:
-        _DERIVED.clear()
-        _DERIVED_FROM[0] = bundle
-    if (kind, key) not in _DERIVED:
-        _DERIVED[(kind, key)] = compute(key)
-    return _DERIVED[(kind, key)]
 
 
 def family_rules(uplus_id: str | None) -> dict[str, Any] | None:
@@ -243,9 +226,13 @@ def family_rules(uplus_id: str | None) -> dict[str, Any] | None:
     if not uplus_id:
         return None
     # deep, because the sections are lists of dicts a caller may edit in place
-    return copy.deepcopy(_derived("family", uplus_id, _family_rules))
+    return copy.deepcopy(_family_rules(uplus_id))
 
 
+# Memoised like every other lookup here (the bundle is static): it serialises every rule of every
+# member to intersect them, and Home Assistant asks on the event loop. The answer is shared, so the
+# public wrapper hands out a copy.
+@lru_cache(maxsize=256)
 def _family_rules(uplus_id: str) -> dict[str, Any] | None:
     products = products_for_uplus_id(uplus_id)
     if not products:

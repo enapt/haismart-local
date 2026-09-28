@@ -17,11 +17,8 @@ def test_mutating_a_family_result_does_not_leak_into_the_next_call() -> None:
     assert family_rules(FAMILY) == pristine
 
 
-def test_a_replaced_bundle_is_not_answered_from_the_old_one(monkeypatch) -> None:
-    assert family_rules(FAMILY) is not None
-    assert product_for_model("HSU-24VRRA03TF") == "AAC1UKZ01"
-    empty = {"models": {}, "by_uplus_id": {}}
-    monkeypatch.setattr(model_rules, "_bundle", lambda: empty)
-    monkeypatch.setattr(model_rules, "_by_model", lambda: {})
-    assert family_rules(FAMILY) is None
-    assert product_for_model("HSU-24VRRA03TF") is None
+def test_the_memo_is_bounded() -> None:
+    """Model numbers are typed by people; an unbounded memo would keep every one for the process."""
+    for i in range(300):
+        product_for_model(f"NOT-A-MODEL-{i}")
+    assert model_rules._product_for_model.cache_info().currsize <= 256

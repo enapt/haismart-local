@@ -1051,8 +1051,11 @@ class HaierCloud:
         seen: set[str] = set()
         for app_type in AC_APP_TYPE_CODES:
             index = 0
-            # A server that ignores `index` answers every page with the same full rows, and
-            # `len(out)` never grows: bound the pages, and stop on a page that added nothing new.
+            previous: list[str] | None = None
+            # A server that ignores `index` answers every page with the same full rows: bound the
+            # pages, and stop on a page identical to the one before. Not on a page that added nothing
+            # new -- `seen` spans the app types, so a page of products already listed under an
+            # earlier one is ordinary and must not end this one's listing.
             for _page in range(_CATALOGUE_MAX_PAGES):
                 if len(out) >= limit:
                     break
@@ -1060,7 +1063,10 @@ class HaierCloud:
                     index=index, count=20, keys=model, app_type_code=app_type
                 )
                 rows = ((reply.get("data") or {}).get("prodInfos")) or []
-                before = len(out)
+                codes = [str(row.get("prodNo")) for row in rows]
+                if codes == previous:
+                    break
+                previous = codes
                 for row in rows:
                     code = row.get("prodNo")
                     if not code or code in seen:
@@ -1073,7 +1079,7 @@ class HaierCloud:
                         app_type_name=row.get("appTypeName") or "",
                         brand=row.get("brand") or "",
                     ))
-                if len(rows) < 20 or len(out) == before:
+                if len(rows) < 20:
                     break
                 index += 20
         return out

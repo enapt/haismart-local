@@ -21,6 +21,7 @@ The zeroconf step is kept for future firmware. The **manual** menu path is the f
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 from dataclasses import replace
@@ -52,6 +53,7 @@ from haismart_hrdp.model_rules import (
     preload as _preload_model_rules,
 )
 from homeassistant.config_entries import (
+    ConfigEntryState,
     ConfigFlow,
     ConfigFlowResult,
     OptionsFlow,
@@ -207,13 +209,28 @@ def _clean_key(local_key: str) -> str:
     return key
 
 
+def _running_session(hass, device_id: str) -> contextlib.AbstractAsyncContextManager[Any]:
+    """The session lock of a loaded entry for ``device_id``, or a no-op when there is none.
+
+    These modules hold ONE uSS session at a time, so validating against a unit its running entry is
+    polling collides with the poll: one of the two fails, and the flow reports `cannot_connect` for
+    an address that is fine. Taking the entry's lock queues the probe behind the poll instead.
+    """
+    entry = hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, device_id)
+    if entry is not None and entry.state is ConfigEntryState.LOADED:
+        if (coordinator := getattr(entry, "runtime_data", None)) is not None:
+            return coordinator._session  # noqa: SLF001 - no public accessor; the lock is the point
+    return contextlib.nullcontext()
+
+
 async def _async_validate(hass, host: str, device_id: str, local_key: str) -> int:
     """Live-validate against the AC; return its current localKey version."""
     try:
-        version = await hass.async_add_executor_job(
-            partial(probe_localkey_version, host, device_id, timeout=READ_TIMEOUT)
-        )
-        blobs = await async_read_status(host, device_id, local_key, timeout=READ_TIMEOUT)
+        async with _running_session(hass, device_id):
+            version = await hass.async_add_executor_job(
+                partial(probe_localkey_version, host, device_id, timeout=READ_TIMEOUT)
+            )
+            blobs = await async_read_status(host, device_id, local_key, timeout=READ_TIMEOUT)
     except (OSError, RuntimeError, TimeoutError) as err:
         raise CannotConnect(str(err)) from err
     if not blobs:
@@ -1152,6 +1169,11 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
             # Same reasoning as the account path: a pending Discovered card holds this unique ID,
             # and someone typing an address in deliberately must not be turned away by it.
             await self.async_set_unique_id(device_id, raise_on_progress=False)
+            # Already configured at this very address: nothing to update, so nothing to validate --
+            # and no second session opened against a unit its running entry is polling.
+            existing = self.hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, device_id)
+            if existing is not None and existing.data.get(CONF_HOST) == host:
+                self._abort_if_unique_id_configured()
             try:
                 local_key = _clean_key(user_input[CONF_LOCAL_KEY])
                 version = await _async_validate(self.hass, host, device_id, local_key)

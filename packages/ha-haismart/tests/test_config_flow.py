@@ -2381,6 +2381,46 @@ async def test_manual_readd_at_a_working_address_updates_the_host(
     assert entry.data[CONF_HOST] == "192.168.1.99"
 
 
+async def test_manual_readd_at_the_same_address_opens_no_session(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Nothing to update, so nothing to validate: probing would only collide with the running
+    entry's poll on a module that holds one session at a time."""
+    entry = _entry()
+    entry.add_to_hass(hass)
+    mock_uss.probe.reset_mock()
+    flow_id = await _start_manual(hass)
+    result = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
+    assert result["type"] == FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+    assert mock_uss.probe.call_count == 0
+
+
+async def test_validation_waits_for_the_running_entrys_session(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Validating a new address for a LOADED entry queues behind its poll instead of racing it."""
+    import asyncio
+
+    entry = _entry()
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    mock_uss.probe.reset_mock()
+    flow_id = await _start_manual(hass)
+    session = entry.runtime_data._session
+    await session.acquire()
+    task = asyncio.ensure_future(hass.config_entries.flow.async_configure(
+        flow_id, {**USER_INPUT, CONF_HOST: "192.168.1.99"}
+    ))
+    await asyncio.sleep(0.05)
+    assert mock_uss.probe.call_count == 0, "validated while the entry's session was held"
+    session.release()
+    result = await task
+    assert mock_uss.probe.call_count == 1
+    assert result["reason"] == "already_configured"
+
+
 async def _reauth_cloud_with_failing_fetch(hass, devices):
     """Drive reauth_cloud to a key fetch that fails, with the account listing ``devices``."""
     from unittest.mock import patch

@@ -4,6 +4,7 @@ import json
 import pytest
 
 from haismart_extractor.cloud import (
+    AC_APP_TYPE_CODES,
     DEVICE_LIST_PATH,
     DEVICE_MODEL_PATH,
     LOGIN_PATH,
@@ -1019,6 +1020,28 @@ async def test_a_catalogue_that_ignores_paging_does_not_loop_forever() -> None:
     cloud = HaierCloud(AppCredentials("a", "k", "c"), "T", transport=transport)
     rows = await cloud.list_ac_products()
     assert len(rows) == 20
+
+
+async def test_a_page_already_listed_under_another_app_type_does_not_end_the_listing() -> None:
+    """`seen` spans the app types, so a page of already-collected products is ordinary: the next
+    app type's later pages must still be fetched."""
+    shared = [{"prodNo": f"AAA{n:05d}", "model": f"M{n}"} for n in range(20)]
+    later = [{"prodNo": "NEW00001", "model": "ONLY-IN-LATER-PAGE"}]
+
+    def page(rows: list[dict]) -> str:
+        return json.dumps({"retCode": "00000", "data": {"prodInfos": rows}})
+
+    async def transport(request: Request) -> Response:
+        body = json.loads(request.body)
+        if body["index"] == 0:
+            return Response(200, page(shared))
+        if body["index"] == 20 and body["appTypeCode"] == AC_APP_TYPE_CODES[1]:
+            return Response(200, page(later))
+        return Response(200, page([]))
+
+    cloud = HaierCloud(AppCredentials("a", "k", "c"), "T", transport=transport)
+    rows = await cloud.list_ac_products()
+    assert "NEW00001" in {r.product_code for r in rows}
 
 
 async def test_a_refresh_without_an_access_token_does_not_echo_the_refresh_token() -> None:

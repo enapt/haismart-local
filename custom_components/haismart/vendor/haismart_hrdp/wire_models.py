@@ -2323,10 +2323,19 @@ def related_wire_model(
     nothing but these arguments. The one handed out is shared, so its mappings are read-only.
     """
     key = (length, displacement, None if order is None else tuple(order), uplus_id, insert)
+    # Checked here, not by catching TypeError around the call: that would also swallow a TypeError
+    # from inside the build -- a real bug -- and build everything a second time to re-raise it.
+    if not _hashable(key):
+        return _build_related_wire_model(*key)   # an unhashable order entry: build, uncached
+    return _related_wire_model_cached(*key)
+
+
+def _hashable(value: object) -> bool:
     try:
-        return _related_wire_model_cached(*key)
-    except TypeError:       # an unhashable order entry: build it, uncached, rather than refuse
-        return _build_related_wire_model(*key)
+        hash(value)
+    except TypeError:
+        return False
+    return True
 
 
 @lru_cache(maxsize=1024)

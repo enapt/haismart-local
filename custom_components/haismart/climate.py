@@ -30,6 +30,9 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .coordinator import HaismartConfigEntry, HaismartCoordinator
 from .entity import HaismartEntity
 
+#: The setpoint is encoded as whole degrees above this (see `_temperature_code`).
+_WIRE_MIN_TEMP = 16
+
 # normalized profile token <-> HA HVACMode (power/off handled separately)
 _MODE_TO_HVAC = {
     "cool": HVACMode.COOL,
@@ -194,9 +197,13 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
             if token not in fans:
                 fans.append(token)
         self._attr_fan_modes = fans
-        self._attr_min_temp = profile.min_temp
+        # The range and step come from the device's own model, which may declare a floor below 16
+        # or half-degree steps -- but the setpoint travels as whole degrees above 16 (see
+        # `_temperature_code`). Advertised as the model says, the UI offered setpoints that could
+        # only ever be refused.
+        self._attr_min_temp = max(profile.min_temp, _WIRE_MIN_TEMP)
         self._attr_max_temp = profile.max_temp
-        self._attr_target_temperature_step = profile.temp_step
+        self._attr_target_temperature_step = max(profile.temp_step, 1.0)
         # Only offer the presets whose field this unit's report family can actually write: a family
         # without the secondary toggles would otherwise get a control that always raises.
         self._presets: dict[str, _Preset] = {
@@ -514,19 +521,17 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
         await self.coordinator.async_send_control(changes)
 
     def _temperature_code(self, temp: float) -> int:
-        """The raw setpoint, ``°C - 16`` in whole degrees, refusing what that cannot hold.
+        """The raw setpoint, ``°C - 16`` in whole degrees.
 
-        The profile's range and step come from the device's own model, which may declare a floor
-        below 16 or half-degree steps; the wire holds neither. Encoded anyway, 12 °C became a
-        negative code and 22.5 silently became 22. A sub-degree remainder is still rounded where the
-        model's step is whole degrees: that is a Fahrenheit conversion (72 °F = 22.2 °C), not a
-        request for precision the unit lacks.
+        Rounded: the entity advertises whole-degree steps, so a remainder is a Fahrenheit conversion
+        (72 °F = 22.2 °C), not a request for precision the unit lacks. Below 16 is refused rather
+        than sent as a negative code -- the advertised floor keeps the UI out of it, this keeps a
+        script out of it.
         """
         whole = int(round(temp))
-        step = self.target_temperature_step or 1.0
-        if whole < 16 or (step % 1 and abs(temp - whole) > 0.01):
+        if whole < _WIRE_MIN_TEMP:
             self.raise_unsupported_value(temp, "target temperature")
-        return whole - 16
+        return whole - _WIRE_MIN_TEMP
 
     async def async_set_fan_mode(self, fan_mode: str) -> None:
         # In fan-only mode the unit rejects fan=auto (see async_set_hvac_mode), so coerce it to a

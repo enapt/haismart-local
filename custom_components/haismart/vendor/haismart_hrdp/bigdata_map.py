@@ -17,12 +17,6 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-from .device_model import read_field
-
-#: Cumulative registers: a zero here is one the firmware never fills in, not a unit that used nothing
-#: (the `WireField` kind "counter" rule), so it reads as absent.
-_COUNTERS = frozenset({"totalElectricityUsed"})
-
 
 @dataclass(frozen=True)
 class BigdataField:
@@ -37,15 +31,11 @@ class BigdataField:
     unit: str | None
 
     def read(self, payload: bytes) -> int | float | None:
-        """The value at this position in a telemetry payload, or None if it lies past the end.
-
-        Read through `read_field` so a field wider than its word takes its high half from the words
-        BEFORE it (the `WireField` convention): reading one word kept only the low 16 bits of the
-        32-bit energy counter, a total that silently wrapped every 65.5 kWh.
-        """
-        raw = read_field(payload, self.word, self.bit, self.length, base=0)
-        if raw is None or (raw == 0 and self.name in _COUNTERS):
+        """The value at this position in a telemetry payload, or None if it lies past the end."""
+        off = 2 * (self.word - 1)
+        if off + 2 > len(payload):
             return None
+        raw = (int.from_bytes(payload[off:off + 2], "big") >> self.bit) & ((1 << self.length) - 1)
         value = raw * self.k + self.c
         return round(value, 1) if isinstance(self.k, float) and self.k != 1.0 else int(value)
 

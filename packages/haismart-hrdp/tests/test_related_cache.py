@@ -30,3 +30,19 @@ def test_a_decode_builds_the_inserted_candidates_once(monkeypatch) -> None:
     monkeypatch.setattr(wire_models, "related_insert_models", counting)
     decode_related(bytes(133), CABINET_UPLUS_ID, None, declared_modes=(1, 2))
     assert len(calls) == 1
+
+
+def test_a_type_error_inside_the_build_is_not_retried(monkeypatch) -> None:
+    """Only unhashable ARGUMENTS fall back to an uncached build; a bug in the build raises once."""
+    calls = []
+
+    def broken(*args):
+        calls.append(args)
+        raise TypeError("bug in the build")
+
+    wire_models._related_wire_model_cached.cache_clear()
+    monkeypatch.setattr(wire_models, "_build_related_wire_model", broken)
+    with pytest.raises(TypeError, match="bug in the build"):
+        wire_models.related_wire_model(99, 0)
+    assert len(calls) == 1
+    wire_models._related_wire_model_cached.cache_clear()

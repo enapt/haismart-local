@@ -271,7 +271,6 @@ class GatewayClient:
         # the caller's timeout. `MqttPahoConnection.subscribe` in this same file already deadlined on
         # `time.monotonic`; the two disagreed.
         self._clock = clock or time.monotonic
-        self._dropped: set[str] = set()   # devices whose reply the last request lost to a hang-up
         # Monotonic request counter. This used to be `time_ms + len(out)`, where `len(out)` only
         # advanced on SUCCESS — so two devices requested in the same millisecond after a failure got
         # the SAME sn, and a late reply for one could be stored against the other. A device holding
@@ -284,10 +283,11 @@ class GatewayClient:
 
     def _request_keys(
         self, conn: MqttConnection, device_ids: list[str], timeout: float
-    ) -> tuple[dict[str, LocalKey], dict[str, str]]:
+    ) -> tuple[dict[str, LocalKey], dict[str, str], set[str]]:
         """Publish one request per device, then collect replies against a SINGLE deadline.
 
-        Returns ``(keys, failures)``. Both public methods share this, so they can no longer disagree
+        Returns ``(keys, failures, dropped)`` -- ``dropped`` the devices whose reply was lost to the
+        connection hanging up, which is a failure to talk rather than a refusal. Both public methods share this, so they can no longer disagree
         about what a valid response looks like — the batch path previously omitted the ``errNo`` check
         entirely and used a per-device deadline, making a bad token take ``N * timeout`` seconds.
         """
@@ -301,7 +301,7 @@ class GatewayClient:
             )
         keys: dict[str, LocalKey] = {}
         failures: dict[str, str] = {}
-        dropped = self._dropped = set()
+        dropped: set[str] = set()
         deadline = self._clock() + timeout
         while pending and self._clock() < deadline:
             try:
@@ -334,20 +334,20 @@ class GatewayClient:
                 pending.pop(sn, None)
         for sn, device_id in pending.items():
             failures.setdefault(device_id, f"no localKey response within {timeout}s")
-        return keys, failures
+        return keys, failures, dropped
 
     def get_localkey(self, device_id: str, *, timeout: float = 8.0) -> LocalKey:
         """Fetch ``device_id``'s current localKey. Raises :class:`GatewayError` on no/failed response."""
         conn = self._connect(self.creds)
         try:
             conn.subscribe(self.creds.sub_topic)
-            keys, failures = self._request_keys(conn, [device_id], timeout)
+            keys, failures, dropped = self._request_keys(conn, [device_id], timeout)
         finally:
             conn.close()
         if device_id in keys:
             return keys[device_id]
         # A hang-up before the reply is the connection failing, not the account being refused.
-        err_cls = GatewayConnectionError if device_id in self._dropped else GatewayError
+        err_cls = GatewayConnectionError if device_id in dropped else GatewayError
         raise err_cls(f"{failures.get(device_id, 'no localKey response')} for {device_id}")
 
     def get_localkeys(self, device_ids: list[str], *, timeout: float = 8.0) -> dict[str, LocalKey]:
@@ -359,7 +359,7 @@ class GatewayClient:
         conn = self._connect(self.creds)
         try:
             conn.subscribe(self.creds.sub_topic)
-            keys, failures = self._request_keys(conn, list(device_ids), timeout)
+            keys, failures, _dropped = self._request_keys(conn, list(device_ids), timeout)
         finally:
             conn.close()
         for device_id, reason in failures.items():

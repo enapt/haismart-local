@@ -373,9 +373,10 @@ def test_a_dropped_connection_keeps_the_keys_already_in_hand() -> None:
             return super().poll(timeout)
 
     client = GatewayClient(_creds(), connect=lambda c: DropsAfterFirst())
-    keys, failures = client._request_keys(DropsAfterFirst(), [UP_DEV, "ACB722000000"], 5)
+    keys, failures, dropped = client._request_keys(DropsAfterFirst(), [UP_DEV, "ACB722000000"], 5)
     assert list(keys) == [UP_DEV]
     assert "closed" in failures["ACB722000000"]
+    assert dropped == {"ACB722000000"}
 
 
 def test_a_hang_up_before_the_reply_is_a_connection_error() -> None:

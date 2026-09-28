@@ -34,8 +34,9 @@ from typing import Any
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-from .bigdata_map import BIGDATA_MAPS
+from .bigdata_map import BIGDATA_MAPS, BigdataField
 from .canonical_map import CANONICAL_WRITE
+from .device_model import read_field
 from .panel import PANEL_BOOL_CONTROLS, PANEL_ENUM_CONTROLS, PANEL_EXTRA_POSITIONS
 from .profiles import model_enum_codes
 from .wire_models import (
@@ -1432,6 +1433,26 @@ def is_extended_status_frame(blob: bytes) -> bool:
     return at >= 0 and blob[at + 10:at + 12] == _EPP_RPT_EXTENDED
 
 
+#: Cumulative registers in the published map: a zero is one the firmware never fills in, not a unit
+#: that used nothing (the `WireField` kind "counter" rule), so it reads as absent.
+_BIGDATA_COUNTERS = frozenset({"totalElectricityUsed"})
+
+
+def read_bigdata_field(field: BigdataField, payload: bytes) -> int | float | None:
+    """``field``'s value in a telemetry payload, or None if it lies past the end or is absent.
+
+    Read here rather than by the generated map's own `BigdataField.read`, which takes one word: a
+    field wider than its word takes its high half from the words BEFORE it (the `WireField`
+    convention), so that kept only the low 16 bits of the 32-bit energy counter -- a total that
+    wrapped every 65.5 kWh. Kept out of `bigdata_map.py` because that file is regenerated.
+    """
+    raw = read_field(payload, field.word, field.bit, field.length, base=0)
+    if raw is None or (raw == 0 and field.name in _BIGDATA_COUNTERS):
+        return None
+    value = raw * field.k + field.c
+    return round(value, 1) if isinstance(field.k, float) and field.k != 1.0 else int(value)
+
+
 def _extended_from_published_map(payload: bytes) -> dict[str, Any]:
     """Telemetry for a family whose layout the manufacturer publishes, keyed on the frame's span.
 
@@ -1444,7 +1465,7 @@ def _extended_from_published_map(payload: bytes) -> dict[str, Any]:
         return {}
     out: dict[str, Any] = {}
     for field in fields:
-        value = field.read(payload)
+        value = read_bigdata_field(field, payload)
         if value is None:
             continue
         if (key := _BIGDATA_ACTUATORS.get(field.name)) is not None:

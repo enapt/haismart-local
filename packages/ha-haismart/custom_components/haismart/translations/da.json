@@ -150,6 +150,7 @@
       "cloud_auth": "Login mislykkedes. Kontrollér din e-mail eller dit telefonnummer og din adgangskode.",
       "cannot_connect_cloud": "Login lykkedes, men Haiers servere kunne ikke nås for at hente listen over dine enheder. Det er som regel forbigående – prøv igen om et øjeblik.",
       "cloud_unreachable": "Haiers servere kunne ikke nås. Kontrollér, at Home Assistant kan nå internettet og slå Haiers adresse op – et DNS- eller firewallproblem på Home Assistant-værten ser præcis sådan ud – og prøv igen.",
+      "device_not_on_account": "Logget ind, men dette apparat er ikke på den Haier-konto, så dets nøgle kan ikke hentes. Log ind med den konto, apparatet blev tilføjet til — eller del det først med denne konto i Haier-appen — og prøv igen.",
       "invalid_key": "Den lokale nøgle skal være en hex-streng på 32 tegn.",
       "invalid_auth": "Apparatet svarede, men denne lokale nøgle dekrypterer ikke dets status – nøglen er forkert eller er blevet skiftet.",
       "cannot_connect": "Apparatet kunne ikke nås på port 56800. Kontrollér IP-adressen, og at Home Assistant er på samme netværk.",

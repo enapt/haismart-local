@@ -21,6 +21,7 @@ caller supplies the product code, or asks. What a uPlusId *does* key reliably is
 
 from __future__ import annotations
 
+import copy
 import gzip
 import json
 from functools import lru_cache
@@ -175,7 +176,12 @@ def product_for_model(model: str | None) -> str | None:
     """
     if not model:
         return None
-    codes = _by_model().get(model.strip().upper()) or []
+    return _product_for_model(model.strip().upper())
+
+
+@lru_cache(maxsize=256)   # bounded: the argument is whatever someone typed off a label
+def _product_for_model(model: str) -> str | None:
+    codes = _by_model().get(model) or []
     if len(codes) == 1:
         return codes[0]
     if not codes:
@@ -215,7 +221,19 @@ def family_rules(uplus_id: str | None) -> dict[str, Any] | None:
     control for hardware a unit does not have is the one failure mode this layer exists to prevent.
 
     Returns ``None`` when the family is unknown, and the single model's rules when it has only one.
+    A fresh copy each call: callers merge into what they get, and the answer is memoised.
     """
+    if not uplus_id:
+        return None
+    # deep, because the sections are lists of dicts a caller may edit in place
+    return copy.deepcopy(_family_rules(uplus_id))
+
+
+# Memoised like every other lookup here (the bundle is static): it serialises every rule of every
+# member to intersect them, and Home Assistant asks on the event loop. The answer is shared, so the
+# public wrapper hands out a copy.
+@lru_cache(maxsize=256)
+def _family_rules(uplus_id: str) -> dict[str, Any] | None:
     products = products_for_uplus_id(uplus_id)
     if not products:
         return None

@@ -241,6 +241,12 @@ class GatewayError(Exception):
     pass
 
 
+class GatewayConnectionError(GatewayError):
+    """The broker could not be talked to (hung up, or never acknowledged) -- as opposed to one that
+    answered and refused. Says nothing about the credentials, so a caller retries rather than asking
+    someone to sign in again."""
+
+
 class GatewayClient:
     """Fetch per-device localKeys over the MQTT gateway.
 
@@ -277,10 +283,11 @@ class GatewayClient:
 
     def _request_keys(
         self, conn: MqttConnection, device_ids: list[str], timeout: float
-    ) -> tuple[dict[str, LocalKey], dict[str, str]]:
+    ) -> tuple[dict[str, LocalKey], dict[str, str], set[str]]:
         """Publish one request per device, then collect replies against a SINGLE deadline.
 
-        Returns ``(keys, failures)``. Both public methods share this, so they can no longer disagree
+        Returns ``(keys, failures, dropped)`` -- ``dropped`` the devices whose reply was lost to the
+        connection hanging up, which is a failure to talk rather than a refusal. Both public methods share this, so they can no longer disagree
         about what a valid response looks like — the batch path previously omitted the ``errNo`` check
         entirely and used a per-device deadline, making a bad token take ``N * timeout`` seconds.
         """
@@ -294,9 +301,18 @@ class GatewayClient:
             )
         keys: dict[str, LocalKey] = {}
         failures: dict[str, str] = {}
+        dropped: set[str] = set()
         deadline = self._clock() + timeout
         while pending and self._clock() < deadline:
-            for _topic, pay in conn.poll(0.5):
+            try:
+                replies = conn.poll(0.5)
+            except GatewayConnectionError as err:
+                # the connection is gone: keep the keys already in hand, name the reason for the rest
+                for device_id in pending.values():
+                    failures.setdefault(device_id, str(err))
+                    dropped.add(device_id)
+                break
+            for _topic, pay in replies:
                 inner = parse_localkey_response(pay)
                 sn = str(inner.get("sn"))
                 device_id = pending.get(sn)
@@ -318,19 +334,21 @@ class GatewayClient:
                 pending.pop(sn, None)
         for sn, device_id in pending.items():
             failures.setdefault(device_id, f"no localKey response within {timeout}s")
-        return keys, failures
+        return keys, failures, dropped
 
     def get_localkey(self, device_id: str, *, timeout: float = 8.0) -> LocalKey:
         """Fetch ``device_id``'s current localKey. Raises :class:`GatewayError` on no/failed response."""
         conn = self._connect(self.creds)
         try:
             conn.subscribe(self.creds.sub_topic)
-            keys, failures = self._request_keys(conn, [device_id], timeout)
+            keys, failures, dropped = self._request_keys(conn, [device_id], timeout)
         finally:
             conn.close()
         if device_id in keys:
             return keys[device_id]
-        raise GatewayError(f"{failures.get(device_id, 'no localKey response')} for {device_id}")
+        # A hang-up before the reply is the connection failing, not the account being refused.
+        err_cls = GatewayConnectionError if device_id in dropped else GatewayError
+        raise err_cls(f"{failures.get(device_id, 'no localKey response')} for {device_id}")
 
     def get_localkeys(self, device_ids: list[str], *, timeout: float = 8.0) -> dict[str, LocalKey]:
         """Fetch several devices' localKeys over one connection.
@@ -341,7 +359,7 @@ class GatewayClient:
         conn = self._connect(self.creds)
         try:
             conn.subscribe(self.creds.sub_topic)
-            keys, failures = self._request_keys(conn, list(device_ids), timeout)
+            keys, failures, _dropped = self._request_keys(conn, list(device_ids), timeout)
         finally:
             conn.close()
         for device_id, reason in failures.items():
@@ -400,6 +418,7 @@ class _TlsMqttConnection(MqttConnection):  # pragma: no cover - needs network
         self._buf = b""
         self._subacked: set[int] = set()
         self._publishes: list[tuple[str, bytes]] = []
+        self._closed = False
         raw = socket.create_connection((creds.host, creds.port), timeout=10)
         try:
             self.ss = ctx.wrap_socket(raw, server_hostname=creds.host)
@@ -418,7 +437,7 @@ class _TlsMqttConnection(MqttConnection):  # pragma: no cover - needs network
             while len(ack) < 4:
                 chunk = self.ss.recv(4 - len(ack))
                 if not chunk:
-                    raise GatewayError("gateway closed the connection before CONNACK")
+                    raise GatewayConnectionError("gateway closed the connection before CONNACK")
                 ack += chunk
             if ack[0] != 0x20:
                 raise GatewayError(f"expected CONNACK, got packet type {ack[0] >> 4}")
@@ -444,7 +463,7 @@ class _TlsMqttConnection(MqttConnection):  # pragma: no cover - needs network
             # any PUBLISH arriving early is buffered by _drain, not dropped
             self._drain(min(0.5, max(0.05, deadline - time.monotonic())))
         if pid not in self._subacked:
-            raise GatewayError(f"no SUBACK for {topic!r} within {timeout}s")
+            raise GatewayConnectionError(f"no SUBACK for {topic!r} within {timeout}s")
 
     def publish(self, topic: str, payload: str) -> None:
         body = _mqtt_field(topic) + payload.encode()
@@ -457,13 +476,24 @@ class _TlsMqttConnection(MqttConnection):  # pragma: no cover - needs network
     def _drain(self, timeout: float) -> list[tuple[str, bytes]]:
         out: list[tuple[str, bytes]] = self._publishes
         self._publishes = []
+        if self._closed:
+            if out:
+                return out
+            raise GatewayConnectionError("gateway closed the connection")
         self.ss.settimeout(timeout)
         try:
             d = self.ss.recv(8192)
-            if d:
-                self._buf += d
         except TimeoutError:
             return out
+        if not d:
+            # b"" is the peer hanging up, and it never stops being true: ignoring it spun the
+            # SUBACK/reply loops to their deadline and then blamed the device for a dropped socket.
+            # Replies already buffered are handed over first; the next call raises.
+            self._closed = True
+            if out:
+                return out
+            raise GatewayConnectionError("gateway closed the connection")
+        self._buf += d
         while len(self._buf) >= 2:
             mult = 1
             val = 0

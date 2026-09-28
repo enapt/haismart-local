@@ -216,6 +216,12 @@ EXTENDED_READING_KEYS: tuple[str, ...] = (
 STATUS_MISSES_HELD = 2       # consecutive failed cycles the last reading may stand in for
 STATUS_HOLD_MAX_AGE = 180.0  # ...and the longest it may stand in for, in seconds
 
+# A localKey rotation whose re-fetch keeps failing for NETWORK reasons is retried quietly (a
+# reauth would ask someone to sign in again because their internet blinked) -- but only for this
+# long. A key service unreachable for half an hour is a DNS/firewall block the owner can fix, or a
+# broker refusing by hanging up (MQTT 3.1.1 allows it); both need the repair and reauth after all.
+ROTATION_OUTAGE_GRACE = 1800.0  # seconds
+
 CONF_SCAN_INTERVAL = "scan_interval"
 DEFAULT_SCAN_INTERVAL = 30  # seconds between read cycles (each is handshake+collect+close)
 MIN_SCAN_INTERVAL = 10

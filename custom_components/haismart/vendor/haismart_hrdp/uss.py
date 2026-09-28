@@ -21,6 +21,7 @@ Layers
 from __future__ import annotations
 
 import asyncio
+import functools
 import hashlib
 import logging
 import random
@@ -33,8 +34,9 @@ from typing import Any
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-from .bigdata_map import BIGDATA_MAPS
+from .bigdata_map import BIGDATA_MAPS, BigdataField
 from .canonical_map import CANONICAL_WRITE
+from .device_model import read_field
 from .panel import PANEL_BOOL_CONTROLS, PANEL_ENUM_CONTROLS, PANEL_EXTRA_POSITIONS
 from .profiles import model_enum_codes
 from .wire_models import (
@@ -82,6 +84,7 @@ def negotiated_type_byte(resp: Message, *, requested: int = TYPE_BYTE[2]) -> int
 
 # --- key derivation -----------------------------------------------------------
 
+@functools.lru_cache(maxsize=8)   # every encrypt/decrypt derives it; a home has a handful of keys
 def localkey_aes_key(local_key: str | bytes) -> bytes:
     """AES-128 key = MD5 of the localKey's 32-char hex string used as ASCII (keylen 0x20 in the lib)."""
     if isinstance(local_key, bytes):
@@ -144,19 +147,71 @@ def split_messages(buf: bytes):
 
 
 def _message_complete(buf: bytes) -> bool:
-    """True once ``buf`` holds at least one full uSS message (6-byte prefix + declared length)."""
-    return len(buf) >= 6 and len(buf) >= 6 + struct.unpack(">H", buf[4:6])[0]
+    """True once ``buf`` holds at least one full uSS message (6-byte prefix + declared length).
+
+    A declared length below 0x0A is not a frame at all (see :func:`split_messages`). Calling that
+    "complete" handed ``decode_message`` a stub whose ``ValueError`` the write path then reported
+    as "does not accept that setting" -- so it raises ``RuntimeError``, a session fault, instead.
+    """
+    if len(buf) < 6:
+        return False
+    length = struct.unpack(">H", buf[4:6])[0]
+    if length < 0x0A:
+        raise RuntimeError(
+            f"the appliance sent a malformed reply (declared uSS length {length} is shorter than "
+            "a header)"
+        )
+    return len(buf) >= 6 + length
 
 
-def _recv_message(sock) -> Message:
-    """Read exactly one complete uSS message, tolerating TCP fragmentation of the reply."""
+def _recv_message_with_tail(sock) -> tuple[Message, bytes]:
+    """Read one complete uSS message; also return any bytes that arrived coalesced after it."""
     buf = b""
     while not _message_complete(buf):
         chunk = sock.recv(4096)
         if not chunk:
             raise RuntimeError("connection closed before a complete reply")
         buf += chunk
-    return decode_message(buf)
+    end = 6 + struct.unpack(">H", buf[4:6])[0]
+    return decode_message(buf[:end]), buf[end:]
+
+
+def _recv_message(sock) -> Message:
+    """Read exactly one complete uSS message, tolerating TCP fragmentation of the reply."""
+    return _recv_message_with_tail(sock)[0]
+
+
+#: Most a handshake wait will buffer while looking for the message it needs.
+_HANDSHAKE_CAP = 16384
+
+
+async def _await_message(reader, buf: bytes, timeout: float, info_type: int | None = None,
+                         what: str = "a complete reply") -> tuple[Message, bytes]:
+    """Read until ``buf`` holds a message of ``info_type`` (``None``: the first message at all), and
+    return it with every byte after it -- a push coalesced into the same read is kept, not dropped.
+
+    One overall deadline and a size cap: a per-read timeout alone restarts on every chunk, so a peer
+    that trickles unrelated frames could hold the handshake open indefinitely. Only new bytes are
+    parsed on each pass. Raises ``TimeoutError`` at the deadline, ``RuntimeError`` otherwise.
+    """
+    deadline = time.monotonic() + timeout
+    off = 0
+    while True:
+        while _message_complete(buf[off:]):
+            end = off + 6 + struct.unpack(">H", buf[off + 4:off + 6])[0]
+            msg = decode_message(buf[off:end])
+            off = end
+            if info_type is None or msg.info_type == info_type:
+                return msg, buf[off:]
+        if len(buf) >= _HANDSHAKE_CAP:
+            raise RuntimeError("the appliance sent too much without completing the handshake")
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError("the appliance did not complete the handshake in time")
+        chunk = await asyncio.wait_for(reader.read(4096), remaining)
+        if not chunk:
+            raise RuntimeError(f"connection closed before {what}")
+        buf += chunk
 
 
 # --- handshake messages -------------------------------------------------------
@@ -1378,6 +1433,26 @@ def is_extended_status_frame(blob: bytes) -> bool:
     return at >= 0 and blob[at + 10:at + 12] == _EPP_RPT_EXTENDED
 
 
+#: Cumulative registers in the published map: a zero is one the firmware never fills in, not a unit
+#: that used nothing (the `WireField` kind "counter" rule), so it reads as absent.
+_BIGDATA_COUNTERS = frozenset({"totalElectricityUsed"})
+
+
+def read_bigdata_field(field: BigdataField, payload: bytes) -> int | float | None:
+    """``field``'s value in a telemetry payload, or None if it lies past the end or is absent.
+
+    Read here rather than by the generated map's own `BigdataField.read`, which takes one word: a
+    field wider than its word takes its high half from the words BEFORE it (the `WireField`
+    convention), so that kept only the low 16 bits of the 32-bit energy counter -- a total that
+    wrapped every 65.5 kWh. Kept out of `bigdata_map.py` because that file is regenerated.
+    """
+    raw = read_field(payload, field.word, field.bit, field.length, base=0)
+    if raw is None or (raw == 0 and field.name in _BIGDATA_COUNTERS):
+        return None
+    value = raw * field.k + field.c
+    return round(value, 1) if isinstance(field.k, float) and field.k != 1.0 else int(value)
+
+
 def _extended_from_published_map(payload: bytes) -> dict[str, Any]:
     """Telemetry for a family whose layout the manufacturer publishes, keyed on the frame's span.
 
@@ -1390,7 +1465,7 @@ def _extended_from_published_map(payload: bytes) -> dict[str, Any]:
         return {}
     out: dict[str, Any] = {}
     for field in fields:
-        value = field.read(payload)
+        value = read_bigdata_field(field, payload)
         if value is None:
             continue
         if (key := _BIGDATA_ACTUATORS.get(field.name)) is not None:
@@ -1681,12 +1756,11 @@ def read_status(ip: str, device_id: str, local_key: str, *,
     blobs: list[bytes] = []
     try:
         s.sendall(hello_message(device_id, sn=1, pro_ver=pro_ver))
-        resp = _recv_message(s)
+        resp, buf = _recv_message_with_tail(s)   # keep anything coalesced after HELLO_RESP
         check_hello_resp(resp)
         s.sendall(encode_message(INFO_HELLO_DONE, 2, b"",
                                  type_byte=negotiated_type_byte(resp, requested=TYPE_BYTE[pro_ver]),
                                  session=resp.session))
-        buf = b""
         deadline = time.monotonic() + timeout
         while len(buf) < 8192 and time.monotonic() < deadline:
             try:
@@ -1735,30 +1809,52 @@ async def async_read_status(ip: str, device_id: str, local_key: str, *,
     try:
         writer.write(hello_message(device_id, sn=1, pro_ver=pro_ver))
         await writer.drain()
-        rbuf = b""
-        while not _message_complete(rbuf):
-            chunk = await asyncio.wait_for(reader.read(4096), timeout)
-            if not chunk:
-                raise RuntimeError("connection closed before a complete reply")
-            rbuf += chunk
-        resp = decode_message(rbuf)
+        # Keep any bytes coalesced after HELLO_RESP: they belong to the session and to the trace.
+        resp, buf = await _await_message(reader, b"", timeout)
         check_hello_resp(resp, expect_localkey_version)
         if trace is not None:
             trace.append({**_message_record(resp), "stage": "hello"})
         speak = negotiated_type_byte(resp, requested=TYPE_BYTE[pro_ver])
         writer.write(encode_message(INFO_HELLO_DONE, 2, b"", type_byte=speak, session=resp.session))
         await writer.drain()
-        buf = b""
         deadline = time.monotonic() + timeout
         sent_extra = extra_request is None
-        while len(buf) < 8192:
-            # full timeout for the first bytes, then only a short idle window for stragglers - see
-            # the note in `read_status`. The deadline stops a peer that trickles bytes from holding
-            # the poll open indefinitely, since each read otherwise resets its own timeout.
+        scanned = 0      # offset in buf past the messages already checked for HELLO_DONE_RESP
+        awaiting = True  # the next bytes are a burst we asked for: give them the full timeout
+        while True:
+            if not sent_extra:
+                # The session is only live once the unit has sent HELLO_DONE_RESP; its body carries
+                # the sequence base this session's requests must use. Send the extra query exactly
+                # once, then keep collecting (and give the reply a fresh window to arrive).
+                for raw in split_messages(buf[scanned:]):
+                    scanned += len(raw)
+                    msg = decode_message(raw)
+                    if msg.info_type != INFO_HELLO_DONE_RESP:
+                        continue
+                    sent_extra = True
+                    try:
+                        seq_base = session_sequence_base(msg, local_key)
+                    except RuntimeError:
+                        # stale key or no sequence number: the status decrypt will fail too, so
+                        # give up on the extra query -- not on the poll
+                        break
+                    envelope = build_cae_op_request(extra_request, device_id, 1)
+                    writer.write(encode_message(
+                        0x64, 0, biz_encrypt(seq_base, envelope, local_key),
+                        type_byte=speak, flag=FLAG_BIZ_ENCRYPTED, session=resp.session))
+                    await writer.drain()
+                    deadline = time.monotonic() + timeout
+                    awaiting = True
+                    break
+            if len(buf) >= 8192:
+                break
+            # full timeout for the first bytes (and for the first after the extra query), then only
+            # a short idle window for stragglers - see the note in `read_status`. The deadline stops
+            # a peer that trickles bytes from holding the poll open, since each read resets its own.
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 break
-            read_to = min(remaining, timeout if not buf else min(timeout, _COLLECT_IDLE))
+            read_to = min(remaining, timeout if awaiting else min(timeout, _COLLECT_IDLE))
             try:
                 chunk = await asyncio.wait_for(reader.read(4096), read_to)
             except TimeoutError:
@@ -1766,27 +1862,7 @@ async def async_read_status(ip: str, device_id: str, local_key: str, *,
             if not chunk:
                 break
             buf += chunk
-            if not sent_extra:
-                # The session is only live once the unit has sent HELLO_DONE_RESP; its body carries
-                # the sequence base this session's requests must use. Send the extra query exactly
-                # once, then keep collecting (and give the reply a fresh window to arrive).
-                for raw in split_messages(buf):
-                    msg = decode_message(raw)
-                    if msg.info_type != INFO_HELLO_DONE_RESP:
-                        continue
-                    try:
-                        _, seq_base = biz_decrypt(msg.payload, local_key)
-                    except ValueError:
-                        sent_extra = True   # stale key: the status decrypt will fail too, so give up
-                        break
-                    envelope = build_cae_op_request(extra_request, device_id, 1)
-                    writer.write(encode_message(
-                        0x64, 0, biz_encrypt(int.from_bytes(seq_base, "big"), envelope, local_key),
-                        type_byte=speak, flag=FLAG_BIZ_ENCRYPTED, session=resp.session))
-                    await writer.drain()
-                    sent_extra = True
-                    deadline = time.monotonic() + timeout
-                    break
+            awaiting = False
     finally:
         writer.close()
         try:
@@ -1946,8 +2022,10 @@ async def _read_pushed_status(reader, leftover: bytes, local_key: str, timeout: 
     full-status report."""
     buf = leftover
     first = not buf
+    off = 0   # past the messages already tried: each pass decrypts only what is new
     while len(buf) < 16384:
-        for raw in split_messages(buf):
+        for raw in split_messages(buf[off:]):
+            off += len(raw)
             m = decode_message(raw)
             if len(m.payload) >= 48:
                 try:
@@ -2037,46 +2115,24 @@ async def async_send_op(ip: str, device_id: str, local_key: str, epp_frame: byte
     try:
         writer.write(hello_message(device_id, sn=1, pro_ver=pro_ver))
         await writer.drain()
-        rbuf = b""
-        while not _message_complete(rbuf):
-            chunk = await asyncio.wait_for(reader.read(4096), timeout)
-            if not chunk:
-                raise RuntimeError("connection closed before a complete reply")
-            rbuf += chunk
-        resp = decode_message(rbuf)
+        resp, hbuf = await _await_message(reader, b"", timeout)
         check_hello_resp(resp, expect_localkey_version)
         speak = negotiated_type_byte(resp, requested=TYPE_BYTE[pro_ver])
         writer.write(encode_message(INFO_HELLO_DONE, 2, b"", type_byte=speak, session=resp.session))
         await writer.drain()
         # The AC only accepts an op once the session is fully established — i.e. AFTER it sends
         # HELLO_DONE_RESP (confirmed by the app's real choreography: it waits for HELLO_DONE_RESP before
-        # the first op). Consume messages until we see it, then send. Carry any bytes past HELLO_RESP.
-        hbuf = rbuf[6 + struct.unpack(">H", rbuf[4:6])[0]:]
-        done_msg: Message | None = None
-        done_end = 0  # byte offset in hbuf just past HELLO_DONE_RESP (rest is the AC's status push)
-        while done_msg is None:
-            off = 0
-            for raw in split_messages(hbuf):
-                m = decode_message(raw)
-                off += len(raw)
-                if m.info_type == INFO_HELLO_DONE_RESP:
-                    done_msg = m
-                    done_end = off
-                    break
-            if done_msg is not None:
-                break
-            chunk = await asyncio.wait_for(reader.read(4096), timeout)
-            if not chunk:
-                raise RuntimeError("connection closed before HELLO_DONE_RESP")
-            hbuf += chunk
+        # the first op). Consume messages until we see it, then send. Carry any bytes past HELLO_RESP;
+        # whatever follows HELLO_DONE_RESP is the AC's status push.
+        done_msg, pushed = await _await_message(reader, hbuf, timeout, INFO_HELLO_DONE_RESP,
+                                                "HELLO_DONE_RESP")
         if biz_sn is None:
             biz_sn = session_sequence_base(done_msg, local_key)
         if build_frame is not None:
             # Read-modify-write in ONE session: the AC pushes its current status right after the
             # handshake (like a read), so seed the group-set from that fresh in-session baseline —
             # no second connection. ``build_frame`` gets None if no status arrived (caller falls back).
-            baseline = await _read_pushed_status(reader, hbuf[done_end:], local_key, timeout,
-                                                 uplus_id)
+            baseline = await _read_pushed_status(reader, pushed, local_key, timeout, uplus_id)
             epp_frame = build_frame(baseline)
         if epp_frame is None:
             raise RuntimeError("async_send_op: neither epp_frame nor build_frame produced a frame")

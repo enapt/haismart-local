@@ -14,6 +14,10 @@ from .coordinator import HaismartConfigEntry, HaismartCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
+#: Bound on the one AWAITED model-rules top-up. Several cloud round trips at the library's own
+#: per-request timeout, so unbounded it could hold setup for most of a minute on a dead link.
+MODEL_RULES_TIMEOUT = 10.0
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> bool:
     # The coordinator reads the bundled model rules while it is being constructed, and the bundle is
@@ -60,7 +64,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> 
                 await coordinator.async_topup_identity()
 
     if coordinator.needs_invisible_topup:
-        await coordinator.async_fetch_model_rules()
+        # Bounded like the lookups either side: a timeout leaves the flag unset, so the entities
+        # are built as before and the top-up is simply tried again on the next start.
+        with contextlib.suppress(TimeoutError):
+            async with asyncio.timeout(MODEL_RULES_TIMEOUT):
+                await coordinator.async_fetch_model_rules()
     else:
         entry.async_create_background_task(
             hass, coordinator.async_fetch_model_rules(), "haismart model rules"

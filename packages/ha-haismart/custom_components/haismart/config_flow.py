@@ -21,6 +21,7 @@ The zeroconf step is kept for future firmware. The **manual** menu path is the f
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 from dataclasses import replace
@@ -52,6 +53,7 @@ from haismart_hrdp.model_rules import (
     preload as _preload_model_rules,
 )
 from homeassistant.config_entries import (
+    ConfigEntryState,
     ConfigFlow,
     ConfigFlowResult,
     OptionsFlow,
@@ -207,13 +209,28 @@ def _clean_key(local_key: str) -> str:
     return key
 
 
+def _running_session(hass, device_id: str) -> contextlib.AbstractAsyncContextManager[Any]:
+    """The session lock of a loaded entry for ``device_id``, or a no-op when there is none.
+
+    These modules hold ONE uSS session at a time, so validating against a unit its running entry is
+    polling collides with the poll: one of the two fails, and the flow reports `cannot_connect` for
+    an address that is fine. Taking the entry's lock queues the probe behind the poll instead.
+    """
+    entry = hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, device_id)
+    if entry is not None and entry.state is ConfigEntryState.LOADED:
+        if (coordinator := getattr(entry, "runtime_data", None)) is not None:
+            return coordinator._session  # noqa: SLF001 - no public accessor; the lock is the point
+    return contextlib.nullcontext()
+
+
 async def _async_validate(hass, host: str, device_id: str, local_key: str) -> int:
     """Live-validate against the AC; return its current localKey version."""
     try:
-        version = await hass.async_add_executor_job(
-            partial(probe_localkey_version, host, device_id, timeout=READ_TIMEOUT)
-        )
-        blobs = await async_read_status(host, device_id, local_key, timeout=READ_TIMEOUT)
+        async with _running_session(hass, device_id):
+            version = await hass.async_add_executor_job(
+                partial(probe_localkey_version, host, device_id, timeout=READ_TIMEOUT)
+            )
+            blobs = await async_read_status(host, device_id, local_key, timeout=READ_TIMEOUT)
     except (OSError, RuntimeError, TimeoutError) as err:
         raise CannotConnect(str(err)) from err
     if not blobs:
@@ -242,6 +259,23 @@ async def _async_fetch_localkey(
         partial(get_localkey_via_gateway, creds, device_id, timeout=GATEWAY_TIMEOUT)
     )
     return local_key.key, local_key.version
+
+
+async def _async_account_lacks(cloud: HaierCloud, device_id: str) -> bool:
+    """Whether the signed-in account's device list answers WITHOUT this appliance.
+
+    Asked only after a key fetch failed, to tell "wrong account" from "no route to Haier" -- which
+    otherwise read alike, and the second's advice (check DNS and the firewall) sends the owner of
+    the first nowhere. The gateway's refusal is only an undocumented errNo, so the list decides.
+    ``False`` when it cannot answer: only a list that replies can say the unit is not on it.
+    """
+    try:
+        devices = await cloud.list_devices_v2()
+    except Exception as err:  # noqa: BLE001 - a second opinion; never the error shown
+        _LOGGER.debug("could not list devices to explain a failed key fetch: %s", err)
+        return False
+    wanted = _clean_device_id(device_id)
+    return all(_clean_device_id(d.device_id) != wanted for d in devices)
 
 
 def _describe_key_failure(err: Exception) -> str:
@@ -1135,7 +1169,11 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
             # Same reasoning as the account path: a pending Discovered card holds this unique ID,
             # and someone typing an address in deliberately must not be turned away by it.
             await self.async_set_unique_id(device_id, raise_on_progress=False)
-            self._abort_if_unique_id_configured(updates={CONF_HOST: host})
+            # Already configured at this very address: nothing to update, so nothing to validate --
+            # and no second session opened against a unit its running entry is polling.
+            existing = self.hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, device_id)
+            if existing is not None and existing.data.get(CONF_HOST) == host:
+                self._abort_if_unique_id_configured()
             try:
                 local_key = _clean_key(user_input[CONF_LOCAL_KEY])
                 version = await _async_validate(self.hass, host, device_id, local_key)
@@ -1146,6 +1184,10 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
             except CannotConnect:
                 errors["base"] = "cannot_connect"
             else:
+                # Only now, with the address proven to answer: checked before validation, this
+                # rewrote a working entry's host with whatever was typed, typo included, and
+                # reported only "already configured" (see async_step_reconfigure_host).
+                self._abort_if_unique_id_configured(updates={CONF_HOST: host})
                 self._pending_manual = {
                     CONF_HOST: host,
                     CONF_DEVICE_ID: device_id,
@@ -1406,9 +1448,9 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Point an existing entry at a new IP, validating BEFORE committing.
 
-        Re-running the manual flow with the same device id also updates the host, but it does so
-        before validating, so a typo silently took a working entry offline while reporting only
-        "already configured".
+        Re-running the manual flow with the same device id also updates the host -- after
+        validating, since it once did so before, and a typo silently took a working entry offline
+        while reporting only "already configured".
         """
         entry = self._get_reconfigure_entry()
         errors: dict[str, str] = {}
@@ -1556,6 +1598,7 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             zone = str(user_input.get(CONF_ZONE_INFO, "")).strip().lstrip("+")
             device_id = entry.data[CONF_DEVICE_ID]
+            _cloud: HaierCloud | None = None
             try:
                 _cloud, cloud_data = await _async_login_cloud(
                     user_input[CONF_USERNAME],
@@ -1574,7 +1617,10 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
                 placeholders = {"username": user_input[CONF_USERNAME], "zone": zone}
             except (CloudError, GatewayError, KeyError, OSError, RuntimeError, TimeoutError) as err:
                 _LOGGER.warning("re-fetching the localKey for %s failed: %s", device_id, err)
-                errors["base"] = "cloud_unreachable"
+                if _cloud is not None and await _async_account_lacks(_cloud, device_id):
+                    errors["base"] = "device_not_on_account"
+                else:
+                    errors["base"] = "cloud_unreachable"
             else:
                 return self.async_update_reload_and_abort(
                     entry,

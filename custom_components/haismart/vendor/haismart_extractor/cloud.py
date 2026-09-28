@@ -152,6 +152,8 @@ class RefreshResult:
 
 # The appliance types the product catalogue files air conditioners under.
 AC_APP_TYPE_CODES = ("A120", "A177", "A178")   # central / wall mounted / floor standing
+# 50 pages of 20 is well past the largest regional catalogue seen (171 air conditioners)
+_CATALOGUE_MAX_PAGES = 50
 
 
 @dataclass(frozen=True)
@@ -688,7 +690,7 @@ async def get_public_device_config(
     if got.status != 200:
         raise CloudError(f"public device config download -> HTTP {got.status}")
     digest = data.get("md5")
-    if digest and hashlib.md5(got.text.encode()).hexdigest() != digest:
+    if digest and hashlib.md5(got.text.encode(), usedforsecurity=False).hexdigest() != digest:
         raise CloudError("public device config download does not match its published MD5")
     return normalize_public_config(strip_signed_config(got.text))
 
@@ -1049,11 +1051,22 @@ class HaierCloud:
         seen: set[str] = set()
         for app_type in AC_APP_TYPE_CODES:
             index = 0
-            while len(out) < limit:
+            previous: list[str] | None = None
+            # A server that ignores `index` answers every page with the same full rows: bound the
+            # pages, and stop on a page identical to the one before. Not on a page that added nothing
+            # new -- `seen` spans the app types, so a page of products already listed under an
+            # earlier one is ordinary and must not end this one's listing.
+            for _page in range(_CATALOGUE_MAX_PAGES):
+                if len(out) >= limit:
+                    break
                 reply = await self.search_products(
                     index=index, count=20, keys=model, app_type_code=app_type
                 )
                 rows = ((reply.get("data") or {}).get("prodInfos")) or []
+                codes = [str(row.get("prodNo")) for row in rows]
+                if codes == previous:
+                    break
+                previous = codes
                 for row in rows:
                     code = row.get("prodNo")
                     if not code or code in seen:
@@ -1140,7 +1153,7 @@ class HaierCloud:
         if resp.status != 200:
             raise CloudError(f"device config download -> HTTP {resp.status}")
         digest = entry.get("md5")
-        if digest and hashlib.md5(resp.text.encode()).hexdigest() != digest:
+        if digest and hashlib.md5(resp.text.encode(), usedforsecurity=False).hexdigest() != digest:
             # the listing publishes the file's MD5, so a truncated or swapped download is caught
             # here rather than surfacing later as a model that parses but is not this device's
             raise CloudError("device config download does not match its published MD5")
@@ -1189,7 +1202,7 @@ class HaierCloud:
             raise CloudError(f"login -> retCode {ret}: {resp.get('retInfo')}")
         result = LoginResult.from_response(resp, client_id=cid)
         if not (result.refresh_token or result.access_token):
-            raise CloudError(f"login returned no tokens: {str(resp)[:200]}")
+            raise CloudError(f"login returned no tokens: {_describe_reply(resp)}")
         client.access_token = result.access_token
         return client, result
 
@@ -1215,10 +1228,22 @@ class HaierCloud:
         result = RefreshResult.from_response(resp)
         if not result.access_token:
             raise CloudError(
-                f"refreshToken succeeded but returned no access token: {str(resp)[:200]}"
+                f"refreshToken succeeded but returned no access token: {_describe_reply(resp)}"
             )
         self.access_token = result.access_token
         return result
+
+
+def _describe_reply(resp: Mapping[str, Any]) -> str:
+    """Enough of a reply to diagnose it, and none of its values beyond the status code and message.
+
+    The reply to a token call carries the tokens themselves (a refreshToken is the durable
+    credential), so echoing it into an exception put them into logs and bug reports.
+    """
+    data = resp.get("data")
+    inner = data.get("tokenInfo") if isinstance(data, Mapping) else None
+    keys = sorted(inner if isinstance(inner, Mapping) else data if isinstance(data, Mapping) else ())
+    return f"retCode {resp.get('retCode')}: {resp.get('retInfo')} (data keys: {keys})"
 
 
 class CloudError(Exception):

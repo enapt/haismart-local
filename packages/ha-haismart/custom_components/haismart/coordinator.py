@@ -22,9 +22,10 @@ from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from dataclasses import replace
 from datetime import timedelta
 from functools import partial
-from typing import Any
+from typing import Any, NoReturn
 
 from haismart_extractor import (
+    GatewayConnectionError,
     GatewayCreds,
     GatewayError,
     HaierCloud,
@@ -33,6 +34,7 @@ from haismart_extractor import (
 )
 from haismart_extractor.cloud import (
     SEA_APP_CREDENTIALS,
+    CloudConnectionError,
     CloudError,
     get_public_device_config,
 )
@@ -148,6 +150,7 @@ from .const import (
     OUTDOOR_TEMP_MAX_AGE,
     READ_TIMEOUT,
     REDISCOVER_COOLDOWN,
+    ROTATION_OUTAGE_GRACE,
     STATUS_HOLD_MAX_AGE,
     STATUS_MISSES_HELD,
     TELEMETRY_MAX_AGE,
@@ -620,6 +623,11 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # that run of failures began (see `_held_status`). Cleared by any successful read.
         self._held_cycles = 0
         self._held_since = 0.0
+        # Whether the last localKey re-fetch failed on the network rather than the account (see
+        # `_raise_rotation_unhealed`).
+        self._refresh_unreachable = False
+        # When the current run of unreachable re-fetches began (loop time), or None outside one.
+        self._outage_since: float | None = None
         # Cloud reachability, from the key-free UDISCOVERY query (see const.py). `None` = not known
         # (never answered, or the unit does not implement it) -- deliberately NOT False, so a device
         # that cannot tell us reads "unknown" rather than being reported as cut off.
@@ -719,6 +727,18 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._held_cycles = 0
         return state
 
+    @callback
+    def async_set_updated_data(self, data: dict[str, Any]) -> None:
+        """Publish fresh state from outside a poll (a write's echo), ending any hold.
+
+        Fresh data from the unit ends a failure run whichever path brought it. Left counting, the
+        next miss would resume a run the echo had already broken and could drop the entities to
+        unavailable a cycle early -- or measure its age from a failure long since healed.
+        """
+        self._held_cycles = 0
+        self._held_since = 0.0
+        super().async_set_updated_data(data)
+
     def _held_status(self, err: UpdateFailed) -> dict[str, Any] | None:
         """The previous reading, while a failed cycle is still within the hold. Else ``None``.
 
@@ -752,20 +772,22 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # more failed polls and a probe that can only learn what we were just told.
             _LOGGER.info("%s while reading; re-keying and retrying this cycle", err)
             if not await self._async_gateway_refresh():
-                # No account, or the key service is unreachable. `_check_localkey_rotation` owns
-                # the repair notification and the reauth flow, and says which of the two it was.
-                await self._check_localkey_rotation()
-                raise UpdateFailed(str(err)) from err
+                # Decided from what the handshake said. Handing this to `_check_localkey_rotation`
+                # used to probe for the same version and fetch a SECOND time, then demand a reauth
+                # even when the key service was only unreachable.
+                self._raise_rotation_unhealed(err.held_version, err.device_version, err)
             self.clear_stale_localkey_issue()
             try:
                 blobs = await self._async_read()
-            except (TimeoutError, OSError, RuntimeError) as again:
+            except (TimeoutError, OSError, RuntimeError, ValueError) as again:
                 # Once. An appliance rotating faster than a key can be fetched must not turn every
                 # poll into a pair of cloud requests.
                 raise UpdateFailed(
                     f"uSS read from {self.host} failed after re-keying: {again}"
                 ) from again
-        except (TimeoutError, OSError, RuntimeError) as err:
+        except (TimeoutError, OSError, RuntimeError, ValueError) as err:
+            # ValueError is uSS decoding (a short message, a failed MD5): a missed cycle like the
+            # rest, so it goes through the hold and the miss accounting rather than escaping them.
             # Before giving up: the AC may simply have moved. Ask the LAN who is out there, and if
             # this unit answers from a new address, follow it and retry in the same cycle -- the
             # user sees nothing at all rather than an AC that went unavailable until they noticed.
@@ -773,7 +795,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 raise UpdateFailed(f"uSS read from {self.host} failed: {err}") from err
             try:
                 blobs = await self._async_read()
-            except (TimeoutError, OSError, RuntimeError) as retry_err:
+            except (TimeoutError, OSError, RuntimeError, ValueError) as retry_err:
                 raise UpdateFailed(
                     f"uSS read from {self.host} failed: {retry_err}"
                 ) from retry_err
@@ -803,13 +825,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             ):
                 self._misses = 0
                 self.last_raw_status = blob
-                # Haier's own byte map, where we have one for this typeid. Added BESIDE the
-                # air-conditioner decode rather than instead of it, under its own key, so nothing
-                # downstream can confuse a manufacturer attribute name with a normalised AC one.
-                model_state = self._model_state(blob)
-                self.model_decoded = bool(model_state)
-                if model_state:
-                    state["model_state"] = model_state
+                # Before the layout bookkeeping below: `_note_unknown_layout` reads `model_decoded`.
+                self._attach_model_state(state, blob)
                 if state.get("partial"):
                     # Decoded, but only the layout-independent fields: this model's report
                     # length has no confirmed layout. Keeping the blob matters -- it is exactly
@@ -939,12 +956,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                             self._async_reading_refused(
                                 k for k in EXTENDED_READING_KEYS if k not in state
                             )
-                self._apply_telemetry(state, telemetry)
-                self._drop_stale_outdoor_temp(state)
-                state.update(alarms)
-                state["features"] = self._feature_states(blob)
-                state["features_enum"] = self._feature_enum_states(blob)
-                state["readings"] = self._numeric_reading_states(blob)
+                self._attach_derived_state(state, blob, telemetry, alarms)
                 return state
 
         # Connected fine but nothing decoded — either the AC pushed no full report this
@@ -1016,18 +1028,20 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         file must be able to answer. Each frame kind is counted and its latest bytes kept, keyed on
         frame type and command.
         """
+        # Both derive from the stored model on every access; once per session, not once per frame.
+        names = self._alarm_names()
+        order = self.declared_group_order
         for blob in blobs:
             key = frame_key(blob)
             if key not in self.lan_frames and len(self.lan_frames) >= _LAN_FRAME_KINDS:
                 self.lan_frames.setdefault("_overflow", {"count": 0})["count"] += 1
                 continue
-            if parse_alarm_frame(blob, self._alarm_names()) is not None:
+            if parse_alarm_frame(blob, names) is not None:
                 role = "alarm"
             elif parse_extended_status(blob):
                 role = "telemetry"
             elif parse_full_status(
-                blob, self.profile, self.digital_model,
-                uplus_id=self.uplus_id, order=self.declared_group_order,
+                blob, self.profile, self.digital_model, uplus_id=self.uplus_id, order=order,
             ):
                 role = "status report"
             else:
@@ -1764,7 +1778,10 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         },
                     ) from again
             else:
-                self._raise_stale_localkey_issue(err.held_version, err.device_version)
+                # No repair for a key service that has only just become unreachable: the next poll
+                # re-fetches (see `_raise_rotation_unhealed`).
+                if not self._rotation_outage_excused():
+                    self._raise_stale_localkey_issue(err.held_version, err.device_version)
                 raise HomeAssistantError(
                     translation_domain=DOMAIN,
                     translation_key="control_failed",
@@ -1982,19 +1999,42 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             ):
                 self.last_raw_status = blob
                 self._misses = 0
-                self._apply_telemetry(state, telemetry)
-                self._drop_stale_outdoor_temp(state)
                 # The echo is a status report and nothing else: it carries no alarm frame, so the
-                # last fault reading stands in exactly as the telemetry does. The optional-feature
-                # states DO come from the status words, so they are read from the echo itself
-                # rather than held -- publishing a state without them blanked those sensors after
-                # every command, which on a fault sensor reads as the check having stopped.
-                state.update(self._held_alarms({}))
-                state["features"] = self._feature_states(blob)
-                state["features_enum"] = self._feature_enum_states(blob)
-                state["readings"] = self._numeric_reading_states(blob)
+                # last fault reading stands in exactly as the telemetry does. Everything read from
+                # the status words -- the byte-map decode, the optional features -- comes from the
+                # echo itself, through the same helpers as the poll, so the two cannot drift: an
+                # echo without `model_state` blanked every water-heater and generic entity after
+                # each command, as one without the features blanked those sensors before it.
+                self._attach_model_state(state, blob)
+                self._attach_derived_state(state, blob, telemetry, self._held_alarms({}))
                 return state
         return None
+
+    def _attach_model_state(self, state: dict[str, Any], blob: bytes) -> None:
+        """Haier's own byte-map decode of ``blob``, where we have one for this typeid.
+
+        Added BESIDE the air-conditioner decode rather than instead of it, under its own key, so
+        nothing downstream can confuse a manufacturer attribute name with a normalised AC one.
+        """
+        model_state = self._model_state(blob)
+        self.model_decoded = bool(model_state)
+        if model_state:
+            state["model_state"] = model_state
+
+    def _attach_derived_state(
+        self,
+        state: dict[str, Any],
+        blob: bytes,
+        telemetry: dict[str, Any],
+        alarms: dict[str, Any],
+    ) -> None:
+        """Everything a published state carries beyond the core decode. Shared by poll and echo."""
+        self._apply_telemetry(state, telemetry)
+        self._drop_stale_outdoor_temp(state)
+        state.update(alarms)
+        state["features"] = self._feature_states(blob)
+        state["features_enum"] = self._feature_enum_states(blob)
+        state["readings"] = self._numeric_reading_states(blob)
 
     def _apply_telemetry(self, state: dict[str, Any], telemetry: dict[str, Any]) -> None:
         """Attach the running-power/compressor figures to a decoded state, standing in the previous
@@ -2296,6 +2336,9 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "%s is reporting readings it previously declined; restoring their entities",
             self.device_id,
         )
+        # hass-level on purpose, not `config_entry.async_create_task`: an entry's own tasks are
+        # awaited by its unload, and this task IS that unload -- it would wait on itself for the
+        # full 10 s unload timeout and log that it "did not complete in time".
         self.hass.async_create_task(
             self.hass.config_entries.async_reload(self.config_entry.entry_id)
         )
@@ -2738,6 +2781,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Probe the AC's current localKey version (key-free). On rotation, try to auto-refresh the
         localKey from the Haier cloud MQTT gateway; only fall back to a manual reauth flow if the
         gateway refresh isn't configured or fails."""
+        if self.localkey_version is None:
+            return      # nothing to compare the answer against, so not worth a session
         try:
             # Also a uSS session (a handshake, key-free), so it takes the same lock.
             async with self._session:
@@ -2758,13 +2803,40 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
             self.clear_stale_localkey_issue()  # healed itself — no manual step needed
             return
-        # No cloud creds to self-heal: a person must reauth by hand. Surface an actionable repair
-        # advising them to add account credentials so future rotations auto-refresh.
+        self._raise_rotation_unhealed(old, current)
+
+    def _raise_rotation_unhealed(
+        self, old: int | None, current: int, cause: Exception | None = None
+    ) -> NoReturn:
+        """The key rotated and the re-fetch just failed: retry next cycle, or ask for a reauth.
+
+        Which one turns on WHY it failed. An account whose key service was merely unreachable has
+        nothing wrong with it -- a reauth flow there asks someone to sign in again because their
+        internet blinked -- so that is an ordinary failed cycle, retried on the next poll. No
+        account, or an account the service refused, genuinely needs a person: raise the repair
+        (which says which of the two it was) and the reauth. So does an outage that outlasts
+        `ROTATION_OUTAGE_GRACE`: by then it is a block the owner can fix, or a refusal in disguise.
+        """
+        if self._rotation_outage_excused():
+            raise UpdateFailed(
+                f"localKey rotated on the AC (v{old} -> v{current}) and the key service is "
+                "unreachable; retrying next cycle"
+            ) from cause
         self._raise_stale_localkey_issue(old, current)
         raise ConfigEntryAuthFailed(
             f"localKey rotated on the AC (v{old} -> v{current}) and no cloud auto-refresh "
             "succeeded; a fresh key is needed"
-        )
+        ) from cause
+
+    def _rotation_outage_excused(self) -> bool:
+        """Whether the last failed re-fetch was the network, within the grace period of its run."""
+        if not self._refresh_unreachable:
+            self._outage_since = None
+            return False
+        now = self.hass.loop.time()
+        if self._outage_since is None:
+            self._outage_since = now
+        return now - self._outage_since < ROTATION_OUTAGE_GRACE
 
     def _issue_id(self, key: str) -> str:
         """A repair-issue id for this appliance, keyed on the config ENTRY, not the device id.
@@ -3210,6 +3282,9 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         per-entry input needed is the uSDK CLIENTID + a token. (``CONF_GATEWAY_USERNAME`` /
         ``CONF_GATEWAY_PASSWORD`` are honored if present, for pinning, but no longer required.)
         """
+        # Set when this attempt failed because Haier could not be REACHED rather than because it
+        # refused us -- the caller retries the former next cycle instead of demanding a reauth.
+        self._refresh_unreachable = False
         data = self.config_entry.data
         usdk_client_id = data.get(CONF_CLOUD_CLIENT_ID)
         if not usdk_client_id:
@@ -3225,6 +3300,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         access_token = data.get(CONF_ACCESS_TOKEN)
         refresh_token = data.get(CONF_REFRESH_TOKEN)
+        refresh_unreachable = False
         if refresh_token:
             # mint a fresh accessToken from the durable refreshToken (accessTokens expire ~daily)
             try:
@@ -3238,6 +3314,11 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 access_token = (await cloud.refresh_token(refresh_token)).access_token
             except (CloudError, OSError, RuntimeError) as err:
                 _LOGGER.warning("token refresh failed (%s); trying the stored access token", err)
+                # Carried through the gateway attempt below: the stored token it falls back on is
+                # usually a day old and expired, so the broker's refusal of THAT says nothing about
+                # the account -- the refresh that would have renewed it never reached Haier.
+                refresh_unreachable = isinstance(err, (CloudConnectionError, OSError))
+        self._refresh_unreachable = refresh_unreachable
         if not access_token:
             return False
 
@@ -3252,10 +3333,18 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
         except (GatewayError, OSError, RuntimeError) as err:
             _LOGGER.warning("gateway localKey refresh failed for %s: %s", self.device_id, err)
+            # A socket-level failure (DNS, refused, timed out) or a broker that hung up says nothing
+            # about the credentials; any other GatewayError is the broker answering -- a CONNACK
+            # refusal, an errNo -- or staying silent about this device, which a reauth may fix.
+            self._refresh_unreachable = refresh_unreachable or isinstance(
+                err, (OSError, GatewayConnectionError)
+            )
             return False
 
         self._local_key = local_key.key
         self.localkey_version = local_key.version
+        self._refresh_unreachable = False
+        self._outage_since = None
         updates: dict[str, Any] = {
             CONF_LOCAL_KEY: local_key.key,
             CONF_LOCALKEY_VERSION: local_key.version,

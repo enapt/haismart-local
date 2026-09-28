@@ -35,6 +35,8 @@ from __future__ import annotations
 
 from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
+from functools import lru_cache
+from types import MappingProxyType
 
 from .canonical_map import CANONICAL, CANONICAL_WRITE, PROFILE_DISPLACEMENTS
 from .panel import PANEL_BOOL_CONTROLS, PANEL_ENUM_CONTROLS, PANEL_EXTRA_POSITIONS
@@ -2316,7 +2318,50 @@ def related_wire_model(
     declares, which rest on the offset being checked field-for-field against a real report rather
     than only on the core block -- so it is granted per class, against a measurement, and never by
     default.
+
+    Memoised: `decode_related` rebuilds every candidate for every report, and a layout depends on
+    nothing but these arguments. The one handed out is shared, so its mappings are read-only.
     """
+    key = (length, displacement, None if order is None else tuple(order), uplus_id, insert)
+    # Checked here, not by catching TypeError around the call: that would also swallow a TypeError
+    # from inside the build -- a real bug -- and build everything a second time to re-raise it.
+    if not _hashable(key):
+        return _build_related_wire_model(*key)   # an unhashable order entry: build, uncached
+    return _related_wire_model_cached(*key)
+
+
+def _hashable(value: object) -> bool:
+    try:
+        hash(value)
+    except TypeError:
+        return False
+    return True
+
+
+@lru_cache(maxsize=1024)
+def _related_wire_model_cached(
+    length: int,
+    displacement: int,
+    order: tuple[str, ...] | None,
+    uplus_id: str | None,
+    insert: tuple[int, int] | None,
+) -> WireModel:
+    wm = _build_related_wire_model(length, displacement, order, uplus_id, insert)
+    return replace(
+        wm,
+        fields=MappingProxyType(dict(wm.fields)),
+        write_fields=MappingProxyType(dict(wm.write_fields)),
+        value_param_fields=MappingProxyType(dict(wm.value_param_fields)),
+    )
+
+
+def _build_related_wire_model(
+    length: int,
+    displacement: int,
+    order: Sequence[str] | None,
+    uplus_id: str | None,
+    insert: tuple[int, int] | None,
+) -> WireModel:
     write = frame_write_fields(order, uplus_id)
     params = value_param_write_fields(displacement, uplus_id, insert=insert)
     place = _canonical_placement(displacement, insert)
@@ -2698,8 +2743,10 @@ def decode_related(
     # published map stops, the frame length fixes the count outright: `insert = (length - base) / 2`
     # (:data:`RELATED_INSERT_BASE_LENGTH`). That needs no `acType`, so it answers for the heat-pump
     # cabinets the flag is structurally silent about -- see `CANONICAL_WIRE_MAP.md` §AO.
+    # built once: both searches below walk the same candidates
+    insert_models = related_insert_models(len(data), uplus_id, order=order)
     by_length = []
-    for wm in related_insert_models(len(data), uplus_id, order=order):
+    for wm in insert_models:
         # ⚠️ These models carry no `canonical_displacement`/`canonical_insert` -- the layout NAME is
         # the serialisation of both (see `related_model_named`), so read it from there rather than
         # from attributes that are None here.
@@ -2721,7 +2768,7 @@ def decode_related(
 
     inserted = [
         decoded
-        for wm in related_insert_models(len(data), uplus_id, order=order)
+        for wm in insert_models
         if (decoded := wm.decode(data, profile)) is not None
         and all(k in decoded for k in _RELATED_REQUIRED)
         and insert_corroborated_by_actype(decoded, declared_modes)

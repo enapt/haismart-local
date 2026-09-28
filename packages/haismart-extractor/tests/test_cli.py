@@ -178,3 +178,17 @@ async def test_the_key_fetch_itself_works_end_to_end(monkeypatch, capsys) -> Non
     rows = json.loads(capsys.readouterr().out)
     assert rows[0]["device_id"] == "ACB722A2CBEC"
     assert rows[0]["local_key"] and rows[0]["localkey_version"]
+
+
+async def test_an_unreachable_cloud_is_not_called_a_failed_sign_in(signed_in, monkeypatch, capsys) -> None:
+    """CloudConnectionError subclasses CloudError, so it has to be caught first or a DNS failure
+    tells the user their password is wrong."""
+    from haismart_extractor.cloud import CloudConnectionError
+
+    async def fail(*a):
+        raise CloudConnectionError("could not connect to uhome-sgp.haieriot.net")
+
+    monkeypatch.setattr("haismart_extractor.cli._collect", fail)
+    assert await _go(["--username", "me@x.com", "--region", "44"]) == 1
+    err = capsys.readouterr().err
+    assert "could not reach Haier" in err and "sign-in failed" not in err

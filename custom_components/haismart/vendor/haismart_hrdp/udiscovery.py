@@ -34,9 +34,13 @@ silent rather than reporting an intermediate code. Polling faster than once a mi
 from __future__ import annotations
 
 import asyncio
+import logging
 import socket
 import struct
+import time
 from dataclasses import dataclass
+
+_LOGGER = logging.getLogger(__name__)
 
 PORT = 7083
 MAGIC = b"Haier"
@@ -281,16 +285,23 @@ def query(host: str, *, timeout: float = 2.0) -> DeviceInfo | None:
     Unicast is answered from any source port, so this needs no privileged or fixed local port.
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.settimeout(timeout)
     try:
-        sock.sendto(build_query(), (host, PORT))
-        while True:
+        # Compare replies by address, not name: `recvfrom` reports the numeric source.
+        target = socket.gethostbyname(host)
+        sock.sendto(build_query(), (target, PORT))
+        # One overall deadline: a per-recv timeout restarts on every stray datagram, so a chatty LAN
+        # (or another unit answering someone else's broadcast) could hold this open indefinitely.
+        deadline = time.monotonic() + timeout
+        while (remaining := deadline - time.monotonic()) > 0:
+            sock.settimeout(remaining)
             try:
-                data, _ = sock.recvfrom(4096)
+                data, addr = sock.recvfrom(4096)
             except TimeoutError:
                 return None
-            if (info := parse_reply(data)) is not None:
+            # Only the unit we asked: another appliance's reply here would be the wrong identity.
+            if addr[0] == target and (info := parse_reply(data)) is not None:
                 return info
+        return None
     finally:
         sock.close()
 
@@ -312,9 +323,11 @@ def discover(
     found: dict[str, DeviceInfo] = {}
     try:
         sock.bind(("", PORT))
-        sock.settimeout(timeout)
         sock.sendto(build_query(), (broadcast, PORT))
-        while True:
+        # An overall deadline, as in `query`: every reply would otherwise restart the wait.
+        deadline = time.monotonic() + timeout
+        while (remaining := deadline - time.monotonic()) > 0:
+            sock.settimeout(remaining)
             try:
                 data, _ = sock.recvfrom(4096)
             except TimeoutError:
@@ -327,7 +340,7 @@ def discover(
 
 
 class _QueryProtocol(asyncio.DatagramProtocol):
-    def __init__(self, future: asyncio.Future[DeviceInfo]) -> None:
+    def __init__(self, future: asyncio.Future[DeviceInfo | None]) -> None:
         self._future = future
 
     def datagram_received(self, data: bytes, addr: tuple[str, int]) -> None:
@@ -337,14 +350,17 @@ class _QueryProtocol(asyncio.DatagramProtocol):
             self._future.set_result(info)
 
     def error_received(self, exc: Exception) -> None:
+        # An ICMP "port unreachable" is the host saying it does not speak UDISCOVERY: that is no
+        # answer, and no answer is ``None`` -- as the docstring and the sync `query` promise.
+        _LOGGER.debug("UDISCOVERY query got an error instead of a reply: %s", exc)
         if not self._future.done():
-            self._future.set_exception(exc)
+            self._future.set_result(None)
 
 
 async def async_query(host: str, *, timeout: float = 2.0) -> DeviceInfo | None:
     """Async :func:`query`, for event-loop hosts. READ-ONLY; ``None`` on no answer."""
     loop = asyncio.get_running_loop()
-    future: asyncio.Future[DeviceInfo] = loop.create_future()
+    future: asyncio.Future[DeviceInfo | None] = loop.create_future()
     transport, _ = await loop.create_datagram_endpoint(
         lambda: _QueryProtocol(future), remote_addr=(host, PORT)
     )

@@ -36,7 +36,7 @@ import json
 import sys
 from typing import Any
 
-from .cloud import SEA_APP_CREDENTIALS, CloudError, HaierCloud
+from .cloud import SEA_APP_CREDENTIALS, CloudError, Domains, HaierCloud
 from .gateway import GatewayClient, GatewayCreds, GatewayError
 
 # Long enough for a TLS connect plus one round trip per appliance, short enough that somebody
@@ -88,14 +88,18 @@ async def _collect(username: str, password: str, region: str) -> tuple[Any, list
     return result, await client.list_devices_v2()
 
 
-def _fetch_keys(result: Any, device_ids: list[str]) -> dict[str, Any]:
+def _fetch_keys(result: Any, device_ids: list[str], region: str) -> dict[str, Any]:
     """Every requested appliance's key, over one gateway connection.
 
     Appliances that fail are omitted rather than aborting the rest: one unplugged air conditioner
-    must not deny somebody the key for the one they are actually trying to fix.
+    must not deny somebody the key for the one they are actually trying to fix. The gateway host
+    follows the account's region (``gw-sea`` for India, ``gw-sgp`` otherwise) — the key lives in the
+    same data centre as the device.
     """
     creds = GatewayCreds.derive(
-        usdk_client_id=result.client_id, access_token=result.access_token
+        usdk_client_id=result.client_id,
+        access_token=result.access_token,
+        host=Domains.for_zone(region).gateway,
     )
     return GatewayClient(creds).get_localkeys(device_ids, timeout=GATEWAY_TIMEOUT)
 
@@ -216,7 +220,12 @@ async def run(args: argparse.Namespace, password: str) -> int:
         return 2
 
     try:
-        keys = await asyncio.to_thread(_fetch_keys, result, [d.device_id for d in devices])
+        keys = await asyncio.to_thread(
+            _fetch_keys,
+            result,
+            [d.device_id for d in devices],
+            str(args.region).strip().lstrip("+"),
+        )
     except (GatewayError, OSError, RuntimeError, TimeoutError) as err:
         # Sign-in worked, so say so: the natural conclusion from "it failed" is to go and check the
         # password that has in fact just been proven correct.

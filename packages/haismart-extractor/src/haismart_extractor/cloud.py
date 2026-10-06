@@ -242,18 +242,44 @@ SEA_APP_CREDENTIALS = AppCredentials(
 
 @dataclass(frozen=True)
 class Domains:
-    """SE-Asia cloud hosts.
+    """The cloud hosts for one Haier SE-Asia data centre.
 
-    ``uhome`` is the Singapore host: the device API is
-    ``uhome-sgp.haieriot.net`` with ``/uplussea/...`` paths, reached with the device-center header
-    envelope below (NOT OAuth Bearer — a Bearer-only request 403s "appId cannot be empty"). The old
-    ``uhome-sea`` + ``/dcs/...`` map 404s; see ``DEVICE_LIST_PATH_V2``.
+    The SE-Asia app ships a data-centre directory (``configFile@MultiDataCenter`` in its assets) with
+    two centres — **Singapore** (``-sgp`` hosts) and **India** (``-sea`` hosts) — and routes an
+    account to one of them by its region: the app's ``MultiDataCenterManager`` sends ``zoneInfo``
+    ``"91"`` (India) to the India centre and every other zone to Singapore. :meth:`for_zone`
+    reproduces that, so the device list and localKey are looked up on the centre that actually holds
+    the account's devices.
+
+    The account/login endpoints answer on ``uhome-sea`` for both centres, so only the device-centre
+    hosts — ``uhome`` (device list, token refresh, ``/uplussea/...`` paths reached with the
+    device-center header envelope, NOT OAuth Bearer) and ``uws`` (digital-model ``/shadow/``) — and
+    the localKey ``gateway`` differ between them. ``uhome`` defaults to the Singapore host.
     """
 
     account: str = "account-api.haier.net"
     uhome: str = "uhome-sgp.haieriot.net"
     uws: str = "uws-sgp.haieriot.net"  # verified for the digital-model /shadow/ endpoint
     login: str = "uhome-sea.haieriot.net"  # verified SE-Asia account login host (/uplussea/accounts/*)
+    gateway: str = "gw-sgp.haieriot.net"  # localKey MQTT business gateway (gateway.py:58702)
+
+    @classmethod
+    def for_zone(cls, zone_info: str | None) -> Domains:
+        """The hosts for an account registered under ``zone_info`` (its dialling code).
+
+        ``"91"`` (India) selects the India centre (the ``-sea`` hosts); every other zone — the
+        default — selects Singapore (the ``-sgp`` hosts), exactly as the app's data-centre selector
+        does. The centre is a property of the region, not something to discover by trying both: an
+        account with no devices in its own centre is simply an empty account.
+        """
+        if str(zone_info or "").strip().lstrip("+") == "91":
+            return cls(
+                uhome="uhome-sea.haieriot.net",
+                uws="uws-sea.haieriot.net",
+                login="uhome-sea.haieriot.net",
+                gateway="gw-sea.haieriot.net",
+            )
+        return cls()
 
 
 # --- endpoints (paths confirmed present in the app; host per Domains) -------
@@ -858,7 +884,12 @@ class HaierCloud:
         # `zoneInfo` is the account's region code; REQUIRED for the account/refreshToken call
         # (its absence gives retCode 30003 "Authorization exception").
         self.zone_info = zone_info
-        self.domains = domains or Domains()
+        # The data centre follows the account's region unless a caller pins one explicitly: a client
+        # built with only a zone (every HA + CLI call site) routes its device list, token refresh,
+        # digital model and localKey gateway to the centre that holds the account (India for zone 91,
+        # Singapore otherwise). An India account used to sign in on uhome-sea and then query the
+        # (empty) Singapore device list — login succeeded, "no devices".
+        self.domains = domains if domains is not None else Domains.for_zone(zone_info)
         self._transport = transport or _httpx_transport
 
     # -- request pipeline (device-center signed) --

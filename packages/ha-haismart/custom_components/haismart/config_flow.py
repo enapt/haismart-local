@@ -33,6 +33,7 @@ from haismart_extractor.cloud import (
     SEA_APP_CREDENTIALS,
     CloudConnectionError,
     CloudError,
+    Domains,
     HaierCloud,
     get_public_device_config,
 )
@@ -237,6 +238,8 @@ async def _async_fetch_localkey(
     creds = GatewayCreds.derive(
         usdk_client_id=cloud_data[CONF_CLOUD_CLIENT_ID],
         access_token=cloud_data[CONF_ACCESS_TOKEN],
+        # the key lives in the account's own data centre — gw-sea for India (zone 91), gw-sgp else
+        host=Domains.for_zone(cloud_data.get(CONF_ZONE_INFO, "0")).gateway,
     )
     local_key = await hass.async_add_executor_job(
         partial(get_localkey_via_gateway, creds, device_id, timeout=GATEWAY_TIMEOUT)

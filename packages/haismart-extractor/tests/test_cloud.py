@@ -1002,3 +1002,84 @@ def test_the_co_command_operator_comes_from_the_request_group() -> None:
         "action": [{"name": "targetTemperature", "rewriteFields": "W", "writable": False}],
     }])
     assert limit[0]["trigger"]["operator"] == "OR"
+
+
+# --- region / data-centre routing (issue #18: India accounts live on the -sea centre) ---
+
+
+def test_domains_for_zone_selects_the_data_centre() -> None:
+    """zoneInfo 91 (India) -> the -sea centre; every other zone -> Singapore (-sgp).
+
+    Reproduces the app's MultiDataCenter selector so the device list, token refresh, digital model
+    and localKey gateway are all looked up in the centre that actually holds the account.
+    """
+    india = Domains.for_zone("91")
+    assert india.uhome == "uhome-sea.haieriot.net"
+    assert india.uws == "uws-sea.haieriot.net"
+    assert india.gateway == "gw-sea.haieriot.net"
+    assert Domains.for_zone("+91").uhome == "uhome-sea.haieriot.net"  # a typed "+" is tolerated
+    for zone in ("66", "65", "0", "", None):  # only India shards to -sea; the rest are Singapore
+        sgp = Domains.for_zone(zone)
+        assert sgp.uhome == "uhome-sgp.haieriot.net"
+        assert sgp.uws == "uws-sgp.haieriot.net"
+        assert sgp.gateway == "gw-sgp.haieriot.net"
+    # the account/login host is uhome-sea for BOTH centres -- which is why login already worked for
+    # an India account even while its device list was being read from the wrong (empty) centre
+    assert india.login == Domains.for_zone("66").login == "uhome-sea.haieriot.net"
+
+
+async def test_india_account_reads_its_device_list_from_the_sea_centre() -> None:
+    """The reporter's bug: zone 91 signed in but the device list on -sgp was empty. A client built
+    with only the zone must query the India centre, where the devices are."""
+    resp = json.dumps({"retCode": "00000", "data": {"deviceInfos": [
+        {"baseInfo": {"deviceId": "A0822259729A", "deviceName": "Air Conditioner",
+                      "deviceType": "0201201b", "wifiType": "2008610800", "isOnline": True}},
+    ]}})
+    cap = Capture(Response(200, resp))
+    cloud = HaierCloud(AppCredentials("a", "k", "CID"), "TOKEN", zone_info="91", transport=cap)
+
+    devices = await cloud.list_devices_v2()
+
+    assert cap.request.url == "https://uhome-sea.haieriot.net/uplussea/devices/v2/user/devices"
+    assert [d.device_id for d in devices] == ["A0822259729A"]
+
+
+async def test_india_account_refresh_and_model_use_the_sea_centre() -> None:
+    """Token refresh and the digital-model call follow the same centre as the device list."""
+    cap = Capture(Response(200, json.dumps(
+        {"retCode": "00000", "data": {"accountToken": "2_NEW", "refreshToken": "2_RT"}})))
+    cloud = HaierCloud(AppCredentials("a", "k", "CID"), "OLD", zone_info="91", transport=cap)
+    await cloud.refresh_token("2_RT")
+    assert cap.request.url == "https://uhome-sea.haieriot.net/uplussea/accounts/v1/user/refreshToken"
+
+    model = {"attributes": []}
+    cap2 = Capture(Response(200, json.dumps({"retCode": "00000", "detailInfo": {"D1": json.dumps(model)}})))
+    cloud2 = HaierCloud(AppCredentials("a", "k", "CID"), "T", zone_info="91", transport=cap2)
+    await cloud2.get_digital_model("D1")
+    assert cap2.request.url == "https://uws-sea.haieriot.net/shadow/v1/devdigitalmodels"
+
+
+async def test_login_routes_the_client_to_the_account_region() -> None:
+    """login with zone 91 returns a client already pointed at the India centre, so the device-list
+    call that follows does not have to be told the region a second time."""
+    resp = {"data": {"tokenInfo": {"uhomeAccessToken": "2_A", "refreshToken": "2_R"}}}
+    client, _ = await HaierCloud.login(
+        AppCredentials("a", "k", "c"), "u@e.com", "pw",
+        zone_info="91", transport=Capture(Response(200, json.dumps(resp))),
+    )
+    assert client.domains.uhome == "uhome-sea.haieriot.net"
+    assert client.domains.gateway == "gw-sea.haieriot.net"
+    # a non-India login still lands on Singapore, unchanged
+    client2, _ = await HaierCloud.login(
+        AppCredentials("a", "k", "c"), "u@e.com", "pw",
+        zone_info="66", transport=Capture(Response(200, json.dumps(resp))),
+    )
+    assert client2.domains.uhome == "uhome-sgp.haieriot.net"
+
+
+async def test_an_explicitly_pinned_domains_is_not_overridden_by_the_zone() -> None:
+    """A caller that passes domains= keeps them: the zone only picks the centre when nothing is
+    pinned (the yanshou/acceptance hosts, for instance, are selected explicitly)."""
+    pinned = Domains(login="uhome-sea-yanshou.haieriot.net")
+    cloud = HaierCloud(AppCredentials("a", "k", "c"), "T", zone_info="91", domains=pinned)
+    assert cloud.domains is pinned

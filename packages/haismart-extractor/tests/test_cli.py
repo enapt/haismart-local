@@ -45,10 +45,13 @@ def signed_in(monkeypatch):
         return result, list(DEVICES)
 
     monkeypatch.setattr("haismart_extractor.cli._collect", collect)
-    monkeypatch.setattr(
-        "haismart_extractor.cli._fetch_keys",
-        lambda res, ids: {k: v for k, v in KEYS.items() if k in ids},
-    )
+
+    def fetch(res, ids, region):
+        fetch.region = region
+        return {k: v for k, v in KEYS.items() if k in ids}
+
+    monkeypatch.setattr("haismart_extractor.cli._fetch_keys", fetch)
+    collect.fetch = fetch
     return collect
 
 
@@ -59,6 +62,8 @@ async def test_it_prints_each_appliance_with_its_key(signed_in, capsys) -> None:
     assert "ACB722A1EF66" in out and "b" * 32 in out
     # the region is passed through as typed, minus any leading +
     assert signed_in.called[2] == "66"
+    # ...and it reaches the key fetch, so the gateway host follows the account's data centre
+    assert signed_in.fetch.region == "66"
 
 
 async def test_no_keys_prints_everything_else(signed_in, capsys) -> None:
@@ -103,7 +108,7 @@ async def test_a_wrong_region_is_named_as_a_possible_cause(signed_in, monkeypatc
 
 async def test_a_gateway_failure_says_the_sign_in_worked(signed_in, monkeypatch, capsys) -> None:
     """Otherwise the natural next move is to check a password that was just proven correct."""
-    def boom(res, ids):
+    def boom(res, ids, region):
         raise TimeoutError("timed out")
 
     monkeypatch.setattr("haismart_extractor.cli._fetch_keys", boom)
@@ -118,7 +123,7 @@ async def test_one_missing_key_does_not_deny_the_others(signed_in, monkeypatch, 
     """An unplugged appliance must not cost somebody the key for the one they are fixing."""
     monkeypatch.setattr(
         "haismart_extractor.cli._fetch_keys",
-        lambda res, ids: {"ACB722A2CBEC": KEYS["ACB722A2CBEC"]},
+        lambda res, ids, region: {"ACB722A2CBEC": KEYS["ACB722A2CBEC"]},
     )
     code = await _go(["--username", "me@x.com", "--region", "66", "--json"])
     rows = json.loads(capsys.readouterr().out)

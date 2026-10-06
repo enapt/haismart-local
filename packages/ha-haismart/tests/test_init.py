@@ -1653,6 +1653,45 @@ async def test_localkey_rotation_auto_refreshes_via_gateway(
     ) is None
 
 
+async def test_gateway_refresh_targets_the_account_region(
+    hass: HomeAssistant, mock_uss, freezer
+) -> None:
+    """The in-place re-key fetch goes to the account's own data centre: an India account (zone 91)
+    rotates against gw-sea, not the Singapore gateway (issue #18)."""
+    from unittest.mock import patch
+
+    from haismart_extractor import LocalKey
+
+    entry = _entry(
+        cloud_client_id="A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4",
+        access_token="tok-abc",   # token direct -> gateway branch, no cloud refresh needed
+        zone_info="91",            # India -> the -sea data centre
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    mock_uss.read.return_value = []
+    mock_uss.read.side_effect = None
+    mock_uss.probe.return_value = 5  # AC rotated v4 -> v5, forcing the gateway refresh
+
+    seen: dict[str, str] = {}
+
+    def _refresh(creds, _device_id, **_kw):
+        seen["host"] = creds.host
+        mock_uss.read.return_value = [mock_uss.frame]
+        return LocalKey(key="ffeeddccbbaa99887766554433221100", version=5)
+
+    with patch(
+        "custom_components.haismart.coordinator.get_localkey_via_gateway", side_effect=_refresh
+    ):
+        await _tick(hass, freezer)  # miss 1
+        await _tick(hass, freezer)  # miss 2 -> probe, rotation, gateway refresh
+        await hass.async_block_till_done()
+
+    assert seen.get("host") == "gw-sea.haieriot.net"
+
+
 async def test_token_refresh_uses_has_shared_http_client(
     hass: HomeAssistant, mock_uss, freezer
 ) -> None:

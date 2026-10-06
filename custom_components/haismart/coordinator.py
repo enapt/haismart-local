@@ -34,6 +34,7 @@ from haismart_extractor import (
 from haismart_extractor.cloud import (
     SEA_APP_CREDENTIALS,
     CloudError,
+    Domains,
     get_public_device_config,
 )
 from haismart_hrdp import (
@@ -3245,6 +3246,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             usdk_client_id=usdk_client_id,
             access_token=access_token,
             username_body=username_body,
+            # rotate against the account's own data centre — gw-sea for India (zone 91), gw-sgp else
+            host=Domains.for_zone(data.get(CONF_ZONE_INFO, "0")).gateway,
         )
         try:
             local_key = await self.hass.async_add_executor_job(

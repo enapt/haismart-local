@@ -2344,3 +2344,35 @@ async def test_the_screen_stays_quiet_when_there_is_nothing_to_report(
     with patch.object(HaismartConfigFlow, "_async_query_device", return_value=None):
         result = await flow.async_step_key_failed()
     assert result["description_placeholders"]["note"] == ""
+
+
+async def test_fetch_localkey_targets_the_region_gateway(
+    hass: HomeAssistant, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Onboarding fetches the key from the account's OWN data centre: an India account (zone 91)
+    asks gw-sea, every other region gw-sgp. On gw-sgp an India unit's key fails (errNo=15); #18."""
+    from haismart_extractor import LocalKey
+
+    from custom_components.haismart import config_flow as cf
+    from custom_components.haismart.const import (
+        CONF_ACCESS_TOKEN,
+        CONF_CLOUD_CLIENT_ID,
+    )
+
+    seen: dict[str, str] = {}
+
+    def fake_get(creds, device_id, timeout):
+        seen["host"] = creds.host
+        return LocalKey(key="a" * 32, version=7)
+
+    monkeypatch.setattr(cf, "get_localkey_via_gateway", fake_get)
+
+    base = {CONF_CLOUD_CLIENT_ID: "C" * 32, CONF_ACCESS_TOKEN: "AT"}
+    key, ver = await cf._async_fetch_localkey(
+        hass, {**base, CONF_ZONE_INFO: "91"}, "A0822259729A"
+    )
+    assert (key, ver) == ("a" * 32, 7)
+    assert seen["host"] == "gw-sea.haieriot.net"
+
+    await cf._async_fetch_localkey(hass, {**base, CONF_ZONE_INFO: "66"}, "A0822259729A")
+    assert seen["host"] == "gw-sgp.haieriot.net"

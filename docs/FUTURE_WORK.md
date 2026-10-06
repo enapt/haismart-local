@@ -2422,3 +2422,30 @@ side of the module, in appliance firmware we have never held.
 that vanished and came back needing re-pairing, this is a documented mechanism, not necessarily
 something they or we did wrong. ⚠️ Do **not** put it in user-facing docs as a likely cause — it has
 never been observed, and the ordinary explanations are overwhelmingly more common.
+
+
+## 72. India-region (zone 91) hosts are desk-derived — confirm token refresh, the digital model and key rotation on a real `-sea` account
+
+**2026-10-06, issue #18 (reporter `akashdubeyx`, a wall-split AC in India).** Sign-in succeeded but
+the integration reported the account had no devices. The SE-Asia app ships a two-centre directory
+(`assets/PresetResPkg/configFile@MultiDataCenter@1.1.1.json`) and routes an account to one of them by
+its region: `MultiDataCenterManager.getCurrentDataCenterByCountry` sends `zoneInfo` `"91"` (India) to
+the **India** centre (`-sea` hosts) and every other zone to **Singapore** (`-sgp`). The old defaults
+read the device list, digital model and localKey from `-sgp` for everyone, so an India account's
+devices — which live on `-sea` — were invisible, while **login** worked because the account endpoint
+is on `uhome-sea` for both centres.
+
+Fixed by computing the hosts from the account's zone (`Domains.for_zone`), so the device list, token
+refresh, digital model and the localKey gateway all follow the account's own data centre.
+
+**Verified:** the device list on `-sea` and the key on `gw-sea` are what the reporter measured live
+with this repo's own client; the selection rule is read from the app binary. **Not verified on
+hardware here** (no India account): token refresh against `uhome-sea/uplussea/accounts/v1/user/refreshToken`
+and the digital model on `uws-sea`. The reporter can confirm by signing in through the integration
+(not the manual-key workaround) and checking a key rotation self-heals. Both calls are the same paths
+that already work on `-sgp`, on the centre whose login the account already completes, so the risk is low.
+
+**Known edge, left alone:** the app has an `isRetainedUser()` override that pins *migrated* India
+users to the India centre regardless of zone. The zone rule cannot see that flag, so a retained user
+whose account reports a non-91 zone would still be routed to Singapore. No such report exists; it
+closes with one, and the manual "I already have the local key" path works for them meanwhile.

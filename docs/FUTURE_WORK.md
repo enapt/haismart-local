@@ -187,9 +187,10 @@ stored AC captures with no per-family code at all:
 | issue #12 ×7 | `0d12` cabinet | 133 B | power / target / mode (cool, dry, fan\_only) / fan (low, medium, high) / indoor — **7/7 captures** |
 | issue #13 ×5 | `2001` heat pump | 167 B | the table above — **a class the integration had never decoded**, and the fifth capture carries **our own accepted write** |
 | issue #11 ×3 | `3912` window | 109 B | target / mode / fan / power / indoor, against the values the thread states for each report — **5/5 per capture** |
-| issue #19 | `0212` japan-wall | 111 B | every attribute the cloud reported for the same unit in the same minute — **35/35**, on a frame the shared map does not describe (item 38) |
+| issue #19 ×2 | `0212` japan-wall | 111 B | every attribute the cloud reported for the same unit in the same minute — **35/35** on each of two units, on a frame the shared map does not describe (item 38) |
 
-**220/220 attribute comparisons, 17 captures, 4 device classes, 5 report lengths.**
+**255/255 attribute comparisons, 18 captures, 4 device classes, 5 report lengths.** The second
+issue #19 capture is a second unit, taken right after a command of ours that it accepted.
 
 ⇒ the `canonical_displacement` / `canonical_insert` / `length_inserts` machinery is a hand-derived
 restatement of what these files state outright. The 125-vs-127 split, derived here as "one inserted

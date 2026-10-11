@@ -33,7 +33,7 @@ def _model() -> dict:
     return {**heat_capable_digital_model(), "deviceId": MODEL_MARKER}
 
 
-async def _diag(hass: HomeAssistant) -> dict:
+async def _diag(hass: HomeAssistant, model_json: str | None = None) -> dict:
     entry = MockConfigEntry(
         domain=DOMAIN,
         title="Downstairs AC",
@@ -44,7 +44,7 @@ async def _diag(hass: HomeAssistant) -> dict:
             CONF_LOCAL_KEY: "00112233445566778899aabbccddeeff",
             CONF_PRODUCT_CODE: "AAC1UKZ01",
             CONF_LOCALKEY_VERSION: 4,
-            CONF_DIGITAL_MODEL: json.dumps(_model()),
+            CONF_DIGITAL_MODEL: json.dumps(_model()) if model_json is None else model_json,
         },
     )
     entry.add_to_hass(hass)
@@ -77,10 +77,38 @@ async def test_a_moved_unit_is_still_flagged_after_redaction(
     assert "192.168.1.77" not in json.dumps(diag)
 
 
-async def test_the_stored_model_json_is_redacted_but_summarised(
+async def test_the_stored_model_keeps_its_tables_and_loses_device_ids(
     hass: HomeAssistant, mock_uss
 ) -> None:
+    """The model's alarm, refusal-reason and constraint tables are the only copy in the file, and
+    faults and refusals on appliances nobody here owns are decoded from them, so the model stays.
+    A per-device id inside it is redacted. That needs the JSON string parsed:
+    `async_redact_data` walks dicts, not the strings the entry stores them in."""
     diag = await _diag(hass)
+    kept = json.loads(diag["entry"][CONF_DIGITAL_MODEL])
+    assert kept.pop("deviceId") == "**REDACTED**"
+    assert MODEL_MARKER not in json.dumps(diag)
+    (entry,) = hass.config_entries.async_entries(DOMAIN)
+    stored = json.loads(entry.data[CONF_DIGITAL_MODEL])
+    del stored["deviceId"]
+    assert kept == stored, "everything but the identifier is kept, as stored"
+    assert diag["digital_model"], "the summary is what maintainers read, and it must remain"
+
+
+async def test_a_model_with_no_identifier_is_published_as_stored(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A maintainer tool reads this field with `json.loads`: it stays a string, byte for byte."""
+    from conftest import heat_capable_digital_model
+
+    diag = await _diag(hass, json.dumps(heat_capable_digital_model()))
+    (entry,) = hass.config_entries.async_entries(DOMAIN)
+    assert diag["entry"][CONF_DIGITAL_MODEL] == entry.data[CONF_DIGITAL_MODEL]
+
+
+async def test_a_model_that_does_not_parse_is_redacted_whole(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    diag = await _diag(hass, '{"deviceId": "' + MODEL_MARKER)
     assert diag["entry"][CONF_DIGITAL_MODEL] == "**REDACTED**"
     assert MODEL_MARKER not in json.dumps(diag)
-    assert diag["digital_model"], "the summary is what maintainers read, and it must remain"

@@ -1,6 +1,7 @@
 """Diagnostics: a redacted snapshot for bug reports."""
 from __future__ import annotations
 
+import json
 import logging
 from functools import partial
 from typing import Any
@@ -51,13 +52,14 @@ _LOGGER = logging.getLogger(__name__)
 # stable device identifier, and nothing here needs it — the report bytes a maintainer works offsets
 # out from are dumped separately under `last_raw_status` / `report`.
 # The host is where on the owner's LAN the unit sits: identifying, and no help with a decode.
-# ⚠️ The digital model is stored as a JSON STRING, which `async_redact_data` cannot walk into, so
-# any per-device id the cloud put in it would pass untouched; it goes whole. `digital_model` below
-# (`_model_summary`) is the maintainer's view of it and stays. `device_map` is not listed: it is
-# the class's published byte map, keyed on the typeid `report.uplus_id` already states.
+# The digital model is NOT listed: it is the only copy in the file of the model's `alarms`,
+# `invalid_reasons`, `constraints` and `modifiers` (`_model_summary` keeps only the value ranges),
+# and refusals and faults on appliances nobody here owns are decoded from those tables. It is stored
+# as a JSON STRING, which `async_redact_data` cannot walk into, so `_redacted_model` parses it and
+# redacts `MODEL_TO_REDACT` inside. `device_map` is not listed: it is the class's published byte
+# map, keyed on the typeid `report.uplus_id` already states.
 TO_REDACT = {
     CONF_HOST,
-    CONF_DIGITAL_MODEL,
     CONF_LOCAL_KEY,
     CONF_REFRESH_TOKEN,
     CONF_ACCESS_TOKEN,
@@ -67,6 +69,26 @@ TO_REDACT = {
     CONF_DEVICE_ID,
     "unique_id",
 }
+
+# Per-device identifiers a cloud model could carry. None of the models users have attached to
+# issues carries one: the only identifier in them is the product's typeid (`uPlusId`), which is
+# not per device. This guards the shape, not an observation.
+MODEL_TO_REDACT = {"deviceId", "devId", "deviceMac", "mac", "macAddress", "sn", "serialNumber"}
+
+
+def _redacted_model(raw: Any) -> Any:
+    """The stored model JSON with any per-device identifier redacted inside it.
+
+    Still a JSON string, as stored, so a tool reading the file parses it the same way. A string
+    that does not parse is redacted whole: nothing inside it can be vouched for.
+    """
+    if not isinstance(raw, str):
+        return raw
+    try:
+        model = json.loads(raw)
+    except ValueError:
+        return REDACTED
+    return json.dumps(async_redact_data(model, MODEL_TO_REDACT))
 
 
 async def _async_handshake_reply(hass: HomeAssistant, coordinator) -> dict[str, Any] | None:
@@ -120,7 +142,17 @@ async def async_get_config_entry_diagnostics(
     async with coordinator._session:  # noqa: SLF001 - no public accessor, and the lock is the point
         handshake = await _async_handshake_reply(hass, coordinator)
     return {
-        "entry": async_redact_data(dict(entry.data), TO_REDACT),
+        "entry": async_redact_data(
+            {
+                **entry.data,
+                **(
+                    {CONF_DIGITAL_MODEL: _redacted_model(entry.data[CONF_DIGITAL_MODEL])}
+                    if CONF_DIGITAL_MODEL in entry.data
+                    else {}
+                ),
+            },
+            TO_REDACT,
+        ),
         "options": dict(entry.options),
         # ⚠️ Two numbers, and the pair is the point. This one is the version of the key this entry
         # HOLDS; `localkey_version_reported` below is the version the appliance says it is using

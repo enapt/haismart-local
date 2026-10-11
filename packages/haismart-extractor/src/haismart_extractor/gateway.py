@@ -398,6 +398,10 @@ def _encode_len(n: int) -> bytes:
             return out
 
 
+#: CONNACK return code 3 in MQTT 3.1.1: "Connection Refused, Server unavailable".
+_CONNACK_SERVER_UNAVAILABLE = 3
+
+
 def _mqtt_field(s: bytes | str) -> bytes:
     b = s.encode() if isinstance(s, str) else s
     return struct.pack(">H", len(b)) + b
@@ -441,6 +445,10 @@ class _TlsMqttConnection(MqttConnection):  # pragma: no cover - needs network
                 ack += chunk
             if ack[0] != 0x20:
                 raise GatewayError(f"expected CONNACK, got packet type {ack[0] >> 4}")
+            if ack[3] == _CONNACK_SERVER_UNAVAILABLE:
+                # MQTT 3.1.1's "server unavailable": the broker's own outage, which says nothing
+                # about the credentials, so a caller retries as it would for a hang-up.
+                raise GatewayConnectionError(f"CONNACK rc={ack[3]} (server unavailable)")
             if ack[3] != 0:
                 raise GatewayError(f"CONNACK rc={ack[3]} (creds rejected/stale)")
         except Exception:

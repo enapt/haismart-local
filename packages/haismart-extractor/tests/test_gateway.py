@@ -395,3 +395,54 @@ def test_an_errno_reply_is_not_a_connection_error() -> None:
     with pytest.raises(GatewayError, match="errNo") as exc:
         GatewayClient(_creds(), connect=lambda _c: FakeMqtt(err_no=1)).get_localkey(UP_DEV, timeout=1)
     assert not isinstance(exc.value, GatewayConnectionError)
+
+
+class _ConnackSocket:
+    """A TLS socket stand-in that answers CONNECT with one CONNACK and records nothing else."""
+
+    def __init__(self, rc: int) -> None:
+        self._reply = bytes([0x20, 0x02, 0x00, rc])
+
+    def sendall(self, _data: bytes) -> None:
+        pass
+
+    def recv(self, n: int) -> bytes:
+        out, self._reply = self._reply[:n], self._reply[n:]
+        return out
+
+    def close(self) -> None:
+        pass
+
+
+def _connect_with_connack(monkeypatch, rc: int):
+    from haismart_extractor import gateway
+
+    class _Ctx:
+        def wrap_socket(self, _raw, server_hostname):
+            return _ConnackSocket(rc)
+
+    class _Raw:
+        def close(self) -> None:
+            pass
+
+    monkeypatch.setattr(gateway.socket, "create_connection", lambda *_a, **_k: _Raw())
+    monkeypatch.setattr(gateway.ssl, "create_default_context", lambda: _Ctx())
+    return gateway._TlsMqttConnection(_creds())
+
+
+def test_connack_server_unavailable_is_a_connection_error(monkeypatch) -> None:
+    """rc=3 is MQTT 3.1.1's "server unavailable": the broker's outage, not a verdict on the
+    credentials, so the caller retries rather than asking someone to sign in again."""
+    with pytest.raises(GatewayConnectionError, match="rc=3"):
+        _connect_with_connack(monkeypatch, 3)
+
+
+@pytest.mark.parametrize("rc", [1, 2, 4, 5])
+def test_any_other_connack_refusal_is_not_a_connection_error(monkeypatch, rc) -> None:
+    with pytest.raises(GatewayError, match=f"rc={rc}") as exc:
+        _connect_with_connack(monkeypatch, rc)
+    assert not isinstance(exc.value, GatewayConnectionError)
+
+
+def test_connack_accepted_connects(monkeypatch) -> None:
+    assert _connect_with_connack(monkeypatch, 0).ss is not None

@@ -21,28 +21,37 @@ keeps its own when it moves between the two sections. Expect the sequence to hav
 
 ## Open items
 
-### 74. The byte-map state lays the extended report over the status report — so after a command the older frame wins
+### 75. The status that opens a session can lag a change made outside Home Assistant — checked and corrected where the extended report carries the settings
 
-`coordinator._model_state` decodes a status report with Haier's byte map, then decodes the last
-extended report (`7d01`) and **updates** the result with it. That is right where the two maps place
-different attributes. But **60 of the 92 bundled Model IDs with a `7D01` map place status attributes
-in it too** — 28 of them air conditioners, 32 other classes (washers 14, refrigerators 12, water
-heaters 2, four others). A command's reply carries a fresh status report and no extended report, so
-the extended report from the poll before the command overwrites the reply's values for those
-attributes until the next poll.
+**Found 2026-10-11 (issue #19, item 38).** In one poll of an AQUA wall unit, the status push said on,
+19 °C, while the extended report from the same session, Haier's cloud and the owner all said off,
+20 °C. Home Assistant showed the push.
 
-* **On an air conditioner it reaches diagnostics only** — the AC entities read their own decode, and
-  the byte-map state feeds no entity. It showed up in issue #19 as `appliance.model_state` reading
-  power off and 20 °C beside a `state` reading on and 19 °C: the status words came from the reply
-  to our turn-on, and the extended report repeats the climate words (item 38).
-* **On another class it would reach the entities** (the generic layer and the water heater read the
-  byte-map state): a setting would show its pre-command value for up to one poll after the command.
-  Unobserved — the one unit of another class seen so far, issue #13's water heater, does not answer
-  the extended query.
+**What is done.** Each poll compares the push with its own extended report on the settings the
+appliance's group set carries, read with Haier's byte map. All 28 air-conditioner maps the
+integration carries repeat power, setpoint and mode in `7D01`, and 26 repeat the fan speed. On a
+disagreement the appliance is asked `getAllProperty` (`4D01`) in one extra read-only session, and its
+`02` answer is the status for that cycle. While the push is known to be behind, a command is seeded
+from that answer instead of from its own session's push, which would have sent the stale settings
+back. Bounded: a setting where the answer sides with the push is a by-design difference and is not
+checked again, and three unanswered checks switch the check off for that unit. Diagnostics show the
+count, the latest case (both readings and the answer) and whether the check is off. The `4D01`
+session was measured live on `e_4.3.00`: push, alarm, then the `02` answer, the same layout as the
+push.
 
-**What closes it:** let the status report win where both maps place an attribute (decode the
-extended report first, or merge it without overwriting), with a test that a reply's value survives
-an older extended report. Small; not done yet.
+**Residue:**
+* A unit that does not answer the extended query, or whose map has no `7D01` copy of a setting,
+  cannot be checked this way. Its push is still taken as it comes.
+* Why the push was behind is not established. Haier's module↔device flow document has the module
+  ask `4D01` once at power-on and the appliance report changes itself after that, so the push is the
+  module's copy assembled from those reports. A change reported as `6C01` (only the changed
+  attributes, which Haier's developer docs allow) and not folded into that copy is one candidate.
+  No `6C01` has ever been seen on the LAN, because sessions are short polls.
+* Within one cycle, the check runs after the poll. A change made between the poll and a command
+  still meets whatever push that command's session carries, as before.
+
+**What would settle the mechanism:** a diagnostics download from a unit changed with its remote
+while Home Assistant polls, showing `status_checks` and the frames around it.
 
 
 ### 72. India-region (zone 91) hosts are desk-derived — confirm token refresh, the digital model and key rotation on a real `-sea` account
@@ -1225,27 +1234,38 @@ cloud record at download and in the unit's last extended report) — consistent 
 account, not a self-verifying record of it. Mode was written but not changed (the unit was already
 in cool); fan has not been changed.
 
-⚠️ **That file disagrees with itself about the moment it was saved, and frames carry no
-timestamps.** The owner wrote that it was taken after switching the unit off from Home Assistant.
-Home Assistant's state and the status report say on, 19 °C, vane wire 2. Haier's cloud record,
-fetched while the file was written, and the unit's last extended report (`7d01`) say off, 20 °C,
-vane wire 8 (published 6). Those two agree on 34 of the 35 attributes the cloud reports (humidity 57
-against 58); the status report differs from the cloud in exactly the three settings the commands
-wrote, plus room temperature and humidity. The last command on record is the turn-on. Two readings
-fit:
+✅ **That file disagreed with itself, and the disagreement was real: Home Assistant showed the unit
+running while it was off.** The owner wrote that it was taken after switching the unit off. Home
+Assistant's state and the status report said on, 19 °C, vane wire 2. Haier's cloud record, fetched
+while the file was written, and the unit's extended report (`7d01`) said off, 20 °C, vane wire 8
+(published 6). Those two agree on 34 of the 35 attributes the cloud reports (humidity 57 against 58).
+The status report differs from the cloud in exactly the three settings the commands wrote, plus room
+temperature and humidity. An off at 20 °C and vane 6 is also not what a turn-off from Home Assistant
+sends: that frame is built from the unit's own report, 19 °C and vane 2.
 
-* **(a)** the file was saved within one poll interval of the turn-on, so no poll ran after it, the
-  extended report is from the last poll before the commands, and the cloud record still showed the
-  state before them; or
-* **(b)** the unit was switched off afterwards by something other than Home Assistant, and Home
-  Assistant's status report had not caught up — it showed the unit on while it was off. An off at
-  20 °C and vane 6 is not what a turn-off from Home Assistant sends: that frame is built from the
-  unit's own report, 19 °C and vane 2.
+Settled in two steps, with measurements rather than preference:
 
-In the other two captures of this family the status and extended reports agree field for field,
-which favours (a) without deciding it. The owner's answer to "on or off when the file was saved, and
-what switched it off" settles it. If (b), the status report can lag a change made elsewhere, and
-this family carries the same settings in its extended report, which could be used to check it.
+* **The status report came from a poll after the last command, in the same session as that
+  extended report.** On a live unit with the same module firmware (`e_4.3.00`), a command's session
+  ends with a status report content-identical to its accepted reply. That held twice out of twice,
+  and the `0d12` cabinets show the same on another module. Each poll asks the extended query
+  together with the status. This file's latest status report differs from the last command's reply
+  (room 22.0 °C against 19.5 °C), so it is not that command's report. The reading that the file was
+  saved before the next poll is ruled out.
+* **In that one poll, the two reports disagreed.** In every other same-poll pair on record they agree
+  on every attribute both carry: two live polls straight after a command (55 of 55), and eight other
+  captures from three families (this one, the classic wall units, the `0d12` cabinets) on two module
+  firmwares (`e_4.3.00`, `e_4.6.21`). Captures whose extended report was asked only on early polls
+  are excluded, because theirs is not from the same poll. The status that opens a session is a **report** the module
+  passes on (frame type `06`). Haier's UART standard (§6.6) lets the appliance report a change in
+  full (`6D01`) or as only the changed parameters (`6C01`). The extended report and `getAllProperty`
+  (`4D01`) are **answers** (§6.1–6.2). Which mechanism left this unit's report behind is not
+  established; that it was behind is.
+
+Fixed by asking: when a poll's push and its extended report disagree about a setting, the appliance is
+asked `4D01` in one extra session and its own answer (frame type `02`) is the status, and the next
+command is built from that answer rather than from the push (item 75). The byte-map state's merge of
+the two reports was a separate fault and is fixed as well (item 74).
 
 ⚠️ Scope: power both ways on one Model ID (`日本挂2024`), on two units; a setpoint change reported by
 an owner; the up-down vane moved by the model's own cool rule (wire 8 in every earlier record, wire 2
@@ -1271,7 +1291,12 @@ Two readings settled from the same file:
   60 °C against 28 °C outdoors, indoor coil 18 °C against a 21 °C room). The temperatures are
   populated and power and the compressor read zero, so whether the firmware fills those while
   running is not known yet. A diagnostics download from a unit that has been cooling for some
-  minutes settles it.
+  minutes settles it. What both frames do check: the map packs the report as a byte stream, so its
+  16-bit values straddle words (power is the low byte of w9 then the high byte of w10), and the
+  reader's convention gets that right. The expansion valve, another straddling field, reads 480 on
+  both units, a typical rest opening, where the opposite convention would give 57,384. The effective
+  setpoint beside it reads each unit's own setpoint. Unexplained: the outdoor coil reads 19 °C
+  against 28 °C outdoor air on the unit that had just stopped cooling.
 
 Residue, each a refusal or an absence rather than a wrong value:
 
@@ -1785,6 +1810,19 @@ standard states that a multi-appliance system *must* use the interactive convers
 those cabinets use the simpler one where the module asks and the appliance only answers — which
 their own refusals confirm. So an appliance of that class is not one of these systems, however many
 indoor units a building has. This needs hardware that actually talks the interactive mode.
+
+### 74. ✅ SETTLED — the byte-map state no longer lays the older report over the newer
+
+`coordinator._model_state` decoded a status report and then **updated** the result with the last
+extended report (`7d01`). 60 of the 92 bundled Model IDs with a `7D01` map place status attributes
+there too: 28 air conditioners and 32 other classes (washers 14, refrigerators 12, water heaters 2,
+four others). A command's reply carries a status report and no extended one, so the extended report
+on hand was from the poll before the command, and it put the old values back until the next poll.
+Reproduced live: a reply of 24 °C under a last extended report of 23 °C. On an air conditioner that
+reached diagnostics only (issue #19's `appliance.model_state` read off at 20 °C beside a state
+reading on at 19 °C). On another class it would have reached the entities. The extended report is
+now merged underneath, so the status report wins wherever both place an attribute.
+
 
 ### The layout prober is told what the captures were
 

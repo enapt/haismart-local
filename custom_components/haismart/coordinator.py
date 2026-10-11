@@ -1695,11 +1695,14 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         grSetDAC is a group-set: it must be seeded from the AC's TRUE current state so every
         attribute except the changed one(s) is preserved, then the requested fields flipped. We
         seed from the status the AC pushes on the op's OWN connection right after the handshake
-        (``build_frame``), so the baseline is live — no separate read connection (keeps control
-        snappy, halves the AC load) and no staleness: seeding from a cached ``last_raw_status``
-        that lags an IR change or a prior command could re-send an old power/mode bit and silently
-        turn the unit back off. If the AC pushes nothing that session we fall back to the cached
-        status. The library gates each field + value (confirmed only). WRITES to the AC.
+        (``build_frame``) — no separate read connection (keeps control snappy, halves the AC load),
+        and normally the freshest state on hand: seeding from a cached ``last_raw_status`` that lags
+        an IR change or a prior command could re-send an old power/mode bit and silently turn the
+        unit back off. ⚠️ That push is a report the module replays, though, and it can lag too
+        (issue #19): while the last poll caught it contradicting the appliance's own answer, the
+        answer is the baseline instead (:meth:`_async_check_push`). If the AC pushes nothing that
+        session we fall back to the cached status. The library gates each field + value (confirmed
+        only). WRITES to the AC.
         """
         # Per-model lockdown: gate every change against the device's digital model (valueRange)
         # BEFORE it is sent, on top of the library's confirmed allowlist — so the pulled
@@ -1801,7 +1804,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     translation_key="no_status",
                     translation_placeholders={"name": self.config_entry.title},
                 )
-            if baseline is not None:  # refresh the cache from the fresh in-session baseline
+            if baseline is not None:  # refresh the cache from the in-session baseline
                 self._misses = 0
                 self.last_raw_status = baseline
             wm = self._wire_model

@@ -2157,9 +2157,11 @@ async def async_send_op(ip: str, device_id: str, local_key: str, epp_frame: byte
     blobs pushed in reply (so the caller can confirm the new state).
 
     Seeding a group-set (read-modify-write): pass ``build_frame`` instead of ``epp_frame``. The AC pushes
-    its current status right after the handshake (same as a read), so we hand that fresh in-session
-    baseline blob (or ``None`` if none arrived) to ``build_frame`` to construct the op — no separate read
-    connection, so control stays snappy and the AC isn't hit twice. Exactly one of ``epp_frame`` /
+    its current status right after the handshake (same as a read), so we hand that in-session
+    baseline blob (or ``None`` if none arrived) to ``build_frame`` to construct the op — no separate
+    read connection, so control stays snappy and the AC isn't hit twice. ⚠️ That status is a report
+    the module replays, not the appliance's answer, and it can lag a change made elsewhere (issue
+    #19); ``build_frame`` may decline it by building from something fresher. Exactly one of ``epp_frame`` /
     ``build_frame`` must yield a frame. Pass ``uplus_id`` so a non-classic family's push is recognised
     as a baseline (:func:`is_control_baseline`); without it only the classic lengths are, and those
     families silently fall back to whatever the caller cached."""
@@ -2183,7 +2185,7 @@ async def async_send_op(ip: str, device_id: str, local_key: str, epp_frame: byte
             biz_sn = session_sequence_base(done_msg, local_key)
         if build_frame is not None:
             # Read-modify-write in ONE session: the AC pushes its current status right after the
-            # handshake (like a read), so seed the group-set from that fresh in-session baseline —
+            # handshake (like a read), so seed the group-set from that in-session baseline —
             # no second connection. ``build_frame`` gets None if no status arrived (caller falls back).
             baseline = await _read_pushed_status(reader, pushed, local_key, timeout, uplus_id)
             epp_frame = build_frame(baseline)

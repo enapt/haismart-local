@@ -35,6 +35,14 @@ behind it.
 2. **Handshake** (plaintext): client `HELLO` → AC `HELLO_RESP` → client `HELLO_DONE` → AC
    `HELLO_DONE_RESP`, after which the AC pushes status as `0xEAC4` messages.
 
+   That first status is a **report** (EPP frame type `06`, `6d01`) that the module passes on, not the
+   appliance's answer to a question. The answer is asked for with getAllProperty (frame type `01`,
+   `4D01`), and the appliance's own reply comes back as frame type `02` with the same layout. Each
+   poll's extra request is the extended-status query (`4DFE`), and all 28 air-conditioner maps the
+   integration carries repeat power, setpoint and mode in their `7d01` (fan speed too, on all but the
+   two `0214` maps). When that answer and the push disagree about a setting, the integration
+   asks `4D01` in one further session and uses the `02` reply.
+
    `HELLO_RESP`'s payload is `status(BE32) || localkey_version(BE32)`. **`status` must be 1.** A unit
    that answers with a different status has refused the session: it will accept `HELLO_DONE`, push
    nothing, and look exactly like a dead network. The version field is free rotation detection — no
@@ -405,7 +413,9 @@ catalogued and cannot disagree with itself.
 
 Writes are a **group-set**: the whole word block is sent at once, so it must be seeded from the AC's
 own current status or unrelated settings get clobbered. The library seeds from the status the AC
-pushes on the op's own connection, falling back to the last polled report if none arrives.
+pushes on the op's own connection, falling back to the last polled report if none arrives. While
+the last poll found that push contradicting the appliance's own `4D01` answer, the integration seeds
+from the answer instead, so stale settings are not sent back.
 
 The op's words (five on the 125-byte classic report, six on the 127-byte one) are the report's own
 control block — word for word and bit for bit, ending where

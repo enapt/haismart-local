@@ -130,6 +130,15 @@ The integration polls every **30 seconds** by default (minimum 10), changeable u
 integration's **Configure** menu. One poll fetches everything in a single connection — status, faults
 and the power figures — because these units accept only one connection at a time.
 
+The status that opens each connection is a report the Wi-Fi module passes on, not the unit's answer
+to a question, and it can lag a change made outside Home Assistant. Every air-conditioner map the
+integration carries also repeats the settings in the extended report that brings the power figures,
+which is an answer, so on a unit that answers that query each poll compares the two. When they
+disagree about a setting, the integration asks the unit directly in one extra connection, shows the
+unit's own answer, and builds the next command from that answer as well. Without that, a temperature
+change could switch a unit back on that its owner had just switched off. If the unit's answer sides
+with the first report, the difference is how that unit works, and that setting is not checked again.
+
 For a different rhythm, Home Assistant has a documented way that works for any integration: open the
 integration's **⋮ → System options**, turn off *Enable polling for updates*, and drive it from an
 automation calling `homeassistant.update_entity` on whatever schedule or trigger you like. Useful if

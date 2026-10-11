@@ -1181,8 +1181,8 @@ standard one (auto is wire 0), and the left-right vane numbers its stops its own
 `日本挂2024` Model ID, a different unit from the first report). A `climate.turn_off` from Home
 Assistant went out as this family's four-word group set (`6001`) — the family has no
 single-parameter commands, so no other path exists — and the appliance **accepted it**: reply frame
-types `0x04`, `0x02`, `0x06`, not refused. The status report in the reply and the next poll both
-read power off (w2 bit 13 = 0), and Haier's own cloud record of the unit, fetched while the file was
+types `0x04`, `0x02`, `0x06`, not refused. The status report in the `0x02` reply reads power off
+(w2 bit 13 = 0), as does the latest report in the file, and Haier's own cloud record of the unit, fetched while the file was
 written, agrees on every attribute it reports that the decode places (29, none disagreeing) —
 setpoint, mode and fan included, so the rest of the four words went out as the unit holds them. The
 file keeps no report from before the command. The owner reports power on and off both work. So the

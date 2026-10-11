@@ -117,6 +117,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util.hass_dict import HassKey
 
 from .cloud_transport import async_cloud_transport
 from .const import (
@@ -181,6 +182,9 @@ type HaismartConfigEntry = ConfigEntry["HaismartCoordinator"]
 
 # Empty read cycles tolerated before probing the AC's localKey version for rotation.
 _MISSES_BEFORE_PROBE = 2
+
+# Per entry: when its current run of unreachable key re-fetches began (see `_outage_since`).
+_OUTAGE_CLOCKS: HassKey[dict[str, float]] = HassKey(f"{DOMAIN}_rotation_outage_since")
 
 # Caps on the undecodable-frame debug log (the known reports are 125/127 bytes, so this keeps whole
 # frames while bounding the damage if some other device pushes something large).
@@ -627,8 +631,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Whether the last localKey re-fetch failed on the network rather than the account (see
         # `_raise_rotation_unhealed`).
         self._refresh_unreachable = False
-        # When the current run of unreachable re-fetches began (loop time), or None outside one.
-        self._outage_since: float | None = None
+        # When the current run of unreachable re-fetches began: see `_outage_since`, which keeps it
+        # outside this object.
         # Cloud reachability, from the key-free UDISCOVERY query (see const.py). `None` = not known
         # (never answered, or the unit does not implement it) -- deliberately NOT False, so a device
         # that cannot tell us reads "unknown" rather than being reported as cut off.
@@ -726,6 +730,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 return held
             raise
         self._held_cycles = 0
+        self._outage_since = None     # the key decrypted a report, so no rotation is unhealed
         return state
 
     @callback
@@ -1780,8 +1785,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     ) from again
             else:
                 # No repair for a key service that has only just become unreachable: the next poll
-                # re-fetches (see `_raise_rotation_unhealed`).
-                if not self._rotation_outage_excused():
+                # re-fetches (see `_raise_rotation_unhealed`). Read-only: the poll owns the clock.
+                if not self._outage_grace_holds():
                     self._raise_stale_localkey_issue(err.held_version, err.device_version)
                 raise HomeAssistantError(
                     translation_domain=DOMAIN,
@@ -2830,7 +2835,12 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         ) from cause
 
     def _rotation_outage_excused(self) -> bool:
-        """Whether the last failed re-fetch was the network, within the grace period of its run."""
+        """Whether the last failed re-fetch was the network, within the grace period of its run.
+
+        Moves the run's clock: the first unreachable fetch starts it and a refusal ends it. Only the
+        poll calls this, so the clock has one owner. A command's re-key asks
+        `_outage_grace_holds`, which reads the clock without moving it.
+        """
         if not self._refresh_unreachable:
             self._outage_since = None
             return False
@@ -2838,6 +2848,38 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if self._outage_since is None:
             self._outage_since = now
         return now - self._outage_since < ROTATION_OUTAGE_GRACE
+
+    def _outage_grace_holds(self) -> bool:
+        """`_rotation_outage_excused`, read-only. For a command whose re-key just failed.
+
+        A command must not move the clock. A refusal there would end the run, and the next
+        unreachable poll would start a fresh grace period while the repair is already showing.
+        """
+        if not self._refresh_unreachable:
+            return False
+        since = self._outage_since
+        return since is None or self.hass.loop.time() - since < ROTATION_OUTAGE_GRACE
+
+    @property
+    def _outage_since(self) -> float | None:
+        """When this entry's current run of unreachable key re-fetches began (loop time).
+
+        Kept in ``hass.data`` per entry, not on the coordinator. A rotation found by the FIRST
+        refresh fails setup, and Home Assistant retries setup with a NEW coordinator. A clock kept
+        on the coordinator restarted on every retry, so the grace period never ran out: a lasting
+        DNS or firewall block left the entry retrying setup indefinitely, with no repair and no
+        reauth. Cleared by a fetched key, a refusal, or any decoded read (a stale key cannot
+        decrypt one), so a reauth or a re-added key ends the run too.
+        """
+        return self.hass.data.get(_OUTAGE_CLOCKS, {}).get(self.config_entry.entry_id)
+
+    @_outage_since.setter
+    def _outage_since(self, since: float | None) -> None:
+        clocks = self.hass.data.setdefault(_OUTAGE_CLOCKS, {})
+        if since is None:
+            clocks.pop(self.config_entry.entry_id, None)
+        else:
+            clocks[self.config_entry.entry_id] = since
 
     def _issue_id(self, key: str) -> str:
         """A repair-issue id for this appliance, keyed on the config ENTRY, not the device id.

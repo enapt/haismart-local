@@ -6,7 +6,8 @@ entity blanked after a write, a hold that never reset, a reauth demanded for a n
 from __future__ import annotations
 
 import asyncio
-from unittest.mock import patch
+from datetime import timedelta
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from conftest import make_status_frame
@@ -14,10 +15,11 @@ from haismart_extractor import GatewayConnectionError, GatewayError, LocalKey
 from haismart_extractor.cloud import CloudConnectionError
 from haismart_hrdp import LocalKeyRotated
 from homeassistant.components.water_heater import DOMAIN as WATER_HEATER_DOMAIN
-from homeassistant.config_entries import SOURCE_REAUTH
+from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
 from homeassistant.const import ATTR_ENTITY_ID, ATTR_TEMPERATURE
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.update_coordinator import UpdateFailed
 from test_init import _entry, _setup
 from test_water_heater import (
@@ -31,11 +33,14 @@ from custom_components.haismart import discovery
 from custom_components.haismart.const import (
     CONF_LOCALKEY_VERSION,
     DOMAIN,
+    ISSUE_KEY_REFRESH_FAILED,
+    ISSUE_STALE_LOCALKEY,
     ROTATION_OUTAGE_GRACE,
 )
 
 GATEWAY = "custom_components.haismart.coordinator.get_localkey_via_gateway"
 REFRESH = "custom_components.haismart.coordinator.HaierCloud.refresh_token"
+SEND = "custom_components.haismart.coordinator.async_send_op"
 
 
 def _gateway_entry(**extra):
@@ -258,3 +263,73 @@ async def test_a_slow_rules_fetch_does_not_hold_up_setup(hass: HomeAssistant, mo
     ):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
+
+
+async def test_the_outage_clock_outlives_a_setup_retry(
+    hass: HomeAssistant, mock_uss, freezer
+) -> None:
+    """A rotation found by the FIRST refresh fails setup, and Home Assistant retries setup with a
+    new coordinator. A grace clock kept on the coordinator restarted with each one, so a lasting
+    DNS or firewall block retried setup indefinitely and never reached the repair or the reauth."""
+    entry = _gateway_entry()
+    entry.add_to_hass(hass)
+    mock_uss.read.side_effect = LocalKeyRotated(device_version=5, held_version=4)
+    with patch(GATEWAY, side_effect=OSError("network unreachable")):
+        assert not await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        assert entry.state is ConfigEntryState.SETUP_RETRY
+        assert not hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+
+        freezer.tick(timedelta(seconds=ROTATION_OUTAGE_GRACE + 1))
+        await hass.config_entries.async_reload(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.SETUP_ERROR
+    flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+    assert [f["context"]["source"] for f in flows] == [SOURCE_REAUTH]
+
+
+async def test_a_refused_command_rekey_leaves_the_outage_clock_alone(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Only the poll moves the clock. A command's refused re-key used to end the run, so the next
+    unreachable poll started a fresh grace period while the repair was already showing."""
+    coordinator = await _setup_entry(hass, _gateway_entry())
+    since = hass.loop.time() - 60
+    coordinator._outage_since = since
+    with (
+        patch(SEND, new=AsyncMock(side_effect=LocalKeyRotated(device_version=5, held_version=4))),
+        patch(GATEWAY, side_effect=GatewayError("CONNACK rc=4")),
+        pytest.raises(HomeAssistantError),
+    ):
+        await coordinator.async_send_control({"onOffStatus": 1})
+    assert coordinator._outage_since == since
+
+
+async def test_a_command_during_an_outage_reads_the_polls_clock(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Past the grace period the poll has already escalated; a command must not hide the repair."""
+    coordinator = await _setup_entry(hass, _gateway_entry())
+    coordinator._outage_since = hass.loop.time() - ROTATION_OUTAGE_GRACE - 1
+    with (
+        patch(SEND, new=AsyncMock(side_effect=LocalKeyRotated(device_version=5, held_version=4))),
+        patch(GATEWAY, side_effect=OSError("network unreachable")),
+        pytest.raises(HomeAssistantError),
+    ):
+        await coordinator.async_send_control({"onOffStatus": 1})
+    issues = ir.async_get(hass)
+    assert any(
+        issues.async_get_issue(DOMAIN, coordinator._issue_id(key))
+        for key in (ISSUE_STALE_LOCALKEY, ISSUE_KEY_REFRESH_FAILED)
+    )
+
+
+async def test_a_decoded_read_ends_the_outage_run(hass: HomeAssistant, mock_uss) -> None:
+    """A stale key cannot decrypt a report, so a decoded one means no rotation is unhealed. Ends a
+    run left behind by an escalation, so a later rotation starts with its own grace period."""
+    coordinator = await _setup_entry(hass, _gateway_entry())
+    coordinator._outage_since = hass.loop.time() - ROTATION_OUTAGE_GRACE - 1
+    await coordinator.async_refresh()
+    assert coordinator.last_update_success
+    assert coordinator._outage_since is None

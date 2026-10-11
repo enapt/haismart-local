@@ -28,8 +28,10 @@ _LOGGER = logging.getLogger(__name__)
 
 BROADCAST_TIMEOUT = 3.0
 #: Bound on an ARP sweep. It runs inline in a failed poll (and on a form someone is waiting on), so
-#: a sweep that hangs must count as finding nothing rather than stall the cycle behind it.
-ARP_TIMEOUT = 5.0
+#: a sweep that hangs must count as finding nothing rather than stall the cycle behind it. Sized to
+#: let a healthy sweep finish: aiodiscover reverse-resolves every address on the subnet, 64 at a
+#: time, waiting up to 3 s per batch, so a /24 behind a slow resolver takes about 12 s.
+ARP_TIMEOUT = 15.0
 
 
 async def async_resolve_host_arp(device_id: str) -> str | None:

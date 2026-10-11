@@ -38,3 +38,15 @@ def test_single_word_fields_read_as_before() -> None:
 
 def test_a_field_past_the_end_of_the_payload_is_none() -> None:
     assert read_bigdata_field(_field(43, "expansionValveOpenDegree"), b"\x00" * 84) is None
+
+
+def test_the_generated_read_agrees_with_the_decoders_on_every_published_field() -> None:
+    """`BigdataField.read` is generated, and a one-word read there was a trap for the next caller:
+    it kept the low half of the 32-bit counter. Both reads agree on every field of every span, on
+    a payload where every word is distinct and non-zero (the decoder withholds a zero counter)."""
+    for span, fields in BIGDATA_MAPS.items():
+        payload = _payload(span, {w: (0x0100 * w + 0x11 * w) & 0xFFFF for w in range(1, span + 1)})
+        for field in fields:
+            assert field.read(payload) == read_bigdata_field(field, payload), (span, field.name)
+    counter = _field(43, "totalElectricityUsed")
+    assert counter.read(_payload(43, {34: 0x0001, 35: 0x0002})) == 0x0001_0002

@@ -17,6 +17,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 
+from .device_model import read_field
+
 
 @dataclass(frozen=True)
 class BigdataField:
@@ -31,11 +33,15 @@ class BigdataField:
     unit: str | None
 
     def read(self, payload: bytes) -> int | float | None:
-        """The value at this position in a telemetry payload, or None if it lies past the end."""
-        off = 2 * (self.word - 1)
-        if off + 2 > len(payload):
+        """The value at this position in a telemetry payload, or None if it lies past the end.
+
+        A field wider than its word takes its high half from the words BEFORE it, the convention
+        the published maps are written in (`device_model.read_field`). `totalElectricityUsed` is
+        32 bits: its high half is the word before `word`.
+        """
+        raw = read_field(payload, self.word, self.bit, self.length, base=0)
+        if raw is None:
             return None
-        raw = (int.from_bytes(payload[off:off + 2], "big") >> self.bit) & ((1 << self.length) - 1)
         value = raw * self.k + self.c
         return round(value, 1) if isinstance(self.k, float) and self.k != 1.0 else int(value)
 

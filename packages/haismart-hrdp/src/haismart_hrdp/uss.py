@@ -1441,10 +1441,10 @@ _BIGDATA_COUNTERS = frozenset({"totalElectricityUsed"})
 def read_bigdata_field(field: BigdataField, payload: bytes) -> int | float | None:
     """``field``'s value in a telemetry payload, or None if it lies past the end or is absent.
 
-    Read here rather than by the generated map's own `BigdataField.read`, which takes one word: a
-    field wider than its word takes its high half from the words BEFORE it (the `WireField`
-    convention), so that kept only the low 16 bits of the 32-bit energy counter -- a total that
-    wrapped every 65.5 kWh. Kept out of `bigdata_map.py` because that file is regenerated.
+    The same multi-word read as `BigdataField.read` (a field wider than its word takes its high
+    half from the words BEFORE it, the `WireField` convention), plus the counter rule: a cumulative
+    counter reading zero is unavailable, not zero. Kept out of `bigdata_map.py` because that file
+    is generated.
     """
     raw = read_field(payload, field.word, field.bit, field.length, base=0)
     if raw is None or (raw == 0 and field.name in _BIGDATA_COUNTERS):

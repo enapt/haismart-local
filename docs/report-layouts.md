@@ -51,8 +51,8 @@ Three limits, all deliberate:
   family gives to a different attribute. A product publishing no list gets no frame-path control —
   though that does not mean read-only, because a class with per-attribute commands is
   commanded without a frame at all.
-- **Core readings only.** Power, setpoint, room and outdoor temperature, mode, fan, vertical swing,
-  fault code and who last changed the unit. The further attributes a device declares stay unplaced
+- **Core readings only.** Power, setpoint, room and outdoor temperature, heat capability, mode, fan,
+  vertical and horizontal swing, fault code and who last changed the unit. The further attributes a device declares stay unplaced
   until the offset has been checked field by field against a real report.
 - **It refuses rather than guesses.** A candidate that "fits" only because it read past the end of a
   shorter report — every field absent, nothing implausible because nothing is there — is rejected
@@ -136,7 +136,7 @@ the number of inserted words, and where they begin.
 |---|---|---|---|---|
 | 109 / 121 / 125 / 127 B | **classic** | `°C − 16` @ w1.b8 | indoor w6.b8, outdoor w7.b8 | ✅ read + control |
 | 109 B (window units) | classic map, resolved as `related-19` | as above | indoor w6.b8; **no outdoor probe** | ✅ read + control |
-| 117 B | **compact-12** | whole °C @ w12 | indoor w1; w2 low byte is the outdoor-UNIT temp (hot, ~60 °C cooling; not ambient) — diagnostics only | ✅ read + control |
+| 117 B | **compact-12** | `°C − 16` @ w12 (whole word) | indoor w1; w2 low byte is the outdoor-UNIT temp (hot, ~60 °C cooling; not ambient) — diagnostics only | ✅ read + control |
 | 165 / 175 B | **extended-36** | `°C − 16` @ w20.b8 | indoor w25.b8, outdoor w26.b8 | ✅ read + control |
 | 209 B | **extended-46** | **half-degrees** @ w20.b8 | indoor w35.b8, outdoor w36.b8 | ✅ read + control (no left-right vane) |
 | 111 B | **japan-wall** (two Model IDs) | **half-degrees** @ w1.b8 | indoor w8.b8, outdoor w9.b8, humidity w8.b0 | ✅ read + control (left-right vane: fixed or sweeping only) |
@@ -155,13 +155,14 @@ a confident but invented value.
 | heat capability | ✅ | — | ✅ | ✅ | — |
 | fault code + last-changed-by | ✅ | — | ✅ | ✅ | last-changed-by only |
 | fault bitmap | ✅ (its own frame, family-independent) | ✅ | ✅ | ✅ | ✅ |
-| self-clean | ✅ | ❌ | ✅ | ❌ | ❌ |
-| vane positions (both axes) | ✅ | ❌ | ✅ | ✅ up-down only | up-down set; left-right read only |
+| self-clean | ✅ | ✅ (start-only command, where declared) | ✅ | ❌ | ❌ |
+| vane positions (both axes) | ✅ | ❌ | ✅ | ❌ (up-down sweep on/off only) | up-down set; left-right read only |
 | live power, from the report itself | ❌ | ⚠️ (decoded at w3, diagnostics only — unit unproven, so no sensor) | ✅ (175 B only) | ❌ | ❌ |
-| cumulative energy total | ✅ (where populated — the reference units never fill it) | ❌ | ✅ (where populated) | ❌ (works, unit unsettled) | ❌ (published, never seen populated) |
+| cumulative energy total | ✅ (where populated — the reference units never fill it) | ❌ | ✅ (where populated) | ✅ (where populated) | ❌ (published, never seen populated) |
 
-Heat capability, the fault code and last-changed-by all sit in the sensor block, one and two words
-past the outdoor reading, so they follow wherever that lands. The fault bitmap arrives in a separate
+Heat capability, the fault code and last-changed-by all sit in the sensor block: heat capability in
+the byte after the outdoor reading, the fault code and last-changed-by in the word after it, so they
+follow wherever that lands. The fault bitmap arrives in a separate
 frame and needs no layout at all.
 
 **Self-clean** comes from the flag word, four words into the control block. That holds on classic and
@@ -172,20 +173,17 @@ there and the self-clean bit clear on units that were not cleaning.
 shipped for that family on the strength of the command being shared across layouts, which is exactly
 the kind of inference the write gate says not to trust. Its owner pressed the button and the unit
 started a cycle with `CL` on its panel. So a write confirmed on one family does carry to another
-unmodified — the first direct evidence for that, which until then rested on the published write
-frame alone. It does not license skipping the check: the gate exists because a field can decode,
+unmodified, where the published write frame alone would only suggest it. It does not license skipping the check: the gate exists because a field can decode,
 be declared, validate, and still be discarded by the hardware.
 
-It is **not offered** on the other two, for different reasons.
-
 On **compact-12** the shared map does not carry over — its packing differs throughout — but the
-family's own published description places self-clean, in word 9 alongside its other toggles, and that
-whole description is decoded in full. Self-clean
-is read from word 9 **into diagnostics, not the self-clean sensor**: every capture reads the bit 0, so
-there is no positive confirmation to promote it on, and a report taken while a cycle runs would both
-confirm the bit and license the entity in one step. (Two other newly-decoded registers — a live
-input-power figure at w3 and the outdoor byte at w2 — are held back the same way, on unit/meaning
-rather than the bit; see `FUTURE_WORK.md` item 31.)
+family's own published description places self-clean in word 9 alongside its other toggles, and the
+family has a start-only self-clean command of its own (`4d26`). It is offered where the unit declares
+the function, and word 9 bit 2 feeds the running sensor. (Two other registers in that description —
+a live input-power figure at w3 and the outdoor byte at w2 — are held back on unit and meaning; see
+`FUTURE_WORK.md` item 31.)
+
+It is **not offered** on extended-46.
 
 On **extended-46** the flag has two candidate homes and the captures cannot choose between them.
 That family confirms w20/w21/w22 unmoved, w35/w36 at +10, and a vane at w25 with fan speed at
@@ -206,7 +204,8 @@ not — need a family that packs the vane as the multi-bit code it is. Classic a
 compact-12 collapses each vane to a single bit, so a position sent there would arrive as "sweep".
 Extended-46 packs its up-down vane as a code too, and reads and writes it — at the appliance's own
 position in the appended part of its settings list, not the shared slot a twin-tower cabinet keeps
-for its left tower (see the extended-46 section below). Its **left-right** vane is still not written:
+for its left tower (see the extended-46 section below) — but offers no position select for it, only
+the climate card's sweep on/off. Its **left-right** vane is still not written:
 nothing in its report reads one back, and a control that cannot be read back is not offered. The
 positions themselves come from the device's own model, so even on a family that can place them the
 entity appears only for a unit that publishes more than the two ends.
@@ -223,7 +222,7 @@ family has always used for auto. Those readings are kept beside the table and ch
 because taking a table from a generated source is safe only while the source still agrees with an
 observation.
 
-The left-right axis needs no table: its model code is its wire value.
+The left-right axis needs no table (except on japan-wall, below): its model code is its wire value.
 
 ### classic
 
@@ -241,9 +240,9 @@ reads the room temperature as a setpoint.
 
 The classic map **displaced 19 words**. Words 1..19 are a voice/media module (volume, playback,
 dialect); the climate block starts at word 20. This is the family where a classic decode is not just
-incomplete but actively wrong: byte 92 is the module's `volume`, typically 100, which reads as a
-48 °C setpoint, and the classic power bit lands in an unrelated word so the unit looks permanently
-off.
+incomplete but actively wrong: byte 92 is the high byte of the media block's first word, which reads
+as a 48 °C setpoint (the module's `volume` is the byte after it), and the classic power bit lands in
+an unrelated word so the unit looks permanently off.
 
 Two report lengths belong to this family. **175 B is the same map with five words on the end** — no
 displacement, every climate field at the same word — carrying a cumulative counter at words 34+35
@@ -282,26 +281,21 @@ the Energy dashboard is worse than no sensor at all.
 
 Extended-36 with a further **ten-word block inserted at word 25**. Words 1..24 are exactly where
 extended-36 puts them; everything from extended-36's word 25 upward moves ten words later. The
-inserted block was taken for a dual-airflow cabinet's second, per-tower set of fan and vane
-attributes — these units do describe one — and a single-flow unit leaves most of it at zero.
+inserted block holds a dual-airflow cabinet's per-tower fan and vane attributes in the published
+description, and a single-flow unit leaves most of it at zero.
 
-⚠️ **That reading is wrong for the two words we read from it.** Word 25 and word 26 carry the
-**appliance's** vane and fan, not a tower's: see the fan entry below.
+⚠️ **Except the two words read from it:** word 25 and word 26 carry the **appliance's** vane and
+fan, not a tower's: see the fan entry below.
 
 Three things about it differ in kind rather than position, and each is settled by values the reports
 carry directly:
 
 - the **setpoint counts half degrees from zero** (wire 44 = 22 °C), not whole degrees offset by 16;
 - the vertical vane answers at word 25, inside the inserted block, with the classic vane encoding
-  (the "swinging" flag is bit 3 of the nibble);
-- the cumulative **energy register at words 44+45 works** on this family — a 32-bit counter that
-  reads a real total, where the classic family reports zero. It is the same published attribute
-  that counts watt-hours on extended-36, but it is **not** published here: this is the one family
-  already caught departing from the published map in three places, and the counter's position is
-  itself derived from the inserted block, so inheriting an unverified unit into someone's energy
-  history is not warranted. One reading off that owner's app against a capture settles it;
-- ★ **fan speed is placed at word 26 bit 9**, and this has been decided three times, so the
-  evidence on every side is in the tests. Word 21 bit 8, where every other family keeps it, reads a
+  (the vane is sweeping only on its auto codes, bits 2 and 3 both set);
+- the cumulative **energy register at words 44+45 works** on this family and is published as the
+  Energy sensor, in watt-hours: two readings of one unit five days apart rule out any other unit;
+- ★ **fan speed is placed at word 26 bit 9**, and the evidence on every side is in the tests. Word 21 bit 8, where every other family keeps it, reads a
   **constant 6** in all seven captures held from two different appliances — including between one
   owner's stated *high* and stated *low*. Word 26 bit 9 reads 1 on high, 3 on low, 0 with the unit
   off, and 1 where a fresh cloud record for that same report says `windSpeed` is 1. It is decoded as
@@ -376,19 +370,17 @@ cannot read the appliance's value when the towers are published beside it as 3 /
 ⚠️ **Two traps to know before you use a diagnostics file as evidence**, because both look like clean
 disagreements:
 
-* **A diagnostics `digital_model` is fetched once, at onboarding, and never refreshed.** Compare it
-  against a report taken later and it will disagree — its setpoint may say 22.0 where the report
-  says 24.0 — and that disagreement is staleness, not a decode fault. Check the two halves agree on
-  something you *can* verify before trusting either.
+* **A diagnostics `digital_model.reported_values` is the model stored at onboarding, and never
+  refreshed.** Compare it against a report taken later and it will disagree — its setpoint may say
+  22.0 where the report says 24.0 — and that disagreement is staleness, not a decode fault. Compare
+  against `digital_model.reported_values_now`, fetched while the file is written.
 * **"Agrees with 53 attributes and disagrees with none" can be a check that cannot fail.**
   `model_declared_fields` holds only attributes no field map reads (the voice module, probes these
   units lack, `tempUnit`), so none of them can change — agreement there is guaranteed regardless.
 
-⚠️ **`write_base_word + write_word - 1` is a heuristic, not a law.** On this family it holds for
-words 1..3 as *words* — setpoint, mode and the entire boolean block — and fails for exactly two
-bit-fields inside the first two. Which way that failure runs is unsettled: the appliance may ignore
-those bits in the group-set, or accept them and report the result only in the inserted block. Only a
-write observes it, and the readback makes that something an owner can check.
+⚠️ **`write_base_word + write_word − 1` holds on this family for every field it writes.** The shared
+vane and fan bits in words 1–2 are the left tower's and are refused; the appliance's own are written
+at group-set words 6–7 and read back at report words 25–26 (above).
 
 `windDirectionHorizontal` stays unwritten: its position is published like the others, but nothing in
 this family's report reads it back. See item 28 in `FUTURE_WORK.md`.
@@ -504,9 +496,9 @@ offset; a unit whose report agrees with neither, or with both, stays on the part
 matters is that nothing is refused for want of *published* data — the report gets its
 chance in every case where the appliance names itself.
 
-★ The 187 central-air cabinets are worth a note, because they are easy to write off. First as
-out of scope; then as read-only, on the reasoning that control needs a frame they do not publish.
-Both are withdrawn. They are cabinets on two Model IDs, the shared map places **thirteen of their
+★ The 187 central-air cabinets are worth a note, because they are easy to write off: as out of
+scope, or as read-only on the reasoning that control needs a frame they do not publish. Neither
+holds. They are cabinets on two Model IDs, the shared map places **thirteen of their
 seventeen** attributes, their displacement is settled and corroborated against real reports, and they
 are commanded a setting at a time. They are ordinary appliances that answer on the LAN
 like any other; it is the *vendor's own app* that drives them through the cloud, for want of a byte
@@ -520,7 +512,7 @@ family, the word from which its fields are displaced, how far, and which setpoin
 with the decoded values for every report the integration kept.
 
 It works because every layout met so far has been a known family displaced from some word onward, so
-the search is over `(family, pivot, shift, setpoint encoding)`. Two things keep it honest:
+the search is over `(family, pivot, shift, setpoint encoding)`. Three things keep it honest:
 
 - **Several reports, in different states.** A status report is mostly zeros, so a map whose fields
   all land on empty words "decodes" perfectly into a cold, powered-off unit at its minimum setpoint.
@@ -601,7 +593,7 @@ They were each worked out separately, from captured reports, and they turn out t
 published attribute map at different displacements. `haismart_hrdp.canonical_map` carries it: 85
 attributes with their word, bit, width and scaling, agreed on by the bundled air-conditioner
 descriptions — same widths, same bits, same order, one whole-word displacement each. (Across the
-full published catalogue, fourteen families keep a *different* attribute at a handful of the shared
+full published catalogue, eleven families keep a *different* attribute at a handful of the shared
 positions — the twin-tower vane/fan and the sterilization-for-self-clean swap — which is why those
 specific controls are refused per family rather than assumed universal. A family can also move a
 setting under its *own name*: every twin-tower family lists the appliance's vane, fan and horizontal
@@ -618,13 +610,11 @@ because they are not this map: they publish one of their own, the `japan-wall` f
 | compact-12 | genuinely different — one attribute per whole word, not this lineage |
 | japan-wall | genuinely different — its own published frame, four settable words, sensors at words 8–9 |
 
-Two of them are *built* from it — the classic probe candidate and extended-36 read their
-positions and scaling straight out of the map, and only state what the map does not: how each field
-should be decoded (that a temperature sensor's zero means "no probe", that a vane nibble is a
-position code, which table names an enum). Extended-46 keeps an explicit table on purpose: its vane
-sits five words past where the map puts it, its setpoint counts half degrees, and its fan speed
-answers from the inserted block, so a displacement plus three overrides would read as a rule with
-more exceptions than rule. A test asserts the correspondence for all of them field by field, so a
+Three of them are *built* from it — the classic probe candidate, extended-36 and extended-46 read
+their positions and scaling straight out of the map, and only state what the map does not: how each
+field should be decoded (that a temperature sensor's zero means "no probe", that a vane nibble is a
+position code, which table names an enum). Extended-46 adds its ten-word insert and three overrides:
+its vane and fan answer from the inserted block, and its setpoint counts half degrees. A test asserts the correspondence for all of them field by field, so a
 change that drifts from it fails rather than diverging quietly. The practical consequence is for **new** models: a layout is the canonical map at
 some displacement, so what has to be discovered is one integer rather than a whole field table.
 
@@ -664,7 +654,8 @@ worse than no value:
   published 1 — is one of the two, behaving exactly as its entry describes.
 
 The readings land in a diagnostics download (`model_declared_fields`), beside the device's own
-published values (`digital_model.reported_values`) so the two can be compared directly. Most are not
+published values (`digital_model.reported_values_now`, fetched while the file is written) so the
+two can be compared directly. Most are not
 entities: their placement rests on the published map rather than on a capture apiece, and a wrong
 value in a diagnostics file costs nothing where the same value on a dashboard is a fault report.
 Two groups are the exception, because they carry their own guards rather than resting on placement
@@ -686,13 +677,13 @@ per report length as well, pinned by a test to the layout table's own confirmed 
 
 ## Why the registry still exists
 
-It is a fair question whether the search could simply replace the hand-written families. Three of the
-four *are* the same map displaced — classic → extended-36 is +19 words from word 1, extended-36 →
+It is a fair question whether the search could simply replace the hand-written families. Three of
+them *are* the same map displaced — classic → extended-36 is +19 words from word 1, extended-36 →
 extended-46 is +10 from word 25, and the reference hardware is the classic map +1 from word 5 — so
 the family list is partly an artefact of writing each one out separately. Expressing a family as
 `(base map, displacements, setpoint encoding)` instead of a fresh field table would collapse most of
-that duplication, and is the obvious next simplification. Only compact-12 is a genuinely different
-packing.
+that duplication, and is the obvious next simplification. Only compact-12 and japan-wall are
+genuinely different packings.
 
 Choosing a layout at runtime is a different proposition, and the registry stays for reasons that do
 not go away:

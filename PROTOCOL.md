@@ -13,8 +13,8 @@ worked out independently by [@enapt](https://github.com/enapt) for interoperabil
 own. The attribute layouts inside the frames are a different matter: the manufacturer publishes, per
 product type, a device configuration that places every attribute at a word, bit and width in the
 report and names its single-setting command, and the maps here are checked against it (see *What the
-device's own model supplies*). The document mostly records what the code already encodes, plus what
-has been learned since.
+device's own model supplies*). The document records what the code encodes, and the measurements
+behind it.
 
 ## Layers
 
@@ -155,8 +155,9 @@ preset describes but a plain split AC leaves inert, and the climate attributes f
 `targetTemperature` at word 20 bit 8, `operationMode` at word 21 bit 13, `windSpeed` at word 21
 bit 8, the boolean block at word 22, `windDirectionHorizontal` at word 23, `indoorTemperature` at
 word 25 bit 8 and `outdoorTemperature` at word 26 bit 8. That displacement is exactly why the classic
-*partial* decode misfires on this model rather than simply falling short: byte 92 is the media
-block's `volume`, which reads as a 48 °C setpoint.
+*partial* decode misfires on this model rather than simply falling short: byte 92 is the high byte of
+the media block's first word, which reads as a 48 °C setpoint (the module's `volume` is the byte
+after it).
 
 Its control path is the classic `6001` group-set with the classic five-word bit map — the op is
 unchanged; only the *baseline* is sliced from report word 20 instead of word 1. That displacement is
@@ -237,7 +238,7 @@ read from its tail, since its block need not be there.
 
 Some families publish their block at **fixed word positions** instead, and the manufacturer's own
 telemetry map for those is carried and used: a reply whose payload is 20, 21, 23 or 43 words long
-is decoded from that published map (power sits at word 10, 15 or 37 depending on the family)
+is decoded from that published map (power sits at word 10, 15, 17 or 37 depending on the family)
 rather than from the table above.
 
 The actuator word packs six two-bit states: compressor at bit 0, indoor fan at 2, reversing valve at
@@ -280,11 +281,12 @@ Two more things to know before relying on these:
 Not every unit answers the query. One that does not simply refuses this one frame — with a short
 reply carrying no data — and still sends normal status, so it is safe to ask unconditionally. The
 integration tries both forms, and concludes a unit does not answer only after three consecutive
-cycles that carried status but no extended report, so a single dropped reply is never held against
-it. A unit that answers with a `7d01` frame of a size no map describes is kept polled: the frame
+cycles in each form that carried status but no extended report, so a single dropped reply is never
+held against it. A unit that answers with a `7d01` frame of a size no map describes is kept polled: the frame
 reaches a diagnostics download, which is what adding its map needs.
 
-A session can therefore return several report kinds sharing the same container: status (`6d01`),
+A session can therefore return several report kinds sharing the same container: status (`6d01`,
+or `6d5f` in reply to a group set),
 the fault bitmap (`0f5a`, 101 bytes), extended status (`7d01`), a changed-parameters report (`6c01`,
 which carries no positional status) and, on a control session, a refusal (frame type `03`, see
 *Refusals*). **Tell them apart by the command word and frame type, not by length or arrival order** — the fault frame is long enough to pass a status
@@ -401,13 +403,14 @@ catalogued and cannot disagree with itself.
 
 Writes are a **group-set**: the whole word block is sent at once, so it must be seeded from the AC's
 own current status or unrelated settings get clobbered. The library seeds from the status the AC
-pushes on the op's own connection, so the baseline is always live.
+pushes on the op's own connection, falling back to the last polled report if none arrives.
 
-The op's five words are the report's own control block — word for word and bit for bit, ending where
+The op's words (five on the 125-byte classic report, six on the 127-byte one) are the report's own
+control block — word for word and bit for bit, ending where
 the sensor readings begin, since a thermometer cannot be written to. A device model publishes the
 same layout and names **39** fields in it, far more than the table below. The table is the core
 that was established field by field on hardware, and it is the allowlist of the classic encoder.
-The other controls the integration offers on this frame — self-clean, fresh air, electric heating,
+The other controls the integration offers on this frame — fresh air, electric heating,
 ambient light, energy saving, mould-proof, dry-out, heatstroke prevention, presence-based airflow —
 are written at the positions the published frame gives them, and offered
 only where the product declares the attribute, does not mark it as hardware the unit lacks, the
@@ -431,6 +434,7 @@ hardware, which is exactly why the panel gate exists.
 | `screenDisplayStatus` | 3 | 9 | 1 |
 | `windDirectionHorizontal` | 4 | 0 | 3 |
 | `ecoMode` | 4 | 3 | 3 |
+| `selfCleaningStatus` | 5 | 4 | 1 |
 
 STD operation-mode codes are drawn from a Haier-wide space, not allocated per model — the tell is the
 gaps: a cooling-only unit lists 0/1/2 then jumps to 6, skipping 3/4/5. Known codes: `0` auto, `1`
@@ -522,8 +526,8 @@ The manufacturer documents two acknowledgements, and they differ by *which* writ
 
 | you send | success | refusal |
 |---|---|---|
-| `01` single command (`5Dxx`, one setting) | **`02`** — a full status report | `03` + reason code |
-| `60` group command (`grSetDAC`, many settings) | **`05`** — a bare ACK, with the new status pushed separately, unprompted | `03` + reason code |
+| frame type `01` — a single setting (`5Dxx`) or the group set (`6001`, grSetDAC) | **`02`** — a full status report | `03` + reason code |
+| frame type `60` — the documented group-command frame, not sent here | **`05`** — a bare ACK, with the new status pushed separately, unprompted | `03` + reason code |
 
 A unit is also required to answer a group command within 50 ms.
 
@@ -531,8 +535,8 @@ Over this LAN transport there is a **third outcome the manufacturer's diagrams c
 silence**. On the appliance's own serial link every frame type is handled, so only accept and refuse
 exist there; across `:56800` the module relays some frame types and drops others without a word.
 Silence therefore means *the frame type is not carried here* — a different thing from `03`, which
-means the frame was understood and its subcommand declined. Measured on hardware, the relayed set is
-`01` and `73`; `61`, `70`, `7c`, `fc` and `69` are dropped.
+means the frame was understood and its subcommand declined. Measured on hardware, `01`, `60` and
+`73` are relayed (answered or refused); `61`, `70`, `7c`, `fc` and `69` are dropped.
 
 Because of that split, the integration treats **a usable status report as the acceptance signal**
 rather than looking for a particular acknowledgement byte, and consults the refusal frame only when
@@ -547,12 +551,13 @@ with the refusal.
 
 ## The families are one map
 
-Every air conditioner packs the same attributes into the same words, at the same bits, with the same
+Nearly every air conditioner — all but the compact-12 and japan-wall families — packs the same
+attributes into the same words, at the same bits, with the same
 widths and scaling. What differs is mainly **where the block starts**. The bundled device
 descriptions agree on it completely — same widths, same bits, same order, one whole-word displacement
 each — and
 [`canonical_map.py`](packages/haismart-hrdp/src/haismart_hrdp/canonical_map.py) carries that map,
-85 attributes of it. Across the full published catalogue there is one further wrinkle: **fourteen
+85 attributes of it. Across the full published catalogue there is one further wrinkle: **eleven
 families keep a *different* attribute at a handful of the shared positions** — a
 twin-tower cabinet's left vane and fan where a single-flow unit's own sit, sterilization where
 self-clean sits. Every such departure is unanimous within its family, and the integration refuses
@@ -564,6 +569,7 @@ exactly those controls for exactly those families rather than commanding the wro
 | extended-36 | the map exactly — its "media block" is the part classic units do not carry |
 | extended-46 | the map with a ten-word block inserted at word 25 |
 | compact-12 | genuinely different: one attribute per whole word |
+| japan-wall | genuinely different: its own published frame, four settable words, sensors at words 8–9 |
 | central cabinet (`0d12`) | the map 19 words earlier with a four-word block inserted at word 25 — keyed on the device class, since an unrelated layout shares its 133-byte length |
 
 So a **new** model's layout is this map at some displacement, which makes the unknown one integer
@@ -596,14 +602,15 @@ than a missing one, since nothing can show whether the setting took.
 A unit declares three or four times the attributes any family map carries — 42 against 14 on the
 reference units — and every one of them sits where the map already states. Those are read too, from
 the map at the family's displacement: membership comes from the device's own model, position from
-the map, and the two are arrived at independently. They appear in a diagnostics download rather than
-as entities, since their placement rests on the map rather than on a capture apiece.
+the map, and the two are arrived at independently. Most appear only in a diagnostics download; the
+declared air-quality and humidity probes and the read-only status readings become sensors (see
+[`docs/report-layouts.md`](docs/report-layouts.md)).
 
 Two limits, both deliberate:
 
-* **Only where the displacement is confirmed.** Extended-46 has no single whole-word offset — six of
-  its nine mapped positions disagree with any — so it declines rather than placing three dozen
-  attributes plausibly and wrongly. Compact-12 is not this lineage at all.
+* **Only where the displacement is confirmed.** Extended-46 has no single whole-word offset, so it is
+  placed piecewise: the map unmoved below word 25 and ten words later from word 25 up. Compact-12 and
+  japan-wall are not this lineage at all.
 * **A code is read as the device publishes it.** An unscaled number is a bare *code*, and a few
   attributes number themselves one way in their published values and another on the wire. The map
   states which: where the two differ it carries the correspondence, and where they agree it carries
@@ -631,9 +638,11 @@ without an account. For every attribute it gives the word, bit and width at whic
 in the status report, the report command that carries it, and — for a class that writes one
 attribute at a time — the single-setting command number. It is the manufacturer's own byte map.
 
-For air conditioners it is used offline: the shared map, the telemetry maps and the central
-cabinets' parameter register are validated against it, and it is where the display-unit and
-cassette-louvre commands come from, with the results shipping as constants.
+For air conditioners the shared map, the telemetry maps and the central cabinets' parameter register
+are validated against it offline, and it is where the display-unit and cassette-louvre commands come
+from, with the results shipping as constants. Every air-conditioner report is also decoded through it
+at runtime, and a successful decode means a report of an unrecognised length raises no
+unknown-layout repair.
 
 **For every other appliance category it is the decoder itself.** The integration carries the map for
 165 product types across 36 device classes, and a status report from one of those is read at the
@@ -651,7 +660,8 @@ returns the configs published for the caller's own devices and reports success w
 identifier or resource type the request carries, so the response has to be selected from rather than
 trusted to contain one entry. (Asked with the app's own credentials and no user token it answers for
 whichever model number is named, which is how the published description of every product is
-fetched offline; the integration's per-device fetch takes the account route.)
+fetched offline. The integration's per-device fetch takes the account route where the entry has an
+account, and otherwise asks the product-code catalogue, which needs none.)
 The uPlusId is what identifies a device there; the model number is the half whose spelling varies,
 since a sticker may read `HSU-24HFAB/013WUSDC(W)-T3` where the service says `HSU-24HFAB`. A device
 that is not in the listing gets no rules at all, which locks nothing — the safe direction — rather
@@ -677,11 +687,10 @@ A 21-byte header in both directions:
 | `0x11` | 4 | BE32 payload length | **not** validated by the device |
 | `0x15` | n | payload | |
 
-The only command an appliance answers is **`0x6915`** (search) → **`0x684d`** (device info). Two
-other request codes exist in this protocol family — `0x6851` (diagnose) and `0x6853` (biz
-transparent-transmission) — but the appliances here are **silent to both**, at every payload shape
-tried, unicast and broadcast. They appear to address sub-devices behind a gateway (a class of
-hardware this integration does not cover), so they are deliberately not implemented.
+The command this integration sends is **`0x6915`** (search), answered by **`0x684d`** (device
+info). Two other request codes exist in this protocol family — `0x6851` (diagnose) and `0x6853`
+(transparent transmission). The appliances here have answered neither at any payload shape tried;
+neither is implemented, because neither is needed to find an appliance.
 
 The request payload is 56 bytes and the device checks exactly two things in it: the literal `2.0.0`
 at `+0x10` and `UDISCOVERY_SDK` at `+0x18`. Zeroing either gets no reply. The 16-byte client
@@ -700,15 +709,15 @@ identifier before them is not checked.
 |---|---|---|
 | `0x15` | 16 | deviceId (MAC, ASCII, NUL-padded) |
 | `0x25` | 32 | `uPlusId`, **BCD-packed** — hex-encoding reproduces the cloud device list's `wifiType` exactly |
-| `0x45` | 4 | BE32 TLV count |
+| `0x45` | 4 | read as a BE32 TLV count; not one field on every device, so the walk is capped at 32 and stops at a zero type |
 | `0x49` | … | TLV area, records of `type(1)` \| `length(1)` \| `value` |
 | `0xe5` | 16 | the device's own IP, ASCII |
 | `0xf5` | 2 | BE16 uSS control port (`56800`) |
 | `0xfd` | 5 | SDK version |
 | `0x105` | 16 | two 8-byte firmware strings |
-| `0x115` | 16 | protocol tag `UDISCOVERY_UWT` |
+| `0x115` | 32 | protocol tag `UDISCOVERY_UWT`, NUL-padded to the end of the 309-byte datagram |
 
-Two TLV types are known: `0x01` deviceId, and **`0x03` cloud state**. Decode by walking the records,
+Four TLV types are defined; the units here send two: `0x01` deviceId and **`0x03` cloud state**. Decode by walking the records,
 not by fixed offset — the area is a fixed-size region whose populated part varies by device class.
 
 ### Cloud state (TLV `0x03`)
@@ -724,7 +733,7 @@ Three values have been observed, across a full disconnect/reconnect cycle sample
 **The rest of the code space is unknown.** These are module-firmware values and Haier publishes no
 documentation for them, so those three are what has been confirmed — and `1010` is the reason a
 decoder must not assume the complement of "disconnected" means connected: for the first two minutes
-of every outage the code is neither of the two values originally observed.
+of every outage the code is neither `1000` nor `1006`.
 
 Decode defensively as a result: walk the TLVs by type, treat **only** `1000` as connected, and keep
 the raw number in an attribute so an unrecognised code arrives as a bug report instead of being

@@ -71,8 +71,9 @@ names every value in its published models:
 `windDirectionHorizontal` is the same shape: 左右摆位置一 (固定) through 位置七, with **位置八 (自动)**
 the sweep. Families differ in how many of these they publish — between 8 and 12 values.
 
-⇒ ★ **Exactly one value per axis means "sweeping".** Everything else — the fixed stops and the two
-health-airflow modes — is a distinct position the appliance holds. That is why the vane **selects**
+⇒ ★ **Only the automatic codes mean "sweeping"** — the auto and alternate sweeps, and the half-range
+sweeps some families publish. Everything else — the fixed stops and the two health-airflow modes — is
+a distinct position the appliance holds. That is why the vane **selects**
 exist: they are the only control that can reach those states, and they write the same field the
 climate entity's swing control writes.
 
@@ -85,21 +86,21 @@ and prior art shows the axes moving independently throughout.
 
 ## Why naming them mattered
 
-It is not cosmetic. Before these names existed, two different speeds were silently sharing one
-token, and a token is what a write is resolved through:
+It is not cosmetic. Without these names, two different speeds share one token, and a token is what
+a write is resolved through:
 
-- `中高风` (code 7) and `高风` (code 1) both became `high` — on **51 products**;
-- `中低风` (code 8) and `中风` (code 2) both became `medium` — on **31**;
-- `健康除湿` (code 3) and `除湿` (code 2) both became `dry` — on **20**.
+- `中高风` (code 7) and `高风` (code 1) would both be `high` — on **51 products**;
+- `中低风` (code 8) and `中风` (code 2) would both be `medium` — on **31**;
+- `健康除湿` (code 3) and `除湿` (code 2) would both be `dry` — on **20**.
 
-With two codes on one token, the reverse lookup returns whichever the model happened to list first.
-And four further speeds — Boost, Breeze, Silent, Quick — resolved to *nothing*, so a unit switched to
-one of them reported **no fan speed at all**: not a wrong reading, an absent one, which is the harder
-kind to notice.
+With two codes on one token, the reverse lookup returns whichever the model happens to list first.
+And four further speeds — Boost, Breeze, Silent, Quick — would resolve to *nothing*, so a unit
+switched to one of them would report **no fan speed at all**: not a wrong reading, an absent one,
+which is the harder kind to notice.
 
 ## Where the vendor's vocabulary and Home Assistant's do not meet
 
-Home Assistant's `HVACMode` has five members and no room for a vendor variant of one. Two modes are
+Home Assistant's `HVACMode` is a fixed set with no room for a vendor variant of one. Two modes are
 therefore **display-only** — they show as the standard mode they are a variant of, and selecting that
 standard mode writes the plain code, never the variant:
 

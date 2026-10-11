@@ -8,7 +8,7 @@ places, classified by :mod:`haismart_hrdp.entity_spec`.
 ⛔ **Nothing here is speculative.** An attribute becomes an entity only where the device's own
 digital model declares it, and a *control* only where the manufacturer publishes a single-parameter
 write id for it. The appliance remains the only authority on whether that write is accepted — a
-refusal retires the control exactly as it does on the air-conditioner path.
+refusal is raised with the reason the appliance's own model gives, and recorded for diagnostics.
 """
 from __future__ import annotations
 

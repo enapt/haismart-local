@@ -1536,8 +1536,8 @@ def parse_extended_status(data: bytes) -> dict[str, Any]:
         return {}
     payload = data[at + 12:-1]
     if (len(payload) // 2) in BIGDATA_MAPS:
-        # A published family whose engineering block sits at fixed WORD positions (`power` is w10,
-        # w15 or w37 depending on the family) -- decode it from the manufacturer's own map.
+        # A published family whose engineering block sits at fixed WORD positions (`power` is w10, w15,
+        # w17 or w37 depending on the family) -- decode it from the manufacturer's own map.
         return _extended_from_published_map(payload)
 
     # Every non-published family confirmed on hardware appends the block at the END of the frame:

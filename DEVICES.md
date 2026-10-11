@@ -33,11 +33,11 @@ It extends to a class of central cabinets that publishes **no group-set command
 at all** — their firmware does not accept one. Those are commanded a setting at a time instead, with
 power, setpoint, mode, fan speed, health, quiet, boost, both vanes and the display unit offered
 where the unit's own description declares them, and presence-based airflow and the four-way louvres
-on self-checking terms; a change touching several settings simply sends several commands. (A unit
-stays read-only only when its published attribute list disagrees with the shared command layout,
-which is two families.) The capture procedure in
+on self-checking terms; a change touching several settings simply sends several commands. (None of
+the published air conditioners is left read-only: the two families whose list disagrees with the
+shared command layout publish a frame of their own, the japan-wall family.) The capture procedure in
 [`docs/new-model.md`](docs/new-model.md) is what promotes such a layout to a confirmed family and
-unlocks the readings beyond the core climate block. So an absence from this table increasingly means
+unlocks the readings beyond the core climate block. So an absence from this table usually means
 "nobody has told us", not "it will not work".
 
 The integration also ships the published description of **every air conditioner in
@@ -65,12 +65,12 @@ table without anyone here owning one.
 |---|---|---|---|---|
 | `AACRL2E00` | PRO X INV-42/3PH | 125-byte classic | ✅ | `deviceType 0201201d`, OUI `24:E8:CE`. Reverse-cycle wall-mounted split; the reference unit for heat support. |
 | `AAC1UKZ01` | HSU-24VRRA03TF | 127-byte classic | ❌ | `deviceType 0201203a`, OUI `AC:B7:22`. Cooling-only. The original unit this project was written for. |
-| `AAC1UKZ01` | HSU-12HFMF/013WUSDC(W) | 117-byte compact-12 | ✅ | OUI `04:E2:29`. A **different wire family** — all attributes (sensors included) are packed into one word array. Reading and control both confirmed on real hardware. |
+| `AL00MU00V` | HSU-12HFMF/013WUSDC(W) | 117-byte compact-12 | ✅ | OUI `04:E2:29`. A **different wire family** — all attributes (sensors included) are packed into one word array. Reading and control both confirmed on real hardware. |
 | `AAD180E00` | HSU-12KCROC(IN)-R32 | 165-byte extended-36 | ✅ | `deviceType 02012036`. The classic bit map **displaced by 19 words**: the report carries a voice/media block first, so the climate attributes start at word 20. **Confirmed on hardware by the reporter**: reading and full control — temperature, modes, fan speed, health, display light. |
-| `AAC1UKZ01` | HS-25VRB03 | 175-byte extended-36 | ❌ | Module `MK-QTWiFi3.1S`, firmware `e.4.3.00` / `R_6.0.01`, Malaysia. The extended-36 map with five further words of counters on the end. **Confirmed on hardware by the reporter**: reading and full control — power, mode, temperature, fan speed, both swings, no snap-back. Its report carries **live power in watts**, which no other family here reports directly, plus a working **cumulative energy total in watt-hours** — the only unit here with both, so it feeds the Energy dashboard with no helper — and it publishes both vanes' positions. **Self-clean is confirmed on hardware**: the button starts a cycle and the unit's own panel shows `CL`. |
+| `AAD933E00` | HS-25VRB03 | 175-byte extended-36 | ❌ | Module `MK-QTWiFi3.1S`, firmware `e.4.3.00` / `R_6.0.01`, Malaysia. The extended-36 map with five further words of counters on the end. **Confirmed on hardware by the reporter**: reading and full control — power, mode, temperature, fan speed, both swings, no snap-back. Its report carries **live power in watts**, which no other family here reports directly, plus a working **cumulative energy total in watt-hours** — the only unit here with both, so it feeds the Energy dashboard with no helper — and it publishes both vanes' positions. **Self-clean is confirmed on hardware**: the button starts a cycle and the unit's own panel shows `CL`. |
 | `AD0P34E00` | HW-10VCQ33-W | 109-byte window unit | ❌ | A window air conditioner (class `3912`). Its Model ID resembles no published model closely enough to inherit an offset, so its report is tried against every offset in use and picks the classic map for itself; the report is eight words long and carries **no outdoor probe**. Cooling-only, with no fan-only mode and no swing — its model marks the vane as hardware it lacks, and the remote confirms it. Its energy-saving mode is a mode code of its own, reached through the **eco preset** and shown as Cool. **Confirmed on hardware by the reporter**: setpoint and fan speed hold after a write, corroborated by the unit's own report. |
 | `AE2C52Q00` | HCFI-38XTR32F | 133-byte central cabinet | ❌ | `deviceType 0D012006`, OUI `3C:16:40`. A ceiling-suspended cabinet, cooling-only. Its report is the shared map at the classic offset with **four extra words inserted** before the sensors, so the room and outdoor temperatures sit four words further down than elsewhere. It publishes **no group-set command** and its firmware refuses one, so it is commanded a setting at a time: power, setpoint, mode, fan speed, health, quiet, boost, both vane axes and the display's temperature unit — **the owner confirmed both vanes moving on hardware**, and the command numbers are the manufacturer's own, from the device configuration that describes this class byte for byte. Presence-based airflow and the four-way cassette louvres are offered provisionally, where a unit declares them: each checks itself against the unit's own reading on first use and withdraws if the unit refuses it. The module relays the running-status report, so **compressor frequency, the coil and discharge temperatures and the compressor state are live**; power and current are not reported by this three-phase class, and those two entities are removed rather than left reading zero. |
-| `AAC1UKZ01` | HSU-24HFAB/013WUSDC(W)-T3 | 209-byte extended-46 | ✅ | OUI `5C:24:1F`. Extended-36 with a further ten-word block inserted at word 25, and a **half-degree setpoint**. Reading is confirmed against every captured state this project holds, fan speed included — it answers from the inserted block rather than the usual word. Control covers power, mode, temperature, fan speed and the up-down vane. On twin-airflow hardware the shared command's vane and fan bits belong to the **left tower**, so this family commands the appliance's own vane and fan from the appended part of its published settings list instead — the same words the report reads them back from. |
+| `AACVX7E00` | HSU-24HFAB/013WUSDC(W)-T3 | 209-byte extended-46 | ✅ | OUI `5C:24:1F`. Extended-36 with a further ten-word block inserted at word 25, and a **half-degree setpoint**. Reading is confirmed against every captured state this project holds, fan speed included — it answers from the inserted block rather than the usual word. Control covers power, mode, temperature, fan speed and the up-down vane. On twin-airflow hardware the shared command's vane and fan bits belong to the **left tower**, so this family commands the appliance's own vane and fan from the appended part of its published settings list instead — the same words the report reads them back from. |
 
 ## Confirmed working — other appliances
 
@@ -85,7 +85,8 @@ table without anyone here owning one.
 > **"Report" is the status layout, not just a length.** Most models share the *classic* family (the
 > setpoint/mode/fan/power in a leading control-word block, sensors after it); the length only varies
 > with how many control words the model carries. A few models use a genuinely different packing
-> (**compact-12**) or the classic packing at a different offset (**extended-36**, **extended-46**),
+> (**compact-12**, **japan-wall**), or the classic packing at a different offset or with an inserted
+> block (**extended-36**, **extended-46**, the **central cabinet**),
 > which the integration recognises and decodes automatically. Full inventory:
 > [`docs/report-layouts.md`](docs/report-layouts.md).
 

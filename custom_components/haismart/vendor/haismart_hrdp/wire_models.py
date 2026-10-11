@@ -1314,8 +1314,9 @@ _EXT46_WRITE = {
 # feature switched on (health, ambient light, fresh air) pins it.
 #
 # Because the report begins with that media module, the classic partial decode misfires here exactly
-# as it does on extended-36: byte 92 is the module's `volume` (100), which reads as a 48 C setpoint,
-# and the classic power bit lands in an unrelated word so the unit always looks off.
+# as it does on extended-36: byte 92 is the high byte of the media block's first word, which reads
+# as a 48 C setpoint (the module's `volume` is the byte after it), and the classic power bit lands in
+# an unrelated word so the unit always looks off.
 #
 # Three positions differ from extended-36 in kind rather than place, and each is fixed by the values
 # the reports themselves carry:

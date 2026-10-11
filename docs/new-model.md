@@ -19,18 +19,19 @@ the published models closest to it and the result checked against what the unit 
 that resembles nothing published is tried against every layout offset in use, and its own report
 decides which one fits. Commanding is gated separately: through the product's own published list of
 group-set settings, or — for a class that publishes no group-set command at all — one setting at a
-time; only a product whose list contradicts the shared command layout is left read-only.
+time. A product whose list contradicts the shared command layout would be left read-only, though
+none of the published ones is: the two families in that position publish a frame of their own.
 
 So before capturing anything, look at what you have:
 
 - **Readings look right, and you can control it.** Nothing to do — your model is recognised. This
   includes most units on the matched-relatives path: the core controls come from your product's own
   published list of group-set settings, no capture required.
-- **Readings look right, but the thermostat and switches won't change anything.** Your product is one
-  of the few whose published list of settings contradicts the shared command layout, so commands are
-  withheld — the safe default, since a group-set command writes a whole block of settings at once and
-  a guessed layout runs the wrong function silently. **The captures below are exactly what turns your
-  model into a controllable one** — and because the readings already work, they are easy to take.
+- **Readings look right, but the thermostat and switches won't change anything.** Your product
+  publishes no list of its group-set settings the integration can use, so commands are withheld — the
+  safe default, since a group-set command writes a whole block of settings at once and a guessed
+  layout runs the wrong function silently. **The captures below are exactly what turns your model
+  into a controllable one** — and because the readings already work, they are easy to take.
 - **Only power, setpoint, mode and fan appear, or values are clearly wrong.** Either your unit did not
   tell us which model it is, or no offset agreed with its report. The captures below are the way
   forward, and they are the whole job.
@@ -92,10 +93,10 @@ and attach each file in its own box, plus:
 
 ## Is anything secret in there?
 
-No. Diagnostics redacts your account tokens and your device's local key. It does include the raw
+No. Diagnostics redacts your account tokens, the gateway credentials, your device's local key, its
+device ID (the Wi-Fi module's MAC address) and its address on your network. It does include the raw
 status bytes, which are just the sensor and setting values — the same numbers your remote shows — and
-the device ID, which is the Wi-Fi module's MAC address. That is not a credential, and it is needed to
-make sense of the capture.
+the model identifier, which every unit of that model shares.
 
 ## What happens next
 
@@ -135,8 +136,8 @@ agrees on.) Of the 102 countries the setup
 form offers, 96 publish at least one air conditioner and six publish none — Myanmar, Nigeria, Kenya,
 Cambodia, Laos and Nepal — where the model shortlist simply is not narrowed by region.
 
-So before assuming your model is undocumented, make sure you are on a current release — the shipped
-catalogue has grown a great deal, and a name it could not find once it very likely finds now.
+So before assuming your model is undocumented, make sure you are on a current release: the shipped
+catalogue grows with each one, and a name an older release could not find a current one may find.
 
 The file carries one more thing that saves a round-trip. Once your unit's layout **is** recognised,
 diagnostics reads **every attribute your air conditioner declares that the published description

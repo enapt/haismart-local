@@ -271,11 +271,19 @@ async def _async_account_lacks(cloud: HaierCloud, device_id: str) -> bool:
     otherwise read alike, and the second's advice (check DNS and the firewall) sends the owner of
     the first nowhere. The gateway's refusal is only an undocumented errNo, so the list decides.
     ``False`` when it cannot answer: only a list that replies can say the unit is not on it.
+
+    An EMPTY list is not an answer either. It is what an account read from the wrong data centre
+    returns, with a success code (issue #18: an India account's list came back ``[]`` from the
+    Singapore hosts). The zone picks the data centre, but `docs/FUTURE_WORK.md` item 72 records the
+    case the zone cannot see, and that account would be told, wrongly, to sign in with another one.
+    Only a list that has devices, none of them this one, says the appliance is not on it.
     """
     try:
         devices = await cloud.list_devices_v2()
     except Exception as err:  # noqa: BLE001 - a second opinion; never the error shown
         _LOGGER.debug("could not list devices to explain a failed key fetch: %s", err)
+        return False
+    if not devices:
         return False
     wanted = _clean_device_id(device_id)
     return all(_clean_device_id(d.device_id) != wanted for d in devices)

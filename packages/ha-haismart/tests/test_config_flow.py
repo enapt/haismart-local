@@ -2515,6 +2515,15 @@ async def test_reauth_keeps_unreachable_when_the_account_does_list_the_unit(
     assert result["errors"] == {"base": "cloud_unreachable"}
 
 
+async def test_reauth_keeps_unreachable_when_the_device_list_is_empty(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """An empty list with a success code is what a wrong-data-centre read returns (issue #18), so
+    it says nothing about which account owns the unit."""
+    result = await _reauth_cloud_with_failing_fetch(hass, [])
+    assert result["errors"] == {"base": "cloud_unreachable"}
+
+
 async def test_reauth_keeps_unreachable_when_the_device_list_fails_too(
     hass: HomeAssistant, mock_uss
 ) -> None:

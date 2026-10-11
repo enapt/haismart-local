@@ -1329,13 +1329,9 @@ _EXT46_WRITE = {
 # `windSpeed` WAS omitted, on the grounds that this family reports a code its own device model does
 # not declare — true of the map's position (a constant 6) and not of the appliance, which answers at
 # w26.b9 with codes its model does declare. See the field below.
-# Also left out: the cumulative-energy register at words 44+45, which works on this family (unlike
-# the classic one, where it reads zero). The register is now known to count watt-hours on
-# extended-36, and it is the same published attribute here — but this is the one family that has
-# been caught departing from the published map three times over, and its counter's position is
-# itself derived from the inserted block. Inheriting an unverified unit into somebody's energy
-# history is not a thing to do on the strength of a map this family already disagrees with. One
-# reading off the owner's app, against a capture, settles it the same way it was settled there.
+# The cumulative-energy register at words 44+45 IS read (`energy_wh`, placed by the pivot like the
+# rest). Its unit is settled as watt-hours by two readings of one unit five days apart, the test
+# `test_the_209_byte_counter_is_in_watt_hours_by_its_own_two_readings`.
 # This family is NOT built from the published map, and deliberately: its vane sits five words past
 # where the map puts it, its setpoint counts half degrees rather than whole degrees offset by 16,
 # and its fan speed answers from the inserted block. Written out, those read as what they are —

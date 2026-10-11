@@ -67,7 +67,8 @@ MQTT's own "server unavailable" (`CONNACK` return code 3) counts as unreachable,
 period's clock is kept per configuration entry, so it runs out across setup retries.
 
 Also noted, not a defect: a unit that is asked for extended status and never answers holds the
-session for the full read timeout on each silent cycle (about 3.4 s more than a plain read). On a
+session for the full read timeout on each silent cycle (4.0 s, against the 0.6 s idle window that
+ends a read otherwise). On a
 unit that has never answered it is bounded: three silent cycles for each of the two published query
 forms, then the query stops. On a unit that has answered before, every silent cycle pays it.
 
@@ -75,7 +76,7 @@ forms, then the query stops. On a unit that has answered before, every silent cy
 unless a report shows them costing someone a needless sign-in.
 
 
-### 63. Issue #13 — a heat-pump WATER HEATER, 167-byte report, and the integration models it as an AC
+### 63. Issue #13 — a heat-pump water heater, decoded and commanded through Haier's byte map; three declared controls never exercised
 
 **Reported 2026-09-09 (issue #13), and it is the best-controlled report this project has had from a
 user.** A Haier heat-pump water heater in Taiwan, `product_code GK0GXZE0J`,
@@ -83,9 +84,14 @@ user.** A Haier heat-pump water heater in Taiwan, `product_code GK0GXZE0J`,
 downloads with **one variable changed per capture** and ~2 min to settle, plus the reporter's own byte
 diff of `last_raw_status`.
 
-**What is wrong today:** the unit decodes as a `climate` entity with cool / dry / fan_only, fan and
-swing modes, a 16–30 °C clamp against a real 35–75 °C setpoint range, `current_temperature` null, and
-**writes disabled** — the 167-byte report matches no known length (we know 125 and 127).
+**What the report showed:** the unit decoded as a `climate` entity with cool / dry / fan_only, fan
+and swing modes, a 16–30 °C clamp against a real 35–75 °C setpoint range, `current_temperature` null,
+and **writes disabled** — the 167-byte report matched no known air-conditioner length.
+
+**What stays open:** the appliance gets a `water_heater` entity and generic entities from Haier's
+byte map, and one command is confirmed on the hardware (`targetTemperature` over `5D01`, below). The
+other declared controls, `onOffStatus` (`5D00`), `runningMode` (`5D04`) and `dualHeaterMode`
+(`5D05`), are offered and have never been exercised on a unit.
 
 **The reporter's mapping** (0-indexed into the 167-byte frame), each value cross-checked against the
 cloud's `reported_values_now` in the same capture:
@@ -170,7 +176,7 @@ configFiles gives **seven rows with no residue**: 1 and 6 = `raw*k + c` · 2 = e
 against ground truth (the cloud's `"22:11"` beside parts 22 and 11); 4 and 5 are rendered the same
 way by construction and **no capture in the corpus carries one with a cloud value beside it**.
 
-#### ★★★ AND THE SAME DECODER REPRODUCES THE SHIPPED AC DECODER — THREE CLASSES, FOUR LENGTHS
+#### ★★★ AND THE SAME DECODER REPRODUCES THE SHIPPED AC DECODER — FOUR CLASSES, FIVE LENGTHS
 
 This is the finding that outgrows item 63. The identical config-driven decoder was run against the
 stored AC captures with no per-family code at all:
@@ -189,23 +195,22 @@ stored AC captures with no per-family code at all:
 restatement of what these files state outright. The 125-vs-127 split, derived here as "one inserted
 word", is simply **two different configFiles**: `挂机通用_V2D18S_0D02` puts `indoorTemperature` at
 byte 102, `共享空调_V2D18S_0D07` (the rental SKU) at byte 104 — both hardware-confirmed numbers.
-⚠️ Scope: four classes, four report lengths, sixteen captures — **not** the 125-byte classic
+⚠️ Scope: four classes, five report lengths, seventeen captures — **not** the 125-byte classic
 (no stored capture carries one) and not any `Bigdata`/`7D01` frame. It is not a claim that every
 configFile is correct for every unit, and the absent-probe rule (`outdoorTemperature` raw 0 →
-−64 °C) still has to be applied on top — `_sensor_temp`'s job, which the generic reader does not do
-for free.
+−64 °C) has to be applied on top: `device_model.absent_probe` applies `uss._sensor_temp`'s rule to
+the byte-map decode.
 
-**The larger ask, stated plainly:** #13 request 3 is *"support heat-pump water heaters, not only air
-conditioners."* That is a **new platform** (`water_heater`), not a new layout — a real piece of work,
-and the first appliance category outside AC this integration would carry. The owner's call whether
-that is in scope. ⓘ Nothing about it is blocked: the wire is the same uSS/`:56800` path we already
-speak, and the localKey already works (the reporter has a live entity).
+**The larger ask:** #13 request 3 was *"support heat-pump water heaters, not only air
+conditioners."* That is a **new platform** (`water_heater`), not a new layout, and the first
+appliance category outside AC this integration carries. It shipped (below), on the same uSS/`:56800`
+path and the same localKey.
 
 #### ✅ SHIPPED 2026-09-13 — and it grew into support for every appliance category
 
 ⇒ **The full account is `docs/MULTI_DEVICE_PLAN_2026-09-13.md` in the development tree.** Beyond the
 `water_heater` platform below, what shipped is a generic layer that gives **any** appliance its
-entities from its own declaration and Haier's published byte map: 165 device classes bundled, any
+entities from its own declaration and Haier's published byte map: 165 product types across 36 device classes bundled, any
 other fetched on demand, and every field classified into a switch / select / number / sensor /
 binary sensor with the units, ranges, options and English name the manufacturer's data supports.
 Validated on a washing machine from prior art that nobody here owns, and swept across all 36 classes
@@ -357,7 +362,7 @@ twelve-degree discrepancy that does not exist.
 
 Raised 2026-09-13 by item 68, which found a concrete instance rather than a hypothetical one.
 
-`scripts/check-translations.py` asserts that all 31 locale files carry the same **287 keys**. It says
+`scripts/check-translations.py` asserts that all 31 locale files carry the same **288 keys**. It says
 nothing about whether a value still corresponds to the English it was translated from. So when
 `issues/unknown_report_layout/title` was reworded in English from "air conditioner" to "appliance"
 some sessions ago, **all 30 locale files kept the old wording and CI stayed green.** Nobody noticed
@@ -393,7 +398,7 @@ temperature is vetoed as implausible by a band, and there are two of them:
 | path | constant | band |
 |---|---|---|
 | the classic family, via `uss._sensor_temp` | `uss._PLAUSIBLE_TEMP_C` | **−70 … 150 °C** |
-| every `wire_models` family (ext-36, ext-46, compact-12, `0d12`) | `_PLAUSIBLE_SENSOR_C` | **−30 … 70 °C** |
+| every `wire_models` family (ext-36, ext-46, compact-12, `0d12`, `japan-wall`) | `_PLAUSIBLE_SENSOR_C` | **−30 … 70 °C** |
 
 ⇒ **An outdoor probe reading 100 °C is published by one path and dropped by the other, on two air
 conditioners, today.** Neither is wrong on its face — the wider one admits a discharge-line
@@ -414,10 +419,12 @@ a reading in the disputed 70…150 °C range, so nothing observed is affected �
 A water heater's reservation times, a washing machine's programme settings and a fridge's zone
 setpoints are not written one parameter at a time. Haier publishes them as an `Operation`: a frame
 type, an EPP command and a list of `(name, startWord, startBit, length)` making up that op's own
-word array — `grSetResn1` on issue #13's heater, and eleven more on it alone.
+word array — `grSetResn1` on issue #13's heater, and seven more group sets on it alone.
 
-Everything needed to build one is in the map, and the integration reads those attributes today. It
-does not offer them as controls, and that is a decision rather than an omission.
+Everything needed to build one is in Haier's map, and the integration reads those attributes today.
+The shipped bundle keeps only each operation's name, frame type and command, so offering one would
+also need the bundle to carry its word layout. It does not offer them as controls, and that is a
+decision rather than an omission.
 
 **Why.** The two write mechanisms are not equally forgiving. A single-parameter write names its
 attribute in the command and carries the value in the payload: a wrong id is refused with a NACK we
@@ -470,14 +477,14 @@ side of the module, in appliance firmware we have never held.
 2. If it ever recurs on one unit: the diagnostic is the **Wi-Fi LED** — solid = paired and connected,
    flashing = config mode — which needs no tooling at all.
 
-**What to do with it now:** keep it in `TROUBLESHOOTING.md`'s vocabulary. If a user reports a unit
-that vanished and came back needing re-pairing, this is a documented mechanism, not necessarily
-something they or we did wrong. ⚠️ Do **not** put it in user-facing docs as a likely cause — it has
-never been observed, and the ordinary explanations are overwhelmingly more common.
+**What to do with it now:** nothing in the user-facing docs. If a user reports a unit that vanished
+and came back needing re-pairing, this is a documented mechanism, not necessarily something they or
+we did wrong. ⚠️ Do **not** add it to `TROUBLESHOOTING.md` as a likely cause — it has never been
+observed, and the ordinary explanations are overwhelmingly more common.
 
 ### 66. Ten device classes are published only in the older V2 text profile
 
-`catalogue/configfiles/` holds 191 maps, of which 27 are not JSON but Haier's older text profile:
+`catalogue/configfiles/` holds 192 vendor maps, of which 27 are not JSON but Haier's older text profile:
 
     [冷藏显示温度]^601001#1&1,-38@!&!,!#6d01,1,8,8$
 
@@ -591,13 +598,13 @@ trap the declaration gate exists to prevent.
 
 Reported by the owner of a `0d12` roof cabinet: the unit's remote sets 24.0, 24.5, 25.0, while the
 integration steps in whole degrees. The step comes from the appliance's own model
-(`targetTemperature` `dataStep.step`), and the climate entity rounds a requested temperature to a
-whole degree before encoding it.
+(`targetTemperature` `dataStep.step`), but the climate entity advertises a step of at least 1 °C
+and rounds a requested temperature to a whole degree before encoding it.
 
 **There are two half-degree mechanisms, and the manufacturer's byte map says which product uses
-which.** Either the setpoint field itself counts halves (`k = 0.5, c = 0`, i.e. °C × 2 — this is the
-209-byte family's encoding, already shipped, and 33 catalogued products declare `step: 0.5` that
-way), or the setpoint stays whole degrees (`k = 1, c = 16`) and a separate flag,
+which.** Either the setpoint field itself counts halves (`k = 0.5, c = 0`, i.e. °C × 2 — the encoding
+of the 209-byte family and of the `japan-wall` family), or the setpoint stays whole degrees
+(`k = 1, c = 16`) and a separate flag,
 `halfDegreeSettingStatus`, carries the half. No product declares both. The `0d12` cabinets and the
 classic families are the second kind.
 
@@ -724,14 +731,16 @@ half-degree dial whose halves round away silently.
 
 #### ⚠️ The products whose setpoint field counts halves
 
-The 33 products whose model declares `targetTemperature` `step: 0.5` store the setpoint as °C × 2,
-so their field could carry a half degree. The integration offers whole degrees on them: the climate
-entity advertises a step of at least 1 °C and a minimum of at least 16 °C whatever the model
-declares, because the write rounds the value to a whole degree and the read rounds it too
-(`wire_models`, the `celsius` field kind). So the dial offers nothing the encoder cannot send. What
-stays open is carrying the half: encode `value × 2` without rounding, read it back the same way,
-and advertise the model's own step. That needs one capture from such a unit, to confirm the field
-is written the way it is read.
+33 catalogued products declare `targetTemperature` `step: 0.5`: the 30 `japan-wall` products (item
+38) and three `0d21` products. The `japan-wall` setpoint field counts halves, and the 209-byte
+family's does too although its products declare whole-degree steps. The report decode reads the
+half (`k = 0.5`), so a half degree set on the handset shows as one. The write does not carry it:
+`climate.py` rounds the requested value to a whole degree and the encoder rounds again
+(`WireModel.current_write_value` and the `celsius` write kind). So the climate entity advertises a
+step of at least 1 °C and a minimum of at least 16 °C whatever the model declares, and offers
+nothing the encoder cannot send. What stays open is writing the half on the families whose field
+counts halves: encode `value × 2` without rounding, and advertise the model's own step. On
+`japan-wall` that waits on the first confirmed command (item 38).
 
 ### 56. The single-parameter register is CLASS-WIDE — the funcModel is the per-family witness
 
@@ -858,27 +867,23 @@ descriptions that *do* carry a timer — none of them air conditioners — say
 ★ So the prediction for the first air conditioner that reports one is **two bytes, not a minute
 count**. Anyone testing this should look for the pair before concluding the attribute is absent.
 
-### 6. The energy total on the families that are not yet trusted for it
+### 6. The energy total on the classic family — one unit's magnitude is unchecked
 
 The cumulative register counts **watt-hours**, settled on the 165/175-byte family against an owner's
 own app (one 15-minute interval added 347 against ~1390 Wh measured; a whole day added 7516 against
-the app's 7.52 kWh). That family ships an Energy sensor; the classic family's register is published
-too on the same reasoning (it *is* the map 19 words earlier, checked field for field), and reads
-zero — reported as absent — on every classic unit met so far.
+the app's 7.52 kWh). The 209-byte family's register is settled as watt-hours too, by two readings of
+one unit five days apart: 25,449 units is 5.1 kWh a day as watt-hours, and as hundredths of a
+kilowatt-hour it would need 46 hours of running in every 24. Both families ship an Energy sensor.
+The classic family's register is published on the same reasoning (it *is* the map 19 words earlier,
+checked field for field), and reads zero — reported as absent — on every classic unit met so far but
+one.
 
-Two cases stay unconfirmed:
+**That one classic unit keeps a total, and its magnitude is unchecked** — it reads ≈ 3,139 kWh, and
+no reading off that owner's app has ever been compared against it. This shipped on *weaker* evidence
+than the 165/175-byte sensor. **Asked for on issue #1; if the answer disagrees, withdraw the sensor
+rather than defend it** — a wrong total is not recoverable once it is in someone's history.
 
-* **Exactly one classic unit is known to keep a total, and its magnitude is unchecked** — it reads
-  ≈ 3,139 kWh, and no reading off that owner's app has ever been compared against it. This shipped on
-  *weaker* evidence than the 165/175-byte sensor. **Asked for on issue #1; if the answer disagrees,
-  withdraw the sensor rather than defend it** — a wrong total is not recoverable once it is in
-  someone's history.
-* **The 209-byte family has a working register that is deliberately not published**, because that
-  family has been caught departing from the shared map three times over and its counter's position is
-  derived from the same inserted block. A unit is not the sort of thing to inherit on the strength of
-  a map the family already disagrees with.
-
-One reading off the owner's app, beside a diagnostics download, settles each — the same way the
+One reading off the owner's app, beside a diagnostics download, settles it — the same way the
 165/175-byte sensor was settled.
 
 ### 7. The fault decode has not met a real fault
@@ -888,10 +893,11 @@ no unit here has reported a fault. `errCode` gives a free cross-check when one o
 single fault where the frame carries the set, so the bit that is set must be `errCode - 1`. Nothing
 to do but keep the diagnostic in place and check the first report that arrives.
 
-★ **The table itself is not in question.** Every published
-air-conditioner model declares **the same 51 faults at the same 51 positions**, with **zero**
-disagreements about a name, so the one shared table this integration applies to every family is
-justified by measurement rather than assumption.
+★ **The table itself is not in question.** Every published air-conditioner model declares **the
+same 51 faults at positions 0–50**, with **zero** disagreements about a name, so the one shared table
+this integration applies to every air conditioner is justified by measurement rather than
+assumption. Past position 50 the published lists diverge, and the unit's own model names the fault;
+an appliance that is not an air conditioner is named from its own model throughout.
 
 ★★ **The bit ordering has a second source too.** It was the one part of this item
 resting on our own reading: which byte carries positions 0..7, and which way the bits run inside it.
@@ -978,7 +984,7 @@ that every config id is accounted for):
   not a shipping target. The oracle WARNs on the encoding divergence rather than failing.
 * **`ampereControl`** (`5D32`, second family, ~4 products) — a compressor-current limit like the ECO
   ladder, now that the config gives it a number. Held for a focused follow-up; its value semantics
-  are not yet worked out. Tracked in the oracle's `DECLARED_NOT_YET_SHIPPED`.
+  are not yet worked out. Tracked in the maintainer's oracle as declared and not yet shipped.
 * **The `0d21` cassette is a SEPARATE class, not this one.** ~20 products spell the louvres
   `fourSidesWindDirection*` in their own declarations — those are class `0d21` (uPlusId `…0d21…`), a
   distinct device class with no single-parameter support here at all. Adding it is its own item (a
@@ -986,8 +992,9 @@ that every config id is accounted for):
   filed those 20 as a `0d12` 商空 spelling gap; they are a different class.
 * **Not louvre-related but surfaced in the same sweep:** the ext-46 family reads/writes its inserted
   `windSpeed` at `w26.b9` with an identity enum, where its config puts it at `w26.b8` with a
-  non-identity enum — wrong for the upper fan codes, and `b9`'s span reaches `oxygenSupplyMode`'s bit.
-  Already flagged hardware-unverified in the code; a real ext-46 capture is the fix (its own item).
+  non-identity enum, and `b9`'s span reaches the bit of `oxgyenSupplyMode` (the vendor's spelling).
+  The read at `w26.b9` is settled against captures (see the `wind_speed` field of `EXTENDED46`); the
+  config's `w26.b8` and its fan codes are not what this family's units answer with.
 
 ### 19. The still-unpositioned settings — counted per lineage, and classified by *why*
 
@@ -1010,7 +1017,8 @@ prevent.
 The two are not the same, and the gap between them is measured: of the residue, **6 attributes across
 837 product-slots have a position that has been worked out and is deliberately not shipped** — three
 are capability flags no product makes visible, one is contested against an attribute already placed
-at those bits, one belongs to families that are read-only, and one is unanimous over four products.
+at those bits, one belongs to the two `japan-wall` families, which publish a frame of their own and
+are read through it (item 38), and one is unanimous over four products.
 Each is stored with the reason, and the test suite re-derives that reason from the shipped data, so
 the day one becomes shippable the suite says so. Counting only what nothing anywhere can place, the
 residue is **98 attributes over 7,118 slots**.
@@ -1080,7 +1088,8 @@ promotion bar (a reading proven and a meaning a user won't misread) is intact.
 ### 36. The panel control surface — the blocked residue
 
 The panel control surface **shipped** across every group-set family, and across the compact family
-via its per-attribute commands. What remains open is the residue that no source can place or read:
+via its per-attribute commands. What remains open is the residue that no source places on the
+shared frame (four of the five are read on `japan-wall` units through that family's own frame):
 
 * **five append-region booleans** — `constDehumidificationStatus`, `preventSupercooling`,
   `pvPowerSavingMode`, `uvSterilizationSwitch`, `windAvoidance`.
@@ -1569,7 +1578,7 @@ So the control and its adjudication (`5D0C`, per the diagnostics `single_param_i
 live on a real `0d12` cabinet, and the enum's *usable* range is the middle four codes, not all eight.
 This is a per-hardware observation, not a model change; it is the ground truth to check the shipped
 `windDirectionHorizontal` labels against, and the first confirmation that a `0d12` L-R vane command
-moves the actual louvre (the four-sided cassette sweep, `FUTURE_WORK` unchanged, is still unobserved).
+moves the actual louvre (the four-sided cassette sweep, item 13, is still unobserved).
 
 ### 55. What the unit is doing (`hvac_action`) is undecidable in auto on a heat pump while the compressor runs
 
@@ -1632,10 +1641,11 @@ what we lack is the trigger); it is unconfirmed on the firmware our reference un
 coordinator polls in short sessions, so a five-minute-debounced push will usually fire with nobody
 connected.
 
-▶ **The free first step, no hardware and no risk:** the frame ledger added in v0.66.0
-(`coordinator.lan_frames`, `uss.collect_session_blobs`) already keeps every frame kind seen. Record
-the **info type** of any inbound message that is not `1` or `3`, so one of these shows up in a
-diagnostics download instead of being silently dropped. If one is ever seen, its bytes settle the
+▶ **The free first step is in place:** every message read in a session is traced with its **info
+type** (`uss.collect_session_blobs`), kept by the coordinator and exported as `uss_messages` in
+diagnostics, beside the frame ledger (`coordinator.lan_frames`). Two gaps remain: only the last poll
+session's trace is kept, and a message skipped while the handshake waits for its own reply
+(`uss._await_message`) is never traced. If one of these messages is ever seen, its bytes settle the
 rest.
 
 ### 61. ⓘ "i-Feel" (the handset measuring room temperature) is not visible to us — a caveat on `indoorTemperature` (2026-09-08)

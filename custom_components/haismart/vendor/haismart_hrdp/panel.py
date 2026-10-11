@@ -80,15 +80,16 @@ PANEL_EXTRA_POSITIONS: Mapping[str, tuple[int, int, int]] = {
 #:     saying "this model has the hardware", not a state the appliance reports.
 #: ``contested`` -- the slot is where the shared map already places another attribute, and the
 #:     products declaring this one overwhelmingly declare that one too.
-#: ``read-only-family`` -- the only products that could show it are ones whose published order
-#:     refutes the shared frame, which is why they are read-only in the first place; a position
-#:     derived from an order that contradicts the frame cannot be trusted against that frame.
+#: ``own-frame-family`` -- the only products that could show it are ones whose published order
+#:     refutes the shared frame; a position derived from an order that contradicts the frame cannot
+#:     be trusted against that frame. Those families publish a frame of their own and are read and
+#:     written through it (``wire_models.JAPAN_WALL``), never through this position.
 WITHHELD_ORDER_POSITIONS: Mapping[str, tuple[tuple[int, int, int], str]] = {
     "balancedWindExist": ((5, 15, 1), "invisible-everywhere"),
     "humidityCtrlExist": ((5, 13, 1), "invisible-everywhere"),
     "tempHumidDisplayMode": ((5, 14, 1), "invisible-everywhere"),
     "windDirectionHorizontalL": ((4, 0, 3), "contested"),
-    "constDehumidificationStatus": ((4, 3, 1), "read-only-family"),
+    "constDehumidificationStatus": ((4, 3, 1), "own-frame-family"),
 }
 
 #: Multi-state panel controls (rendered as selects): attribute -> (slug, {wire value: state token}).

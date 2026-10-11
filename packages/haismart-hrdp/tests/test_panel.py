@@ -133,10 +133,10 @@ def test_each_withheld_order_position_still_has_its_reason():
             assert len(with_rival) > len(declares_it) / 2, (
                 f"{name} no longer travels with {rival} on most products"
             )
-        elif reason == "read-only-family":
-            # the only units that could show it are ones this project already refuses to command,
-            # because their published order refutes the shared frame -- which is the very frame the
-            # position was derived against.
+        elif reason == "own-frame-family":
+            # the only units that could show it are ones the shared frame cannot command, because
+            # their published order refutes it -- the very frame the position was derived against.
+            # They are commanded through a frame of their own, which `frame_write_fields` is not.
             assert shows_it, f"{name} is visible nowhere; its reason should be invisible-everywhere"
             for entry in shows_it:
                 assert not frame_write_fields(

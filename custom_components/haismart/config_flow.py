@@ -1180,10 +1180,16 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
             # Same reasoning as the account path: a pending Discovered card holds this unique ID,
             # and someone typing an address in deliberately must not be turned away by it.
             await self.async_set_unique_id(device_id, raise_on_progress=False)
-            # Already configured at this very address: nothing to update, so nothing to validate --
-            # and no second session opened against a unit its running entry is polling.
+            # Already configured at this very address with this very key: nothing to update, so
+            # nothing to validate -- and no second session opened against a unit its running entry
+            # is polling. A different key is worth the session: re-adding is how a stale one gets
+            # fixed by hand.
             existing = self.hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, device_id)
-            if existing is not None and existing.data.get(CONF_HOST) == host:
+            if (
+                existing is not None
+                and existing.data.get(CONF_HOST) == host
+                and existing.data.get(CONF_LOCAL_KEY) == user_input[CONF_LOCAL_KEY].strip()
+            ):
                 self._abort_if_unique_id_configured()
             try:
                 local_key = _clean_key(user_input[CONF_LOCAL_KEY])
@@ -1197,8 +1203,15 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
             else:
                 # Only now, with the address proven to answer: checked before validation, this
                 # rewrote a working entry's host with whatever was typed, typo included, and
-                # reported only "already configured" (see async_step_reconfigure_host).
-                self._abort_if_unique_id_configured(updates={CONF_HOST: host})
+                # reported only "already configured" (see async_step_reconfigure_host). The key
+                # goes too: it has just been proven against the unit, so a re-add fixes a stale one.
+                self._abort_if_unique_id_configured(
+                    updates={
+                        CONF_HOST: host,
+                        CONF_LOCAL_KEY: local_key,
+                        CONF_LOCALKEY_VERSION: version,
+                    }
+                )
                 self._pending_manual = {
                     CONF_HOST: host,
                     CONF_DEVICE_ID: device_id,

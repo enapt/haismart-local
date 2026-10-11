@@ -2376,6 +2376,8 @@ async def test_fetch_localkey_targets_the_region_gateway(
 
     await cf._async_fetch_localkey(hass, {**base, CONF_ZONE_INFO: "66"}, "A0822259729A")
     assert seen["host"] == "gw-sgp.haieriot.net"
+
+
 # --- review fixes: a typo'd address, and a key fetch refused because the account lacks the unit ---
 
 
@@ -2424,6 +2426,42 @@ async def test_manual_readd_at_the_same_address_opens_no_session(
     assert result["type"] == FlowResultType.ABORT
     assert result["reason"] == "already_configured"
     assert mock_uss.probe.call_count == 0
+
+
+async def test_manual_readd_with_a_new_key_validates_and_stores_it(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Re-adding by hand is how a stale key gets fixed. The typed key is proven against the unit,
+    so it is stored with the version the unit reported -- at the same address too, where only the
+    key changed."""
+    entry = _entry(**{CONF_LOCAL_KEY: "f" * 32, CONF_LOCALKEY_VERSION: 3})
+    entry.add_to_hass(hass)
+    mock_uss.probe.reset_mock()
+    flow_id = await _start_manual(hass)
+    result = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
+    assert result["type"] == FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+    assert mock_uss.probe.call_count == 1, "a new key has to be proven before it is stored"
+    assert entry.data[CONF_LOCAL_KEY] == LOCAL_KEY
+    assert entry.data[CONF_LOCALKEY_VERSION] == mock_uss.probe.return_value
+
+
+async def test_manual_readd_with_a_wrong_key_leaves_the_entry_alone(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    from unittest.mock import patch
+
+    from custom_components.haismart.config_flow import InvalidAuth
+
+    entry = _entry(**{CONF_LOCAL_KEY: "f" * 32, CONF_LOCALKEY_VERSION: 3})
+    entry.add_to_hass(hass)
+    with patch(
+        "custom_components.haismart.config_flow._async_validate", side_effect=InvalidAuth
+    ):
+        flow_id = await _start_manual(hass)
+        result = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
+    assert result["errors"] == {"base": "invalid_auth"}
+    assert entry.data[CONF_LOCAL_KEY] == "f" * 32
 
 
 async def test_validation_waits_for_the_running_entrys_session(

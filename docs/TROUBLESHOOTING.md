@@ -253,10 +253,10 @@ heat-capability flag checked against its description's modes where the size does
 that, no such layout is used, because the decoded values alone cannot say how many words were
 inserted.
 
-Of the 1,451 published air conditioners, **1,421 read and control, 30 read and report only, and
-none is turned away before its report is looked at.** (The read-only thirty are the two families
-whose published order the shared packing cannot explain, so nothing is offered for them rather than
-guessed at.)
+Of the 1,451 published air conditioners, **all 1,451 read and control, and none is turned away
+before its report is looked at.** (Thirty of them — the AQUA/JAA wall units — publish an order the
+shared packing cannot explain because they do not use it: they publish a frame of their own, and
+are read and commanded through it.)
 
 **None of that layout-guessing applies to an appliance that is not an air conditioner.** There, the
 manufacturer publishes the byte positions outright for the product class, so nothing has to be

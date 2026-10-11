@@ -515,10 +515,10 @@ def test_a_twin_tower_order_is_not_offered_the_horizontal_vane_frame_position() 
 def test_an_order_the_frame_cannot_explain_offers_no_writes_at_all() -> None:
     """Two families (30 products) publish a group-set order unrelated to the shared frame --
     rank-correlation with the frame's positions is near zero, so it is not the frame with a few
-    moved names, it is some other layout. Writing any frame position there is a guess, and a
-    guessed group-set runs wrong functions silently. The whole write path must stay closed until
-    someone with the hardware supplies evidence; the read path is unaffected (report layouts are
-    verified against the report itself, and the read frame is not the write frame)."""
+    moved names, it is some other layout. Writing any SHARED-frame position there is a guess, and a
+    guessed group-set runs wrong functions silently, so the shared frame's write path offers them
+    nothing. (They publish a frame of their own and are written through it -- the `japan-wall`
+    family, held to that frame in `test_japan_wall.py`.)"""
     from haismart_hrdp.wire_models import frame_write_fields
 
     # the published order of the 12-product 1850 family, verbatim

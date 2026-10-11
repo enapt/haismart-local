@@ -106,6 +106,9 @@ So, for a report from an appliance no family claims:
 | names itself | publishes an order that refutes the frame | **read-only** |
 | does not name itself | — | partial decode, flagged `layout: unknown` |
 
+(No published product sits in the read-only row. The two families whose order refutes the frame —
+the AQUA/JAA wall units — publish a frame of their own, and are the `japan-wall` family below.)
+
 A resolved layout is reported as `related-19` / `related+0` (the offset it used) rather than a family
 name, so diagnostics distinguish it from a family confirmed on hardware.
 
@@ -136,6 +139,7 @@ the number of inserted words, and where they begin.
 | 117 B | **compact-12** | whole °C @ w12 | indoor w1; w2 low byte is the outdoor-UNIT temp (hot, ~60 °C cooling; not ambient) — diagnostics only | ✅ read + control |
 | 165 / 175 B | **extended-36** | `°C − 16` @ w20.b8 | indoor w25.b8, outdoor w26.b8 | ✅ read + control |
 | 209 B | **extended-46** | **half-degrees** @ w20.b8 | indoor w35.b8, outdoor w36.b8 | ✅ read + control (no left-right vane) |
+| 111 B | **japan-wall** (two Model IDs) | **half-degrees** @ w1.b8 | indoor w8.b8, outdoor w9.b8, humidity w8.b0 | ✅ read + control (left-right vane: fixed or sweeping only) |
 | 133 B | **central cabinet**, resolved as `related-19+4@25` | `°C − 16` @ w1.b8 | indoor w10.b8, outdoor w11.b8 | ✅ read + control (one setting at a time, vanes included) |
 | 133 B | a second, unobserved map — see below | `°C − 16` @ w1.b12 (4 bits) | indoor w5.b8, outdoor w6.b8 | ⏳ documented, never seen |
 | 149 / 155 B | *unclaimed* — floor/heat-pump class | @ w25.b8 | — | ⏳ two conflicting maps at 149 B |
@@ -146,15 +150,15 @@ Beyond the climate block, families differ in what else is placed. A field is off
 position is supported by the reports themselves — absent beats wrong, since a misplaced offset shows
 a confident but invented value.
 
-| | classic | compact-12 | extended-36 | extended-46 |
-|---|---|---|---|---|
-| heat capability | ✅ | — | ✅ | ✅ |
-| fault code + last-changed-by | ✅ | — | ✅ | ✅ |
-| fault bitmap | ✅ (its own frame, family-independent) | ✅ | ✅ | ✅ |
-| self-clean | ✅ | ❌ | ✅ | ❌ |
-| vane positions (both axes) | ✅ | ❌ | ✅ | ✅ up-down only |
-| live power, from the report itself | ❌ | ⚠️ (decoded at w3, diagnostics only — unit unproven, so no sensor) | ✅ (175 B only) | ❌ |
-| cumulative energy total | ✅ (where populated — the reference units never fill it) | ❌ | ✅ (where populated) | ❌ (works, unit unsettled) |
+| | classic | compact-12 | extended-36 | extended-46 | japan-wall |
+|---|---|---|---|---|---|
+| heat capability | ✅ | — | ✅ | ✅ | — |
+| fault code + last-changed-by | ✅ | — | ✅ | ✅ | last-changed-by only |
+| fault bitmap | ✅ (its own frame, family-independent) | ✅ | ✅ | ✅ | ✅ |
+| self-clean | ✅ | ❌ | ✅ | ❌ | ❌ |
+| vane positions (both axes) | ✅ | ❌ | ✅ | ✅ up-down only | up-down set; left-right read only |
+| live power, from the report itself | ❌ | ⚠️ (decoded at w3, diagnostics only — unit unproven, so no sensor) | ✅ (175 B only) | ❌ | ❌ |
+| cumulative energy total | ✅ (where populated — the reference units never fill it) | ❌ | ✅ (where populated) | ❌ (works, unit unsettled) | ❌ (published, never seen populated) |
 
 Heat capability, the fault code and last-changed-by all sit in the sensor block, one and two words
 past the outdoor reading, so they follow wherever that lands. The fault bitmap arrives in a separate
@@ -322,6 +326,37 @@ add is confirmation the appliance honours a seven-word frame (Rule 8).
 the appliance — which is why those slots are refused here and the appended positions are used
 instead.
 
+### japan-wall
+
+The AQUA `AQA-AX*` and `JAA-MX*` wall units — Haier's `日本挂2024` and `日本挂2025` device types,
+30 products. Not the shared map at any displacement: the family publishes a frame of its own. The
+four settable words come first, packed in an order of their own (setpoint and both vanes in w1;
+power, mode and the boolean block in w2; fan, boost, quiet and display in w4), and the sensors
+follow at w8 (room temperature and humidity) and w9 (outdoor). The family is selected by the Model
+ID the unit announces, never by its 111-byte length.
+
+Its map and its write frame state the **same word, bit and width** for every settable attribute, so
+the group set (`6001`) is report words 1–4 lifted out, seeded from the live report like every other
+family, and a command reads back exactly where it was written. Three encodings differ from the
+shared frame, and each would be a confident wrong value if borrowed:
+
+- the **setpoint counts half degrees from zero** (wire 42 = 21 °C) — read as the classic family's
+  `°C − 16`, a unit set to 20 °C shows 56 °C;
+- the **fan code is not the standard one**: auto is wire 0, high 2, medium 4, low 6;
+- the **left-right vane numbers its stops its own way** (wire 1 is the fourth stop). Its stops are
+  therefore read and named from the family's own table but not offered as a control; the left-right
+  vane is set fixed or sweeping only, which are the two codes it shares with every other family.
+
+The decode was checked against ground truth it was not built from: a real unit's report agreed with
+the manufacturer's own cloud record of that unit, taken in the same minute, on all 35 attributes
+the cloud reported. ⚠️ The write frame is the published one rather than a captured one, and no unit
+of this family has yet confirmed a command; the appliance's reply and its next report decide
+whether a command landed, as on every family.
+
+ⓘ None of the 30 published models declares a fixed position for the up-down vane (every one lists
+the same five stops and three sweeps), so "swing off" on the climate card is refused with the
+model's own list of positions; the up-down vane select is how a sweep is stopped at a position.
+
 ### How the read positions were settled
 
 One diagnostics file carries a report **and** a cloud record taken close enough together to check
@@ -460,8 +495,8 @@ Of the **1,451** published air conditioners:
 
 | | products | |
 |---|---|---|
-| read **and** control | **1,421** | 590 through a registered family, 644 through the shared frame corroborated by the product's own group-set order, 187 central-air cabinets one setting at a time |
-| read only | **30** | their published order refutes the frame outright, so nothing is commanded |
+| read **and** control | **1,451** | 620 through a registered family, 644 through the shared frame corroborated by the product's own group-set order, 187 central-air cabinets one setting at a time |
+| read only | **0** | — |
 | turned away before their report is looked at | **0** | — |
 
 ⚠️ **"Can resolve a layout" is not "will decode".** The report still has to agree with exactly one
@@ -572,8 +607,8 @@ specific controls are refused per family rather than assumed universal. A family
 setting under its *own name*: every twin-tower family lists the appliance's vane, fan and horizontal
 vane in the appended tail of its group-set order, past the shared frame's words, so the frame-path
 controls are additionally gated on the product's own order corroborating each position — and two
-families, the AQUA/JAA wall units, publish an order the frame cannot be reconciled with at all and
-are kept read-only.)
+families, the AQUA/JAA wall units, publish an order the frame cannot be reconciled with at all,
+because they are not this map: they publish one of their own, the `japan-wall` family.)
 
 | family | is |
 |---|---|
@@ -581,6 +616,7 @@ are kept read-only.)
 | extended-36 | the canonical map exactly (its "media block" is the part classic units do not carry) |
 | extended-46 | the canonical map with a ten-word block inserted at word 25 |
 | compact-12 | genuinely different — one attribute per whole word, not this lineage |
+| japan-wall | genuinely different — its own published frame, four settable words, sensors at words 8–9 |
 
 Two of them are *built* from it — the classic probe candidate and extended-36 read their
 positions and scaling straight out of the map, and only state what the map does not: how each field

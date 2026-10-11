@@ -1133,7 +1133,7 @@ via its per-attribute commands. What remains open is the residue that no source 
   |---|---|
   | balanced-wind and humidity-control capability flags, display mode | **159 products declare them and every one marks them as hardware the unit lacks.** There is no unit to show them on. Both flags are `有无` — "does this model have the function" — which is a statement about the product, not a state the appliance reports |
   | the left tower's horizontal vane | **contested**: 161 of the 165 products declaring it also declare the ordinary horizontal vane, which the shared map places at exactly those bits. A placement under this name would be reading the other setting's bits on almost every unit that has it |
-  | constant dehumidification | the only **30** products that show it are the two families of item 38 — the ones whose published order refutes the shared frame, which is why they are read-only. A position derived from an order that contradicts the frame cannot be trusted against that frame |
+  | constant dehumidification | the only **30** products that show it are the two families of item 38 — the ones whose published order refutes the shared frame. A position derived from an order that contradicts the frame cannot be trusted against that frame; on those units it is read from their own published frame instead (`japan-wall`) |
 
   Those reasons are kept as data next to the positions themselves and re-measured by the suite, not
   written down and forgotten: if a catalogue re-sweep ever makes one of them visible, or moves a
@@ -1173,24 +1173,49 @@ to get one.
   model we hold, so the remaining 179 are unmeasured, not known to agree. Settling it needs the value
   sets for those, or a report placing the field's real width.
 
-### 38. Two families publish a group-set order the shared frame cannot explain (30 products)
+### 38. The AQUA/JAA wall units publish a frame of their own — read and commanded through it; the first confirmed command is still owed (30 products)
 
 A catalogue-wide audit — every product's published group-set order checked against the shared
 frame's positions — found two families (12 + 18 products, the **AQUA `AQA-AX*` and `JAA-MX*` wall
-units**) whose order has essentially **zero rank-correlation with the frame** (τ ≈ 0.06, against
-1.0 for every confirmed family). That is not the frame with a few settings moved; it is some other
-layout, or a list published in some other discipline. Nothing anchors it, so nothing can be derived
-from it.
+units**, Haier's `日本挂2024` and `日本挂2025` device types) whose order has essentially **zero
+rank-correlation with the frame** (τ ≈ 0.06, against 1.0 for every confirmed family).
 
-These products are **read-only**: every frame-position write for them would be a guess with
-substantial counter-evidence, and a guessed group-set runs wrong functions silently rather than
-failing (their report decode is unaffected — report
-layouts are verified against the report itself, and the read frame is not the write frame). What
-settles it: a diagnostics file or capture from any of these units, which would show whether their
-reports resolve to a known family and give the first anchor for whatever their write layout is.
-⚠️ **Checked 2026-08-25:** no report from an `AQA-*` or `JAA-*` unit exists in the public issue
-trackers of the projects implementing this protocol either — the route that settled item 42 has
-nothing to offer here yet.
+✅ **Why, and what they are instead.** They do not use the shared frame at any displacement. The
+manufacturer's byte map for each of the two Model IDs states a frame of its own: four settable words
+(setpoint and both vanes in w1; power, mode and the boolean block in w2; fan, boost, quiet and
+display in w4), sensors at w8–w9, a 111-byte report. Its report map and its write frame
+(`Operation[grSetDAC].variants`, command `6001`) state the **same word, bit and width for all 30
+settable attributes**, so the group set is report words 1–4 lifted out. That is the `japan-wall`
+family in `wire_models.py`, keyed on the two Model IDs, never on the length.
+
+✅ **Read side — checked against ground truth it was not built from.** The first report from any of
+these units (issue #19, a `JAA-MX225AK`) decodes in agreement with the manufacturer's own cloud
+record of the same unit, taken in the same minute, on **all 35 attributes the cloud reported** —
+and the hand-built family reproduces the byte map field for field on it. Three encodings differ from
+the shared frame and each was a silent wrong value before: the setpoint is half degrees from zero
+(the classic fallback read the reporter's 20 °C as 56 °C, shown as 133 °F), the fan code is not the
+standard one (auto is wire 0), and the left-right vane numbers its stops its own way.
+
+⚠️ **What is still owed.** No unit of this family has confirmed a command (Rule 8). The frame is the
+published one and its length is the published span, which is the rule both classic layouts obey on
+hardware (the 127-byte unit's own app sends six words, its map's span; a five-word op was accepted by
+the 125-byte layout, its map's span) — but that is two other families. **One `climate.turn_off`, or
+one setpoint change, from any of these units, with the reply in its diagnostics, settles it.**
+
+Residue, each a refusal rather than a wrong value:
+
+* **Left-right stops are not offered** — only fixed and sweeping, the two codes this family shares
+  with every other. Its stops are read (a read-only position sensor names them from the family's own
+  table); offering them needs the vane select to translate per family.
+* **The up-down half-range sweeps (12, 13) are not offered** — the vane select translates through
+  the shared table, which agrees with this family on every other stop and has no code for those two.
+* **"Swing off" on the climate card is refused on these units**: none of the 30 published models
+  declares a fixed up-down position, so the model's own list rejects code 0. The up-down vane select
+  stops a sweep at a position.
+* The setpoint is natively half-degree; a half degree set from Home Assistant is rounded on the way
+  out (item 57).
+* The cumulative energy register (w6–w7) is published but not read — the one report seen holds zero,
+  which on every family so far means a register the firmware never fills.
 
 ### 39. The appended-tail settings on the other twin-tower families
 
@@ -1928,20 +1953,19 @@ Safe without a capture because the group-set is one frame across every published
 report base word is `20 + the layout's own offset` (a definition, not a fitted constant), and *which*
 settings a unit has comes from its own published group-set list; families reusing a shared position
 have those controls refused (item 32). A layout that publishes no list stays read-only — the safe
-default. ⚠️ **Two families are read-only on positive evidence**, not for want of data: their
-published order refutes the frame outright (item 38).
+default. ⓘ Two families publish an order that refutes the frame outright; they publish a frame of
+their own and are read and commanded through it (item 38).
 
-★ **Figures — 1,451 = 1,421 read + write · 30 read-only · 0 without a layout.** Every published
-product can resolve a layout; none is refused for want of published data. The read-only 30 are the
-families whose order refutes the frame (item 38). Supersedes *1,206 / 30 / 215*, *1,234 / 217 / 0*,
-and "1,236 products" everywhere either appears.
+★ **Figures — 1,451 = 1,451 read + write · 0 read-only · 0 without a layout.** Every published
+product can resolve a layout; none is refused for want of published data. The 30 whose order refutes
+the shared frame are the `japan-wall` family, which publishes its own (item 38). Supersedes
+*1,421 / 30 / 0*, *1,206 / 30 / 215*, *1,234 / 217 / 0*, and "1,236 products" everywhere any appears.
 
 | how the layout is reached | products | control |
 |---|---|---|
-| registered family (compact-12 · extended-46 · extended-36) | 590 | yes |
+| registered family (compact-12 · extended-46 · extended-36 · japan-wall) | 620 | yes |
 | the shared frame, corroborated by the product's own order | 644 | yes |
 | no group command at all — written one parameter at a time (item 42) | 187 | yes |
-| resolved, but the order refutes the frame | 30 | no |
 
 ⚠️ **"Control needs a frame, and these have no usable one" is a tempting and wrong reading.** It is
 right about the frame and wrong about control: these cabinets do not use a frame at all, and the
@@ -1974,8 +1998,8 @@ anchors (indoor + setpoint) to have arrived. Rule 13 again — the guard existed
 was classic-only, so every other family fell back to a cached blob; `is_control_baseline` asks the
 registry instead.
 
-**35. Which units are placed offline — measured.** **1,421 of 1,451** are placed from published
-data alone (item 30's table). The working below is kept because it is how the remainder was resolved,
+**35. Which units are placed offline — measured.** **All 1,451** are placed from published data
+alone (item 30's table). The working below is kept because it is how the remainder was resolved,
 one class at a time.
 
 The 215 that were once unplaced are **two** central-air classes plus eight others: `0d12` (187, no
@@ -1989,8 +2013,8 @@ the appliance-type field) — the displacement is measured from the report inste
 ★ **The 187 are read as well.** Requiring a group-set order before decoding them was evidence about
 the *write* frame standing in for evidence about the *read* frame (Rule 22). They resolve from their
 own report like any other appliance, and they are controlled a setting at a time (item 42). So the
-current statement is: **1,451 = 1,421 read + write · 30 read-only · 0 refused** — and neither half
-needed an owner to appear.
+current statement is: **1,451 = 1,451 read + write · 0 read-only · 0 refused** — and only the last
+thirty (item 38) needed a report from an owner, to check the read side against ground truth.
 
 ⚠️ "Placed offline" is not "will work": an unrecognised identifier falls back to report length, so
 the set that works on first contact is larger; and a resolved layout still needs its report to agree
@@ -2014,7 +2038,7 @@ positions where a *different* attribute was placed. The audit that found it ran 
 still being offered at the frame position, where those cabinets keep tower/auxiliary bits. The
 frame-path controls are now gated by `consistent_with_frame`: an order corroborates a position, or
 drops the moved names (the appended-tail shape), or refutes the frame outright and offers nothing
-(item 38). The audit itself ships as a test over the full bundle, so a future catalogue regeneration
+through it (item 38 — those families are commanded through their own frame instead). The audit itself ships as a test over the full bundle, so a future catalogue regeneration
 that introduces a new departure fails the suite instead of quietly being offered frame positions its
 own contract contradicts.
 

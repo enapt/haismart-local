@@ -1,0 +1,3206 @@
+{
+ "alarms": [
+  {
+   "name": "alarmCancel",
+   "desc": "告警解除",
+   "clear": true
+  },
+  {
+   "name": "outdoorModuleErr",
+   "desc": "室外模块故障",
+   "clear": false
+  },
+  {
+   "name": "outdoorDeforstSensorErr",
+   "desc": "室外除霜传感器故障",
+   "clear": false
+  },
+  {
+   "name": "outdoorExhaustSensorErr",
+   "desc": "室外压缩机排气传感器故障",
+   "clear": false
+  },
+  {
+   "name": "outdoorEEPROMErr",
+   "desc": "室外EEPROM异常",
+   "clear": false
+  },
+  {
+   "name": "indoorCoilerSensorErr",
+   "desc": "室内盘管传感器故障",
+   "clear": false
+  },
+  {
+   "name": "indoorOutdoorCommErr",
+   "desc": "室内外通讯故障",
+   "clear": false
+  },
+  {
+   "name": "powerProtection",
+   "desc": "电源过压保护",
+   "clear": false
+  },
+  {
+   "name": "panelCommErr",
+   "desc": "面板与内机通信故障",
+   "clear": false
+  },
+  {
+   "name": "outdoorCompressorOverheatProtection",
+   "desc": "室外压机过热保护",
+   "clear": false
+  },
+  {
+   "name": "outdoorEnviSensorErr",
+   "desc": "室外环境传感器异常",
+   "clear": false
+  },
+  {
+   "name": "fullWaterProtection",
+   "desc": "满水保护",
+   "clear": false
+  },
+  {
+   "name": "indoorEEPROMErr",
+   "desc": "室内EEPROM故障",
+   "clear": false
+  },
+  {
+   "name": "outdoorReturnAirSensorErr",
+   "desc": "室外回气传感器故障",
+   "clear": false
+  },
+  {
+   "name": "cbdCommErr",
+   "desc": "CBD与模块通讯故障",
+   "clear": false
+  },
+  {
+   "name": "indoorFanErr",
+   "desc": "室内直流风机故障",
+   "clear": false
+  },
+  {
+   "name": "outdoorFanErr",
+   "desc": "室外直流风机故障",
+   "clear": false
+  },
+  {
+   "name": "doorErr",
+   "desc": "门开关故障",
+   "clear": false
+  },
+  {
+   "name": "filterCleaningAlarm",
+   "desc": "除尘网需清洗提示",
+   "clear": false
+  },
+  {
+   "name": "waterLackProtection",
+   "desc": "缺水保护",
+   "clear": false
+  },
+  {
+   "name": "humiditySensorErr",
+   "desc": "湿度传感器故障",
+   "clear": false
+  },
+  {
+   "name": "indoorTempSensorErr",
+   "desc": "室内温度传感器故障",
+   "clear": false
+  },
+  {
+   "name": "mechanicalArmLimitErr",
+   "desc": "机械手限位故障",
+   "clear": false
+  },
+  {
+   "name": "indoorPM2p5SensorErr",
+   "desc": "室内PM2.5传感器故障",
+   "clear": false
+  },
+  {
+   "name": "outdoorPM2p5SensorErr",
+   "desc": "室外PM2.5传感器故障",
+   "clear": false
+  },
+  {
+   "name": "indoorHeatingOverloadAlarm",
+   "desc": "室内制热过载/高负荷报警",
+   "clear": false
+  },
+  {
+   "name": "outdoorACProtection",
+   "desc": "室外AC电流保护",
+   "clear": false
+  },
+  {
+   "name": "outdoorCompressorRunningErr",
+   "desc": "室外压机运转异常",
+   "clear": false
+  },
+  {
+   "name": "outdoorDCProtection",
+   "desc": "室外DC电流保护",
+   "clear": false
+  },
+  {
+   "name": "outdoorUnloadedErr",
+   "desc": "室外无负载故障",
+   "clear": false
+  },
+  {
+   "name": "ctCurrentErr",
+   "desc": "CT电流异常",
+   "clear": false
+  },
+  {
+   "name": "indoorFreezingProtection",
+   "desc": "室内制冷结冰保护",
+   "clear": false
+  },
+  {
+   "name": "pressureProtection",
+   "desc": "高低压力保护",
+   "clear": false
+  },
+  {
+   "name": "returnAirOverheatAlarm",
+   "desc": "压机回气温度过高",
+   "clear": false
+  },
+  {
+   "name": "outdoorEvaporationSensorErr",
+   "desc": "室外蒸发传感器故障",
+   "clear": false
+  },
+  {
+   "name": "outdoorCoolingOverloadAlarm",
+   "desc": "室外制冷过载",
+   "clear": false
+  },
+  {
+   "name": "waterPumpErr",
+   "desc": "水泵排水故障",
+   "clear": false
+  },
+  {
+   "name": "threePhaseSupplyErr",
+   "desc": "三相电电源故障",
+   "clear": false
+  },
+  {
+   "name": "fourWayValveErr",
+   "desc": "四通阀故障",
+   "clear": false
+  },
+  {
+   "name": "externalAlarmSwitchErr",
+   "desc": "外部报警/耙流开关故障",
+   "clear": false
+  },
+  {
+   "name": "tempCuttingOffProtection",
+   "desc": "温度截止保护报警",
+   "clear": false
+  },
+  {
+   "name": "differentModeRunningErr",
+   "desc": "异模式运转故障",
+   "clear": false
+  },
+  {
+   "name": "expansionValveErr",
+   "desc": "电子膨胀阀故障",
+   "clear": false
+  },
+  {
+   "name": "twErr",
+   "desc": "双热源传感器Tw故障",
+   "clear": false
+  },
+  {
+   "name": "wireCtrCommErr",
+   "desc": "与线控器通讯故障",
+   "clear": false
+  },
+  {
+   "name": "indoorUnitIdConflictErr",
+   "desc": "室内机地址重复故障",
+   "clear": false
+  },
+  {
+   "name": "zeroPassageErr",
+   "desc": "50Hz过零故障",
+   "clear": false
+  },
+  {
+   "name": "outdoorUnitErr",
+   "desc": "室外机故障",
+   "clear": false
+  },
+  {
+   "name": "ch2oSensorErr",
+   "desc": "甲醛传感器故障",
+   "clear": false
+  },
+  {
+   "name": "vocSensorErr",
+   "desc": "VOC传感器故障",
+   "clear": false
+  },
+  {
+   "name": "co2SensorErr",
+   "desc": "CO2传感器故障",
+   "clear": false
+  },
+  {
+   "name": "firewallErr",
+   "desc": "防火墙故障",
+   "clear": false
+  },
+  {
+   "name": "refrigerantCycleErr",
+   "desc": "冷媒循环异常",
+   "clear": false
+  },
+  {
+   "name": "minRotateSpeedErr",
+   "desc": "最小转速故障",
+   "clear": false
+  },
+  {
+   "name": "waterLackAlarm",
+   "desc": "缺水故障",
+   "clear": false
+  },
+  {
+   "name": "downFanErr",
+   "desc": "下风机故障",
+   "clear": false
+  },
+  {
+   "name": "rangeSensorErr",
+   "desc": "距离传感器故障",
+   "clear": false
+  },
+  {
+   "name": "airTemperatureProtection",
+   "desc": "出风温度保护",
+   "clear": false
+  },
+  {
+   "name": "airOutletTemperatureSensorErr",
+   "desc": "出风温度传感器故障",
+   "clear": false
+  },
+  {
+   "name": "highPressureProtection",
+   "desc": "高压压力保护",
+   "clear": false
+  },
+  {
+   "name": "lowPressureProtection",
+   "desc": "低压压力保护",
+   "clear": false
+  },
+  {
+   "name": "indoor3rdFanErr",
+   "desc": "室内风机故障3",
+   "clear": false
+  },
+  {
+   "name": "liquidLevelSensorErr",
+   "desc": "液位传感器故障",
+   "clear": false
+  }
+ ],
+ "attributes": [
+  {
+   "defaultValue": "false",
+   "desc": "防霉",
+   "invisible": false,
+   "name": "mouldProof",
+   "operationType": "G",
+   "readable": true,
+   "value": "true",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "开启"
+     },
+     {
+      "data": "false",
+      "desc": "关闭"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "desc": "室外温度",
+   "invisible": false,
+   "name": "outdoorTemperature",
+   "readable": true,
+   "value": "24",
+   "valueRange": {
+    "dataStep": {
+     "dataType": "Double",
+     "maxValue": "191",
+     "minValue": "-64",
+     "step": "1"
+    },
+    "type": "STEP"
+   },
+   "writable": false
+  },
+  {
+   "defaultValue": "0",
+   "desc": "新风风速",
+   "invisible": true,
+   "name": "freshWindSpeed",
+   "operationType": "G",
+   "readable": true,
+   "value": "0",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "0",
+      "desc": "新风风速无"
+     },
+     {
+      "data": "1",
+      "desc": "新风低风"
+     },
+     {
+      "data": "2",
+      "desc": "新风高风"
+     },
+     {
+      "data": "3",
+      "desc": "新风额定"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "false",
+   "desc": "健康",
+   "invisible": false,
+   "name": "healthMode",
+   "operationType": "G",
+   "readable": true,
+   "value": "false",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "开"
+     },
+     {
+      "data": "false",
+      "desc": "关"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "false",
+   "desc": "蜂鸣器",
+   "invisible": false,
+   "name": "echoStatus",
+   "operationType": "G",
+   "readable": true,
+   "value": "false",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "蜂鸣器不响"
+     },
+     {
+      "data": "false",
+      "desc": "蜂鸣器回响"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "false",
+   "desc": "风避让",
+   "invisible": false,
+   "name": "windAvoidance",
+   "operationType": "G",
+   "readable": true,
+   "value": "false",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "开启"
+     },
+     {
+      "data": "false",
+      "desc": "关闭"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "0",
+   "desc": "自清洁",
+   "invisible": false,
+   "name": "cleanningMode",
+   "operationType": "G",
+   "readable": true,
+   "value": "0",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "0",
+      "desc": "关闭"
+     },
+     {
+      "data": "1",
+      "desc": "内机自清洁"
+     },
+     {
+      "data": "3",
+      "desc": "高温自清洁"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "2",
+   "desc": "上下摆风",
+   "invisible": false,
+   "name": "windDirectionVertical",
+   "operationType": "G",
+   "readable": true,
+   "value": "6",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "2",
+      "desc": "上下摆位置一"
+     },
+     {
+      "data": "4",
+      "desc": "上下摆位置二"
+     },
+     {
+      "data": "5",
+      "desc": "上下摆位置三"
+     },
+     {
+      "data": "6",
+      "desc": "上下摆位置四"
+     },
+     {
+      "data": "7",
+      "desc": "上下摆位置五"
+     },
+     {
+      "data": "8",
+      "desc": "上下摆自动"
+     },
+     {
+      "data": "12",
+      "desc": "上半程自动"
+     },
+     {
+      "data": "13",
+      "desc": "下半程自动"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "false",
+   "desc": "屏显",
+   "invisible": false,
+   "name": "screenDisplayStatus",
+   "operationType": "G",
+   "readable": true,
+   "value": "true",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "开"
+     },
+     {
+      "data": "false",
+      "desc": "关"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "false",
+   "desc": "情景灯光状态",
+   "invisible": true,
+   "name": "lightStatus",
+   "operationType": "G",
+   "readable": true,
+   "value": "false",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "开"
+     },
+     {
+      "data": "false",
+      "desc": "关"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "false",
+   "desc": "ECO",
+   "invisible": false,
+   "name": "energySavingStatus",
+   "operationType": "G",
+   "readable": true,
+   "value": "false",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "开"
+     },
+     {
+      "data": "false",
+      "desc": "关"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "desc": "室内湿度",
+   "invisible": false,
+   "name": "indoorHumidity",
+   "readable": true,
+   "value": "57",
+   "valueRange": {
+    "dataStep": {
+     "dataType": "Integer",
+     "maxValue": "100",
+     "minValue": "0",
+     "step": "1"
+    },
+    "type": "STEP"
+   },
+   "writable": false
+  },
+  {
+   "defaultValue": "false",
+   "desc": "防过冷",
+   "invisible": false,
+   "name": "preventSupercooling",
+   "operationType": "G",
+   "readable": true,
+   "value": "false",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "开启"
+     },
+     {
+      "data": "false",
+      "desc": "关闭"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "0",
+   "desc": "功能模式",
+   "invisible": false,
+   "name": "operationMode",
+   "operationType": "G",
+   "readable": true,
+   "value": "1",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "0",
+      "desc": "智能/自动/舒适"
+     },
+     {
+      "data": "1",
+      "desc": "制冷"
+     },
+     {
+      "data": "2",
+      "desc": "除湿"
+     },
+     {
+      "data": "4",
+      "desc": "制热"
+     },
+     {
+      "data": "6",
+      "desc": "送风"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "26.0",
+   "desc": "目标温度",
+   "invisible": false,
+   "name": "targetTemperature",
+   "operationType": "G",
+   "readable": true,
+   "value": "20.0",
+   "valueRange": {
+    "dataStep": {
+     "dataType": "Double",
+     "maxValue": "30.0",
+     "minValue": "16.0",
+     "step": "0.5"
+    },
+    "type": "STEP"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "0",
+   "desc": "左右摆风",
+   "invisible": false,
+   "name": "windDirectionHorizontal",
+   "operationType": "G",
+   "readable": true,
+   "value": "0",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "0",
+      "desc": "左右摆位置一(固定)"
+     },
+     {
+      "data": "3",
+      "desc": "左右摆位置四"
+     },
+     {
+      "data": "4",
+      "desc": "左右摆位置五"
+     },
+     {
+      "data": "5",
+      "desc": "左右摆位置六"
+     },
+     {
+      "data": "6",
+      "desc": "左右摆位置七"
+     },
+     {
+      "data": "7",
+      "desc": "左右摆位置八(自动)"
+     },
+     {
+      "data": "8",
+      "desc": "左半程自动"
+     },
+     {
+      "data": "9",
+      "desc": "右半程自动"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "true",
+   "desc": "自清扫",
+   "invisible": false,
+   "name": "selfSweepingStatus",
+   "operationType": "G",
+   "readable": true,
+   "value": "false",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "开"
+     },
+     {
+      "data": "false",
+      "desc": "关"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": false
+  },
+  {
+   "desc": "当前室内温度",
+   "invisible": false,
+   "name": "indoorTemperature",
+   "readable": true,
+   "value": "20.5",
+   "valueRange": {
+    "dataStep": {
+     "dataType": "Double",
+     "maxValue": "64.0",
+     "minValue": "0.0",
+     "step": "0.5"
+    },
+    "type": "STEP"
+   },
+   "writable": false
+  },
+  {
+   "defaultValue": "false",
+   "desc": "新风功能状态",
+   "invisible": true,
+   "name": "freshAirStatus",
+   "operationType": "G",
+   "readable": true,
+   "value": "false",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "开"
+     },
+     {
+      "data": "false",
+      "desc": "关"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "false",
+   "desc": "AI开关",
+   "invisible": false,
+   "name": "aiSwitch",
+   "operationType": "G",
+   "readable": true,
+   "value": "false",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "有效"
+     },
+     {
+      "data": "false",
+      "desc": "无效"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "3",
+   "desc": "风速",
+   "invisible": false,
+   "name": "windSpeed",
+   "operationType": "G",
+   "readable": true,
+   "value": "5",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "1",
+      "desc": "高"
+     },
+     {
+      "data": "2",
+      "desc": "中"
+     },
+     {
+      "data": "3",
+      "desc": "低"
+     },
+     {
+      "data": "5",
+      "desc": "自动"
+     },
+     {
+      "data": "7",
+      "desc": "中高风"
+     },
+     {
+      "data": "8",
+      "desc": "中低风"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "false",
+   "desc": "开关机状态",
+   "invisible": false,
+   "name": "onOffStatus",
+   "operationType": "IG",
+   "readable": true,
+   "value": "true",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "开机"
+     },
+     {
+      "data": "false",
+      "desc": "关机"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "0",
+   "desc": "安装位置",
+   "invisible": false,
+   "name": "installationPosition",
+   "readable": true,
+   "value": "0",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "0",
+      "desc": "居中"
+     },
+     {
+      "data": "1",
+      "desc": "居左"
+     },
+     {
+      "data": "2",
+      "desc": "居右"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": false
+  },
+  {
+   "defaultValue": "false",
+   "desc": "电加热功能状态",
+   "invisible": true,
+   "name": "electricHeatingStatus",
+   "operationType": "G",
+   "readable": true,
+   "value": "false",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "开"
+     },
+     {
+      "data": "false",
+      "desc": "关"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "desc": "查询所有属性",
+   "invisible": true,
+   "name": "getAllProperty",
+   "operationType": "I",
+   "readable": true,
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "getAllProperty"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "false",
+   "desc": "滤网提醒",
+   "invisible": false,
+   "name": "localFilterChangeFlag",
+   "readable": true,
+   "value": "false",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "需要更换滤网"
+     },
+     {
+      "data": "false",
+      "desc": "无需更换滤网"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": false
+  },
+  {
+   "defaultValue": "30",
+   "desc": "目标湿度",
+   "invisible": true,
+   "name": "targetHumidity",
+   "operationType": "G",
+   "readable": true,
+   "value": "30",
+   "valueRange": {
+    "dataStep": {
+     "dataType": "Integer",
+     "maxValue": "90",
+     "minValue": "30",
+     "step": "1"
+    },
+    "type": "STEP"
+   },
+   "writable": true
+  },
+  {
+   "desc": "停止报警",
+   "invisible": true,
+   "name": "stopCurrentAlarm",
+   "operationType": "I",
+   "readable": true,
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "stopCurrentAlarm"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "false",
+   "desc": "强力",
+   "invisible": false,
+   "name": "rapidMode",
+   "operationType": "G",
+   "readable": true,
+   "value": "false",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "开"
+     },
+     {
+      "data": "false",
+      "desc": "关"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "false",
+   "desc": "舒适除湿",
+   "invisible": false,
+   "name": "constDehumidificationStatus",
+   "operationType": "G",
+   "readable": true,
+   "value": "false",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "开"
+     },
+     {
+      "data": "false",
+      "desc": "关"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "true",
+   "desc": "提示音开关状态",
+   "invisible": false,
+   "name": "warnStatus",
+   "operationType": "G",
+   "readable": true,
+   "value": "true",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "开"
+     },
+     {
+      "data": "false",
+      "desc": "关"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "false",
+   "desc": "静眠",
+   "invisible": false,
+   "name": "silentSleepStatus",
+   "operationType": "G",
+   "readable": true,
+   "value": "false",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "开"
+     },
+     {
+      "data": "false",
+      "desc": "关"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "false",
+   "desc": "衣服干燥",
+   "invisible": false,
+   "name": "drying",
+   "operationType": "G",
+   "readable": true,
+   "value": "false",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "开启"
+     },
+     {
+      "data": "false",
+      "desc": "关闭"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "false",
+   "desc": "静音",
+   "invisible": false,
+   "name": "muteStatus",
+   "operationType": "G",
+   "readable": true,
+   "value": "false",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "开"
+     },
+     {
+      "data": "false",
+      "desc": "关"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "desc": "查询所有报警",
+   "invisible": true,
+   "name": "getAllAlarm",
+   "operationType": "I",
+   "readable": true,
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "getAllAlarm"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "false",
+   "desc": "防中暑",
+   "invisible": false,
+   "name": "preventHeatstroke",
+   "operationType": "G",
+   "readable": true,
+   "value": "false",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "开启"
+     },
+     {
+      "data": "false",
+      "desc": "关闭"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "0",
+   "desc": "感人模式",
+   "invisible": true,
+   "name": "humanSensingStatus",
+   "operationType": "G",
+   "readable": true,
+   "value": "0",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "0",
+      "desc": "感人关"
+     },
+     {
+      "data": "1",
+      "desc": "感人避让"
+     },
+     {
+      "data": "2",
+      "desc": "感人跟随"
+     },
+     {
+      "data": "3",
+      "desc": "感人"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  },
+  {
+   "defaultValue": "true",
+   "desc": "UV杀菌",
+   "invisible": false,
+   "name": "uvSterilizationSwitch",
+   "operationType": "G",
+   "readable": true,
+   "value": "false",
+   "valueRange": {
+    "dataList": [
+     {
+      "data": "true",
+      "desc": "开"
+     },
+     {
+      "data": "false",
+      "desc": "关"
+     }
+    ],
+    "type": "LIST"
+   },
+   "writable": true
+  }
+ ],
+ "businessAttr": [],
+ "modifiers": [
+  {
+   "priority": 14,
+   "trigger": {
+    "operator": "AND",
+    "conditions": {
+     "operationMode": [
+      "0"
+     ]
+    }
+   },
+   "actions": [
+    {
+     "name": "windAvoidance",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    }
+   ]
+  },
+  {
+   "priority": 13,
+   "trigger": {
+    "operator": "AND",
+    "conditions": {
+     "windAvoidance": [
+      "true"
+     ]
+    }
+   },
+   "actions": [
+    {
+     "name": "windDirectionHorizontal",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "windDirectionVertical",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    }
+   ]
+  },
+  {
+   "priority": 12,
+   "trigger": {
+    "operator": "AND",
+    "conditions": {
+     "drying": [
+      "true"
+     ]
+    }
+   },
+   "actions": [
+    {
+     "name": "silentSleepStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    }
+   ]
+  },
+  {
+   "priority": 11,
+   "trigger": {
+    "operator": "AND",
+    "conditions": {
+     "onOffStatus": [
+      "true"
+     ]
+    }
+   },
+   "actions": [
+    {
+     "name": "selfSweepingStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    }
+   ]
+  },
+  {
+   "priority": 10,
+   "trigger": {
+    "operator": "AND",
+    "conditions": {
+     "silentSleepStatus": [
+      "true"
+     ]
+    }
+   },
+   "actions": [
+    {
+     "name": "cleanningMode",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "rapidMode",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "drying",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    }
+   ]
+  },
+  {
+   "priority": 9,
+   "trigger": {
+    "operator": "AND",
+    "conditions": {
+     "cleanningMode": [
+      "3"
+     ]
+    }
+   },
+   "actions": [
+    {
+     "name": "selfSweepingStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "cleanningMode",
+     "rewriteFields": "V",
+     "writable": null,
+     "defaultValue": null,
+     "valueRange": {
+      "dataList": [
+       {
+        "data": "0",
+        "desc": "关闭"
+       },
+       {
+        "data": "3",
+        "desc": "高温自清洁"
+       }
+      ],
+      "type": "LIST"
+     }
+    }
+   ]
+  },
+  {
+   "priority": 8,
+   "trigger": {
+    "operator": "AND",
+    "conditions": {
+     "cleanningMode": [
+      "1"
+     ]
+    }
+   },
+   "actions": [
+    {
+     "name": "selfSweepingStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "cleanningMode",
+     "rewriteFields": "V",
+     "writable": null,
+     "defaultValue": null,
+     "valueRange": {
+      "dataList": [
+       {
+        "data": "0",
+        "desc": "关闭"
+       },
+       {
+        "data": "1",
+        "desc": "内机自清洁"
+       }
+      ],
+      "type": "LIST"
+     }
+    }
+   ]
+  },
+  {
+   "priority": 7,
+   "trigger": {
+    "operator": "AND",
+    "conditions": {
+     "operationMode": [
+      "2"
+     ]
+    }
+   },
+   "actions": [
+    {
+     "name": "rapidMode",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "muteStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    }
+   ]
+  },
+  {
+   "priority": 6,
+   "trigger": {
+    "operator": "AND",
+    "conditions": {
+     "drying": [
+      "true"
+     ]
+    }
+   },
+   "actions": [
+    {
+     "name": "targetTemperature",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "windSpeed",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "rapidMode",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "muteStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    }
+   ]
+  },
+  {
+   "priority": 5,
+   "trigger": {
+    "operator": "OR",
+    "conditions": {
+     "cleanningMode": [
+      "1",
+      "3"
+     ],
+     "selfSweepingStatus": [
+      "true"
+     ]
+    }
+   },
+   "actions": [
+    {
+     "name": "targetTemperature",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "windDirectionHorizontal",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "windAvoidance",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "windDirectionVertical",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "healthMode",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "aiSwitch",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "energySavingStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "silentSleepStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "mouldProof",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "preventHeatstroke",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "preventSupercooling",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "windSpeed",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "rapidMode",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "muteStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "drying",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "screenDisplayStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "uvSterilizationSwitch",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "constDehumidificationStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    }
+   ]
+  },
+  {
+   "priority": 4,
+   "trigger": {
+    "operator": "AND",
+    "conditions": {
+     "operationMode": [
+      "6"
+     ]
+    }
+   },
+   "actions": [
+    {
+     "name": "windAvoidance",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "energySavingStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "silentSleepStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "windSpeed",
+     "rewriteFields": "V",
+     "writable": null,
+     "defaultValue": null,
+     "valueRange": {
+      "dataList": [
+       {
+        "data": "1",
+        "desc": "高"
+       },
+       {
+        "data": "2",
+        "desc": "中"
+       },
+       {
+        "data": "3",
+        "desc": "低"
+       },
+       {
+        "data": "7",
+        "desc": "中高风"
+       },
+       {
+        "data": "8",
+        "desc": "中低风"
+       }
+      ],
+      "type": "LIST"
+     }
+    },
+    {
+     "name": "rapidMode",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "muteStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    }
+   ]
+  },
+  {
+   "priority": 3,
+   "trigger": {
+    "operator": "AND",
+    "conditions": {
+     "installationPosition": [
+      "2"
+     ]
+    }
+   },
+   "actions": [
+    {
+     "name": "windDirectionHorizontal",
+     "rewriteFields": "V",
+     "writable": null,
+     "defaultValue": null,
+     "valueRange": {
+      "dataList": [
+       {
+        "data": "0",
+        "desc": "左右摆位置一(固定)"
+       },
+       {
+        "data": "3",
+        "desc": "左右摆位置四"
+       },
+       {
+        "data": "4",
+        "desc": "左右摆位置五"
+       },
+       {
+        "data": "8",
+        "desc": "左半程自动"
+       }
+      ],
+      "type": "LIST"
+     }
+    }
+   ]
+  },
+  {
+   "priority": 2,
+   "trigger": {
+    "operator": "AND",
+    "conditions": {
+     "installationPosition": [
+      "1"
+     ]
+    }
+   },
+   "actions": [
+    {
+     "name": "windDirectionHorizontal",
+     "rewriteFields": "V",
+     "writable": null,
+     "defaultValue": null,
+     "valueRange": {
+      "dataList": [
+       {
+        "data": "0",
+        "desc": "左右摆位置一(固定)"
+       },
+       {
+        "data": "5",
+        "desc": "左右摆位置六"
+       },
+       {
+        "data": "6",
+        "desc": "左右摆位置七"
+       },
+       {
+        "data": "9",
+        "desc": "右半程自动"
+       }
+      ],
+      "type": "LIST"
+     }
+    }
+   ]
+  },
+  {
+   "priority": 1,
+   "trigger": {
+    "operator": "OR",
+    "conditions": {},
+    "alarms": [
+     "outdoorModuleErr",
+     "outdoorDeforstSensorErr",
+     "outdoorExhaustSensorErr",
+     "outdoorEEPROMErr",
+     "indoorCoilerSensorErr",
+     "indoorOutdoorCommErr",
+     "powerProtection",
+     "panelCommErr",
+     "outdoorCompressorOverheatProtection",
+     "outdoorEnviSensorErr",
+     "fullWaterProtection",
+     "indoorEEPROMErr",
+     "outdoorReturnAirSensorErr",
+     "cbdCommErr",
+     "indoorFanErr",
+     "outdoorFanErr",
+     "doorErr",
+     "filterCleaningAlarm",
+     "waterLackProtection",
+     "humiditySensorErr",
+     "indoorTempSensorErr",
+     "mechanicalArmLimitErr",
+     "indoorPM2p5SensorErr",
+     "outdoorPM2p5SensorErr",
+     "indoorHeatingOverloadAlarm",
+     "outdoorACProtection",
+     "outdoorCompressorRunningErr",
+     "outdoorDCProtection",
+     "outdoorUnloadedErr",
+     "ctCurrentErr",
+     "indoorFreezingProtection",
+     "pressureProtection",
+     "returnAirOverheatAlarm",
+     "outdoorEvaporationSensorErr",
+     "outdoorCoolingOverloadAlarm",
+     "waterPumpErr",
+     "threePhaseSupplyErr",
+     "fourWayValveErr",
+     "externalAlarmSwitchErr",
+     "tempCuttingOffProtection",
+     "differentModeRunningErr",
+     "expansionValveErr",
+     "twErr",
+     "wireCtrCommErr",
+     "indoorUnitIdConflictErr",
+     "zeroPassageErr",
+     "outdoorUnitErr",
+     "ch2oSensorErr",
+     "vocSensorErr",
+     "co2SensorErr",
+     "firewallErr",
+     "refrigerantCycleErr",
+     "minRotateSpeedErr",
+     "waterLackAlarm",
+     "downFanErr",
+     "rangeSensorErr",
+     "airTemperatureProtection",
+     "airOutletTemperatureSensorErr",
+     "highPressureProtection",
+     "lowPressureProtection",
+     "indoor3rdFanErr",
+     "liquidLevelSensorErr"
+    ]
+   },
+   "actions": [
+    {
+     "name": "targetTemperature",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "windDirectionHorizontal",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "windAvoidance",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "windDirectionVertical",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "healthMode",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "aiSwitch",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "energySavingStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "operationMode",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "silentSleepStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "mouldProof",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "preventHeatstroke",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "preventSupercooling",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "selfSweepingStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "cleanningMode",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "windSpeed",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "rapidMode",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "muteStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "drying",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "warnStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "screenDisplayStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "uvSterilizationSwitch",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    }
+   ]
+  },
+  {
+   "priority": 0,
+   "trigger": {
+    "operator": "AND",
+    "conditions": {
+     "onOffStatus": [
+      "false"
+     ]
+    }
+   },
+   "actions": [
+    {
+     "name": "targetTemperature",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "windDirectionHorizontal",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "windAvoidance",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "windDirectionVertical",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "healthMode",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "aiSwitch",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "energySavingStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "operationMode",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "silentSleepStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "mouldProof",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "preventHeatstroke",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "preventSupercooling",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "windSpeed",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "rapidMode",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "muteStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "drying",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "uvSterilizationSwitch",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    },
+    {
+     "name": "constDehumidificationStatus",
+     "rewriteFields": "W",
+     "writable": false,
+     "defaultValue": null,
+     "valueRange": null
+    }
+   ]
+  }
+ ],
+ "constraints": [
+  {
+   "pendingCondition": {
+    "operator": "AND",
+    "commands": {
+     "drying": [
+      "true"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "targetTemperature",
+      "value": "16"
+     },
+     {
+      "name": "operationMode",
+      "value": "2"
+     },
+     {
+      "name": "windSpeed",
+      "value": "5"
+     },
+     {
+      "name": "muteStatus",
+      "value": "false"
+     },
+     {
+      "name": "rapidMode",
+      "value": "false"
+     },
+     {
+      "name": "selfSweepingStatus",
+      "value": "false"
+     },
+     {
+      "name": "cleanningMode",
+      "value": "0"
+     },
+     {
+      "name": "silentSleepStatus",
+      "value": "false"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": []
+   }
+  },
+  {
+   "pendingCondition": {
+    "operator": "AND",
+    "commands": {
+     "operationMode": [
+      "6"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "windSpeed",
+      "value": "3"
+     },
+     {
+      "name": "silentSleepStatus",
+      "value": "false"
+     },
+     {
+      "name": "muteStatus",
+      "value": "false"
+     },
+     {
+      "name": "rapidMode",
+      "value": "false"
+     },
+     {
+      "name": "drying",
+      "value": "false"
+     },
+     {
+      "name": "energySavingStatus",
+      "value": "false"
+     },
+     {
+      "name": "selfSweepingStatus",
+      "value": "false"
+     },
+     {
+      "name": "cleanningMode",
+      "value": "0"
+     },
+     {
+      "name": "onOffStatus",
+      "value": "true"
+     },
+     {
+      "name": "constDehumidificationStatus",
+      "value": "false"
+     },
+     {
+      "name": "uvSterilizationSwitch",
+      "value": "false"
+     },
+     {
+      "name": "windAvoidance",
+      "value": "false"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": [
+     {
+      "dataType": "enum",
+      "name": "windSpeed",
+      "variants": {
+       "enumList": [
+        {
+         "stdDesc": "自动",
+         "stdValue": "5",
+         "description": "自动"
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "pendingCondition": {
+    "operator": "AND",
+    "commands": {
+     "operationMode": [
+      "6"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "silentSleepStatus",
+      "value": "false"
+     },
+     {
+      "name": "muteStatus",
+      "value": "false"
+     },
+     {
+      "name": "rapidMode",
+      "value": "false"
+     },
+     {
+      "name": "drying",
+      "value": "false"
+     },
+     {
+      "name": "energySavingStatus",
+      "value": "false"
+     },
+     {
+      "name": "selfSweepingStatus",
+      "value": "false"
+     },
+     {
+      "name": "cleanningMode",
+      "value": "0"
+     },
+     {
+      "name": "onOffStatus",
+      "value": "true"
+     },
+     {
+      "name": "constDehumidificationStatus",
+      "value": "false"
+     },
+     {
+      "name": "uvSterilizationSwitch",
+      "value": "false"
+     },
+     {
+      "name": "windAvoidance",
+      "value": "false"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": []
+   }
+  },
+  {
+   "pendingCondition": {
+    "operator": "AND",
+    "commands": {
+     "operationMode": [
+      "0"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "targetTemperature",
+      "value": "25"
+     },
+     {
+      "name": "drying",
+      "value": "false"
+     },
+     {
+      "name": "selfSweepingStatus",
+      "value": "false"
+     },
+     {
+      "name": "cleanningMode",
+      "value": "0"
+     },
+     {
+      "name": "onOffStatus",
+      "value": "true"
+     },
+     {
+      "name": "constDehumidificationStatus",
+      "value": "false"
+     },
+     {
+      "name": "uvSterilizationSwitch",
+      "value": "false"
+     },
+     {
+      "name": "windAvoidance",
+      "value": "false"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": [
+     {
+      "dataType": "bool",
+      "name": "aiSwitch",
+      "variants": {
+       "boolList": [
+        {
+         "stdDesc": "有效",
+         "stdValue": "true",
+         "description": "有效"
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "pendingCondition": {
+    "operator": "AND",
+    "commands": {
+     "operationMode": [
+      "0"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "drying",
+      "value": "false"
+     },
+     {
+      "name": "selfSweepingStatus",
+      "value": "false"
+     },
+     {
+      "name": "cleanningMode",
+      "value": "0"
+     },
+     {
+      "name": "onOffStatus",
+      "value": "true"
+     },
+     {
+      "name": "constDehumidificationStatus",
+      "value": "false"
+     },
+     {
+      "name": "uvSterilizationSwitch",
+      "value": "false"
+     },
+     {
+      "name": "windAvoidance",
+      "value": "false"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": []
+   }
+  },
+  {
+   "pendingCondition": {
+    "operator": "AND",
+    "commands": {
+     "onOffStatus": [
+      "true",
+      "false"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "selfSweepingStatus",
+      "value": "false"
+     },
+     {
+      "name": "cleanningMode",
+      "value": "0"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": []
+   }
+  },
+  {
+   "pendingCondition": {
+    "operator": "AND",
+    "commands": {
+     "cleanningMode": [
+      "1",
+      "3"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "selfSweepingStatus",
+      "value": "false"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": []
+   }
+  },
+  {
+   "pendingCondition": {
+    "operator": "OR",
+    "commands": {
+     "muteStatus": [
+      "true"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "rapidMode",
+      "value": "false"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": []
+   }
+  },
+  {
+   "pendingCondition": {
+    "operator": "AND",
+    "commands": {
+     "rapidMode": [
+      "true"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "muteStatus",
+      "value": "false"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": []
+   }
+  },
+  {
+   "pendingCondition": {
+    "operator": "AND",
+    "commands": {
+     "windSpeed": [
+      "1",
+      "2",
+      "3",
+      "7",
+      "8"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "rapidMode",
+      "value": "false"
+     },
+     {
+      "name": "muteStatus",
+      "value": "false"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": []
+   }
+  },
+  {
+   "pendingCondition": {
+    "operator": "AND",
+    "commands": {
+     "muteStatus": [
+      "false"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "uvSterilizationSwitch",
+      "value": "false"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": []
+   }
+  },
+  {
+   "pendingCondition": {
+    "operator": "AND",
+    "commands": {
+     "silentSleepStatus": [
+      "true"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "rapidMode",
+      "value": "false"
+     },
+     {
+      "name": "drying",
+      "value": "false"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": []
+   }
+  },
+  {
+   "pendingCondition": {
+    "operator": "AND",
+    "commands": {
+     "windAvoidance": [
+      "true"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "windDirectionHorizontal",
+      "value": "3"
+     },
+     {
+      "name": "windDirectionVertical",
+      "value": "2"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": [
+     {
+      "dataType": "enum",
+      "name": "operationMode",
+      "variants": {
+       "enumList": [
+        {
+         "stdDesc": "制冷",
+         "stdValue": "1",
+         "description": "制冷"
+        },
+        {
+         "stdDesc": "除湿",
+         "stdValue": "2",
+         "description": "除湿"
+        }
+       ]
+      }
+     },
+     {
+      "dataType": "enum",
+      "name": "installationPosition",
+      "variants": {
+       "enumList": [
+        {
+         "stdDesc": "居左",
+         "stdValue": "1",
+         "description": "居左"
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "pendingCondition": {
+    "operator": "AND",
+    "commands": {
+     "windAvoidance": [
+      "true"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "windDirectionHorizontal",
+      "value": "6"
+     },
+     {
+      "name": "windDirectionVertical",
+      "value": "2"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": [
+     {
+      "dataType": "enum",
+      "name": "operationMode",
+      "variants": {
+       "enumList": [
+        {
+         "stdDesc": "制冷",
+         "stdValue": "1",
+         "description": "制冷"
+        },
+        {
+         "stdDesc": "除湿",
+         "stdValue": "2",
+         "description": "除湿"
+        }
+       ]
+      }
+     },
+     {
+      "dataType": "enum",
+      "name": "installationPosition",
+      "variants": {
+       "enumList": [
+        {
+         "stdDesc": "居中",
+         "stdValue": "0",
+         "description": "居中"
+        },
+        {
+         "stdDesc": "居右",
+         "stdValue": "2",
+         "description": "居右"
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "pendingCondition": {
+    "operator": "AND",
+    "commands": {
+     "windAvoidance": [
+      "true"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "windDirectionVertical",
+      "value": "7"
+     },
+     {
+      "name": "windDirectionHorizontal",
+      "value": "6"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": [
+     {
+      "dataType": "enum",
+      "name": "operationMode",
+      "variants": {
+       "enumList": [
+        {
+         "stdDesc": "制热",
+         "stdValue": "4",
+         "description": "制热"
+        }
+       ]
+      }
+     },
+     {
+      "dataType": "enum",
+      "name": "installationPosition",
+      "variants": {
+       "enumList": [
+        {
+         "stdDesc": "居中",
+         "stdValue": "0",
+         "description": "居中"
+        },
+        {
+         "stdDesc": "居右",
+         "stdValue": "2",
+         "description": "居右"
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "pendingCondition": {
+    "operator": "AND",
+    "commands": {
+     "windAvoidance": [
+      "true"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "windDirectionVertical",
+      "value": "7"
+     },
+     {
+      "name": "windDirectionHorizontal",
+      "value": "3"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": [
+     {
+      "dataType": "enum",
+      "name": "operationMode",
+      "variants": {
+       "enumList": [
+        {
+         "stdDesc": "制热",
+         "stdValue": "4",
+         "description": "制热"
+        }
+       ]
+      }
+     },
+     {
+      "dataType": "enum",
+      "name": "installationPosition",
+      "variants": {
+       "enumList": [
+        {
+         "stdDesc": "居左",
+         "stdValue": "1",
+         "description": "居左"
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "pendingCondition": {
+    "operator": "AND",
+    "commands": {
+     "operationMode": [
+      "2"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "muteStatus",
+      "value": "false"
+     },
+     {
+      "name": "rapidMode",
+      "value": "false"
+     },
+     {
+      "name": "selfSweepingStatus",
+      "value": "false"
+     },
+     {
+      "name": "cleanningMode",
+      "value": "0"
+     },
+     {
+      "name": "onOffStatus",
+      "value": "true"
+     },
+     {
+      "name": "windDirectionVertical",
+      "value": "2"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": [
+     {
+      "dataType": "bool",
+      "name": "windAvoidance",
+      "variants": {
+       "boolList": [
+        {
+         "stdDesc": "开启",
+         "stdValue": "true",
+         "description": "开启"
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "pendingCondition": {
+    "operator": "AND",
+    "commands": {
+     "operationMode": [
+      "2"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "muteStatus",
+      "value": "false"
+     },
+     {
+      "name": "rapidMode",
+      "value": "false"
+     },
+     {
+      "name": "selfSweepingStatus",
+      "value": "false"
+     },
+     {
+      "name": "cleanningMode",
+      "value": "0"
+     },
+     {
+      "name": "onOffStatus",
+      "value": "true"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": []
+   }
+  },
+  {
+   "pendingCondition": {
+    "operator": "AND",
+    "commands": {
+     "operationMode": [
+      "1"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "constDehumidificationStatus",
+      "value": "false"
+     },
+     {
+      "name": "drying",
+      "value": "false"
+     },
+     {
+      "name": "uvSterilizationSwitch",
+      "value": "false"
+     },
+     {
+      "name": "windDirectionVertical",
+      "value": "2"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": [
+     {
+      "dataType": "bool",
+      "name": "windAvoidance",
+      "variants": {
+       "boolList": [
+        {
+         "stdDesc": "开启",
+         "stdValue": "true",
+         "description": "开启"
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "pendingCondition": {
+    "operator": "AND",
+    "commands": {
+     "operationMode": [
+      "1"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "constDehumidificationStatus",
+      "value": "false"
+     },
+     {
+      "name": "uvSterilizationSwitch",
+      "value": "false"
+     },
+     {
+      "name": "drying",
+      "value": "false"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": []
+   }
+  },
+  {
+   "pendingCondition": {
+    "operator": "AND",
+    "commands": {
+     "operationMode": [
+      "4"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "constDehumidificationStatus",
+      "value": "false"
+     },
+     {
+      "name": "drying",
+      "value": "false"
+     },
+     {
+      "name": "uvSterilizationSwitch",
+      "value": "false"
+     },
+     {
+      "name": "windDirectionVertical",
+      "value": "7"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": [
+     {
+      "dataType": "bool",
+      "name": "windAvoidance",
+      "variants": {
+       "boolList": [
+        {
+         "stdDesc": "开启",
+         "stdValue": "true",
+         "description": "开启"
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "pendingCondition": {
+    "operator": "AND",
+    "commands": {
+     "operationMode": [
+      "4"
+     ]
+    }
+   },
+   "additionalCommands": {
+    "mergeType": "PREPEND",
+    "commands": [
+     {
+      "name": "constDehumidificationStatus",
+      "value": "false"
+     },
+     {
+      "name": "drying",
+      "value": "false"
+     },
+     {
+      "name": "uvSterilizationSwitch",
+      "value": "false"
+     }
+    ]
+   },
+   "reportValue": {
+    "relation": "AND",
+    "property": []
+   }
+  }
+ ],
+ "groupCommands": [
+  {
+   "name": "grSetDAC",
+   "desc": "参数设置（组命令）",
+   "attrNameList": [
+    "targetTemperature",
+    "windDirectionHorizontal",
+    "windAvoidance",
+    "windDirectionVertical",
+    "healthMode",
+    "electricHeatingStatus",
+    "onOffStatus",
+    "aiSwitch",
+    "energySavingStatus",
+    "operationMode",
+    "silentSleepStatus",
+    "lightStatus",
+    "humanSensingStatus",
+    "uvSterilizationSwitch",
+    "mouldProof",
+    "preventHeatstroke",
+    "preventSupercooling",
+    "freshAirStatus",
+    "freshWindSpeed",
+    "selfSweepingStatus",
+    "cleanningMode",
+    "targetHumidity",
+    "windSpeed",
+    "rapidMode",
+    "muteStatus",
+    "screenDisplayStatus",
+    "echoStatus",
+    "drying",
+    "constDehumidificationStatus",
+    "warnStatus"
+   ]
+  }
+ ],
+ "invisible_attributes": [
+  "electricHeatingStatus",
+  "freshAirStatus",
+  "freshWindSpeed",
+  "getAllAlarm",
+  "getAllProperty",
+  "humanSensingStatus",
+  "lightStatus",
+  "stopCurrentAlarm",
+  "targetHumidity"
+ ]
+}

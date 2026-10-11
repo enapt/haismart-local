@@ -334,9 +334,9 @@ def test_every_bundled_order_is_reconciled_with_the_frame_or_recorded() -> None:
 
     Every product the bundle ships an order for is checked against the shared frame. The allowed
     verdicts are a closed list -- fully clean, the twin-tower appended-tail drops, or the two
-    families whose order refutes the frame outright -- so a future bundle regeneration that brings
-    in a new departure fails here and gets a decision made about it, instead of quietly being
-    offered frame positions its own contract contradicts.
+    families whose order refutes the frame outright because they publish their own -- so a future
+    bundle regeneration that brings in a new departure fails here and gets a decision made about
+    it, instead of quietly being offered frame positions its own contract contradicts.
     """
     from haismart_hrdp.canonical_map import CANONICAL_WRITE
     from haismart_hrdp.device_rules import declared_order
@@ -352,10 +352,10 @@ def test_every_bundled_order_is_reconciled_with_the_frame_or_recorded() -> None:
     # the only families allowed to depart, and how
     TWIN_TOWER_DROPS = {"windDirectionHorizontal", "windDirectionVertical", "windSpeed",
                         "mouldProof"}
-    IRRECONCILABLE = {
-        "2008610800820324021200118018500000000000000000000000000000000040",
-        "2008610800820324021200118018504200000000000000000000000000000040",
-    }
+    # An order that refutes the frame is allowed only where the family publishes a frame of its own
+    # and is registered with it -- so a new refuting family fails here until it has one, rather
+    # than being left with nothing.
+    from haismart_hrdp.wire_models import JAPAN_WALL_TYPEIDS as IRRECONCILABLE
 
     checked = 0
     for code in known_products():

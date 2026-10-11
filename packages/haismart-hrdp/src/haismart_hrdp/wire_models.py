@@ -270,10 +270,16 @@ def vane_model_code(model: WireModel, data: bytes, key: str) -> int | None:
 
     ``None`` also for a wire code no published stop maps to: the special modes park a vane at codes
     no model names, and reporting one as a stop the unit never claimed to have would be an invention.
+
+    A family carrying its own :attr:`WireModel.vane_codes` is translated through those, on BOTH
+    axes: the shared rule that the left-right code is already the published one is a property of the
+    shared frame, and a family with its own frame numbers its stops its own way.
     """
     raw = vane_code(model, data, key)
     if raw is None:
         return None
+    if (own := model.vane_codes.get(key)) is not None:
+        return own.get(raw)
     if key == "swing_vertical":
         return VANE_V_EPP_TO_MODEL.get(raw)
     return raw
@@ -449,6 +455,18 @@ class WireModel:
     # that publishes NO group command at all -- every attribute ``writeType: I`` -- so there is no
     # word block to seed and each change is its own op. Maps an attribute name to :class:`ValueParam`.
     value_param_fields: Mapping[str, ValueParam] = field(default_factory=dict)
+    # A family that publishes its OWN map rather than a displacement of the shared one: the
+    # attributes beyond the climate block that its map places, keyed by the published attribute name
+    # the way :func:`declared_fields` keys them. Read only when ``canonical_displacement`` is
+    # ``None`` -- a family that has a displacement takes its extras from the shared map instead, and
+    # carrying both would let two tables disagree about one attribute.
+    own_fields: Mapping[str, WireField] = field(default_factory=dict)
+    # The family's own vane code tables, wire code -> the code its model publishes, per axis key
+    # (``"swing_vertical"`` / ``"swing_horizontal"``). Empty means the shared tables apply: the
+    # up-down axis through :data:`VANE_V_EPP_TO_MODEL`, the left-right axis as the identity. A family
+    # that numbers its stops differently MUST carry its own, or a stop it reports is named as a
+    # different stop of the shared family.
+    vane_codes: Mapping[str, Mapping[int, int]] = field(default_factory=dict)
 
     def canonical_word(self, word: int) -> int | None:
         """Where a published map word lands in this family's report, or ``None`` if unplaceable.
@@ -471,10 +489,19 @@ class WireModel:
 
         Empty for a family whose relationship to the map is unknown, which is the safe direction:
         the device keeps the attributes that were established from captures and gains nothing
-        invented.
+        invented. A family that publishes its own map places them from :attr:`own_fields` instead,
+        under the same two gates: the device declares the attribute, and the report is long enough
+        to carry it.
         """
         if self.canonical_displacement is None:
-            return {}
+            word_limit = (report_length - _ATTR_BASE) // 2
+            wanted = set(declared)
+            return {
+                name: wf for name, wf in self.own_fields.items()
+                if name in wanted
+                and wf.word <= word_limit
+                and wf.word - (wf.bit + wf.length + 15) // 16 + 1 >= 1
+            }
         place = self.canonical_word
         if insert := self.length_inserts.get(report_length):
             pivot, count = insert
@@ -1423,9 +1450,150 @@ EXTENDED46 = WireModel(
     },
 )
 
+# --- the Japanese wall units (111-byte report) ----------------------------------------------------
+
+# Haier's two Japanese wall-mounted device types, `日本挂2024` and `日本挂2025` -- the AQUA `AQA-AX*`
+# and `JAA-MX*` lines. Every unit of both announces one of these two identifiers, and the family is
+# keyed on them alone: a 111-byte report from anything else falls through to the unknown-layout
+# path, exactly as before.
+#
+# ★ This is NOT the shared frame at another displacement, and that is the whole reason these units
+# were monitoring-only. Their published group-set ORDER has essentially no rank correlation with the
+# shared frame's positions, so no displacement of it could be right. The reason is that the family
+# publishes its OWN frame: the climate block is packed into four words in an order of its own, and
+# the sensors follow at words 8-9. Both maps -- the report's `Property` and the write frame's
+# `Operation[grSetDAC].variants` -- are in the manufacturer's byte map for each identifier, and for
+# all 30 settable attributes the two state the SAME word, bit and width. So the group set is report
+# words 1-4 lifted out, and a write reads back at exactly the bit it wrote.
+#
+# ★ Read side checked against ground truth this map was not built from: issue #19's report (a
+# `JAA-MX225AK`, product `AACWS2E00`), decoded here, agrees with the manufacturer's own cloud record
+# of the same unit taken in the same minute -- setpoint 21.0, room 20.0 C, humidity 60, outdoor 14,
+# cool, fan auto, power on, vanes, and the secondary toggles.
+#
+# ⚠️ The write side is the published frame, not a capture: no unit of this family has yet confirmed
+# a command (Rule 8). Its length is the published span -- four words -- on the rule both classic
+# layouts obey on hardware: the 127-byte unit's own app was captured sending six words, and a
+# five-word op was accepted by the 125-byte layout, each the span its own map publishes. The
+# appliance's reply frame and the next report say whether it landed, as on every family.
+#
+# Three things differ from the shared frame and each would be a SILENT wrong value if copied:
+#
+#   * the setpoint is °C × 2 (k 0.5), not °C − 16 -- read as the classic family it is 58 C;
+#   * the fan code is not the identity: auto is wire 0 and high is wire 2;
+#   * the left-right vane is not the identity either (wire 1 is published stop 3, "position 4").
+#     The shared rule passes a left-right stop through as its wire code, so on this family a stop
+#     would land one to two positions away from the one asked for. Only its two ends -- fixed (0)
+#     and auto (7), which do coincide -- are written; the stops are not offered.
+JAPAN_WALL_TYPEIDS = frozenset({
+    "2008610800820324021200118018500000000000000000000000000000000040",   # 日本挂2024
+    "2008610800820324021200118018504200000000000000000000000000000040",   # 日本挂2025
+})
+
+#: Wire code -> the code the model publishes, per vane axis, from the family's own `variants`.
+_JAPAN_WALL_VANE_V: Mapping[int, int] = {
+    0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 6: 5, 8: 6, 10: 7, 12: 8, 5: 12, 7: 13,
+}
+_JAPAN_WALL_VANE_H: Mapping[int, int] = {0: 0, 1: 3, 2: 4, 3: 5, 4: 6, 7: 7, 5: 8, 6: 9}
+#: The published codes that SWEEP, named by the units' own descriptions: 上下摆自动 / 上半程自动 /
+#: 下半程自动 (full, upper half, lower half) and 左右摆位置八(自动) / 左半程自动 / 右半程自动. A
+#: half-range sweep is swinging, and reading it as stationary would invite a swing-on that flattens
+#: it into a full sweep.
+_JAPAN_WALL_SWEEP_V = frozenset({8, 12, 13})
+_JAPAN_WALL_SWEEP_H = frozenset({7, 8, 9})
+#: Published STD code -> wire code.
+_JAPAN_WALL_MODE: Mapping[int, int] = {0: 0, 1: 1, 2: 2, 4: 4, 6: 6}
+_JAPAN_WALL_FAN: Mapping[int, int] = {1: 2, 2: 4, 3: 6, 4: 7, 5: 0, 6: 1, 7: 3, 8: 5}
+
+_JAPAN_WALL_WRITE = {
+    # 16..30 C, the range the units declare: wire 32..60.
+    "targetTemperature": WriteField(1, 8, 8, "celsius", scale=2.0, min_epp=32, max_epp=60),
+    # The up-down stops a unit of this family declares (2, 4, 5, 6, 7 and auto 8) are the SAME wire
+    # codes as the shared table's, so a position chosen through it lands where it says;
+    # `test_japan_wall_up_down_stops_agree_with_the_shared_table` holds that. Its two half-range
+    # sweeps (12, 13) have no shared code and are not offered.
+    "windDirectionVertical": WriteField(1, 0, 4, "passthrough", max_epp=0x0C),
+    # Fixed or sweeping only -- see the note above the family.
+    "windDirectionHorizontal": WriteField(1, 5, 3, "onoff", on_value=VANE_H_AUTO),
+    "operationMode": WriteField(2, 8, 3, "std_enum", std_to_epp=_JAPAN_WALL_MODE),
+    "onOffStatus": WriteField(2, 13, 1, "passthrough"),
+    "healthMode": WriteField(2, 15, 1, "passthrough"),
+    "silentSleepStatus": WriteField(2, 7, 1, "passthrough"),
+    "windSpeed": WriteField(4, 12, 3, "std_enum", std_to_epp=_JAPAN_WALL_FAN),
+    "rapidMode": WriteField(4, 11, 1, "passthrough"),
+    "muteStatus": WriteField(4, 10, 1, "passthrough"),
+    "screenDisplayStatus": WriteField(4, 9, 1, "passthrough"),
+}
+
+JAPAN_WALL = WireModel(
+    family="japan_wall",
+    # Keyed on the identifiers, never on the length: nothing about "111 bytes" says "this family",
+    # and a length match would hand an unrelated report this map's confident readings.
+    report_lengths=frozenset(),
+    uplus_ids=JAPAN_WALL_TYPEIDS,
+    writable=True,
+    group_cmd=b"\x60\x01",
+    word_count=4,
+    write_base_word=1,
+    write_fields=_JAPAN_WALL_WRITE,
+    position_fields=frozenset({"windDirectionVertical"}),
+    vane_codes={
+        "swing_vertical": _JAPAN_WALL_VANE_V,
+        "swing_horizontal": _JAPAN_WALL_VANE_H,
+    },
+    fields={
+        "power": WireField(2, 13, 1, kind="bool"),
+        "target_temperature": WireField(1, 8, 8, kind="int", k=0.5),
+        "current_temperature": WireField(8, 8, 8, kind="temp", k=0.5),
+        "outdoor_temperature": WireField(9, 8, 8, kind="temp", c=-64.0),
+        "operation_mode": WireField(
+            2, 8, 3, kind="enum", enum={w: str(s) for s, w in _JAPAN_WALL_MODE.items()}
+        ),
+        "wind_speed": WireField(
+            4, 12, 3, kind="enum", enum={w: str(s) for s, w in _JAPAN_WALL_FAN.items()}
+        ),
+        "swing_vertical": WireField(
+            1, 0, 4, kind="enum",
+            enum={w: s in _JAPAN_WALL_SWEEP_V for w, s in _JAPAN_WALL_VANE_V.items()},
+        ),
+        "swing_horizontal": WireField(
+            1, 5, 3, kind="enum",
+            enum={w: s in _JAPAN_WALL_SWEEP_H for w, s in _JAPAN_WALL_VANE_H.items()},
+        ),
+        "health": WireField(2, 15, 1, kind="bool"),
+        "sleep": WireField(2, 7, 1, kind="bool"),
+        "strong": WireField(4, 11, 1, kind="bool"),
+        "quiet": WireField(4, 10, 1, kind="bool"),
+        "lamp": WireField(4, 9, 1, kind="bool"),
+        "last_changed_by": WireField(5, 0, 2, kind="enum", enum=OPERATION_SOURCE),
+    },
+    # The rest of what the family's map places, offered by the device's own declaration like any
+    # other family's extras: the humidity probe and the read-only feature states. Every entry is held
+    # to the manufacturer's map for BOTH identifiers by `test_japan_wall_matches_the_published_map`,
+    # which also fails if one the readers know is missing -- a table that omits a field is how a
+    # declared reading silently never appears.
+    own_fields={
+        "indoorHumidity": WireField(8, 0, 8, kind="raw"),
+        "windAvoidance": WireField(1, 4, 1, kind="bool"),
+        "electricHeatingStatus": WireField(2, 14, 1, kind="bool"),
+        "energySavingStatus": WireField(2, 11, 1, kind="bool"),
+        "lightStatus": WireField(2, 6, 1, kind="bool"),
+        "humanSensingStatus": WireField(2, 4, 2, kind="raw"),
+        "uvSterilizationSwitch": WireField(2, 3, 1, kind="bool"),
+        "mouldProof": WireField(2, 2, 1, kind="bool"),
+        "preventHeatstroke": WireField(2, 1, 1, kind="bool"),
+        "preventSupercooling": WireField(2, 0, 1, kind="bool"),
+        "freshAirStatus": WireField(3, 15, 1, kind="bool"),
+        "echoStatus": WireField(4, 8, 1, kind="bool"),
+        "drying": WireField(4, 7, 1, kind="bool"),
+        "constDehumidificationStatus": WireField(4, 6, 1, kind="bool"),
+        "localFilterChangeFlag": WireField(5, 7, 1, kind="bool"),
+    },
+)
+
 # Every non-classic family known to the library. The classic 125/127 family is NOT here — it keeps
 # its verified inline decode + write path in uss.py.
-WIRE_MODELS: tuple[WireModel, ...] = (COMPACT12, EXTENDED36, EXTENDED46)
+WIRE_MODELS: tuple[WireModel, ...] = (COMPACT12, EXTENDED36, EXTENDED46, JAPAN_WALL)
 
 
 # --- layout probing ------------------------------------------------------------------------------

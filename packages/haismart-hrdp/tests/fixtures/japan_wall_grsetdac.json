@@ -1,0 +1,394 @@
+{
+ "2008610800820324021200118018500000000000000000000000000000000040": {
+  "name": "日本挂2024",
+  "version": "2.0.6",
+  "grSetDAC": {
+   "eppCmd": "6001",
+   "frameType": 1,
+   "variants": [
+    {
+     "name": "targetTemperature",
+     "startWord": 1,
+     "startBit": 8,
+     "length": 8
+    },
+    {
+     "name": "windDirectionHorizontal",
+     "startWord": 1,
+     "startBit": 5,
+     "length": 3
+    },
+    {
+     "name": "windAvoidance",
+     "startWord": 1,
+     "startBit": 4,
+     "length": 1
+    },
+    {
+     "name": "windDirectionVertical",
+     "startWord": 1,
+     "startBit": 0,
+     "length": 4
+    },
+    {
+     "name": "healthMode",
+     "startWord": 2,
+     "startBit": 15,
+     "length": 1
+    },
+    {
+     "name": "electricHeatingStatus",
+     "startWord": 2,
+     "startBit": 14,
+     "length": 1
+    },
+    {
+     "name": "onOffStatus",
+     "startWord": 2,
+     "startBit": 13,
+     "length": 1
+    },
+    {
+     "name": "aiSwitch",
+     "startWord": 2,
+     "startBit": 12,
+     "length": 1
+    },
+    {
+     "name": "energySavingStatus",
+     "startWord": 2,
+     "startBit": 11,
+     "length": 1
+    },
+    {
+     "name": "operationMode",
+     "startWord": 2,
+     "startBit": 8,
+     "length": 3
+    },
+    {
+     "name": "silentSleepStatus",
+     "startWord": 2,
+     "startBit": 7,
+     "length": 1
+    },
+    {
+     "name": "lightStatus",
+     "startWord": 2,
+     "startBit": 6,
+     "length": 1
+    },
+    {
+     "name": "humanSensingStatus",
+     "startWord": 2,
+     "startBit": 4,
+     "length": 2
+    },
+    {
+     "name": "uvSterilizationSwitch",
+     "startWord": 2,
+     "startBit": 3,
+     "length": 1
+    },
+    {
+     "name": "mouldProof",
+     "startWord": 2,
+     "startBit": 2,
+     "length": 1
+    },
+    {
+     "name": "preventHeatstroke",
+     "startWord": 2,
+     "startBit": 1,
+     "length": 1
+    },
+    {
+     "name": "preventSupercooling",
+     "startWord": 2,
+     "startBit": 0,
+     "length": 1
+    },
+    {
+     "name": "freshAirStatus",
+     "startWord": 3,
+     "startBit": 15,
+     "length": 1
+    },
+    {
+     "name": "freshWindSpeed",
+     "startWord": 3,
+     "startBit": 13,
+     "length": 2
+    },
+    {
+     "name": "selfSweepingStatus",
+     "startWord": 3,
+     "startBit": 12,
+     "length": 1
+    },
+    {
+     "name": "cleanningMode",
+     "startWord": 3,
+     "startBit": 9,
+     "length": 3
+    },
+    {
+     "name": "targetHumidity",
+     "startWord": 3,
+     "startBit": 0,
+     "length": 8
+    },
+    {
+     "name": "windSpeed",
+     "startWord": 4,
+     "startBit": 12,
+     "length": 3
+    },
+    {
+     "name": "rapidMode",
+     "startWord": 4,
+     "startBit": 11,
+     "length": 1
+    },
+    {
+     "name": "muteStatus",
+     "startWord": 4,
+     "startBit": 10,
+     "length": 1
+    },
+    {
+     "name": "screenDisplayStatus",
+     "startWord": 4,
+     "startBit": 9,
+     "length": 1
+    },
+    {
+     "name": "echoStatus",
+     "startWord": 4,
+     "startBit": 8,
+     "length": 1
+    },
+    {
+     "name": "drying",
+     "startWord": 4,
+     "startBit": 7,
+     "length": 1
+    },
+    {
+     "name": "constDehumidificationStatus",
+     "startWord": 4,
+     "startBit": 6,
+     "length": 1
+    },
+    {
+     "name": "warnStatus",
+     "startWord": 4,
+     "startBit": 5,
+     "length": 1
+    }
+   ]
+  }
+ },
+ "2008610800820324021200118018504200000000000000000000000000000040": {
+  "name": "日本挂2025",
+  "version": "2.0.1",
+  "grSetDAC": {
+   "eppCmd": "6001",
+   "frameType": 1,
+   "variants": [
+    {
+     "name": "targetTemperature",
+     "startWord": 1,
+     "startBit": 8,
+     "length": 8
+    },
+    {
+     "name": "windDirectionHorizontal",
+     "startWord": 1,
+     "startBit": 5,
+     "length": 3
+    },
+    {
+     "name": "windAvoidance",
+     "startWord": 1,
+     "startBit": 4,
+     "length": 1
+    },
+    {
+     "name": "windDirectionVertical",
+     "startWord": 1,
+     "startBit": 0,
+     "length": 4
+    },
+    {
+     "name": "healthMode",
+     "startWord": 2,
+     "startBit": 15,
+     "length": 1
+    },
+    {
+     "name": "electricHeatingStatus",
+     "startWord": 2,
+     "startBit": 14,
+     "length": 1
+    },
+    {
+     "name": "onOffStatus",
+     "startWord": 2,
+     "startBit": 13,
+     "length": 1
+    },
+    {
+     "name": "aiSwitch",
+     "startWord": 2,
+     "startBit": 12,
+     "length": 1
+    },
+    {
+     "name": "energySavingStatus",
+     "startWord": 2,
+     "startBit": 11,
+     "length": 1
+    },
+    {
+     "name": "operationMode",
+     "startWord": 2,
+     "startBit": 8,
+     "length": 3
+    },
+    {
+     "name": "silentSleepStatus",
+     "startWord": 2,
+     "startBit": 7,
+     "length": 1
+    },
+    {
+     "name": "lightStatus",
+     "startWord": 2,
+     "startBit": 6,
+     "length": 1
+    },
+    {
+     "name": "humanSensingStatus",
+     "startWord": 2,
+     "startBit": 4,
+     "length": 2
+    },
+    {
+     "name": "uvSterilizationSwitch",
+     "startWord": 2,
+     "startBit": 3,
+     "length": 1
+    },
+    {
+     "name": "mouldProof",
+     "startWord": 2,
+     "startBit": 2,
+     "length": 1
+    },
+    {
+     "name": "preventHeatstroke",
+     "startWord": 2,
+     "startBit": 1,
+     "length": 1
+    },
+    {
+     "name": "preventSupercooling",
+     "startWord": 2,
+     "startBit": 0,
+     "length": 1
+    },
+    {
+     "name": "freshAirStatus",
+     "startWord": 3,
+     "startBit": 15,
+     "length": 1
+    },
+    {
+     "name": "freshWindSpeed",
+     "startWord": 3,
+     "startBit": 13,
+     "length": 2
+    },
+    {
+     "name": "selfSweepingStatus",
+     "startWord": 3,
+     "startBit": 12,
+     "length": 1
+    },
+    {
+     "name": "cleanningMode",
+     "startWord": 3,
+     "startBit": 9,
+     "length": 3
+    },
+    {
+     "name": "autoSelfCleaning",
+     "startWord": 3,
+     "startBit": 8,
+     "length": 1
+    },
+    {
+     "name": "targetHumidity",
+     "startWord": 3,
+     "startBit": 0,
+     "length": 8
+    },
+    {
+     "name": "windSpeed",
+     "startWord": 4,
+     "startBit": 12,
+     "length": 3
+    },
+    {
+     "name": "rapidMode",
+     "startWord": 4,
+     "startBit": 11,
+     "length": 1
+    },
+    {
+     "name": "muteStatus",
+     "startWord": 4,
+     "startBit": 10,
+     "length": 1
+    },
+    {
+     "name": "screenDisplayStatus",
+     "startWord": 4,
+     "startBit": 9,
+     "length": 1
+    },
+    {
+     "name": "echoStatus",
+     "startWord": 4,
+     "startBit": 8,
+     "length": 1
+    },
+    {
+     "name": "drying",
+     "startWord": 4,
+     "startBit": 7,
+     "length": 1
+    },
+    {
+     "name": "constDehumidificationStatus",
+     "startWord": 4,
+     "startBit": 6,
+     "length": 1
+    },
+    {
+     "name": "warnStatus",
+     "startWord": 4,
+     "startBit": 5,
+     "length": 1
+    },
+    {
+     "name": "aienergySaving",
+     "startWord": 4,
+     "startBit": 4,
+     "length": 1
+    }
+   ]
+  }
+ }
+}

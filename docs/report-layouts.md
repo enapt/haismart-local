@@ -343,9 +343,10 @@ shared frame, and each would be a confident wrong value if borrowed:
 
 The decode was checked against ground truth it was not built from: a real unit's report agreed with
 the manufacturer's own cloud record of that unit, taken in the same minute, on all 35 attributes
-the cloud reported. ⚠️ The write frame is the published one rather than a captured one, and no unit
-of this family has yet confirmed a command; the appliance's reply and its next report decide
-whether a command landed, as on every family.
+the cloud reported. The write frame is the published one, and a second unit has accepted it: a
+`turn_off` from Home Assistant, sent as the four-word group set, drew the appliance's acceptance
+(`0x02`) and a report with power off, its other settings agreeing with Haier's cloud record of the
+unit.
 
 ⓘ None of the 30 published models declares a fixed position for the up-down vane (every one lists
 the same five stops and three sweeps), so "swing off" on the climate card is refused with the

@@ -740,7 +740,7 @@ half (`k = 0.5`), so a half degree set on the handset shows as one. The write do
 step of at least 1 °C and a minimum of at least 16 °C whatever the model declares, and offers
 nothing the encoder cannot send. What stays open is writing the half on the families whose field
 counts halves: encode `value × 2` without rounding, and advertise the model's own step. On
-`japan-wall` that waits on the first confirmed command (item 38).
+`japan-wall` the frame is confirmed on hardware (item 38); writing the half is what remains.
 
 ### 56. The single-parameter register is CLASS-WIDE — the funcModel is the per-family witness
 
@@ -1153,7 +1153,7 @@ to get one.
   model we hold, so the remaining 179 are unmeasured, not known to agree. Settling it needs the value
   sets for those, or a report placing the field's real width.
 
-### 38. The AQUA/JAA wall units publish a frame of their own — read and commanded through it; the first confirmed command is still owed (30 products)
+### 38. The AQUA/JAA wall units publish a frame of their own — read and commanded through it; power confirmed on hardware, the residue is below (30 products)
 
 A catalogue-wide audit — every product's published group-set order checked against the shared
 frame's positions — found two families (12 + 18 products, the **AQUA `AQA-AX*` and `JAA-MX*` wall
@@ -1176,13 +1176,32 @@ the shared frame and each was a silent wrong value before: the setpoint is half 
 (the classic fallback read the reporter's 20 °C as 56 °C, shown as 133 °F), the fan code is not the
 standard one (auto is wire 0), and the left-right vane numbers its stops its own way.
 
-⚠️ **What is still owed.** No unit of this family has confirmed a command (Rule 8). The frame is the
-published one and its length is the published span, which is the rule both classic layouts obey on
-hardware (the 127-byte unit's own app sends six words, its map's span; a five-word op was accepted by
-the 125-byte layout, its map's span) — but that is two other families. **One `climate.turn_off`, or
-one setpoint change, from any of these units, with the reply in its diagnostics, settles it.**
+✅ **The write frame is confirmed on hardware** (issue #19, a second `JAA-MX` unit on the
+`日本挂2024` Model ID, a different unit from the first report). A `climate.turn_off` from Home
+Assistant went out as this family's four-word group set (`6001`) — the family has no
+single-parameter commands, so no other path exists — and the appliance **accepted it**: reply frame
+types `0x04`, `0x02`, `0x06`, not refused. The status report in the reply and the next poll both
+read power off (w2 bit 13 = 0), and Haier's own cloud record of the unit, fetched while the file was
+written, agrees on every attribute it reports that the decode places (29, none disagreeing) —
+setpoint, mode and fan included, so the rest of the four words went out as the unit holds them. The
+file keeps no report from before the command. The owner reports power on and off both work. So the
+group-set length rule (the op is the published span) holds on hardware for a third layout. ⚠️ Scope:
+one command, power, on one Model ID (`日本挂2024`); no other setting was changed by it, and
+`日本挂2025` has not been seen.
 
-Residue, each a refusal rather than a wrong value:
+Residue, each a refusal or an absence rather than a wrong value — except the first:
+
+* ⚠️ **`last_changed_by` reads "Other" after a Home Assistant command.** The published map puts
+  `opSrc` at w5 bits 0–1 with the same 0–3 codes as every other family, but both units seen report 0
+  there, one of them in the report that followed our own command. Either this firmware does not fill
+  the field or it fills it differently; withholding the reading on this family is the fix, until a
+  report shows a non-zero code.
+* **The family's telemetry report (`7d01`) is not decoded.** These units answer the extended-status
+  query with an 18-word report, and the family's published map describes exactly 18 words: power,
+  compressor frequency and current, the indoor and outdoor coil and air temperatures, the actuator
+  states and the energy counter (w6–w7). No telemetry map is shipped for an 18-word span, so the
+  frame is kept in diagnostics and nothing is read from it. Adding it needs the span checked
+  against every other published 18-word map.
 
 * **Left-right stops are not offered** — only fixed and sweeping, the two codes this family shares
   with every other. Its stops are read (a read-only position sensor names them from the family's own
@@ -1194,8 +1213,8 @@ Residue, each a refusal rather than a wrong value:
   stops a sweep at a position.
 * The setpoint is natively half-degree; a half degree set from Home Assistant is rounded on the way
   out (item 57).
-* The cumulative energy register (w6–w7) is published but not read — the one report seen holds zero,
-  which on every family so far means a register the firmware never fills.
+* The cumulative energy register (w6–w7) is published but not read from the status report; both
+  reports seen hold zero there. The telemetry report carries it too (above).
 
 ### 39. The appended-tail settings on the other twin-tower families
 

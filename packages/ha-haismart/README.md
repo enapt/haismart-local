@@ -5,12 +5,12 @@ Native Home Assistant integration for Haier appliances, built on
 
 **Full local control.** The integration handshakes each appliance over uSS `:56800`, decrypts its
 status pushes, and both reads AND controls it locally (`iot_class: local_polling`) — via the
-grSetDAC group-set write path on air conditioners, and the single-parameter path elsewhere. No cloud
-at runtime.
+grSetDAC group-set on most air conditioners, and one setting at a time on the central cabinets, the
+compact family and every other appliance. No cloud at runtime.
 
 **Platforms are per entry, not global.** `PLATFORMS_BY_KIND` forwards only what the appliance
 actually is, so a water heater is set up with `water_heater` and gets no thermostat, and an air
-conditioner's platform list is byte-for-byte what it always was. An air conditioner keeps its
+conditioner gets the full air-conditioner platform list. An air conditioner keeps its
 hand-built entity set; every other category has its entities generated from
 `haismart_hrdp.entity_spec` — see [`docs/appliances.md`](../../docs/appliances.md).
 
@@ -26,9 +26,12 @@ hand-built entity set; every other category has its entities generated from
   - After sign-in the flow **lists your devices to pick from**, and for the picked AC it **fetches the
     `localKey` from the cloud gateway** (all CONNECT creds derived) — no key to paste — and **resolves the
     AC's LAN IP from HA's DHCP/ARP data** (`aiodiscover`), so typically nothing is entered at all. It asks
-    for the IP only if HA hasn't seen the AC yet, and falls back to the manual key form if the gateway fetch
-    fails. (Same "cloud fetches the key" model as LocalTuya's cloud-assisted onboarding.)
-  - *Manual*: host + device ID + `localKey` directly — the fully-offline path (no account).
+    for the IP only if HA hasn't seen the AC yet, and if the gateway fetch fails it offers a retry or
+    the manual form, showing what the fetch returned. (Same "cloud fetches the key" model as
+    LocalTuya's cloud-assisted onboarding.)
+  - *Manual*: the fully offline path (no account). Haier appliances found on the network are listed;
+    pick one and paste its `localKey`. The device ID is read from the unit and is typed only when it
+    does not answer. A follow-up step asks which model it is, from a shortlist (skippable).
   - Every path validates by a **live uSS read** (handshake proves reachability, biz-data MD5 proves the key
     decrypts). **Discovery is by DHCP**: the deviceId **is** the AC's MAC, so a `dhcp`
     manifest matcher + `async_step_dhcp` surface each AC as a discovered device (host + device ID prefilled).
@@ -37,19 +40,22 @@ hand-built entity set; every other category has its entities generated from
     rotation and re-fetches the fresh key automatically. Options flow sets the poll interval. Unique-ID = MAC.
 - **Polling coordinator** (`coordinator.py`): one `DataUpdateCoordinator` per AC. Each refresh is one
   short-lived uSS session (`async_read_status`); control ops (`async_send_control`) are seeded from the
-  latest status so a group-set preserves every unchanged attribute. A stale `localKey` is silent at the
-  transport layer, so after consecutive empty cycles the coordinator probes the AC's `localKey` version
-  key-free; on a mismatch it **auto-refreshes the localKey from the cloud MQTT gateway**
-  (`_async_gateway_refresh` — mints a fresh token, derives the gateway clientId, fetches via
-  `haismart_extractor.gateway.get_localkey_via_gateway`, updates the key in place). Only if that isn't
-  configured or fails does it raise `ConfigEntryAuthFailed` (→ manual reauth) **and surface a repair**
-  advising the user to add account credentials so future rotations self-heal.
+  latest status so a group-set preserves every unchanged attribute. A rotation is caught in the same
+  read cycle when the handshake reports a key version other than the stored one; failing that,
+  consecutive empty cycles trigger a key-free version probe. Either way the coordinator
+  **auto-refreshes the localKey from the cloud MQTT gateway** (`_async_gateway_refresh` — mints a
+  fresh token, derives the gateway clientId, fetches via
+  `haismart_extractor.gateway.get_localkey_via_gateway`, updates the key in place) and retries. If
+  Haier cannot be reached, later polls retry quietly for up to `ROTATION_OUTAGE_GRACE` (30 min; the
+  clock is kept per entry, so it runs out across setup retries). With no account, a refusal, or an
+  outage past that, it raises `ConfigEntryAuthFailed` (→ reauth) **and a repair** that says which
+  case it is.
 - **Profile-based entities**, generated from the model's `AttributeProfile` (not hardcoded per model):
   - `climate` — target temperature, HVAC mode (off / auto / cool / dry / fan-only, plus **heat** where
     the unit reports it can), fan speed, swing on both axes, **presets** (eco / sleep / boost), on/off.
     A setting the unit's own model says it discards in the current state stays readable and refuses
-    the command with the reason; the climate card hides only the setpoint, fan and horizontal-swing
-    features while they are locked. Reports what the unit is *doing* (`hvac_action`) from the
+    the command with the reason; the climate card hides the setpoint, fan and each swing axis while
+    its field is locked, and lists only the presets the unit will act on. Reports what the unit is *doing* (`hvac_action`) from the
     compressor flag.
   - `switch` — **strong** (rapid), **quiet** (mute), **health**, **sleep**, **lamp** (front display),
     plus every other function the vendor's own control panel renders a switch for and this unit
@@ -100,12 +106,15 @@ hand-built entity set; every other category has its entities generated from
   raises rather than send anything not in its allowlist), **and** the coordinator
   validates every change against the device's pulled **digital model** (`validate_write` — writable + temp
   range + allowed enums) before encoding. No path sends a guessed or out-of-spec frame.
-- **Repairs** (`homeassistant.helpers.issue_registry`): an actionable issue is raised when a `localKey`
-  rotation forces a manual re-key (no cloud creds to auto-heal); it self-clears once a gateway refresh or a
-  successful reauth restores a working key.
+- **Repairs** (`homeassistant.helpers.issue_registry`): a warning before a rotation, on an entry with no
+  account whose unit is still online; a manual re-key notice when there is no account; a re-fetch
+  failure when the stored account's fetch failed; and one for an unrecognised report layout. The key
+  repairs clear once a gateway refresh or a reauth restores a working key.
 - **Diagnostics** (`diagnostics.py`): redacted snapshot — keeps the decrypted status bytes for offset
   debugging, every LAN frame kind seen, the uSS message trace, the raw feature codes and a summary of
-  the control channel; redacts the key, device ID, tokens and gateway credentials.
+  the control channel; redacts the key, the device ID, the LAN address (the entry's host and the one
+  the unit reports; `host_matches` is kept), the tokens, the cloud client ID and the gateway
+  credentials. The stored digital model is kept, with any per-device identifier inside it redacted.
 
 ## Install
 

@@ -20,7 +20,7 @@ copy of that key and setup works with no internet at all._
 **🌐 Getting started in your language:** [Bahasa Indonesia](docs/i18n/README.id.md) ·
 [ไทย](docs/i18n/README.th.md) · [Tiếng Việt](docs/i18n/README.vi.md) ·
 [Bahasa Melayu](docs/i18n/README.ms.md) · [Filipino](docs/i18n/README.fil.md)\
-_The integration's own screens follow your Home Assistant language, in 30 languages. These docs are
+_The integration's own screens follow your Home Assistant language, in 31 languages. These docs are
 English-only; the pages above cover install and setup._
 
 <details>
@@ -96,11 +96,11 @@ it actually has, and each becomes an entity of the right kind — see
 [any other appliance](#any-other-appliance) for what that produces.
 
 ⚠️ **The maps are the manufacturer's, and most categories have never been seen on real hardware
-here.** One non-air-conditioner has now been commanded successfully — a heat-pump water heater's
+here.** One non-air-conditioner has been commanded successfully — a heat-pump water heater's
 setpoint, accepted by the appliance and read back — but that is one attribute on one unit, not a
 guarantee for the rest. The decode
-is checked against every capture held here — two air conditioners, a heat-pump water heater and a
-washing machine. If you own one of the rest, it should come up correctly and its diagnostics will
+is checked against every capture held here — air conditioners from four families, a heat-pump water
+heater and a washing machine. If you own one of the rest, it should come up correctly and its diagnostics will
 say exactly what was decoded; please
 [open an issue](docs/TROUBLESHOOTING.md#before-you-open-an-issue) either way, including one that
 just works. Two things are deliberately withheld until somebody can verify them: settings written
@@ -267,8 +267,9 @@ appliances on your network, asks each to identify itself, and lists what answere
 and paste the key. If you have no key saved — from the *Local key* diagnostic sensor of a previous
 install, or a backup — sign in instead: the appliance itself will never hand it over.
 
-Either way it then asks **which model** you have, from the short list of models sharing your unit's
-product family, by the number printed on its label. Answering unlocks the fault names, the
+The offline route then asks **which model** you have, from the short list of models sharing your
+unit's product family, by the number printed on its label; signing in needs no answer, because the
+account already says. Answering unlocks the fault names, the
 availability rules and your unit's real feature list. **Skipping is fine** — the rules every model
 in that family agrees on are used instead, which still covers every fault name.
 
@@ -324,8 +325,9 @@ phoned home at all:
    Home Assistant backups.
 2. **Block the appliance's internet access** at your router — the simplest rule that works is denying traffic
    to `43.156.75.60`, Haier's gateway. Keep the LAN open: Home Assistant still needs port 56800.
-   DNS blocking is *not* reliable here (the units connect by a cached address), and router features
-   called "MAC filtering" or "IP filtering" often cut the device off your LAN entirely.
+   DNS blocking has not been verified as a way to cut the units off, so prefer the address rule; and
+   router features called "MAC filtering" or "IP filtering" often cut the device off your LAN
+   entirely.
 3. The key can then never rotate, so the copy you archived stays valid indefinitely, however long
    has passed. You can always re-add the unit later through the offline path with no cloud involved.
 4. **Check that it worked.** The **Cloud connection** diagnostic sensor asks the appliance itself — over a
@@ -341,9 +343,11 @@ Three things cover most of it:
 
 * **Sign-in fails** — it is almost always the **country code**: the dialling code of the country your
   Haier account was registered in, which may not be where you live.
-* **It keeps asking for the key** — the key rotates, and a firewalled appliance cannot be re-keyed
-  automatically. [Going fully cloud-independent](#going-fully-cloud-independent) explains the
-  trade-off; the troubleshooting guide explains how to get a fresh key by hand.
+* **It keeps asking for the key** — the appliance can still reach Haier, so its key keeps changing,
+  and this setup has no account to fetch the new one with (or Home Assistant cannot reach Haier's key
+  service). Sign in, or block the appliance from the internet so the key stops changing:
+  [Going fully cloud-independent](#going-fully-cloud-independent) explains the trade-off, and the
+  troubleshooting guide explains how to get a fresh key by hand.
 * **The appliance changed IP** — handled for you. The integration follows it by MAC, usually within
   the same poll.
 

@@ -18,7 +18,8 @@ a setting, and how the energy and polling side works.
 ## Your unit describes itself
 
 The integration reads your unit's own model: the modes and fan speeds it has, the setpoint range it
-accepts, the positions its vanes can hold, and the rules saying which settings it ignores in which
+accepts (in whole degrees from 16 °C, which is what the unit's command carries), the positions its
+vanes can hold, and the rules saying which settings it ignores in which
 state. A heat pump gets Heat and a cooling-only unit does not, with no list to maintain.
 
 A model describes every function its *product line* might have, and marks the ones a given unit
@@ -39,9 +40,9 @@ mode"*. They are not marked unavailable, because a setting your AC ignores in it
 normal operation rather than a fault, and marking it so takes the reading and its history away for
 as long as the mode lasts.
 
-The one thing that does disappear is the temperature box on the thermostat card, which is Home
-Assistant's own mechanism for exactly this — better than a box that accepts numbers the unit throws
-away. A unit reporting a fault refuses its settings the same way. Nothing is restricted while the AC
+On the thermostat card, a locked setpoint, fan speed or swing axis is hidden while the lock lasts.
+That is Home Assistant's own mechanism for exactly this, and better than a box that accepts values
+the unit throws away. A preset the unit would ignore is left off the preset list. A unit reporting a fault refuses its settings the same way. Nothing is restricted while the AC
 is switched off, which is when you are most likely to be setting it up.
 
 ## Presets
@@ -78,7 +79,7 @@ put it, and an alternate or half-range sweep is not flattened into a plain one.
 | `swing_mode: both` | `swing_mode: on` **and** `swing_horizontal_mode: on` |
 
 The horizontal axis is set with the `climate.set_swing_horizontal_mode` service. An automation that
-sends one of the old values now fails loudly rather than moving a vane it did not mean to.
+sends one of the old values fails with an error rather than moving a vane it did not mean to.
 
 Swinging and pointing are different things, and a climate entity can only express the first. Where
 your unit publishes the stops a vane can hold, a **Left-right vane** or **Up-down vane** select

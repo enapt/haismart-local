@@ -8,7 +8,7 @@ in and to fetch each AC's per-device `localKey`.
 | Module | What it is |
 |---|---|
 | `src/haismart_extractor/cloud.py` | Account **email/password login** + token refresh, device list, digital model, and a device's **published model** (`get_device_config`). Device-center request signing: `SHA-256(path + strippedBody + appId + appKey + timestamp)`. |
-| `src/haismart_extractor/gateway.py` | Per-device **`localKey`** fetch over the cloud MQTT gateway (`gw-sgp.haieriot.net:58702`). All CONNECT credentials are derived (`derive_client_id`, `derive_gateway_auth`). |
+| `src/haismart_extractor/gateway.py` | Per-device **`localKey`** fetch over the cloud MQTT gateway on port 58702: `gw-sgp.haieriot.net`, or `gw-sea.haieriot.net` for accounts registered in India (`Domains.for_zone(zone).gateway`). All CONNECT credentials are derived (`derive_client_id`, `derive_gateway_auth`). |
 
 **A device hands out two descriptions of itself, and both are needed.** `get_digital_model` returns
 its *shadow* — attributes, value ranges, enums and current values — and carries **no rules at all**.
@@ -25,14 +25,20 @@ The gateway recomputes the password from the username, so a freshly generated pa
 
 ```python
 import asyncio
-from haismart_extractor import HaierCloud, SEA_APP_CREDENTIALS, GatewayCreds, get_localkey_via_gateway
+from haismart_extractor import (
+    Domains, GatewayCreds, HaierCloud, SEA_APP_CREDENTIALS, get_localkey_via_gateway,
+)
 
 async def main():
     # zone_info is the dialling code of the country the account was registered in
     cloud, login = await HaierCloud.login(
         SEA_APP_CREDENTIALS, "you@example.com", "password", zone_info="66"
     )
-    creds = GatewayCreds.derive(usdk_client_id=login.client_id, access_token=login.access_token)
+    creds = GatewayCreds.derive(
+        usdk_client_id=login.client_id,
+        access_token=login.access_token,
+        host=Domains.for_zone("66").gateway,  # the account's own data centre
+    )
     key = get_localkey_via_gateway(creds, "A1B2C3D4E5F6")
     print(key)
 

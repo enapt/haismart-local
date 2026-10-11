@@ -13,7 +13,10 @@ performs.
   Keep them out of logs, screenshots, and public issues.
 - **Diagnostics downloads redact all of them automatically**, so the file the issue templates ask for
   is safe to attach. The `deviceId` is redacted too — it is only the Wi-Fi module's MAC and not a
-  credential, but it is a stable device identifier and nothing in a bug report needs it. The decrypted
+  credential, but it is a stable device identifier and nothing in a bug report needs it. The
+  appliance's LAN address is redacted as well; the file keeps only whether it still matches the
+  address the unit reports. The appliance's cloud model is kept, because its fault and refusal tables
+  are what make a report diagnosable, with any per-device identifier inside it redacted. The decrypted
   status bytes are *not* redacted and are safe: they are the same sensor and setting values your remote
   displays, and they are what makes an unrecognised report layout diagnosable.
 - Do **not** commit real credentials. `*.local.json` and similar are git-ignored; scrub any pasted logs.

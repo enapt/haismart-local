@@ -120,16 +120,19 @@ can't rotate and your stored key stays valid indefinitely. This is **optional** 
 > (Option A), not a device. If everything for that AC goes **unavailable** rather than the Cloud
 > connection sensor going **off**, that is what has happened.
 
-> **Before blocking:** note each AC's current key/version — from HA go **Settings → Devices & Services →
-> Haismart → the device → Diagnostics** (redacted), or run `probe_localkey_version(ip, deviceId)`. Keep a
-> copy as your escape hatch; you can always re-add via the **offline** path — Home Assistant finds the
+> **Before blocking:** note each AC's current key and its version from its *Local key* diagnostic sensor
+> (a diagnostics download carries the version but redacts the key), or read the version with
+> `probe_localkey_version(ip, deviceId)`. Keep a copy as your escape hatch; you can always re-add via the **offline** path — Home Assistant finds the
 > unit on the network itself, so only the key is needed — with no cloud involved.
 
 ### Option A — block the gateway address (recommended)
 
 Add a firewall rule denying traffic **to `43.156.75.60`** — Haier's MQTT gateway
 (`gw-sgp.haieriot.net:58702`). Source can be the air conditioners, or everything on your LAN if your
-router only does destination rules.
+router only does destination rules. That is the gateway of the Singapore data centre, which serves
+every account registered outside India. An appliance on an account registered in India may use the
+India data centre's gateway instead (`gw-sea.haieriot.net`), whose address has not been measured
+here: block that address too, and confirm with the sensor below that the unit reads off.
 
 This is the recommended method for two reasons. It is **proven sufficient**: that single address
 carries both the app's gateway *and* the air conditioners' own uplink, and blocking it takes a unit
@@ -160,12 +163,12 @@ blocked when it isn't.
 
 ### Not recommended — DNS blocking
 
-Blocking `*.haieriot.net`, `*.haier.net` and `*.haigeek.com` on Pi-hole or AdGuard **will not reliably
-stop the air conditioners.** The modules connect to the gateway by a cached IP address and do not
-appear to resolve it at connection time, so a DNS blackhole can leave the unit connected while
-convincing you it is cut off. It still has some value for stopping the *phone app* from reaching
-Haier, but do not use it as your isolation mechanism — and if you do use it, verify with the sensor
-below rather than assuming.
+Blocking `*.haieriot.net`, `*.haier.net` and `*.haigeek.com` on Pi-hole or AdGuard **has not been
+verified to cut the air conditioners off.** The modules do look the gateway up by name, but whether a
+blocked lookup keeps a unit offline has not been tested, so a DNS blackhole may leave the unit
+connected while convincing you it is cut off. It still has some value for stopping the *phone app*
+from reaching Haier, but do not use it as your isolation mechanism — and if you do use it, verify
+with the sensor below rather than assuming.
 
 ### Verify it holds
 1. **Watch the AC's own `Cloud connection` sensor** (diagnostic, one per device). This is the direct
@@ -212,7 +215,7 @@ locally forever. To be fully immune:
 2. **Onboard each AC via the config-flow offline path** (pick the unit from the network scan, paste the
    key from the backup). It needs
    **zero cloud** — no login, no gateway — so nothing depends on Haier being up. The model ID it needs to
-   decode your unit correctly is read from the air conditioner itself, so an offline setup is now as accurate
+   decode your unit correctly is read from the air conditioner itself, so an offline setup is as accurate
    as one done through an account.
 3. **Firewall the ACs** (§4) so the key never rotates.
 
@@ -236,13 +239,13 @@ an issue.
   `nc -z <ac-ip> 56800`. The integration finds the AC by DHCP (matching Haier's appliance MAC
   prefixes) or the host you provide. If you blocked the AC's WAN access (§4), check you left its
   **LAN** open.
-- **Sign-in rejected.** "No Haier account … in the country you selected" (retCode 30032) means the
-  **country** is wrong: it is the one the account was *registered* in, which need not be where you
+- **Sign-in rejected.** "No Haier account … in the country you selected" (retCode 30032) usually means
+  the **country** is wrong: it is the one the account was *registered* in, which need not be where you
   live or where the AC is. A missing-field error is retCode 10001. "Haier's servers could not be
   reached" is not a credential problem: the Home Assistant host could not reach Haier at all (DNS,
-  a firewall rule, an outage) — check it can resolve and reach `uhome-sgp.haieriot.net`, then retry.
-  If sign-in succeeds but no devices appear, the account has none bound — share the AC to it in the
-  app first.
+  a firewall rule, an outage) — check it can resolve and reach `uhome-sea.haieriot.net`, Haier's
+  sign-in server, then retry. If sign-in succeeds but no devices appear, the account usually has none
+  bound — share the AC to it in the app first.
 
 ## Uninstall
 

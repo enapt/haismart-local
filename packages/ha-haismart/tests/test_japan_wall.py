@@ -21,6 +21,7 @@ from homeassistant.helpers import issue_registry as ir
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.haismart.const import (
+    CONF_ABSENT_READINGS,
     CONF_DEVICE_ID,
     CONF_DIGITAL_MODEL,
     CONF_HOST,
@@ -57,7 +58,7 @@ def japan_wall(mock_uss):
     return mock_uss
 
 
-async def _setup(hass: HomeAssistant) -> MockConfigEntry:
+async def _setup(hass: HomeAssistant, **extra) -> MockConfigEntry:
     entry = MockConfigEntry(
         domain=DOMAIN,
         title="Wall Mounted",
@@ -70,6 +71,7 @@ async def _setup(hass: HomeAssistant) -> MockConfigEntry:
             CONF_LOCALKEY_VERSION: 4,
             CONF_UPLUS_ID: JP_2024,
             CONF_DIGITAL_MODEL: json.dumps(MODEL),
+            **extra,
         },
     )
     entry.add_to_hass(hass)
@@ -167,3 +169,67 @@ async def test_the_entities_follow_what_this_family_can_place(
     ]
     assert len(humidity) == 1
     assert hass.states.get(humidity[0].entity_id).state == "60"
+
+
+def _suffixes(hass: HomeAssistant, entry) -> set[str]:
+    registry = er.async_get(hass)
+    return {
+        e.unique_id.removeprefix("A1B2C3D4E5F6_")
+        for e in er.async_entries_for_config_entry(registry, entry.entry_id)
+    }
+
+
+def _state(hass: HomeAssistant, entry, suffix: str) -> str:
+    registry = er.async_get(hass)
+    (entity,) = [
+        e for e in er.async_entries_for_config_entry(registry, entry.entry_id)
+        if e.unique_id == f"A1B2C3D4E5F6_{suffix}"
+    ]
+    return hass.states.get(entity.entity_id).state
+
+
+async def test_who_made_the_last_change_is_not_offered(hass: HomeAssistant, japan_wall) -> None:
+    """The product's own model does not declare `opSrc`, so the sensor would read "Other" after a
+    change Home Assistant made. Not created -- and one left by an earlier build is removed."""
+    names = {a.get("name") for a in MODEL["attributes"]}
+    assert "opSrc" not in names, "the reason for withholding it: the product does not declare it"
+    registry = er.async_get(hass)
+    registry.async_get_or_create(
+        "sensor", DOMAIN, "A1B2C3D4E5F6_last_changed_by", suggested_object_id="old_last_changed_by"
+    )
+    entry = await _setup(hass)
+    assert "last_changed_by" not in _suffixes(hass, entry)
+    assert registry.async_get_entity_id("sensor", DOMAIN, "A1B2C3D4E5F6_last_changed_by") is None
+
+
+#: A second unit's telemetry report (issue #19), unit off: 18 words, read from the family's own map.
+TELEMETRY = bytes.fromhex(
+    "00002715000000004e5601007a0302007a040100000000000000000000000000000000000000000000000000000000"
+    "000000000000000000000000000000000000000000000000000000000100000031ffff2e000000000000067d013604"
+    "00040000020000000000000046306700007066630063000000000001e03600001acb67"
+)
+
+
+async def test_the_telemetry_report_fills_the_running_sensors(
+    hass: HomeAssistant, japan_wall
+) -> None:
+    japan_wall.read.return_value = [REPORT, TELEMETRY]
+    entry = await _setup(hass)
+    assert _state(hass, entry, "compressor_frequency_hz") == "0"
+    assert float(_state(hass, entry, "coil_temperature")) == 36.0
+
+
+async def test_sensors_written_off_before_the_map_existed_come_back(
+    hass: HomeAssistant, japan_wall
+) -> None:
+    """The reporter's entry had already retired these, because the frame could not be read. The
+    first poll that decodes it restores them -- no reinstall."""
+    japan_wall.read.return_value = [REPORT, TELEMETRY]
+    entry = await _setup(
+        hass, **{CONF_ABSENT_READINGS: ["coil_temperature", "compressor_frequency_hz", "power_w"]}
+    )
+    await hass.async_block_till_done()
+    assert not set(entry.data.get(CONF_ABSENT_READINGS) or ()) & {
+        "coil_temperature", "compressor_frequency_hz", "power_w"
+    }
+    assert {"coil_temperature", "compressor_frequency_hz", "power_w"} <= _suffixes(hass, entry)

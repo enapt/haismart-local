@@ -469,6 +469,11 @@ class WireModel:
     # that numbers its stops differently MUST carry its own, or a stop it reports is named as a
     # different stop of the shared family.
     vane_codes: Mapping[str, Mapping[int, int]] = field(default_factory=dict)
+    # Core readings no product of this family carries, by the products' own published models. The
+    # map may still place one -- it is the device TYPE's map, wider than any product of it -- but a
+    # unit that does not carry the attribute reports a constant there, and that constant decodes to
+    # a confident, wrong value. Not decoded, and the entity is not created for this family.
+    withheld_readings: frozenset[str] = frozenset()
 
     def canonical_word(self, word: int) -> int | None:
         """Where a published map word lands in this family's report, or ``None`` if unplaceable.
@@ -1564,8 +1569,12 @@ JAPAN_WALL = WireModel(
         "strong": WireField(4, 11, 1, kind="bool"),
         "quiet": WireField(4, 10, 1, kind="bool"),
         "lamp": WireField(4, 9, 1, kind="bool"),
-        "last_changed_by": WireField(5, 0, 2, kind="enum", enum=OPERATION_SOURCE),
     },
+    # `opSrc` (who made the last change) is in the device type's map at w5 b0-1, with the same codes as
+    # every family, but none of the 30 products declares it, the cloud record of a unit does not
+    # report it, and both units seen read 0 there -- one of them in the report that followed a
+    # command of ours, so "Other" would be shown for a change Home Assistant made.
+    withheld_readings=frozenset({"last_changed_by"}),
     # The rest of what the family's map places, offered by the device's own declaration like any
     # other family's extras: the humidity probe and the read-only feature states. Every entry is held
     # to the manufacturer's map for BOTH identifiers by `test_japan_wall_matches_the_published_map`,

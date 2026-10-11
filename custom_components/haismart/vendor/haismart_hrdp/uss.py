@@ -36,10 +36,11 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .bigdata_map import BIGDATA_MAPS, BigdataField
 from .canonical_map import CANONICAL_WRITE
-from .device_model import read_field
+from .device_model import model_for, read_field
 from .panel import PANEL_BOOL_CONTROLS, PANEL_ENUM_CONTROLS, PANEL_EXTRA_POSITIONS
 from .profiles import model_enum_codes
 from .wire_models import (
+    JAPAN_WALL_TYPEIDS,
     OPERATION_SOURCE,
     VALUE_PARAM_ONLY,
     decode_related,
@@ -1454,14 +1455,16 @@ def read_bigdata_field(field: BigdataField, payload: bytes) -> int | float | Non
     return round(value, 1) if isinstance(field.k, float) and field.k != 1.0 else int(value)
 
 
-def _extended_from_published_map(payload: bytes) -> dict[str, Any]:
+def _extended_from_published_map(
+    payload: bytes, fields: tuple[BigdataField, ...] | None = None
+) -> dict[str, Any]:
     """Telemetry for a family whose layout the manufacturer publishes, keyed on the frame's span.
 
     Returns ``{}`` for a span no profile describes, which is the same silence an unrecognised report
     has always produced -- a family we cannot place simply yields no telemetry rather than numbers
     read from the wrong words.
     """
-    fields = BIGDATA_MAPS.get(len(payload) // 2)
+    fields = BIGDATA_MAPS.get(len(payload) // 2) if fields is None else fields
     if not fields:
         return {}
     out: dict[str, Any] = {}
@@ -1498,7 +1501,51 @@ def _extended_from_published_map(payload: bytes) -> dict[str, Any]:
     return out
 
 
-def parse_extended_status(data: bytes) -> dict[str, Any]:
+#: Families whose telemetry report is read from the byte map of their own Model ID: the japan-wall
+#: units answer the telemetry query with an 18-word report that no span-keyed map in
+#: :data:`BIGDATA_MAPS` describes, and their published map does, field for field, with scaling of its
+#: own (the indoor coil counts half degrees from -20 °C, where the span-keyed families count whole
+#: degrees). Keyed on the identifier, like the family itself, never on the span.
+_OWN_TELEMETRY_TYPEIDS = JAPAN_WALL_TYPEIDS
+
+
+@functools.lru_cache(maxsize=8)
+def _own_telemetry(uplus_id: str | None) -> tuple[int, tuple[BigdataField, ...]]:
+    """``(the map's extent in words, its fields)`` for a family in :data:`_OWN_TELEMETRY_TYPEIDS`."""
+    if uplus_id not in _OWN_TELEMETRY_TYPEIDS or (model := model_for(uplus_id)) is None:
+        return 0, ()
+    published = [f for f in model.fields if (f.status_cmd or "").upper() == "7D01"]
+    out: list[BigdataField] = []
+    for f in published:
+        if f.name in _BIGDATA_ACTUATORS:
+            # an actuator state is a code (0 off, 1 on, 2 not reported), read unscaled
+            out.append(BigdataField(f.name, f.word, f.bit, f.length, 1.0, 0.0, None))
+        elif f.name in _BIGDATA_KEYS and isinstance(f.variants, dict):
+            k, c = f.variants.get("k"), f.variants.get("c")
+            if k is not None and c is not None:
+                out.append(BigdataField(f.name, f.word, f.bit, f.length, k, c, f.unit))
+    return max((f.word for f in published), default=0), tuple(out)
+
+
+def own_telemetry_fields(uplus_id: str | None) -> tuple[BigdataField, ...]:
+    """The telemetry fields a family keyed on its Model ID publishes for itself, else ``()``.
+
+    Read from the shipped byte map of that Model ID: every ``7D01`` field this decoder publishes
+    (:data:`_BIGDATA_KEYS`, :data:`_BIGDATA_ACTUATORS`) at the map's own position and scaling.
+    """
+    return _own_telemetry(uplus_id)[1]
+
+
+def _own_telemetry_map(uplus_id: str | None, payload: bytes) -> tuple[BigdataField, ...]:
+    """:func:`own_telemetry_fields`, only for a frame exactly as long as that map describes.
+
+    A frame longer or shorter than the map is not this map's frame, and is not read against it.
+    """
+    extent, fields = _own_telemetry(uplus_id)
+    return fields if fields and len(payload) // 2 == extent else ()
+
+
+def parse_extended_status(data: bytes, *, uplus_id: str | None = None) -> dict[str, Any]:
     """Decode the running power / compressor figures from an extended-status report.
 
     ⚠️ One name here deliberately departs from the published map. The map calls the reading at byte
@@ -1511,7 +1558,9 @@ def parse_extended_status(data: bytes) -> dict[str, Any]:
     where they conflict with the reading. Position from the map, name from the thermometer.
 
     Returns ``{}`` for anything that is not a layout this decoder can place, so a device whose
-    extended report differs simply yields no telemetry rather than fabricated numbers. Two layouts
+    extended report differs simply yields no telemetry rather than fabricated numbers. A family
+    keyed on its Model ID (``uplus_id``) that publishes its own telemetry map is read from that map
+    first (:func:`own_telemetry_fields`). Otherwise two layouts
     are placed: a payload whose word count matches a family in :data:`BIGDATA_MAPS` is read from
     the manufacturer's own published field map; any other frame at least the classic 141 bytes long
     is read END-ANCHORED -- the engineering block sits at the tail, so its offsets are taken from
@@ -1536,6 +1585,9 @@ def parse_extended_status(data: bytes) -> dict[str, Any]:
     if len(data) < at + 13 or data[at + 2] != len(data) - at - 3:
         return {}
     payload = data[at + 12:-1]
+    if own := _own_telemetry_map(uplus_id, payload):
+        # A family keyed on its Model ID that publishes its own telemetry map (japan-wall).
+        return _extended_from_published_map(payload, own)
     if (len(payload) // 2) in BIGDATA_MAPS:
         # A published family whose engineering block sits at fixed WORD positions (`power` is w10, w15,
         # w17 or w37 depending on the family) -- decode it from the manufacturer's own map.

@@ -19,7 +19,12 @@ from haismart_hrdp.features import (
     OPTIONAL_ENUM_FEATURES,
     OPTIONAL_NUMERIC_READINGS,
 )
-from haismart_hrdp.uss import build_epp_frame, parse_full_status
+from haismart_hrdp.uss import (
+    build_epp_frame,
+    own_telemetry_fields,
+    parse_extended_status,
+    parse_full_status,
+)
 from haismart_hrdp.wire_models import (
     _JAPAN_WALL_FAN,
     _JAPAN_WALL_MODE,
@@ -64,7 +69,7 @@ ATTRIBUTE = {
     "operation_mode": "operationMode", "wind_speed": "windSpeed",
     "swing_vertical": "windDirectionVertical", "swing_horizontal": "windDirectionHorizontal",
     "health": "healthMode", "sleep": "silentSleepStatus", "strong": "rapidMode",
-    "quiet": "muteStatus", "lamp": "screenDisplayStatus", "last_changed_by": "opSrc",
+    "quiet": "muteStatus", "lamp": "screenDisplayStatus",
 }
 
 _GRSETDAC = json.loads(
@@ -264,3 +269,67 @@ def test_the_family_is_keyed_on_its_identifiers_and_never_on_the_length() -> Non
     assert select_wire_model(111, "2008610800820324021200118012560000000000000000000000000000000040") is None
     # Without the identifier the report stays an unrecognised layout, exactly as before.
     assert parse_full_status(REPORT).get("layout") == "unknown"
+
+
+# --- who made the last change: withheld ---------------------------------------------------------
+
+
+def test_who_made_the_last_change_is_withheld_on_this_family() -> None:
+    """`opSrc` is in the device type's map at w5 b0-1, but no product of the family declares it, and
+    both units seen read 0 there -- one in the report after a command of ours, which would show
+    "Other" for a change Home Assistant made. So it is neither decoded nor offered."""
+    assert "last_changed_by" not in JAPAN_WALL.fields
+    assert "last_changed_by" in JAPAN_WALL.withheld_readings
+    assert "last_changed_by" not in parse_full_status(REPORT, uplus_id=JP_2024)
+
+
+# --- the telemetry report, from the family's own map ----------------------------------------------
+
+#: A second unit's telemetry report (issue #19, taken with the unit off): 18 words, which no span-keyed
+#: map describes and the family's own map does.
+TELEMETRY = bytes.fromhex(
+    "00002715000000004e5601007a0302007a040100000000000000000000000000000000000000000000000000000000"
+    "000000000000000000000000000000000000000000000000000000000100000031ffff2e000000000000067d013604"
+    "00040000020000000000000046306700007066630063000000000001e03600001acb67"
+)
+
+
+def test_the_telemetry_report_decodes_from_the_familys_own_map() -> None:
+    """Each reading at the map's position and with the map's own scaling: the indoor coil counts half
+    degrees from -20 C here, where the span-keyed families count whole degrees. Off, in a 35 C room
+    with 39 C outdoors: coils and outlet near ambient, compressor stopped, no power drawn."""
+    assert parse_extended_status(TELEMETRY, uplus_id=JP_2024) == {
+        "power_w": 0,
+        "compressor_frequency_hz": 0,
+        "compressor_current_a": 0.0,
+        "compressor_running": False,
+        "outdoor_fan_running": False,
+        "coil_temperature": 36.0,               # raw 112: 112 x 0.5 - 20
+        "discharge_temperature": 38,            # outdoor outlet, raw 102 - 64
+        "outdoor_coil_temperature": 35,
+        "outdoor_defrost_temperature": 35,
+        "expansion_valve_opening": 480,         # 16 bits, its high byte in the word before
+    }
+
+
+def test_the_telemetry_map_is_keyed_on_the_model_id_not_the_span() -> None:
+    """Another appliance whose report happens to be 18 words long is not read against this map."""
+    assert parse_extended_status(TELEMETRY) == {}
+    assert parse_extended_status(TELEMETRY, uplus_id="0" * 64) == {}
+
+
+def test_a_frame_longer_than_the_map_is_not_read_against_it() -> None:
+    at = TELEMETRY.find(b"\xff\xff")
+    body = TELEMETRY[at + 3:-1] + b"\x00\x00"                 # one word more than the map describes
+    frame = TELEMETRY[:at] + b"\xff\xff" + bytes([len(body) + 1]) + body
+    frame += bytes([sum(frame[at + 2:]) & 0xFF])
+    assert parse_extended_status(frame, uplus_id=JP_2024) == {}
+
+
+@pytest.mark.parametrize("typeid", sorted(JAPAN_WALL_TYPEIDS))
+def test_both_model_ids_publish_the_same_telemetry_map(typeid) -> None:
+    fields = own_telemetry_fields(typeid)
+    assert {f.name for f in fields} >= {"power", "compressorFrequency", "indoorCoilerTemperature"}
+    assert [(f.name, f.word, f.bit, f.length, f.k, f.c) for f in fields] == [
+        (f.name, f.word, f.bit, f.length, f.k, f.c) for f in own_telemetry_fields(JP_2024)
+    ]

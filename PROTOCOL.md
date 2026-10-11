@@ -239,7 +239,8 @@ read from its tail, since its block need not be there.
 Some families publish their block at **fixed word positions** instead, and the manufacturer's own
 telemetry map for those is carried and used: a reply whose payload is 20, 21, 23 or 43 words long
 is decoded from that published map (power sits at word 10, 15, 17 or 37 depending on the family)
-rather than from the table above.
+rather than from the table above. The japan-wall family's 18-word reply is decoded from the map of
+its own Model ID, keyed on that identifier rather than on the length.
 
 The actuator word packs six two-bit states: compressor at bit 0, indoor fan at 2, reversing valve at
 4, indoor electric heating at 6, outdoor fan at 8, defrost at 10.

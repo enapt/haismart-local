@@ -433,7 +433,9 @@ def _alarms_from(
     return {}
 
 
-def _telemetry_from(blobs: list[bytes]) -> tuple[dict[str, Any], bytes | None]:
+def _telemetry_from(
+    blobs: list[bytes], uplus_id: str | None = None
+) -> tuple[dict[str, Any], bytes | None]:
     """The running-power/compressor figures out of a session's blobs, and the frame they came from.
 
     ``({}, None)`` when the session carried no extended report, which is usual for a control
@@ -452,7 +454,7 @@ def _telemetry_from(blobs: list[bytes]) -> tuple[dict[str, Any], bytes | None]:
             # exactly the thing a maintainer needs to add its map, and it must not vanish just
             # because this build cannot yet read it.
             extended_blob = blob
-            if ext := parse_extended_status(blob):
+            if ext := parse_extended_status(blob, uplus_id=uplus_id):
                 return ext, blob
     return {}, extended_blob
 
@@ -811,7 +813,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # sits here rather than at the top of the cycle.
         await self._async_poll_cloud_state()
 
-        telemetry, extended_blob = _telemetry_from(blobs)
+        telemetry, extended_blob = _telemetry_from(blobs, self.uplus_id)
         if extended_blob is not None:
             self.last_raw_extended = extended_blob
         alarms = self._held_alarms(
@@ -1044,7 +1046,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 continue
             if parse_alarm_frame(blob, names) is not None:
                 role = "alarm"
-            elif parse_extended_status(blob):
+            elif parse_extended_status(blob, uplus_id=self.uplus_id):
                 role = "telemetry"
             elif parse_full_status(
                 blob, self.profile, self.digital_model, uplus_id=self.uplus_id, order=order,
@@ -1992,7 +1994,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         decoded. The AC echoes updated state on the op connection (the protocol). Also updates
         the seed baseline + miss counter so the next op/poll starts from the confirmed state."""
         self._record_frames(reply, "control")
-        telemetry, extended_blob = _telemetry_from(reply)
+        telemetry, extended_blob = _telemetry_from(reply, self.uplus_id)
         if extended_blob is not None:
             self.last_raw_extended = extended_blob
         for blob in reversed(reply):
@@ -2268,6 +2270,16 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """The AC's current localKey (kept fresh across gateway auto-refresh). For the opt-in backup
         sensor — it's a secret, so that entity is diagnostic + disabled by default."""
         return self._local_key
+
+    @property
+    def withheld_readings(self) -> frozenset[str]:
+        """Core readings this unit's family does not carry: not decoded, and no entity is made.
+
+        A property of the family (``WireModel.withheld_readings``), so it is known as soon as the
+        layout is: no poll has to fail first, and nothing is recorded on the entry.
+        """
+        wm = self._wire_model
+        return wm.withheld_readings if wm is not None else frozenset()
 
     @property
     def absent_readings(self) -> frozenset[str]:

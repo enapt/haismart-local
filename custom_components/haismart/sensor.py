@@ -294,13 +294,17 @@ async def async_setup_entry(
     # being created and removed again on every restart. Absence is never enough for this -- only a
     # refusal, which is what `absent_readings` records.
     absent = coordinator.absent_readings
+    # And readings the unit's FAMILY does not carry -- known from the layout, not from a poll -- are
+    # never created, and an entity left from a build that did create one is removed.
+    withheld = coordinator.withheld_readings
+    _drop_withheld_sensors(hass, coordinator, withheld)
     # The curated set is an AIR CONDITIONER's -- indoor/outdoor temperature, compressor frequency,
     # the self-clean history. On anything else every one of them reads `unknown` for ever.
     curated = coordinator.uses_curated_ac_entities
     entities: list[SensorEntity] = [
         HaismartSensor(coordinator, desc)
         for desc in SENSORS
-        if curated and desc.key not in absent
+        if curated and desc.key not in absent and desc.key not in withheld
     ]
     # opt-in backup entity: exposes the localKey so it rides along in HA backups / can be copied.
     # It's a secret, so it's diagnostic + DISABLED by default (enable it, back it up, done).
@@ -337,6 +341,22 @@ async def async_setup_entry(
     if curated and coordinator.supports_field("selfCleaningStatus"):
         entities.append(HaismartLastSelfCleanSensor(coordinator))
     async_add_entities(entities)
+
+
+def _drop_withheld_sensors(
+    hass: HomeAssistant, coordinator: HaismartCoordinator, withheld: frozenset[str]
+) -> None:
+    """Remove the registry rows of readings this unit's family does not carry.
+
+    Home Assistant keeps a registry row after a platform stops creating the entity, so without this
+    an install that had the entity keeps it, frozen at its last value. Only this integration's own
+    rows are touched, by the ``<deviceId>_<key>`` unique id every sensor here is built with.
+    """
+    registry = er.async_get(hass)
+    for key in sorted(withheld):
+        unique_id = f"{coordinator.device_id}_{key}"
+        if entity_id := registry.async_get_entity_id(SENSOR_DOMAIN, DOMAIN, unique_id):
+            registry.async_remove(entity_id)
 
 
 def _drop_superseded_vane_sensors(

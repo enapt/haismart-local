@@ -1190,23 +1190,27 @@ group-set length rule (the op is the published span) holds on hardware for a thi
 one command, power, on one Model ID (`日本挂2024`); no other setting was changed by it, and
 `日本挂2025` has not been seen.
 
-Residue, each a refusal or an absence rather than a wrong value — except the first:
+Two readings settled from the same file:
 
-* ⚠️ **`last_changed_by` reads "Other" after a Home Assistant command, because these products do
-  not carry the field.** The family's byte map places `opSrc` (控制命令来源) at w5 bits 0–1, with the
-  funcModel's codes 0 其他 · 1 遥控器 · 2 按键 · 3 网络, the same as every family. But **none of the
-  30 products declares `opSrc`** (the catalogue's per-product models, and both units' own models,
-  38 attributes each), Haier's cloud record of the unit does not report it, and both units read 0
-  there, one of them in the report that followed our own command. The sensor is created for every
-  air conditioner without a declaration check; on this family it should not be.
-* **The family's telemetry report (`7d01`) is not decoded.** These units answer the extended-status
-  query with an 18-word report, and the family's byte map describes exactly 18 words (56 fields:
-  power, compressor frequency and current, the coil and air temperatures, the actuator states and
-  the energy counter at w6–w7). The shipped byte-map bundle carries those fields, but the
-  air-conditioner telemetry path reads only the spans in `BIGDATA_MAPS`, so the frame is kept in
-  diagnostics and nothing is read from it. The one frame seen was taken with the unit off: the coil
-  and air temperatures are populated, and power, compressor and the energy counter read zero, so
-  whether the firmware fills those while running is not known yet.
+* ✅ **"Last changed by" is not offered on this family**, because these products do not carry the
+  field. The family's byte map places `opSrc` (控制命令来源) at w5 bits 0–1, with the funcModel's codes
+  0 其他 · 1 遥控器 · 2 按键 · 3 网络, the same as every family. But **none of the 30 products declares
+  `opSrc`** (the catalogue's per-product models, and both units' own models, 38 attributes each),
+  Haier's cloud record of the unit does not report it, and both units read 0 there, one of them in
+  the report that followed our own command — so the sensor would have shown "Other" for a change
+  Home Assistant made. The family lists it in `withheld_readings`: not decoded, the entity not
+  created, and one left by an earlier build removed.
+* ✅ **The family's telemetry report (`7d01`) is decoded from the map of its own Model ID.** These
+  units answer the extended-status query with an 18-word report, which no span-keyed map in
+  `BIGDATA_MAPS` describes and the family's byte map does (56 fields). The published power,
+  compressor, coil and air temperature, expansion-valve and actuator readings are read at the map's
+  positions with the map's own scaling (the indoor coil counts half degrees from −20 °C, unlike the
+  span-keyed families), keyed on the Model ID and only for a frame exactly as long as the map. ⚠️
+  The one frame seen was taken with the unit off: the temperatures are populated and power and the
+  compressor read zero, so whether the firmware fills those while running is not known yet. A
+  diagnostics download from a running unit settles it.
+
+Residue, each a refusal or an absence rather than a wrong value:
 
 * **Left-right stops are not offered** — only fixed and sweeping, the two codes this family shares
   with every other. Its stops are read (a read-only position sensor names them from the family's own

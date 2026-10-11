@@ -153,7 +153,7 @@ a confident but invented value.
 | | classic | compact-12 | extended-36 | extended-46 | japan-wall |
 |---|---|---|---|---|---|
 | heat capability | ✅ | — | ✅ | ✅ | — |
-| fault code + last-changed-by | ✅ | — | ✅ | ✅ | last-changed-by only |
+| fault code + last-changed-by | ✅ | — | ✅ | ✅ | — (no product declares either) |
 | fault bitmap | ✅ (its own frame, family-independent) | ✅ | ✅ | ✅ | ✅ |
 | self-clean | ✅ | ✅ (start-only command, where declared) | ✅ | ❌ | ❌ |
 | vane positions (both axes) | ✅ | ❌ | ✅ | ❌ (up-down sweep on/off only) | up-down set; left-right read only |

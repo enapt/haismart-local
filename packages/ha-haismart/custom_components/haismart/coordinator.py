@@ -65,6 +65,7 @@ from haismart_hrdp import (
     displaced_write_fields,
     extended_status_epp_frame,
     family_rules,
+    getallproperty_epp_frame,
     grsetdac_baseline_from_status,
     grsetdac_op_frame,
     is_extended_status_frame,
@@ -591,6 +592,18 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         #: derived command numbers the answer settled. Diagnostics carry it, so "I pressed it and
         #: got an error" arrives with the appliance's actual answer rather than a paraphrase.
         self.last_control: dict[str, Any] | None = None
+        #: When a poll's status push and the same poll's extended report disagree about a setting,
+        #: the appliance is asked directly (`_async_check_push`). How often that happened, the
+        #: latest case -- both readings and the appliance's own answer -- and whether the check has
+        #: been switched off for this unit, for diagnostics.
+        self.status_checks: dict[str, Any] = {"count": 0, "last": None, "off": None}
+        # Settings whose copy in the extended report the appliance itself has contradicted: its
+        # direct answer sided with the push, so on this unit the two reports differ there by design.
+        self._status_check_ignored: set[str] = set()
+        self._status_check_unanswered = 0
+        # True while the latest check found the push saying something the appliance's own answer
+        # did not: a command seeded from that push would send the stale settings back (`_build`).
+        self._push_is_stale = False
         # Whether this unit answers the extended-status query (running power / compressor figures).
         # None = not yet known; settled on the first cycle that produces a status report.
         self.supports_extended: bool | None = None
@@ -831,6 +844,10 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 uplus_id=self.uplus_id,
                 order=self.declared_group_order,
             ):
+                if extended_blob is not None and (
+                    checked := await self._async_check_push(blob, extended_blob)
+                ) is not None:
+                    blob, state = checked
                 self._misses = 0
                 self.last_raw_status = blob
                 # Before the layout bookkeeping below: `_note_unknown_layout` reads `model_decoded`.
@@ -1025,6 +1042,110 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # carried only short acks, is exactly what a bug report has to be able to show.
         self.uss_trace = trace
         return blobs
+
+    def _contradicted_settings(
+        self, push: bytes, extended: bytes
+    ) -> dict[str, tuple[Any, Any]]:
+        """Settings a poll's status push and the same poll's extended report give different values.
+
+        ``{attribute: (pushed, reported)}`` over the settings this appliance's group set carries,
+        read from each report with Haier's byte map for the Model ID. Empty when there is no map, no
+        declared group set, or nothing disagrees -- as in every same-poll pair of reports on record
+        but one.
+        """
+        model = self.device_model
+        if model is None or self.status_checks["off"]:
+            return {}
+        settings = frozenset(self.declared_group_order) - self._status_check_ignored
+        if not settings:
+            return {}
+        pushed = model.decode(push, only=settings)
+        reported = model.decode(extended, status_cmd=STATUS_BIGDATA, only=settings)
+        return {
+            name: (pushed[name], reported[name])
+            for name in sorted(pushed.keys() & reported.keys())
+            if pushed[name] != reported[name]
+        }
+
+    async def _async_check_push(
+        self, push: bytes, extended: bytes
+    ) -> tuple[bytes, dict[str, Any]] | None:
+        """Ask the appliance itself when a poll's two reports disagree about a setting.
+
+        The status that opens every session is a REPORT the module passes on (frame type ``06``),
+        not the appliance's answer to a question; the extended report is the answer to the one we
+        ask in the same session. Haier's UART standard lets an appliance report a change either in
+        full (``6D01``) or as only the parameters that changed (``6C01``), and in the one capture
+        where the two disagreed (issue #19, an AQUA wall unit) the pushed status still said "on,
+        19 C" while the extended report, Haier's cloud and the unit's owner all said "off, 20 C" --
+        so Home Assistant showed the unit running when it was not. Everywhere else, including two
+        polls straight after a command on a live unit, the two agree on every shared attribute.
+
+        So a disagreement is not resolved by preferring either report. The appliance is asked with
+        ``getAllProperty`` (``4D01``), the read-only query every published model declares, in one
+        extra session, and its own answer (frame type ``02``) is the status this cycle uses. Bounded
+        two ways: a setting the appliance's answer sides with the push on is a difference by design
+        for this unit and is not checked again, and a unit that answers the query three times in a
+        row with nothing usable stops being asked. Any failure leaves the push in place.
+        """
+        contradicted = self._contradicted_settings(push, extended)
+        if not contradicted:
+            self._push_is_stale = False
+            return None
+        from datetime import UTC, datetime
+
+        from haismart_hrdp.uss import epp_frame_type
+
+        self.status_checks["count"] += 1
+        record: dict[str, Any] = {
+            "at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "pushed": {name: pushed for name, (pushed, _) in contradicted.items()},
+            "extended": {name: reported for name, (_, reported) in contradicted.items()},
+            "answer": None,
+        }
+        self.status_checks["last"] = record
+        try:
+            async with self._session:
+                reply = await async_read_status(
+                    self.host, self.device_id, self._local_key, timeout=READ_TIMEOUT,
+                    expect_localkey_version=self.localkey_version or None,
+                    extra_request=getallproperty_epp_frame(),
+                )
+        except (LocalKeyRotated, TimeoutError, OSError, RuntimeError, ValueError) as err:
+            _LOGGER.debug(
+                "%s: asking for its status after a disagreement failed: %s", self.host, err
+            )
+            return None
+        self._record_frames(reply, "check")
+        for blob in reversed(reply):
+            if epp_frame_type(blob) != 0x02:
+                continue      # the session's own push is the report in question, not an answer
+            state = parse_full_status(
+                blob, self.profile, self.digital_model,
+                uplus_id=self.uplus_id, order=self.declared_group_order,
+            )
+            if not state:
+                continue
+            self._status_check_unanswered = 0
+            model = self.device_model
+            assert model is not None              # `_contradicted_settings` returned something
+            answer = model.decode(blob, only=frozenset(contradicted))
+            record["answer"] = answer
+            by_design = {
+                name for name, (pushed, _) in contradicted.items() if answer.get(name) == pushed
+            }
+            if by_design:
+                self._status_check_ignored |= by_design
+            self._push_is_stale = len(by_design) < len(contradicted)
+            _LOGGER.debug(
+                "%s: status push and extended report disagreed on %s; the appliance answered %s",
+                self.host, sorted(contradicted), answer,
+            )
+            return blob, state
+        self._status_check_unanswered += 1
+        if self._status_check_unanswered >= EXTENDED_MISSES:
+            self.status_checks["off"] = "the appliance did not answer the status query"
+        return None
 
     def _record_frames(self, blobs: list[bytes], session: str) -> None:
         """Keep every frame the appliance sent this session, parsed or not, with its bytes.
@@ -1449,15 +1570,22 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         declared = frozenset(declared_attribute_names(self.digital_model))
         if not declared:
             return {}
-        state = model.decode(blob, only=declared)
         # The extended/telemetry frame carries its own half of the map (Haier files those fields
         # under `Bigdata`, read from `7D01`). Merged in where the appliance sent one: an appliance
         # that never answers that query simply contributes nothing, which is why this needs no
         # capability flag of its own.
+        #
+        # ⚠️ Underneath the status report, never over it. 60 of the 92 bundled maps with a `7D01`
+        # section place some status attributes there too, and a command's reply carries a status
+        # report but no extended one -- so the extended report on hand is from the poll BEFORE the
+        # command, and laid on top it put the old value back. Issue #19's diagnostics read "off,
+        # 20 C" here beside a decode reading the reply's "on, 19 C".
+        state: dict[str, Any] = {}
         if self.last_raw_extended:
             state.update(
                 model.decode(self.last_raw_extended, status_cmd=STATUS_BIGDATA, only=declared)
             )
+        state.update(model.decode(blob, only=declared))
         return state
 
     def _note_unknown_layout(self, blob: bytes) -> None:
@@ -1660,6 +1788,12 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
 
         def _build(baseline: bytes | None) -> bytes:
+            if baseline is not None and self._push_is_stale and self.last_raw_status is not None:
+                # The last poll caught this session's kind of push contradicting the appliance's
+                # own answer (`_async_check_push`). Seeding from it would send those settings back
+                # -- the unit switched off at the remote would be switched on again by a setpoint
+                # change -- so the answer, at most one poll old, is the baseline instead.
+                baseline = None
             base = baseline if baseline is not None else self.last_raw_status
             if base is None:
                 raise HomeAssistantError(

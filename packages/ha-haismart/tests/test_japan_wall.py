@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 
 import pytest
+from haismart_hrdp import getallproperty_epp_frame
 from homeassistant.components.climate import DOMAIN as CLIMATE_DOMAIN
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import ATTR_ENTITY_ID, SERVICE_TURN_OFF
@@ -233,3 +234,191 @@ async def test_sensors_written_off_before_the_map_existed_come_back(
         "coil_temperature", "compressor_frequency_hz", "power_w"
     }
     assert {"coil_temperature", "compressor_frequency_hz", "power_w"} <= _suffixes(hass, entry)
+
+
+# --- issue #19's first unit, after its owner's commands: a poll whose two reports disagreed -----
+# Real frames from the owner's diagnostics download. The status push and the extended report came
+# from the SAME poll, and disagree on power, setpoint and up-down vane. Haier's cloud, fetched as
+# the file was written, agreed with the extended report on 34 of 35 attributes, as did the owner.
+
+#: The poll's status push: on, cool, 19 C, vane wire 2, room 22 C.
+PUSH_ON = bytes.fromhex(
+    "00002715000000004e5601000003020000040100000000000000000000000000000000000000000000000000000000"
+    "00000000000000000000000000000000000000000000000000000000000000001fffff1c000000000000066d012602"
+    "2104000002000000000000002c395c00a0"
+)
+#: The same poll's alarm push (no fault).
+ALARM = bytes.fromhex(
+    "00002715000000004e5601000003020000040100000000000000000000000000000000000000000000000000000000"
+    "000000000000000000000000000000000000000000000000000000000000000015ffff12000000000000040f5a0000"
+    "0000000000007f"
+)
+#: The same poll's extended report: off, cool, 20 C, vane wire 8 (published 6), room 21 C.
+EXTENDED_OFF = bytes.fromhex(
+    "00002715000000004e5601007a03020079040100000000000000000000000000000000000000000000000000000000"
+    "000000000000000000000000000000000000000000000000000000000100000031ffff2e000000000000067d012808"
+    "0104000002000000000000002a395c00004c7c530053000000000001e028000039cb23"
+)
+#: The unit's accepted reply (frame type 02) to the owner's turn-on: on, cool, 19 C, vane wire 2.
+ECHO_ON = bytes.fromhex(
+    "00002715000000004e5601006e0302006d040100000000000000000000000000000000000000000000000000000000"
+    "00000000000000000000000000000000000000000000000000000000010000001fffff1c000000000000026d012602"
+    "21040000020000000000000027395b0096"
+)
+#: Rad1ally's unit (same Model ID): a poll whose push and extended report agree -- off, auto, 27 C.
+AGREEING_PUSH = bytes.fromhex(
+    "00002715000000004e5601000003020000040100000000000000000000000000000000000000000000000000000000"
+    "00000000000000000000000000000000000000000000000000000000000000001fffff1c000000000000066d013604"
+    "00040000020000000000000046306700ad"
+)
+
+_GET_ALL = getallproperty_epp_frame()
+
+
+def _with_words_of(frame: bytes, source: bytes, words: int = 9) -> bytes:
+    """``frame`` carrying ``source``'s first ``words`` report words, checksum recomputed.
+
+    The unit's own answer to ``4D01`` is not in the owner's file, so the tests build it from the
+    unit's own bytes: its real accepted reply, carrying the settings its own extended report gave in
+    that poll -- the same nine words in the same layout (the family's byte map places them alike).
+    """
+    at, src = frame.find(b"\xff\xff"), source.find(b"\xff\xff")
+    body = bytearray(frame[:-1])
+    body[at + 12:at + 12 + 2 * words] = source[src + 12:src + 12 + 2 * words]
+    return bytes(body) + bytes([sum(body[at + 2:]) & 0xFF])
+
+
+def test_the_built_answer_keeps_the_frames_own_checksum_rule() -> None:
+    assert _with_words_of(ECHO_ON, ECHO_ON) == ECHO_ON
+
+
+def _reads(answer: list[bytes] | None, poll: list[bytes]):
+    """A read mock: ``poll`` for an ordinary cycle, ``answer`` for a session that asks ``4D01``."""
+    asked: list[bytes | None] = []
+
+    async def read(*args, extra_request=None, **kwargs):
+        asked.append(extra_request)
+        return list(answer or []) if extra_request == _GET_ALL else list(poll)
+
+    return read, asked
+
+
+async def test_when_a_polls_two_reports_disagree_the_unit_is_asked(
+    hass: HomeAssistant, japan_wall
+) -> None:
+    """Home Assistant showed this unit on at 19 C while it was off at 20 C. The appliance's own
+    answer to `getAllProperty` decides, and is what the thermostat shows."""
+    answer = _with_words_of(ECHO_ON, EXTENDED_OFF)
+    japan_wall.read.side_effect, asked = _reads(
+        [PUSH_ON, ALARM, answer], [PUSH_ON, ALARM, EXTENDED_OFF]
+    )
+    entry = await _setup(hass)
+
+    assert _GET_ALL in asked
+    state = hass.states.get(CLIMATE)
+    assert state.state == "off"
+    assert state.attributes["temperature"] == 20.0
+    checks = entry.runtime_data.status_checks
+    assert checks["count"] >= 1
+    assert checks["last"]["pushed"] == {
+        "onOffStatus": True, "targetTemperature": 19.0, "windDirectionVertical": 2,
+    }
+    assert checks["last"]["extended"] == {
+        "onOffStatus": False, "targetTemperature": 20.0, "windDirectionVertical": 6,
+    }
+    assert checks["last"]["answer"] == checks["last"]["extended"]
+    assert entry.runtime_data.last_raw_status == answer
+
+
+async def test_a_poll_whose_reports_agree_asks_nothing_more(
+    hass: HomeAssistant, japan_wall
+) -> None:
+    japan_wall.read.side_effect, asked = _reads(None, [AGREEING_PUSH, ALARM, TELEMETRY])
+    entry = await _setup(hass)
+    await entry.runtime_data.async_refresh()
+
+    assert _GET_ALL not in asked
+    assert entry.runtime_data.status_checks["count"] == 0
+    assert hass.states.get(CLIMATE).attributes["temperature"] == 27.0
+
+
+async def test_a_difference_the_unit_confirms_is_not_checked_again(
+    hass: HomeAssistant, japan_wall
+) -> None:
+    """When the appliance's answer sides with the push, its extended report differs there by
+    design: believe the answer, and do not pay an extra session for it on every poll."""
+    japan_wall.read.side_effect, asked = _reads(
+        [PUSH_ON, ALARM, ECHO_ON], [PUSH_ON, ALARM, EXTENDED_OFF]
+    )
+    entry = await _setup(hass)
+    assert hass.states.get(CLIMATE).attributes["temperature"] == 19.0
+    asked_before = asked.count(_GET_ALL)
+    assert asked_before == 1
+
+    await entry.runtime_data.async_refresh()
+    assert asked.count(_GET_ALL) == asked_before
+
+
+async def test_a_unit_that_does_not_answer_the_question_stops_being_asked(
+    hass: HomeAssistant, japan_wall
+) -> None:
+    japan_wall.read.side_effect, asked = _reads(
+        [PUSH_ON, ALARM], [PUSH_ON, ALARM, EXTENDED_OFF]
+    )
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data
+    for _ in range(4):
+        await coordinator.async_refresh()
+
+    assert asked.count(_GET_ALL) == 3
+    assert coordinator.status_checks["off"]
+    # Nothing to go on but the push, so the push stands, as it did before the check existed.
+    assert hass.states.get(CLIMATE).attributes["temperature"] == 19.0
+
+
+async def test_the_byte_map_state_after_a_command_is_the_replys(
+    hass: HomeAssistant, japan_wall
+) -> None:
+    """A command's reply carries a status report and no extended one, so the extended report on
+    hand is the one from before the command. Laid over the reply, it put the old values back --
+    issue #19's diagnostics read off at 20 C there, beside a decode reading on at 19 C."""
+    answer = _with_words_of(ECHO_ON, EXTENDED_OFF)
+    japan_wall.read.side_effect, _ = _reads(
+        [PUSH_ON, ALARM, answer], [PUSH_ON, ALARM, EXTENDED_OFF]
+    )
+    japan_wall.send.baseline = answer
+    japan_wall.send.return_value = [ALARM, ECHO_ON]
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data
+    assert coordinator.last_raw_extended == EXTENDED_OFF
+
+    await hass.services.async_call(
+        CLIMATE_DOMAIN, "set_hvac_mode", {ATTR_ENTITY_ID: CLIMATE, "hvac_mode": "cool"},
+        blocking=True,
+    )
+    model_state = coordinator.data["model_state"]
+    assert model_state["onOffStatus"] is True
+    assert model_state["targetTemperature"] == 19.0
+    assert model_state["windDirectionVertical"] == 2
+    assert hass.states.get(CLIMATE).state == "cool"
+
+
+async def test_a_command_after_a_stale_push_is_built_from_the_units_answer(
+    hass: HomeAssistant, japan_wall
+) -> None:
+    """A group set is seeded from the status its own session opens with -- the same push the last
+    poll caught contradicting the appliance. Seeded from it, a setpoint change would have sent
+    "on, vane 2" back and switched on a unit its owner had just switched off."""
+    answer = _with_words_of(ECHO_ON, EXTENDED_OFF)
+    japan_wall.read.side_effect, _ = _reads(
+        [PUSH_ON, ALARM, answer], [PUSH_ON, ALARM, EXTENDED_OFF]
+    )
+    japan_wall.send.baseline = PUSH_ON
+    await _setup(hass)
+
+    await hass.services.async_call(
+        CLIMATE_DOMAIN, "set_temperature", {ATTR_ENTITY_ID: CLIMATE, "temperature": 21},
+        blocking=True,
+    )
+    # 21 C with the answer's vane (wire 8); power stays off (`0104`), not the push's `2104`.
+    assert _words(japan_wall.send.last_frame) == bytes.fromhex("2a08010400000200")

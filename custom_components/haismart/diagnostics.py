@@ -205,6 +205,10 @@ async def async_get_config_entry_diagnostics(
         # Which commands this appliance is written with, which of them are on trial, and what
         # the last one drew. See _controls_summary.
         "controls": _controls_summary(coordinator),
+        # How often a poll's status push and its own extended report disagreed about a setting, the
+        # latest case with the appliance's direct answer, and whether the check is off for this
+        # unit. See coordinator._async_check_push.
+        "status_checks": coordinator.status_checks,
         # Every kind of frame this appliance has sent on the LAN, parsed or not, with the latest
         # bytes of each. A frame nothing here decodes is counted, named where recognised, and kept
         # as hex -- which is what a maintainer needs to find out whether, say, the module's own

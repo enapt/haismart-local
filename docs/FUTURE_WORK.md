@@ -21,6 +21,60 @@ keeps its own when it moves between the two sections. Expect the sequence to hav
 
 ## Open items
 
+### 72. India-region (zone 91) hosts are desk-derived — confirm token refresh, the digital model and key rotation on a real `-sea` account
+
+**2026-10-06, issue #18 (reporter `akashdubeyx`, a wall-split AC in India).** Sign-in succeeded but
+the integration reported the account had no devices. The SE-Asia app ships a two-centre directory
+(`assets/PresetResPkg/configFile@MultiDataCenter@1.1.1.json`) and routes an account to one of them by
+its region: `MultiDataCenterManager.getCurrentDataCenterByCountry` sends `zoneInfo` `"91"` (India) to
+the **India** centre (`-sea` hosts) and every other zone to **Singapore** (`-sgp`). The old defaults
+read the device list, digital model and localKey from `-sgp` for everyone, so an India account's
+devices — which live on `-sea` — were invisible, while **login** worked because the account endpoint
+is on `uhome-sea` for both centres.
+
+Fixed by computing the hosts from the account's zone (`Domains.for_zone`), so the device list, token
+refresh, digital model and the localKey gateway all follow the account's own data centre.
+
+**Verified:** the device list on `-sea` and the key on `gw-sea` are what the reporter measured live
+with this repo's own client; the selection rule is read from the app binary. **Not verified on
+hardware here** (no India account): token refresh against `uhome-sea/uplussea/accounts/v1/user/refreshToken`
+and the digital model on `uws-sea`. The reporter can confirm by signing in through the integration
+(not the manual-key workaround) and checking a key rotation self-heals. Both calls are the same paths
+that already work on `-sgp`, on the centre whose login the account already completes, so the risk is low.
+
+**Known edge, left alone:** the app has an `isRetainedUser()` override that pins *migrated* India
+users to the India centre regardless of zone. The zone rule cannot see that flag, so a retained user
+whose account reports a non-91 zone would still be routed to Singapore. No such report exists; it
+closes with one, and the manual "I already have the local key" path works for them meanwhile. Such
+an account reads an EMPTY device list with a success code, so a failed key fetch treats an empty
+list as no answer: the re-authentication form says Haier could not be reached, not that the
+appliance belongs to a different account.
+
+
+### 73. Key-outage handling: what still counts as a refusal
+
+When a localKey rotates and the re-fetch fails, the integration retries quietly for up to 30 minutes
+if Haier could not be **reached**, and asks for a reauth at once if Haier **refused**. Two
+server-side outages still read as refusals, so they ask for a reauth straight away:
+
+* **An HTTP 5xx on the token refresh.** It raises the plain cloud error, not the connection error,
+  so the refresh is not marked unreachable. Telling a 5xx apart needs the status carried on the
+  error. A reply that answers with a non-zero `retCode` is Haier refusing, and must stay a refusal.
+* **A broker that refuses by hanging up after the 30 minutes.** A hang-up is treated as the network
+  for the grace period, then escalates — by design, since a refusal can look exactly like that.
+
+MQTT's own "server unavailable" (`CONNACK` return code 3) counts as unreachable, and the grace
+period's clock is kept per configuration entry, so it runs out across setup retries.
+
+Also noted, not a defect: a unit that is asked for extended status and never answers holds the
+session for the full read timeout on each silent cycle (about 3.4 s more than a plain read). On a
+unit that has never answered it is bounded: three silent cycles for each of the two published query
+forms, then the query stops. On a unit that has answered before, every silent cycle pays it.
+
+**What closes it:** a status-bearing cloud error for the 5xx case. Nothing to do for the other two
+unless a report shows them costing someone a needless sign-in.
+
+
 ### 63. Issue #13 — a heat-pump WATER HEATER, 167-byte report, and the integration models it as an AC
 
 **Reported 2026-09-09 (issue #13), and it is the best-controlled report this project has had from a
@@ -299,137 +353,6 @@ kind's platform list — but a reader diffing two diagnostics files would otherw
 twelve-degree discrepancy that does not exist.
 
 
-### 68. ✅ SETTLED — the setup and repair copy no longer calls every appliance an "air conditioner"
-
-Raised and settled 2026-09-13. **38 English strings** named the appliance as an air conditioner —
-every config-flow step title and description, five errors, four aborts, the poll-interval help and
-the three key-rotation repair issues — each mirrored across **31 locales**.
-
-✅ **Done, 1,052 strings across 30 locales plus English.** ⛔ **Not by find-and-replace, and the
-first attempt proved why.** Substituting a "device" word wherever the AC word appeared produced
-grammatical wreckage in the inflected languages, because the replacement noun usually has a
-different gender and everything agreeing with it then has to change too: pl *"To urządzenie jest już
-**konfigurowany**"*, cs *"Toto zařízení **byla přidána**"*, el *"**Όλα οι** συσκευές"*, and a
-malformed *"urządzenie**owi**"* invented by suffixing a case ending onto the wrong stem.
-
-⇒ ★ **The rule that made it tractable: choose a replacement noun of the SAME GENDER as the word it
-replaces, and all of that agreement stays correct by construction.** cs/sk *klimatizace/klimatizácia*
-(fem) → **jednotka** (fem) · pl *klimatyzator* (masc) → **sprzęt** (masc) · ru *кондиционер* (masc,
-hard) → **прибор** (masc, hard — the identical declension class, so a 1:1 map per case) · el
-*κλιματιστικό* (neut) → **μηχάνημα** (neut, so every article is untouched). Where gender already
-matched, the obvious word was kept (de *Gerät*, fr *appareil*, uk *пристрій*, bg *уред*).
-⚠️ Czech and Slovak still needed the **case** pinned per context — case cannot be read off the noun
-alone, and *klimatizace* is simultaneously nominative and genitive — so those two carry an explicit
-30-context map rather than a bare noun swap.
-
-✅ **Checked rather than assumed:** a before/after fingerprint of **8,897 strings** across all 31
-files confirms **every `{placeholder}`, every `**bold**` run, every backtick and every newline is
-byte-identical** — only nouns moved. `check-translations.py` 287 keys × 31 files in parity, and the
-diff is 2,260 insertions against 2,260 deletions, i.e. line-for-line with no structural change.
-
-⇒ **Two by-products worth keeping:**
-* ⛔ **A STALE TRANSLATION THE SWEEP FOUND BY ACCIDENT.** `issues/unknown_report_layout/title` was
-  reworded to "this appliance's status format" in English some sessions ago and **all 30 locale files
-  were left saying "air conditioner"** — nobody noticed, because the parity check compares KEYS, not
-  values. Thai had a second one (`config/step/host/description`, which names the appliance where the
-  English uses a `{device}` placeholder). Both are now correct.
-* ⚠️ ★ **`scripts/check-translations.py` cannot catch this class of drift at all** — it enforces key
-  parity only, so an English rewording that skips the locales passes CI silently, and a partial
-  locale rewrite would too. **A value-drift check is the real open item here**, and it is what would
-  have caught the stale title above years earlier. Filed as the remaining work, not done.
-
-⚠️ **A second QA pass found three artifacts the substitution itself introduced, and none of them
-would have been caught by reading a sample** — they were found by scanning every locale
-mechanically:
-* **Dutch pluralises `airco` with an apostrophe** (`airco's`), so the noun swap produced
-  **`apparaat's`** in three strings; the correct plural is `apparaten`.
-* **Dutch pronoun gender:** `airco` is a *de*-word and `apparaat` is a *het*-word, so two `hij`
-  referring to the appliance had to become `het`. ⓘ The other four `hij` in that file refer to
-  *de sleutel* (the key) and are correct — which is why this needed reading, not replacing.
-* **Indonesian capitalisation:** `AC` is capitalised at sentence start, so a word-for-word swap left
-  **13 strings beginning `perangkat`** in lower case.
-⇒ ★ **The general lesson: a noun swap has to answer for the noun's MORPHOLOGY (plural form, case) and
-for everything that AGREES with it (articles, pronouns, participles) — and for its CAPITALISATION,
-which is invisible until the word lands at the start of a sentence.**
-
-ⓘ The translations remain machine-written and not natively reviewed, exactly as before this change;
-corrections from native speakers are welcome. The tool that did the rewrite, with the per-language
-reasoning inline, is `delocalise_ac.py` (session scratchpad, not shipped).
-
-### 71. ✅ SETTLED — air conditioners kept their own write path
-
-Raised as issue #15 and settled 2026-09-15. Turning an air conditioner off from Home Assistant
-failed with `onOffStatus='0' not in allowed ['false', 'true']`, and nothing reached the unit.
-
-**The cause was one gate keyed on the wrong condition.** When the byte-map decoder arrived, every
-appliance gained a decoder built from Haier's published map. Air conditioners already had a
-hand-built one, and the READ side keeps them on it. The WRITE side asked a different question:
-`model_write_fields()` was gated on "did the byte map decode this report" rather than on "is this
-an air conditioner", and an air conditioner's report decodes both ways. So a change made of
-model-writable fields alone was routed to the byte-map write path, which speaks a different
-**representation** (the model's published values, not raw EPP) and builds a different **frame** (a
-single-parameter write, not the group set).
-
-⇒ The gate is now the same condition the read side uses, so the two cannot drift apart again.
-
-⚠️ **The blast radius was per family, and it was not small.** 26 of the 28 air-conditioner families
-in the shipped bundle mark `onOffStatus` writable, so power was diverted on almost all of them —
-including the hardware this project develops against. On a `0d12` commercial cabinet, whose byte map
-marks 42 attributes writable, **eight of its declared controls** were diverted: power, setpoint,
-mode, fan, both vanes, quiet and boost. A setpoint failed differently from power and is the sharper
-illustration — 22 °C is EPP 6, so the byte-map validator rejected an ordinary temperature as out of
-range `[16, 30]`.
-
-⇒ ★ **Turning on appeared to work, which is why this looked narrower than it was.** Setting a mode
-carries `operationMode` as well as power, and most families do not mark that attribute writable, so
-the whole change fell back to the air-conditioner path by luck. `climate.turn_on`, a single-field
-change, was refused exactly like `turn_off`.
-
-⛔ **Refusing the write was only the visible half.** Teaching the validator to convert `0` to
-`"false"` would have let the change through — and then sent it as a `5Dxx` single-parameter write,
-which is unconfirmed on the classic families: their published write type is group-only for every
-attribute but power, and a live probe found the setpoint id refused by the appliance while the
-power id was accepted, on the same unit in the same session. Making the values agree would have
-replaced a loud failure with a quiet one.
-
-⇒ ★★ **Two blind spots in the suite let this ship, and both are now closed by
-`test_ac_write_path.py`.** No air-conditioner test set a `uplus_id`, so no air-conditioner test ever
-loaded a byte map; and the shared model fixture omits `invisible_attributes`, without which the
-declaration gate returns nothing and the byte map decodes nothing. Either alone was enough to hide
-the gate. **Every test in that file fails against the old code** — checked, not assumed.
-
-### 70. ✅ SETTLED — swing moved to Home Assistant's modern shape: one control per axis
-
-Raised and settled 2026-09-13, from Home Assistant's own developer documentation:
-
-> *"This should only be implemented if the integration has independent control of vertical and
-> horizontal swing."* — on `SWING_HORIZONTAL_MODE`
-
-**We do have independent control** — the axes are separate fields on the wire
-(`windDirectionVertical` w1, `windDirectionHorizontal` w4) — so HA's intended shape applies:
-`swing_modes` = off/on for the up-down axis, `swing_horizontal_modes` = off/on for the left-right
-one. The four-way `{off, vertical, horizontal, both}` is HA's **legacy** shape, for integrations
-that can only move both axes together.
-
-⛔ **Two wrong shapes preceded this, and both were structural rather than careless.** The four-way
-*plus* a horizontal control (shipped for a while) gave `windDirectionHorizontal` two owners that
-fought and put two swing dropdowns on the card. The four-way *alone* meant asking for one axis
-silently commanded the other — and since the field is the vendor's position enum, that flattened
-health-airflow settings and knocked vanes off their stops. ⇒ ★ **One control per axis removes the
-whole class of problem by construction: each control writes exactly one field.**
-
-✅ **And a guard is still needed on top of it**, which is the part that is easy to miss: several
-codes READ as sweeping (the alternate sweep, the half-range sweeps), so re-asserting `on` over one
-would flatten it to the plain sweep. An axis already in the asked-for state is therefore not
-written at all.
-
-⚠️ **BREAKING for automations.** `swing_mode: both|vertical|horizontal` no longer exists; the
-migration table is in [`behaviour.md`](behaviour.md#swinging-and-pointing). An automation sending an
-old value now fails loudly rather than moving a vane it did not mean to, which is the right failure.
-
-ⓘ The vane **selects** are unaffected and remain the only control that reaches the fixed stops and
-the health-airflow modes — neither swing shape expresses those.
-
 ### 69. `check-translations.py` compares KEYS, not VALUES — an English rewording can silently skip 30 locales
 
 Raised 2026-09-13 by item 68, which found a concrete instance rather than a hypothetical one.
@@ -511,10 +434,46 @@ both-directions UART tap and the only writes in it are `4d01` status queries. Th
 a diagnostics download taken immediately after setting a reservation in the Haismart app, which
 would leave the op in `lan_frames`.
 
-### 65. A board can wipe its module's Wi-Fi configuration
+### 65. A unit can un-provision ITSELF on its mainboard's orders — `FD` 清除用户信息
 
-*(see `CLAUDE.md`; the `FD` 清除用户信息 field — a board that sends it takes the unit off the LAN and
-the integration sees the appliance vanish.)*
+**2026-09-13, from the vendor's UART specification and prior-art captures.**
+
+In **master-slave mode** — which is almost certainly what the maintainer's units and the `0d12`
+cabinets run (three independent lines of evidence agree) — the Wi-Fi module **polls its
+own appliance mainboard** for management instructions, roughly once per cycle: frame **`FC`** out
+(no payload), frame **`FD`** back (6 bytes). One of those bytes is **清除用户信息**, and the value
+**`0x02`** means *"清除模块中用户配置的WIFI信息等"* — **clear the user-configured Wi-Fi settings.**
+A sibling byte, **解除绑定状态 = `0x01`**, unbinds the appliance from its account, and **模式切换**
+can push the module into softAP / smartlink / WPS setup.
+
+⇒ **What this means for the integration:** an appliance can leave the network *without anything on
+the network doing anything wrong*. From Home Assistant's side the failure looks like a unit that
+simply **vanishes** — no error, no key rotation, no cloud event, no reachability at
+`192.168.x.x:56800` — because the module has discarded its Wi-Fi credentials and gone looking for a
+provisioner. A user would report it as "the integration stopped working"; the cause is on the other
+side of the module, in appliance firmware we have never held.
+
+**Why it is filed rather than fixed:** nothing here is actionable in code today.
+* ⛔ **Never observed in the wild.** In every prior-art capture the field is `0x00`: a `0212` cabinet
+  answers `00 00 00 00 00 00` and a `0d12` cabinet `00 00 00 01 00 00` (that `1` is 强制进设置, which
+  the spec says is **ignored** unless 模式切换 selects a config mode). **93 polls, 93 answers, not one
+  requesting anything.**
+* ⛔ **We cannot see it happen.** It is board↔module UART traffic; it never crosses `:56800`, and this
+  project has never taken a UART capture.
+* ⛔ **And we could not prevent it if we did** — it is the appliance obeying its own mainboard.
+
+**What would make it actionable, cheapest first:**
+1. **A user report matching the signature** — a unit that disappears from the LAN and, on inspection,
+   is back in pairing mode (Wi-Fi LED flashing rather than solid) with **no** router/DHCP change and
+   **no** power event. That distinguishes it from the ordinary causes (DHCP lease moved, AP band
+   steering, the unit unplugged).
+2. If it ever recurs on one unit: the diagnostic is the **Wi-Fi LED** — solid = paired and connected,
+   flashing = config mode — which needs no tooling at all.
+
+**What to do with it now:** keep it in `TROUBLESHOOTING.md`'s vocabulary. If a user reports a unit
+that vanished and came back needing re-pairing, this is a documented mechanism, not necessarily
+something they or we did wrong. ⚠️ Do **not** put it in user-facing docs as a likely cause — it has
+never been observed, and the ordinary explanations are overwhelmingly more common.
 
 ### 66. Ten device classes are published only in the older V2 text profile
 
@@ -538,6 +497,14 @@ be served a V3 map under its own typeid.
 
 **What closes it:** a label→name mapping (the panel resources may carry one), or one live device of
 those classes whose typeid does serve V3 — which would show the whole question is historical.
+
+### 62. A local tool for fully offline owners
+
+A command-line or web tool that does what the vendor's technician app does on the local network —
+discovery, a device inventory and firmware versions — for owners who never connect their appliances
+to the cloud. The design notes and the discovery tools are kept with the maintainer's research
+rather than here, because they map the module's Bluetooth surface, which is not something this
+repository publishes.
 
 ### 58. The end-anchored telemetry decode assumes a tail block — five published families put it elsewhere
 
@@ -755,14 +722,16 @@ step would become a property rather than a fixed attribute, 0.5 only where the f
 it must fall back to whole degrees when a provisional control retires, or a user is left with a
 half-degree dial whose halves round away silently.
 
-#### ⚠️ A defect this turned up, independent of the flag
+#### ⚠️ The products whose setpoint field counts halves
 
-The 33 products whose model declares `targetTemperature` `step: 0.5` already get a half-degree step
-in the UI, because the step is read straight from the model — while the write path rounds the value
-to a whole degree. Those units offer a step the write cannot express. The fix is either to encode
-the half (their setpoint field counts halves, so it can carry it) or to clamp the advertised step to
-what the encoder can send; the first is correct and needs one capture from such a unit to confirm the
-field is written the way it is read.
+The 33 products whose model declares `targetTemperature` `step: 0.5` store the setpoint as °C × 2,
+so their field could carry a half degree. The integration offers whole degrees on them: the climate
+entity advertises a step of at least 1 °C and a minimum of at least 16 °C whatever the model
+declares, because the write rounds the value to a whole degree and the read rounds it too
+(`wire_models`, the `celsius` field kind). So the dial offers nothing the encoder cannot send. What
+stays open is carrying the half: encode `value × 2` without rounding, read it back the same way,
+and advertise the model's own step. That needs one capture from such a unit, to confirm the field
+is written the way it is read.
 
 ### 56. The single-parameter register is CLASS-WIDE — the funcModel is the per-family witness
 
@@ -1785,6 +1754,138 @@ have a concrete case of it firing wrongly. **Leave the controls ungated.**
 
 # Settled
 
+### 68. ✅ SETTLED — the setup and repair copy no longer calls every appliance an "air conditioner"
+
+Raised and settled 2026-09-13. **38 English strings** named the appliance as an air conditioner —
+every config-flow step title and description, five errors, four aborts, the poll-interval help and
+the three key-rotation repair issues — each mirrored across **31 locales**.
+
+✅ **Done, 1,052 strings across 30 locales plus English.** ⛔ **Not by find-and-replace, and the
+first attempt proved why.** Substituting a "device" word wherever the AC word appeared produced
+grammatical wreckage in the inflected languages, because the replacement noun usually has a
+different gender and everything agreeing with it then has to change too: pl *"To urządzenie jest już
+**konfigurowany**"*, cs *"Toto zařízení **byla přidána**"*, el *"**Όλα οι** συσκευές"*, and a
+malformed *"urządzenie**owi**"* invented by suffixing a case ending onto the wrong stem.
+
+⇒ ★ **The rule that made it tractable: choose a replacement noun of the SAME GENDER as the word it
+replaces, and all of that agreement stays correct by construction.** cs/sk *klimatizace/klimatizácia*
+(fem) → **jednotka** (fem) · pl *klimatyzator* (masc) → **sprzęt** (masc) · ru *кондиционер* (masc,
+hard) → **прибор** (masc, hard — the identical declension class, so a 1:1 map per case) · el
+*κλιματιστικό* (neut) → **μηχάνημα** (neut, so every article is untouched). Where gender already
+matched, the obvious word was kept (de *Gerät*, fr *appareil*, uk *пристрій*, bg *уред*).
+⚠️ Czech and Slovak still needed the **case** pinned per context — case cannot be read off the noun
+alone, and *klimatizace* is simultaneously nominative and genitive — so those two carry an explicit
+30-context map rather than a bare noun swap.
+
+✅ **Checked rather than assumed:** a before/after fingerprint of **8,897 strings** across all 31
+files confirms **every `{placeholder}`, every `**bold**` run, every backtick and every newline is
+byte-identical** — only nouns moved. `check-translations.py` 287 keys × 31 files in parity, and the
+diff is 2,260 insertions against 2,260 deletions, i.e. line-for-line with no structural change.
+
+⇒ **Two by-products worth keeping:**
+* ⛔ **A STALE TRANSLATION THE SWEEP FOUND BY ACCIDENT.** `issues/unknown_report_layout/title` was
+  reworded to "this appliance's status format" in English some sessions ago and **all 30 locale files
+  were left saying "air conditioner"** — nobody noticed, because the parity check compares KEYS, not
+  values. Thai had a second one (`config/step/host/description`, which names the appliance where the
+  English uses a `{device}` placeholder). Both are now correct.
+* ⚠️ ★ **`scripts/check-translations.py` cannot catch this class of drift at all** — it enforces key
+  parity only, so an English rewording that skips the locales passes CI silently, and a partial
+  locale rewrite would too. **A value-drift check is the real open item here**, and it is what would
+  have caught the stale title above years earlier. Filed as the remaining work, not done.
+
+⚠️ **A second QA pass found three artifacts the substitution itself introduced, and none of them
+would have been caught by reading a sample** — they were found by scanning every locale
+mechanically:
+* **Dutch pluralises `airco` with an apostrophe** (`airco's`), so the noun swap produced
+  **`apparaat's`** in three strings; the correct plural is `apparaten`.
+* **Dutch pronoun gender:** `airco` is a *de*-word and `apparaat` is a *het*-word, so two `hij`
+  referring to the appliance had to become `het`. ⓘ The other four `hij` in that file refer to
+  *de sleutel* (the key) and are correct — which is why this needed reading, not replacing.
+* **Indonesian capitalisation:** `AC` is capitalised at sentence start, so a word-for-word swap left
+  **13 strings beginning `perangkat`** in lower case.
+⇒ ★ **The general lesson: a noun swap has to answer for the noun's MORPHOLOGY (plural form, case) and
+for everything that AGREES with it (articles, pronouns, participles) — and for its CAPITALISATION,
+which is invisible until the word lands at the start of a sentence.**
+
+ⓘ The translations remain machine-written and not natively reviewed, exactly as before this change;
+corrections from native speakers are welcome. The tool that did the rewrite, with the per-language
+reasoning inline, is `delocalise_ac.py` (session scratchpad, not shipped).
+
+### 71. ✅ SETTLED — air conditioners kept their own write path
+
+Raised as issue #15 and settled 2026-09-15. Turning an air conditioner off from Home Assistant
+failed with `onOffStatus='0' not in allowed ['false', 'true']`, and nothing reached the unit.
+
+**The cause was one gate keyed on the wrong condition.** When the byte-map decoder arrived, every
+appliance gained a decoder built from Haier's published map. Air conditioners already had a
+hand-built one, and the READ side keeps them on it. The WRITE side asked a different question:
+`model_write_fields()` was gated on "did the byte map decode this report" rather than on "is this
+an air conditioner", and an air conditioner's report decodes both ways. So a change made of
+model-writable fields alone was routed to the byte-map write path, which speaks a different
+**representation** (the model's published values, not raw EPP) and builds a different **frame** (a
+single-parameter write, not the group set).
+
+⇒ The gate is now the same condition the read side uses, so the two cannot drift apart again.
+
+⚠️ **The blast radius was per family, and it was not small.** 26 of the 28 air-conditioner families
+in the shipped bundle mark `onOffStatus` writable, so power was diverted on almost all of them —
+including the hardware this project develops against. On a `0d12` commercial cabinet, whose byte map
+marks 42 attributes writable, **eight of its declared controls** were diverted: power, setpoint,
+mode, fan, both vanes, quiet and boost. A setpoint failed differently from power and is the sharper
+illustration — 22 °C is EPP 6, so the byte-map validator rejected an ordinary temperature as out of
+range `[16, 30]`.
+
+⇒ ★ **Turning on appeared to work, which is why this looked narrower than it was.** Setting a mode
+carries `operationMode` as well as power, and most families do not mark that attribute writable, so
+the whole change fell back to the air-conditioner path by luck. `climate.turn_on`, a single-field
+change, was refused exactly like `turn_off`.
+
+⛔ **Refusing the write was only the visible half.** Teaching the validator to convert `0` to
+`"false"` would have let the change through — and then sent it as a `5Dxx` single-parameter write,
+which is unconfirmed on the classic families: their published write type is group-only for every
+attribute but power, and a live probe found the setpoint id refused by the appliance while the
+power id was accepted, on the same unit in the same session. Making the values agree would have
+replaced a loud failure with a quiet one.
+
+⇒ ★★ **Two blind spots in the suite let this ship, and both are now closed by
+`test_ac_write_path.py`.** No air-conditioner test set a `uplus_id`, so no air-conditioner test ever
+loaded a byte map; and the shared model fixture omits `invisible_attributes`, without which the
+declaration gate returns nothing and the byte map decodes nothing. Either alone was enough to hide
+the gate. **Every test in that file fails against the old code** — checked, not assumed.
+
+### 70. ✅ SETTLED — swing moved to Home Assistant's modern shape: one control per axis
+
+Raised and settled 2026-09-13, from Home Assistant's own developer documentation:
+
+> *"This should only be implemented if the integration has independent control of vertical and
+> horizontal swing."* — on `SWING_HORIZONTAL_MODE`
+
+**We do have independent control** — the axes are separate fields on the wire
+(`windDirectionVertical` w1, `windDirectionHorizontal` w4) — so HA's intended shape applies:
+`swing_modes` = off/on for the up-down axis, `swing_horizontal_modes` = off/on for the left-right
+one. The four-way `{off, vertical, horizontal, both}` is HA's **legacy** shape, for integrations
+that can only move both axes together.
+
+⛔ **Two wrong shapes preceded this, and both were structural rather than careless.** The four-way
+*plus* a horizontal control (shipped for a while) gave `windDirectionHorizontal` two owners that
+fought and put two swing dropdowns on the card. The four-way *alone* meant asking for one axis
+silently commanded the other — and since the field is the vendor's position enum, that flattened
+health-airflow settings and knocked vanes off their stops. ⇒ ★ **One control per axis removes the
+whole class of problem by construction: each control writes exactly one field.**
+
+✅ **And a guard is still needed on top of it**, which is the part that is easy to miss: several
+codes READ as sweeping (the alternate sweep, the half-range sweeps), so re-asserting `on` over one
+would flatten it to the plain sweep. An axis already in the asked-for state is therefore not
+written at all.
+
+⚠️ **BREAKING for automations.** `swing_mode: both|vertical|horizontal` no longer exists; the
+migration table is in [`behaviour.md`](behaviour.md#swinging-and-pointing). An automation sending an
+old value now fails loudly rather than moving a vane it did not mean to, which is the right failure.
+
+ⓘ The vane **selects** are unaffected and remain the only control that reaches the fixed stops and
+the health-airflow modes — neither swing shape expresses those.
+
+
 **49. A refusal names its own reason, and it is reported in the manufacturer's own words.** Done.
 An appliance that declines a command answers with a code saying which rule was broken, and each
 product publishes its own table of those codes — this integration ships all of them, translated, and
@@ -2272,206 +2373,3 @@ than no figure at all.
 
 **What closes it:** one diagnostics file from an air conditioner that is decoded from a relative's
 layout *and* whose model lists the counter. The value can then be checked rather than assumed.
-
-### 62. Replicate the technician app's local surface as a CLI or web UI, for fully offline users
-
-> ## ✅ TIER 1 IS BUILT AND GATED (2026-09-10) — `tools/re/ble_advert.py` + `tools/re/discover.py`
->
-> The discovery tier below is no longer a proposal. Two tools, both lint-clean, both self-tested,
-> **neither able to write to an appliance** — they carry no code for a BLE connection, GATT,
-> pairing, OTA or the factory-test channel, and `discover.py` never opens `:56800`, so it does not
-> contend with Home Assistant for the single control session.
->
-> * **The advertisement decode now exists as code rather than prose.** Both TLV encodings, the
->   `"U+"` header, fragment + scan-response reassembly, all 22 types, the 11 named flag bits, the
->   ExtField in memory order. Its self-test asserts **the four independent reality checks**
->   (`LocalkeyValid`, `Controllable`, `Configurable`, `isNeedAuth`) and pins `APConnected = 0`,
->   which §23 then resolved: the module **never sets that bit**, so it is an unimplemented field
->   rather than a wrong reading.
->   Mutation-tested: two deliberate corruptions each produce four failures.
-> * ⟦LIVE⟧ **Run against both units 2026-09-10** — joined `LAN+BLE` on the MAC, `psk0`, `A91R6`,
->   `e_4.3.00`/`R_6.0.01`, `cloud_state 1006`. Units left as found.
->
-> ★★ **AND IT MEASURED THE GAP TO TIER 2, which is the more useful output.** Against the technician
-> client's own LAN property vocabulary (`cae_sr_uwt_reset_property_list`, `FW_BLE_ADVERT_DECODED.md`
-> §21 §2), the key-free surfaces fill **7 of 22** properties. The **15** out of reach are
-> `Protocol · ProtocolVers · ProductCode · swType · Busying · ReadyToBind · SupportPing · UDPPort ·
-> OfflineReason · IsMeshGW · ComplexDevType · SupportGetDevVerInfo · SUWTLibVer · SUWTDevVer ·
-> SupportAuxiliaryConfig`.
-> ⇒ **the cheapest instrument for most of them is LAN `0x5DC3` device-info** (reply `0x5DC4`,
-> 0x10 + 0x10 + 0x40 bytes of device/config fields) — a **read** on a channel we already speak, and
-> the natural content of tier 2. ⛔ Not sent by either tool.
-> ⛔⛔ **TESTED ⟦LIVE⟧ 2026-09-10 AND THE RECOMMENDATION ABOVE IS WITHDRAWN.** `0x5DC3`, `0x65BB` and
-> `0x659D` each **RESET the connection after send** — **bare AND inside a fully established uSS
-> session** (hello → hello_resp with `localkey_version 48` verified → hello_done → done_resp), with
-> the control that the very handshake our integration uses every 30 s worked on that same socket.
-> ⇒ **the whole `0x4E20+` command family is unreachable on these units**, so tier 2 has **no LAN
-> instrument** and those 15 properties stay out of reach. ⚠️ **[U] why** — a role byte, or a different
-> listener. `captures/module-firmware/analysis/FW_GATT_LIVE_2026-09-10.md`.
-> ⓘ Counting note: §21 prints 24 strings, two of which (`UWT_DEV`, `UWT_DEV_SAFE`) are its own
-> identification of the *values* of `Protocol`; hence 22 distinct properties. If that split is ever
-> shown wrong the count is 24 and nothing else changes.
->
-> ▶ **What tier 1 still lacks:** a scanner. This host has no Bluetooth adapter, so `discover.py`
-> reads a scan **log** (the C# harness in `captures/ble-scan-2026-09-09/`) rather than driving a
-> radio. A packaged tool for an offline owner needs a `bleak`-based scanner on a machine that has
-> one — bounded work, no new protocol knowledge required.
-
-**The idea (owner, 2026-09-10):** everything the uAssistant technician app can do to a unit *without
-the cloud* is now enumerated, and none of it needs Haier's servers at the moment of use. Packaging
-that as a command-line tool or a small local web UI would give an owner who keeps their appliances
-firewalled the same diagnostic and control surface a technician has — with no account, no internet,
-and nothing installed on the appliance.
-
-**Why this is now realistic rather than speculative.** The surface is mapped, not guessed:
-
-* **97 `cae_localc_*` local-control functions** crawled with their literals
-  (`captures/module-firmware/analysis/APP_TECHNICIAN_API.md`) — security/key, bind, BLE bond and
-  auth, BLE transport, OTA, network/domain, device I/O, proxy lifecycle, mesh.
-* **The BLE GATT profile** — six services, 30 characteristics, every UUID from Haier's own symbols
-  (`FW_BLE_GATT_SURFACE.md`), including `ff20` **EPP req/rsp**, i.e. the same appliance frames we
-  already build for `:56800`.
-  ⚠️ **SCOPE CORRECTION ⟦LIVE⟧ 2026-09-10:** that is the profile **as the phone library defines it**.
-  The enumeration on Downstairs found **`ff00` AUTH and `ff50` STP served, and `ff10`/`ff20`/`ff30`/
-  `ff40` ABSENT**. ⇒ **`ff20` is not available on this build**; EPP over BLE would ride ucom `0x22`
-  over **STP** (`ff50`/`ff53`, both served and writable) instead. `FW_GATT_LIVE_2026-09-10.md`,
-  `FW_BLE_GATT_SURFACE.md` §29.2.
-* **The LAN command set** — all 13 commands on `:56800` decoded (`FW_LAN_SET_GATEWAY_26013.md` §10).
-* **The BLE scan-result field set** — `prepare_search_dev_info` … `prepare_search_ble_dev_event`,
-  58 keys, and the Java model `BleGbDeviceAddNotify` (`FW_BLE_ADVERT_DECODED.md` §17). A scan list
-  showing RSSI, config mode, bind state, key validity and the ExtField versions is buildable from a
-  **passive** scan plus one `SCAN_REQ`.
-* **UDISCOVERY** already gives deviceId, uPlusId, firmware, SDK version and cloud state, key-free.
-
-**What it would plausibly offer, in rising order of risk:**
-1. **Read-only, zero-touch:** discovery (UDP `:7083` + BLE scan), device inventory, firmware/hardware
-   versions, cloud state, bind state, the decoded ExtField, RSSI. *Nothing is written.*
-2. **Read-only over an authenticated session:** the LAN reads we already speak (status, extended
-   report). ⛔ **`0x5DC3` device info and `0x65BB` bind info are NOT available** — measured
-   ⟦LIVE⟧ 2026-09-10: both reset the connection even inside a valid uSS session (see the correction
-   in the tier-1 box above). **Tier 2 is therefore thinner than this list implied.**
-3. **Control:** what this integration already does — the EPP write path — but exposed outside Home
-   Assistant, and optionally **over BLE `ff20`** rather than the LAN.
-
-⛔ **Explicitly out of scope, and the reasons are on file:** OTA (`ff3x`, the only brick-capable
-action), the factory-test channel, `ff0a`/`ff09`/`ff12`/`ff15` writes, and anything that pairs or
-bonds. Those stay under the standing stop rules regardless of how convenient a UI would make them.
-
-⛔ **CORRECTED 2026-09-10 (owner: *"arent you confident in the write side?"*) — I was, and I wrote
-the gate too broadly.** The caution below belongs to **the BLE transport**, not to writing.
-
-✅ **The LAN write path is not speculative — it is the shipping product.** `packages/` writes
-setpoint, mode, fan and vane to two real appliances every day; **727 tests green** (2026-09-10);
-v0.69.1 is deployed and was **live-verified** (setpoint 23→24→23 on Upstairs, confirmed by the unit's
-own next poll). The single-parameter `5Dxx` path is confirmed **per attribute on real hardware** —
-`5D01` (`I&G`) accepted with a status report, `5D02` (`G`) refused `0x03/0x0000`, **same unit, same
-session**. And writes are **self-verifying**: the reply frame type is the acceptance oracle
-(`02` accept / `03` refuse), with per-product reason codes decoded. ⇒ **LAN control belongs in tier 1
-beside discovery, not behind it.**
-
-✅ **AND THE BLE TIER JUST GOT CHEAPER (2026-09-10):** EPP over BLE is wrapped with the **same uSS
-cipher and the same localKey** as our `:56800` biz-data, with the sequence number pinned to **0**
-(`FW_BLE_GATT_SURFACE.md` §19 — `psk0_encrpyt_data` → `safekey_2_key` → `uss_encrpyt_data` →
-`uss_encrpyt_data_with_sn(sn=0)`). ⇒ **no new cryptography is needed**: `haismart_hrdp.uss.biz_encrypt`
-/ `biz_decrypt` work unchanged at `sn = 0`, and the existing EPP frame builders are reusable. **Only
-the transport is new.**
-
-⚠️ **The gate that IS real, and it is narrow: the BLE transport.** **No byte has ever been sent over
-BLE to these units**, `ff20`-carries-EPP is inferred from characteristic names, and whether they serve
-the `ff00` family at all is `BLE_ROUTE_UNKNOWNS.md` **A1/A2**. ⇒ **BLE** is where "read-only first"
-applies, and one passive GATT enumeration answers both unknowns.
-ⓘ And the exclusions above (OTA, factory-test, `ff0a/09/12/15`, pairing) are **risk policy, not
-uncertainty** — they stay out however confident we are.
-
-
-## 64. ⟦LIVE⟧ ★★★★★ BLE control is PROVEN — scope it, and decide on disclosure
-
-**2026-09-11.** An **unpaired, unbonded, UNAUTHENTICATED** BLE peer changed a unit's setpoint and
-restored it, verified over the LAN both times. The chain is in
-`captures/module-firmware/analysis/FW_BLE_FIRST_CONTACT_2026-09-11.md` §13 and the builder is
-`tools/re/ble_control.py` (private tree only).
-
-⇒ **This makes `FUTURE_WORK` 62 (a technician-style offline CLI) realistic for CONTROL** — the BLE
-half needs no account, no internet and no credential. ⛔ It does **not** make takeover realistic:
-installing a localKey we choose is a different operation and is unchanged.
-
-**Open, all cheap and on the same rig:**
-1. Other EPP commands over BLE — mode, fan, power, swing. Only `grSetDAC` setpoint is proven.
-2. The second unit; persistence across a power cycle; a never-paired unit.
-3. Whether the module will *report* state over BLE (the outbound callback table at `0x100100a0` —
-   only `0x13 CFG_STATE RPT` is observed populated).
-
-⚠️⚠️ **And a decision that is not engineering: DISCLOSURE.** Anyone in BLE range can command these
-units with no credential. That is more serious than the three items already on that list (the
-`*-sessionKey` API, the RNG with no hardware entropy, the `libOSDK` debug localKey). **Owner's call.**
-⛔ **Nothing beyond the existing private tooling should be published**, and the builder must not go
-into the public repo.
-
-## 65. A unit can un-provision ITSELF on its mainboard's orders — `FD` 清除用户信息
-
-**2026-09-13, from the vendor UART spec + prior-art captures** (`captures/module-firmware/analysis/`
-`FW_LOCALKEY_STORE_2026-09-11.md` §70; `docs/PROTOCOL.md` §10.8).
-
-In **master-slave mode** — which is almost certainly what the owner's units and the `0d12` cabinets
-run (three independent lines agree; `docs/UART_SYSTEM_FRAMES.md` §9a) — the Wi-Fi module **polls its
-own appliance mainboard** for management instructions, roughly once per cycle: frame **`FC`** out
-(no payload), frame **`FD`** back (6 bytes). One of those bytes is **清除用户信息**, and the value
-**`0x02`** means *"清除模块中用户配置的WIFI信息等"* — **clear the user-configured Wi-Fi settings.**
-A sibling byte, **解除绑定状态 = `0x01`**, unbinds the appliance from its account, and **模式切换**
-can push the module into softAP / smartlink / WPS setup.
-
-⇒ **What this means for the integration:** an appliance can leave the network *without anything on
-the network doing anything wrong*. From Home Assistant's side the failure looks like a unit that
-simply **vanishes** — no error, no key rotation, no cloud event, no reachability at
-`192.168.x.x:56800` — because the module has discarded its Wi-Fi credentials and gone looking for a
-provisioner. A user would report it as "the integration stopped working"; the cause is on the other
-side of the module, in appliance firmware we have never held.
-
-**Why it is filed rather than fixed:** nothing here is actionable in code today.
-* ⛔ **Never observed in the wild.** In every prior-art capture the field is `0x00`: a `0212` cabinet
-  answers `00 00 00 00 00 00` and a `0d12` cabinet `00 00 00 01 00 00` (that `1` is 强制进设置, which
-  the spec says is **ignored** unless 模式切换 selects a config mode). **93 polls, 93 answers, not one
-  requesting anything.**
-* ⛔ **We cannot see it happen.** It is board↔module UART traffic; it never crosses `:56800`, and this
-  project has never taken a UART capture.
-* ⛔ **And we could not prevent it if we did** — it is the appliance obeying its own mainboard.
-
-**What would make it actionable, cheapest first:**
-1. **A user report matching the signature** — a unit that disappears from the LAN and, on inspection,
-   is back in pairing mode (Wi-Fi LED flashing rather than solid) with **no** router/DHCP change and
-   **no** power event. That distinguishes it from the ordinary causes (DHCP lease moved, AP band
-   steering, the unit unplugged).
-2. If it ever recurs on one unit: the diagnostic is the **Wi-Fi LED** — solid = paired and connected,
-   flashing = config mode — which needs no tooling at all.
-
-**What to do with it now:** keep it in `TROUBLESHOOTING.md`'s vocabulary. If a user reports a unit
-that vanished and came back needing re-pairing, this is a documented mechanism, not necessarily
-something they or we did wrong. ⚠️ Do **not** put it in user-facing docs as a likely cause — it has
-never been observed, and the ordinary explanations are overwhelmingly more common.
-
-
-## 72. India-region (zone 91) hosts are desk-derived — confirm token refresh, the digital model and key rotation on a real `-sea` account
-
-**2026-10-06, issue #18 (reporter `akashdubeyx`, a wall-split AC in India).** Sign-in succeeded but
-the integration reported the account had no devices. The SE-Asia app ships a two-centre directory
-(`assets/PresetResPkg/configFile@MultiDataCenter@1.1.1.json`) and routes an account to one of them by
-its region: `MultiDataCenterManager.getCurrentDataCenterByCountry` sends `zoneInfo` `"91"` (India) to
-the **India** centre (`-sea` hosts) and every other zone to **Singapore** (`-sgp`). The old defaults
-read the device list, digital model and localKey from `-sgp` for everyone, so an India account's
-devices — which live on `-sea` — were invisible, while **login** worked because the account endpoint
-is on `uhome-sea` for both centres.
-
-Fixed by computing the hosts from the account's zone (`Domains.for_zone`), so the device list, token
-refresh, digital model and the localKey gateway all follow the account's own data centre.
-
-**Verified:** the device list on `-sea` and the key on `gw-sea` are what the reporter measured live
-with this repo's own client; the selection rule is read from the app binary. **Not verified on
-hardware here** (no India account): token refresh against `uhome-sea/uplussea/accounts/v1/user/refreshToken`
-and the digital model on `uws-sea`. The reporter can confirm by signing in through the integration
-(not the manual-key workaround) and checking a key rotation self-heals. Both calls are the same paths
-that already work on `-sgp`, on the centre whose login the account already completes, so the risk is low.
-
-**Known edge, left alone:** the app has an `isRetainedUser()` override that pins *migrated* India
-users to the India centre regardless of zone. The zone rule cannot see that flag, so a retained user
-whose account reports a non-91 zone would still be routed to Singapore. No such report exists; it
-closes with one, and the manual "I already have the local key" path works for them meanwhile.

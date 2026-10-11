@@ -63,11 +63,15 @@ disahkan semula. Selebihnya masih belum terbukti. Jika anda memiliki salah satun
 [laporkan](../TROUBLESHOOTING.md#before-you-open-an-issue) — termasuk jika semuanya berjalan lancar.
 Perinciannya ada dalam [Appliance support in detail](../appliances.md) (bahasa Inggeris).
 
+Dua perkara sengaja belum ditawarkan sehingga seseorang dapat mengesahkannya: tetapan yang ditulis
+melalui arahan *kumpulan* (masa tempahan pemanas air, program mesin basuh), serta 27 jenis produk yang
+hanya diterbitkan Haier dalam format profil lama.
+
 ## Apa yang anda dapat
 
 ### Penghawa dingin
 
-Satu peranti bagi setiap penghawa dingin: **Climate** (suhu, mod, kelajuan kipas, ayunan, hidup/mati),
+Satu peranti bagi setiap penghawa dingin: **Climate** (suhu, mod, kelajuan kipas, ayunan — berasingan untuk arah atas-bawah dan kiri-kanan — hidup/mati),
 penderia **suhu dalaman** dan **luaran**, **suis** (Kuat, Senyap, Kesihatan, Tidur, Lampu paparan),
 pilihan **Eco**, pilihan **kedudukan bilah** jika unit anda menerbitkannya, penderia **Kerosakan**
 yang menamakan kerosakan itu berserta kod yang dipaparkan unit anda, **pembersihan sendiri** (sebuah
@@ -142,15 +146,34 @@ Dua cara menyelesaikannya buat selamanya, kedua-duanya elok dilakukan sementara 
 berfungsi:
 
 - **Tambah akaun Haier anda** pada unit itu: Settings → Devices & Services → Haismart → peranti →
-  Reconfigure → *Add your Haier account*. Pertukaran kunci kemudian diambil secara automatik.
+  Reconfigure → *Add my Haier account, so the key refreshes itself*. Pertukaran kunci kemudian diambil secara automatik.
 - **Atau sekat capaian internet perkakas itu** pada penghala anda. Kuncinya berhenti bertukar dan
   yang anda miliki kekal sah. Kawalan setempat tidak terjejas dalam kedua-dua keadaan.
+
+Sebelum menyekat, **simpan kuncinya dahulu**: dayakan penderia diagnostik *Local key* pada halaman
+peranti — nilainya ialah kunci itu, dan ia turut tersimpan dalam sandaran Home Assistant. Peraturan
+paling mudah yang terbukti berkesan ialah menolak trafik ke `43.156.75.60`, get laluan Haier; biarkan
+LAN terbuka, kerana Home Assistant masih memerlukan port 56800. Jangan gunakan ciri penghala bernama
+"MAC filtering" atau "IP filtering" — ciri itu sering memutuskan peranti daripada LAN sepenuhnya.
+Apabila sekatan berjaya, penderia diagnostik **Cloud connection** bertukar kepada **off** dalam
+beberapa minit. Perinciannya di
+[Going fully cloud-independent](../../README.md#going-fully-cloud-independent) (bahasa Inggeris).
+
+### Menambah perkakas lain
+
+Akaun daripada unit pertama anda disimpan, jadi **Add Integration → Haismart** menawarkan pilihan
+ketiga di bahagian atas: **Use the Haier account already added** — tanpa kata laluan, kunci atau
+alamat. Ia menyenaraikan perkakas dalam akaun itu yang belum disediakan; pilih salah satu. Perkakas
+yang muncul dalam kotak **Discovered** Home Assistant membawa kepada pengesahan yang sama. Log masuk
+kali kedua juga berfungsi, tetapi tidak memberi apa-apa faedah.
 
 ## Sebelum memasang
 
 - Home Assistant dan perkakas itu mesti berada pada **subnet yang sama**. Tiada geganti awan
   sebagai sandaran.
 - Perkakas itu menerima **satu sesi setempat pada satu masa** (kira-kira 17 saat setiap sesi).
+- Menjalankan integrasi setempat Haier yang lain terhadap unit yang sama akan menyebabkan kedua-duanya
+  bermasalah.
 - Memasang ini **tidak menghentikan perkakas anda daripada berhubung dengan Haier**, melainkan anda
   menyekatnya dengan tembok api.
 - **Tempahan DHCP** untuk perkakas itu kemas, tetapi tidak wajib: jika alamatnya berubah, integrasi
@@ -161,3 +184,13 @@ berfungsi:
 Laporkan masalah di [GitHub Issues](https://github.com/enapt/haismart-local/issues) — **dalam bahasa
 Inggeris jika boleh**. Sila baca [bahagian "Before you open an issue"](../TROUBLESHOOTING.md#before-you-open-an-issue)
 dalam panduan penyelesaian masalah dahulu.
+
+## Penafian
+
+Projek komuniti bebas, **tidak bergabung dengan, tidak diberi kuasa dan tidak disokong oleh Haier**.
+"Haier", "Haismart" dan "Haier U+" ialah tanda dagangan pemilik masing-masing, digunakan di sini hanya
+untuk mengenal pasti perkakasan yang boleh berfungsi dengan perisian ini. Persediaan log masuk ke API
+akaun Haier dengan kelayakan **anda sendiri**; tiada apa-apa yang dipintas. Berkongsi peranti dengan
+akaun kedua mungkin tertakluk pada syarat perkhidmatan aplikasi, dan pematuhannya ialah tanggungjawab
+anda. Disediakan seadanya, tanpa waranti, untuk digunakan dengan perkakasan milik anda pada rangkaian
+anda sendiri. Teks yang berkuat kuasa ialah [versi bahasa Inggeris](../../README.md#disclaimer).

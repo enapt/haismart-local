@@ -58,11 +58,15 @@ Phần còn lại vẫn chưa được kiểm chứng. Nếu bạn có một tro
 [báo lại](../TROUBLESHOOTING.md#before-you-open-an-issue) — kể cả khi mọi thứ chạy tốt.
 Chi tiết: [Appliance support in detail](../appliances.md) (tiếng Anh).
 
+Có hai thứ được cố ý chưa cung cấp cho đến khi có người kiểm chứng được: các thiết lập được ghi qua
+lệnh *nhóm* (giờ hẹn của máy nước nóng, chương trình của máy giặt), và 27 loại sản phẩm mà Haier chỉ
+công bố ở định dạng hồ sơ cũ.
+
 ## Bạn nhận được gì
 
 ### Điều hòa
 
-Mỗi điều hòa là một thiết bị: **Climate** (nhiệt độ đặt, chế độ, tốc độ quạt, đảo gió, bật/tắt), cảm
+Mỗi điều hòa là một thiết bị: **Climate** (nhiệt độ đặt, chế độ, tốc độ quạt, đảo gió — riêng cho hướng lên-xuống và trái-phải — bật/tắt), cảm
 biến **nhiệt độ trong nhà** và **ngoài trời**, các **công tắc** (Mạnh, Yên tĩnh, Sức khỏe, Ngủ, Đèn
 hiển thị), lựa chọn **Eco**, lựa chọn **vị trí cánh gió** nếu máy của bạn công bố chúng, cảm biến
 **Lỗi** nêu tên lỗi kèm mã mà máy bạn hiển thị, **tự làm sạch** (một nút bấm và một cảm biến),
@@ -131,15 +135,32 @@ thủ công chỉ dùng được đến lần đổi khóa tiếp theo.
 Hai cách xử lý dứt điểm, nên làm ngay khi mọi thứ còn chạy tốt:
 
 - **Thêm tài khoản Haier của bạn** vào máy đó: Settings → Devices & Services → Haismart → thiết bị →
-  Reconfigure → *Add your Haier account*. Khóa đổi sẽ được lấy tự động.
+  Reconfigure → *Thêm tài khoản Haier của tôi, để khóa tự làm mới*. Khóa đổi sẽ được lấy tự động.
 - **Hoặc chặn thiết bị truy cập internet** trên bộ định tuyến. Khóa sẽ ngừng thay đổi và khóa bạn
   đang có vẫn hợp lệ. Điều khiển cục bộ không bị ảnh hưởng trong cả hai trường hợp.
+
+Trước khi chặn, **hãy lưu khóa lại trước**: bật cảm biến chẩn đoán *Khóa cục bộ* trên trang thiết bị —
+giá trị của nó chính là khóa, và nó được lưu kèm trong bản sao lưu của Home Assistant. Quy tắc đơn
+giản nhất đã được kiểm chứng là chặn lưu lượng tới `43.156.75.60`, cổng kết nối của Haier; vẫn để mạng
+LAN mở, vì Home Assistant vẫn cần cổng 56800. Đừng dùng tính năng của router có tên "MAC filtering"
+hay "IP filtering" — chúng thường cắt thiết bị khỏi mạng LAN hoàn toàn. Khi chặn thành công, cảm biến
+chẩn đoán **Kết nối đám mây** chuyển sang **off** trong vài phút. Chi tiết:
+[Going fully cloud-independent](../../README.md#going-fully-cloud-independent) (tiếng Anh).
+
+### Thêm thiết bị khác
+
+Tài khoản từ thiết bị đầu tiên đã được lưu, nên **Add Integration → Haismart** có thêm lựa chọn thứ
+ba ở đầu danh sách: **Dùng tài khoản Haier đã thêm** — không cần mật khẩu, khóa hay địa chỉ. Nó liệt
+kê các thiết bị trong tài khoản đó chưa được thiết lập; hãy chọn một. Thiết bị xuất hiện trong ô
+**Discovered** của Home Assistant cũng dẫn tới bước xác nhận tương tự. Đăng nhập lần thứ hai vẫn được,
+nhưng không có thêm lợi ích gì.
 
 ## Trước khi cài
 
 - Home Assistant và thiết bị phải ở **cùng một subnet**. Không có máy chủ trung chuyển đám mây dự
   phòng.
 - Thiết bị chỉ chấp nhận **một phiên cục bộ tại một thời điểm** (khoảng 17 giây mỗi phiên).
+- Chạy một tích hợp cục bộ Haier khác với cùng một thiết bị sẽ khiến cả hai hoạt động sai.
 - Cài tích hợp này **không ngăn thiết bị liên lạc với Haier**, trừ khi bạn chặn bằng tường lửa.
 - **DHCP reservation** cho thiết bị thì gọn gàng nhưng không bắt buộc: nếu địa chỉ IP thay đổi,
   tích hợp sẽ tìm lại máy theo ID thiết bị và tự đi theo.
@@ -149,3 +170,13 @@ Hai cách xử lý dứt điểm, nên làm ngay khi mọi thứ còn chạy t�
 Báo lỗi tại [GitHub Issues](https://github.com/enapt/haismart-local/issues) — **bằng tiếng Anh nếu
 có thể**. Vui lòng đọc [mục "Before you open an issue"](../TROUBLESHOOTING.md#before-you-open-an-issue)
 trong hướng dẫn khắc phục sự cố trước.
+
+## Tuyên bố miễn trừ
+
+Một dự án cộng đồng độc lập, **không liên kết với, không được ủy quyền hay xác nhận bởi Haier**.
+"Haier", "Haismart" và "Haier U+" là nhãn hiệu của chủ sở hữu tương ứng, chỉ được dùng ở đây để chỉ phần
+cứng mà phần mềm này tương thích. Bước thiết lập đăng nhập vào API tài khoản Haier bằng thông tin đăng
+nhập **của chính bạn**; không vượt qua cơ chế nào. Việc chia sẻ thiết bị sang tài khoản thứ hai có thể
+chịu sự điều chỉnh của điều khoản dịch vụ của ứng dụng, và việc tuân thủ là trách nhiệm của bạn. Cung
+cấp nguyên trạng, không có bảo đảm, để dùng với phần cứng bạn sở hữu trên mạng của chính bạn. Văn bản
+có hiệu lực là [bản tiếng Anh](../../README.md#disclaimer).

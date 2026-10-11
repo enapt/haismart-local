@@ -60,11 +60,15 @@ dibaca ulang. Selebihnya belum terbukti. Jika Anda memiliki salah satunya, mohon
 [laporkan](../TROUBLESHOOTING.md#before-you-open-an-issue) — termasuk bila semuanya berjalan lancar.
 Rinciannya ada di [Appliance support in detail](../appliances.md) (bahasa Inggris).
 
+Dua hal sengaja belum ditawarkan sampai ada yang dapat memverifikasinya: pengaturan yang ditulis
+lewat perintah *grup* (jadwal reservasi pemanas air, program mesin cuci), serta 27 tipe produk yang
+hanya diterbitkan Haier dalam format profil lama.
+
 ## Apa yang Anda dapatkan
 
 ### AC
 
-Satu perangkat per AC: **Climate** (suhu, mode, kecepatan kipas, swing, nyala/mati), sensor **suhu
+Satu perangkat per AC: **Climate** (suhu, mode, kecepatan kipas, swing — terpisah untuk arah atas-bawah dan kiri-kanan — nyala/mati), sensor **suhu
 dalam** dan **luar ruangan**, **sakelar** (Kuat, Senyap, Kesehatan, Tidur, Lampu layar), pilihan
 **Eco**, pilihan **posisi kisi-kisi** bila unit Anda mempublikasikannya, sensor **Kerusakan** yang
 menyebutkan nama kerusakan beserta kode yang ditampilkan unit Anda, **pembersihan mandiri** (sebuah
@@ -140,15 +144,33 @@ Dua cara menyelesaikannya untuk selamanya, keduanya sebaiknya dilakukan selagi s
 berfungsi:
 
 - **Tambahkan akun Haier Anda** ke unit tersebut: Settings → Devices & Services → Haismart →
-  perangkat → Reconfigure → *Add your Haier account*. Pergantian kunci lalu diambil otomatis.
+  perangkat → Reconfigure → *Tambahkan akun Haier saya, agar kuncinya diperbarui sendiri*. Pergantian kunci lalu diambil otomatis.
 - **Atau blokir akses internet perangkat** di router Anda. Kuncinya berhenti berubah dan yang Anda
   miliki tetap berlaku. Kendali lokal tidak terpengaruh dalam kedua kasus.
+
+Sebelum memblokir, **simpan kuncinya dulu**: aktifkan sensor diagnostik *Kunci lokal* di halaman
+perangkat — nilainya adalah kunci itu, dan ikut tersimpan dalam cadangan Home Assistant. Aturan
+yang paling sederhana dan terbukti berhasil adalah menolak lalu lintas ke `43.156.75.60`, gateway
+Haier; biarkan LAN tetap terbuka, karena Home Assistant masih memerlukan port 56800. Jangan memakai
+fitur router bernama "MAC filtering" atau "IP filtering" — fitur itu sering memutus perangkat dari
+LAN sama sekali. Bila pemblokiran berhasil, sensor diagnostik **Koneksi cloud** menjadi **off**
+dalam beberapa menit. Rinciannya ada di
+[Going fully cloud-independent](../../README.md#going-fully-cloud-independent) (bahasa Inggris).
+
+### Menambahkan perangkat lain
+
+Akun dari unit pertama Anda tersimpan, jadi **Add Integration → Haismart** menawarkan pilihan
+ketiga di urutan teratas: **Gunakan akun Haier yang sudah ditambahkan** — tanpa kata sandi, kunci,
+atau alamat. Pilihan itu menampilkan perangkat di akun tersebut yang belum disiapkan; pilih salah
+satu. Perangkat yang muncul di kotak **Discovered** Home Assistant mengarah ke konfirmasi yang sama.
+Masuk untuk kedua kalinya juga berfungsi, tetapi tidak memberi keuntungan apa pun.
 
 ## Sebelum memasang
 
 - Home Assistant dan perangkat harus berada di **subnet yang sama**. Tidak ada relai cloud sebagai
   cadangan.
 - Perangkat hanya menerima **satu sesi lokal dalam satu waktu** (sekitar 17 detik per sesi).
+- Menjalankan integrasi lokal Haier lain terhadap unit yang sama akan membuat keduanya bermasalah.
 - Memasang ini **tidak menghentikan perangkat Anda berkomunikasi dengan Haier**, kecuali Anda
   memblokirnya dengan firewall.
 - **Reservasi DHCP** untuk perangkat itu rapi, tetapi tidak wajib: jika alamatnya berubah, integrasi
@@ -159,3 +181,13 @@ berfungsi:
 Laporkan masalah di [GitHub Issues](https://github.com/enapt/haismart-local/issues) — **dalam bahasa
 Inggris jika memungkinkan**. Baca dulu [bagian "Before you open an issue"](../TROUBLESHOOTING.md#before-you-open-an-issue)
 di panduan pemecahan masalah.
+
+## Penafian
+
+Proyek komunitas independen, **tidak berafiliasi dengan, tidak diizinkan, dan tidak didukung oleh
+Haier**. "Haier", "Haismart" dan "Haier U+" adalah merek dagang milik pemiliknya masing-masing, dipakai
+di sini hanya untuk menyebut perangkat yang dapat bekerja dengan perangkat lunak ini. Penyiapan masuk
+ke API akun Haier dengan kredensial **Anda sendiri**; tidak ada yang dibobol. Membagikan perangkat ke
+akun kedua mungkin diatur oleh ketentuan layanan aplikasi, dan kepatuhannya menjadi tanggung jawab
+Anda. Disediakan apa adanya, tanpa jaminan, untuk digunakan dengan perangkat milik Anda di jaringan
+Anda sendiri. Teks yang berlaku adalah [versi bahasa Inggris](../../README.md#disclaimer).

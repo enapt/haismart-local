@@ -64,11 +64,16 @@ ang iba. Kung mayroon kayo ng alinman sa mga ito, mangyaring
 [iulat ninyo ito](../TROUBLESHOOTING.md#before-you-open-an-issue) — pati na kung maayos ang lahat.
 Nasa [Appliance support in detail](../appliances.md) (Ingles) ang mga detalye.
 
+Dalawang bagay ang sadyang hindi pa iniaalok hangga't walang nakapagpapatunay sa mga ito: ang mga
+setting na isinusulat sa pamamagitan ng *group* na utos (ang mga oras ng reserbasyon ng water heater,
+ang programa ng washing machine), at ang 27 uri ng produkto na inilalathala lamang ng Haier sa lumang
+format ng profile.
+
 ## Ano ang makukuha ninyo
 
 ### Mga aircon
 
-Isang device kada aircon: **Climate** (temperatura, mode, bilis ng bentilador, swing, on/off), mga
+Isang device kada aircon: **Climate** (temperatura, mode, bilis ng bentilador, swing — hiwalay para sa pataas-pababa at pakaliwa-pakanan — on/off), mga
 sensor ng temperatura sa **loob** at **labas**, mga **switch** (Strong, Quiet, Health, Sleep, Display
 light), pagpipiliang **Eco**, pagpipilian ng **posisyon ng vane** kung inilalathala ito ng unit
 ninyo, sensor ng **Fault** na pinangangalanan ang sira kasama ang code na ipinapakita ng unit,
@@ -146,10 +151,27 @@ lamang hanggang sa susunod na palit.
 Dalawang paraan para tuluyang matapos ito, at mabuting gawin habang gumagana pa ang lahat:
 
 - **Idagdag ang inyong Haier account** sa unit na iyon: Settings → Devices & Services → Haismart →
-  ang device → Reconfigure → *Add your Haier account*. Awtomatiko nang kukunin ang bawat palit ng
+  ang device → Reconfigure → *Add my Haier account, so the key refreshes itself*. Awtomatiko nang kukunin ang bawat palit ng
   key.
 - **O harangan ang internet ng appliance** sa inyong router. Titigil na itong magpalit ng key at
   mananatiling wasto ang hawak ninyo. Hindi apektado ang lokal na kontrol sa alinmang paraan.
+
+Bago humarang, **itabi muna ang key**: i-enable ang diagnostic sensor na *Local key* sa page ng
+device — ang halaga nito ay ang key mismo, at kasama ito sa mga backup ng Home Assistant. Ang
+pinakasimpleng panuntunang napatunayang gumagana ay ang pagtanggi sa trapiko papunta sa
+`43.156.75.60`, ang gateway ng Haier; iwanang bukas ang LAN, dahil kailangan pa rin ng Home Assistant
+ang port 56800. Huwag gamitin ang mga feature ng router na tinatawag na "MAC filtering" o "IP
+filtering" — madalas nitong tuluyang inaalis ang device sa LAN. Kapag gumana ang pagharang, magiging
+**off** ang diagnostic sensor na **Cloud connection** sa loob ng ilang minuto. Ang mga detalye ay nasa
+[Going fully cloud-independent](../../README.md#going-fully-cloud-independent) (Ingles).
+
+### Pagdaragdag ng isa pang appliance
+
+Nakatabi ang account mula sa una ninyong unit, kaya nag-aalok ang **Add Integration → Haismart** ng
+pangatlong pagpipilian, una sa listahan: **Use the Haier account already added** — walang password,
+key o address. Inililista nito ang mga appliance sa account na iyon na hindi pa naka-set up; pumili ng
+isa. Ang unit na lumalabas sa kahong **Discovered** ng Home Assistant ay humahantong sa parehong
+kumpirmasyon. Gumagana rin ang pag-sign in nang ikalawang beses, pero walang naidudulot na pakinabang.
 
 ## Bago mag-install
 
@@ -157,6 +179,8 @@ Dalawang paraan para tuluyang matapos ito, at mabuting gawin habang gumagana pa 
   panghalili.
 - Tumatanggap ang appliance ng **isang lokal na session lamang sa bawat pagkakataon** (mga 17
   segundo kada session).
+- Kapag nagpatakbo ng isa pang lokal na Haier integration sa parehong unit, parehong magkakaproblema
+  ang dalawa.
 - Ang pag-install nito ay **hindi humihinto sa pakikipag-usap ng appliance ninyo sa Haier**, maliban
   kung haharangan ninyo ito sa firewall.
 - Maayos ang **DHCP reservation** para sa appliance ngunit hindi kailangan: kapag nagbago ang IP
@@ -167,3 +191,13 @@ Dalawang paraan para tuluyang matapos ito, at mabuting gawin habang gumagana pa 
 Mag-ulat ng isyu sa [GitHub Issues](https://github.com/enapt/haismart-local/issues) — **sa Ingles
 kung maaari**. Basahin muna ang [bahaging "Before you open an issue"](../TROUBLESHOOTING.md#before-you-open-an-issue)
 sa gabay sa troubleshooting.
+
+## Paalala
+
+Isang independiyenteng proyekto ng komunidad, **hindi kaanib, hindi awtorisado, at hindi inendorso ng
+Haier**. Ang "Haier", "Haismart" at "Haier U+" ay mga trademark ng kani-kanilang may-ari, ginagamit
+dito para lamang tukuyin ang hardware na gumagana kasama ng software na ito. Nagsa-sign in ang setup sa
+account API ng Haier gamit ang **sarili ninyong** credentials; walang nilalampasan. Ang pagbabahagi ng
+device sa ikalawang account ay maaaring saklaw ng terms of service ng app, at kayo ang may pananagutan
+sa pagsunod dito. Ibinibigay kung ano ito, nang walang warranty, para gamitin sa hardware na pag-aari
+ninyo sa sarili ninyong network. Ang tekstong may bisa ay ang [bersiyong Ingles](../../README.md#disclaimer).

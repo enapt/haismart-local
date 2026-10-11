@@ -150,6 +150,7 @@
       "cloud_auth": "Anmeldung fehlgeschlagen. Prüfe deine E-Mail-Adresse bzw. Telefonnummer und dein Passwort.",
       "cannot_connect_cloud": "Anmeldung erfolgreich, aber Haiers Server waren nicht erreichbar, um deine Geräte aufzulisten. Das ist meist vorübergehend – versuche es gleich noch einmal.",
       "cloud_unreachable": "Haiers Server waren nicht erreichbar. Prüfe, ob Home Assistant ins Internet kommt und Haiers Adresse auflösen kann – ein DNS- oder Firewall-Problem auf dem Home-Assistant-Host sieht genau so aus – und versuche es dann noch einmal.",
+      "device_not_on_account": "Anmeldung erfolgreich, aber dieses Gerät gehört nicht zu diesem Haier-Konto, daher kann sein Schlüssel nicht abgerufen werden. Melde dich mit dem Konto an, dem das Gerät hinzugefügt wurde – oder teile es zuerst in der Haier-App mit diesem Konto – und versuche es dann erneut.",
       "invalid_key": "Der lokale Schlüssel muss eine 32-stellige Hex-Zeichenkette sein.",
       "invalid_auth": "Das Gerät hat geantwortet, aber dieser lokale Schlüssel entschlüsselt seinen Status nicht – der Schlüssel ist falsch oder wurde gewechselt.",
       "cannot_connect": "Das Gerät war über Port 56800 nicht erreichbar. Prüfe die IP-Adresse und ob Home Assistant im selben Netzwerk ist.",

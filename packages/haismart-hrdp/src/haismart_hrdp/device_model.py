@@ -37,7 +37,7 @@ import gzip
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -106,18 +106,18 @@ def read_field(
     board↔module UART frame (``FF FF · len · addr[6] · type · cmd[2]``). The same map decodes both,
     which is how a washing machine captured on the UART by prior art could be read at all.
     """
-    value = 0
-    for index in range(length):
-        source_word, source_bit = word, bit + index
-        while source_bit > 15:
-            source_bit -= 16
-            source_word -= 1
-        offset = base + 2 * (source_word - 1)
-        if source_word < 1 or offset + 1 >= len(data):
-            return None
-        if ((data[offset] << 8 | data[offset + 1]) >> source_bit) & 1:
-            value |= 1 << index
-    return value
+    if length <= 0:
+        return 0
+    # One slice instead of a bit-at-a-time walk (this runs for every field of every report). The
+    # field occupies words `low..high`, `high` holding its LSB; a `bit` past 15 simply starts in an
+    # earlier word, so `high` is not always `word`.
+    high = word - bit // 16
+    low = word - (bit + length - 1) // 16
+    end = base + 2 * high
+    if low < 1 or end > len(data):
+        return None
+    raw = int.from_bytes(data[base + 2 * (low - 1):end], "big")
+    return (raw >> (bit % 16)) & ((1 << length) - 1)
 
 
 @dataclass(frozen=True)
@@ -297,11 +297,36 @@ class DeviceModel:
                 out[pos] = name
         return tuple(out)
 
+    # The lookups below are asked of the same model for every report (``ac_state`` alone calls
+    # `field` about fifteen times a decode), and depend on nothing but the model, which is frozen.
+    # `cached_property` writes the instance ``__dict__`` directly, so it works on a frozen dataclass.
+    @cached_property
+    def _by_name(self) -> dict[str, ModelField]:
+        index: dict[str, ModelField] = {}
+        for f in self.fields:
+            index.setdefault(f.name, f)     # the first declaration wins, as the scan it replaced did
+        return index
+
+    @cached_property
+    def _by_cmd(self) -> dict[str | None, tuple[ModelField, ...]]:
+        grouped: dict[str | None, list[ModelField]] = {}
+        for f in self.fields:
+            grouped.setdefault(f.status_cmd, []).append(f)
+        return {cmd: tuple(fields) for cmd, fields in grouped.items()}
+
+    @cached_property
+    def _extents(self) -> dict[str | None, int]:
+        return {cmd: max(f.last_word for f in fields) for cmd, fields in self._by_cmd.items()}
+
+    @cached_property
+    def _omitted(self) -> dict[str, int | None]:
+        return {}
+
     def field(self, name: str) -> ModelField | None:
-        return next((f for f in self.fields if f.name == name), None)
+        return self._by_name.get(name)
 
     def fields_for(self, status_cmd: str = STATUS_ALL) -> tuple[ModelField, ...]:
-        return tuple(f for f in self.fields if f.status_cmd == status_cmd)
+        return self._by_cmd.get(status_cmd, ())
 
     def writable_fields(self) -> tuple[ModelField, ...]:
         """Fields the class publishes a single-parameter write id for."""
@@ -334,9 +359,7 @@ class DeviceModel:
 
     def extent(self, status_cmd: str = STATUS_ALL) -> int:
         """The highest word any field of ``status_cmd`` touches — how long a full report is."""
-        return max(
-            (f.last_word for f in self.fields if f.status_cmd == status_cmd), default=0
-        )
+        return self._extents.get(status_cmd, 0)
 
     def first_omitted_word(self, status_cmd: str = STATUS_ALL) -> int | None:
         """The start of the first RESERVED BLOCK a firmware might not send, or ``None``.
@@ -353,10 +376,14 @@ class DeviceModel:
         `0d12` cabinet one) and are demonstrably sent, so treating those as suspect would refuse to
         decode appliances that decode correctly today.
         """
+        if status_cmd not in self._omitted:
+            self._omitted[status_cmd] = self._scan_omitted(status_cmd)
+        return self._omitted[status_cmd]
+
+    def _scan_omitted(self, status_cmd: str) -> int | None:
         covered: set[int] = set()
-        for f in self.fields:
-            if f.status_cmd == status_cmd:
-                covered.update(range(f.word, f.last_word + 1))
+        for f in self.fields_for(status_cmd):
+            covered.update(range(f.word, f.last_word + 1))
         run_start: int | None = None
         for word in range(1, self.extent(status_cmd) + 1):
             if word in covered:
@@ -403,9 +430,7 @@ class DeviceModel:
         """
         limit = self.placeable_limit(len(data), base=base, status_cmd=status_cmd)
         out: dict[str, Any] = {}
-        for field in self.fields:
-            if field.status_cmd != status_cmd:
-                continue
+        for field in self.fields_for(status_cmd):
             if only is not None and field.name not in only:
                 continue
             if limit is not None and field.last_word > limit:

@@ -150,6 +150,7 @@
       "cloud_auth": "Oturum açılamadı. E-postanızı veya telefon numaranızı ve parolanızı kontrol edin.",
       "cannot_connect_cloud": "Oturum açma başarılı, ancak cihazlarınızı listelemek için Haier sunucularına ulaşılamadı. Bu genellikle geçicidir — birazdan yeniden deneyin.",
       "cloud_unreachable": "Haier sunucularına ulaşılamadı. Home Assistant'ın internete erişebildiğini ve Haier'in adresini çözebildiğini kontrol edin — Home Assistant ana makinesindeki bir DNS veya güvenlik duvarı sorunu tam olarak böyle görünür — sonra yeniden deneyin.",
+      "device_not_on_account": "Oturum açıldı, ancak bu cihaz o Haier hesabında değil, bu yüzden anahtarı alınamıyor. Cihazın eklendiği hesapla oturum açın — ya da önce Haier uygulamasında cihazı bu hesapla paylaşın — ve tekrar deneyin.",
       "invalid_key": "Yerel anahtar 32 karakterlik onaltılık bir dize olmalıdır.",
       "invalid_auth": "Cihaz yanıt verdi, ancak bu yerel anahtar durumunu çözmüyor — anahtar yanlış ya da değiştirilmiş.",
       "cannot_connect": "Cihaza 56800 numaralı bağlantı noktasından ulaşılamadı. IP adresini ve Home Assistant'ın aynı ağda olup olmadığını kontrol edin.",

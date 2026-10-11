@@ -20,7 +20,7 @@ from haismart_hrdp import (
 from haismart_hrdp.features import raw_enum_values
 from haismart_hrdp.udiscovery import CLOUD_STATES
 from haismart_hrdp.uss import EXTENDED_STATUS_FRAME_TYPES
-from homeassistant.components.diagnostics import async_redact_data
+from homeassistant.components.diagnostics import REDACTED, async_redact_data
 from homeassistant.core import HomeAssistant
 
 from .const import (
@@ -28,8 +28,10 @@ from .const import (
     CONF_APP_TYPE,
     CONF_CLOUD_CLIENT_ID,
     CONF_DEVICE_ID,
+    CONF_DIGITAL_MODEL,
     CONF_GATEWAY_PASSWORD,
     CONF_GATEWAY_USERNAME,
+    CONF_HOST,
     CONF_LOCAL_KEY,
     CONF_PRODUCT_CODE,
     CONF_REFRESH_TOKEN,
@@ -48,7 +50,14 @@ _LOGGER = logging.getLogger(__name__)
 # The deviceId stays redacted even though it is only the Wi-Fi MAC and not a credential: it is a
 # stable device identifier, and nothing here needs it — the report bytes a maintainer works offsets
 # out from are dumped separately under `last_raw_status` / `report`.
+# The host is where on the owner's LAN the unit sits: identifying, and no help with a decode.
+# ⚠️ The digital model is stored as a JSON STRING, which `async_redact_data` cannot walk into, so
+# any per-device id the cloud put in it would pass untouched; it goes whole. `digital_model` below
+# (`_model_summary`) is the maintainer's view of it and stays. `device_map` is not listed: it is
+# the class's published byte map, keyed on the typeid `report.uplus_id` already states.
 TO_REDACT = {
+    CONF_HOST,
+    CONF_DIGITAL_MODEL,
     CONF_LOCAL_KEY,
     CONF_REFRESH_TOKEN,
     CONF_ACCESS_TOKEN,
@@ -216,8 +225,11 @@ async def async_get_config_entry_diagnostics(
             # Where the AC says it is, and whether that still agrees with the address this entry
             # uses. `host_matches: false` means the unit moved on DHCP and the entry is stale --
             # worth stating outright, because it presents as "the AC stopped responding" and is
-            # otherwise indistinguishable from a dead unit or a bad key.
-            "reported_host": coordinator.reported_host,
+            # otherwise indistinguishable from a dead unit or a bad key. The address itself is
+            # redacted like the entry's host; the comparison is what a report needs.
+            "reported_host": (
+                None if coordinator.reported_host is None else REDACTED
+            ),
             "reported_port": coordinator.reported_port,
             "host_matches": (
                 None

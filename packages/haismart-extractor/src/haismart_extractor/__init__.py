@@ -26,6 +26,7 @@ from .cloud import (
 from .device_config import async_fetch_device_config
 from .gateway import (
     GatewayClient,
+    GatewayConnectionError,
     GatewayCreds,
     GatewayError,
     derive_client_id,
@@ -47,6 +48,7 @@ __all__ = [
     "CloudError",
     "Domains",
     "GatewayClient",
+    "GatewayConnectionError",
     "GatewayCreds",
     "GatewayError",
     "HaierCloud",

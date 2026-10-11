@@ -193,3 +193,89 @@ def test_the_reply_tail_names_a_protocol():
     # reply -- so the field is empty rather than the parse failing
     short = parse_reply(bytes(reply[:0x110]))
     assert short is not None and short.protocol_tag == ""
+
+
+# --- the socket loops: one overall deadline, and only the asked-for host -------------------------
+
+HOST = "192.0.2.10"   # TEST-NET-1, illustrative
+
+
+class _FakeUdp:
+    """A UDP socket stub: `recvfrom` hands out scripted datagrams, each after a short pause."""
+
+    def __init__(self, datagrams, pause=0.0):
+        self._datagrams = list(datagrams)
+        self._pause = pause
+        self.timeouts: list[float] = []
+
+    def settimeout(self, t):
+        self.timeouts.append(t)
+
+    def setsockopt(self, *a): ...
+    def bind(self, *a): ...
+    def sendto(self, *a): ...
+    def close(self): ...
+
+    def recvfrom(self, _n):
+        import time
+        if not self._datagrams:
+            raise TimeoutError
+        time.sleep(self._pause)
+        return self._datagrams.pop(0)
+
+
+def test_query_deadline_is_overall_not_per_datagram(monkeypatch):
+    """A steady trickle of stray datagrams must not keep restarting the wait."""
+    import time
+    junk = [(b"noise", (HOST, ud.PORT))] * 1000
+    monkeypatch.setattr(ud.socket, "socket", lambda *a: _FakeUdp(junk, pause=0.02))
+    t0 = time.monotonic()
+    assert ud.query(HOST, timeout=0.2) is None
+    assert time.monotonic() - t0 < 1.0
+
+
+def test_discover_deadline_is_overall_not_per_datagram(monkeypatch):
+    import time
+    replies = [(REPLY_ONLINE, (HOST, ud.PORT))] * 1000
+    monkeypatch.setattr(ud.socket, "socket", lambda *a: _FakeUdp(replies, pause=0.02))
+    t0 = time.monotonic()
+    found = ud.discover(timeout=0.2)
+    assert time.monotonic() - t0 < 1.0
+    assert [d.device_id for d in found] == [DEV]
+
+
+def test_query_ignores_a_reply_from_another_host(monkeypatch):
+    """Another unit's device-info must not be returned as the asked-for one's identity."""
+    other = REPLY_OFFLINE
+    datagrams = [(other, ("192.0.2.99", ud.PORT)), (REPLY_ONLINE, (HOST, ud.PORT))]
+    monkeypatch.setattr(ud.socket, "socket", lambda *a: _FakeUdp(datagrams))
+    info = ud.query(HOST, timeout=1.0)
+    assert info is not None and info.cloud_connected is True
+
+
+def test_query_from_only_another_host_is_no_answer(monkeypatch):
+    datagrams = [(REPLY_ONLINE, ("192.0.2.99", ud.PORT))]
+    monkeypatch.setattr(ud.socket, "socket", lambda *a: _FakeUdp(datagrams))
+    assert ud.query(HOST, timeout=0.5) is None
+
+
+async def test_async_query_error_received_is_no_answer(monkeypatch):
+    """An ICMP error (port unreachable) means no answer: ``None``, as documented, not an OSError."""
+    import asyncio
+
+    class FakeTransport:
+        def sendto(self, _data):
+            protocol.error_received(ConnectionRefusedError(111, "Connection refused"))
+
+        def close(self): ...
+
+    protocol = None
+    loop = asyncio.get_running_loop()
+
+    async def fake_endpoint(factory, remote_addr=None, **_kw):
+        nonlocal protocol
+        protocol = factory()
+        return FakeTransport(), protocol
+
+    monkeypatch.setattr(loop, "create_datagram_endpoint", fake_endpoint)
+    assert await ud.async_query(HOST, timeout=1.0) is None

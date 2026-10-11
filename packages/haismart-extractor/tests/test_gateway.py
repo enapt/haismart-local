@@ -11,6 +11,7 @@ from haismart_extractor.cloud import LocalKey
 from haismart_extractor.gateway import (
     GATEWAY_AUTH_SALT,
     GatewayClient,
+    GatewayConnectionError,
     GatewayCreds,
     GatewayError,
     MqttConnection,
@@ -340,3 +341,57 @@ def test_get_localkeys_shares_one_deadline_and_never_reuses_an_sn() -> None:
 def test_get_localkeys_still_returns_the_devices_that_did_answer() -> None:
     keys = GatewayClient(_creds(), connect=lambda _c: FakeMqtt()).get_localkeys([UP_DEV])
     assert keys == {UP_DEV: LocalKey(key=UP_KEY, version=UP_VER)}
+
+
+def test_a_closed_connection_is_reported_not_spun_on() -> None:
+    """recv() returning b"" is the peer hanging up. Ignoring it spun subscribe/poll until their
+    deadline and then blamed the device ("no localKey response") for what was a dropped socket."""
+    from haismart_extractor.gateway import _TlsMqttConnection
+
+    class Closed:
+        def settimeout(self, t): pass
+        def recv(self, n): return b""
+
+    conn = object.__new__(_TlsMqttConnection)
+    conn.ss, conn._buf, conn._subacked, conn._publishes, conn._pid = Closed(), b"", set(), [], 0
+    conn._closed = False
+    with pytest.raises(GatewayConnectionError, match="closed"):
+        conn.poll(1.0)
+
+
+def test_a_dropped_connection_keeps_the_keys_already_in_hand() -> None:
+    """A hang-up mid-batch must not discard the keys that did arrive, and names why the rest failed."""
+    class DropsAfterFirst(FakeMqtt):
+        def publish(self, topic, payload):
+            if json.loads(base64.b64decode(json.loads(payload)["data"]))["dev"] == UP_DEV:
+                super().publish(topic, payload)
+
+        def poll(self, timeout):
+            if getattr(self, "_answered", False):
+                raise GatewayConnectionError("gateway closed the connection")
+            self._answered = True
+            return super().poll(timeout)
+
+    client = GatewayClient(_creds(), connect=lambda c: DropsAfterFirst())
+    keys, failures, dropped = client._request_keys(DropsAfterFirst(), [UP_DEV, "ACB722000000"], 5)
+    assert list(keys) == [UP_DEV]
+    assert "closed" in failures["ACB722000000"]
+    assert dropped == {"ACB722000000"}
+
+
+def test_a_hang_up_before_the_reply_is_a_connection_error() -> None:
+    """get_localkey tells a dropped socket apart from a refusal, so a caller can retry the former
+    instead of asking someone to sign in again."""
+    class HangsUp(FakeMqtt):
+        def poll(self, timeout):
+            raise GatewayConnectionError("gateway closed the connection")
+
+    with pytest.raises(GatewayConnectionError, match="closed"):
+        GatewayClient(_creds(), connect=lambda _c: HangsUp()).get_localkey(UP_DEV, timeout=1)
+
+
+def test_an_errno_reply_is_not_a_connection_error() -> None:
+    """The broker answering with a refusal is still a plain GatewayError: that one may need a person."""
+    with pytest.raises(GatewayError, match="errNo") as exc:
+        GatewayClient(_creds(), connect=lambda _c: FakeMqtt(err_no=1)).get_localkey(UP_DEV, timeout=1)
+    assert not isinstance(exc.value, GatewayConnectionError)

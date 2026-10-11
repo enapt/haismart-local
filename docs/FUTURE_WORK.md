@@ -21,6 +21,30 @@ keeps its own when it moves between the two sections. Expect the sequence to hav
 
 ## Open items
 
+### 74. The byte-map state lays the extended report over the status report — so after a command the older frame wins
+
+`coordinator._model_state` decodes a status report with Haier's byte map, then decodes the last
+extended report (`7d01`) and **updates** the result with it. That is right where the two maps place
+different attributes. But **60 of the 92 bundled Model IDs with a `7D01` map place status attributes
+in it too** — 28 of them air conditioners, 32 other classes (washers 14, refrigerators 12, water
+heaters 2, four others). A command's reply carries a fresh status report and no extended report, so
+the extended report from the poll before the command overwrites the reply's values for those
+attributes until the next poll.
+
+* **On an air conditioner it reaches diagnostics only** — the AC entities read their own decode, and
+  the byte-map state feeds no entity. It showed up in issue #19 as `appliance.model_state` reading
+  power off and 20 °C beside a `state` reading on and 19 °C: the status words came from the reply
+  to our turn-on, and the extended report repeats the climate words (item 38).
+* **On another class it would reach the entities** (the generic layer and the water heater read the
+  byte-map state): a setting would show its pre-command value for up to one poll after the command.
+  Unobserved — the one unit of another class seen so far, issue #13's water heater, does not answer
+  the extended query.
+
+**What closes it:** let the status report win where both maps place an attribute (decode the
+extended report first, or merge it without overwriting), with a test that a reply's value survives
+an older extended report. Small; not done yet.
+
+
 ### 72. India-region (zone 91) hosts are desk-derived — confirm token refresh, the digital model and key rotation on a real `-sea` account
 
 **2026-10-06, issue #18 (reporter `akashdubeyx`, a wall-split AC in India).** Sign-in succeeded but
@@ -1154,7 +1178,7 @@ to get one.
   model we hold, so the remaining 179 are unmeasured, not known to agree. Settling it needs the value
   sets for those, or a report placing the field's real width.
 
-### 38. The AQUA/JAA wall units publish a frame of their own — read and commanded through it; power confirmed on hardware, the residue is below (30 products)
+### 38. The AQUA/JAA wall units publish a frame of their own — read and commanded through it; power confirmed on hardware both ways, on two units; the residue is below (30 products)
 
 A catalogue-wide audit — every product's published group-set order checked against the shared
 frame's positions — found two families (12 + 18 products, the **AQUA `AQA-AX*` and `JAA-MX*` wall
@@ -1186,9 +1210,46 @@ types `0x04`, `0x02`, `0x06`, not refused. The status report in the `0x02` reply
 written, agrees on every attribute it reports that the decode places (29, none disagreeing) —
 setpoint, mode and fan included, so the rest of the four words went out as the unit holds them. The
 file keeps no report from before the command. The owner reports power on and off both work. So the
-group-set length rule (the op is the published span) holds on hardware for a third layout. ⚠️ Scope:
-one command, power, on one Model ID (`日本挂2024`); no other setting was changed by it, and
-`日本挂2025` has not been seen.
+group-set length rule (the op is the published span) holds on hardware for a third layout.
+
+✅ **And the other direction, on the first unit** (issue #19's original reporter, the unit the family
+was built from). Three commands from Home Assistant, each answered `0x02` (accepted), none refused.
+The file keeps the last: cool from off, i.e. power on and mode cool, plus the up-down vane at
+position 2, which this model's own published rules attach to cool (`constraints`: `operationMode` 1
+⇒ `windDirectionVertical` 2; dry also ⇒ 2, heat ⇒ 7). The status report in the reply reads power on,
+cool, vane wire 2, setpoint 19.0 °C. The owner reports that setting the temperature and switching on
+and off from Home Assistant all work. ⚠️ What the file cannot show: only the last command is kept, so
+the setpoint command itself is not in it. The 19.0 °C the unit reported when that last command was
+built is a value no earlier record of the unit holds (20.0 °C in the cloud record at setup, in the
+cloud record at download and in the unit's last extended report) — consistent with the owner's
+account, not a self-verifying record of it. Mode was written but not changed (the unit was already
+in cool); fan has not been changed.
+
+⚠️ **That file disagrees with itself about the moment it was saved, and frames carry no
+timestamps.** The owner wrote that it was taken after switching the unit off from Home Assistant.
+Home Assistant's state and the status report say on, 19 °C, vane wire 2. Haier's cloud record,
+fetched while the file was written, and the unit's last extended report (`7d01`) say off, 20 °C,
+vane wire 8 (published 6). Those two agree on 34 of the 35 attributes the cloud reports (humidity 57
+against 58); the status report differs from the cloud in exactly the three settings the commands
+wrote, plus room temperature and humidity. The last command on record is the turn-on. Two readings
+fit:
+
+* **(a)** the file was saved within one poll interval of the turn-on, so no poll ran after it, the
+  extended report is from the last poll before the commands, and the cloud record still showed the
+  state before them; or
+* **(b)** the unit was switched off afterwards by something other than Home Assistant, and Home
+  Assistant's status report had not caught up — it showed the unit on while it was off. An off at
+  20 °C and vane 6 is not what a turn-off from Home Assistant sends: that frame is built from the
+  unit's own report, 19 °C and vane 2.
+
+In the other two captures of this family the status and extended reports agree field for field,
+which favours (a) without deciding it. The owner's answer to "on or off when the file was saved, and
+what switched it off" settles it. If (b), the status report can lag a change made elsewhere, and
+this family carries the same settings in its extended report, which could be used to check it.
+
+⚠️ Scope: power both ways on one Model ID (`日本挂2024`), on two units; a setpoint change reported by
+an owner; the up-down vane moved by the model's own cool rule (wire 8 in every earlier record, wire 2
+in the reply that wrote it). `日本挂2025` has not been seen.
 
 Two readings settled from the same file:
 
@@ -1206,9 +1267,11 @@ Two readings settled from the same file:
   compressor, coil and air temperature, expansion-valve and actuator readings are read at the map's
   positions with the map's own scaling (the indoor coil counts half degrees from −20 °C, unlike the
   span-keyed families), keyed on the Model ID and only for a frame exactly as long as the map. ⚠️
-  The one frame seen was taken with the unit off: the temperatures are populated and power and the
-  compressor read zero, so whether the firmware fills those while running is not known yet. A
-  diagnostics download from a running unit settles it.
+  Both frames seen were taken with the unit off — the second just after it had stopped (discharge
+  60 °C against 28 °C outdoors, indoor coil 18 °C against a 21 °C room). The temperatures are
+  populated and power and the compressor read zero, so whether the firmware fills those while
+  running is not known yet. A diagnostics download from a unit that has been cooling for some
+  minutes settles it.
 
 Residue, each a refusal or an absence rather than a wrong value:
 

@@ -285,8 +285,9 @@ cycles in each form that carried status but no extended report, so a single drop
 held against it. A unit that answers with a `7d01` frame of a size no map describes is kept polled: the frame
 reaches a diagnostics download, which is what adding its map needs.
 
-A session can therefore return several report kinds sharing the same container: status (`6d01`,
-or `6d5f` in reply to a group set),
+A session can therefore return several report kinds sharing the same container: status (`6d01`;
+prior art's simulators answer a group set with `6d5f` and the same payload, and the integration
+accepts either),
 the fault bitmap (`0f5a`, 101 bytes), extended status (`7d01`), a changed-parameters report (`6c01`,
 which carries no positional status) and, on a control session, a refusal (frame type `03`, see
 *Refusals*). **Tell them apart by the command word and frame type, not by length or arrival order** — the fault frame is long enough to pass a status

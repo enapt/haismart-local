@@ -1192,17 +1192,21 @@ one command, power, on one Model ID (`日本挂2024`); no other setting was chan
 
 Residue, each a refusal or an absence rather than a wrong value — except the first:
 
-* ⚠️ **`last_changed_by` reads "Other" after a Home Assistant command.** The published map puts
-  `opSrc` at w5 bits 0–1 with the same 0–3 codes as every other family, but both units seen report 0
-  there, one of them in the report that followed our own command. Either this firmware does not fill
-  the field or it fills it differently; withholding the reading on this family is the fix, until a
-  report shows a non-zero code.
+* ⚠️ **`last_changed_by` reads "Other" after a Home Assistant command, because these products do
+  not carry the field.** The family's byte map places `opSrc` (控制命令来源) at w5 bits 0–1, with the
+  funcModel's codes 0 其他 · 1 遥控器 · 2 按键 · 3 网络, the same as every family. But **none of the
+  30 products declares `opSrc`** (the catalogue's per-product models, and both units' own models,
+  38 attributes each), Haier's cloud record of the unit does not report it, and both units read 0
+  there, one of them in the report that followed our own command. The sensor is created for every
+  air conditioner without a declaration check; on this family it should not be.
 * **The family's telemetry report (`7d01`) is not decoded.** These units answer the extended-status
-  query with an 18-word report, and the family's published map describes exactly 18 words: power,
-  compressor frequency and current, the indoor and outdoor coil and air temperatures, the actuator
-  states and the energy counter (w6–w7). No telemetry map is shipped for an 18-word span, so the
-  frame is kept in diagnostics and nothing is read from it. Adding it needs the span checked
-  against every other published 18-word map.
+  query with an 18-word report, and the family's byte map describes exactly 18 words (56 fields:
+  power, compressor frequency and current, the coil and air temperatures, the actuator states and
+  the energy counter at w6–w7). The shipped byte-map bundle carries those fields, but the
+  air-conditioner telemetry path reads only the spans in `BIGDATA_MAPS`, so the frame is kept in
+  diagnostics and nothing is read from it. The one frame seen was taken with the unit off: the coil
+  and air temperatures are populated, and power, compressor and the energy counter read zero, so
+  whether the firmware fills those while running is not known yet.
 
 * **Left-right stops are not offered** — only fixed and sweeping, the two codes this family shares
   with every other. Its stops are read (a read-only position sensor names them from the family's own

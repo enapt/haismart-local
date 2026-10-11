@@ -42,8 +42,8 @@ The AC answered and the connection is fine, but Home Assistant couldn't read the
 
 - **Stale local key** — keys rotate server-side. If you signed in with your account, the new key is
   fetched automatically. If Haier cannot be reached, it keeps retrying quietly for up to 30 minutes.
-  Failing that, or with no account on this unit, an account another appliance here uses is tried,
-  and only then are you asked to re-authenticate. The integration tells you which
+  Failing that, or with no account on this unit, an account another appliance here uses is tried
+  without asking you anything, and only then are you asked to re-authenticate. The integration tells you which
   situation you are in rather than making you guess — see
   [Why it keeps asking for a key](#why-it-keeps-asking-for-a-key).
 - **A report layout we don't know yet** — your model packs its status differently. The integration

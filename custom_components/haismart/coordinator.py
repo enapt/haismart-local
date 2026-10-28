@@ -110,7 +110,7 @@ from haismart_hrdp.device_model import (
     project_config,
 )
 from haismart_hrdp.entity_spec import EntitySpec, specs_for
-from haismart_hrdp.uss import epp_command, frame_key
+from haismart_hrdp.uss import epp_command, epp_frame_type, frame_key
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
@@ -179,6 +179,9 @@ _LOGGER = logging.getLogger(__name__)
 #: Distinct frame kinds kept per entry before further new kinds are only counted. Real sessions
 #: carry a handful; the cap only guards the diagnostics file against a misbehaving stream.
 _LAN_FRAME_KINDS = 64
+#: EPP frame types that carry a status report: the reply to a status query (02) and the unsolicited
+#: push (06). Both arrive from the 0504 laundry centre as `02/6d01`, `06/6d01` and `06/6d02`.
+_STATUS_FRAME_TYPES = (0x02, 0x06)
 
 type HaismartConfigEntry = ConfigEntry["HaismartCoordinator"]
 
@@ -1165,14 +1168,11 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Both derive from the stored model on every access; once per session, not once per frame.
         names = self._alarm_names()
         order = self.declared_group_order
-        model = self.device_model
         for blob in blobs:
             # Every status report the byte map has a section for, by command -- before the overflow
             # guard below, which only limits what diagnostics keep. `_model_state` reads these.
-            if model is not None and (command := epp_command(blob)) is not None:
-                name = command.hex().upper()
-                if name.startswith("6D") and model.fields_for(name):
-                    self._status_frames[name] = (blob, self.hass.loop.time())
+            if (name := self._own_status_cmd(blob)) is not None:
+                self._status_frames[name] = (blob, self.hass.loop.time())
             key = frame_key(blob)
             if key not in self.lan_frames and len(self.lan_frames) >= _LAN_FRAME_KINDS:
                 self.lan_frames.setdefault("_overflow", {"count": 0})["count"] += 1
@@ -1560,18 +1560,33 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             and f.status_cmd.upper() != STATUS_ALL
         }))
 
-    def _status_cmd_of(self, blob: bytes) -> str:
-        """The status command ``blob`` answers, when the byte map has a section for it; else 6D01.
+    def _own_status_cmd(self, blob: bytes) -> str | None:
+        """The ``6Dxx`` status command ``blob`` answers, for a laundry appliance whose map files
+        fields under it; ``None`` for anything else.
 
-        Falling back to ``6D01`` keeps every appliance that decodes today decoding the same way: a
-        report whose command the map does not file anything under is read as the map always read it.
+        ⛔ Laundry only. Every other kind keeps reading its one report under ``6D01`` exactly as it
+        did, including the few maps that publish further ``6Dxx`` sections nobody has seen on the
+        wire. And only a status reply or push: an alarm frame has no meaningful command bytes.
         """
-        command = epp_command(blob)
         model = self.device_model
-        if command is None or model is None:
-            return STATUS_ALL
+        if model is None or self.appliance_kind is not ApplianceKind.LAUNDRY:
+            return None
+        if epp_frame_type(blob) not in _STATUS_FRAME_TYPES:
+            return None
+        command = epp_command(blob)
+        if command is None:
+            return None
         name = command.hex().upper()
-        return name if name.startswith("6D") and model.fields_for(name) else STATUS_ALL
+        if not name.startswith("6D"):
+            return None
+        return name if model.fields_for(name) else None
+
+    def _status_cmd_of(self, blob: bytes) -> str:
+        """The status command ``blob`` answers, where :meth:`_own_status_cmd` names one; else 6D01.
+
+        Falling back to ``6D01`` keeps every appliance that decodes today decoding the same way.
+        """
+        return self._own_status_cmd(blob) or STATUS_ALL
 
     def model_attribute_range(self, name: str) -> tuple[float, float, float] | None:
         """``(min, max, step)`` for a numeric attribute, from the DEVICE's model first.

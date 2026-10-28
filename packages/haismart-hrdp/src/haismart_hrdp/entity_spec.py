@@ -329,6 +329,28 @@ _ENUM_LABELS: Mapping[str, str] = MappingProxyType({
     "中温保温": "Mid-temperature keep warm", "动态夜电模式": "Off-peak",
     "随温而动": "Adaptive", "Eco除菌": "Eco sterilise",
     "单预约": "One schedule", "双预约": "Two schedules",
+    # laundry (the 0504 washer-dryer's cycle phases and end-of-cycle messages)
+    "启动": "Running", "待机/未启动": "Standby", "待机状态": "Standby", "称重": "Weighing",
+    "重量提示": "Load advice", "洗涤进水": "Wash fill", "洗涤加热": "Wash heating",
+    "洗涤": "Washing", "洗涤排水": "Wash drain", "中间脱水": "Intermediate spin",
+    "漂洗进水": "Rinse fill", "漂洗": "Rinsing", "漂洗排水": "Rinse drain",
+    "最终脱水": "Final spin", "冷却": "Cooling down", "预约运行中": "Delayed start",
+    "预约运行": "Delayed start", "洗衣程序运行完抖散中": "Tumbling after wash",
+    "洗衣程序运行完烘干中": "Drying after wash", "洗衣程序运行完烘干结束": "Drying after wash finished",
+    "洗衣程序运行完抖散结束": "Tumbling after wash finished", "护理中": "Care",
+    "预洗进水": "Pre-wash fill", "预洗": "Pre-wash", "预洗加热": "Pre-wash heating",
+    "预洗排水": "Pre-wash drain", "风干": "Air drying", "检测中": "Detecting",
+    "冷风1": "Cool air 1", "冷风2": "Cool air 2", "加热1": "Heating 1", "加热2": "Heating 2",
+    "程序结束": "Finished", "防皱": "Anti-crease", "自动判断负载中": "Sensing load",
+    "预烘中": "Pre-drying", "保养中": "Maintenance",
+    "衣服已洗完": "Wash finished", "衣服已洗干": "Wash and dry finished",
+    "衣服已烘干": "Drying finished", "无提示信息": "None", "熨烫提醒": "Ironing reminder",
+    "请清理过滤器": "Clean the filter", "请清理水盒": "Empty the water box", "正在除菌": "Sterilising",
+    "液体洗涤剂用完": "Detergent empty", "柔顺剂用完": "Softener empty", "消毒剂用完": "Disinfectant empty",
+    "液体洗涤剂、柔顺剂用完": "Detergent and softener empty", "请关闭抽屉门": "Close the drawer",
+    "筒内温度过高，不能开门": "Drum too hot to open", "筒内水位过高，不能开门": "Water too high to open",
+    "排水过滤器需要清洗": "Clean the drain filter", "烘干过滤器需要清洗": "Clean the dryer filter",
+    "门被打开，远程控制功能失效": "Door opened, remote control off",
 })
 
 

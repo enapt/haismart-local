@@ -1,0 +1,8846 @@
+{
+ "_about": "Haier HWD140-BD14LCGNU1 twin washer + dryer (class 0504), captured over the LAN by the integration's own diagnostics on 2026-10-28 while the dryer ran Ai Dry and the washer sat idle after a finished cycle. reported_values_now is Haier's cloud shadow read at the same moment. No device id, key, MAC or address is in here: the frames' uSS header carries none, and the typeid is the model's, shared by every unit of it.",
+ "typeid": "201c51890c31c308050400218004514845000000000000000000000000000040",
+ "app_type": "Roller Washer",
+ "frames": {
+  "6d01_dryer_running": "00002715000000004e5601000003020000040100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000055ffff52000000000000066d010033000001d60000010403380800000200000000000001030000736d6172745f6c6f63616c0000000000000000003173653732773d3d00000000000000000000000000000001000013",
+  "6d02_washer_idle": "00002715000000004e5601000003020000040100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000091ffff8e000000000000066d02380a80010009010108040001000100000000007800000000001c900286001e23000000000064010100016400000182000000000000000000000000000000000000000000736d6172745f6c6f63616c0000000000000000003173653732773d3d00000000000000000000000000000000000000000000000000010000000000000000006473",
+  "6d01_dryer_idle": "00002715000000004e5601007a0302007a040100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000055ffff52000000000000026d010031000001e00000010403380002000000000000000000000000736d6172745f6c6f63616c0000000000000000003173653732773d3d0000000000000000000000000000000000000a"
+ },
+ "digital_model": {
+  "alarms": [
+   {
+    "name": "alarmCancel",
+    "desc": "告警解除",
+    "clear": true
+   },
+   {
+    "name": "dryerPumpErr",
+    "desc": "干衣机排水泵（水位开关）故障(F2)",
+    "clear": false
+   },
+   {
+    "name": "ntc1Err",
+    "desc": "干衣机NTC1故障(F31)",
+    "clear": false
+   },
+   {
+    "name": "ntc2Err",
+    "desc": "干衣机NTC2故障(F32)",
+    "clear": false
+   },
+   {
+    "name": "dryerHeatingErr",
+    "desc": "干衣机加热异常（制冷剂泄漏）(F4)",
+    "clear": false
+   },
+   {
+    "name": "dryerFilterBlockedAlarm",
+    "desc": "干衣机过滤网堵塞(E6)",
+    "clear": false
+   },
+   {
+    "name": "dryerMotorDriverBoardErr",
+    "desc": "干衣机电机故障（电机驱动板）(F7)",
+    "clear": false
+   },
+   {
+    "name": "dryerMotorOverheatAlarm",
+    "desc": "干衣机电机故障（过载过热）(F7)",
+    "clear": false
+   },
+   {
+    "name": "ntc2TempLowAlarm",
+    "desc": "干衣机NTC2温度过低(LO)",
+    "clear": false
+   },
+   {
+    "name": "dryerPowerBoardCommErr",
+    "desc": "干衣机显示板与电源板通讯故障(FC2)",
+    "clear": false
+   },
+   {
+    "name": "dryerMotorDriverCommErr",
+    "desc": "干衣机与电机控制板通讯故障(FC1)",
+    "clear": false
+   },
+   {
+    "name": "dryerDoorOpenAlarm",
+    "desc": "干衣机开门报警(Door)",
+    "clear": false
+   },
+   {
+    "name": "waterBoxFullAlarm",
+    "desc": "干衣机集水盒满报警(H2OFULL)",
+    "clear": false
+   },
+   {
+    "name": "ntc3Err",
+    "desc": "干衣机NTC3故障(F33)",
+    "clear": false
+   },
+   {
+    "name": "ntc4Err",
+    "desc": "干衣机NTC4故障（F34）",
+    "clear": false
+   },
+   {
+    "name": "dryerFanCommErr",
+    "desc": "干衣机风机模块通讯异常(FC6)",
+    "clear": false
+   },
+   {
+    "name": "dryerFogModuleCommErr",
+    "desc": "干衣机雾化模块通讯异常(FC10)",
+    "clear": false
+   },
+   {
+    "name": "dryerFanErr",
+    "desc": "干衣机风机故障(FE)",
+    "clear": false
+   },
+   {
+    "name": "dryerBusErr",
+    "desc": "干衣机总线自身异常(FC0)",
+    "clear": false
+   },
+   {
+    "name": "dryerDoorLockFail",
+    "desc": "干衣机门锁锁门故障(E2)",
+    "clear": false
+   },
+   {
+    "name": "dryerDoorUnlockFail",
+    "desc": "干衣机门锁解锁故障(E2)",
+    "clear": false
+   },
+   {
+    "name": "wifiCfgFailed",
+    "desc": "无线模块配置失败(FH)",
+    "clear": false
+   },
+   {
+    "name": "dryerAnionModuleCommErr",
+    "desc": "干衣机负离子模块通信故障(FC1D)",
+    "clear": false
+   },
+   {
+    "name": "dryerFilterInstallErr",
+    "desc": "干衣机烘干过滤网未安装到位",
+    "clear": false
+   },
+   {
+    "name": "dryerCompDriverCommErr",
+    "desc": "干衣机压缩机驱动模块通讯异常(FCD)",
+    "clear": false
+   },
+   {
+    "name": "dryerCtrBoardCommErr",
+    "desc": "显示板与控制板通讯异常(FCU)",
+    "clear": false
+   },
+   {
+    "name": "fcCompressorRunErr",
+    "desc": "变频压机运行故障（FF）",
+    "clear": false
+   },
+   {
+    "name": "ntc11Err",
+    "desc": "NTC11故障（F311）",
+    "clear": false
+   },
+   {
+    "name": "dryerOutNTCErr",
+    "desc": "干衣机出风口NTC故障（F91）",
+    "clear": false
+   },
+   {
+    "name": "dryerTwoDEVNTCErr",
+    "desc": "干衣机两器间NTC故障（F92）",
+    "clear": false
+   },
+   {
+    "name": "loadExpBoardErr",
+    "desc": "负载扩展板故障（FCA）",
+    "clear": false
+   },
+   {
+    "name": "washerFanErr",
+    "desc": "洗衣机风机故障(FE)",
+    "clear": false
+   },
+   {
+    "name": "waterHeatingErr",
+    "desc": "水加热断开(F4)",
+    "clear": false
+   },
+   {
+    "name": "washerHallErr",
+    "desc": "洗衣机霍尔故障(F7)",
+    "clear": false
+   },
+   {
+    "name": "washerRpmErr",
+    "desc": "洗衣机速度错误(F7)",
+    "clear": false
+   },
+   {
+    "name": "washerVoltageHighAlarm",
+    "desc": "洗衣机电压过高(F7)",
+    "clear": false
+   },
+   {
+    "name": "washerVoltageLowAlarm",
+    "desc": "洗衣机电压过低(F7)",
+    "clear": false
+   },
+   {
+    "name": "washerDDMotorNTCErr",
+    "desc": "洗衣机DD电机NTC故障(F7)",
+    "clear": false
+   },
+   {
+    "name": "washerMotorStatorHighTempProtection",
+    "desc": "洗衣机电机定子高温保护(F7)",
+    "clear": false
+   },
+   {
+    "name": "washerCurrentSensingCircuitErr",
+    "desc": "洗衣机电流检测电路故障(F7)",
+    "clear": false
+   },
+   {
+    "name": "washerOvercurrentAlarm",
+    "desc": "洗衣机过流(F7)",
+    "clear": false
+   },
+   {
+    "name": "washerIpmErr",
+    "desc": "洗衣机IPM故障(F7)",
+    "clear": false
+   },
+   {
+    "name": "washerPhaseBreakProtection",
+    "desc": "洗衣机缺相保护(F7)",
+    "clear": false
+   },
+   {
+    "name": "washerLaunchFailed",
+    "desc": "洗衣机启动失败(F7)",
+    "clear": false
+   },
+   {
+    "name": "washerNoPowerOnSignal",
+    "desc": "洗衣机无上电信号(Ec)",
+    "clear": false
+   },
+   {
+    "name": "washerHeaterRelayErr",
+    "desc": "洗衣机烘干继电器故障(Fd)",
+    "clear": false
+   },
+   {
+    "name": "washerHeaterErr",
+    "desc": "洗衣机烘干加热管故障(Fd)",
+    "clear": false
+   },
+   {
+    "name": "washerTempSensorErr",
+    "desc": "洗衣机温度传感器故障(F3)",
+    "clear": false
+   },
+   {
+    "name": "washerInAirSensorErr",
+    "desc": "洗衣机进风口传感器故障(F9)",
+    "clear": false
+   },
+   {
+    "name": "washerCondenserSensorErr",
+    "desc": "洗衣机冷凝传感器故障(F9)",
+    "clear": false
+   },
+   {
+    "name": "washerDoorLockFail",
+    "desc": "洗衣机门锁锁门异常(E2)",
+    "clear": false
+   },
+   {
+    "name": "washerDoorUnlockFail",
+    "desc": "洗衣机门锁解锁异常(E2)",
+    "clear": false
+   },
+   {
+    "name": "washerMotorDriverCommErr",
+    "desc": "洗衣机与电机驱动模块通讯故障(FC1/FCb)",
+    "clear": false
+   },
+   {
+    "name": "washerPowerDriverCommErr",
+    "desc": "洗衣机与电源驱动模块通讯故障(FC2)",
+    "clear": false
+   },
+   {
+    "name": "washerDisplayBoardCommErr",
+    "desc": "洗衣机与显示按键通讯故障(Fc)",
+    "clear": false
+   },
+   {
+    "name": "washerMainRelayAdhesion",
+    "desc": "洗衣机主继电器粘连(Eb)",
+    "clear": false
+   },
+   {
+    "name": "waterLevelSensorErr",
+    "desc": "水位传感器异常(FA)",
+    "clear": false
+   },
+   {
+    "name": "inWaterErr",
+    "desc": "洗衣机进水异常(E4)",
+    "clear": false
+   },
+   {
+    "name": "washerDrainErr",
+    "desc": "洗衣机排水异常(E1)",
+    "clear": false
+   },
+   {
+    "name": "waterOverHighAlarm",
+    "desc": "洗衣机异常高水位（洗涤、漂洗）(E8)",
+    "clear": false
+   },
+   {
+    "name": "washerDyWaterLevelAlarm",
+    "desc": "洗衣机烘干水位异常(E12)",
+    "clear": false
+   },
+   {
+    "name": "washerDryHeatingAlarm",
+    "desc": "洗衣机干烧（加热时水位偏低）(E4)",
+    "clear": false
+   },
+   {
+    "name": "waterOverLowAlarm",
+    "desc": "洗涤时水位偏低(E4)",
+    "clear": false
+   },
+   {
+    "name": "waterLevelAlarm",
+    "desc": "水位异常（水位达到溢水水位）(E8)",
+    "clear": false
+   },
+   {
+    "name": "spinUnbalanceAlarm",
+    "desc": "脱水时分布不平衡(Unb)",
+    "clear": false
+   },
+   {
+    "name": "washerWeightErr",
+    "desc": "洗衣机称重数据错误(E_L)",
+    "clear": false
+   },
+   {
+    "name": "washerDryOverweightAlarm",
+    "desc": "洗衣机烘干超重(AL_E)",
+    "clear": false
+   },
+   {
+    "name": "washerMainEEPROMErr",
+    "desc": "洗衣机主控板EEPROM读写错误(EE)",
+    "clear": false
+   },
+   {
+    "name": "washerTempOverHighAlarm",
+    "desc": "洗衣机筒内温度过高(H)",
+    "clear": false
+   },
+   {
+    "name": "washerOtherAlarm",
+    "desc": "洗衣机其他报警(E0)",
+    "clear": false
+   },
+   {
+    "name": "washerDryDriverCommErr",
+    "desc": "洗衣机烘干驱动模块通讯异常(FC3)",
+    "clear": false
+   },
+   {
+    "name": "washerWaterLeakageAlarm",
+    "desc": "洗衣机漏水报警(Fb)",
+    "clear": false
+   },
+   {
+    "name": "purificationReductionWarning",
+    "desc": "净水模块性能衰减提醒(F6)",
+    "clear": false
+   },
+   {
+    "name": "purificationReductionAlarm",
+    "desc": "净水模块性能衰减报警(F5)",
+    "clear": false
+   },
+   {
+    "name": "purificationDriverCommErr",
+    "desc": "净水洗驱动板通讯故障(FC4)",
+    "clear": false
+   },
+   {
+    "name": "washerMuCommErr",
+    "desc": "洗衣机与MU模块通讯异常(FC5)",
+    "clear": false
+   },
+   {
+    "name": "washerBusCommErr",
+    "desc": "洗衣机总线通讯报警(FC0)",
+    "clear": false
+   },
+   {
+    "name": "wpCommErr",
+    "desc": "UI与WP通讯异常告警(FCU)",
+    "clear": false
+   },
+   {
+    "name": "washerClutchMotorErr",
+    "desc": "洗衣机离合电机异常(FL)",
+    "clear": false
+   },
+   {
+    "name": "washerSwSelfTestErr",
+    "desc": "洗衣机软件自检错误(EU)",
+    "clear": false
+   },
+   {
+    "name": "autoFlowmeterErr",
+    "desc": "自动投放流量计故障(F0)",
+    "clear": false
+   },
+   {
+    "name": "washerFanDriverCommErr",
+    "desc": "洗衣机FU风机驱动板通信故障(FC6)",
+    "clear": false
+   },
+   {
+    "name": "washerRfidCommErr",
+    "desc": "洗衣机RFID模块通信故障(FC7)",
+    "clear": false
+   },
+   {
+    "name": "washerProxSensorErr",
+    "desc": "洗衣机接近传感器异常(FN)",
+    "clear": false
+   },
+   {
+    "name": "wallLimitSwitchAlarm",
+    "desc": "靠墙限位开关松脱报警(Fo)",
+    "clear": false
+   },
+   {
+    "name": "eccentricityAlarm",
+    "desc": "空桶偏心较大报警(Z1)",
+    "clear": false
+   },
+   {
+    "name": "detergentInValveErr",
+    "desc": "洗涤剂侧进水阀故障,或者流量传感器故障(E4A)",
+    "clear": false
+   },
+   {
+    "name": "softenerInValveErr",
+    "desc": "柔顺剂侧进水阀故障,或者流量传感器故障(E4B)",
+    "clear": false
+   },
+   {
+    "name": "innerDrainErr",
+    "desc": "排空筒内水异常(E5)",
+    "clear": false
+   },
+   {
+    "name": "washerAutoModuleCommErr",
+    "desc": "自动投放模块通讯异常(FCF)",
+    "clear": false
+   },
+   {
+    "name": "washerProcessBorardCommErr",
+    "desc": "洗衣机流程板通讯异常(FCE)",
+    "clear": false
+   },
+   {
+    "name": "washerCompDriverCommErr",
+    "desc": "洗衣机压缩机驱动模块通讯异常(FCD)",
+    "clear": false
+   },
+   {
+    "name": "washerFilterInstallErr",
+    "desc": "洗衣机烘干过滤网安装不到位",
+    "clear": false
+   },
+   {
+    "name": "clothClipAlarm",
+    "desc": "夹布告警（Eb）",
+    "clear": false
+   }
+  ],
+  "attributes": [
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数9",
+    "invisible": false,
+    "name": "dryerAirWashPara9",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "亮色助洗剂投放状态",
+    "invisible": false,
+    "name": "brightenerInjectStatus",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "干衣机End显示持续时间",
+    "invisible": false,
+    "name": "dryerEndDisplayDuration",
+    "operationType": "I",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "30",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数1",
+    "invisible": false,
+    "name": "dryerAirWashPara1",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "墨盒1余量状态",
+    "invisible": false,
+    "name": "box1RemainingStatus",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "未知"
+      },
+      {
+       "data": "1",
+       "desc": "有"
+      },
+      {
+       "data": "2",
+       "desc": "少"
+      },
+      {
+       "data": "3",
+       "desc": "无"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数2",
+    "invisible": false,
+    "name": "dryerAirWashPara2",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "洗衣程序运行完抖散",
+    "invisible": false,
+    "name": "loosenStatus",
+    "operationType": "I",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "柔顺亮白剂投放状态",
+    "invisible": false,
+    "name": "softenerInjectStatus",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数3",
+    "invisible": false,
+    "name": "dryerAirWashPara3",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数4",
+    "invisible": false,
+    "name": "dryerAirWashPara4",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数5",
+    "invisible": false,
+    "name": "dryerAirWashPara5",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数6",
+    "invisible": false,
+    "name": "dryerAirWashPara6",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数7",
+    "invisible": false,
+    "name": "dryerAirWashPara7",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数8",
+    "invisible": false,
+    "name": "dryerAirWashPara8",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "净螨功能状态",
+    "invisible": false,
+    "name": "mitesRemovalStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "干衣机提示信息",
+    "invisible": false,
+    "name": "dryerMessage",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "无提示信息"
+      },
+      {
+       "data": "1",
+       "desc": "熨烫提醒"
+      },
+      {
+       "data": "2",
+       "desc": "衣服已烘干"
+      },
+      {
+       "data": "3",
+       "desc": "请清理过滤器"
+      },
+      {
+       "data": "4",
+       "desc": "请清理水盒"
+      },
+      {
+       "data": "5",
+       "desc": "正在除菌"
+      },
+      {
+       "data": "6",
+       "desc": "预留提示1"
+      },
+      {
+       "data": "7",
+       "desc": "预留提示2"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "洗涤水温",
+    "invisible": false,
+    "name": "washTemp",
+    "operationType": "IG",
+    "readable": true,
+    "value": "30",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "100",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机防皱时间",
+    "invisible": false,
+    "name": "antiCreaseTime",
+    "operationType": "IG",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "20",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "脱水系统诊断结果",
+    "invisible": false,
+    "name": "spinSysDiagResult",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "诊断通过"
+      },
+      {
+       "data": "false",
+       "desc": "未诊断或不合格"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "true",
+    "desc": "新风功能",
+    "invisible": false,
+    "name": "freshAir",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开启"
+      },
+      {
+       "data": "false",
+       "desc": "关闭"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "夜间洗功能状态",
+    "invisible": false,
+    "name": "nightWashStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "洗衣机实测衣物重量",
+    "invisible": false,
+    "name": "washerActualWeight",
+    "readable": true,
+    "value": "4",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "desc": "干衣机回待机",
+    "invisible": false,
+    "name": "dryerReturnStandby",
+    "operationType": "I",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "1",
+       "desc": "执行"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "洗衣程序运行完烘干",
+    "invisible": false,
+    "name": "washerDryStatus",
+    "operationType": "I",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "干衣机呵护功能状态",
+    "invisible": false,
+    "name": "delicateStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "助洗剂余量状态",
+    "invisible": false,
+    "name": "remainingDispersantStatus",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "未知"
+      },
+      {
+       "data": "1",
+       "desc": "有"
+      },
+      {
+       "data": "2",
+       "desc": "无"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "true",
+    "desc": "同步数据参数",
+    "invisible": false,
+    "name": "dataSynParam",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "同步"
+      },
+      {
+       "data": "false",
+       "desc": "不同步"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "进水时转速(组命令)",
+    "invisible": false,
+    "name": "haier_InWaterSpeed",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "60",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "解童锁关机",
+    "invisible": false,
+    "name": "unlockShutdown",
+    "operationType": "I",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "1",
+       "desc": "执行"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "进水时转动时长",
+    "invisible": false,
+    "name": "haier_InWaterRotateTime",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "60",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "消毒剂自动投放功能状态",
+    "invisible": false,
+    "name": "autoDisinfectantStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "当前上报的衣物序号",
+    "invisible": false,
+    "name": "clothesIdIndex",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "desc": "End显示持续时间",
+    "invisible": false,
+    "name": "endDisplayDuration",
+    "operationType": "I",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "30",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "运动鞋负离子功能状态",
+    "invisible": false,
+    "name": "shoesAnionStatus",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "光等离子护理时间",
+    "invisible": false,
+    "name": "photoPlasmaCareTime",
+    "operationType": "G",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "空气洗温度档位",
+    "invisible": false,
+    "name": "airWashTempLevel",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "未设定"
+      },
+      {
+       "data": "1",
+       "desc": "低温"
+      },
+      {
+       "data": "2",
+       "desc": "中温"
+      },
+      {
+       "data": "3",
+       "desc": "高温"
+      },
+      {
+       "data": "4",
+       "desc": "预留档位1"
+      },
+      {
+       "data": "5",
+       "desc": "预留档位2"
+      },
+      {
+       "data": "6",
+       "desc": "预留档位3"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "墨盒2投放类型",
+    "invisible": false,
+    "name": "box2LiquidType",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "未放置"
+      },
+      {
+       "data": "1",
+       "desc": "未知"
+      },
+      {
+       "data": "2",
+       "desc": "精粹洗衣液"
+      },
+      {
+       "data": "3",
+       "desc": "净白助洗剂"
+      },
+      {
+       "data": "4",
+       "desc": "柔顺亮白剂"
+      },
+      {
+       "data": "5",
+       "desc": "亮色助洗剂"
+      },
+      {
+       "data": "6",
+       "desc": "母婴精洗液"
+      },
+      {
+       "data": "255",
+       "desc": "异常"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "true",
+    "desc": "启动程序",
+    "invisible": false,
+    "name": "startProgram",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "启动"
+      },
+      {
+       "data": "false",
+       "desc": "不启动"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "洗涤剂余量状态",
+    "invisible": false,
+    "name": "remainingDetergentStatus",
+    "readable": true,
+    "value": "1",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "未知"
+      },
+      {
+       "data": "1",
+       "desc": "有"
+      },
+      {
+       "data": "2",
+       "desc": "无"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0.0",
+    "desc": "干衣机预约时间",
+    "invisible": false,
+    "name": "dryerResnTime",
+    "operationType": "IG",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Double",
+      "maxValue": "24.0",
+      "minValue": "0.0",
+      "step": "0.5"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "当前剩余/预约时间小时",
+    "invisible": false,
+    "name": "remainingTimeHH",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "24",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "desc": "干衣机恢复出厂设置",
+    "invisible": false,
+    "name": "dryerResetOpt",
+    "operationType": "I",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "恢复除水电外所有设置"
+      },
+      {
+       "data": "1",
+       "desc": "恢复用户设定参数"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "强制删除",
+    "invisible": false,
+    "name": "forceDelete",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "有"
+      },
+      {
+       "data": "false",
+       "desc": "无"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "1",
+    "desc": "烘干强度",
+    "invisible": false,
+    "name": "washerDryLevel",
+    "operationType": "G",
+    "readable": true,
+    "value": "1",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "1",
+       "desc": "强"
+      },
+      {
+       "data": "2",
+       "desc": "中"
+      },
+      {
+       "data": "3",
+       "desc": "弱"
+      },
+      {
+       "data": "4",
+       "desc": "不加热"
+      },
+      {
+       "data": "5",
+       "desc": "性能"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "干衣机剩余定时时间",
+    "invisible": false,
+    "name": "dryerRemainingDryTime",
+    "readable": true,
+    "value": "480",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "600",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "洗衣机统一程序设定",
+    "invisible": false,
+    "name": "washerUnifiedProgramSettings",
+    "operationType": "IG",
+    "readable": true,
+    "value": "56",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "空"
+      },
+      {
+       "data": "1",
+       "desc": "棉麻"
+      },
+      {
+       "data": "2",
+       "desc": "化纤"
+      },
+      {
+       "data": "3",
+       "desc": "羽绒"
+      },
+      {
+       "data": "4",
+       "desc": "窗帘"
+      },
+      {
+       "data": "5",
+       "desc": "混合"
+      },
+      {
+       "data": "6",
+       "desc": "衬衣"
+      },
+      {
+       "data": "7",
+       "desc": "童装"
+      },
+      {
+       "data": "8",
+       "desc": "轻柔"
+      },
+      {
+       "data": "9",
+       "desc": "烫烫净"
+      },
+      {
+       "data": "10",
+       "desc": "羊毛"
+      },
+      {
+       "data": "11",
+       "desc": "牛仔"
+      },
+      {
+       "data": "12",
+       "desc": "空气洗"
+      },
+      {
+       "data": "13",
+       "desc": "筒自洁"
+      },
+      {
+       "data": "14",
+       "desc": "内衣"
+      },
+      {
+       "data": "15",
+       "desc": "快洗15"
+      },
+      {
+       "data": "16",
+       "desc": "快洗29"
+      },
+      {
+       "data": "17",
+       "desc": "大件"
+      },
+      {
+       "data": "18",
+       "desc": "运动服"
+      },
+      {
+       "data": "19",
+       "desc": "摇篮柔洗"
+      },
+      {
+       "data": "20",
+       "desc": "爱婴洗"
+      },
+      {
+       "data": "21",
+       "desc": "即时"
+      },
+      {
+       "data": "22",
+       "desc": "真丝"
+      },
+      {
+       "data": "23",
+       "desc": "记忆洗"
+      },
+      {
+       "data": "24",
+       "desc": "护色洗"
+      },
+      {
+       "data": "25",
+       "desc": "手洗"
+      },
+      {
+       "data": "26",
+       "desc": "毛巾"
+      },
+      {
+       "data": "27",
+       "desc": "漂洗"
+      },
+      {
+       "data": "28",
+       "desc": "单脱水"
+      },
+      {
+       "data": "29",
+       "desc": "单烘干"
+      },
+      {
+       "data": "30",
+       "desc": "除毛洗"
+      },
+      {
+       "data": "31",
+       "desc": "床单"
+      },
+      {
+       "data": "32",
+       "desc": "户外服"
+      },
+      {
+       "data": "33",
+       "desc": "夜洗"
+      },
+      {
+       "data": "34",
+       "desc": "架干燥"
+      },
+      {
+       "data": "35",
+       "desc": "抖散"
+      },
+      {
+       "data": "36",
+       "desc": "护肤洗"
+      },
+      {
+       "data": "37",
+       "desc": "消毒洗"
+      },
+      {
+       "data": "38",
+       "desc": "高端专属"
+      },
+      {
+       "data": "39",
+       "desc": "棉麻快洗"
+      },
+      {
+       "data": "40",
+       "desc": "加强洗"
+      },
+      {
+       "data": "41",
+       "desc": "熨烫"
+      },
+      {
+       "data": "42",
+       "desc": "小太阳"
+      },
+      {
+       "data": "43",
+       "desc": "定时烘干"
+      },
+      {
+       "data": "44",
+       "desc": "衣架烘干"
+      },
+      {
+       "data": "45",
+       "desc": "在线洗"
+      },
+      {
+       "data": "46",
+       "desc": "巨浪洗"
+      },
+      {
+       "data": "47",
+       "desc": "CTTN棉麻"
+      },
+      {
+       "data": "48",
+       "desc": "CTTN化纤"
+      },
+      {
+       "data": "49",
+       "desc": "防过敏"
+      },
+      {
+       "data": "50",
+       "desc": "除异味"
+      },
+      {
+       "data": "51",
+       "desc": "时间洗"
+      },
+      {
+       "data": "52",
+       "desc": "冲锋衣"
+      },
+      {
+       "data": "53",
+       "desc": "App自诊断"
+      },
+      {
+       "data": "54",
+       "desc": "毛毯洗"
+      },
+      {
+       "data": "55",
+       "desc": "Standard"
+      },
+      {
+       "data": "56",
+       "desc": "智慧洗"
+      },
+      {
+       "data": "57",
+       "desc": "智慧云洗"
+      },
+      {
+       "data": "58",
+       "desc": "浴巾"
+      },
+      {
+       "data": "59",
+       "desc": "紫外除菌"
+      },
+      {
+       "data": "60",
+       "desc": "蒸汽除螨"
+      },
+      {
+       "data": "61",
+       "desc": "巴氏杀菌"
+      },
+      {
+       "data": "62",
+       "desc": "超级空气洗"
+      },
+      {
+       "data": "63",
+       "desc": "超级洗"
+      },
+      {
+       "data": "64",
+       "desc": "FPA快洗30"
+      },
+      {
+       "data": "65",
+       "desc": "快洗烘"
+      },
+      {
+       "data": "66",
+       "desc": "美颜洗"
+      },
+      {
+       "data": "67",
+       "desc": "棉麻20"
+      },
+      {
+       "data": "68",
+       "desc": "新欧标性能"
+      },
+      {
+       "data": "69",
+       "desc": "欧标性能洗烘"
+      },
+      {
+       "data": "70",
+       "desc": "香薰"
+      },
+      {
+       "data": "71",
+       "desc": "水雾清新"
+      },
+      {
+       "data": "72",
+       "desc": "貂皮"
+      },
+      {
+       "data": "73",
+       "desc": "蚕丝被"
+      },
+      {
+       "data": "74",
+       "desc": "校服"
+      },
+      {
+       "data": "75",
+       "desc": "皮毛一体"
+      },
+      {
+       "data": "76",
+       "desc": "羊毛衫"
+      },
+      {
+       "data": "77",
+       "desc": "雪纺纱"
+      },
+      {
+       "data": "78",
+       "desc": "西装"
+      },
+      {
+       "data": "79",
+       "desc": "家纺"
+      },
+      {
+       "data": "80",
+       "desc": "毛绒玩具"
+      },
+      {
+       "data": "81",
+       "desc": "口罩"
+      },
+      {
+       "data": "82",
+       "desc": "快洗39"
+      },
+      {
+       "data": "83",
+       "desc": "换季洗"
+      },
+      {
+       "data": "84",
+       "desc": "欧标棉麻"
+      },
+      {
+       "data": "85",
+       "desc": "欧标化纤"
+      },
+      {
+       "data": "86",
+       "desc": "混合2"
+      },
+      {
+       "data": "87",
+       "desc": "新衣洗2"
+      },
+      {
+       "data": "88",
+       "desc": "智慧洗烘"
+      },
+      {
+       "data": "89",
+       "desc": "毛呢"
+      },
+      {
+       "data": "90",
+       "desc": "奢品家纺"
+      },
+      {
+       "data": "91",
+       "desc": "筒洗烘"
+      },
+      {
+       "data": "92",
+       "desc": "亚麻"
+      },
+      {
+       "data": "93",
+       "desc": "香护"
+      },
+      {
+       "data": "94",
+       "desc": "留香洗"
+      },
+      {
+       "data": "95",
+       "desc": "摇粒绒"
+      },
+      {
+       "data": "96",
+       "desc": "奢护"
+      },
+      {
+       "data": "97",
+       "desc": "蒸汽智慧洗"
+      },
+      {
+       "data": "98",
+       "desc": "衬衣蒸汽洗"
+      },
+      {
+       "data": "99",
+       "desc": "爱婴蒸汽洗"
+      },
+      {
+       "data": "100",
+       "desc": "蒸汽防过敏"
+      },
+      {
+       "data": "101",
+       "desc": "运动Bra"
+      },
+      {
+       "data": "102",
+       "desc": "无感Bra"
+      },
+      {
+       "data": "103",
+       "desc": "塑形Bra"
+      },
+      {
+       "data": "104",
+       "desc": "蕾丝Bra"
+      },
+      {
+       "data": "105",
+       "desc": "内裤"
+      },
+      {
+       "data": "106",
+       "desc": "蓝色消毒"
+      },
+      {
+       "data": "107",
+       "desc": "隔离快净"
+      },
+      {
+       "data": "108",
+       "desc": "快速20"
+      },
+      {
+       "data": "109",
+       "desc": "快速30"
+      },
+      {
+       "data": "110",
+       "desc": "工作服"
+      },
+      {
+       "data": "111",
+       "desc": "尿布"
+      },
+      {
+       "data": "112",
+       "desc": "鞋子"
+      },
+      {
+       "data": "113",
+       "desc": "精细"
+      },
+      {
+       "data": "114",
+       "desc": "休闲装"
+      },
+      {
+       "data": "115",
+       "desc": "冷风30"
+      },
+      {
+       "data": "116",
+       "desc": "热风定时"
+      },
+      {
+       "data": "117",
+       "desc": "冷风定时"
+      },
+      {
+       "data": "118",
+       "desc": "除菌"
+      },
+      {
+       "data": "119",
+       "desc": "羊毛大衣"
+      },
+      {
+       "data": "120",
+       "desc": "婴童衣被"
+      },
+      {
+       "data": "121",
+       "desc": "纯棉婴儿装"
+      },
+      {
+       "data": "122",
+       "desc": "棉质床品"
+      },
+      {
+       "data": "123",
+       "desc": "亚麻西装"
+      },
+      {
+       "data": "124",
+       "desc": "抓绒衣"
+      },
+      {
+       "data": "125",
+       "desc": "保养"
+      },
+      {
+       "data": "126",
+       "desc": "皮革保养"
+      },
+      {
+       "data": "127",
+       "desc": "皮草保养"
+      },
+      {
+       "data": "128",
+       "desc": "织物靓色"
+      },
+      {
+       "data": "129",
+       "desc": "织物香护"
+      },
+      {
+       "data": "130",
+       "desc": "暖衣"
+      },
+      {
+       "data": "131",
+       "desc": "被子"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "开关机状态",
+    "invisible": false,
+    "name": "onOffStatus",
+    "operationType": "I",
+    "readable": true,
+    "value": "true",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开机"
+      },
+      {
+       "data": "false",
+       "desc": "关机"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "查询所有属性",
+    "invisible": true,
+    "name": "getAllProperty",
+    "operationType": "I",
+    "readable": true,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "getAllProperty"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "防过敏功能状态",
+    "invisible": false,
+    "name": "antiAllergyStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "洗衣机减漂洗操作有无",
+    "invisible": false,
+    "name": "rinseDecreaseOpStatus",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "有"
+      },
+      {
+       "data": "false",
+       "desc": "无"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "洗衣机云程序编号",
+    "invisible": false,
+    "name": "washerCloudProgId",
+    "operationType": "G",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65534",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "SPA漂洗加热功能",
+    "invisible": false,
+    "name": "spaRinseHeatStatus",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "洗衣机运行状态",
+    "invisible": false,
+    "name": "washerRunningMode",
+    "operationType": "I",
+    "readable": true,
+    "value": "1",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "1",
+       "desc": "启动"
+      },
+      {
+       "data": "2",
+       "desc": "暂停"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "洗衣机远程控制有无",
+    "invisible": false,
+    "name": "washerRemoteCtrValid",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "有效"
+      },
+      {
+       "data": "false",
+       "desc": "无效"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "洗涤剂类型",
+    "invisible": false,
+    "name": "detergentType",
+    "readable": true,
+    "value": "1",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "1",
+       "desc": "普通型"
+      },
+      {
+       "data": "2",
+       "desc": "浓缩型"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "洗衣机烘干时间",
+    "invisible": false,
+    "name": "washerDryTime",
+    "operationType": "G",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "600",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "1",
+    "desc": "干衣机烘干模式",
+    "invisible": false,
+    "name": "dryerDryMode",
+    "operationType": "IG",
+    "readable": true,
+    "value": "1",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "1",
+       "desc": "正常烘干"
+      },
+      {
+       "data": "2",
+       "desc": "节能烘干"
+      },
+      {
+       "data": "3",
+       "desc": "快速烘干"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "墨盒3排残液",
+    "invisible": false,
+    "name": "box3DischargeResidualLiquid",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "快烘功能状态",
+    "invisible": false,
+    "name": "fastDryStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "最高速脱水+智能烘干",
+    "invisible": false,
+    "name": "maxSpinIntDry",
+    "operationType": "I",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "1",
+       "desc": "执行"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "延时待机时间设定有无",
+    "invisible": false,
+    "name": "standbyTimeExtended",
+    "readable": true,
+    "value": "true",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "有"
+      },
+      {
+       "data": "false",
+       "desc": "无"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "洗衣机统一衣物材质",
+    "invisible": false,
+    "name": "washerUnifiedClothingMaterial",
+    "operationType": "G",
+    "readable": true,
+    "value": "1",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "空"
+      },
+      {
+       "data": "1",
+       "desc": "棉麻"
+      },
+      {
+       "data": "2",
+       "desc": "化纤"
+      },
+      {
+       "data": "3",
+       "desc": "羽绒"
+      },
+      {
+       "data": "4",
+       "desc": "窗帘"
+      },
+      {
+       "data": "5",
+       "desc": "混合"
+      },
+      {
+       "data": "6",
+       "desc": "衬衣"
+      },
+      {
+       "data": "7",
+       "desc": "童装"
+      },
+      {
+       "data": "8",
+       "desc": "轻柔"
+      },
+      {
+       "data": "9",
+       "desc": "烫烫净"
+      },
+      {
+       "data": "10",
+       "desc": "羊毛"
+      },
+      {
+       "data": "11",
+       "desc": "牛仔"
+      },
+      {
+       "data": "12",
+       "desc": "空气洗"
+      },
+      {
+       "data": "13",
+       "desc": "筒自洁"
+      },
+      {
+       "data": "14",
+       "desc": "内衣"
+      },
+      {
+       "data": "15",
+       "desc": "快洗15"
+      },
+      {
+       "data": "16",
+       "desc": "快洗29"
+      },
+      {
+       "data": "17",
+       "desc": "大件"
+      },
+      {
+       "data": "18",
+       "desc": "运动服"
+      },
+      {
+       "data": "19",
+       "desc": "摇篮柔洗"
+      },
+      {
+       "data": "20",
+       "desc": "爱婴洗"
+      },
+      {
+       "data": "21",
+       "desc": "即时"
+      },
+      {
+       "data": "22",
+       "desc": "真丝"
+      },
+      {
+       "data": "23",
+       "desc": "记忆洗"
+      },
+      {
+       "data": "24",
+       "desc": "护色洗"
+      },
+      {
+       "data": "25",
+       "desc": "手洗"
+      },
+      {
+       "data": "26",
+       "desc": "毛巾"
+      },
+      {
+       "data": "27",
+       "desc": "漂洗"
+      },
+      {
+       "data": "28",
+       "desc": "单脱水"
+      },
+      {
+       "data": "29",
+       "desc": "单烘干"
+      },
+      {
+       "data": "30",
+       "desc": "除毛洗"
+      },
+      {
+       "data": "31",
+       "desc": "床单"
+      },
+      {
+       "data": "32",
+       "desc": "户外服"
+      },
+      {
+       "data": "33",
+       "desc": "夜洗"
+      },
+      {
+       "data": "34",
+       "desc": "架干燥"
+      },
+      {
+       "data": "35",
+       "desc": "抖散"
+      },
+      {
+       "data": "36",
+       "desc": "护肤洗"
+      },
+      {
+       "data": "37",
+       "desc": "消毒洗"
+      },
+      {
+       "data": "38",
+       "desc": "高端专属"
+      },
+      {
+       "data": "39",
+       "desc": "棉麻快洗"
+      },
+      {
+       "data": "40",
+       "desc": "加强洗"
+      },
+      {
+       "data": "41",
+       "desc": "熨烫"
+      },
+      {
+       "data": "42",
+       "desc": "小太阳"
+      },
+      {
+       "data": "43",
+       "desc": "定时烘干"
+      },
+      {
+       "data": "44",
+       "desc": "衣架烘干"
+      },
+      {
+       "data": "45",
+       "desc": "在线洗"
+      },
+      {
+       "data": "46",
+       "desc": "巨浪洗"
+      },
+      {
+       "data": "47",
+       "desc": "CTTN棉麻"
+      },
+      {
+       "data": "48",
+       "desc": "CTTN化纤"
+      },
+      {
+       "data": "49",
+       "desc": "防过敏"
+      },
+      {
+       "data": "50",
+       "desc": "除异味"
+      },
+      {
+       "data": "51",
+       "desc": "时间洗"
+      },
+      {
+       "data": "52",
+       "desc": "冲锋衣"
+      },
+      {
+       "data": "53",
+       "desc": "App自诊断"
+      },
+      {
+       "data": "54",
+       "desc": "毛毯洗"
+      },
+      {
+       "data": "55",
+       "desc": "Standard"
+      },
+      {
+       "data": "56",
+       "desc": "智慧洗"
+      },
+      {
+       "data": "57",
+       "desc": "智慧云洗"
+      },
+      {
+       "data": "58",
+       "desc": "浴巾"
+      },
+      {
+       "data": "59",
+       "desc": "紫外除菌"
+      },
+      {
+       "data": "60",
+       "desc": "蒸汽除螨"
+      },
+      {
+       "data": "61",
+       "desc": "巴氏杀菌"
+      },
+      {
+       "data": "62",
+       "desc": "超级空气洗"
+      },
+      {
+       "data": "63",
+       "desc": "超级洗"
+      },
+      {
+       "data": "64",
+       "desc": "FPA快洗30"
+      },
+      {
+       "data": "65",
+       "desc": "快洗烘"
+      },
+      {
+       "data": "66",
+       "desc": "美颜洗"
+      },
+      {
+       "data": "67",
+       "desc": "棉麻20"
+      },
+      {
+       "data": "68",
+       "desc": "新欧标性能"
+      },
+      {
+       "data": "69",
+       "desc": "欧标性能洗烘"
+      },
+      {
+       "data": "70",
+       "desc": "香薰"
+      },
+      {
+       "data": "71",
+       "desc": "水雾清新"
+      },
+      {
+       "data": "72",
+       "desc": "貂皮"
+      },
+      {
+       "data": "73",
+       "desc": "蚕丝被"
+      },
+      {
+       "data": "74",
+       "desc": "校服"
+      },
+      {
+       "data": "75",
+       "desc": "皮毛一体"
+      },
+      {
+       "data": "76",
+       "desc": "羊毛衫"
+      },
+      {
+       "data": "77",
+       "desc": "雪纺纱"
+      },
+      {
+       "data": "78",
+       "desc": "西装"
+      },
+      {
+       "data": "79",
+       "desc": "家纺"
+      },
+      {
+       "data": "80",
+       "desc": "毛绒玩具"
+      },
+      {
+       "data": "81",
+       "desc": "口罩"
+      },
+      {
+       "data": "82",
+       "desc": "快洗39"
+      },
+      {
+       "data": "83",
+       "desc": "换季洗"
+      },
+      {
+       "data": "84",
+       "desc": "欧标棉麻"
+      },
+      {
+       "data": "85",
+       "desc": "欧标化纤"
+      },
+      {
+       "data": "86",
+       "desc": "混合2"
+      },
+      {
+       "data": "87",
+       "desc": "新衣洗2"
+      },
+      {
+       "data": "88",
+       "desc": "智慧洗烘"
+      },
+      {
+       "data": "89",
+       "desc": "毛呢"
+      },
+      {
+       "data": "90",
+       "desc": "奢品家纺"
+      },
+      {
+       "data": "91",
+       "desc": "筒洗烘"
+      },
+      {
+       "data": "92",
+       "desc": "亚麻"
+      },
+      {
+       "data": "93",
+       "desc": "香护"
+      },
+      {
+       "data": "94",
+       "desc": "留香洗"
+      },
+      {
+       "data": "95",
+       "desc": "摇粒绒"
+      },
+      {
+       "data": "96",
+       "desc": "奢护"
+      },
+      {
+       "data": "97",
+       "desc": "蒸汽智慧洗"
+      },
+      {
+       "data": "98",
+       "desc": "衬衣蒸汽洗"
+      },
+      {
+       "data": "99",
+       "desc": "爱婴蒸汽洗"
+      },
+      {
+       "data": "100",
+       "desc": "蒸汽防过敏"
+      },
+      {
+       "data": "101",
+       "desc": "运动Bra"
+      },
+      {
+       "data": "102",
+       "desc": "无感Bra"
+      },
+      {
+       "data": "103",
+       "desc": "塑形Bra"
+      },
+      {
+       "data": "104",
+       "desc": "蕾丝Bra"
+      },
+      {
+       "data": "105",
+       "desc": "内裤"
+      },
+      {
+       "data": "106",
+       "desc": "蓝色消毒"
+      },
+      {
+       "data": "107",
+       "desc": "隔离快净"
+      },
+      {
+       "data": "108",
+       "desc": "快速20"
+      },
+      {
+       "data": "109",
+       "desc": "快速30"
+      },
+      {
+       "data": "110",
+       "desc": "工作服"
+      },
+      {
+       "data": "111",
+       "desc": "尿布"
+      },
+      {
+       "data": "112",
+       "desc": "鞋子"
+      },
+      {
+       "data": "113",
+       "desc": "精细"
+      },
+      {
+       "data": "114",
+       "desc": "休闲装"
+      },
+      {
+       "data": "115",
+       "desc": "冷风30"
+      },
+      {
+       "data": "116",
+       "desc": "热风定时"
+      },
+      {
+       "data": "117",
+       "desc": "冷风定时"
+      },
+      {
+       "data": "118",
+       "desc": "除菌"
+      },
+      {
+       "data": "119",
+       "desc": "羊毛大衣"
+      },
+      {
+       "data": "120",
+       "desc": "婴童衣被"
+      },
+      {
+       "data": "121",
+       "desc": "纯棉婴儿装"
+      },
+      {
+       "data": "122",
+       "desc": "棉质床品"
+      },
+      {
+       "data": "123",
+       "desc": "亚麻西装"
+      },
+      {
+       "data": "124",
+       "desc": "抓绒衣"
+      },
+      {
+       "data": "125",
+       "desc": "保养"
+      },
+      {
+       "data": "126",
+       "desc": "皮革保养"
+      },
+      {
+       "data": "127",
+       "desc": "皮草保养"
+      },
+      {
+       "data": "128",
+       "desc": "织物靓色"
+      },
+      {
+       "data": "129",
+       "desc": "织物香护"
+      },
+      {
+       "data": "130",
+       "desc": "暖衣"
+      },
+      {
+       "data": "131",
+       "desc": "被子"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机风力等级",
+    "invisible": false,
+    "name": "dryerWindForceLevel",
+    "operationType": "IG",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "20",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "墨盒2投放量",
+    "invisible": false,
+    "name": "box2Volume",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "漂洗水位设定",
+    "invisible": false,
+    "name": "rinseWaterLevel",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "洗烘联动功能状态",
+    "invisible": false,
+    "name": "wdLinkageStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "干衣机门锁状态",
+    "invisible": false,
+    "name": "dryerDoorLockStatus",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "上锁"
+      },
+      {
+       "data": "false",
+       "desc": "解锁"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "墨盒3投放类型",
+    "invisible": false,
+    "name": "box3LiquidType",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "未放置"
+      },
+      {
+       "data": "1",
+       "desc": "未知"
+      },
+      {
+       "data": "2",
+       "desc": "精粹洗衣液"
+      },
+      {
+       "data": "3",
+       "desc": "净白助洗剂"
+      },
+      {
+       "data": "4",
+       "desc": "柔顺亮白剂"
+      },
+      {
+       "data": "5",
+       "desc": "亮色助洗剂"
+      },
+      {
+       "data": "6",
+       "desc": "母婴精洗液"
+      },
+      {
+       "data": "255",
+       "desc": "异常"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "true",
+    "desc": "是否是本机端存储的云程序",
+    "invisible": false,
+    "name": "localStoredCloudProgramFlag",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "是"
+      },
+      {
+       "data": "false",
+       "desc": "不是"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "柔顺剂投放量",
+    "invisible": false,
+    "name": "haier_SoftenerWeight",
+    "operationType": "G",
+    "readable": true,
+    "value": "40",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "设定衣物重量(运行后确定的重量)",
+    "invisible": false,
+    "name": "weight",
+    "operationType": "IG",
+    "readable": true,
+    "value": "4",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Double",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "衣物信息中字",
+    "invisible": false,
+    "name": "clothesInfoMW",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "desc": "洗衣机洗涤阶段",
+    "invisible": false,
+    "name": "laundryCyclePhase",
+    "readable": true,
+    "value": "9",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "待机/未启动"
+      },
+      {
+       "data": "1",
+       "desc": "称重"
+      },
+      {
+       "data": "2",
+       "desc": "重量提示"
+      },
+      {
+       "data": "3",
+       "desc": "洗涤进水"
+      },
+      {
+       "data": "4",
+       "desc": "洗涤加热"
+      },
+      {
+       "data": "5",
+       "desc": "洗涤"
+      },
+      {
+       "data": "6",
+       "desc": "洗涤排水"
+      },
+      {
+       "data": "7",
+       "desc": "中间脱水"
+      },
+      {
+       "data": "8",
+       "desc": "漂洗进水"
+      },
+      {
+       "data": "9",
+       "desc": "漂洗"
+      },
+      {
+       "data": "10",
+       "desc": "漂洗排水"
+      },
+      {
+       "data": "11",
+       "desc": "最终脱水"
+      },
+      {
+       "data": "12",
+       "desc": "烘干"
+      },
+      {
+       "data": "13",
+       "desc": "冷却"
+      },
+      {
+       "data": "14",
+       "desc": "结束"
+      },
+      {
+       "data": "15",
+       "desc": "预约运行中"
+      },
+      {
+       "data": "16",
+       "desc": "洗衣程序运行完抖散中"
+      },
+      {
+       "data": "17",
+       "desc": "洗衣程序运行完烘干中"
+      },
+      {
+       "data": "18",
+       "desc": "洗衣程序运行完烘干结束"
+      },
+      {
+       "data": "19",
+       "desc": "洗衣程序运行完抖散结束"
+      },
+      {
+       "data": "20",
+       "desc": "护理中"
+      },
+      {
+       "data": "21",
+       "desc": "预洗进水"
+      },
+      {
+       "data": "22",
+       "desc": "预洗"
+      },
+      {
+       "data": "23",
+       "desc": "预洗加热"
+      },
+      {
+       "data": "24",
+       "desc": "预洗排水"
+      },
+      {
+       "data": "25",
+       "desc": "风干"
+      },
+      {
+       "data": "26",
+       "desc": "检测中"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "墨盒3余量状态",
+    "invisible": false,
+    "name": "box3RemainingStatus",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "未知"
+      },
+      {
+       "data": "1",
+       "desc": "有"
+      },
+      {
+       "data": "2",
+       "desc": "少"
+      },
+      {
+       "data": "3",
+       "desc": "无"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "累计用水量",
+    "invisible": false,
+    "name": "totalWaterUsed",
+    "readable": true,
+    "value": "98",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "4294967295",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "true",
+    "desc": "干衣机除菌功能状态",
+    "invisible": false,
+    "name": "dryerSterilizationStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "当前剩余/预约时间分钟",
+    "invisible": false,
+    "name": "remainingTimeMM",
+    "readable": true,
+    "value": "14",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "59",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "desc": "墨盒2余量状态",
+    "invisible": false,
+    "name": "box2RemainingStatus",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "未知"
+      },
+      {
+       "data": "1",
+       "desc": "有"
+      },
+      {
+       "data": "2",
+       "desc": "少"
+      },
+      {
+       "data": "3",
+       "desc": "无"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "洗衣机是否支持设置默认参数",
+    "invisible": false,
+    "name": "washerDefSetAllowed",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "可以设置"
+      },
+      {
+       "data": "false",
+       "desc": "不可设置"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "true",
+    "desc": "蜂鸣音静音",
+    "invisible": false,
+    "name": "buzzerDisabled",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "蜂鸣器静音"
+      },
+      {
+       "data": "false",
+       "desc": "蜂鸣器不静音"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "干衣机衣物重量",
+    "invisible": false,
+    "name": "dryerWeight",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "desc": "烘干系统诊断结果",
+    "invisible": false,
+    "name": "drySysDiagResult",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "诊断通过"
+      },
+      {
+       "data": "false",
+       "desc": "未诊断或不合格"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "程序是否已运行",
+    "invisible": false,
+    "name": "laundryCycleStatus",
+    "readable": true,
+    "value": "true",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "已运行"
+      },
+      {
+       "data": "false",
+       "desc": "未运行"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "true",
+    "desc": "净白助洗剂投放状态",
+    "invisible": false,
+    "name": "dispersantInjectStatus",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "干衣机剩余预约时间",
+    "invisible": false,
+    "name": "dryerRemainingResnTime",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "true",
+    "desc": "烘干程序标志位",
+    "invisible": false,
+    "name": "dryProgFlag",
+    "operationType": "G",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "童锁状态",
+    "invisible": false,
+    "name": "childLockStatus",
+    "operationType": "I",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "锁定"
+      },
+      {
+       "data": "false",
+       "desc": "解锁"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "衣物信息低字",
+    "invisible": false,
+    "name": "clothesInfoLW",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "true",
+    "desc": "蒸汽洗状态",
+    "invisible": false,
+    "name": "steamWashStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "洗衣机智慧洗衣程序状态",
+    "invisible": false,
+    "name": "washerIntelligenceStatus",
+    "operationType": "G",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "设置柔顺剂投放比例",
+    "invisible": false,
+    "name": "softenerPercent",
+    "operationType": "IG",
+    "readable": true,
+    "value": "100",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "洗涤剂自动投放功能状态",
+    "invisible": false,
+    "name": "autoDetergentStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "true",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "周期内累计洗涤次数",
+    "invisible": false,
+    "name": "currentWashCycle",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "true",
+    "desc": "洗衣机免熨烫功能状态",
+    "invisible": false,
+    "name": "washerPermanentPressStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "干衣机程序运行阶段",
+    "invisible": false,
+    "name": "dryerCyclePhase",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "待机状态"
+      },
+      {
+       "data": "1",
+       "desc": "预约运行"
+      },
+      {
+       "data": "2",
+       "desc": "冷风1"
+      },
+      {
+       "data": "3",
+       "desc": "加热1"
+      },
+      {
+       "data": "4",
+       "desc": "加热2"
+      },
+      {
+       "data": "5",
+       "desc": "冷风2"
+      },
+      {
+       "data": "6",
+       "desc": "程序结束"
+      },
+      {
+       "data": "7",
+       "desc": "防皱"
+      },
+      {
+       "data": "8",
+       "desc": "自动判断负载中"
+      },
+      {
+       "data": "9",
+       "desc": "护理中"
+      },
+      {
+       "data": "10",
+       "desc": "预烘中"
+      },
+      {
+       "data": "11",
+       "desc": "保养中"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "脏污度",
+    "invisible": false,
+    "name": "dirtyLevel",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "不设定脏污度"
+      },
+      {
+       "data": "1",
+       "desc": "自动测定脏污度，自动添加洗涤剂"
+      },
+      {
+       "data": "2",
+       "desc": "轻度脏污，自动添加洗涤剂"
+      },
+      {
+       "data": "3",
+       "desc": "中度脏污，自动添加洗涤剂"
+      },
+      {
+       "data": "4",
+       "desc": "重度脏污，自动添加洗涤剂"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "true",
+    "desc": "洗涤剂B投放状态",
+    "invisible": false,
+    "name": "detergentBStatus",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "本次用水量",
+    "invisible": false,
+    "name": "currentWaterUsed",
+    "readable": true,
+    "value": "58",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "主洗停止时间(组命令)",
+    "invisible": false,
+    "name": "haier_MainWashStopTime",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "180",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "衣物负离子功能状态",
+    "invisible": false,
+    "name": "clothesAnionStatus",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "剩余漂洗次数",
+    "invisible": false,
+    "name": "remainingRinseTimes",
+    "readable": true,
+    "value": "1",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "10",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "desc": "干衣机远程控制有无",
+    "invisible": false,
+    "name": "dryerRemoteCtrValid",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "有效"
+      },
+      {
+       "data": "false",
+       "desc": "无效"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "墨盒1投放量",
+    "invisible": false,
+    "name": "box1Volume",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "漂洗停止时间(组命令)",
+    "invisible": false,
+    "name": "haier_RinseStopTime",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "180",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "洗涤系统诊断结果",
+    "invisible": false,
+    "name": "washSysDiagResult",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "诊断通过"
+      },
+      {
+       "data": "false",
+       "desc": "未诊断或不合格"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "墨盒1浓度",
+    "invisible": false,
+    "name": "box1Concentration",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "默认"
+      },
+      {
+       "data": "1",
+       "desc": "浓缩++"
+      },
+      {
+       "data": "2",
+       "desc": "浓缩+"
+      },
+      {
+       "data": "3",
+       "desc": "浓缩"
+      },
+      {
+       "data": "4",
+       "desc": "普通"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "洗衣机本机程序名1",
+    "invisible": false,
+    "name": "washerLocalProgName1",
+    "readable": true,
+    "value": "smart_local",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": ""
+      }
+     ],
+     "type": "NONE"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "程序类别",
+    "invisible": false,
+    "name": "programClass",
+    "operationType": "G",
+    "readable": true,
+    "value": "1",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "不支持"
+      },
+      {
+       "data": "1",
+       "desc": "普通程序"
+      },
+      {
+       "data": "2",
+       "desc": "空气洗类程序"
+      },
+      {
+       "data": "3",
+       "desc": "智能匀烘类程序"
+      },
+      {
+       "data": "4",
+       "desc": "保养类程序"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "洗涤剂投放量",
+    "invisible": false,
+    "name": "haier_DetergentWeight",
+    "operationType": "G",
+    "readable": true,
+    "value": "34",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "洗衣机本机程序名2",
+    "invisible": false,
+    "name": "washerLocalProgName2",
+    "readable": true,
+    "value": "1se72w==",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": ""
+      }
+     ],
+     "type": "NONE"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "设定漂洗次数",
+    "invisible": false,
+    "name": "rinseTimes",
+    "operationType": "IG",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "10",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "远程开机启用状态",
+    "invisible": false,
+    "name": "remotePowerOn",
+    "operationType": "I",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开启"
+      },
+      {
+       "data": "false",
+       "desc": "关闭"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "浸泡/预洗阶段选择(组命令)",
+    "invisible": false,
+    "name": "haier_SoakPrewashSelection",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "无"
+      },
+      {
+       "data": "1",
+       "desc": "单浸泡"
+      },
+      {
+       "data": "2",
+       "desc": "单预洗"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数9",
+    "invisible": false,
+    "name": "airWashPara9",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "脱水转速",
+    "invisible": false,
+    "name": "spinSpeed",
+    "operationType": "IG",
+    "readable": true,
+    "value": "1000",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "1600",
+      "minValue": "0",
+      "step": "10"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "干衣机负离子状态",
+    "invisible": false,
+    "name": "dryerAnionStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数7",
+    "invisible": false,
+    "name": "airWashPara7",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "洗衣机节能洗功能状态",
+    "invisible": false,
+    "name": "washerEnergySavingStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数8",
+    "invisible": false,
+    "name": "airWashPara8",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数5",
+    "invisible": false,
+    "name": "airWashPara5",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "浸泡/预洗转速(组命令)",
+    "invisible": false,
+    "name": "haier_SoakPrewashSpeed",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "60",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数6",
+    "invisible": false,
+    "name": "airWashPara6",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "漂洗加热温度",
+    "invisible": false,
+    "name": "rinseHeatTemperature",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "100",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数3",
+    "invisible": false,
+    "name": "airWashPara3",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数4",
+    "invisible": false,
+    "name": "airWashPara4",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数1",
+    "invisible": false,
+    "name": "airWashPara1",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数2",
+    "invisible": false,
+    "name": "airWashPara2",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "净水洗程序状态",
+    "invisible": false,
+    "name": "purifiedWashStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "进水系统诊断结果",
+    "invisible": false,
+    "name": "inWaterSysDiagResult",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "诊断通过"
+      },
+      {
+       "data": "false",
+       "desc": "未诊断或不合格"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "发送生产测试命令",
+    "invisible": false,
+    "name": "sendTestCmd",
+    "operationType": "I",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "1",
+       "desc": "执行"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "设定洗涤转速",
+    "invisible": false,
+    "name": "washSpeed",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "浸泡/预洗停止时间(组命令)",
+    "invisible": false,
+    "name": "haier_SoakPrewashStopTime",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "60",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "干衣机筒门状态",
+    "invisible": false,
+    "name": "dryerDoorStatus",
+    "readable": true,
+    "value": "true",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "true",
+    "desc": "高水位功能状态",
+    "invisible": false,
+    "name": "highWaterLevelStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "水硬度值",
+    "invisible": false,
+    "name": "hardnessValue",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "2550",
+      "minValue": "0",
+      "step": "10"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数13",
+    "invisible": false,
+    "name": "dryerAirWashPara13",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "墨盒4投放功能状态",
+    "invisible": false,
+    "name": "box4InjectStatus",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "墨盒3投放功能状态",
+    "invisible": false,
+    "name": "box3InjectStatus",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数12",
+    "invisible": false,
+    "name": "dryerAirWashPara12",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数11",
+    "invisible": false,
+    "name": "dryerAirWashPara11",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数10",
+    "invisible": false,
+    "name": "dryerAirWashPara10",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数17",
+    "invisible": false,
+    "name": "dryerAirWashPara17",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数16",
+    "invisible": false,
+    "name": "dryerAirWashPara16",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "浸泡/预洗时间(组命令)",
+    "invisible": false,
+    "name": "haier_SoakPrewashTime",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "30",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "漂洗时间(组命令)",
+    "invisible": false,
+    "name": "haier_RinseTime",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "16",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数15",
+    "invisible": false,
+    "name": "dryerAirWashPara15",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0.0",
+    "desc": "洗衣机预约时间",
+    "invisible": false,
+    "name": "washerResnTime",
+    "operationType": "IG",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Double",
+      "maxValue": "24.0",
+      "minValue": "0.0",
+      "step": "0.5"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数14",
+    "invisible": false,
+    "name": "dryerAirWashPara14",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "洗衣机增漂洗操作有无",
+    "invisible": false,
+    "name": "rinseIncreaseOpStatus",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "有"
+      },
+      {
+       "data": "false",
+       "desc": "无"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数19",
+    "invisible": false,
+    "name": "dryerAirWashPara19",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数18",
+    "invisible": false,
+    "name": "dryerAirWashPara18",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "当前衣物识别结果",
+    "invisible": false,
+    "name": "clothesRecogResult",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "desc": "墨盒2投放功能状态",
+    "invisible": false,
+    "name": "box2InjectStatus",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "墨盒1投放功能状态",
+    "invisible": false,
+    "name": "box1InjectStatus",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "浸泡/预洗转动时间(组命令)",
+    "invisible": false,
+    "name": "haier_SoakPrewashRotateTime",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "60",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "墨盒1排残液",
+    "invisible": false,
+    "name": "box1DischargeResidualLiquid",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "墨盒3投放量",
+    "invisible": false,
+    "name": "box3Volume",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "desc": "洗衣机上电状态",
+    "invisible": false,
+    "name": "washerPowerStatus",
+    "readable": true,
+    "value": "true",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "上电"
+      },
+      {
+       "data": "false",
+       "desc": "未上电"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "衣物信息高字",
+    "invisible": false,
+    "name": "clothesInfoHW",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "浸泡/预洗温度(组命令)",
+    "invisible": false,
+    "name": "haier_SoakPrewashTemperature",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Double",
+      "maxValue": "60",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数20",
+    "invisible": false,
+    "name": "dryerAirWashPara20",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "1",
+    "desc": "干衣机空气洗模式",
+    "invisible": false,
+    "name": "dryerAirWashMode",
+    "operationType": "IG",
+    "readable": true,
+    "value": "1",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "1",
+       "desc": "标准"
+      },
+      {
+       "data": "2",
+       "desc": "除皱"
+      },
+      {
+       "data": "3",
+       "desc": "暖衣"
+      },
+      {
+       "data": "4",
+       "desc": "袪味"
+      },
+      {
+       "data": "5",
+       "desc": "蓬松"
+      },
+      {
+       "data": "6",
+       "desc": "除潮"
+      },
+      {
+       "data": "7",
+       "desc": "除醛"
+      },
+      {
+       "data": "8",
+       "desc": "除菌"
+      },
+      {
+       "data": "9",
+       "desc": "养护"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "漂洗转动时间(组命令)",
+    "invisible": false,
+    "name": "haier_RinseRotateTime",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "60",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "洗衣机烘干程序",
+    "invisible": false,
+    "name": "washerDryMode",
+    "operationType": "I",
+    "readable": true,
+    "value": "10",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "无烘干过程"
+      },
+      {
+       "data": "1",
+       "desc": "强烘"
+      },
+      {
+       "data": "2",
+       "desc": "弱烘"
+      },
+      {
+       "data": "3",
+       "desc": "熨烫"
+      },
+      {
+       "data": "4",
+       "desc": "120分钟烘干"
+      },
+      {
+       "data": "5",
+       "desc": "90分钟烘干"
+      },
+      {
+       "data": "6",
+       "desc": "60分钟烘干"
+      },
+      {
+       "data": "7",
+       "desc": "30分钟烘干"
+      },
+      {
+       "data": "8",
+       "desc": "150分钟烘干"
+      },
+      {
+       "data": "9",
+       "desc": "180分钟烘干"
+      },
+      {
+       "data": "10",
+       "desc": "智能烘干"
+      },
+      {
+       "data": "11",
+       "desc": "210分钟烘干"
+      },
+      {
+       "data": "12",
+       "desc": "预留档位1"
+      },
+      {
+       "data": "13",
+       "desc": "预留档位2"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "洗衣机恢复出厂设置",
+    "invisible": false,
+    "name": "washerResetOpt",
+    "operationType": "I",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "恢复除水电外所有参数"
+      },
+      {
+       "data": "1",
+       "desc": "恢复用户设定参数"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数36",
+    "invisible": false,
+    "name": "airWashPara36",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数24",
+    "invisible": false,
+    "name": "dryerAirWashPara24",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数23",
+    "invisible": false,
+    "name": "dryerAirWashPara23",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "干衣机长期授权状态",
+    "invisible": false,
+    "name": "dryerLongTimeAuthorizationStatus",
+    "operationType": "I",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开启"
+      },
+      {
+       "data": "false",
+       "desc": "关闭"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数22",
+    "invisible": false,
+    "name": "dryerAirWashPara22",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "空气洗喷雾时间",
+    "invisible": false,
+    "name": "airwashSprayTime",
+    "operationType": "G",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数21",
+    "invisible": false,
+    "name": "dryerAirWashPara21",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机干燥程度",
+    "invisible": false,
+    "name": "dryerDryLevel",
+    "operationType": "IG",
+    "readable": true,
+    "value": "3",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "不支持自动判干(定时类)"
+      },
+      {
+       "data": "1",
+       "desc": "特低（即熨）"
+      },
+      {
+       "data": "2",
+       "desc": "较低（即穿）"
+      },
+      {
+       "data": "3",
+       "desc": "普通（储藏）"
+      },
+      {
+       "data": "4",
+       "desc": "较高（特干）"
+      },
+      {
+       "data": "5",
+       "desc": "特高"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数28",
+    "invisible": false,
+    "name": "dryerAirWashPara28",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数32",
+    "invisible": false,
+    "name": "airWashPara32",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数33",
+    "invisible": false,
+    "name": "airWashPara33",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "漂洗脱水转速",
+    "invisible": false,
+    "name": "rinseSpinSpeed",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "2550",
+      "minValue": "0",
+      "step": "10"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数27",
+    "invisible": false,
+    "name": "dryerAirWashPara27",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数26",
+    "invisible": false,
+    "name": "dryerAirWashPara26",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数34",
+    "invisible": false,
+    "name": "airWashPara34",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "设定主洗时间",
+    "invisible": false,
+    "name": "mainWashTime",
+    "operationType": "IG",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "180",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "空气洗时间",
+    "invisible": false,
+    "name": "airWashTime",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数25",
+    "invisible": false,
+    "name": "dryerAirWashPara25",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数35",
+    "invisible": false,
+    "name": "airWashPara35",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机云程序编号",
+    "invisible": false,
+    "name": "dryerCloudProgId",
+    "operationType": "G",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65534",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "洗衣机累计用电量",
+    "invisible": false,
+    "name": "washerTotalElectricityUsed",
+    "readable": true,
+    "value": "0.24",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Double",
+      "maxValue": "42949672.95",
+      "minValue": "0.00",
+      "step": "0.01"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "进水时停止时长",
+    "invisible": false,
+    "name": "haier_InWaterStopTime",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "180",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数30",
+    "invisible": false,
+    "name": "airWashPara30",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机超级空气洗参数29",
+    "invisible": false,
+    "name": "dryerAirWashPara29",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数31",
+    "invisible": false,
+    "name": "airWashPara31",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机云程序启动来源",
+    "invisible": false,
+    "name": "dryerCloudProgSrc",
+    "operationType": "G",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "未知"
+      },
+      {
+       "data": "1",
+       "desc": "本机"
+      },
+      {
+       "data": "2",
+       "desc": "APP"
+      },
+      {
+       "data": "3",
+       "desc": "语音模块"
+      },
+      {
+       "data": "4",
+       "desc": "音箱"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "剩余主洗时间",
+    "invisible": false,
+    "name": "remainingMainWashTime",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "180",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "主洗转动时间(组命令)",
+    "invisible": false,
+    "name": "haier_MainWashRotateTime",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "60",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "停止报警",
+    "invisible": true,
+    "name": "stopCurrentAlarm",
+    "operationType": "I",
+    "readable": true,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "stopCurrentAlarm"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "熨烫提醒功能状态",
+    "invisible": false,
+    "name": "ironRemindStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "有熨烫提醒"
+      },
+      {
+       "data": "false",
+       "desc": "无熨烫提醒"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "洗衣机云程序启动来源",
+    "invisible": false,
+    "name": "washerCloudProgSrc",
+    "operationType": "G",
+    "readable": true,
+    "value": "1",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "未知"
+      },
+      {
+       "data": "1",
+       "desc": "本机"
+      },
+      {
+       "data": "2",
+       "desc": "APP"
+      },
+      {
+       "data": "3",
+       "desc": "语音模块"
+      },
+      {
+       "data": "4",
+       "desc": "音箱"
+      },
+      {
+       "data": "5",
+       "desc": "冰箱"
+      },
+      {
+       "data": "6",
+       "desc": "TV"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "排水系统诊断结果",
+    "invisible": false,
+    "name": "drainSysDiagResult",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "诊断通过"
+      },
+      {
+       "data": "false",
+       "desc": "未诊断或不合格"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "有无需要干洗的衣物",
+    "invisible": false,
+    "name": "dryCleaningNeeded",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "有"
+      },
+      {
+       "data": "false",
+       "desc": "无"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数29",
+    "invisible": false,
+    "name": "airWashPara29",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "漂洗转速(组命令)",
+    "invisible": false,
+    "name": "haier_RinseSpeed",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "60",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机统一程序设定",
+    "invisible": false,
+    "name": "dryerUnifiedProgramSettings",
+    "operationType": "IG",
+    "readable": true,
+    "value": "56",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "空"
+      },
+      {
+       "data": "1",
+       "desc": "棉麻"
+      },
+      {
+       "data": "2",
+       "desc": "化纤"
+      },
+      {
+       "data": "3",
+       "desc": "羽绒"
+      },
+      {
+       "data": "4",
+       "desc": "窗帘"
+      },
+      {
+       "data": "5",
+       "desc": "混合"
+      },
+      {
+       "data": "6",
+       "desc": "衬衣"
+      },
+      {
+       "data": "7",
+       "desc": "童装"
+      },
+      {
+       "data": "8",
+       "desc": "轻柔"
+      },
+      {
+       "data": "9",
+       "desc": "烫烫净"
+      },
+      {
+       "data": "10",
+       "desc": "羊毛"
+      },
+      {
+       "data": "11",
+       "desc": "牛仔"
+      },
+      {
+       "data": "12",
+       "desc": "空气洗"
+      },
+      {
+       "data": "13",
+       "desc": "筒自洁"
+      },
+      {
+       "data": "14",
+       "desc": "内衣"
+      },
+      {
+       "data": "15",
+       "desc": "快洗15"
+      },
+      {
+       "data": "16",
+       "desc": "快洗29"
+      },
+      {
+       "data": "17",
+       "desc": "大件"
+      },
+      {
+       "data": "18",
+       "desc": "运动服"
+      },
+      {
+       "data": "19",
+       "desc": "摇篮柔洗"
+      },
+      {
+       "data": "20",
+       "desc": "爱婴洗"
+      },
+      {
+       "data": "21",
+       "desc": "即时"
+      },
+      {
+       "data": "22",
+       "desc": "真丝"
+      },
+      {
+       "data": "23",
+       "desc": "记忆洗"
+      },
+      {
+       "data": "24",
+       "desc": "护色洗"
+      },
+      {
+       "data": "25",
+       "desc": "手洗"
+      },
+      {
+       "data": "26",
+       "desc": "毛巾"
+      },
+      {
+       "data": "27",
+       "desc": "漂洗"
+      },
+      {
+       "data": "28",
+       "desc": "单脱水"
+      },
+      {
+       "data": "29",
+       "desc": "单烘干"
+      },
+      {
+       "data": "30",
+       "desc": "除毛洗"
+      },
+      {
+       "data": "31",
+       "desc": "床单"
+      },
+      {
+       "data": "32",
+       "desc": "户外服"
+      },
+      {
+       "data": "33",
+       "desc": "夜洗"
+      },
+      {
+       "data": "34",
+       "desc": "架干燥"
+      },
+      {
+       "data": "35",
+       "desc": "抖散"
+      },
+      {
+       "data": "36",
+       "desc": "护肤洗"
+      },
+      {
+       "data": "37",
+       "desc": "消毒洗"
+      },
+      {
+       "data": "38",
+       "desc": "高端专属"
+      },
+      {
+       "data": "39",
+       "desc": "棉麻快洗"
+      },
+      {
+       "data": "40",
+       "desc": "加强洗"
+      },
+      {
+       "data": "41",
+       "desc": "熨烫"
+      },
+      {
+       "data": "42",
+       "desc": "小太阳"
+      },
+      {
+       "data": "43",
+       "desc": "定时烘干"
+      },
+      {
+       "data": "44",
+       "desc": "衣架烘干"
+      },
+      {
+       "data": "45",
+       "desc": "在线洗"
+      },
+      {
+       "data": "46",
+       "desc": "巨浪洗"
+      },
+      {
+       "data": "47",
+       "desc": "CTTN棉麻"
+      },
+      {
+       "data": "48",
+       "desc": "CTTN化纤"
+      },
+      {
+       "data": "49",
+       "desc": "防过敏"
+      },
+      {
+       "data": "50",
+       "desc": "除异味"
+      },
+      {
+       "data": "51",
+       "desc": "时间洗"
+      },
+      {
+       "data": "52",
+       "desc": "冲锋衣"
+      },
+      {
+       "data": "53",
+       "desc": "App自诊断"
+      },
+      {
+       "data": "54",
+       "desc": "毛毯洗"
+      },
+      {
+       "data": "55",
+       "desc": "Standard"
+      },
+      {
+       "data": "56",
+       "desc": "智慧洗"
+      },
+      {
+       "data": "57",
+       "desc": "智慧云洗"
+      },
+      {
+       "data": "58",
+       "desc": "浴巾"
+      },
+      {
+       "data": "59",
+       "desc": "紫外除菌"
+      },
+      {
+       "data": "60",
+       "desc": "蒸汽除螨"
+      },
+      {
+       "data": "61",
+       "desc": "巴氏杀菌"
+      },
+      {
+       "data": "62",
+       "desc": "超级空气洗"
+      },
+      {
+       "data": "63",
+       "desc": "超级洗"
+      },
+      {
+       "data": "64",
+       "desc": "FPA快洗30"
+      },
+      {
+       "data": "65",
+       "desc": "快洗烘"
+      },
+      {
+       "data": "66",
+       "desc": "美颜洗"
+      },
+      {
+       "data": "67",
+       "desc": "棉麻20"
+      },
+      {
+       "data": "68",
+       "desc": "新欧标性能"
+      },
+      {
+       "data": "69",
+       "desc": "欧标性能洗烘"
+      },
+      {
+       "data": "70",
+       "desc": "香薰"
+      },
+      {
+       "data": "71",
+       "desc": "水雾清新"
+      },
+      {
+       "data": "72",
+       "desc": "貂皮"
+      },
+      {
+       "data": "73",
+       "desc": "蚕丝被"
+      },
+      {
+       "data": "74",
+       "desc": "校服"
+      },
+      {
+       "data": "75",
+       "desc": "皮毛一体"
+      },
+      {
+       "data": "76",
+       "desc": "羊毛衫"
+      },
+      {
+       "data": "77",
+       "desc": "雪纺纱"
+      },
+      {
+       "data": "78",
+       "desc": "西装"
+      },
+      {
+       "data": "79",
+       "desc": "家纺"
+      },
+      {
+       "data": "80",
+       "desc": "毛绒玩具"
+      },
+      {
+       "data": "81",
+       "desc": "口罩"
+      },
+      {
+       "data": "82",
+       "desc": "快洗39"
+      },
+      {
+       "data": "83",
+       "desc": "换季洗"
+      },
+      {
+       "data": "84",
+       "desc": "欧标棉麻"
+      },
+      {
+       "data": "85",
+       "desc": "欧标化纤"
+      },
+      {
+       "data": "86",
+       "desc": "混合2"
+      },
+      {
+       "data": "87",
+       "desc": "新衣洗2"
+      },
+      {
+       "data": "88",
+       "desc": "智慧洗烘"
+      },
+      {
+       "data": "89",
+       "desc": "毛呢"
+      },
+      {
+       "data": "90",
+       "desc": "奢品家纺"
+      },
+      {
+       "data": "91",
+       "desc": "筒洗烘"
+      },
+      {
+       "data": "92",
+       "desc": "亚麻"
+      },
+      {
+       "data": "93",
+       "desc": "香护"
+      },
+      {
+       "data": "94",
+       "desc": "留香洗"
+      },
+      {
+       "data": "95",
+       "desc": "摇粒绒"
+      },
+      {
+       "data": "96",
+       "desc": "奢护"
+      },
+      {
+       "data": "97",
+       "desc": "蒸汽智慧洗"
+      },
+      {
+       "data": "98",
+       "desc": "衬衣蒸汽洗"
+      },
+      {
+       "data": "99",
+       "desc": "爱婴蒸汽洗"
+      },
+      {
+       "data": "100",
+       "desc": "蒸汽防过敏"
+      },
+      {
+       "data": "101",
+       "desc": "运动Bra"
+      },
+      {
+       "data": "102",
+       "desc": "无感Bra"
+      },
+      {
+       "data": "103",
+       "desc": "塑形Bra"
+      },
+      {
+       "data": "104",
+       "desc": "蕾丝Bra"
+      },
+      {
+       "data": "105",
+       "desc": "内裤"
+      },
+      {
+       "data": "106",
+       "desc": "蓝色消毒"
+      },
+      {
+       "data": "107",
+       "desc": "隔离快净"
+      },
+      {
+       "data": "108",
+       "desc": "快速20"
+      },
+      {
+       "data": "109",
+       "desc": "快速30"
+      },
+      {
+       "data": "110",
+       "desc": "工作服"
+      },
+      {
+       "data": "111",
+       "desc": "尿布"
+      },
+      {
+       "data": "112",
+       "desc": "鞋子"
+      },
+      {
+       "data": "113",
+       "desc": "精细"
+      },
+      {
+       "data": "114",
+       "desc": "休闲装"
+      },
+      {
+       "data": "115",
+       "desc": "冷风30"
+      },
+      {
+       "data": "116",
+       "desc": "热风定时"
+      },
+      {
+       "data": "117",
+       "desc": "冷风定时"
+      },
+      {
+       "data": "118",
+       "desc": "除菌"
+      },
+      {
+       "data": "119",
+       "desc": "羊毛大衣"
+      },
+      {
+       "data": "120",
+       "desc": "婴童衣被"
+      },
+      {
+       "data": "121",
+       "desc": "纯棉婴儿装"
+      },
+      {
+       "data": "122",
+       "desc": "棉质床品"
+      },
+      {
+       "data": "123",
+       "desc": "亚麻西装"
+      },
+      {
+       "data": "124",
+       "desc": "抓绒衣"
+      },
+      {
+       "data": "125",
+       "desc": "保养"
+      },
+      {
+       "data": "126",
+       "desc": "皮革保养"
+      },
+      {
+       "data": "127",
+       "desc": "皮草保养"
+      },
+      {
+       "data": "128",
+       "desc": "织物靓色"
+      },
+      {
+       "data": "129",
+       "desc": "织物香护"
+      },
+      {
+       "data": "130",
+       "desc": "暖衣"
+      },
+      {
+       "data": "131",
+       "desc": "被子"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数25",
+    "invisible": false,
+    "name": "airWashPara25",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "累计洗涤周期",
+    "invisible": false,
+    "name": "totalWashCycle",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "desc": "墨盒2浓度",
+    "invisible": false,
+    "name": "box2Concentration",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "默认"
+      },
+      {
+       "data": "1",
+       "desc": "浓缩++"
+      },
+      {
+       "data": "2",
+       "desc": "浓缩+"
+      },
+      {
+       "data": "3",
+       "desc": "浓缩"
+      },
+      {
+       "data": "4",
+       "desc": "普通"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数26",
+    "invisible": false,
+    "name": "airWashPara26",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数27",
+    "invisible": false,
+    "name": "airWashPara27",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数28",
+    "invisible": false,
+    "name": "airWashPara28",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数21",
+    "invisible": false,
+    "name": "airWashPara21",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "1",
+    "desc": "干衣机运行状态",
+    "invisible": false,
+    "name": "dryerRunningMode",
+    "operationType": "IG",
+    "readable": true,
+    "value": "2",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "1",
+       "desc": "启动"
+      },
+      {
+       "data": "2",
+       "desc": "暂停"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数22",
+    "invisible": false,
+    "name": "airWashPara22",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数23",
+    "invisible": false,
+    "name": "airWashPara23",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "墨盒4浓度",
+    "invisible": false,
+    "name": "box4Concentration",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "默认"
+      },
+      {
+       "data": "1",
+       "desc": "浓缩++"
+      },
+      {
+       "data": "2",
+       "desc": "浓缩+"
+      },
+      {
+       "data": "3",
+       "desc": "浓缩"
+      },
+      {
+       "data": "4",
+       "desc": "普通"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数24",
+    "invisible": false,
+    "name": "airWashPara24",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "柔顺剂余量状态",
+    "invisible": false,
+    "name": "remainingSoftenerStatus",
+    "readable": true,
+    "value": "2",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "未知"
+      },
+      {
+       "data": "1",
+       "desc": "有"
+      },
+      {
+       "data": "2",
+       "desc": "无"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "特渍种类",
+    "invisible": false,
+    "name": "stainType",
+    "operationType": "IG",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "不设定"
+      },
+      {
+       "data": "1",
+       "desc": "酒渍"
+      },
+      {
+       "data": "2",
+       "desc": "草渍"
+      },
+      {
+       "data": "3",
+       "desc": "泥土渍"
+      },
+      {
+       "data": "4",
+       "desc": "血渍"
+      },
+      {
+       "data": "5",
+       "desc": "奶渍"
+      },
+      {
+       "data": "6",
+       "desc": "烹饪油"
+      },
+      {
+       "data": "7",
+       "desc": "茶渍"
+      },
+      {
+       "data": "8",
+       "desc": "咖啡"
+      },
+      {
+       "data": "9",
+       "desc": "巧克力渍"
+      },
+      {
+       "data": "10",
+       "desc": "唇彩"
+      },
+      {
+       "data": "11",
+       "desc": "咖喱渍"
+      },
+      {
+       "data": "12",
+       "desc": "奶茶"
+      },
+      {
+       "data": "13",
+       "desc": "辣椒油"
+      },
+      {
+       "data": "14",
+       "desc": "蓝墨水"
+      },
+      {
+       "data": "15",
+       "desc": "水彩笔"
+      },
+      {
+       "data": "16",
+       "desc": "鞋油"
+      },
+      {
+       "data": "17",
+       "desc": "油画棒"
+      },
+      {
+       "data": "18",
+       "desc": "蓝莓"
+      },
+      {
+       "data": "19",
+       "desc": "汗渍"
+      },
+      {
+       "data": "20",
+       "desc": "蛋渍"
+      },
+      {
+       "data": "21",
+       "desc": "番茄酱"
+      },
+      {
+       "data": "22",
+       "desc": "婴儿食物"
+      },
+      {
+       "data": "23",
+       "desc": "酱油渍"
+      },
+      {
+       "data": "24",
+       "desc": "豆瓣酱"
+      },
+      {
+       "data": "25",
+       "desc": "辣椒酱"
+      },
+      {
+       "data": "26",
+       "desc": "果渍"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数20",
+    "invisible": false,
+    "name": "airWashPara20",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "远程控制设置使能",
+    "invisible": false,
+    "name": "remoteCtrEnabled",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "使能"
+      },
+      {
+       "data": "false",
+       "desc": "不使能"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "主洗转速(组命令)",
+    "invisible": false,
+    "name": "haier_MainWashSpeed",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "60",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "防皱浸泡功能状态",
+    "invisible": false,
+    "name": "creaseResistSoakStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "墨盒助洗剂自动投放量",
+    "invisible": false,
+    "name": "inkBoxDispersantAutoVolume",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "洗衣机预约功能状态",
+    "invisible": false,
+    "name": "washerResnStatus",
+    "operationType": "G",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "长期授权状态",
+    "invisible": false,
+    "name": "longTimeAuthorizationStatus",
+    "operationType": "I",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开启"
+      },
+      {
+       "data": "false",
+       "desc": "关闭"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "设置洗涤剂投放比例",
+    "invisible": false,
+    "name": "detergentPercent",
+    "operationType": "IG",
+    "readable": true,
+    "value": "100",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "设置洗涤剂B投放比例（带AB墨盒使用）",
+    "invisible": false,
+    "name": "detergentBPercent",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "true",
+    "desc": "浸泡洗功能状态",
+    "invisible": false,
+    "name": "soakWashStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "主洗水位深度",
+    "invisible": false,
+    "name": "mainWashWaterDepth",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数18",
+    "invisible": false,
+    "name": "airWashPara18",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数19",
+    "invisible": false,
+    "name": "airWashPara19",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "主洗水位(组命令)",
+    "invisible": false,
+    "name": "haier_MainWashWaterLevel",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "4",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数14",
+    "invisible": false,
+    "name": "airWashPara14",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数15",
+    "invisible": false,
+    "name": "airWashPara15",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数16",
+    "invisible": false,
+    "name": "airWashPara16",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "当前衣物识别状态",
+    "invisible": false,
+    "name": "clothesRecogStatus",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数17",
+    "invisible": false,
+    "name": "airWashPara17",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数10",
+    "invisible": false,
+    "name": "airWashPara10",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数11",
+    "invisible": false,
+    "name": "airWashPara11",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数12",
+    "invisible": false,
+    "name": "airWashPara12",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "超级空气洗参数13",
+    "invisible": false,
+    "name": "airWashPara13",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "精粹洗衣液投放状态",
+    "invisible": false,
+    "name": "essenceInjectStatus",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "洗衣机加速洗功能状态",
+    "invisible": false,
+    "name": "washerSpeedUpStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "干衣机本机程序名2",
+    "invisible": false,
+    "name": "dryerLocalProgName2",
+    "readable": true,
+    "value": "1se72w==",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": ""
+      }
+     ],
+     "type": "NONE"
+    },
+    "writable": false
+   },
+   {
+    "desc": "干衣机本机程序名1",
+    "invisible": false,
+    "name": "dryerLocalProgName1",
+    "readable": true,
+    "value": "smart_local",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": ""
+      }
+     ],
+     "type": "NONE"
+    },
+    "writable": false
+   },
+   {
+    "desc": "干衣机上电状态",
+    "invisible": false,
+    "name": "dryerPowerStatus",
+    "readable": true,
+    "value": "true",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "上电"
+      },
+      {
+       "data": "false",
+       "desc": "未上电"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "true",
+    "desc": "湿洗程序",
+    "invisible": false,
+    "name": "wetcleaningProgram",
+    "operationType": "G",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "是"
+      },
+      {
+       "data": "false",
+       "desc": "否"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "墨盒2排残液",
+    "invisible": false,
+    "name": "box2DischargeResidualLiquid",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "洗衣机筒门状态",
+    "invisible": false,
+    "name": "washerDoorStatus",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "true",
+    "desc": "干衣机香护功能",
+    "invisible": false,
+    "name": "dryerAromaCareStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开启"
+      },
+      {
+       "data": "false",
+       "desc": "关闭"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "语音功能开关",
+    "invisible": false,
+    "name": "voiceStatus",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "设定待机时间",
+    "invisible": false,
+    "name": "standbyTime",
+    "operationType": "I",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "干衣机剩余防皱时间",
+    "invisible": false,
+    "name": "remainingAntiCreaseTime",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "洗衣机烘干方式",
+    "invisible": false,
+    "name": "washerDryType",
+    "operationType": "G",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "定时烘干"
+      },
+      {
+       "data": "1",
+       "desc": "标准(0%)"
+      },
+      {
+       "data": "2",
+       "desc": "熨烫(12%)"
+      },
+      {
+       "data": "3",
+       "desc": "衣架(3%)"
+      },
+      {
+       "data": "4",
+       "desc": "太阳(-3%)"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "洗衣机回待机",
+    "invisible": false,
+    "name": "washerReturnStandby",
+    "operationType": "I",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "1",
+       "desc": "执行"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "柔顺剂自动投放功能状态",
+    "invisible": false,
+    "name": "autoSoftenerStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "true",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "洗衣机本次用电量",
+    "invisible": false,
+    "name": "washerCurrentElectricityUsed",
+    "readable": true,
+    "value": "0.15",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Double",
+      "maxValue": "655.35",
+      "minValue": "0.00",
+      "step": "0.01"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机定时时间",
+    "invisible": false,
+    "name": "dryerDryTime",
+    "operationType": "IG",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "静置功能状态",
+    "invisible": false,
+    "name": "staticStatus",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "洗衣机门锁状态",
+    "invisible": false,
+    "name": "washerDoorLockStatus",
+    "readable": true,
+    "value": "true",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "上锁"
+      },
+      {
+       "data": "false",
+       "desc": "解锁"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "true",
+    "desc": "干衣机光等离子功能",
+    "invisible": false,
+    "name": "dryerPhotoPlasmaStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开启"
+      },
+      {
+       "data": "false",
+       "desc": "关闭"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "墨盒4余量状态",
+    "invisible": false,
+    "name": "box4RemainingStatus",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "未知"
+      },
+      {
+       "data": "1",
+       "desc": "有"
+      },
+      {
+       "data": "2",
+       "desc": "少"
+      },
+      {
+       "data": "3",
+       "desc": "无"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "0",
+    "desc": "干衣机统一衣物材质",
+    "invisible": false,
+    "name": "dryerUnifiedClothingMaterial",
+    "operationType": "G",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "空"
+      },
+      {
+       "data": "1",
+       "desc": "棉麻"
+      },
+      {
+       "data": "2",
+       "desc": "化纤"
+      },
+      {
+       "data": "3",
+       "desc": "羽绒"
+      },
+      {
+       "data": "4",
+       "desc": "窗帘"
+      },
+      {
+       "data": "5",
+       "desc": "混合"
+      },
+      {
+       "data": "6",
+       "desc": "衬衣"
+      },
+      {
+       "data": "7",
+       "desc": "童装"
+      },
+      {
+       "data": "8",
+       "desc": "轻柔"
+      },
+      {
+       "data": "9",
+       "desc": "烫烫净"
+      },
+      {
+       "data": "10",
+       "desc": "羊毛"
+      },
+      {
+       "data": "11",
+       "desc": "牛仔"
+      },
+      {
+       "data": "12",
+       "desc": "空气洗"
+      },
+      {
+       "data": "13",
+       "desc": "筒自洁"
+      },
+      {
+       "data": "14",
+       "desc": "内衣"
+      },
+      {
+       "data": "15",
+       "desc": "快洗15"
+      },
+      {
+       "data": "16",
+       "desc": "快洗29"
+      },
+      {
+       "data": "17",
+       "desc": "大件"
+      },
+      {
+       "data": "18",
+       "desc": "运动服"
+      },
+      {
+       "data": "19",
+       "desc": "摇篮柔洗"
+      },
+      {
+       "data": "20",
+       "desc": "爱婴洗"
+      },
+      {
+       "data": "21",
+       "desc": "即时"
+      },
+      {
+       "data": "22",
+       "desc": "真丝"
+      },
+      {
+       "data": "23",
+       "desc": "记忆洗"
+      },
+      {
+       "data": "24",
+       "desc": "护色洗"
+      },
+      {
+       "data": "25",
+       "desc": "手洗"
+      },
+      {
+       "data": "26",
+       "desc": "毛巾"
+      },
+      {
+       "data": "27",
+       "desc": "漂洗"
+      },
+      {
+       "data": "28",
+       "desc": "单脱水"
+      },
+      {
+       "data": "29",
+       "desc": "单烘干"
+      },
+      {
+       "data": "30",
+       "desc": "除毛洗"
+      },
+      {
+       "data": "31",
+       "desc": "床单"
+      },
+      {
+       "data": "32",
+       "desc": "户外服"
+      },
+      {
+       "data": "33",
+       "desc": "夜洗"
+      },
+      {
+       "data": "34",
+       "desc": "架干燥"
+      },
+      {
+       "data": "35",
+       "desc": "抖散"
+      },
+      {
+       "data": "36",
+       "desc": "护肤洗"
+      },
+      {
+       "data": "37",
+       "desc": "消毒洗"
+      },
+      {
+       "data": "38",
+       "desc": "高端专属"
+      },
+      {
+       "data": "39",
+       "desc": "棉麻快洗"
+      },
+      {
+       "data": "40",
+       "desc": "加强洗"
+      },
+      {
+       "data": "41",
+       "desc": "熨烫"
+      },
+      {
+       "data": "42",
+       "desc": "小太阳"
+      },
+      {
+       "data": "43",
+       "desc": "定时烘干"
+      },
+      {
+       "data": "44",
+       "desc": "衣架烘干"
+      },
+      {
+       "data": "45",
+       "desc": "在线洗"
+      },
+      {
+       "data": "46",
+       "desc": "巨浪洗"
+      },
+      {
+       "data": "47",
+       "desc": "CTTN棉麻"
+      },
+      {
+       "data": "48",
+       "desc": "CTTN化纤"
+      },
+      {
+       "data": "49",
+       "desc": "防过敏"
+      },
+      {
+       "data": "50",
+       "desc": "除异味"
+      },
+      {
+       "data": "51",
+       "desc": "时间洗"
+      },
+      {
+       "data": "52",
+       "desc": "冲锋衣"
+      },
+      {
+       "data": "53",
+       "desc": "App自诊断"
+      },
+      {
+       "data": "54",
+       "desc": "毛毯洗"
+      },
+      {
+       "data": "55",
+       "desc": "Standard"
+      },
+      {
+       "data": "56",
+       "desc": "智慧洗"
+      },
+      {
+       "data": "57",
+       "desc": "智慧云洗"
+      },
+      {
+       "data": "58",
+       "desc": "浴巾"
+      },
+      {
+       "data": "59",
+       "desc": "紫外除菌"
+      },
+      {
+       "data": "60",
+       "desc": "蒸汽除螨"
+      },
+      {
+       "data": "61",
+       "desc": "巴氏杀菌"
+      },
+      {
+       "data": "62",
+       "desc": "超级空气洗"
+      },
+      {
+       "data": "63",
+       "desc": "超级洗"
+      },
+      {
+       "data": "64",
+       "desc": "FPA快洗30"
+      },
+      {
+       "data": "65",
+       "desc": "快洗烘"
+      },
+      {
+       "data": "66",
+       "desc": "美颜洗"
+      },
+      {
+       "data": "67",
+       "desc": "棉麻20"
+      },
+      {
+       "data": "68",
+       "desc": "新欧标性能"
+      },
+      {
+       "data": "69",
+       "desc": "欧标性能洗烘"
+      },
+      {
+       "data": "70",
+       "desc": "香薰"
+      },
+      {
+       "data": "71",
+       "desc": "水雾清新"
+      },
+      {
+       "data": "72",
+       "desc": "貂皮"
+      },
+      {
+       "data": "73",
+       "desc": "蚕丝被"
+      },
+      {
+       "data": "74",
+       "desc": "校服"
+      },
+      {
+       "data": "75",
+       "desc": "皮毛一体"
+      },
+      {
+       "data": "76",
+       "desc": "羊毛衫"
+      },
+      {
+       "data": "77",
+       "desc": "雪纺纱"
+      },
+      {
+       "data": "78",
+       "desc": "西装"
+      },
+      {
+       "data": "79",
+       "desc": "家纺"
+      },
+      {
+       "data": "80",
+       "desc": "毛绒玩具"
+      },
+      {
+       "data": "81",
+       "desc": "口罩"
+      },
+      {
+       "data": "82",
+       "desc": "快洗39"
+      },
+      {
+       "data": "83",
+       "desc": "换季洗"
+      },
+      {
+       "data": "84",
+       "desc": "欧标棉麻"
+      },
+      {
+       "data": "85",
+       "desc": "欧标化纤"
+      },
+      {
+       "data": "86",
+       "desc": "混合2"
+      },
+      {
+       "data": "87",
+       "desc": "新衣洗2"
+      },
+      {
+       "data": "88",
+       "desc": "智慧洗烘"
+      },
+      {
+       "data": "89",
+       "desc": "毛呢"
+      },
+      {
+       "data": "90",
+       "desc": "奢品家纺"
+      },
+      {
+       "data": "91",
+       "desc": "筒洗烘"
+      },
+      {
+       "data": "92",
+       "desc": "亚麻"
+      },
+      {
+       "data": "93",
+       "desc": "香护"
+      },
+      {
+       "data": "94",
+       "desc": "留香洗"
+      },
+      {
+       "data": "95",
+       "desc": "摇粒绒"
+      },
+      {
+       "data": "96",
+       "desc": "奢护"
+      },
+      {
+       "data": "97",
+       "desc": "蒸汽智慧洗"
+      },
+      {
+       "data": "98",
+       "desc": "衬衣蒸汽洗"
+      },
+      {
+       "data": "99",
+       "desc": "爱婴蒸汽洗"
+      },
+      {
+       "data": "100",
+       "desc": "蒸汽防过敏"
+      },
+      {
+       "data": "101",
+       "desc": "运动Bra"
+      },
+      {
+       "data": "102",
+       "desc": "无感Bra"
+      },
+      {
+       "data": "103",
+       "desc": "塑形Bra"
+      },
+      {
+       "data": "104",
+       "desc": "蕾丝Bra"
+      },
+      {
+       "data": "105",
+       "desc": "内裤"
+      },
+      {
+       "data": "106",
+       "desc": "蓝色消毒"
+      },
+      {
+       "data": "107",
+       "desc": "隔离快净"
+      },
+      {
+       "data": "108",
+       "desc": "快速20"
+      },
+      {
+       "data": "109",
+       "desc": "快速30"
+      },
+      {
+       "data": "110",
+       "desc": "工作服"
+      },
+      {
+       "data": "111",
+       "desc": "尿布"
+      },
+      {
+       "data": "112",
+       "desc": "鞋子"
+      },
+      {
+       "data": "113",
+       "desc": "精细"
+      },
+      {
+       "data": "114",
+       "desc": "休闲装"
+      },
+      {
+       "data": "115",
+       "desc": "冷风30"
+      },
+      {
+       "data": "116",
+       "desc": "热风定时"
+      },
+      {
+       "data": "117",
+       "desc": "冷风定时"
+      },
+      {
+       "data": "118",
+       "desc": "除菌"
+      },
+      {
+       "data": "119",
+       "desc": "羊毛大衣"
+      },
+      {
+       "data": "120",
+       "desc": "婴童衣被"
+      },
+      {
+       "data": "121",
+       "desc": "纯棉婴儿装"
+      },
+      {
+       "data": "122",
+       "desc": "棉质床品"
+      },
+      {
+       "data": "123",
+       "desc": "亚麻西装"
+      },
+      {
+       "data": "124",
+       "desc": "抓绒衣"
+      },
+      {
+       "data": "125",
+       "desc": "保养"
+      },
+      {
+       "data": "126",
+       "desc": "皮革保养"
+      },
+      {
+       "data": "127",
+       "desc": "皮草保养"
+      },
+      {
+       "data": "128",
+       "desc": "织物靓色"
+      },
+      {
+       "data": "129",
+       "desc": "织物香护"
+      },
+      {
+       "data": "130",
+       "desc": "暖衣"
+      },
+      {
+       "data": "131",
+       "desc": "被子"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "墨盒4排残液",
+    "invisible": false,
+    "name": "box4DischargeResidualLiquid",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "0",
+    "desc": "主洗脱水转速",
+    "invisible": false,
+    "name": "mainWashSpinSpeed",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "2550",
+      "minValue": "0",
+      "step": "10"
+     },
+     "type": "STEP"
+    },
+    "writable": true
+   },
+   {
+    "desc": "洗衣机提示信息",
+    "invisible": false,
+    "name": "washerMessage",
+    "readable": true,
+    "value": "4",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "无"
+      },
+      {
+       "data": "1",
+       "desc": "衣服已洗完"
+      },
+      {
+       "data": "2",
+       "desc": "衣服已洗干"
+      },
+      {
+       "data": "3",
+       "desc": "液体洗涤剂用完"
+      },
+      {
+       "data": "4",
+       "desc": "柔顺剂用完"
+      },
+      {
+       "data": "5",
+       "desc": "架干燥使用说明"
+      },
+      {
+       "data": "6",
+       "desc": "请关闭抽屉门"
+      },
+      {
+       "data": "7",
+       "desc": "称重完成，请在分配器盒内加入适量洗衣粉"
+      },
+      {
+       "data": "8",
+       "desc": "筒内温度过高，不能开门"
+      },
+      {
+       "data": "9",
+       "desc": "筒内水位过高，不能开门"
+      },
+      {
+       "data": "10",
+       "desc": "泡沫过多正进行消泡处理"
+      },
+      {
+       "data": "11",
+       "desc": "消毒剂用完"
+      },
+      {
+       "data": "12",
+       "desc": "负离子已完成"
+      },
+      {
+       "data": "13",
+       "desc": "液体洗涤剂、柔顺剂用完"
+      },
+      {
+       "data": "14",
+       "desc": "排水过滤器需要清洗"
+      },
+      {
+       "data": "15",
+       "desc": "烘干过滤器需要清洗"
+      },
+      {
+       "data": "17",
+       "desc": "请使用筒自洁程序，进行筒内清洁"
+      },
+      {
+       "data": "18",
+       "desc": "门被打开，远程控制功能失效"
+      },
+      {
+       "data": "19",
+       "desc": "程序已运行达到指定周期,请清理排水过滤器"
+      },
+      {
+       "data": "20",
+       "desc": "干洗叫单提醒"
+      },
+      {
+       "data": "21",
+       "desc": "使用普通洗涤剂"
+      },
+      {
+       "data": "22",
+       "desc": "使用浓缩洗涤剂"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "1",
+    "desc": "干衣机温度等级",
+    "invisible": false,
+    "name": "dryerTempLevel",
+    "operationType": "IG",
+    "readable": true,
+    "value": "4",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "1",
+       "desc": "冷风"
+      },
+      {
+       "data": "2",
+       "desc": "低温"
+      },
+      {
+       "data": "3",
+       "desc": "中温"
+      },
+      {
+       "data": "4",
+       "desc": "高温"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "墨盒1投放类型",
+    "invisible": false,
+    "name": "box1LiquidType",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "未放置"
+      },
+      {
+       "data": "1",
+       "desc": "未知"
+      },
+      {
+       "data": "2",
+       "desc": "精粹洗衣液"
+      },
+      {
+       "data": "3",
+       "desc": "净白助洗剂"
+      },
+      {
+       "data": "4",
+       "desc": "柔顺亮白剂"
+      },
+      {
+       "data": "5",
+       "desc": "亮色助洗剂"
+      },
+      {
+       "data": "6",
+       "desc": "母婴精洗液"
+      },
+      {
+       "data": "255",
+       "desc": "异常"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "干衣机远程控制设置使能",
+    "invisible": false,
+    "name": "dryerRemoteCtrEnabled",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "使能"
+      },
+      {
+       "data": "false",
+       "desc": "不使能"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "识别到的衣物总数量",
+    "invisible": false,
+    "name": "clothesRecogNum",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "255",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "desc": "墨盒3浓度",
+    "invisible": false,
+    "name": "box3Concentration",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "默认"
+      },
+      {
+       "data": "1",
+       "desc": "浓缩++"
+      },
+      {
+       "data": "2",
+       "desc": "浓缩+"
+      },
+      {
+       "data": "3",
+       "desc": "浓缩"
+      },
+      {
+       "data": "4",
+       "desc": "普通"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "剩余待机时间",
+    "invisible": false,
+    "name": "remainingStandbyTime",
+    "readable": true,
+    "value": "0",
+    "valueRange": {
+     "dataStep": {
+      "dataType": "Integer",
+      "maxValue": "65535",
+      "minValue": "0",
+      "step": "1"
+     },
+     "type": "STEP"
+    },
+    "writable": false
+   },
+   {
+    "defaultValue": "true",
+    "desc": "是否恒温选择(组命令)",
+    "invisible": false,
+    "name": "haier_ConstantTempStatus",
+    "operationType": "G",
+    "readable": false,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "是"
+      },
+      {
+       "data": "false",
+       "desc": "否"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "洗衣机强力去污功能状态",
+    "invisible": false,
+    "name": "washerStrongStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "开"
+      },
+      {
+       "data": "false",
+       "desc": "关"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "desc": "服务模式",
+    "invisible": false,
+    "name": "serverModeStatus",
+    "readable": true,
+    "value": "1",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "0",
+       "desc": "未知"
+      },
+      {
+       "data": "1",
+       "desc": "洗涤"
+      },
+      {
+       "data": "2",
+       "desc": "烘干"
+      },
+      {
+       "data": "3",
+       "desc": "护理"
+      },
+      {
+       "data": "4",
+       "desc": "洗烘"
+      },
+      {
+       "data": "5",
+       "desc": "洗护"
+      },
+      {
+       "data": "6",
+       "desc": "烘护"
+      },
+      {
+       "data": "7",
+       "desc": "洗烘护"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": false
+   },
+   {
+    "desc": "查询所有报警",
+    "invisible": true,
+    "name": "getAllAlarm",
+    "operationType": "I",
+    "readable": true,
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "getAllAlarm"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   },
+   {
+    "defaultValue": "true",
+    "desc": "洗衣机紫外杀菌功能状态",
+    "invisible": false,
+    "name": "washerUvSterilizationStatus",
+    "operationType": "IG",
+    "readable": true,
+    "value": "false",
+    "valueRange": {
+     "dataList": [
+      {
+       "data": "true",
+       "desc": "用户选择"
+      },
+      {
+       "data": "false",
+       "desc": "用户未选择"
+      }
+     ],
+     "type": "LIST"
+    },
+    "writable": true
+   }
+  ],
+  "invisible_attributes": [
+   "getAllAlarm",
+   "getAllProperty",
+   "stopCurrentAlarm"
+  ]
+ },
+ "reported_values_now": {
+  "dryerEndDisplayDuration": "0",
+  "box1RemainingStatus": "0",
+  "loosenStatus": "false",
+  "mitesRemovalStatus": "false",
+  "dryerMessage": "0",
+  "washTemp": "30",
+  "spinSysDiagResult": "false",
+  "freshAir": "false",
+  "nightWashStatus": "false",
+  "washerActualWeight": "1",
+  "washerDryStatus": "false",
+  "delicateStatus": "false",
+  "remainingDispersantStatus": "0",
+  "autoDisinfectantStatus": "false",
+  "clothesIdIndex": "0",
+  "endDisplayDuration": "0",
+  "shoesAnionStatus": "false",
+  "photoPlasmaCareTime": "0",
+  "airWashTempLevel": "0",
+  "box2LiquidType": "0",
+  "remainingDetergentStatus": "1",
+  "remainingTimeHH": "1",
+  "forceDelete": "false",
+  "washerDryLevel": "1",
+  "dryerRemainingDryTime": "470",
+  "washerUnifiedProgramSettings": "56",
+  "onOffStatus": "true",
+  "antiAllergyStatus": "false",
+  "rinseDecreaseOpStatus": "false",
+  "washerCloudProgId": "0",
+  "spaRinseHeatStatus": "false",
+  "washerRunningMode": "2",
+  "washerRemoteCtrValid": "false",
+  "detergentType": "1",
+  "washerDryTime": "0",
+  "dryerDryMode": "1",
+  "fastDryStatus": "false",
+  "standbyTimeExtended": "false",
+  "washerUnifiedClothingMaterial": "1",
+  "dryerWindForceLevel": "0",
+  "box2Volume": "0",
+  "wdLinkageStatus": "false",
+  "dryerDoorLockStatus": "true",
+  "box3LiquidType": "0",
+  "haier_SoftenerWeight": "1",
+  "weight": "134",
+  "clothesInfoMW": "0",
+  "laundryCyclePhase": "0",
+  "box3RemainingStatus": "0",
+  "totalWaterUsed": "120",
+  "dryerSterilizationStatus": "false",
+  "remainingTimeMM": "8",
+  "box2RemainingStatus": "0",
+  "washerDefSetAllowed": "false",
+  "buzzerDisabled": "false",
+  "dryerWeight": "1",
+  "drySysDiagResult": "false",
+  "laundryCycleStatus": "false",
+  "dryerRemainingResnTime": "0",
+  "dryProgFlag": "false",
+  "childLockStatus": "false",
+  "clothesInfoLW": "0",
+  "steamWashStatus": "false",
+  "washerIntelligenceStatus": "false",
+  "softenerPercent": "100",
+  "autoDetergentStatus": "true",
+  "currentWashCycle": "1",
+  "washerPermanentPressStatus": "false",
+  "dryerCyclePhase": "8",
+  "dirtyLevel": "0",
+  "currentWaterUsed": "0",
+  "clothesAnionStatus": "false",
+  "remainingRinseTimes": "2",
+  "dryerRemoteCtrValid": "false",
+  "box1Volume": "0",
+  "washSysDiagResult": "false",
+  "box1Concentration": "0",
+  "washerLocalProgName1": "smart_local",
+  "programClass": "1",
+  "haier_DetergentWeight": "1",
+  "washerLocalProgName2": "1se72w==",
+  "remotePowerOn": "false",
+  "spinSpeed": "1000",
+  "dryerAnionStatus": "false",
+  "washerEnergySavingStatus": "false",
+  "purifiedWashStatus": "false",
+  "inWaterSysDiagResult": "false",
+  "washSpeed": "0",
+  "dryerDoorStatus": "false",
+  "highWaterLevelStatus": "false",
+  "hardnessValue": "0",
+  "box4InjectStatus": "false",
+  "box3InjectStatus": "false",
+  "rinseIncreaseOpStatus": "false",
+  "clothesRecogResult": "0",
+  "box2InjectStatus": "false",
+  "box1InjectStatus": "false",
+  "box3Volume": "0",
+  "washerPowerStatus": "true",
+  "clothesInfoHW": "0",
+  "dryerAirWashMode": "1",
+  "washerDryMode": "10",
+  "dryerLongTimeAuthorizationStatus": "false",
+  "airwashSprayTime": "0",
+  "dryerDryLevel": "3",
+  "airWashTime": "0",
+  "dryerCloudProgId": "0",
+  "washerTotalElectricityUsed": "0.28",
+  "dryerCloudProgSrc": "1",
+  "remainingMainWashTime": "35",
+  "ironRemindStatus": "false",
+  "washerCloudProgSrc": "0",
+  "drainSysDiagResult": "false",
+  "dryCleaningNeeded": "false",
+  "dryerUnifiedProgramSettings": "56",
+  "totalWashCycle": "1",
+  "box2Concentration": "0",
+  "dryerRunningMode": "1",
+  "box4Concentration": "0",
+  "remainingSoftenerStatus": "2",
+  "stainType": "0",
+  "remoteCtrEnabled": "false",
+  "creaseResistSoakStatus": "false",
+  "washerResnStatus": "false",
+  "longTimeAuthorizationStatus": "false",
+  "detergentPercent": "100",
+  "detergentBPercent": "0",
+  "soakWashStatus": "false",
+  "clothesRecogStatus": "0",
+  "washerSpeedUpStatus": "false",
+  "dryerLocalProgName2": "1se72w==",
+  "dryerLocalProgName1": "smart_local",
+  "dryerPowerStatus": "true",
+  "wetcleaningProgram": "false",
+  "washerDoorStatus": "false",
+  "dryerAromaCareStatus": "false",
+  "voiceStatus": "false",
+  "remainingAntiCreaseTime": "0",
+  "washerDryType": "0",
+  "autoSoftenerStatus": "true",
+  "washerCurrentElectricityUsed": "0.00",
+  "washerDoorLockStatus": "false",
+  "dryerPhotoPlasmaStatus": "false",
+  "box4RemainingStatus": "0",
+  "dryerUnifiedClothingMaterial": "0",
+  "washerMessage": "4",
+  "dryerTempLevel": "4",
+  "box1LiquidType": "0",
+  "dryerRemoteCtrEnabled": "false",
+  "clothesRecogNum": "0",
+  "box3Concentration": "0",
+  "remainingStandbyTime": "2",
+  "washerStrongStatus": "false",
+  "serverModeStatus": "1",
+  "washerUvSterilizationStatus": "false"
+ }
+}

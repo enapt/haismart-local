@@ -102,6 +102,7 @@ from haismart_hrdp import (
 )
 from haismart_hrdp.appliance import ApplianceKind, kind_for
 from haismart_hrdp.device_model import (
+    STATUS_ALL,
     STATUS_BIGDATA,
     DeviceModel,
     model_for,
@@ -109,7 +110,7 @@ from haismart_hrdp.device_model import (
     project_config,
 )
 from haismart_hrdp.entity_spec import EntitySpec, specs_for
-from haismart_hrdp.uss import frame_key
+from haismart_hrdp.uss import epp_command, frame_key
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
@@ -691,6 +692,10 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Every kind of frame this appliance has sent on the LAN, parsed or not, with the latest
         # bytes of each -- keyed on frame type and command. See _record_frames.
         self.lan_frames: dict[str, dict[str, Any]] = {}
+        # The latest bytes of each STATUS report the byte map places fields in, and when they came,
+        # keyed on its command ("6D01", "6D02", ...). An appliance may split its state across
+        # several (see `_model_state`).
+        self._status_frames: dict[str, tuple[bytes, float]] = {}
         # The uSS messages of the most recent read session, one record each, decrypted or not
         # (uss.collect_session_blobs). Diagnostics prints both.
         self.uss_trace: list[dict[str, Any]] = []
@@ -1160,7 +1165,14 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Both derive from the stored model on every access; once per session, not once per frame.
         names = self._alarm_names()
         order = self.declared_group_order
+        model = self.device_model
         for blob in blobs:
+            # Every status report the byte map has a section for, by command -- before the overflow
+            # guard below, which only limits what diagnostics keep. `_model_state` reads these.
+            if model is not None and (command := epp_command(blob)) is not None:
+                name = command.hex().upper()
+                if name.startswith("6D") and model.fields_for(name):
+                    self._status_frames[name] = (blob, self.hass.loop.time())
             key = frame_key(blob)
             if key not in self.lan_frames and len(self.lan_frames) >= _LAN_FRAME_KINDS:
                 self.lan_frames.setdefault("_overflow", {"count": 0})["count"] += 1
@@ -1464,6 +1476,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         model = self.device_model
         if model is None or self.uses_curated_ac_entities:
             return frozenset()
+        if self.appliance_kind is ApplianceKind.LAUNDRY:
+            return frozenset()      # read-only: see `PLATFORMS_BY_KIND[LAUNDRY]`
         declared = frozenset(declared_attribute_names(self.digital_model))
         return frozenset(
             f.name for f in model.writable_fields()
@@ -1484,8 +1498,16 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         the byte map cannot decode keeps exactly what it has today. Only an appliance we can build
         entities for from its own model loses the curated set — and it loses nothing, because
         everything it really has arrives instead.
+
+        ⛔ A laundry appliance never gets it, decoded or not. ``model_decoded`` is the LAST poll's
+        verdict and the platforms read this once, at setup -- which on a fresh entry is before the
+        byte map has been fetched, or after a follow-up refresh the one-session module refused. A
+        0504 washer-dryer set up in that window got a thermostat and five AC switches for life.
         """
-        return self.appliance_kind is ApplianceKind.AIR_CONDITIONER or not self.model_decoded
+        kind = self.appliance_kind
+        if kind is ApplianceKind.LAUNDRY:
+            return False
+        return kind is ApplianceKind.AIR_CONDITIONER or not self.model_decoded
 
     @property
     def entity_specs(self) -> tuple[EntitySpec, ...]:
@@ -1497,15 +1519,59 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         Also empty for any device the byte map did not decode, which is the safe direction: entities
         are created from what a report actually yielded, not from what a class could carry.
+
+        A laundry appliance is the exception to that last gate, for the reason given on
+        ``uses_curated_ac_entities``: its class is positively identified, ``specs_for`` still
+        refuses without a byte map and a declaration, and every status frame its map places is
+        covered -- the 0504 laundry centre reports its dryer in ``6D01`` and its washer in ``6D02``.
         """
-        if self.appliance_kind is ApplianceKind.AIR_CONDITIONER or not self.model_decoded:
+        kind = self.appliance_kind
+        if kind is ApplianceKind.AIR_CONDITIONER:
+            return ()
+        if kind is ApplianceKind.LAUNDRY:
+            return specs_for(
+                self.device_model,
+                (self.digital_model or {}).get("attributes"),
+                writable=frozenset(),
+                exclude=HERO_ATTRIBUTES.get(kind, frozenset()),
+                status_cmd=(STATUS_ALL, *self._extra_status_cmds(), STATUS_BIGDATA),
+            )
+        if not self.model_decoded:
             return ()
         return specs_for(
             self.device_model,
             (self.digital_model or {}).get("attributes"),
             writable=self.model_write_fields(),
-            exclude=HERO_ATTRIBUTES.get(self.appliance_kind, frozenset()),
+            exclude=HERO_ATTRIBUTES.get(kind, frozenset()),
         )
+
+    def _extra_status_cmds(self) -> tuple[str, ...]:
+        """Status frames this device's byte map places fields in besides ``6D01``, e.g. ``6D02``.
+
+        Only ``6Dxx`` status reports: ``7Dxx`` is the big-data family and has its own query, and
+        nothing else carries a status section. Sorted, so the entity order is stable.
+        """
+        model = self.device_model
+        if model is None:
+            return ()
+        return tuple(sorted({
+            f.status_cmd for f in model.fields
+            if f.status_cmd and f.status_cmd.upper().startswith("6D")
+            and f.status_cmd.upper() != STATUS_ALL
+        }))
+
+    def _status_cmd_of(self, blob: bytes) -> str:
+        """The status command ``blob`` answers, when the byte map has a section for it; else 6D01.
+
+        Falling back to ``6D01`` keeps every appliance that decodes today decoding the same way: a
+        report whose command the map does not file anything under is read as the map always read it.
+        """
+        command = epp_command(blob)
+        model = self.device_model
+        if command is None or model is None:
+            return STATUS_ALL
+        name = command.hex().upper()
+        return name if name.startswith("6D") and model.fields_for(name) else STATUS_ALL
 
     def model_attribute_range(self, name: str) -> tuple[float, float, float] | None:
         """``(min, max, step)`` for a numeric attribute, from the DEVICE's model first.
@@ -1585,7 +1651,21 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             state.update(
                 model.decode(self.last_raw_extended, status_cmd=STATUS_BIGDATA, only=declared)
             )
-        state.update(model.decode(blob, only=declared))
+        # A map can file its status attributes under more than one report. The 0504 laundry centre
+        # pushes BOTH every session -- `6D01` (165 B, the dryer) then `6D02` (225 B, the washer) --
+        # and the poll keeps only the first that parses, so the washer half was never read at all.
+        # The other reports seen (see `_record_frames`) go underneath, for the same reason the
+        # extended one does: the report in hand is the newest and must win any overlap.
+        # One that has stopped arriving ages out like the telemetry does, so its half of the
+        # appliance reads unknown instead of holding the last value it ever sent.
+        command = self._status_cmd_of(blob)
+        now = self.hass.loop.time()
+        for other, (frame, seen_at) in self._status_frames.items():
+            if other != command and now - seen_at <= TELEMETRY_MAX_AGE:
+                state.update(model.decode(frame, status_cmd=other, only=declared))
+        # ⚠️ Decoded under its OWN command. Read as 6D01, a 6D02 report placed the dryer's fields
+        # over the washer's words -- a confident wrong value on the polls where 6D02 came first.
+        state.update(model.decode(blob, status_cmd=command, only=declared))
         return state
 
     def _note_unknown_layout(self, blob: bytes) -> None:

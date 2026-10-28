@@ -41,6 +41,10 @@ class ApplianceKind(StrEnum):
 
     AIR_CONDITIONER = "air_conditioner"
     WATER_HEATER = "water_heater"
+    # A washer, dryer or twin washer + dryer. Read-only by construction (see `PLATFORMS_BY_KIND`):
+    # its whole state is the manufacturer's byte map, split across two status frames (6D01 dryer,
+    # 6D02 washer on the 0504 laundry centre), and no hand-built family describes any of it.
+    LAUNDRY = "laundry"
     OTHER = "other"
 
 
@@ -66,6 +70,10 @@ CLASS_KINDS: Mapping[str, ApplianceKind] = MappingProxyType({
     "1815": ApplianceKind.WATER_HEATER,      # 燃气R5R6型
     "1817": ApplianceKind.WATER_HEATER,      # 500S / 788零冷水燃气热水器
     "2001": ApplianceKind.WATER_HEATER,      # 热泵热水器 — heat pump (issue #13)
+    # --- laundry ----------------------------------------------------------------------------------
+    # AWD14_BD4LCU1L越南中子 — twin washer + dryer (HWD140-BD14LCGNU1); its configFile files washer
+    # fields under 6D02/7D02 and dryer fields under 6D01/7D01, and the cloud labels it Roller Washer.
+    "0504": ApplianceKind.LAUNDRY,
 })
 
 # ⛔ NOT listed, deliberately. `0601`, `0602` and `1801` sit in the numbering next to classes that
@@ -97,6 +105,7 @@ CLASS_LABELS: Mapping[str, str] = MappingProxyType({
     "0312": "Air conditioner", "0d12": "Air conditioner", "0d21": "Air conditioner",
     "3912": "Air conditioner",
     "0501": "Washing machine",
+    "0504": "Washer-dryer",
     "0612": "Water heater", "0616": "Water heater", "0618": "Water heater",
     "0619": "Water heater", "061a": "Water heater",
     "1812": "Gas water heater", "1813": "Gas water heater", "1814": "Gas water heater",

@@ -28,7 +28,7 @@ Be aware of which tier your appliance falls into.
 | Tier | What it means | Classes |
 |---|---|---|
 | **Confirmed on hardware** | Real units, commanded and read back | Air conditioners `0212`, `0d12` (presence and the four-way louvres provisional), `3912` (a window unit); heat-pump water heater `2001` (**setpoint only** — its other settings are decoded but have never been commanded) |
-| **Decode validated against a real capture** | A real unit's traffic decoded correctly; never driven through Home Assistant, never commanded | Washing machine `0501` |
+| **Decode validated against a real capture** | A real unit's traffic decoded correctly; never driven through Home Assistant, never commanded | Washing machine `0501`; twin washer + dryer `0504` (read-only, see below) |
 | **By construction** | The manufacturer's map and your unit's declaration; **never seen on hardware here** | every other class below |
 
 ⚠️ **Only one non-air-conditioner setting has ever been commanded successfully** — a heat-pump
@@ -73,6 +73,7 @@ operating modes.
 |---|---|
 | `0121` `0122` `0123` `0124` `0128` | Refrigerators |
 | `0501` | Washing machines |
+| `0504` | Twin washer + dryer (laundry centre) |
 | `0901` `0902` | Cooker hoods |
 | `0b11` `0b12` | Sterilising cabinets |
 | `1a01` | Dishwashers |
@@ -86,6 +87,24 @@ operating modes.
 
 These are read and controlled through generic entities. A category gets a dedicated Home Assistant
 entity type as support for it is confirmed.
+
+## Twin washer + dryer (`0504`)
+
+The HWD140-BD14LCGNU1 laundry centre is one appliance with two drums, and it reports them in **two
+status frames every session**: the dryer in `6D01` (165 bytes) and the washer in `6D02` (225 bytes).
+Both are decoded from the unit's published map and merged into one state. A frame that stops
+arriving ages out after two minutes, so that drum's entities go unknown instead of freezing.
+
+It is identified by its class field, which matters here: its dryer report is exactly as long as the
+extended-36 air-conditioner family, and before the class was named it came up as an air conditioner
+with a thermostat and AC switches. Identified as laundry, it gets **sensors and binary sensors only**.
+No write has been confirmed on any laundry class, and a dashboard is the wrong place to find out
+whether one starts a drum full of water.
+
+Every field decoded from both frames of one real capture agrees with Haier's own cloud shadow for
+the same moment: 37 of the dryer's 44 and 109 of the washer's 111. Each frame also carries two
+programme-name text blocks, which are not decoded. The other five dryer fields sit past the report's
+first omitted word, and `placeable_limit` withholds them until more captures exist.
 
 ## What is deliberately not supported
 

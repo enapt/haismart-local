@@ -32,6 +32,13 @@ PLATFORMS_BY_KIND: dict[ApplianceKind, list[Platform]] = {
         Platform.SELECT,
         Platform.WATER_HEATER,
     ],
+    # Read-only on purpose: a washer's state is worth having in Home Assistant, but no 5Dxx write
+    # has been confirmed on any laundry class, and starting or pausing a drum full of water from a
+    # dashboard is the wrong place to find out. No climate either -- see `platforms_for`.
+    ApplianceKind.LAUNDRY: [
+        Platform.BINARY_SENSOR,
+        Platform.SENSOR,
+    ],
 }
 
 # Attributes a HERO platform already owns, so the generic layer does not build a second control

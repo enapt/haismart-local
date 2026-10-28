@@ -9,6 +9,7 @@ moment. The cloud is the independent witness: every field the map places is chec
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -95,3 +96,59 @@ def test_the_dryer_report_moves_between_idle_and_running() -> None:
     assert (idle["dryerRunningMode"], running["dryerRunningMode"]) == (2, 1)     # paused -> start
     assert (idle["dryerCyclePhase"], running["dryerCyclePhase"]) == (0, 8)       # standby -> sensing
     assert idle["dryerDoorStatus"] is True and running["dryerDoorLockStatus"] is True
+
+
+# --- labels -----------------------------------------------------------------------------------
+
+_CJK = re.compile(r"[　-鿿＀-￯]")
+
+
+def _laundry_specs():
+    from haismart_hrdp.entity_spec import specs_for
+
+    model = model_for(TYPEID)
+    assert model is not None
+    return specs_for(
+        model, CAPTURE["digital_model"]["attributes"], status_cmd=("6D01", "6D02", "7D01")
+    )
+
+
+def test_no_state_this_unit_can_show_is_left_in_chinese() -> None:
+    left = {
+        f"{spec.attribute}={value}": label
+        for spec in _laundry_specs()
+        for value, label in spec.options
+        if _CJK.search(label)
+    }
+    assert not left, left
+
+
+def test_no_two_values_of_one_attribute_share_a_label() -> None:
+    """Home Assistant dedupes an enum's options, so a shared label would hide a state."""
+    clashes = {
+        spec.attribute: labels
+        for spec in _laundry_specs()
+        if len(labels := [label for _, label in spec.options]) != len(set(labels))
+    }
+    assert not clashes, clashes
+
+
+def test_the_end_of_cycle_states_keep_the_labels_automations_use() -> None:
+    options = {spec.attribute: dict(spec.options) for spec in _laundry_specs()}
+    assert options["dryerCyclePhase"]["6"] == "Finished"
+    assert options["dryerCyclePhase"]["7"] == "Anti-crease"
+    assert options["dryerMessage"]["2"] == "Drying finished"
+    assert options["laundryCyclePhase"]["14"] == "Finished"
+    assert options["washerMessage"]["1"] == "Wash finished"
+    assert options["washerMessage"]["2"] == "Wash and dry finished"
+    assert options["dryerUnifiedProgramSettings"]["56"] == "AI Dry"   # what the app shows
+
+
+def test_laundry_labels_never_rename_another_class_s_states() -> None:
+    """⛔ The same words on any other appliance keep the label they had before this class."""
+    from haismart_hrdp.entity_spec import enum_label
+    from haismart_hrdp.laundry_labels import laundry_label
+
+    assert laundry_label("0501", "laundryCyclePhase", "结束") is None
+    assert laundry_label(None, "runningMode", "启动") is None
+    assert enum_label(1, "启动") == "启动"

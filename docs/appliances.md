@@ -97,14 +97,51 @@ arriving ages out after two minutes, so that drum's entities go unknown instead 
 
 It is identified by its class field, which matters here: its dryer report is exactly as long as the
 extended-36 air-conditioner family, and before the class was named it came up as an air conditioner
-with a thermostat and AC switches. Identified as laundry, it gets **sensors and binary sensors only**.
-No write has been confirmed on any laundry class, and a dashboard is the wrong place to find out
-whether one starts a drum full of water.
+with a thermostat and AC switches. Identified as laundry, it gets **sensors and binary sensors** by
+default. Controls are an opt-in, described below, because no write has been confirmed on any
+laundry class yet.
 
 Every field decoded from both frames of one real capture agrees with Haier's own cloud shadow for
 the same moment: 37 of the dryer's 44 and 109 of the washer's 111. Each frame also carries two
 programme-name text blocks, which are not decoded. The other five dryer fields sit past the report's
 first omitted word, and `placeable_limit` withholds them until more captures exist.
+
+The map also files a **big-data report per drum**: `7D01` (dryer) and `7D02` (washer). The unit
+never answered the extended query that asks for one, so they are read only if the machine pushes
+them. Each is decoded under its own command and placed underneath the status reports, which are
+fresher wherever the two overlap (81 of the washer's names repeat). The readings only they carry,
+such as motor current, valve states and the dryer's energy totals, are not declared by this unit's
+own model. The app does not show them either, so they stay hidden.
+
+### Controls (off by default)
+
+Turn on **Configure → Enable washer and dryer controls** to get:
+
+* **Start or resume**, **Pause** and **Cancel** buttons for each drum. Start runs whatever programme
+  the drum has selected; the machine uses one value for start and resume. Cancel (`ReturnStandby`)
+  abandons the cycle and returns the drum to standby.
+* The settings the machine's configFile marks as writable **on their own** (`operationType` `I`):
+  each drum's programme, spin speed, wash temperature, dry level and temperature, child lock, the
+  dosing and care options. That is 45 in all. Settings it writes only inside a group command are
+  not offered.
+
+Every command is a single-parameter `5Dxx` write; the washer drum's carry the `0x80` drum bit. Each
+one is refused before anything is sent unless:
+
+* that drum's **remote-control flag is on**. It is set at the machine's panel, and the machine
+  refuses remote commands without it anyway;
+* for a programme change, the drum is **not running**. Pick the programme, check that it took,
+  then start. Chaining the two by machine gave spin-only cycles on other Haier washers;
+* for power off, **neither drum is running**.
+
+Four writable settings are never offered: the "long-term authorisation" pair, which would keep
+remote control allowed with no panel action; remote power-on; and the measured load weight.
+
+⚠️ No laundry command has been seen accepted yet. The first one sent tells: a refusal shows as an
+error naming the reason, and the diagnostics file records every command and its reply. Haier's
+configFile also defines the group commands the app can start a programme with (`grCommonDry`
+0x60/0001, `grOnlineWash` 0x60/8006, with every member's word and bit). They are not used yet, and
+are the next step only if the single-parameter start turns out not to be enough.
 
 ## How an appliance is identified, and what happens when it is not
 

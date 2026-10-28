@@ -183,11 +183,13 @@
         "title": "Opzioni Haismart",
         "data": {
           "scan_interval": "Intervallo di interrogazione dello stato (secondi)",
-          "appliance_kind": "Apparecchio"
+          "appliance_kind": "Apparecchio",
+          "laundry_controls": "Abilita i comandi di lavatrice e asciugatrice"
         },
         "data_description": {
           "scan_interval": "Con quale frequenza chiedere lo stato al apparecchio. Ogni interrogazione è una sessione locale completa e serve solo a rilevare le modifiche fatte con il telecomando o con l'app: i comandi inviati da Home Assistant si aggiornano comunque all'istante.",
-          "appliance_kind": "Mostrato solo per un apparecchio che non si è identificato. Una lavatrice, un'asciugatrice o una lavasciuga riceve sensori di sola lettura e mai un termostato per condizionatore."
+          "appliance_kind": "Mostrato solo per un apparecchio che non si è identificato. Una lavatrice, un'asciugatrice o una lavasciuga riceve sensori di sola lettura e mai un termostato per condizionatore.",
+          "laundry_controls": "Aggiunge i pulsanti di avvio, pausa e annullamento per ciascun cestello, oltre alle impostazioni di programma e di opzione che la macchina consente di modificare una alla volta. Disattivato per impostazione predefinita. Ogni comando richiede comunque che il controllo remoto sia attivato sul pannello della macchina per quel cestello, e non viene inviato nulla finché è disattivato."
         }
       }
     }
@@ -555,6 +557,24 @@
     "button": {
       "start_self_clean": {
         "name": "Avvia autopulizia"
+      },
+      "washer_start": {
+        "name": "Lavatrice: avvia o riprendi"
+      },
+      "washer_pause": {
+        "name": "Lavatrice: metti in pausa"
+      },
+      "washer_cancel": {
+        "name": "Lavatrice: annulla"
+      },
+      "dryer_start": {
+        "name": "Asciugatrice: avvia o riprendi"
+      },
+      "dryer_pause": {
+        "name": "Asciugatrice: metti in pausa"
+      },
+      "dryer_cancel": {
+        "name": "Asciugatrice: annulla"
       }
     }
   },

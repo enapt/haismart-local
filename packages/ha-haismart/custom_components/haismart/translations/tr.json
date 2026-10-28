@@ -183,11 +183,13 @@
         "title": "Haismart seçenekleri",
         "data": {
           "scan_interval": "Durum sorgulama aralığı (saniye)",
-          "appliance_kind": "Cihaz"
+          "appliance_kind": "Cihaz",
+          "laundry_controls": "Çamaşır ve kurutma makinesi kontrollerini etkinleştir"
         },
         "data_description": {
           "scan_interval": "Cihaza durumunun ne sıklıkla sorulacağı. Her sorgulama tam bir yerel oturumdur ve yalnızca kumandayla veya uygulamayla yapılan değişiklikleri fark etmek için vardır — Home Assistant'tan gönderdiğiniz komutlar zaten anında yansır.",
-          "appliance_kind": "Yalnızca kendini tanıtmayan cihazlarda gösterilir. Çamaşır makinesi, kurutma makinesi veya kurutmalı çamaşır makinesi salt okunur sensörler alır ve asla klima termostatı almaz."
+          "appliance_kind": "Yalnızca kendini tanıtmayan cihazlarda gösterilir. Çamaşır makinesi, kurutma makinesi veya kurutmalı çamaşır makinesi salt okunur sensörler alır ve asla klima termostatı almaz.",
+          "laundry_controls": "Her tambur için başlat, duraklat ve iptal düğmelerinin yanı sıra makinenin tek tek değiştirilmesine izin verdiği program ve seçenek ayarlarını ekler. Varsayılan olarak kapalıdır. Her komut için yine de makinenin panelinden o tambur için uzaktan kontrolün açılmış olması gerekir; kapalıyken hiçbir komut gönderilmez."
         }
       }
     }
@@ -555,6 +557,24 @@
     "button": {
       "start_self_clean": {
         "name": "Kendi kendini temizlemeyi başlat"
+      },
+      "washer_start": {
+        "name": "Çamaşır makinesini başlat veya devam ettir"
+      },
+      "washer_pause": {
+        "name": "Çamaşır makinesini duraklat"
+      },
+      "washer_cancel": {
+        "name": "Çamaşır makinesini iptal et"
+      },
+      "dryer_start": {
+        "name": "Kurutma makinesini başlat veya devam ettir"
+      },
+      "dryer_pause": {
+        "name": "Kurutma makinesini duraklat"
+      },
+      "dryer_cancel": {
+        "name": "Kurutma makinesini iptal et"
       }
     }
   },

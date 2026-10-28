@@ -183,11 +183,13 @@
         "title": "Opcje Haismart",
         "data": {
           "scan_interval": "Częstotliwość odpytywania o stan (sekundy)",
-          "appliance_kind": "Sprzęt"
+          "appliance_kind": "Sprzęt",
+          "laundry_controls": "Włącz sterowanie pralką i suszarką"
         },
         "data_description": {
           "scan_interval": "Jak często pytać sprzęt o jego stan. Każde odpytanie to pełna sesja lokalna i służy wyłącznie do wychwycenia zmian wprowadzonych pilotem lub aplikacją — polecenia wysyłane z Home Assistanta i tak aktualizują się natychmiast.",
-          "appliance_kind": "Widoczne tylko dla sprzętu, który się nie przedstawił. Pralka, suszarka lub pralko-suszarka otrzymuje czujniki tylko do odczytu i nigdy nie dostaje termostatu klimatyzatora."
+          "appliance_kind": "Widoczne tylko dla sprzętu, który się nie przedstawił. Pralka, suszarka lub pralko-suszarka otrzymuje czujniki tylko do odczytu i nigdy nie dostaje termostatu klimatyzatora.",
+          "laundry_controls": "Dodaje przyciski uruchamiania, wstrzymywania i anulowania dla każdego bębna oraz ustawienia programu i opcji, które maszyna pozwala zmieniać pojedynczo. Domyślnie wyłączone. Każde polecenie nadal wymaga włączenia zdalnego sterowania na panelu maszyny dla danego bębna — dopóki jest wyłączone, nic nie jest wysyłane."
         }
       }
     }
@@ -555,6 +557,24 @@
     "button": {
       "start_self_clean": {
         "name": "Uruchom samoczyszczenie"
+      },
+      "washer_start": {
+        "name": "Pralka: uruchom lub wznów"
+      },
+      "washer_pause": {
+        "name": "Pralka: wstrzymaj"
+      },
+      "washer_cancel": {
+        "name": "Pralka: anuluj"
+      },
+      "dryer_start": {
+        "name": "Suszarka: uruchom lub wznów"
+      },
+      "dryer_pause": {
+        "name": "Suszarka: wstrzymaj"
+      },
+      "dryer_cancel": {
+        "name": "Suszarka: anuluj"
       }
     }
   },

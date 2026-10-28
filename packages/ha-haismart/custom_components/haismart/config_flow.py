@@ -64,6 +64,7 @@ from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.selector import (
+    BooleanSelector,
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
@@ -103,6 +104,7 @@ from .const import (
     CONF_DEVICE_TYPE,
     CONF_DIGITAL_MODEL,
     CONF_HOST,
+    CONF_LAUNDRY_CONTROLS,
     CONF_LOCAL_KEY,
     CONF_LOCALKEY_VERSION,
     CONF_NAME,
@@ -1807,11 +1809,29 @@ class HaismartOptionsFlow(OptionsFlow):
                 or CONF_APPLIANCE_KIND in entry.options
             )
         )
+        # Laundry controls, for an entry that is laundry now -- by class, label or answer.
+        coordinator = getattr(entry, "runtime_data", None)
+        is_laundry = (
+            coordinator.appliance_kind if coordinator is not None else kind
+        ) is ApplianceKind.LAUNDRY
         if user_input is not None:
             # This form replaces the options wholesale, so an answer it did not show is carried.
             if not offered and CONF_APPLIANCE_KIND in entry.options:
                 user_input = {**user_input, CONF_APPLIANCE_KIND: entry.options[CONF_APPLIANCE_KIND]}
+            if not is_laundry and CONF_LAUNDRY_CONTROLS in entry.options:
+                user_input = {
+                    **user_input, CONF_LAUNDRY_CONTROLS: entry.options[CONF_LAUNDRY_CONTROLS]
+                }
             return self.async_create_entry(data=user_input)
+        if is_laundry:
+            kind_field_laundry: dict[Any, Any] = {
+                vol.Required(
+                    CONF_LAUNDRY_CONTROLS,
+                    default=bool(entry.options.get(CONF_LAUNDRY_CONTROLS, False)),
+                ): BooleanSelector(),
+            }
+        else:
+            kind_field_laundry = {}
         kind_field: dict[Any, Any] = {}
         if offered:
             kind_field = {
@@ -1825,6 +1845,7 @@ class HaismartOptionsFlow(OptionsFlow):
             data_schema=vol.Schema(
                 {
                     **kind_field,
+                    **kind_field_laundry,
                     vol.Required(
                         CONF_SCAN_INTERVAL,
                         default=self.config_entry.options.get(

@@ -183,11 +183,13 @@
         "title": "Možnosti Haismart",
         "data": {
           "scan_interval": "Interval dotazování na stav (sekundy)",
-          "appliance_kind": "Zařízení"
+          "appliance_kind": "Zařízení",
+          "laundry_controls": "Povolit ovládání pračky a sušičky"
         },
         "data_description": {
           "scan_interval": "Jak často se jednotky ptát na její stav. Každý dotaz je plnohodnotná lokální relace a existuje jen proto, aby zachytil změny provedené dálkovým ovladačem nebo aplikací – příkazy odeslané z Home Assistanta se projeví okamžitě tak jako tak.",
-          "appliance_kind": "Zobrazuje se jen u zařízení, které se neidentifikovalo. Pračka, sušička nebo pračka se sušičkou dostane senzory jen pro čtení, nikdy termostat klimatizace."
+          "appliance_kind": "Zobrazuje se jen u zařízení, které se neidentifikovalo. Pračka, sušička nebo pračka se sušičkou dostane senzory jen pro čtení, nikdy termostat klimatizace.",
+          "laundry_controls": "Přidá ke každému bubnu tlačítka pro spuštění, pozastavení a zrušení a také nastavení programu a možností, která stroj dovoluje měnit po jednom. Ve výchozím stavu vypnuto. Každý příkaz stále vyžaduje zapnuté dálkové ovládání na panelu stroje pro daný buben; dokud je vypnuté, nic se neodesílá."
         }
       }
     }
@@ -555,6 +557,24 @@
     "button": {
       "start_self_clean": {
         "name": "Spustit samočištění"
+      },
+      "washer_start": {
+        "name": "Pračka: spustit nebo pokračovat"
+      },
+      "washer_pause": {
+        "name": "Pračka: pozastavit"
+      },
+      "washer_cancel": {
+        "name": "Pračka: zrušit"
+      },
+      "dryer_start": {
+        "name": "Sušička: spustit nebo pokračovat"
+      },
+      "dryer_pause": {
+        "name": "Sušička: pozastavit"
+      },
+      "dryer_cancel": {
+        "name": "Sušička: zrušit"
       }
     }
   },

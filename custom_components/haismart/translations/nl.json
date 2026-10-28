@@ -183,11 +183,13 @@
         "title": "Haismart-opties",
         "data": {
           "scan_interval": "Interval voor statusopvraging (seconden)",
-          "appliance_kind": "Apparaat"
+          "appliance_kind": "Apparaat",
+          "laundry_controls": "Bediening van wasmachine en droger inschakelen"
         },
         "data_description": {
           "scan_interval": "Hoe vaak het apparaat naar zijn status wordt gevraagd. Elke opvraging is een volledige lokale sessie en bestaat alleen om wijzigingen op te merken die met de afstandsbediening of de app zijn gemaakt — opdrachten die je vanuit Home Assistant stuurt, worden hoe dan ook meteen verwerkt.",
-          "appliance_kind": "Alleen getoond voor een apparaat dat zich niet heeft geïdentificeerd. Een wasmachine, droger of was-droogcombinatie krijgt alleen-lezen sensoren en nooit een airco-thermostaat."
+          "appliance_kind": "Alleen getoond voor een apparaat dat zich niet heeft geïdentificeerd. Een wasmachine, droger of was-droogcombinatie krijgt alleen-lezen sensoren en nooit een airco-thermostaat.",
+          "laundry_controls": "Voegt voor elke trommel knoppen toe om te starten, te pauzeren en te annuleren, plus de programma- en optie-instellingen die de machine één voor één laat wijzigen. Standaard uitgeschakeld. Elke opdracht vereist nog steeds dat bediening op afstand voor die trommel op het bedieningspaneel van de machine is ingeschakeld; zolang die uit staat, wordt er niets verzonden."
         }
       }
     }
@@ -555,6 +557,24 @@
     "button": {
       "start_self_clean": {
         "name": "Zelfreiniging starten"
+      },
+      "washer_start": {
+        "name": "Wasmachine starten of hervatten"
+      },
+      "washer_pause": {
+        "name": "Wasmachine pauzeren"
+      },
+      "washer_cancel": {
+        "name": "Wasprogramma annuleren"
+      },
+      "dryer_start": {
+        "name": "Droger starten of hervatten"
+      },
+      "dryer_pause": {
+        "name": "Droger pauzeren"
+      },
+      "dryer_cancel": {
+        "name": "Droogprogramma annuleren"
       }
     }
   },

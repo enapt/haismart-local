@@ -183,11 +183,13 @@
         "title": "Haismart-alternativ",
         "data": {
           "scan_interval": "Intervall för statusavfrågning (sekunder)",
-          "appliance_kind": "Apparat"
+          "appliance_kind": "Apparat",
+          "laundry_controls": "Aktivera styrning av tvättmaskin och torktumlare"
         },
         "data_description": {
           "scan_interval": "Hur ofta enheten ska tillfrågas om sitt tillstånd. Varje avfrågning är en fullständig lokal session och finns bara till för att upptäcka ändringar gjorda med fjärrkontrollen eller appen – kommandon du skickar från Home Assistant uppdateras direkt ändå.",
-          "appliance_kind": "Visas bara för en apparat som inte identifierade sig. En tvättmaskin, torktumlare eller tvätt- och torkmaskin får skrivskyddade sensorer och aldrig någon termostat för luftkonditionering."
+          "appliance_kind": "Visas bara för en apparat som inte identifierade sig. En tvättmaskin, torktumlare eller tvätt- och torkmaskin får skrivskyddade sensorer och aldrig någon termostat för luftkonditionering.",
+          "laundry_controls": "Lägger till knappar för start, paus och avbryt för varje trumma, plus de program- och alternativinställningar som maskinen låter dig ändra en i taget. Avstängt som standard. Varje kommando kräver fortfarande att fjärrstyrning är aktiverad på maskinens kontrollpanel för den trumman, och inget skickas medan den är avstängd."
         }
       }
     }
@@ -555,6 +557,24 @@
     "button": {
       "start_self_clean": {
         "name": "Starta självrengöring"
+      },
+      "washer_start": {
+        "name": "Tvättmaskin: starta eller återuppta"
+      },
+      "washer_pause": {
+        "name": "Tvättmaskin: pausa"
+      },
+      "washer_cancel": {
+        "name": "Tvättmaskin: avbryt"
+      },
+      "dryer_start": {
+        "name": "Torktumlare: starta eller återuppta"
+      },
+      "dryer_pause": {
+        "name": "Torktumlare: pausa"
+      },
+      "dryer_cancel": {
+        "name": "Torktumlare: avbryt"
       }
     }
   },

@@ -183,11 +183,13 @@
         "title": "Opțiuni Haismart",
         "data": {
           "scan_interval": "Interval de interogare a stării (secunde)",
-          "appliance_kind": "Aparat"
+          "appliance_kind": "Aparat",
+          "laundry_controls": "Activează comenzile mașinii de spălat și ale uscătorului de rufe"
         },
         "data_description": {
           "scan_interval": "Cât de des să fie întrebat aparatul despre starea sa. Fiecare interogare este o sesiune locală completă și există doar pentru a observa modificările făcute de la telecomandă sau din aplicație — comenzile trimise din Home Assistant se actualizează instantaneu oricum.",
-          "appliance_kind": "Afișat doar pentru un aparat care nu s-a identificat. O mașină de spălat, un uscător de rufe sau o mașină de spălat cu uscător primește senzori doar pentru citire și niciodată un termostat de aer condiționat."
+          "appliance_kind": "Afișat doar pentru un aparat care nu s-a identificat. O mașină de spălat, un uscător de rufe sau o mașină de spălat cu uscător primește senzori doar pentru citire și niciodată un termostat de aer condiționat.",
+          "laundry_controls": "Adaugă butoane de pornire, pauză și anulare pentru fiecare tambur, precum și setările de program și de opțiuni pe care mașina vă permite să le modificați pe rând. Dezactivat implicit. Fiecare comandă necesită în continuare activarea controlului de la distanță de pe panoul mașinii pentru acel tambur, iar cât timp acesta este dezactivat nu se trimite nimic."
         }
       }
     }
@@ -555,6 +557,24 @@
     "button": {
       "start_self_clean": {
         "name": "Pornește autocurățarea"
+      },
+      "washer_start": {
+        "name": "Mașină de spălat: pornește sau reia"
+      },
+      "washer_pause": {
+        "name": "Mașină de spălat: pune pe pauză"
+      },
+      "washer_cancel": {
+        "name": "Mașină de spălat: anulează"
+      },
+      "dryer_start": {
+        "name": "Uscător de rufe: pornește sau reia"
+      },
+      "dryer_pause": {
+        "name": "Uscător de rufe: pune pe pauză"
+      },
+      "dryer_cancel": {
+        "name": "Uscător de rufe: anulează"
       }
     }
   },

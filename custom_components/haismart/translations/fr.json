@@ -183,11 +183,13 @@
         "title": "Options Haismart",
         "data": {
           "scan_interval": "Intervalle d'interrogation de l'état (secondes)",
-          "appliance_kind": "Appareil"
+          "appliance_kind": "Appareil",
+          "laundry_controls": "Activer les commandes du lave-linge et du sèche-linge"
         },
         "data_description": {
           "scan_interval": "À quelle fréquence demander son état à l'appareil. Chaque interrogation est une session locale complète, et elle ne sert qu'à détecter les changements faits depuis la télécommande ou l'application — les commandes envoyées depuis Home Assistant se répercutent immédiatement de toute façon.",
-          "appliance_kind": "Affiché uniquement pour un appareil qui ne s'est pas identifié. Un lave-linge, un sèche-linge ou un lave-linge séchant dispose de capteurs en lecture seule et jamais d'un thermostat de climatiseur."
+          "appliance_kind": "Affiché uniquement pour un appareil qui ne s'est pas identifié. Un lave-linge, un sèche-linge ou un lave-linge séchant dispose de capteurs en lecture seule et jamais d'un thermostat de climatiseur.",
+          "laundry_controls": "Ajoute des boutons de démarrage, de pause et d'annulation pour chaque tambour, ainsi que les réglages de programme et d'options que la machine permet de modifier un par un. Désactivé par défaut. Chaque commande exige toujours que le contrôle à distance soit activé sur le panneau de la machine pour ce tambour, et rien n'est envoyé tant qu'il est désactivé."
         }
       }
     }
@@ -555,6 +557,24 @@
     "button": {
       "start_self_clean": {
         "name": "Démarrer l'auto-nettoyage"
+      },
+      "washer_start": {
+        "name": "Lave-linge : démarrer ou reprendre"
+      },
+      "washer_pause": {
+        "name": "Lave-linge : mettre en pause"
+      },
+      "washer_cancel": {
+        "name": "Lave-linge : annuler"
+      },
+      "dryer_start": {
+        "name": "Sèche-linge : démarrer ou reprendre"
+      },
+      "dryer_pause": {
+        "name": "Sèche-linge : mettre en pause"
+      },
+      "dryer_cancel": {
+        "name": "Sèche-linge : annuler"
       }
     }
   },

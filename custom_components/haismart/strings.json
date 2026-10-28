@@ -183,11 +183,13 @@
         "title": "Haismart options",
         "data": {
           "scan_interval": "Status poll interval (seconds)",
-          "appliance_kind": "Appliance"
+          "appliance_kind": "Appliance",
+          "laundry_controls": "Enable washer and dryer controls"
         },
         "data_description": {
           "scan_interval": "How often to ask the appliance for its state. Each poll is a full local session, and it exists only to notice changes made with the remote or the app — commands you send from Home Assistant update instantly regardless.",
-          "appliance_kind": "Only shown for an appliance that did not identify itself. A washer, dryer or washer-dryer gets read-only sensors and never an air-conditioner thermostat."
+          "appliance_kind": "Only shown for an appliance that did not identify itself. A washer, dryer or washer-dryer gets read-only sensors and never an air-conditioner thermostat.",
+          "laundry_controls": "Adds start, pause and cancel buttons for each drum, plus the programme and option settings the machine allows to be changed one at a time. Off by default. Every command still needs remote control turned on at the machine's panel for that drum, and nothing is sent while it is off."
         }
       }
     }
@@ -555,6 +557,24 @@
     "button": {
       "start_self_clean": {
         "name": "Start self-clean"
+      },
+      "washer_start": {
+        "name": "Washer start or resume"
+      },
+      "washer_pause": {
+        "name": "Washer pause"
+      },
+      "washer_cancel": {
+        "name": "Washer cancel"
+      },
+      "dryer_start": {
+        "name": "Dryer start or resume"
+      },
+      "dryer_pause": {
+        "name": "Dryer pause"
+      },
+      "dryer_cancel": {
+        "name": "Dryer cancel"
       }
     }
   },

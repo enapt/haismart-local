@@ -152,3 +152,53 @@ def test_laundry_labels_never_rename_another_class_s_states() -> None:
     assert laundry_label("0501", "laundryCyclePhase", "结束") is None
     assert laundry_label(None, "runningMode", "启动") is None
     assert enum_label(1, "启动") == "启动"
+
+
+# --- controls ----------------------------------------------------------------------------------
+
+
+def test_only_individually_writable_visible_settings_are_offered() -> None:
+    from haismart_hrdp.laundry import laundry_writable
+
+    model = model_for(TYPEID)
+    assert model is not None
+    offered = laundry_writable(model.fields, CAPTURE["digital_model"]["attributes"])
+    declared = {a["name"]: a for a in CAPTURE["digital_model"]["attributes"]}
+    assert {"washerUnifiedProgramSettings", "dryerUnifiedProgramSettings", "spinSpeed",
+            "washTemp", "childLockStatus", "dryerDryLevel"} <= offered
+    for name in offered:
+        assert "I" in declared[name]["operationType"], name     # never a group-only attribute
+        assert model.field(name).epp_cmd, name
+    # ⛔ Never offered: the safeguard, remote power-on, the measured load, and start/pause as a
+    # dropdown (they are buttons).
+    assert not offered & {
+        "longTimeAuthorizationStatus", "dryerLongTimeAuthorizationStatus", "remotePowerOn",
+        "weight", "washerRunningMode", "dryerRunningMode",
+    }
+
+
+def test_the_write_ids_are_the_class_s_own_with_the_washer_drum_bit() -> None:
+    from haismart_hrdp.laundry import DRUMS, LAUNDRY_ACTIONS
+
+    model = model_for(TYPEID)
+    assert model is not None
+    assert model.encode_write("washerRunningMode", 1) == (bytes.fromhex("5da1"), b"\x00\x01")
+    assert model.encode_write("washerRunningMode", 2) == (bytes.fromhex("5da1"), b"\x00\x00")
+    assert model.encode_write("dryerRunningMode", 1) == (bytes.fromhex("5d21"), b"\x00\x01")
+    cancel = LAUNDRY_ACTIONS["0504"]
+    assert cancel["washerReturnStandby"].frame_parts() == (bytes.fromhex("5da4"), b"\x00\x01")
+    assert cancel["dryerReturnStandby"].frame_parts() == (bytes.fromhex("5d23"), b"\x00\x01")
+    for drum in DRUMS.values():
+        assert model.field(drum.remote_valid).status_cmd == drum.report
+        assert model.field(drum.running_mode).status_cmd == drum.report
+        assert drum.return_standby in cancel
+
+
+def test_the_remote_flags_read_off_in_the_capture() -> None:
+    """The owner had remote control off at the panel; the gate must read it that way."""
+    model = model_for(TYPEID)
+    assert model is not None
+    dryer = model.decode(FRAMES["6d01_dryer_running"], status_cmd="6D01", only=DECLARED)
+    washer = model.decode(FRAMES["6d02_washer_idle"], status_cmd="6D02", only=DECLARED)
+    assert dryer["dryerRemoteCtrValid"] is False and CLOUD["dryerRemoteCtrValid"] == "false"
+    assert washer["washerRemoteCtrValid"] is False and CLOUD["washerRemoteCtrValid"] == "false"

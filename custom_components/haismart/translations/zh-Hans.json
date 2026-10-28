@@ -183,11 +183,13 @@
         "title": "Haismart 选项",
         "data": {
           "scan_interval": "状态轮询间隔（秒）",
-          "appliance_kind": "设备"
+          "appliance_kind": "设备",
+          "laundry_controls": "启用洗衣机和干衣机控制"
         },
         "data_description": {
           "scan_interval": "多久向设备查询一次状态。每次轮询都是一个完整的本地会话，其唯一作用是察觉通过遥控器或 App 所做的更改——你从 Home Assistant 发出的命令无论如何都会即时更新。",
-          "appliance_kind": "仅对未表明自身类型的设备显示。洗衣机、干衣机或洗烘一体机会获得只读传感器，并且绝不会生成空调温控器。"
+          "appliance_kind": "仅对未表明自身类型的设备显示。洗衣机、干衣机或洗烘一体机会获得只读传感器，并且绝不会生成空调温控器。",
+          "laundry_controls": "为每个滚筒添加启动、暂停和取消按钮，以及设备允许逐项更改的程序和选项设置。默认关闭。每条命令仍需先在设备面板上为该滚筒开启远程控制，远程控制关闭期间不会发送任何命令。"
         }
       }
     }
@@ -555,6 +557,24 @@
     "button": {
       "start_self_clean": {
         "name": "启动自清洁"
+      },
+      "washer_start": {
+        "name": "洗衣机启动或继续"
+      },
+      "washer_pause": {
+        "name": "洗衣机暂停"
+      },
+      "washer_cancel": {
+        "name": "洗衣机取消"
+      },
+      "dryer_start": {
+        "name": "干衣机启动或继续"
+      },
+      "dryer_pause": {
+        "name": "干衣机暂停"
+      },
+      "dryer_cancel": {
+        "name": "干衣机取消"
       }
     }
   },

@@ -183,11 +183,13 @@
         "title": "Haismart-Optionen",
         "data": {
           "scan_interval": "Abfrageintervall für den Status (Sekunden)",
-          "appliance_kind": "Gerät"
+          "appliance_kind": "Gerät",
+          "laundry_controls": "Steuerung für Waschmaschine und Trockner aktivieren"
         },
         "data_description": {
           "scan_interval": "Wie oft das Gerät nach seinem Zustand gefragt wird. Jede Abfrage ist eine vollständige lokale Sitzung und dient allein dazu, Änderungen über die Fernbedienung oder die App mitzubekommen – Befehle, die du aus Home Assistant sendest, werden ohnehin sofort übernommen.",
-          "appliance_kind": "Wird nur für ein Gerät angezeigt, das sich nicht identifiziert hat. Eine Waschmaschine, ein Trockner oder ein Waschtrockner erhält schreibgeschützte Sensoren und nie einen Klimaanlagen-Thermostat."
+          "appliance_kind": "Wird nur für ein Gerät angezeigt, das sich nicht identifiziert hat. Eine Waschmaschine, ein Trockner oder ein Waschtrockner erhält schreibgeschützte Sensoren und nie einen Klimaanlagen-Thermostat.",
+          "laundry_controls": "Fügt für jede Trommel Schaltflächen zum Starten, Pausieren und Abbrechen hinzu, dazu die Programm- und Optionseinstellungen, die sich am Gerät einzeln ändern lassen. Standardmäßig deaktiviert. Jeder Befehl setzt weiterhin voraus, dass die Fernsteuerung für diese Trommel am Bedienfeld des Geräts eingeschaltet ist; solange sie aus ist, wird nichts gesendet."
         }
       }
     }
@@ -555,6 +557,24 @@
     "button": {
       "start_self_clean": {
         "name": "Selbstreinigung starten"
+      },
+      "washer_start": {
+        "name": "Waschmaschine starten oder fortsetzen"
+      },
+      "washer_pause": {
+        "name": "Waschmaschine pausieren"
+      },
+      "washer_cancel": {
+        "name": "Waschprogramm abbrechen"
+      },
+      "dryer_start": {
+        "name": "Trockner starten oder fortsetzen"
+      },
+      "dryer_pause": {
+        "name": "Trockner pausieren"
+      },
+      "dryer_cancel": {
+        "name": "Trockenprogramm abbrechen"
       }
     }
   },

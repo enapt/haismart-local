@@ -183,11 +183,13 @@
         "title": "Haismart-alternativer",
         "data": {
           "scan_interval": "Intervall for statusforespørsel (sekunder)",
-          "appliance_kind": "Apparat"
+          "appliance_kind": "Apparat",
+          "laundry_controls": "Aktiver styring av vaskemaskin og tørketrommel"
         },
         "data_description": {
           "scan_interval": "Hvor ofte anlegget skal spørres om tilstanden sin. Hver forespørsel er en full lokal økt, og den finnes bare for å fange opp endringer gjort med fjernkontrollen eller appen – kommandoer du sender fra Home Assistant, oppdateres umiddelbart uansett.",
-          "appliance_kind": "Vises bare for et apparat som ikke identifiserte seg. En vaskemaskin, tørketrommel eller vaske-tørkemaskin får skrivebeskyttede sensorer og aldri en termostat for klimaanlegg."
+          "appliance_kind": "Vises bare for et apparat som ikke identifiserte seg. En vaskemaskin, tørketrommel eller vaske-tørkemaskin får skrivebeskyttede sensorer og aldri en termostat for klimaanlegg.",
+          "laundry_controls": "Legger til knapper for start, pause og avbryt for hver tromle, pluss de program- og alternativinnstillingene maskinen lar deg endre én om gangen. Av som standard. Hver kommando krever fortsatt at fjernstyring er slått på i maskinens kontrollpanel for den tromlen, og ingenting sendes mens den er slått av."
         }
       }
     }
@@ -555,6 +557,24 @@
     "button": {
       "start_self_clean": {
         "name": "Start selvrensing"
+      },
+      "washer_start": {
+        "name": "Vaskemaskin: start eller fortsett"
+      },
+      "washer_pause": {
+        "name": "Vaskemaskin: pause"
+      },
+      "washer_cancel": {
+        "name": "Vaskemaskin: avbryt"
+      },
+      "dryer_start": {
+        "name": "Tørketrommel: start eller fortsett"
+      },
+      "dryer_pause": {
+        "name": "Tørketrommel: pause"
+      },
+      "dryer_cancel": {
+        "name": "Tørketrommel: avbryt"
       }
     }
   },

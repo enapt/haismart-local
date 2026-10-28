@@ -183,11 +183,13 @@
         "title": "Tùy chọn Haismart",
         "data": {
           "scan_interval": "Chu kỳ đọc trạng thái (giây)",
-          "appliance_kind": "Thiết bị"
+          "appliance_kind": "Thiết bị",
+          "laundry_controls": "Bật điều khiển máy giặt và máy sấy"
         },
         "data_description": {
           "scan_interval": "Tần suất hỏi trạng thái của thiết bị. Mỗi lần đọc là một phiên cục bộ đầy đủ, và chỉ nhằm phát hiện những thay đổi thực hiện bằng điều khiển từ xa hoặc ứng dụng — các lệnh bạn gửi từ Home Assistant vẫn cập nhật ngay lập tức.",
-          "appliance_kind": "Chỉ hiển thị với thiết bị không tự nhận dạng. Máy giặt, máy sấy hoặc máy giặt sấy sẽ có cảm biến chỉ đọc và không bao giờ có bộ điều nhiệt máy điều hòa."
+          "appliance_kind": "Chỉ hiển thị với thiết bị không tự nhận dạng. Máy giặt, máy sấy hoặc máy giặt sấy sẽ có cảm biến chỉ đọc và không bao giờ có bộ điều nhiệt máy điều hòa.",
+          "laundry_controls": "Thêm các nút bắt đầu, tạm dừng và hủy cho từng lồng, cùng với các cài đặt chương trình và tùy chọn mà máy cho phép thay đổi từng mục một. Tắt theo mặc định. Mọi lệnh vẫn cần bật điều khiển từ xa cho lồng đó trên bảng điều khiển của máy, và không có lệnh nào được gửi khi chế độ này tắt."
         }
       }
     }
@@ -555,6 +557,24 @@
     "button": {
       "start_self_clean": {
         "name": "Bắt đầu tự làm sạch"
+      },
+      "washer_start": {
+        "name": "Bắt đầu hoặc tiếp tục máy giặt"
+      },
+      "washer_pause": {
+        "name": "Tạm dừng máy giặt"
+      },
+      "washer_cancel": {
+        "name": "Hủy máy giặt"
+      },
+      "dryer_start": {
+        "name": "Bắt đầu hoặc tiếp tục máy sấy"
+      },
+      "dryer_pause": {
+        "name": "Tạm dừng máy sấy"
+      },
+      "dryer_cancel": {
+        "name": "Hủy máy sấy"
       }
     }
   },

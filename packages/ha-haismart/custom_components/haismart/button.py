@@ -1,4 +1,4 @@
-"""Button to start the AC's self-clean cycle.
+"""Buttons: the AC's self-clean cycle, and a laundry appliance's start / pause / cancel per drum.
 
 Self-clean is a one-shot *trigger*, not a toggle: the cycle runs to completion and there is no OFF
 command — the device model declares a start and no stop, and pressing it again while it runs is
@@ -12,6 +12,7 @@ write frame (same group command, zero displacement) to be confirmed there.
 """
 from __future__ import annotations
 
+from haismart_hrdp.laundry import DRUMS, Drum
 from homeassistant.components.button import ButtonEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -32,6 +33,13 @@ async def async_setup_entry(
     # follow: a button that fires an op the family cannot place would silently do nothing.
     if coordinator.uses_curated_ac_entities and coordinator.supports_field(_SELF_CLEAN_FIELD):
         async_add_entities([HaismartSelfCleanButton(coordinator)])
+    if coordinator.laundry_controls_enabled:
+        async_add_entities(
+            LaundryDrumButton(coordinator, drum, action)
+            for drum in DRUMS.values()
+            for action in ("start", "pause", "cancel")
+            if action != "cancel" or drum.return_standby in coordinator.laundry_actions
+        )
 
 
 class HaismartSelfCleanButton(HaismartEntity, ButtonEntity):
@@ -65,3 +73,27 @@ class HaismartSelfCleanButton(HaismartEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         await self.coordinator.async_send_control({_SELF_CLEAN_FIELD: 1})
+
+
+class LaundryDrumButton(HaismartEntity, ButtonEntity):
+    """Start (or resume), pause, or cancel one drum of a laundry appliance.
+
+    Start runs whatever programme the drum has selected -- on its panel, or through the programme
+    control -- and resumes a paused one: the machine publishes one value for both. Cancel returns
+    the drum to standby, abandoning the cycle. The coordinator refuses each unless the drum's own
+    remote-control flag is set at the panel (see ``_async_check_laundry_write``).
+    """
+
+    def __init__(self, coordinator: HaismartCoordinator, drum: Drum, action: str) -> None:
+        super().__init__(coordinator)
+        self._drum = drum
+        self._action = action
+        self._attr_translation_key = f"{drum.key}_{action}"
+        self._attr_unique_id = f"{coordinator.device_id}_{drum.key}_{action}"
+
+    async def async_press(self) -> None:
+        if self._action == "cancel":
+            change = {self._drum.return_standby: 1}
+        else:   # running mode: 1 starts or resumes, 2 pauses
+            change = {self._drum.running_mode: 1 if self._action == "start" else 2}
+        await self.coordinator.async_send_control(change)

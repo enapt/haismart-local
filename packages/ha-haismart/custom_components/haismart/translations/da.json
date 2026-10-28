@@ -183,11 +183,13 @@
         "title": "Haismart-indstillinger",
         "data": {
           "scan_interval": "Interval for statusforespørgsel (sekunder)",
-          "appliance_kind": "Apparat"
+          "appliance_kind": "Apparat",
+          "laundry_controls": "Aktivér betjening af vaskemaskine og tørretumbler"
         },
         "data_description": {
           "scan_interval": "Hvor ofte anlægget skal spørges om sin tilstand. Hver forespørgsel er en fuld lokal session, og den findes udelukkende for at opdage ændringer foretaget med fjernbetjeningen eller appen – kommandoer, du sender fra Home Assistant, opdateres med det samme under alle omstændigheder.",
-          "appliance_kind": "Vises kun for et apparat, der ikke identificerede sig. En vaskemaskine, tørretumbler eller vaske-tørremaskine får skrivebeskyttede sensorer og aldrig en klimaanlægstermostat."
+          "appliance_kind": "Vises kun for et apparat, der ikke identificerede sig. En vaskemaskine, tørretumbler eller vaske-tørremaskine får skrivebeskyttede sensorer og aldrig en klimaanlægstermostat.",
+          "laundry_controls": "Tilføjer knapper til start, pause og annullering for hver tromle samt de program- og tilvalgsindstillinger, som maskinen lader dig ændre én ad gangen. Slået fra som standard. Hver kommando kræver stadig, at fjernstyring er slået til på maskinens betjeningspanel for den pågældende tromle, og intet sendes, mens den er slået fra."
         }
       }
     }
@@ -555,6 +557,24 @@
     "button": {
       "start_self_clean": {
         "name": "Start selvrensning"
+      },
+      "washer_start": {
+        "name": "Vaskemaskine: start eller genoptag"
+      },
+      "washer_pause": {
+        "name": "Vaskemaskine: pause"
+      },
+      "washer_cancel": {
+        "name": "Vaskemaskine: annuller"
+      },
+      "dryer_start": {
+        "name": "Tørretumbler: start eller genoptag"
+      },
+      "dryer_pause": {
+        "name": "Tørretumbler: pause"
+      },
+      "dryer_cancel": {
+        "name": "Tørretumbler: annuller"
       }
     }
   },

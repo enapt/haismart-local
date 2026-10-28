@@ -183,11 +183,13 @@
         "title": "Haismart-asetukset",
         "data": {
           "scan_interval": "Tilan kyselyväli (sekuntia)",
-          "appliance_kind": "Laite"
+          "appliance_kind": "Laite",
+          "laundry_controls": "Ota pesukoneen ja kuivausrummun ohjaus käyttöön"
         },
         "data_description": {
           "scan_interval": "Kuinka usein laitteelta kysytään sen tilaa. Jokainen kysely on täysi paikallinen istunto, ja se on olemassa vain havaitakseen kaukosäätimellä tai sovelluksella tehdyt muutokset – Home Assistantista lähettämäsi komennot päivittyvät joka tapauksessa heti.",
-          "appliance_kind": "Näytetään vain laitteelle, joka ei tunnistautunut. Pesukone, kuivausrumpu tai kuivaava pesukone saa vain luku -anturit eikä koskaan ilmastointilaitteen termostaattia."
+          "appliance_kind": "Näytetään vain laitteelle, joka ei tunnistautunut. Pesukone, kuivausrumpu tai kuivaava pesukone saa vain luku -anturit eikä koskaan ilmastointilaitteen termostaattia.",
+          "laundry_controls": "Lisää kullekin rummulle käynnistys-, tauko- ja peruutuspainikkeet sekä ne ohjelma- ja valinta-asetukset, joita kone sallii muuttaa yksi kerrallaan. Oletuksena pois päältä. Jokainen komento edellyttää edelleen, että kyseisen rummun etäohjaus on kytketty päälle koneen ohjauspaneelista, eikä mitään lähetetä, kun se on pois päältä."
         }
       }
     }
@@ -555,6 +557,24 @@
     "button": {
       "start_self_clean": {
         "name": "Käynnistä itsepuhdistus"
+      },
+      "washer_start": {
+        "name": "Pesukone: käynnistä tai jatka"
+      },
+      "washer_pause": {
+        "name": "Pesukone: tauota"
+      },
+      "washer_cancel": {
+        "name": "Pesukone: peruuta"
+      },
+      "dryer_start": {
+        "name": "Kuivausrumpu: käynnistä tai jatka"
+      },
+      "dryer_pause": {
+        "name": "Kuivausrumpu: tauota"
+      },
+      "dryer_cancel": {
+        "name": "Kuivausrumpu: peruuta"
       }
     }
   },

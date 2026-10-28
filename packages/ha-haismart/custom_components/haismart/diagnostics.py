@@ -451,6 +451,7 @@ def _controls_summary(coordinator) -> dict[str, Any]:
         "class_carried": {"offered": sorted(offered), "blocked_by_declared": blocked},
         "unusable_params": sorted(coordinator.unusable_params),
         "last_control": coordinator.last_control,
+        "recent_controls": list(coordinator.control_log),
     }
 
 

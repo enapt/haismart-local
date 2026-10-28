@@ -41,6 +41,15 @@ PLATFORMS_BY_KIND: dict[ApplianceKind, list[Platform]] = {
     ],
 }
 
+# What a laundry appliance adds when its owner turns its controls on: start / pause / cancel per
+# drum (button) and the settings its class publishes as individually writable.
+LAUNDRY_CONTROL_PLATFORMS: list[Platform] = [
+    Platform.BUTTON,
+    Platform.NUMBER,
+    Platform.SELECT,
+    Platform.SWITCH,
+]
+
 # Attributes a HERO platform already owns, so the generic layer does not build a second control
 # for the same setting beside it. A water heater's setpoint belongs to its `water_heater` entity.
 HERO_ATTRIBUTES: dict[ApplianceKind, frozenset[str]] = {
@@ -129,6 +138,9 @@ KIND_AUTO = "auto"  # decide from the reports, as an unidentified device always 
 KIND_LAUNDRY = "laundry"  # a washer, dryer or washer-dryer: read-only sensors, every status frame
 KIND_NOT_AIR_CONDITIONER = "not_air_conditioner"  # never a thermostat or the AC entity set
 APPLIANCE_KIND_CHOICES = (KIND_AUTO, KIND_LAUNDRY, KIND_NOT_AIR_CONDITIONER)
+# Control of a laundry appliance: off unless the owner turns it on in the entry's options. Every
+# command is still gated on the drum's own panel-set remote-control flag (`haismart_hrdp.laundry`).
+CONF_LAUNDRY_CONTROLS = "laundry_controls"
 # Haier's byte map for this device's class, fetched once when the shipped bundle does not carry it
 # and cached here so the appliance decodes offline afterwards. Stored as the same PROJECTION the
 # bundle holds -- positions only -- not the quarter-megabyte configFile.
@@ -164,6 +176,14 @@ REDISCOVER_COOLDOWN = 300.0  # seconds between attempts
 # slow-moving measurements, so a value from seconds ago beats a gap, while a unit that has genuinely
 # stopped reporting still ends up honestly unknown rather than frozen on an old number.
 TELEMETRY_MAX_AGE = 120.0    # seconds a previous extended reading may stand in for a missing one
+# A laundry drum's big-data report (7D01 dryer, 7D02 washer) is not answered on every poll: it is
+# the appliance's own push, so it may be minutes between them. Held this long before that drum's
+# big-data fields read unknown. ⚠️ Provisional: no capture yet shows how often the 0504 sends one.
+BIGDATA_MAX_AGE = 900.0
+# How old a drum's own status report may be when a laundry command is gated on it. The gate reads
+# once first, so a working connection gives a report a few seconds old; this only fails it closed.
+LAUNDRY_GATE_MAX_AGE = 60.0
+CONTROL_LOG_SIZE = 10      # commands kept, with their frames, for diagnostics
 # The outdoor probe sits in the OUTDOOR unit, which is dormant while the AC is off -- so the indoor
 # board keeps reporting the last value it took rather than a current one. Documented behaviour of
 # this protocol ("remains unchanged, reflecting the last measured value"), and confirmed on

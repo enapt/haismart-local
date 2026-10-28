@@ -183,11 +183,13 @@
         "title": "Haismart beállítások",
         "data": {
           "scan_interval": "Állapotlekérdezés gyakorisága (másodperc)",
-          "appliance_kind": "Készülék"
+          "appliance_kind": "Készülék",
+          "laundry_controls": "Mosógép- és szárítógép-vezérlés engedélyezése"
         },
         "data_description": {
           "scan_interval": "Milyen gyakran kérdezze le a készülék állapotát. Minden lekérdezés egy teljes helyi munkamenet, és kizárólag azért van, hogy észrevegye a távirányítóval vagy az alkalmazással végzett módosításokat – a Home Assistantból küldött parancsok amúgy is azonnal frissülnek.",
-          "appliance_kind": "Csak olyan készüléknél jelenik meg, amely nem azonosította magát. A mosógép, szárítógép vagy mosó-szárítógép csak olvasható érzékelőket kap, és soha nem kap légkondicionáló-termosztátot."
+          "appliance_kind": "Csak olyan készüléknél jelenik meg, amely nem azonosította magát. A mosógép, szárítógép vagy mosó-szárítógép csak olvasható érzékelőket kap, és soha nem kap légkondicionáló-termosztátot.",
+          "laundry_controls": "Indítás, szüneteltetés és megszakítás gombokat ad hozzá minden dobhoz, valamint azokat a program- és opcióbeállításokat, amelyeket a gép egyenként enged módosítani. Alapértelmezetten ki van kapcsolva. Minden parancshoz továbbra is be kell kapcsolni a távvezérlést a gép kezelőpaneljén az adott dobhoz, és amíg az ki van kapcsolva, semmilyen parancs nem kerül elküldésre."
         }
       }
     }
@@ -555,6 +557,24 @@
     "button": {
       "start_self_clean": {
         "name": "Öntisztítás indítása"
+      },
+      "washer_start": {
+        "name": "Mosógép indítása vagy folytatása"
+      },
+      "washer_pause": {
+        "name": "Mosógép szüneteltetése"
+      },
+      "washer_cancel": {
+        "name": "Mosógép megszakítása"
+      },
+      "dryer_start": {
+        "name": "Szárítógép indítása vagy folytatása"
+      },
+      "dryer_pause": {
+        "name": "Szárítógép szüneteltetése"
+      },
+      "dryer_cancel": {
+        "name": "Szárítógép megszakítása"
       }
     }
   },

@@ -12,7 +12,13 @@ from homeassistant.const import ATTR_RESTORED
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
-from .const import DEVICE_MAP_TIMEOUT, IDENTITY_TOPUP_TIMEOUT, PLATFORMS, platforms_for
+from .const import (
+    DEVICE_MAP_TIMEOUT,
+    IDENTITY_TOPUP_TIMEOUT,
+    LAUNDRY_CONTROL_PLATFORMS,
+    PLATFORMS,
+    platforms_for,
+)
 from .coordinator import HaismartConfigEntry, HaismartCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -97,6 +103,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> 
         coordinator.appliance_kind,
         decodes_as_air_conditioner=coordinator.decodes_as_air_conditioner,
     )
+    if coordinator.laundry_controls_enabled:
+        platforms += [p for p in LAUNDRY_CONTROL_PLATFORMS if p not in platforms]
     # Remember what was forwarded: unload must be handed the same list, and the kind can change
     # between setup and unload (the coordinator learns a uPlusId from the device at runtime).
     # Unloading a platform that was never set up leaves entities behind on every reload.

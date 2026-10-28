@@ -183,11 +183,13 @@
         "title": "Opções do Haismart",
         "data": {
           "scan_interval": "Intervalo de consulta de estado (segundos)",
-          "appliance_kind": "Aparelho"
+          "appliance_kind": "Aparelho",
+          "laundry_controls": "Ativar os controles da lavadora e da secadora"
         },
         "data_description": {
           "scan_interval": "Com que frequência perguntar o estado ao aparelho. Cada consulta é uma sessão local completa e existe apenas para perceber mudanças feitas pelo controle remoto ou pelo aplicativo — os comandos enviados do Home Assistant são atualizados na hora de qualquer forma.",
-          "appliance_kind": "Exibido apenas para um aparelho que não se identificou. Uma lavadora, secadora ou lava e seca recebe sensores somente leitura e nunca um termostato de ar-condicionado."
+          "appliance_kind": "Exibido apenas para um aparelho que não se identificou. Uma lavadora, secadora ou lava e seca recebe sensores somente leitura e nunca um termostato de ar-condicionado.",
+          "laundry_controls": "Adiciona botões de iniciar, pausar e cancelar para cada tambor, além das configurações de programa e de opções que a máquina permite alterar uma de cada vez. Desativado por padrão. Cada comando ainda exige que a função de controle remoto esteja ativada no painel da máquina para aquele tambor, e nada é enviado enquanto ela estiver desativada."
         }
       }
     }
@@ -555,6 +557,24 @@
     "button": {
       "start_self_clean": {
         "name": "Iniciar autolimpeza"
+      },
+      "washer_start": {
+        "name": "Lavadora: iniciar ou retomar"
+      },
+      "washer_pause": {
+        "name": "Lavadora: pausar"
+      },
+      "washer_cancel": {
+        "name": "Lavadora: cancelar"
+      },
+      "dryer_start": {
+        "name": "Secadora: iniciar ou retomar"
+      },
+      "dryer_pause": {
+        "name": "Secadora: pausar"
+      },
+      "dryer_cancel": {
+        "name": "Secadora: cancelar"
       }
     }
   },

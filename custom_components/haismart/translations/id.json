@@ -183,11 +183,13 @@
         "title": "Opsi Haismart",
         "data": {
           "scan_interval": "Interval pemeriksaan status (detik)",
-          "appliance_kind": "Perangkat"
+          "appliance_kind": "Perangkat",
+          "laundry_controls": "Aktifkan kontrol mesin cuci dan pengering"
         },
         "data_description": {
           "scan_interval": "Seberapa sering menanyakan status perangkat. Setiap pemeriksaan adalah satu sesi lokal penuh, dan tujuannya hanya untuk mendeteksi perubahan yang dibuat lewat remote atau aplikasi — perintah yang Anda kirim dari Home Assistant tetap langsung diperbarui.",
-          "appliance_kind": "Hanya ditampilkan untuk perangkat yang tidak mengidentifikasi dirinya. Mesin cuci, pengering, atau mesin cuci-pengering mendapatkan sensor hanya-baca dan tidak akan pernah mendapatkan termostat AC."
+          "appliance_kind": "Hanya ditampilkan untuk perangkat yang tidak mengidentifikasi dirinya. Mesin cuci, pengering, atau mesin cuci-pengering mendapatkan sensor hanya-baca dan tidak akan pernah mendapatkan termostat AC.",
+          "laundry_controls": "Menambahkan tombol mulai, jeda, dan batal untuk setiap tabung, serta pengaturan program dan opsi yang diizinkan mesin untuk diubah satu per satu. Nonaktif secara default. Setiap perintah tetap memerlukan kontrol jarak jauh untuk tabung tersebut diaktifkan di panel mesin, dan tidak ada perintah yang dikirim selama kontrol itu nonaktif."
         }
       }
     }
@@ -555,6 +557,24 @@
     "button": {
       "start_self_clean": {
         "name": "Mulai pembersihan otomatis"
+      },
+      "washer_start": {
+        "name": "Mulai atau lanjutkan mesin cuci"
+      },
+      "washer_pause": {
+        "name": "Jeda mesin cuci"
+      },
+      "washer_cancel": {
+        "name": "Batalkan mesin cuci"
+      },
+      "dryer_start": {
+        "name": "Mulai atau lanjutkan pengering"
+      },
+      "dryer_pause": {
+        "name": "Jeda pengering"
+      },
+      "dryer_cancel": {
+        "name": "Batalkan pengering"
       }
     }
   },

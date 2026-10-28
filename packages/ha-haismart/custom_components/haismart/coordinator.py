@@ -18,6 +18,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from collections import deque
 from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from dataclasses import replace
 from datetime import timedelta
@@ -115,6 +116,14 @@ from haismart_hrdp.device_model import (
     project_config,
 )
 from haismart_hrdp.entity_spec import EntitySpec, specs_for
+from haismart_hrdp.laundry import (
+    DRUMS,
+    LAUNDRY_ACTIONS,
+    LaundryAction,
+    drum_of,
+    drums_for,
+    laundry_writable,
+)
 from haismart_hrdp.uss import epp_command, epp_frame_type, frame_key
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -128,6 +137,7 @@ from homeassistant.util.hass_dict import HassKey
 
 from .cloud_transport import async_cloud_transport
 from .const import (
+    BIGDATA_MAX_AGE,
     CONF_ABSENT_READINGS,
     CONF_ACCESS_TOKEN,
     CONF_APP_TYPE,
@@ -139,6 +149,7 @@ from .const import (
     CONF_DIGITAL_MODEL,
     CONF_GATEWAY_USERNAME,
     CONF_HOST,
+    CONF_LAUNDRY_CONTROLS,
     CONF_LOCAL_KEY,
     CONF_LOCALKEY_VERSION,
     CONF_PRODUCT_CODE,
@@ -147,6 +158,7 @@ from .const import (
     CONF_UNUSABLE_PARAMS,
     CONF_UPLUS_ID,
     CONF_ZONE_INFO,
+    CONTROL_LOG_SIZE,
     DEFAULT_PRODUCT_CODE,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
@@ -159,6 +171,7 @@ from .const import (
     ISSUE_UNKNOWN_LAYOUT,
     KIND_LAUNDRY,
     KIND_NOT_AIR_CONDITIONER,
+    LAUNDRY_GATE_MAX_AGE,
     OUTDOOR_TEMP_MAX_AGE,
     READ_TIMEOUT,
     REDISCOVER_COOLDOWN,
@@ -604,6 +617,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         #: derived command numbers the answer settled. Diagnostics carry it, so "I pressed it and
         #: got an error" arrives with the appliance's actual answer rather than a paraphrase.
         self.last_control: dict[str, Any] | None = None
+        # The last few commands, each with the exact frame sent -- `last_control` keeps only one.
+        self.control_log: deque[dict[str, Any]] = deque(maxlen=CONTROL_LOG_SIZE)
         #: When a poll's status push and the same poll's extended report disagree about a setting,
         #: the appliance is asked directly (`_async_check_push`). How often that happened, the
         #: latest case -- both readings and the appliance's own answer -- and whether the check has
@@ -1519,7 +1534,15 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if model is None or self.uses_curated_ac_entities:
             return frozenset()
         if self.appliance_kind is ApplianceKind.LAUNDRY:
-            return frozenset()      # read-only: see `PLATFORMS_BY_KIND[LAUNDRY]`
+            # Read-only unless the owner turned the controls on; then what the class publishes as
+            # writable on its own, plus each drum's start/pause and cancel (the buttons).
+            if not self.laundry_controls_enabled:
+                return frozenset()
+            return (
+                self.laundry_settings
+                | {drum.running_mode for drum in DRUMS.values()}
+                | frozenset(self.laundry_actions)
+            )
         declared = frozenset(declared_attribute_names(self.digital_model))
         return frozenset(
             f.name for f in model.writable_fields()
@@ -1576,9 +1599,10 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return specs_for(
                 self.device_model,
                 (self.digital_model or {}).get("attributes"),
-                writable=frozenset(),
+                writable=self.laundry_settings if self.laundry_controls_enabled else frozenset(),
                 exclude=HERO_ATTRIBUTES.get(kind, frozenset()),
-                status_cmd=(STATUS_ALL, *self._extra_status_cmds(), STATUS_BIGDATA),
+                status_cmd=(STATUS_ALL, *self._extra_status_cmds(), STATUS_BIGDATA,
+                            *self._extra_bigdata_cmds()),
             )
         if not self.model_decoded:
             return ()
@@ -1604,6 +1628,152 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             and f.status_cmd.upper() != STATUS_ALL
         }))
 
+    def _extra_bigdata_cmds(self) -> tuple[str, ...]:
+        """Big-data reports besides ``7D01`` that the map files fields under, e.g. ``7D02``.
+
+        The 0504 laundry centre's map has one per drum -- ``7D01`` the dryer's, ``7D02`` the
+        washer's -- and they alone carry each drum's current programme (``dryCycle`` /
+        ``laundryCycle``), the dryer's energy totals and the motor and sensor readings.
+        """
+        model = self.device_model
+        if model is None:
+            return ()
+        return tuple(sorted({
+            f.status_cmd for f in model.fields
+            if f.status_cmd and f.status_cmd.upper().startswith("7D")
+            and f.status_cmd.upper() != STATUS_BIGDATA
+        }))
+
+    # --- laundry controls -------------------------------------------------------------------
+
+    @property
+    def laundry_controls_enabled(self) -> bool:
+        """Whether the owner turned on control of this laundry appliance (off by default)."""
+        return (
+            self.appliance_kind is ApplianceKind.LAUNDRY
+            and bool(self.config_entry.options.get(CONF_LAUNDRY_CONTROLS))
+        )
+
+    @property
+    def laundry_actions(self) -> Mapping[str, LaundryAction]:
+        """This class's write-only commands (each drum's cancel), by attribute name."""
+        device_class = (self.uplus_id or "")[16:20].lower()
+        return LAUNDRY_ACTIONS.get(device_class, {})
+
+    @property
+    def laundry_settings(self) -> frozenset[str]:
+        """The settings a laundry appliance may be written one at a time -- the controls."""
+        model = self.device_model
+        if model is None:
+            return frozenset()
+        return laundry_writable(model.fields, (self.digital_model or {}).get("attributes"))
+
+    def _laundry_reports(self) -> dict[str, dict[str, Any] | None]:
+        """Each drum's OWN latest status report, decoded -- or ``None`` where it is not fresh.
+
+        ⛔ What the gates read, and deliberately not the merged ``model_state``: the big-data
+        reports repeat both remote flags and running modes at the same positions, the extended
+        report on hand can be hours old, and the merge lets either stand in once a drum's status
+        report has aged out. A gate must never say yes on a reading like that.
+        """
+        model = self.device_model
+        declared = frozenset(declared_attribute_names(self.digital_model))
+        now = self.hass.loop.time()
+        reports: dict[str, dict[str, Any] | None] = {}
+        for key, drum in DRUMS.items():
+            held = self._status_frames.get(drum.report)
+            if model is None or held is None or now - held[1] > LAUNDRY_GATE_MAX_AGE:
+                reports[key] = None
+                continue
+            reports[key] = model.decode(held[0], status_cmd=drum.report, only=declared)
+        return reports
+
+    def _laundry_report_of(self, name: str) -> str | None:
+        if (action := self.laundry_actions.get(name)) is not None:
+            return DRUMS[action.drum].report
+        for drum in DRUMS.values():
+            if name == drum.running_mode:
+                return drum.report
+        model = self.device_model
+        field = model.field(name) if model is not None else None
+        return field.status_cmd if field is not None else None
+
+    async def _async_check_laundry_write(self, changes: Mapping[str, Any]) -> None:
+        """Refuse a laundry command the machine has not been opened to, or that is unsafe now.
+
+        One read is made first, so the decision is on reports seconds old rather than a poll that
+        may be minutes old -- or that predates the owner turning remote control on at the panel.
+        Then, from each drum's own report only (:meth:`_laundry_reports`), and failing CLOSED where
+        a report is missing or stale:
+
+        * controls are on for this entry at all;
+        * the remote-control flag of every drum the command touches is set -- one drum for its own
+          settings, both for the machine-wide ones (power, child lock, buzzer, linkage);
+        * a programme is not changed unless its drum is known not to be running;
+        * the machine is not switched off unless both drums are known not to be running.
+
+        ``_build`` checks the flag once more against the report the command's own session sees.
+        """
+        def refuse(reason: str) -> NoReturn:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="control_rejected",
+                translation_placeholders={"name": self.config_entry.title, "error": reason},
+            )
+
+        if not self.laundry_controls_enabled:
+            refuse("laundry controls are off for this appliance (Configure → enable controls)")
+        await self.async_refresh()
+        reports = self._laundry_reports()
+        for name, value in changes.items():
+            keys = drums_for(name, self._laundry_report_of(name))
+            if not keys:
+                refuse(f"{name} is not a laundry control")
+            for key in keys:
+                report = reports[key]
+                if report is None:
+                    refuse(f"no fresh report from the {key}; try again in a moment")
+                if report.get(DRUMS[key].remote_valid) is not True:
+                    refuse(
+                        f"remote control is not enabled for the {key} -- turn it on at the "
+                        "machine's panel first"
+                    )
+            for key in keys:
+                drum = DRUMS[key]
+                if name == drum.programme and reports[key].get(drum.running_mode) != 2:
+                    refuse(
+                        f"the {key} is running or its state is unknown; pause or cancel it "
+                        "before changing the programme"
+                    )
+            if name == "onOffStatus" and not value and any(
+                report is None or report.get(DRUMS[key].running_mode) != 2
+                for key, report in reports.items()
+            ):
+                refuse("a drum is running or its state is unknown; cancel it before switching off")
+
+    def _recheck_laundry_push(self, changes: Mapping[str, Any], push: bytes | None) -> None:
+        """Refuse inside the command's own session if its fresh push shows remote control off."""
+        if push is None or self.appliance_kind is not ApplianceKind.LAUNDRY:
+            return
+        report = self._own_status_cmd(push)
+        model = self.device_model
+        if report is None or model is None or not report.startswith("6D"):
+            return
+        key = drum_of(report)
+        if key is None or not any(
+            key in drums_for(name, self._laundry_report_of(name)) for name in changes
+        ):
+            return
+        if model.decode(push, status_cmd=report).get(DRUMS[key].remote_valid) is not True:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="control_rejected",
+                translation_placeholders={
+                    "name": self.config_entry.title,
+                    "error": f"remote control was switched off for the {key}; nothing was sent",
+                },
+            )
+
     def _own_status_cmd(self, blob: bytes) -> str | None:
         """The ``6Dxx`` status command ``blob`` answers, for a laundry appliance whose map files
         fields under it; ``None`` for anything else.
@@ -1621,7 +1791,9 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if command is None:
             return None
         name = command.hex().upper()
-        if not name.startswith("6D"):
+        # 6Dxx status reports, and the big-data reports (7Dxx) for each drum: each is read under
+        # its own command, never under 6D01's positions.
+        if not name.startswith(("6D", "7D")):
             return None
         return name if model.fields_for(name) else None
 
@@ -1706,7 +1878,10 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # command, and laid on top it put the old value back. Issue #19's diagnostics read "off,
         # 20 C" here beside a decode reading the reply's "on, 19 C".
         state: dict[str, Any] = {}
-        if self.last_raw_extended:
+        laundry = self.appliance_kind is ApplianceKind.LAUNDRY
+        # A laundry appliance's big-data reports come in through `_status_frames`, which ages them;
+        # the extended report on hand here never ages, so it is not laid under a laundry state.
+        if self.last_raw_extended and not laundry:
             state.update(
                 model.decode(self.last_raw_extended, status_cmd=STATUS_BIGDATA, only=declared)
             )
@@ -1717,14 +1892,25 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # extended one does: the report in hand is the newest and must win any overlap.
         # One that has stopped arriving ages out like the telemetry does, so its half of the
         # appliance reads unknown instead of holding the last value it ever sent.
-        command = self._status_cmd_of(blob)
+        # ⛔ For laundry, the report in hand counts only when it is one of its own reports by
+        # command. A change report (6C01) or anything else read at 6D01's positions would overwrite
+        # the dryer's real state -- and the gates' inputs with it.
+        command = self._own_status_cmd(blob) if laundry else STATUS_ALL
         now = self.hass.loop.time()
-        for other, (frame, seen_at) in self._status_frames.items():
-            if other != command and now - seen_at <= TELEMETRY_MAX_AGE:
-                state.update(model.decode(frame, status_cmd=other, only=declared))
-        # ⚠️ Decoded under its OWN command. Read as 6D01, a 6D02 report placed the dryer's fields
-        # over the washer's words -- a confident wrong value on the polls where 6D02 came first.
-        state.update(model.decode(blob, status_cmd=command, only=declared))
+        frames = {
+            other: frame for other, (frame, seen_at) in self._status_frames.items()
+            if other != command
+            and now - seen_at <= (BIGDATA_MAX_AGE if other.startswith("7D") else TELEMETRY_MAX_AGE)
+        }
+        if command is not None:
+            frames[command] = blob
+        # ⚠️ Decoded under each frame's OWN command. Read as 6D01, a 6D02 report placed the dryer's
+        # fields over the washer's words -- a confident wrong value on the polls where 6D02 came
+        # first. Big-data (7Dxx) goes underneath every status report, since 81 of the washer's
+        # 7D02 names repeat 6D02's and a status report is the fresher; the one in hand goes last
+        # within its family.
+        for other in sorted(frames, key=lambda c: (not c.startswith("7D"), c == command)):
+            state.update(model.decode(frames[other], status_cmd=other, only=declared))
         return state
 
     def _note_unknown_layout(self, blob: bytes) -> None:
@@ -1863,6 +2049,20 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # ever -- so the split below hands its parts back with the expansion already done.
             # ⛔ Skipped for byte-map writes: the co-command rules are the AC families' own.
             changes = self._with_required_co_commands(changes)
+        if self.appliance_kind is ApplianceKind.LAUNDRY:
+            # ⛔ A laundry appliance is written only by its own map's single-parameter commands.
+            # Anything else would fall through to the group-set paths below, which read its report
+            # as an air conditioner's word block.
+            if not writes_by_model:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="control_rejected",
+                    translation_placeholders={
+                        "name": self.config_entry.title,
+                        "error": f"not a laundry control: {', '.join(sorted(changes))}",
+                    },
+                )
+            await self._async_check_laundry_write(changes)
         if writes_by_model:
             self._validate_model_write(changes)
         else:
@@ -1994,7 +2194,11 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 model = self.device_model
                 assert model is not None                # writes_by_model implies it
                 (name, value), = changes.items()
-                cmd, payload = model.encode_write(name, value)
+                self._recheck_laundry_push(changes, baseline)
+                if (action := self.laundry_actions.get(name)) is not None:
+                    cmd, payload = action.frame_parts()     # write-only: no report position
+                else:
+                    cmd, payload = model.encode_write(name, value)
                 return build_epp_frame(0x01, cmd, payload)
             if wm is not None and wm.group_cmd is not None:
                 # Non-classic family: pack via its own wire model + group-set command. The encoder
@@ -2009,6 +2213,13 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 )
             return grsetdac_op_frame(words)
 
+        built_frames: list[bytes] = []
+
+        def _build_and_keep(baseline: bytes | None) -> bytes:
+            frame = _build(baseline)
+            built_frames.append(frame)
+            return frame
+
         try:
             # One short session: the CAE counter starts at 1 and the biz sequence base is
             # auto-derived from HELLO_DONE_RESP (a wrong sn drops the connection). build_frame
@@ -2020,7 +2231,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             async with self._session:
                 reply = await async_send_op(
                     self.host, self.device_id, self._local_key,
-                    build_frame=_build, counter=1, timeout=WRITE_TIMEOUT,
+                    build_frame=_build_and_keep, counter=1, timeout=WRITE_TIMEOUT,
                     # So the appliance's own post-handshake push is recognised as this family's
                     # status report and seeds the group-set. Without it only the classic lengths
                     # are, and every other family quietly falls back to the cached blob -- the
@@ -2044,7 +2255,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     async with self._session:
                         reply = await async_send_op(
                             self.host, self.device_id, self._local_key,
-                            build_frame=_build, counter=1, timeout=WRITE_TIMEOUT,
+                            build_frame=_build_and_keep, counter=1, timeout=WRITE_TIMEOUT,
                             uplus_id=self.uplus_id,
                             expect_localkey_version=self.localkey_version or None,
                         )
@@ -2099,7 +2310,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # the seed baseline from a fresh push is worth having either way.
         state = self._state_from_reply(reply)
         provisional = self._provisional_in(changes)
-        self._record_control(changes, reply, provisional)
+        sent = built_frames[-1] if built_frames else None
+        self._record_control(changes, reply, provisional, sent)
         if reply_refused(reply):
             # The unit answered, and what it answered was a refusal. Distinct from the silence
             # below on purpose: silence is a connection that missed and is worth retrying, a
@@ -2216,7 +2428,11 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return reason is None or reason == REASON_NOT_SUPPORTED
 
     def _record_control(
-        self, changes: Mapping[str, int], reply: list[bytes], provisional: list[str]
+        self,
+        changes: Mapping[str, int],
+        reply: list[bytes],
+        provisional: list[str],
+        frame: bytes | None = None,
     ) -> None:
         """Keep what was sent and what came back, for diagnostics (:attr:`last_control`)."""
         from datetime import UTC, datetime
@@ -2235,7 +2451,12 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "reason": self._refusal_reason(reply) if refused else None,
             "provisional": list(provisional),
             "withdrawn": [],
+            # The exact EPP frame sent and every frame of the reply, so a refusal or an ignored
+            # command can be read from diagnostics byte for byte.
+            "frame": frame.hex() if frame is not None else None,
+            "reply": [blob.hex() for blob in reply],
         }
+        self.control_log.append(self.last_control)
 
     def _note_withdrawn(self, names: Iterable[str]) -> None:
         if self.last_control is not None:
@@ -2257,6 +2478,14 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         the command itself is wrong, not the moment.
         """
         code = refusal_code(reply)
+        if self.appliance_kind is ApplianceKind.LAUNDRY:
+            # Not "not recognised": on a washer the likelier cause is the moment -- the door, no
+            # programme chosen, the panel's own state -- and the code is what diagnoses it.
+            if code is not None and (reason := refusal_reason(self.digital_model, code)):
+                return reason
+            return "the machine refused the command" + (
+                f" (reason {code})" if code is not None else ""
+            )
         if code is None:
             return "the air conditioner refused the command"
         if (reason := refusal_reason(self.digital_model, code)) is not None:

@@ -6,8 +6,11 @@ import contextlib
 import logging
 
 from haismart_hrdp import preload as _preload_model_rules
+from haismart_hrdp.appliance import ApplianceKind
 from haismart_hrdp.device_model import preload as _preload_device_models
+from homeassistant.const import ATTR_RESTORED
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 
 from .const import DEVICE_MAP_TIMEOUT, IDENTITY_TOPUP_TIMEOUT, PLATFORMS, platforms_for
 from .coordinator import HaismartConfigEntry, HaismartCoordinator
@@ -103,7 +106,43 @@ async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> 
         ", ".join(str(p) for p in platforms),
     )
     await hass.config_entries.async_forward_entry_setups(entry, platforms)
+    _drop_entities_no_longer_provided(hass, entry, coordinator)
     return True
+
+
+def _drop_entities_no_longer_provided(
+    hass: HomeAssistant, entry: HaismartConfigEntry, coordinator: HaismartCoordinator
+) -> None:
+    """Remove this entry's registry rows that setup no longer creates -- for a non-AC only.
+
+    Home Assistant keeps a row after its platform stops creating the entity, so an appliance that
+    was read as an air conditioner and is now identified as laundry, or answered "not an air
+    conditioner", kept its thermostat and AC switches for good: unavailable, still offering cool /
+    dry / fan_only, and still what an automation might reference. The 0504 washer-dryer was left
+    with thirteen of them.
+
+    Scoped tightly, because removing a row loses its name, area and history:
+
+    * only a laundry appliance, or an unidentified one ruled out as an AC whose byte map decoded --
+      the cases where what setup builds comes from the appliance's own map, not from a poll that
+      might have gone wrong. An air conditioner or a water heater is never touched;
+    * only a row with no live entity after every platform has been set up (every entity here is
+      added during setup) and that the owner has not disabled, which also leaves no live entity.
+    """
+    if not (
+        coordinator.appliance_kind is ApplianceKind.LAUNDRY
+        or (coordinator.ruled_out_air_conditioner and coordinator.model_decoded)
+    ):
+        return
+    registry = er.async_get(hass)
+    for row in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if row.disabled_by is not None:
+            continue
+        state = hass.states.get(row.entity_id)
+        if state is None or state.attributes.get(ATTR_RESTORED):
+            _LOGGER.info("%s: removing %s, which this appliance no longer has", entry.title,
+                         row.entity_id)
+            registry.async_remove(row.entity_id)
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: HaismartConfigEntry) -> None:

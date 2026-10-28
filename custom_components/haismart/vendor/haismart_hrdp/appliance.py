@@ -4,15 +4,19 @@ Every config entry got a climate entity, because every device was an air conditi
 what that costs when it is not: a heat-pump water heater rendered with cool / dry / fan_only modes,
 a 16–30 °C clamp against a real 35–75 °C setpoint, and its own current temperature nowhere.
 
-Two independent sources, and they are used in that order:
+Independent sources, used in this order:
 
 1. **The typeid's class field** — characters 16:20 of the 64-hex uPlusId. It is the manufacturer's
    own device-class code, the appliance **announces it on the key-free discovery channel**, and it
    is the key Haier's byte maps are filed under. That makes it available offline, before any poll,
    and for a device nobody has an account for.
-2. **The cloud's ``appTypeName``**, when the device list supplied one. Used only where the class is
+2. **The class's family**, for laundry only: an unnamed ``05xx`` class is a washer or dryer.
+3. **The cloud's ``appTypeName``**, when the device list supplied one. Used only where the class is
    unknown to us, because it is a marketing-facing label (``"Pump"`` for a heat-pump water heater)
-   and it is absent for any locally-added device.
+   and it is absent for any locally-added device. A label naming laundry ("Roller Washer") is
+   matched on its words, since the result is read-only; every other label must match exactly.
+
+Where all of them fail, setup asks the owner (``CONF_APPLIANCE_KIND`` in the integration).
 
 ⛔ **Unknown maps to :data:`ApplianceKind.OTHER`, and OTHER is not a synonym for "wrong".** The
 caller decides what to build; this module only refuses to guess. Naming a class here is a claim
@@ -22,15 +26,19 @@ that class in its configFile — printed beside each entry.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from enum import StrEnum
 from types import MappingProxyType
 
 __all__ = [
     "ApplianceKind",
+    "answer_applies",
+    "asks_owner",
     "CLASS_KINDS",
     "CLASS_LABELS",
     "class_of",
+    "identified_not_air_conditioner",
     "kind_for",
     "label_for",
 ]
@@ -85,7 +93,8 @@ CLASS_KINDS: Mapping[str, ApplianceKind] = MappingProxyType({
 # Also unlisted, and known to be something else — each would be a real appliance kind of its own,
 # and none has ever been seen in the field by this project:
 #   0121 0122 0123 0124 0128  BCD_… / 风冷三门 — refrigerators
-#   0501 0502                 单滚筒XQG… — washing machines
+#   0501 0502                 单滚筒XQG… — washing machines (0501 keeps its generic, model-driven
+#                             entities; an unnamed 05xx such as 0502 resolves to LAUNDRY by family)
 #   0901 0902                 烟机 / 定频油烟机 — cooker hoods
 #   0b11 0b12                 消毒柜 — sterilising cabinets
 #   1a01                      S45TXXXU1 — dishwasher
@@ -147,6 +156,29 @@ _APP_TYPE_KINDS: Mapping[str, ApplianceKind] = MappingProxyType({
 })
 
 
+# The laundry FAMILY: a class whose first two digits are 05. Used only for a 05xx class this module
+# has no row for -- a named class keeps exactly what its row says -- and only ever to say "laundry",
+# which builds sensors and nothing that writes, so a wrong answer costs a reading, never a command.
+# The evidence that 05 is laundry and nothing else: every 05xx configFile Haier ships names a washer
+# (0501 单滚筒XQG…, 0502 the same in the V2 text format, 0504 AWD14_BD4LCU1L — a twin washer +
+# dryer), and the SEA app files its washer-and-dryer cards under middle classes 4 and 5 of that
+# family (`washerAndDryerMiddleClass_4` / `_5`, libapp.so of com.haier.uhome.uplus.seasia 5.7.0).
+_LAUNDRY_FAMILY = "05"
+
+# A cloud category that names laundry, for a device whose class we cannot read or have no row for.
+# "Roller Washer" is the label Haier's device list gives the 0504 laundry centre; the SEA app's own
+# washer types are roller, pulsator, double roller, double pulsator and dryer. Matched on whole
+# words, so "Dishwasher" is not a washer -- and "Dish Washer" is excluded by name.
+_LAUNDRY_LABEL = re.compile(r"\b(?:washer|washing|dryer|laundry)\b", re.IGNORECASE)
+_NOT_LAUNDRY_LABEL = re.compile(r"\bdish", re.IGNORECASE)
+
+
+def _is_laundry_label(app_type_name: str) -> bool:
+    return bool(_LAUNDRY_LABEL.search(app_type_name)) and not _NOT_LAUNDRY_LABEL.search(
+        app_type_name
+    )
+
+
 def class_of(uplus_id: str | None) -> str | None:
     """The device-class field of a uPlusId — characters 16:20 — or ``None`` if there isn't one."""
     if not uplus_id or len(uplus_id) < 20:
@@ -166,6 +198,69 @@ def kind_for(uplus_id: str | None, app_type_name: str | None = None) -> Applianc
     device_class = class_of(uplus_id)
     if device_class is not None and device_class in CLASS_KINDS:
         return CLASS_KINDS[device_class]
+    # A class we have a name for is settled by that name, whatever the cloud calls it: a 0501
+    # front loader is a "Roller Washer" too, and a label must not quietly change what it gets.
+    if device_class is not None and device_class in CLASS_LABELS:
+        return ApplianceKind.OTHER
+    if device_class is not None and device_class.startswith(_LAUNDRY_FAMILY):
+        return ApplianceKind.LAUNDRY
     if app_type_name:
-        return _APP_TYPE_KINDS.get(app_type_name.strip().lower(), ApplianceKind.OTHER)
+        label = app_type_name.strip()
+        if _is_laundry_label(label):
+            return ApplianceKind.LAUNDRY
+        return _APP_TYPE_KINDS.get(label.lower(), ApplianceKind.OTHER)
     return ApplianceKind.OTHER
+
+
+def identified_not_air_conditioner(uplus_id: str | None, app_type_name: str | None = None) -> bool:
+    """Whether the evidence positively says this is NOT an air conditioner.
+
+    The other half of the unidentified-device rule. An ``OTHER`` keeps a thermostat while its report
+    decodes as one, because some uncatalogued classes are working air conditioners -- but a report
+    length is not an identity: the 0504 dryer's 165-byte report is also an AC family's length, and
+    read that way it had a setpoint, a mode and a 50.5 °C "room". A class Haier names as something
+    else (a refrigerator, a 0501 washer, a hood) has answered the question, so its report is never
+    read as an AC's, whichever length it happens to be.
+    """
+    kind = kind_for(uplus_id, app_type_name)
+    if kind is ApplianceKind.AIR_CONDITIONER:
+        return False
+    if kind is not ApplianceKind.OTHER:
+        return True
+    device_class = class_of(uplus_id)
+    return device_class is not None and device_class in CLASS_LABELS
+
+
+def asks_owner(uplus_id: str | None, app_type_name: str | None = None) -> bool:
+    """Whether the owner should be asked what this appliance is.
+
+    Only where the device said who it is and nothing here recognised it: a class field we have no
+    row or name for, or a cloud label we do not know. A device that said nothing at all -- a manual
+    install whose unit did not answer the key-free query -- is not asked, because that is how most
+    air conditioners arrive and they need no answer; the coordinator learns the uPlusId at runtime,
+    and the question is in the entry's options from then on.
+    """
+    if kind_for(uplus_id, app_type_name) is not ApplianceKind.OTHER:
+        return False
+    device_class = class_of(uplus_id)
+    if device_class is not None:
+        return device_class not in CLASS_LABELS
+    return bool(app_type_name and app_type_name.strip())
+
+
+def answer_applies(uplus_id: str | None) -> bool:
+    """Whether the owner's answer can decide the kind -- i.e. the class field does not.
+
+    A class this module has a row or a name for settles it, and so does the laundry family. What is
+    left is a class nobody here knows, or none at all, where the only other evidence is the cloud's
+    label -- and a label can be wrong ("Hand Dryer" reads as laundry), so the owner's answer outranks
+    it there.
+    """
+    device_class = class_of(uplus_id)
+    if device_class is None:
+        return True
+    return not (
+        device_class in CLASS_KINDS
+        or device_class in CLASS_LABELS
+        or device_class.startswith(_LAUNDRY_FAMILY)
+    )

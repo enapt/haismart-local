@@ -100,7 +100,12 @@ from haismart_hrdp import (
 from haismart_hrdp import (
     declared_numeric_readings as numeric_reading_names,
 )
-from haismart_hrdp.appliance import ApplianceKind, kind_for
+from haismart_hrdp.appliance import (
+    ApplianceKind,
+    answer_applies,
+    identified_not_air_conditioner,
+    kind_for,
+)
 from haismart_hrdp.device_model import (
     STATUS_ALL,
     STATUS_BIGDATA,
@@ -126,6 +131,7 @@ from .const import (
     CONF_ABSENT_READINGS,
     CONF_ACCESS_TOKEN,
     CONF_APP_TYPE,
+    CONF_APPLIANCE_KIND,
     CONF_CLOUD_CLIENT_ID,
     CONF_DEVICE_ID,
     CONF_DEVICE_MAP,
@@ -151,6 +157,8 @@ from .const import (
     ISSUE_KEY_WILL_ROTATE,
     ISSUE_STALE_LOCALKEY,
     ISSUE_UNKNOWN_LAYOUT,
+    KIND_LAUNDRY,
+    KIND_NOT_AIR_CONDITIONER,
     OUTDOOR_TEMP_MAX_AGE,
     READ_TIMEOUT,
     REDISCOVER_COOLDOWN,
@@ -1348,8 +1356,42 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         discovery channel, so it is known offline and before any poll) and the cloud's own category
         second. ``OTHER`` where neither settles it, and ``OTHER`` must never be read as "air
         conditioner": issue #13 is what that costs.
+
+        The owner's answer (``CONF_APPLIANCE_KIND``) counts only where the class field leaves the
+        question open (``answer_applies``): it can make an unrecognised appliance laundry, or
+        overrule a cloud label that made it laundry, but never re-type a class the catalogue
+        names -- an air conditioner stays one whatever an old answer says.
         """
-        return kind_for(self.uplus_id, self.config_entry.data.get(CONF_APP_TYPE))
+        kind = kind_for(self.uplus_id, self.config_entry.data.get(CONF_APP_TYPE))
+        answer = self._owner_answer
+        if answer is not None and kind in (ApplianceKind.OTHER, ApplianceKind.LAUNDRY):
+            return ApplianceKind.LAUNDRY if answer == KIND_LAUNDRY else ApplianceKind.OTHER
+        return kind
+
+    @property
+    def _owner_answer(self) -> str | None:
+        """The owner's answer where it can decide (not ``auto``, and no class settles it)."""
+        answer = self.config_entry.options.get(CONF_APPLIANCE_KIND)
+        if answer not in (KIND_LAUNDRY, KIND_NOT_AIR_CONDITIONER):
+            return None
+        return answer if answer_applies(self.uplus_id) else None
+
+    @property
+    def ruled_out_air_conditioner(self) -> bool:
+        """Whether an unidentified (``OTHER``) appliance is known NOT to be an air conditioner.
+
+        Either its class is one Haier names as something else, or its owner said so. Its report is
+        then never read as an AC's: see ``identified_not_air_conditioner`` for the 165-byte dryer
+        report that read as a thermostat. Every other kind already settles this: an AC is one, and
+        a water heater or laundry appliance has its own platform set.
+        """
+        if self.appliance_kind is not ApplianceKind.OTHER:
+            return False
+        if self._owner_answer == KIND_NOT_AIR_CONDITIONER:
+            return True
+        return identified_not_air_conditioner(
+            self.uplus_id, self.config_entry.data.get(CONF_APP_TYPE)
+        )
 
     @property
     def device_model(self) -> DeviceModel | None:
@@ -1426,7 +1468,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         for devices we could NOT identify, so a false positive preserves today's behaviour and a
         false negative would remove a working entity.
         """
-        if self.unknown_layout is not None:
+        if self.unknown_layout is not None or self.ruled_out_air_conditioner:
             return False
         state = self.data or {}
         has_setpoint = state.get("target_temperature") is not None
@@ -1503,9 +1545,11 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         verdict and the platforms read this once, at setup -- which on a fresh entry is before the
         byte map has been fetched, or after a follow-up refresh the one-session module refused. A
         0504 washer-dryer set up in that window got a thermostat and five AC switches for life.
+        The same holds for an unidentified appliance that is ruled out as an AC (a named non-AC
+        class, or the owner's answer): it has nothing the AC set describes.
         """
         kind = self.appliance_kind
-        if kind is ApplianceKind.LAUNDRY:
+        if kind is ApplianceKind.LAUNDRY or self.ruled_out_air_conditioner:
             return False
         return kind is ApplianceKind.AIR_CONDITIONER or not self.model_decoded
 

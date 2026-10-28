@@ -142,6 +142,16 @@
       "discovery_confirm": {
         "title": "Configurar este aparato",
         "description": "Home Assistant ha encontrado un aparato Haier en {host} (`{device_id}`).\n\nSu clave local se obtendrá de la cuenta Haier que ya has añadido, así que no hay nada que escribir. Selecciona **Enviar** para añadirlo."
+      },
+      "appliance_kind": {
+        "title": "¿Qué tipo de aparato es?",
+        "description": "Este aparato no se ha identificado como nada que esta integración reconozca, así que se lo pregunta a usted.\n\nSi es una lavadora, una secadora o una lavasecadora, indíquelo: recibirá sensores de solo lectura para ambos tambores y nunca un termostato de aire acondicionado. Puede cambiarlo más adelante en las opciones de la integración.",
+        "data": {
+          "appliance_kind": "Aparato"
+        },
+        "data_description": {
+          "appliance_kind": "¿No está seguro? Deje «Decidir según sus informes». Es lo que ocurre si no responde, y es lo adecuado para un aire acondicionado."
+        }
       }
     },
     "error": {
@@ -172,10 +182,12 @@
       "init": {
         "title": "Opciones de Haismart",
         "data": {
-          "scan_interval": "Intervalo de consulta del estado (segundos)"
+          "scan_interval": "Intervalo de consulta del estado (segundos)",
+          "appliance_kind": "Aparato"
         },
         "data_description": {
-          "scan_interval": "Con qué frecuencia preguntar su estado al equipo. Cada consulta es una sesión local completa y existe únicamente para detectar cambios hechos con el mando o la aplicación: los comandos que envías desde Home Assistant se actualizan al instante igualmente."
+          "scan_interval": "Con qué frecuencia preguntar su estado al equipo. Cada consulta es una sesión local completa y existe únicamente para detectar cambios hechos con el mando o la aplicación: los comandos que envías desde Home Assistant se actualizan al instante igualmente.",
+          "appliance_kind": "Solo se muestra para un aparato que no se ha identificado. Una lavadora, secadora o lavasecadora recibe sensores de solo lectura y nunca un termostato de aire acondicionado."
         }
       }
     }
@@ -579,6 +591,15 @@
     },
     "unsupported_value": {
       "message": "{name} no admite {value!r} para {field}."
+    }
+  },
+  "selector": {
+    "appliance_kind": {
+      "options": {
+        "auto": "Decidir según sus informes",
+        "laundry": "Lavadora, secadora o lavasecadora",
+        "not_air_conditioner": "Otro aparato, no un aire acondicionado"
+      }
     }
   }
 }

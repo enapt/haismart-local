@@ -142,6 +142,16 @@
       "discovery_confirm": {
         "title": "Dieses Gerät einrichten",
         "description": "Home Assistant hat ein Haier-Gerät unter {host} (`{device_id}`) gefunden.\n\nSein lokaler Schlüssel wird aus dem bereits hinzugefügten Haier-Konto abgerufen, es ist also nichts einzugeben. Wählen Sie **Absenden**, um es hinzuzufügen."
+      },
+      "appliance_kind": {
+        "title": "Was für ein Gerät ist das?",
+        "description": "Dieses Gerät hat sich nicht als etwas zu erkennen gegeben, das diese Integration kennt, daher wirst du gefragt.\n\nWenn es eine Waschmaschine, ein Trockner oder ein Waschtrockner ist, gib das hier an: Es erhält dann schreibgeschützte Sensoren für beide Trommeln und nie einen Klimaanlagen-Thermostat. Du kannst das später in den Optionen der Integration ändern.",
+        "data": {
+          "appliance_kind": "Gerät"
+        },
+        "data_description": {
+          "appliance_kind": "Nicht sicher? Behalte „anhand seiner Berichte entscheiden“. Das geschieht auch ohne Antwort und passt zu einer Klimaanlage."
+        }
       }
     },
     "error": {
@@ -172,10 +182,12 @@
       "init": {
         "title": "Haismart-Optionen",
         "data": {
-          "scan_interval": "Abfrageintervall für den Status (Sekunden)"
+          "scan_interval": "Abfrageintervall für den Status (Sekunden)",
+          "appliance_kind": "Gerät"
         },
         "data_description": {
-          "scan_interval": "Wie oft das Gerät nach seinem Zustand gefragt wird. Jede Abfrage ist eine vollständige lokale Sitzung und dient allein dazu, Änderungen über die Fernbedienung oder die App mitzubekommen – Befehle, die du aus Home Assistant sendest, werden ohnehin sofort übernommen."
+          "scan_interval": "Wie oft das Gerät nach seinem Zustand gefragt wird. Jede Abfrage ist eine vollständige lokale Sitzung und dient allein dazu, Änderungen über die Fernbedienung oder die App mitzubekommen – Befehle, die du aus Home Assistant sendest, werden ohnehin sofort übernommen.",
+          "appliance_kind": "Wird nur für ein Gerät angezeigt, das sich nicht identifiziert hat. Eine Waschmaschine, ein Trockner oder ein Waschtrockner erhält schreibgeschützte Sensoren und nie einen Klimaanlagen-Thermostat."
         }
       }
     }
@@ -579,6 +591,15 @@
     },
     "unsupported_value": {
       "message": "{name} unterstützt {value!r} für {field} nicht."
+    }
+  },
+  "selector": {
+    "appliance_kind": {
+      "options": {
+        "auto": "Anhand seiner Berichte entscheiden",
+        "laundry": "Waschmaschine, Trockner oder Waschtrockner",
+        "not_air_conditioner": "Anderes Gerät, keine Klimaanlage"
+      }
     }
   }
 }

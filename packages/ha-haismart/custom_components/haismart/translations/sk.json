@@ -142,6 +142,16 @@
       "discovery_confirm": {
         "title": "Nastaviť túto jednotku",
         "description": "Home Assistant našiel jednotku Haier na adrese {host} (`{device_id}`).\n\nJej lokálny kľúč sa načíta z účtu Haier, ktorý ste už pridali, takže netreba nič zadávať. Pridajte ju voľbou **Odoslať**."
+      },
+      "appliance_kind": {
+        "title": "O aké zariadenie ide?",
+        "description": "Toto zariadenie sa neidentifikovalo ako nič, čo táto integrácia rozpozná, a preto sa pýta vás.\n\nAk ide o práčku, sušičku alebo práčku so sušičkou, uveďte to: dostane potom senzory len na čítanie pre oba bubny, nikdy nie termostat klimatizácie. Neskôr to môžete zmeniť v možnostiach integrácie.",
+        "data": {
+          "appliance_kind": "Zariadenie"
+        },
+        "data_description": {
+          "appliance_kind": "Nie ste si istí? Ponechajte „Rozhodnúť podľa jeho hlásení“. To sa stane aj bez odpovede a hodí sa to pre klimatizáciu."
+        }
       }
     },
     "error": {
@@ -172,10 +182,12 @@
       "init": {
         "title": "Možnosti Haismart",
         "data": {
-          "scan_interval": "Interval dopytovania na stav (sekundy)"
+          "scan_interval": "Interval dopytovania na stav (sekundy)",
+          "appliance_kind": "Zariadenie"
         },
         "data_description": {
-          "scan_interval": "Ako často sa jednotky pýtať na jej stav. Každý dopyt je plnohodnotná lokálna relácia a existuje len preto, aby zachytil zmeny vykonané diaľkovým ovládačom alebo aplikáciou – príkazy odoslané z Home Assistanta sa prejavia okamžite tak či tak."
+          "scan_interval": "Ako často sa jednotky pýtať na jej stav. Každý dopyt je plnohodnotná lokálna relácia a existuje len preto, aby zachytil zmeny vykonané diaľkovým ovládačom alebo aplikáciou – príkazy odoslané z Home Assistanta sa prejavia okamžite tak či tak.",
+          "appliance_kind": "Zobrazuje sa len pri zariadení, ktoré sa neidentifikovalo. Práčka, sušička alebo práčka so sušičkou dostane senzory len na čítanie, nikdy nie termostat klimatizácie."
         }
       }
     }
@@ -579,6 +591,15 @@
     },
     "unsupported_value": {
       "message": "{name} nepodporuje {value!r} pre {field}."
+    }
+  },
+  "selector": {
+    "appliance_kind": {
+      "options": {
+        "auto": "Rozhodnúť podľa jeho hlásení",
+        "laundry": "Práčka, sušička alebo práčka so sušičkou",
+        "not_air_conditioner": "Iné zariadenie, nie klimatizácia"
+      }
     }
   }
 }

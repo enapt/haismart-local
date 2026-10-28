@@ -142,6 +142,16 @@
       "discovery_confirm": {
         "title": "Siapkan perangkat ini",
         "description": "Home Assistant menemukan perangkat Haier di {host} (`{device_id}`).\n\nKunci lokalnya akan diambil dari akun Haier yang sudah Anda tambahkan, jadi tidak ada yang perlu diketik. Pilih **Kirim** untuk menambahkannya."
+      },
+      "appliance_kind": {
+        "title": "Perangkat jenis apa ini?",
+        "description": "Perangkat ini tidak mengidentifikasi dirinya sebagai apa pun yang dikenali integrasi ini, jadi integrasi ini menanyakannya kepada Anda.\n\nJika ini mesin cuci, pengering, atau mesin cuci-pengering, pilih opsi tersebut: perangkat akan mendapatkan sensor hanya-baca untuk kedua tabung dan tidak akan pernah mendapatkan termostat AC. Anda dapat mengubahnya nanti di opsi integrasi.",
+        "data": {
+          "appliance_kind": "Perangkat"
+        },
+        "data_description": {
+          "appliance_kind": "Tidak yakin? Biarkan “Putuskan dari laporannya”. Itulah yang dipakai jika tidak ada jawaban, dan cocok untuk AC."
+        }
       }
     },
     "error": {
@@ -172,10 +182,12 @@
       "init": {
         "title": "Opsi Haismart",
         "data": {
-          "scan_interval": "Interval pemeriksaan status (detik)"
+          "scan_interval": "Interval pemeriksaan status (detik)",
+          "appliance_kind": "Perangkat"
         },
         "data_description": {
-          "scan_interval": "Seberapa sering menanyakan status perangkat. Setiap pemeriksaan adalah satu sesi lokal penuh, dan tujuannya hanya untuk mendeteksi perubahan yang dibuat lewat remote atau aplikasi — perintah yang Anda kirim dari Home Assistant tetap langsung diperbarui."
+          "scan_interval": "Seberapa sering menanyakan status perangkat. Setiap pemeriksaan adalah satu sesi lokal penuh, dan tujuannya hanya untuk mendeteksi perubahan yang dibuat lewat remote atau aplikasi — perintah yang Anda kirim dari Home Assistant tetap langsung diperbarui.",
+          "appliance_kind": "Hanya ditampilkan untuk perangkat yang tidak mengidentifikasi dirinya. Mesin cuci, pengering, atau mesin cuci-pengering mendapatkan sensor hanya-baca dan tidak akan pernah mendapatkan termostat AC."
         }
       }
     }
@@ -579,6 +591,15 @@
     },
     "unsupported_value": {
       "message": "{name} tidak mendukung {value!r} untuk {field}."
+    }
+  },
+  "selector": {
+    "appliance_kind": {
+      "options": {
+        "auto": "Putuskan dari laporannya",
+        "laundry": "Mesin cuci, pengering, atau mesin cuci-pengering",
+        "not_air_conditioner": "Perangkat lain, bukan AC"
+      }
     }
   }
 }

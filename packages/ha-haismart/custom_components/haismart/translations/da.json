@@ -142,6 +142,16 @@
       "discovery_confirm": {
         "title": "Opsæt dette apparat",
         "description": "Home Assistant fandt et Haier-apparat på {host} (`{device_id}`).\n\nDets lokale nøgle hentes fra den Haier-konto, du allerede har tilføjet, så der er intet at indtaste. Vælg **Indsend** for at tilføje det."
+      },
+      "appliance_kind": {
+        "title": "Hvilken slags apparat er dette?",
+        "description": "Dette apparat identificerede sig ikke som noget, denne integration genkender, så du bliver spurgt.\n\nEr det en vaskemaskine, tørretumbler eller vaske-tørremaskine, så angiv det: Det får da skrivebeskyttede sensorer for begge tromler og aldrig en klimaanlægstermostat. Du kan ændre det senere i integrationens indstillinger.",
+        "data": {
+          "appliance_kind": "Apparat"
+        },
+        "data_description": {
+          "appliance_kind": "I tvivl? Behold “afgør ud fra dets rapporter”. Det sker også uden svar, og det passer til et klimaanlæg."
+        }
       }
     },
     "error": {
@@ -172,10 +182,12 @@
       "init": {
         "title": "Haismart-indstillinger",
         "data": {
-          "scan_interval": "Interval for statusforespørgsel (sekunder)"
+          "scan_interval": "Interval for statusforespørgsel (sekunder)",
+          "appliance_kind": "Apparat"
         },
         "data_description": {
-          "scan_interval": "Hvor ofte anlægget skal spørges om sin tilstand. Hver forespørgsel er en fuld lokal session, og den findes udelukkende for at opdage ændringer foretaget med fjernbetjeningen eller appen – kommandoer, du sender fra Home Assistant, opdateres med det samme under alle omstændigheder."
+          "scan_interval": "Hvor ofte anlægget skal spørges om sin tilstand. Hver forespørgsel er en fuld lokal session, og den findes udelukkende for at opdage ændringer foretaget med fjernbetjeningen eller appen – kommandoer, du sender fra Home Assistant, opdateres med det samme under alle omstændigheder.",
+          "appliance_kind": "Vises kun for et apparat, der ikke identificerede sig. En vaskemaskine, tørretumbler eller vaske-tørremaskine får skrivebeskyttede sensorer og aldrig en klimaanlægstermostat."
         }
       }
     }
@@ -579,6 +591,15 @@
     },
     "unsupported_value": {
       "message": "{name} understøtter ikke {value!r} for {field}."
+    }
+  },
+  "selector": {
+    "appliance_kind": {
+      "options": {
+        "auto": "Afgør ud fra dets rapporter",
+        "laundry": "Vaskemaskine, tørretumbler eller vaske-tørremaskine",
+        "not_air_conditioner": "Et andet apparat, ikke et klimaanlæg"
+      }
     }
   }
 }

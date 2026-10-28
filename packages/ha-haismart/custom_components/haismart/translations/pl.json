@@ -142,6 +142,16 @@
       "discovery_confirm": {
         "title": "Skonfiguruj ten sprzęt",
         "description": "Home Assistant znalazł sprzęt Haier pod adresem {host} (`{device_id}`).\n\nJego klucz lokalny zostanie pobrany z już dodanego konta Haier, więc nie trzeba nic wpisywać. Wybierz **Wyślij**, aby go dodać."
+      },
+      "appliance_kind": {
+        "title": "Jaki to sprzęt?",
+        "description": "Ten sprzęt nie przedstawił się w sposób, który ta integracja rozpoznaje, więc pyta Ciebie.\n\nJeśli to pralka, suszarka lub pralko-suszarka, zaznacz to: otrzyma wtedy czujniki tylko do odczytu dla obu bębnów i nigdy nie dostanie termostatu klimatyzatora. Możesz to później zmienić w opcjach integracji.",
+        "data": {
+          "appliance_kind": "Sprzęt"
+        },
+        "data_description": {
+          "appliance_kind": "Nie masz pewności? Zostaw „Rozpoznaj na podstawie raportów”. Tak samo stanie się bez odpowiedzi i to dobry wybór dla klimatyzatora."
+        }
       }
     },
     "error": {
@@ -172,10 +182,12 @@
       "init": {
         "title": "Opcje Haismart",
         "data": {
-          "scan_interval": "Częstotliwość odpytywania o stan (sekundy)"
+          "scan_interval": "Częstotliwość odpytywania o stan (sekundy)",
+          "appliance_kind": "Sprzęt"
         },
         "data_description": {
-          "scan_interval": "Jak często pytać sprzęt o jego stan. Każde odpytanie to pełna sesja lokalna i służy wyłącznie do wychwycenia zmian wprowadzonych pilotem lub aplikacją — polecenia wysyłane z Home Assistanta i tak aktualizują się natychmiast."
+          "scan_interval": "Jak często pytać sprzęt o jego stan. Każde odpytanie to pełna sesja lokalna i służy wyłącznie do wychwycenia zmian wprowadzonych pilotem lub aplikacją — polecenia wysyłane z Home Assistanta i tak aktualizują się natychmiast.",
+          "appliance_kind": "Widoczne tylko dla sprzętu, który się nie przedstawił. Pralka, suszarka lub pralko-suszarka otrzymuje czujniki tylko do odczytu i nigdy nie dostaje termostatu klimatyzatora."
         }
       }
     }
@@ -579,6 +591,15 @@
     },
     "unsupported_value": {
       "message": "{name} nie obsługuje {value!r} dla {field}."
+    }
+  },
+  "selector": {
+    "appliance_kind": {
+      "options": {
+        "auto": "Rozpoznaj na podstawie raportów",
+        "laundry": "Pralka, suszarka lub pralko-suszarka",
+        "not_air_conditioner": "Inny sprzęt, nie klimatyzator"
+      }
     }
   }
 }

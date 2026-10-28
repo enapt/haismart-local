@@ -121,6 +121,14 @@ CONF_DEVICE_TYPE = "device_type"
 # class field is one we have no row for; never overrides the class field, which is what the
 # appliance announces for itself. Absent for a device added without an account.
 CONF_APP_TYPE = "app_type"
+# The owner's answer to "what is this appliance?", asked only when neither the class field nor the
+# cloud's label identifies it (`haismart_hrdp.appliance.asks_owner`). An OPTION, so it can be
+# changed later; it never overrides a class the catalogue identifies.
+CONF_APPLIANCE_KIND = "appliance_kind"
+KIND_AUTO = "auto"  # decide from the reports, as an unidentified device always has
+KIND_LAUNDRY = "laundry"  # a washer, dryer or washer-dryer: read-only sensors, every status frame
+KIND_NOT_AIR_CONDITIONER = "not_air_conditioner"  # never a thermostat or the AC entity set
+APPLIANCE_KIND_CHOICES = (KIND_AUTO, KIND_LAUNDRY, KIND_NOT_AIR_CONDITIONER)
 # Haier's byte map for this device's class, fetched once when the shipped bundle does not carry it
 # and cached here so the appliance decodes offline afterwards. Stored as the same PROJECTION the
 # bundle holds -- positions only -- not the quarter-megabyte configFile.

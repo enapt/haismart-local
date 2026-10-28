@@ -142,6 +142,16 @@
       "discovery_confirm": {
         "title": "Configurează acest aparat de aparat",
         "description": "Home Assistant a găsit un aparat de aparat Haier la {host} (`{device_id}`).\n\nCheia lui locală va fi preluată din contul Haier pe care l-ai adăugat deja, deci nu trebuie tastat nimic. Selectează **Trimite** pentru a-l adăuga."
+      },
+      "appliance_kind": {
+        "title": "Ce tip de aparat este acesta?",
+        "description": "Acest aparat nu s-a identificat ca ceva recunoscut de această integrare, așa că vă întreabă pe dumneavoastră.\n\nDacă este o mașină de spălat, un uscător de rufe sau o mașină de spălat cu uscător, indicați acest lucru: va primi senzori doar pentru citire pentru ambele tambure și niciodată un termostat de aer condiționat. Puteți modifica ulterior această alegere în opțiunile integrării.",
+        "data": {
+          "appliance_kind": "Aparat"
+        },
+        "data_description": {
+          "appliance_kind": "Nu sunteți sigur? Păstrați „Decide pe baza rapoartelor sale”. Aceasta se aplică și dacă nu răspundeți și este potrivită pentru un aparat de aer condiționat."
+        }
       }
     },
     "error": {
@@ -172,10 +182,12 @@
       "init": {
         "title": "Opțiuni Haismart",
         "data": {
-          "scan_interval": "Interval de interogare a stării (secunde)"
+          "scan_interval": "Interval de interogare a stării (secunde)",
+          "appliance_kind": "Aparat"
         },
         "data_description": {
-          "scan_interval": "Cât de des să fie întrebat aparatul despre starea sa. Fiecare interogare este o sesiune locală completă și există doar pentru a observa modificările făcute de la telecomandă sau din aplicație — comenzile trimise din Home Assistant se actualizează instantaneu oricum."
+          "scan_interval": "Cât de des să fie întrebat aparatul despre starea sa. Fiecare interogare este o sesiune locală completă și există doar pentru a observa modificările făcute de la telecomandă sau din aplicație — comenzile trimise din Home Assistant se actualizează instantaneu oricum.",
+          "appliance_kind": "Afișat doar pentru un aparat care nu s-a identificat. O mașină de spălat, un uscător de rufe sau o mașină de spălat cu uscător primește senzori doar pentru citire și niciodată un termostat de aer condiționat."
         }
       }
     }
@@ -579,6 +591,15 @@
     },
     "unsupported_value": {
       "message": "{name} nu acceptă {value!r} pentru {field}."
+    }
+  },
+  "selector": {
+    "appliance_kind": {
+      "options": {
+        "auto": "Decide pe baza rapoartelor sale",
+        "laundry": "Mașină de spălat, uscător de rufe sau mașină de spălat cu uscător",
+        "not_air_conditioner": "Alt aparat, nu un aparat de aer condiționat"
+      }
     }
   }
 }

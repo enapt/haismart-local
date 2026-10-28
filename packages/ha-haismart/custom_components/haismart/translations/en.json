@@ -142,6 +142,16 @@
       "discovery_confirm": {
         "title": "Set up this appliance",
         "description": "Home Assistant found a Haier appliance at {host} (`{device_id}`).\n\nIts local key will be fetched from the Haier account you have already added, so there is nothing to type. Select **Submit** to add it."
+      },
+      "appliance_kind": {
+        "title": "What kind of appliance is this?",
+        "description": "This appliance did not identify itself as anything this integration recognises, so it is asking you.\n\nIf it is a washer, dryer or washer-dryer, say so: it then gets read-only sensors for both drums and never an air-conditioner thermostat. You can change this later in the integration's options.",
+        "data": {
+          "appliance_kind": "Appliance"
+        },
+        "data_description": {
+          "appliance_kind": "Not sure? Keep \"decide from its reports\". That is what happens without an answer, and it suits an air conditioner."
+        }
       }
     },
     "error": {
@@ -172,10 +182,12 @@
       "init": {
         "title": "Haismart options",
         "data": {
-          "scan_interval": "Status poll interval (seconds)"
+          "scan_interval": "Status poll interval (seconds)",
+          "appliance_kind": "Appliance"
         },
         "data_description": {
-          "scan_interval": "How often to ask the appliance for its state. Each poll is a full local session, and it exists only to notice changes made with the remote or the app — commands you send from Home Assistant update instantly regardless."
+          "scan_interval": "How often to ask the appliance for its state. Each poll is a full local session, and it exists only to notice changes made with the remote or the app — commands you send from Home Assistant update instantly regardless.",
+          "appliance_kind": "Only shown for an appliance that did not identify itself. A washer, dryer or washer-dryer gets read-only sensors and never an air-conditioner thermostat."
         }
       }
     }
@@ -579,6 +591,15 @@
     },
     "unsupported_value": {
       "message": "{name} does not support {value!r} for {field}."
+    }
+  },
+  "selector": {
+    "appliance_kind": {
+      "options": {
+        "auto": "Decide from its reports",
+        "laundry": "Washer, dryer or washer-dryer",
+        "not_air_conditioner": "Another appliance, not an air conditioner"
+      }
     }
   }
 }

@@ -142,6 +142,16 @@
       "discovery_confirm": {
         "title": "Sett opp dette apparatet",
         "description": "Home Assistant fant et Haier-apparat på {host} (`{device_id}`).\n\nDen lokale nøkkelen hentes fra Haier-kontoen du allerede har lagt til, så det er ingenting å skrive. Velg **Send inn** for å legge det til."
+      },
+      "appliance_kind": {
+        "title": "Hva slags apparat er dette?",
+        "description": "Dette apparatet identifiserte seg ikke som noe denne integrasjonen gjenkjenner, så du blir spurt.\n\nEr det en vaskemaskin, tørketrommel eller vaske-tørkemaskin, si fra: Da får det skrivebeskyttede sensorer for begge tromlene og aldri en termostat for klimaanlegg. Du kan endre dette senere i integrasjonens alternativer.",
+        "data": {
+          "appliance_kind": "Apparat"
+        },
+        "data_description": {
+          "appliance_kind": "Usikker? Behold «avgjør ut fra rapportene». Det er det som skjer uten svar, og det passer for et klimaanlegg."
+        }
       }
     },
     "error": {
@@ -172,10 +182,12 @@
       "init": {
         "title": "Haismart-alternativer",
         "data": {
-          "scan_interval": "Intervall for statusforespørsel (sekunder)"
+          "scan_interval": "Intervall for statusforespørsel (sekunder)",
+          "appliance_kind": "Apparat"
         },
         "data_description": {
-          "scan_interval": "Hvor ofte anlegget skal spørres om tilstanden sin. Hver forespørsel er en full lokal økt, og den finnes bare for å fange opp endringer gjort med fjernkontrollen eller appen – kommandoer du sender fra Home Assistant, oppdateres umiddelbart uansett."
+          "scan_interval": "Hvor ofte anlegget skal spørres om tilstanden sin. Hver forespørsel er en full lokal økt, og den finnes bare for å fange opp endringer gjort med fjernkontrollen eller appen – kommandoer du sender fra Home Assistant, oppdateres umiddelbart uansett.",
+          "appliance_kind": "Vises bare for et apparat som ikke identifiserte seg. En vaskemaskin, tørketrommel eller vaske-tørkemaskin får skrivebeskyttede sensorer og aldri en termostat for klimaanlegg."
         }
       }
     }
@@ -579,6 +591,15 @@
     },
     "unsupported_value": {
       "message": "{name} støtter ikke {value!r} for {field}."
+    }
+  },
+  "selector": {
+    "appliance_kind": {
+      "options": {
+        "auto": "Avgjør ut fra rapportene",
+        "laundry": "Vaskemaskin, tørketrommel eller vaske-tørkemaskin",
+        "not_air_conditioner": "Et annet apparat, ikke et klimaanlegg"
+      }
     }
   }
 }

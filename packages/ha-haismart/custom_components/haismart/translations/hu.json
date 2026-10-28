@@ -142,6 +142,16 @@
       "discovery_confirm": {
         "title": "Készülék beállítása",
         "description": "A Home Assistant Haier készüléket talált a következő címen: {host} (`{device_id}`).\n\nA helyi kulcsát a már hozzáadott Haier-fiókból tölti le, így nincs mit beírni. A hozzáadáshoz válassza a **Küldés** lehetőséget."
+      },
+      "appliance_kind": {
+        "title": "Milyen készülék ez?",
+        "description": "Ez a készülék nem azonosította magát olyan típusként, amelyet ez az integráció felismer, ezért az integráció most Önt kérdezi meg.\n\nHa mosógép, szárítógép vagy mosó-szárítógép, jelezze: ekkor csak olvasható érzékelőket kap mindkét dobhoz, és soha nem kap légkondicionáló-termosztátot. Ezt később az integráció beállításaiban módosíthatja.",
+        "data": {
+          "appliance_kind": "Készülék"
+        },
+        "data_description": {
+          "appliance_kind": "Nem biztos benne? Hagyja a „Döntés a jelentései alapján” lehetőséget. Válasz nélkül is ez történik, és légkondicionálóhoz ez a megfelelő."
+        }
       }
     },
     "error": {
@@ -172,10 +182,12 @@
       "init": {
         "title": "Haismart beállítások",
         "data": {
-          "scan_interval": "Állapotlekérdezés gyakorisága (másodperc)"
+          "scan_interval": "Állapotlekérdezés gyakorisága (másodperc)",
+          "appliance_kind": "Készülék"
         },
         "data_description": {
-          "scan_interval": "Milyen gyakran kérdezze le a készülék állapotát. Minden lekérdezés egy teljes helyi munkamenet, és kizárólag azért van, hogy észrevegye a távirányítóval vagy az alkalmazással végzett módosításokat – a Home Assistantból küldött parancsok amúgy is azonnal frissülnek."
+          "scan_interval": "Milyen gyakran kérdezze le a készülék állapotát. Minden lekérdezés egy teljes helyi munkamenet, és kizárólag azért van, hogy észrevegye a távirányítóval vagy az alkalmazással végzett módosításokat – a Home Assistantból küldött parancsok amúgy is azonnal frissülnek.",
+          "appliance_kind": "Csak olyan készüléknél jelenik meg, amely nem azonosította magát. A mosógép, szárítógép vagy mosó-szárítógép csak olvasható érzékelőket kap, és soha nem kap légkondicionáló-termosztátot."
         }
       }
     }
@@ -579,6 +591,15 @@
     },
     "unsupported_value": {
       "message": "A(z) {name} nem támogatja a következőt: {value!r} a(z) {field} mezőhöz."
+    }
+  },
+  "selector": {
+    "appliance_kind": {
+      "options": {
+        "auto": "Döntés a jelentései alapján",
+        "laundry": "Mosógép, szárítógép vagy mosó-szárítógép",
+        "not_air_conditioner": "Más készülék, nem légkondicionáló"
+      }
     }
   }
 }

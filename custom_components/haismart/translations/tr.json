@@ -142,6 +142,16 @@
       "discovery_confirm": {
         "title": "Bu cihazı kur",
         "description": "Home Assistant, {host} (`{device_id}`) adresinde bir Haier cihaz buldu.\n\nYerel anahtarı, hâlihazırda eklediğiniz Haier hesabından alınacak; yani yazılacak bir şey yok. Eklemek için **Gönder**'i seçin."
+      },
+      "appliance_kind": {
+        "title": "Bu ne tür bir cihaz?",
+        "description": "Bu cihaz kendini bu entegrasyonun tanıdığı herhangi bir şey olarak tanıtmadı, bu yüzden size soruluyor.\n\nÇamaşır makinesi, kurutma makinesi veya kurutmalı çamaşır makinesiyse bunu belirtin: bu durumda her iki tambur için salt okunur sensörler alır ve asla bir klima termostatı almaz. Bunu daha sonra entegrasyonun seçeneklerinden değiştirebilirsiniz.",
+        "data": {
+          "appliance_kind": "Cihaz"
+        },
+        "data_description": {
+          "appliance_kind": "Emin değil misiniz? «Raporlarına göre karar ver» seçeneğini koruyun. Yanıt verilmediğinde de böyle olur ve bir klima için uygundur."
+        }
       }
     },
     "error": {
@@ -172,10 +182,12 @@
       "init": {
         "title": "Haismart seçenekleri",
         "data": {
-          "scan_interval": "Durum sorgulama aralığı (saniye)"
+          "scan_interval": "Durum sorgulama aralığı (saniye)",
+          "appliance_kind": "Cihaz"
         },
         "data_description": {
-          "scan_interval": "Cihaza durumunun ne sıklıkla sorulacağı. Her sorgulama tam bir yerel oturumdur ve yalnızca kumandayla veya uygulamayla yapılan değişiklikleri fark etmek için vardır — Home Assistant'tan gönderdiğiniz komutlar zaten anında yansır."
+          "scan_interval": "Cihaza durumunun ne sıklıkla sorulacağı. Her sorgulama tam bir yerel oturumdur ve yalnızca kumandayla veya uygulamayla yapılan değişiklikleri fark etmek için vardır — Home Assistant'tan gönderdiğiniz komutlar zaten anında yansır.",
+          "appliance_kind": "Yalnızca kendini tanıtmayan cihazlarda gösterilir. Çamaşır makinesi, kurutma makinesi veya kurutmalı çamaşır makinesi salt okunur sensörler alır ve asla klima termostatı almaz."
         }
       }
     }
@@ -579,6 +591,15 @@
     },
     "unsupported_value": {
       "message": "{name}, {field} için {value!r} değerini desteklemiyor."
+    }
+  },
+  "selector": {
+    "appliance_kind": {
+      "options": {
+        "auto": "Raporlarına göre karar ver",
+        "laundry": "Çamaşır, kurutma veya kurutmalı çamaşır makinesi",
+        "not_air_conditioner": "Başka bir cihaz, klima değil"
+      }
     }
   }
 }

@@ -142,6 +142,16 @@
       "discovery_confirm": {
         "title": "Dit apparaat instellen",
         "description": "Home Assistant heeft een Haier-apparaat gevonden op {host} (`{device_id}`).\n\nDe lokale sleutel wordt opgehaald uit het Haier-account dat je al hebt toegevoegd, dus er valt niets in te typen. Kies **Verzenden** om hem toe te voegen."
+      },
+      "appliance_kind": {
+        "title": "Wat voor apparaat is dit?",
+        "description": "Dit apparaat heeft zich niet geïdentificeerd als iets wat deze integratie herkent, daarom wordt het aan jou gevraagd.\n\nIs het een wasmachine, droger of was-droogcombinatie, geef dat dan aan: het krijgt in dat geval alleen-lezen sensoren voor beide trommels en nooit een airco-thermostaat. Je kunt dit later wijzigen in de opties van de integratie.",
+        "data": {
+          "appliance_kind": "Apparaat"
+        },
+        "data_description": {
+          "appliance_kind": "Twijfel je? Laat “bepalen op basis van de rapporten” staan. Dat gebeurt ook zonder antwoord, en dat past bij een airco."
+        }
       }
     },
     "error": {
@@ -172,10 +182,12 @@
       "init": {
         "title": "Haismart-opties",
         "data": {
-          "scan_interval": "Interval voor statusopvraging (seconden)"
+          "scan_interval": "Interval voor statusopvraging (seconden)",
+          "appliance_kind": "Apparaat"
         },
         "data_description": {
-          "scan_interval": "Hoe vaak het apparaat naar zijn status wordt gevraagd. Elke opvraging is een volledige lokale sessie en bestaat alleen om wijzigingen op te merken die met de afstandsbediening of de app zijn gemaakt — opdrachten die je vanuit Home Assistant stuurt, worden hoe dan ook meteen verwerkt."
+          "scan_interval": "Hoe vaak het apparaat naar zijn status wordt gevraagd. Elke opvraging is een volledige lokale sessie en bestaat alleen om wijzigingen op te merken die met de afstandsbediening of de app zijn gemaakt — opdrachten die je vanuit Home Assistant stuurt, worden hoe dan ook meteen verwerkt.",
+          "appliance_kind": "Alleen getoond voor een apparaat dat zich niet heeft geïdentificeerd. Een wasmachine, droger of was-droogcombinatie krijgt alleen-lezen sensoren en nooit een airco-thermostaat."
         }
       }
     }
@@ -579,6 +591,15 @@
     },
     "unsupported_value": {
       "message": "{name} ondersteunt {value!r} niet voor {field}."
+    }
+  },
+  "selector": {
+    "appliance_kind": {
+      "options": {
+        "auto": "Bepalen op basis van de rapporten",
+        "laundry": "Wasmachine, droger of was-droogcombinatie",
+        "not_air_conditioner": "Ander apparaat, geen airco"
+      }
     }
   }
 }

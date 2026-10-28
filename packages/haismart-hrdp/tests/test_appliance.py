@@ -149,3 +149,75 @@ def test_a_label_matches_the_manufacturers_own_name_for_the_class() -> None:
         ]
         assert any(marker in n for n in names), f"{device_class}: {names[:3]}"
         assert device_class in CLASS_LABELS
+
+
+# --- an appliance nobody has catalogued -------------------------------------------------------
+
+
+def _with_class(device_class: str) -> str:
+    return f"{'0' * 16}{device_class}{'0' * 44}"
+
+
+@pytest.mark.parametrize("device_class", ["0502", "0503", "0505", "05ff"])
+def test_an_unnamed_class_of_the_laundry_family_is_laundry(device_class: str) -> None:
+    """05 is the washer family in every configFile Haier ships; laundry builds nothing that writes."""
+    assert kind_for(_with_class(device_class)) is ApplianceKind.LAUNDRY
+
+
+@pytest.mark.parametrize(
+    "label", ["Roller Washer", "Pulsator Washer", "Dryer", "Washer Dryer", "washing machine"]
+)
+def test_a_laundry_label_settles_an_unknown_class(label: str) -> None:
+    """"Roller Washer" is what Haier's device list calls the 0504 laundry centre."""
+    assert kind_for(_with_class("9a01"), label) is ApplianceKind.LAUNDRY
+    assert kind_for(None, label) is ApplianceKind.LAUNDRY
+
+
+@pytest.mark.parametrize("label", ["Dishwasher", "Dish Washer", "Wash Basin", "Washroom Heater"])
+def test_a_label_that_only_looks_like_laundry_is_not(label: str) -> None:
+    assert kind_for(None, label) is ApplianceKind.OTHER
+
+
+def test_no_label_or_family_rule_reaches_a_class_the_catalogue_names() -> None:
+    """⛔ What a named class gets is decided by its row, never by the cloud's words for it."""
+    from haismart_hrdp.appliance import CLASS_LABELS
+
+    for device_class in CLASS_LABELS:
+        before = CLASS_KINDS.get(device_class, ApplianceKind.OTHER)
+        for label in ("Roller Washer", "Dryer", "Wall Mounted", "Electric Water Heater"):
+            assert kind_for(_with_class(device_class), label) is before, (device_class, label)
+    assert kind_for(CLASSIC_AC, "Roller Washer") is ApplianceKind.AIR_CONDITIONER
+
+
+def test_only_a_positive_identification_rules_out_an_air_conditioner() -> None:
+    from haismart_hrdp.appliance import identified_not_air_conditioner as not_ac
+
+    assert not not_ac(CLASSIC_AC) and not not_ac(CABINET_AC)
+    assert not not_ac(_with_class("9a01")), "unknown is not 'not an AC': it may be an uncatalogued one"
+    assert not not_ac(None) and not not_ac(None, "Robot Vacuum")
+    # Named as something else by Haier, or laundry by family or label.
+    assert not_ac(_with_class("0121")) and not_ac(_with_class("0501"))
+    assert not_ac(_with_class("0502")) and not_ac(None, "Roller Washer")
+    assert not_ac(WATER_HEATER)
+
+
+def test_the_owner_is_asked_only_where_the_device_spoke_and_nothing_recognised_it() -> None:
+    from haismart_hrdp.appliance import asks_owner
+
+    assert asks_owner(_with_class("9a01"))
+    assert asks_owner(None, "Robot Vacuum")
+    # Recognised, by class, family or label: nothing to ask.
+    assert not asks_owner(CLASSIC_AC) and not asks_owner(WATER_HEATER)
+    assert not asks_owner(_with_class("0121")) and not asks_owner(_with_class("0504"))
+    assert not asks_owner(_with_class("0502")) and not asks_owner(None, "Roller Washer")
+    # Silent -- how most air conditioners are added by hand: never asked at setup.
+    assert not asks_owner(None) and not asks_owner("0" * 64, "  ")
+
+
+def test_an_answer_can_decide_only_where_no_class_does() -> None:
+    from haismart_hrdp.appliance import answer_applies
+
+    assert answer_applies(None) and answer_applies(_with_class("9a01"))
+    for settled in (CLASSIC_AC, WATER_HEATER, _with_class("0121"), _with_class("0504"),
+                    _with_class("0502")):
+        assert not answer_applies(settled), settled

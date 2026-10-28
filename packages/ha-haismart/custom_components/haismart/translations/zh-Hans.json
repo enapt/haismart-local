@@ -142,6 +142,16 @@
       "discovery_confirm": {
         "title": "设置此设备",
         "description": "Home Assistant 在 {host}（`{device_id}`）发现了一台 Haier 设备。\n\n它的本地密钥将从你已添加的 Haier 账户获取，因此无需输入任何内容。选择**提交**即可添加。"
+      },
+      "appliance_kind": {
+        "title": "这是哪种设备？",
+        "description": "这台设备没有表明自己属于本集成可识别的任何类型，因此需要询问你。\n\n如果它是洗衣机、干衣机或洗烘一体机，请如实选择：这样它会获得两个滚筒的只读传感器，并且绝不会生成空调温控器。你之后可以在本集成的选项中更改此设置。",
+        "data": {
+          "appliance_kind": "设备"
+        },
+        "data_description": {
+          "appliance_kind": "不确定？请保留“根据其报告判断”。不作选择时就是这样处理的，这也适合空调。"
+        }
       }
     },
     "error": {
@@ -172,10 +182,12 @@
       "init": {
         "title": "Haismart 选项",
         "data": {
-          "scan_interval": "状态轮询间隔（秒）"
+          "scan_interval": "状态轮询间隔（秒）",
+          "appliance_kind": "设备"
         },
         "data_description": {
-          "scan_interval": "多久向设备查询一次状态。每次轮询都是一个完整的本地会话，其唯一作用是察觉通过遥控器或 App 所做的更改——你从 Home Assistant 发出的命令无论如何都会即时更新。"
+          "scan_interval": "多久向设备查询一次状态。每次轮询都是一个完整的本地会话，其唯一作用是察觉通过遥控器或 App 所做的更改——你从 Home Assistant 发出的命令无论如何都会即时更新。",
+          "appliance_kind": "仅对未表明自身类型的设备显示。洗衣机、干衣机或洗烘一体机会获得只读传感器，并且绝不会生成空调温控器。"
         }
       }
     }
@@ -579,6 +591,15 @@
     },
     "unsupported_value": {
       "message": "{name} 的 {field} 不支持 {value!r}。"
+    }
+  },
+  "selector": {
+    "appliance_kind": {
+      "options": {
+        "auto": "根据其报告判断",
+        "laundry": "洗衣机、干衣机或洗烘一体机",
+        "not_air_conditioner": "其他设备，不是空调"
+      }
     }
   }
 }

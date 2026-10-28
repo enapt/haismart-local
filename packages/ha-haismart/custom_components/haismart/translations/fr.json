@@ -142,6 +142,16 @@
       "discovery_confirm": {
         "title": "Configurer cet appareil",
         "description": "Home Assistant a trouvé un appareil Haier à l'adresse {host} (`{device_id}`).\n\nSa clé locale sera récupérée depuis le compte Haier que vous avez déjà ajouté : il n'y a rien à saisir. Sélectionnez **Valider** pour l'ajouter."
+      },
+      "appliance_kind": {
+        "title": "De quel type d'appareil s'agit-il ?",
+        "description": "Cet appareil ne s'est pas identifié comme un type reconnu par cette intégration, qui vous pose donc la question.\n\nS'il s'agit d'un lave-linge, d'un sèche-linge ou d'un lave-linge séchant, indiquez-le : il disposera alors de capteurs en lecture seule pour les deux tambours, et jamais d'un thermostat de climatiseur. Vous pourrez modifier ce choix plus tard dans les options de l'intégration.",
+        "data": {
+          "appliance_kind": "Appareil"
+        },
+        "data_description": {
+          "appliance_kind": "Vous hésitez ? Laissez « Décider d'après ses rapports ». C'est ce qui s'applique si vous ne répondez pas, et cela convient à un climatiseur."
+        }
       }
     },
     "error": {
@@ -172,10 +182,12 @@
       "init": {
         "title": "Options Haismart",
         "data": {
-          "scan_interval": "Intervalle d'interrogation de l'état (secondes)"
+          "scan_interval": "Intervalle d'interrogation de l'état (secondes)",
+          "appliance_kind": "Appareil"
         },
         "data_description": {
-          "scan_interval": "À quelle fréquence demander son état à l'appareil. Chaque interrogation est une session locale complète, et elle ne sert qu'à détecter les changements faits depuis la télécommande ou l'application — les commandes envoyées depuis Home Assistant se répercutent immédiatement de toute façon."
+          "scan_interval": "À quelle fréquence demander son état à l'appareil. Chaque interrogation est une session locale complète, et elle ne sert qu'à détecter les changements faits depuis la télécommande ou l'application — les commandes envoyées depuis Home Assistant se répercutent immédiatement de toute façon.",
+          "appliance_kind": "Affiché uniquement pour un appareil qui ne s'est pas identifié. Un lave-linge, un sèche-linge ou un lave-linge séchant dispose de capteurs en lecture seule et jamais d'un thermostat de climatiseur."
         }
       }
     }
@@ -579,6 +591,15 @@
     },
     "unsupported_value": {
       "message": "{name} ne prend pas en charge {value!r} pour {field}."
+    }
+  },
+  "selector": {
+    "appliance_kind": {
+      "options": {
+        "auto": "Décider d'après ses rapports",
+        "laundry": "Lave-linge, sèche-linge ou lave-linge séchant",
+        "not_air_conditioner": "Autre appareil, pas un climatiseur"
+      }
     }
   }
 }

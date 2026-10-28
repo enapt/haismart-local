@@ -83,13 +83,21 @@ except ImportError:  # pragma: no cover - HA < 2025.2
 if TYPE_CHECKING:
     from homeassistant.components.dhcp import DhcpServiceInfo
 
-from haismart_hrdp.appliance import ApplianceKind, kind_for, label_for
+from haismart_hrdp.appliance import (
+    ApplianceKind,
+    answer_applies,
+    asks_owner,
+    kind_for,
+    label_for,
+)
 
 from .cloud_transport import async_cloud_transport
 from .const import (
     AC_DEVICE_CLASSES,
+    APPLIANCE_KIND_CHOICES,
     CONF_ACCESS_TOKEN,
     CONF_APP_TYPE,
+    CONF_APPLIANCE_KIND,
     CONF_CLOUD_CLIENT_ID,
     CONF_DEVICE_ID,
     CONF_DEVICE_TYPE,
@@ -105,6 +113,7 @@ from .const import (
     CONF_ZONE_INFO,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    KIND_AUTO,
     MIN_SCAN_INTERVAL,
     READ_TIMEOUT,
     UDISCOVERY_TIMEOUT,
@@ -396,12 +405,26 @@ def _device_label(device: Any) -> str:
     # warning.
     if category := label_for(uplus_id):
         return f"{label} - {category.lower()}"
+    # Laundry by its class family or the cloud's label ("Roller Washer"), with no class name here.
+    if kind is ApplianceKind.LAUNDRY:
+        return f"{label} - washer or dryer"
     # Nothing names the class. Fall back to the deviceType byte before saying so, since an
     # appliance whose uPlusId the device list did not carry still names its class there.
     cls = (getattr(device, "device_type", "") or "")[:2].lower()
     if cls and cls in AC_DEVICE_CLASSES:
         return label
     return f"{label} - appliance type not recognised, may not work"
+
+
+def _appliance_kind_selector() -> SelectSelector:
+    """The owner's answer to "what is this appliance?" -- see `CONF_APPLIANCE_KIND`."""
+    return SelectSelector(
+        SelectSelectorConfig(
+            options=list(APPLIANCE_KIND_CHOICES),
+            translation_key=CONF_APPLIANCE_KIND,
+            mode=SelectSelectorMode.LIST,
+        )
+    )
 
 
 class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -418,6 +441,8 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         self._devices: list[Any] = []
         self._picked: Any = None
         self._cloud: HaierCloud | None = None
+        # an entry held back to ask what the appliance is (see `async_step_appliance_kind`)
+        self._held_entry: tuple[str, dict[str, Any]] | None = None
         self._local_key: str | None = None
         self._localkey_version: int | None = None
         # an account held by another entry has been tried for this appliance already (once is enough
@@ -921,15 +946,50 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         device_id = self._discovered[CONF_DEVICE_ID]
         assert self._local_key is not None
         version = await _async_validate(self.hass, host, device_id, self._local_key)
-        return self.async_create_entry(
-            title=self._discovered.get(CONF_NAME) or f"Haier {device_id}",
-            data={
+        return await self._async_create_or_ask_kind(
+            self._discovered.get(CONF_NAME) or f"Haier {device_id}",
+            {
                 CONF_HOST: host,
                 CONF_DEVICE_ID: device_id,
                 CONF_LOCAL_KEY: self._local_key,
                 CONF_LOCALKEY_VERSION: self._localkey_version or version,
                 **self._cloud_data,
             },
+        )
+
+    async def _async_create_or_ask_kind(
+        self, title: str, data: dict[str, Any]
+    ) -> ConfigFlowResult:
+        """Create the entry -- unless the appliance said who it is and nothing here recognised it.
+
+        Then the owner is asked first. Their answer is the one thing the catalogue cannot supply,
+        and the question exists because the fallback for an unrecognised device is to read its
+        report as an air conditioner's when the length matches one: a 0504 washer-dryer's dryer
+        report is 165 bytes, an AC family's length, and it got a thermostat. Asked only then, so an
+        air conditioner set up the way most are never sees it.
+        """
+        if asks_owner(data.get(CONF_UPLUS_ID), data.get(CONF_APP_TYPE)):
+            self._held_entry = (title, data)
+            return await self.async_step_appliance_kind()
+        return self.async_create_entry(title=title, data=data)
+
+    async def async_step_appliance_kind(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """What is this appliance? Laundry, something that is not an AC, or decide from reports."""
+        assert self._held_entry is not None
+        title, data = self._held_entry
+        if user_input is not None:
+            return self.async_create_entry(
+                title=title,
+                data=data,
+                options={CONF_APPLIANCE_KIND: user_input[CONF_APPLIANCE_KIND]},
+            )
+        return self.async_show_form(
+            step_id="appliance_kind",
+            data_schema=vol.Schema({
+                vol.Required(CONF_APPLIANCE_KIND, default=KIND_AUTO): _appliance_kind_selector(),
+            }),
         )
 
     async def async_step_key_failed(
@@ -1259,9 +1319,9 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         pending = self._pending_manual
         product_code = pending.get(CONF_PRODUCT_CODE) or ""
         model = await self._async_public_model(product_code)
-        return self.async_create_entry(
-            title=pending[CONF_NAME],
-            data={
+        return await self._async_create_or_ask_kind(
+            pending[CONF_NAME],
+            {
                 CONF_HOST: pending[CONF_HOST],
                 CONF_DEVICE_ID: pending[CONF_DEVICE_ID],
                 CONF_LOCAL_KEY: pending[CONF_LOCAL_KEY],
@@ -1731,12 +1791,40 @@ class HaismartOptionsFlow(OptionsFlow):
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
+        entry = self.config_entry
+        uplus_id, app_type = entry.data.get(CONF_UPLUS_ID), entry.data.get(CONF_APP_TYPE)
+        # The appliance question, wherever an answer can still decide: no class settles the kind,
+        # and the device is unrecognised (including one whose uPlusId the coordinator learned after
+        # setup), laundry only by the cloud's label, or already answered. Hidden everywhere else --
+        # for an air conditioner above all -- where an answer would do nothing.
+        kind = kind_for(uplus_id, app_type)
+        offered = (
+            answer_applies(uplus_id)
+            and kind in (ApplianceKind.OTHER, ApplianceKind.LAUNDRY)
+            and (
+                asks_owner(uplus_id, app_type)
+                or kind is ApplianceKind.LAUNDRY
+                or CONF_APPLIANCE_KIND in entry.options
+            )
+        )
         if user_input is not None:
+            # This form replaces the options wholesale, so an answer it did not show is carried.
+            if not offered and CONF_APPLIANCE_KIND in entry.options:
+                user_input = {**user_input, CONF_APPLIANCE_KIND: entry.options[CONF_APPLIANCE_KIND]}
             return self.async_create_entry(data=user_input)
+        kind_field: dict[Any, Any] = {}
+        if offered:
+            kind_field = {
+                vol.Required(
+                    CONF_APPLIANCE_KIND,
+                    default=entry.options.get(CONF_APPLIANCE_KIND, KIND_AUTO),
+                ): _appliance_kind_selector(),
+            }
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
                 {
+                    **kind_field,
                     vol.Required(
                         CONF_SCAN_INTERVAL,
                         default=self.config_entry.options.get(

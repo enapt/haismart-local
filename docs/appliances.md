@@ -106,6 +106,33 @@ the same moment: 37 of the dryer's 44 and 109 of the washer's 111. Each frame al
 programme-name text blocks, which are not decoded. The other five dryer fields sit past the report's
 first omitted word, and `placeable_limit` withholds them until more captures exist.
 
+## How an appliance is identified, and what happens when it is not
+
+Nothing asks you what your appliance is if the appliance can say so. In order:
+
+1. **Its class field** (characters 17–20 of the uPlusId, e.g. `0504`). A class this integration
+   names settles it, whatever else says otherwise.
+2. **The laundry family.** Any other `05xx` class is a washer or dryer: every `05` configuration
+   Haier publishes is one, and Haier's own app files its washer-and-dryer cards under that family.
+3. **The cloud's category**, when the appliance was added through an account. "Roller Washer",
+   "Dryer" and other laundry words make it laundry; the air-conditioner and water-heater categories
+   must match exactly. Neither ever overrides a class from step 1.
+4. **You.** If the appliance named a class or category and none of the above recognised it, setup
+   asks what it is:
+   * **Washer, dryer or washer-dryer**: read-only sensors from every status frame, like `0504`.
+   * **Another appliance, not an air conditioner**: never a thermostat or the AC entity set, however
+     its report looks.
+   * **Decide from its reports**: what happens without an answer. It keeps a thermostat only while
+     its report decodes as an air conditioner's, which keeps working an AC nobody has catalogued.
+
+   The answer is in the integration's **Configure** options afterwards, so it can be changed. An
+   air conditioner set up the usual way is never asked: it is recognised, or it said nothing, and
+   the question then appears in the options once the appliance has identified itself.
+
+A class Haier names as something other than an air conditioner (a refrigerator, a hood, a `0501`
+washer) is also never read as one: report length is not identity, and the `0504` dryer's report
+proved it.
+
 ## What is deliberately not supported
 
 **Appliances with no Wi-Fi module of their own.** Bulbs, sockets, curtains, door and motion sensors

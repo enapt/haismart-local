@@ -27,6 +27,7 @@ from homeassistant.core import HomeAssistant
 from .const import (
     CONF_ACCESS_TOKEN,
     CONF_APP_TYPE,
+    CONF_APPLIANCE_KIND,
     CONF_CLOUD_CLIENT_ID,
     CONF_DEVICE_ID,
     CONF_DIGITAL_MODEL,
@@ -229,6 +230,9 @@ async def async_get_config_entry_diagnostics(
             "kind": str(coordinator.appliance_kind),
             "device_class": (coordinator.uplus_id or "")[16:20] or None,
             "app_type": coordinator.config_entry.data.get(CONF_APP_TYPE),
+            # The owner's answer to "what is this?" where setup had to ask; absent where it did not
+            "owner_answer": coordinator.config_entry.options.get(CONF_APPLIANCE_KIND),
+            "ruled_out_air_conditioner": coordinator.ruled_out_air_conditioner,
             "byte_map": getattr(coordinator.device_model, "name", None),
             "decoded_by_byte_map": coordinator.model_decoded,
             "model_state": (coordinator.data or {}).get("model_state"),

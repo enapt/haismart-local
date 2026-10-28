@@ -142,6 +142,16 @@
       "discovery_confirm": {
         "title": "Configura questo apparecchio",
         "description": "Home Assistant ha trovato un apparecchio Haier su {host} (`{device_id}`).\n\nLa sua chiave locale verrà recuperata dall'account Haier che hai già aggiunto, quindi non c'è nulla da digitare. Seleziona **Invia** per aggiungerlo."
+      },
+      "appliance_kind": {
+        "title": "Che tipo di apparecchio è?",
+        "description": "Questo apparecchio non si è identificato come nulla che questa integrazione riconosca, quindi lo chiede a te.\n\nSe è una lavatrice, un'asciugatrice o una lavasciuga, indicalo: riceverà sensori di sola lettura per entrambi i cestelli e mai un termostato per condizionatore. Puoi cambiarlo in seguito nelle opzioni dell'integrazione.",
+        "data": {
+          "appliance_kind": "Apparecchio"
+        },
+        "data_description": {
+          "appliance_kind": "Non sei sicuro? Lascia «Decidi in base ai suoi report». È ciò che succede se non rispondi, ed è adatto a un condizionatore."
+        }
       }
     },
     "error": {
@@ -172,10 +182,12 @@
       "init": {
         "title": "Opzioni Haismart",
         "data": {
-          "scan_interval": "Intervallo di interrogazione dello stato (secondi)"
+          "scan_interval": "Intervallo di interrogazione dello stato (secondi)",
+          "appliance_kind": "Apparecchio"
         },
         "data_description": {
-          "scan_interval": "Con quale frequenza chiedere lo stato al apparecchio. Ogni interrogazione è una sessione locale completa e serve solo a rilevare le modifiche fatte con il telecomando o con l'app: i comandi inviati da Home Assistant si aggiornano comunque all'istante."
+          "scan_interval": "Con quale frequenza chiedere lo stato al apparecchio. Ogni interrogazione è una sessione locale completa e serve solo a rilevare le modifiche fatte con il telecomando o con l'app: i comandi inviati da Home Assistant si aggiornano comunque all'istante.",
+          "appliance_kind": "Mostrato solo per un apparecchio che non si è identificato. Una lavatrice, un'asciugatrice o una lavasciuga riceve sensori di sola lettura e mai un termostato per condizionatore."
         }
       }
     }
@@ -579,6 +591,15 @@
     },
     "unsupported_value": {
       "message": "{name} non supporta {value!r} per {field}."
+    }
+  },
+  "selector": {
+    "appliance_kind": {
+      "options": {
+        "auto": "Decidi in base ai suoi report",
+        "laundry": "Lavatrice, asciugatrice o lavasciuga",
+        "not_air_conditioner": "Altro apparecchio, non un condizionatore"
+      }
     }
   }
 }

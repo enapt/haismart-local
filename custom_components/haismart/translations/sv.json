@@ -142,6 +142,16 @@
       "discovery_confirm": {
         "title": "Konfigurera den här apparaten",
         "description": "Home Assistant hittade en Haier-apparat på {host} (`{device_id}`).\n\nDess lokala nyckel hämtas från Haier-kontot du redan lagt till, så det finns inget att skriva. Välj **Skicka** för att lägga till den."
+      },
+      "appliance_kind": {
+        "title": "Vilken sorts apparat är det här?",
+        "description": "Den här apparaten identifierade sig inte som något som den här integrationen känner igen, så därför frågas du.\n\nOm det är en tvättmaskin, torktumlare eller tvätt- och torkmaskin, ange det: den får då skrivskyddade sensorer för båda trummorna och aldrig någon termostat för luftkonditionering. Du kan ändra detta senare i integrationens alternativ.",
+        "data": {
+          "appliance_kind": "Apparat"
+        },
+        "data_description": {
+          "appliance_kind": "Osäker? Behåll ”avgör utifrån dess rapporter”. Det är vad som händer utan svar, och det passar för en luftkonditionering."
+        }
       }
     },
     "error": {
@@ -172,10 +182,12 @@
       "init": {
         "title": "Haismart-alternativ",
         "data": {
-          "scan_interval": "Intervall för statusavfrågning (sekunder)"
+          "scan_interval": "Intervall för statusavfrågning (sekunder)",
+          "appliance_kind": "Apparat"
         },
         "data_description": {
-          "scan_interval": "Hur ofta enheten ska tillfrågas om sitt tillstånd. Varje avfrågning är en fullständig lokal session och finns bara till för att upptäcka ändringar gjorda med fjärrkontrollen eller appen – kommandon du skickar från Home Assistant uppdateras direkt ändå."
+          "scan_interval": "Hur ofta enheten ska tillfrågas om sitt tillstånd. Varje avfrågning är en fullständig lokal session och finns bara till för att upptäcka ändringar gjorda med fjärrkontrollen eller appen – kommandon du skickar från Home Assistant uppdateras direkt ändå.",
+          "appliance_kind": "Visas bara för en apparat som inte identifierade sig. En tvättmaskin, torktumlare eller tvätt- och torkmaskin får skrivskyddade sensorer och aldrig någon termostat för luftkonditionering."
         }
       }
     }
@@ -579,6 +591,15 @@
     },
     "unsupported_value": {
       "message": "{name} stöder inte {value!r} för {field}."
+    }
+  },
+  "selector": {
+    "appliance_kind": {
+      "options": {
+        "auto": "Avgör utifrån dess rapporter",
+        "laundry": "Tvättmaskin, torktumlare eller tvätt- och torkmaskin",
+        "not_air_conditioner": "Annan apparat, inte luftkonditionering"
+      }
     }
   }
 }

@@ -142,6 +142,16 @@
       "discovery_confirm": {
         "title": "Thiết lập máy thiết bị này",
         "description": "Home Assistant đã tìm thấy một máy thiết bị Haier tại {host} (`{device_id}`).\n\nKhóa cục bộ của máy sẽ được lấy từ tài khoản Haier bạn đã thêm, nên không phải nhập gì. Chọn **Gửi** để thêm máy."
+      },
+      "appliance_kind": {
+        "title": "Đây là loại thiết bị gì?",
+        "description": "Thiết bị này không tự nhận là bất kỳ loại nào mà tích hợp này nhận diện được, nên cần hỏi bạn.\n\nNếu đó là máy giặt, máy sấy hoặc máy giặt sấy, hãy chọn như vậy: khi đó nó sẽ có các cảm biến chỉ đọc cho cả hai lồng giặt và không bao giờ có bộ điều nhiệt máy điều hòa. Bạn có thể thay đổi điều này sau trong tùy chọn của tích hợp.",
+        "data": {
+          "appliance_kind": "Thiết bị"
+        },
+        "data_description": {
+          "appliance_kind": "Không chắc? Hãy giữ “Dựa trên báo cáo của thiết bị”. Đó cũng là cách xử lý khi không có câu trả lời, và phù hợp với máy điều hòa."
+        }
       }
     },
     "error": {
@@ -172,10 +182,12 @@
       "init": {
         "title": "Tùy chọn Haismart",
         "data": {
-          "scan_interval": "Chu kỳ đọc trạng thái (giây)"
+          "scan_interval": "Chu kỳ đọc trạng thái (giây)",
+          "appliance_kind": "Thiết bị"
         },
         "data_description": {
-          "scan_interval": "Tần suất hỏi trạng thái của thiết bị. Mỗi lần đọc là một phiên cục bộ đầy đủ, và chỉ nhằm phát hiện những thay đổi thực hiện bằng điều khiển từ xa hoặc ứng dụng — các lệnh bạn gửi từ Home Assistant vẫn cập nhật ngay lập tức."
+          "scan_interval": "Tần suất hỏi trạng thái của thiết bị. Mỗi lần đọc là một phiên cục bộ đầy đủ, và chỉ nhằm phát hiện những thay đổi thực hiện bằng điều khiển từ xa hoặc ứng dụng — các lệnh bạn gửi từ Home Assistant vẫn cập nhật ngay lập tức.",
+          "appliance_kind": "Chỉ hiển thị với thiết bị không tự nhận dạng. Máy giặt, máy sấy hoặc máy giặt sấy sẽ có cảm biến chỉ đọc và không bao giờ có bộ điều nhiệt máy điều hòa."
         }
       }
     }
@@ -579,6 +591,15 @@
     },
     "unsupported_value": {
       "message": "{name} không hỗ trợ {value!r} cho {field}."
+    }
+  },
+  "selector": {
+    "appliance_kind": {
+      "options": {
+        "auto": "Dựa trên báo cáo của thiết bị",
+        "laundry": "Máy giặt, máy sấy hoặc máy giặt sấy",
+        "not_air_conditioner": "Thiết bị khác, không phải máy điều hòa"
+      }
     }
   }
 }

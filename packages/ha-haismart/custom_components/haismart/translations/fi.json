@@ -142,6 +142,16 @@
       "discovery_confirm": {
         "title": "Määritä tämä laite",
         "description": "Home Assistant löysi Haier-laitteen osoitteesta {host} (`{device_id}`).\n\nSen paikallinen avain haetaan jo lisäämältäsi Haier-tililtä, joten mitään ei tarvitse kirjoittaa. Lisää se valitsemalla **Lähetä**."
+      },
+      "appliance_kind": {
+        "title": "Minkä tyyppinen laite tämä on?",
+        "description": "Tämä laite ei tunnistautunut miksikään tämän integraation tuntemaksi laitteeksi, joten sinulta kysytään.\n\nJos se on pesukone, kuivausrumpu tai kuivaava pesukone, kerro se: silloin se saa vain luku -anturit molemmille rummuille eikä koskaan ilmastointilaitteen termostaattia. Voit muuttaa tätä myöhemmin integraation asetuksista.",
+        "data": {
+          "appliance_kind": "Laite"
+        },
+        "data_description": {
+          "appliance_kind": "Etkö ole varma? Pidä valinta ”päätetään raporttien perusteella”. Niin tapahtuu myös ilman vastausta, ja se sopii ilmastointilaitteelle."
+        }
       }
     },
     "error": {
@@ -172,10 +182,12 @@
       "init": {
         "title": "Haismart-asetukset",
         "data": {
-          "scan_interval": "Tilan kyselyväli (sekuntia)"
+          "scan_interval": "Tilan kyselyväli (sekuntia)",
+          "appliance_kind": "Laite"
         },
         "data_description": {
-          "scan_interval": "Kuinka usein laitteelta kysytään sen tilaa. Jokainen kysely on täysi paikallinen istunto, ja se on olemassa vain havaitakseen kaukosäätimellä tai sovelluksella tehdyt muutokset – Home Assistantista lähettämäsi komennot päivittyvät joka tapauksessa heti."
+          "scan_interval": "Kuinka usein laitteelta kysytään sen tilaa. Jokainen kysely on täysi paikallinen istunto, ja se on olemassa vain havaitakseen kaukosäätimellä tai sovelluksella tehdyt muutokset – Home Assistantista lähettämäsi komennot päivittyvät joka tapauksessa heti.",
+          "appliance_kind": "Näytetään vain laitteelle, joka ei tunnistautunut. Pesukone, kuivausrumpu tai kuivaava pesukone saa vain luku -anturit eikä koskaan ilmastointilaitteen termostaattia."
         }
       }
     }
@@ -579,6 +591,15 @@
     },
     "unsupported_value": {
       "message": "{name} ei tue arvoa {value!r} kentälle {field}."
+    }
+  },
+  "selector": {
+    "appliance_kind": {
+      "options": {
+        "auto": "Päätetään raporttien perusteella",
+        "laundry": "Pesukone, kuivausrumpu tai kuivaava pesukone",
+        "not_air_conditioner": "Muu laite, ei ilmastointilaite"
+      }
     }
   }
 }

@@ -195,6 +195,11 @@ class GenericEntity(HaismartEntity):
         without the identifier it was generated from.
         """
         extra: dict[str, Any] = {"haier_attribute": self.spec.attribute}
+        if not self.spec.sources:
+            # The published value itself (a phase's number, not its English label), so a dashboard
+            # card or an automation can act on it without parsing a label that may be reworded or
+            # translated. It changes exactly when the state does, so it adds no recorder rows.
+            extra["haier_value"] = self.native_value_raw
         if self.spec.description:
             # The manufacturer's own words, verbatim. 83% of the catalogue's attributes have one and
             # all but four are Chinese, so it cannot BE the name for an English-speaking user — but

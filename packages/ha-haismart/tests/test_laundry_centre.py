@@ -373,3 +373,15 @@ async def test_every_command_is_kept_with_its_frame_for_diagnostics(
     await coordinator.async_send_control({"washerRunningMode": 1})
     log = list(coordinator.control_log)
     assert [c["frame"][20:28] for c in log] == ["5d210000", "5da10001"]
+
+
+async def test_each_reading_carries_its_published_value_for_cards(
+    hass: HomeAssistant, laundry
+) -> None:
+    """A card acts on the number (phase 8), never on the English label ("Sensing load")."""
+    entry = await _setup(hass)
+    entity = _entities(hass, entry)["dryerCyclePhase"]
+    state = hass.states.get(entity.entity_id)
+    assert state.state == "Sensing load"
+    assert state.attributes["haier_attribute"] == "dryerCyclePhase"
+    assert state.attributes["haier_value"] == int(CLOUD["dryerCyclePhase"]) == 8

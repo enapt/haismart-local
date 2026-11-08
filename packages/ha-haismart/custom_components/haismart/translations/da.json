@@ -189,7 +189,7 @@
         "data_description": {
           "scan_interval": "Hvor ofte anlægget skal spørges om sin tilstand. Hver forespørgsel er en fuld lokal session, og den findes udelukkende for at opdage ændringer foretaget med fjernbetjeningen eller appen – kommandoer, du sender fra Home Assistant, opdateres med det samme under alle omstændigheder.",
           "appliance_kind": "Vises kun for et apparat, der ikke identificerede sig. En vaskemaskine, tørretumbler eller vaske-tørremaskine får skrivebeskyttede sensorer og aldrig en klimaanlægstermostat.",
-          "laundry_controls": "Tilføjer knapper til start, pause og annullering for hver tromle samt de program- og tilvalgsindstillinger, som maskinen lader dig ændre én ad gangen. Slået fra som standard. Hver kommando kræver stadig, at fjernstyring er slået til på maskinens betjeningspanel for den pågældende tromle, og intet sendes, mens den er slået fra."
+          "laundry_controls": "Tilføjer knapper til start, pause og annullering for hver tromle samt de tilvalgsindstillinger, som maskinen lader dig ændre én ad gangen. Selve programmet vælges på maskinens betjeningspanel. Slået fra som standard. Hver kommando kræver stadig, at fjernstyring er slået til på maskinens betjeningspanel for den pågældende tromle, og intet sendes, mens den er slået fra."
         }
       }
     }

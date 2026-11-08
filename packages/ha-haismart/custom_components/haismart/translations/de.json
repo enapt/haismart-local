@@ -189,7 +189,7 @@
         "data_description": {
           "scan_interval": "Wie oft das Gerät nach seinem Zustand gefragt wird. Jede Abfrage ist eine vollständige lokale Sitzung und dient allein dazu, Änderungen über die Fernbedienung oder die App mitzubekommen – Befehle, die du aus Home Assistant sendest, werden ohnehin sofort übernommen.",
           "appliance_kind": "Wird nur für ein Gerät angezeigt, das sich nicht identifiziert hat. Eine Waschmaschine, ein Trockner oder ein Waschtrockner erhält schreibgeschützte Sensoren und nie einen Klimaanlagen-Thermostat.",
-          "laundry_controls": "Fügt für jede Trommel Schaltflächen zum Starten, Pausieren und Abbrechen hinzu, dazu die Programm- und Optionseinstellungen, die sich am Gerät einzeln ändern lassen. Standardmäßig deaktiviert. Jeder Befehl setzt weiterhin voraus, dass die Fernsteuerung für diese Trommel am Bedienfeld des Geräts eingeschaltet ist; solange sie aus ist, wird nichts gesendet."
+          "laundry_controls": "Fügt für jede Trommel Schaltflächen zum Starten, Pausieren und Abbrechen hinzu, dazu die Optionseinstellungen, die sich am Gerät einzeln ändern lassen. Das Programm selbst wird am Bedienfeld des Geräts gewählt. Standardmäßig deaktiviert. Jeder Befehl setzt weiterhin voraus, dass die Fernsteuerung für diese Trommel am Bedienfeld des Geräts eingeschaltet ist; solange sie aus ist, wird nichts gesendet."
         }
       }
     }

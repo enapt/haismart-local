@@ -78,9 +78,9 @@ class HaismartSelfCleanButton(HaismartEntity, ButtonEntity):
 class LaundryDrumButton(HaismartEntity, ButtonEntity):
     """Start (or resume), pause, or cancel one drum of a laundry appliance.
 
-    Start runs whatever programme the drum has selected -- on its panel, or through the programme
-    control -- and resumes a paused one: the machine publishes one value for both. Cancel returns
-    the drum to standby, abandoning the cycle. The coordinator refuses each unless the drum's own
+    Start runs whatever programme the drum has selected at its panel, and resumes a paused one: the
+    machine publishes one value for both. Cancel abandons the cycle: a running drum is paused first,
+    then returned to standby, as Haier's app does. The coordinator refuses each unless the drum's
     remote-control flag is set at the panel (see ``_async_check_laundry_write``).
     """
 
@@ -93,7 +93,9 @@ class LaundryDrumButton(HaismartEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         if self._action == "cancel":
-            change = {self._drum.return_standby: 1}
-        else:   # running mode: 1 starts or resumes, 2 pauses
-            change = {self._drum.running_mode: 1 if self._action == "start" else 2}
+            # Pause first if it is running, then standby -- Haier's own sequence.
+            await self.coordinator.async_laundry_cancel(self._drum.key)
+            return
+        # running mode: 1 starts or resumes, 2 pauses
+        change = {self._drum.running_mode: 1 if self._action == "start" else 2}
         await self.coordinator.async_send_control(change)

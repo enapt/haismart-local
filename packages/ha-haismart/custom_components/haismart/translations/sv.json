@@ -189,7 +189,7 @@
         "data_description": {
           "scan_interval": "Hur ofta enheten ska tillfrågas om sitt tillstånd. Varje avfrågning är en fullständig lokal session och finns bara till för att upptäcka ändringar gjorda med fjärrkontrollen eller appen – kommandon du skickar från Home Assistant uppdateras direkt ändå.",
           "appliance_kind": "Visas bara för en apparat som inte identifierade sig. En tvättmaskin, torktumlare eller tvätt- och torkmaskin får skrivskyddade sensorer och aldrig någon termostat för luftkonditionering.",
-          "laundry_controls": "Lägger till knappar för start, paus och avbryt för varje trumma, plus de program- och alternativinställningar som maskinen låter dig ändra en i taget. Avstängt som standard. Varje kommando kräver fortfarande att fjärrstyrning är aktiverad på maskinens kontrollpanel för den trumman, och inget skickas medan den är avstängd."
+          "laundry_controls": "Lägger till knappar för start, paus och avbryt för varje trumma, plus de alternativinställningar som maskinen låter dig ändra en i taget. Själva programmet väljs på maskinens kontrollpanel. Avstängt som standard. Varje kommando kräver fortfarande att fjärrstyrning är aktiverad på maskinens kontrollpanel för den trumman, och inget skickas medan den är avstängd."
         }
       }
     }

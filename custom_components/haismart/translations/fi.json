@@ -189,7 +189,7 @@
         "data_description": {
           "scan_interval": "Kuinka usein laitteelta kysytään sen tilaa. Jokainen kysely on täysi paikallinen istunto, ja se on olemassa vain havaitakseen kaukosäätimellä tai sovelluksella tehdyt muutokset – Home Assistantista lähettämäsi komennot päivittyvät joka tapauksessa heti.",
           "appliance_kind": "Näytetään vain laitteelle, joka ei tunnistautunut. Pesukone, kuivausrumpu tai kuivaava pesukone saa vain luku -anturit eikä koskaan ilmastointilaitteen termostaattia.",
-          "laundry_controls": "Lisää kullekin rummulle käynnistys-, tauko- ja peruutuspainikkeet sekä ne ohjelma- ja valinta-asetukset, joita kone sallii muuttaa yksi kerrallaan. Oletuksena pois päältä. Jokainen komento edellyttää edelleen, että kyseisen rummun etäohjaus on kytketty päälle koneen ohjauspaneelista, eikä mitään lähetetä, kun se on pois päältä."
+          "laundry_controls": "Lisää kullekin rummulle käynnistys-, tauko- ja peruutuspainikkeet sekä ne valinta-asetukset, joita kone sallii muuttaa yksi kerrallaan. Itse ohjelma valitaan koneen ohjauspaneelista. Oletuksena pois päältä. Jokainen komento edellyttää edelleen, että kyseisen rummun etäohjaus on kytketty päälle koneen ohjauspaneelista, eikä mitään lähetetä, kun se on pois päältä."
         }
       }
     }

@@ -189,7 +189,7 @@
         "data_description": {
           "scan_interval": "Con qué frecuencia preguntar su estado al equipo. Cada consulta es una sesión local completa y existe únicamente para detectar cambios hechos con el mando o la aplicación: los comandos que envías desde Home Assistant se actualizan al instante igualmente.",
           "appliance_kind": "Solo se muestra para un aparato que no se ha identificado. Una lavadora, secadora o lavasecadora recibe sensores de solo lectura y nunca un termostato de aire acondicionado.",
-          "laundry_controls": "Añade botones de inicio, pausa y cancelación para cada tambor, además de los ajustes de programa y de opciones que la máquina permite cambiar de uno en uno. Desactivado de forma predeterminada. Cada comando sigue necesitando que el control remoto esté activado en el panel de la máquina para ese tambor, y no se envía nada mientras esté desactivado."
+          "laundry_controls": "Añade botones de inicio, pausa y cancelación para cada tambor, además de los ajustes de opciones que la máquina permite cambiar de uno en uno. El programa en sí se elige en el panel de la máquina. Desactivado de forma predeterminada. Cada comando sigue necesitando que el control remoto esté activado en el panel de la máquina para ese tambor, y no se envía nada mientras esté desactivado."
         }
       }
     }

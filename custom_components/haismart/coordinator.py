@@ -119,6 +119,7 @@ from haismart_hrdp.entity_spec import EntitySpec, specs_for
 from haismart_hrdp.laundry import (
     DRUMS,
     LAUNDRY_ACTIONS,
+    LAUNDRY_REFUSALS,
     LaundryAction,
     drum_of,
     drums_for,
@@ -1708,9 +1709,12 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         * controls are on for this entry at all;
         * the remote-control flag of every drum the command touches is set -- one drum for its own
-          settings, both for the machine-wide ones (power, child lock, buzzer, linkage);
-        * a programme is not changed unless its drum is known not to be running;
-        * the machine is not switched off unless both drums are known not to be running.
+          settings, both for the machine-wide ones (power, buzzer, linkage);
+        * the child lock is off. Haier's own app refuses every command while it is on, and the
+          machine answers one with refusal 0009; it is read from the dryer's report (``6D01``),
+          which files it, so that report must be fresh whichever drum the command is for;
+        * the machine is not switched off unless both drums are known to be idle -- by PHASE
+          (standby or finished), because the running mode reads the same paused mid-cycle as idle.
 
         ``_build`` checks the flag once more against the report the command's own session sees.
         """
@@ -1738,18 +1742,37 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         f"remote control is not enabled for the {key} -- turn it on at the "
                         "machine's panel first"
                     )
-            for key in keys:
-                drum = DRUMS[key]
-                if name == drum.programme and reports[key].get(drum.running_mode) != 2:
-                    refuse(
-                        f"the {key} is running or its state is unknown; pause or cancel it "
-                        "before changing the programme"
-                    )
-            if name == "onOffStatus" and not value and any(
-                report is None or report.get(DRUMS[key].running_mode) != 2
-                for key, report in reports.items()
+            machine = reports["dryer"]
+            if machine is None:
+                refuse("no fresh report from the dryer, which carries the child lock; try again")
+            if machine.get("childLockStatus") is True:
+                refuse("the child lock is on -- unlock it at the machine first")
+            if name == "onOffStatus" and not value and not all(
+                self._laundry_drum_idle(key, report) for key, report in reports.items()
             ):
-                refuse("a drum is running or its state is unknown; cancel it before switching off")
+                refuse("a drum has a cycle in progress or its state is unknown; cancel it first")
+
+    @staticmethod
+    def _laundry_drum_idle(key: str, report: Mapping[str, Any] | None) -> bool:
+        """Whether a drum's own report says nothing is in progress: standby, or finished."""
+        if report is None:
+            return False
+        drum = DRUMS[key]
+        phase = report.get(drum.phase)
+        return isinstance(phase, int) and phase in drum.idle_phases
+
+    async def async_laundry_cancel(self, key: str) -> None:
+        """Cancel a drum's cycle the way Haier's app does: pause a running drum, then standby.
+
+        Returning to standby abandons the cycle. The app pauses a running drum before sending it,
+        so this does the same; each of the two is a separate, separately gated command.
+        """
+        drum = DRUMS[key]
+        await self.async_refresh()
+        report = self._laundry_reports().get(key)
+        if report is not None and report.get(drum.running_mode) == 1:
+            await self.async_send_control({drum.running_mode: 2})
+        await self.async_send_control({drum.return_standby: 1})
 
     def _recheck_laundry_push(self, changes: Mapping[str, Any], push: bytes | None) -> None:
         """Refuse inside the command's own session if its fresh push shows remote control off."""
@@ -2483,8 +2506,10 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # programme chosen, the panel's own state -- and the code is what diagnoses it.
             if code is not None and (reason := refusal_reason(self.digital_model, code)):
                 return reason
+            if code is not None and (reason := LAUNDRY_REFUSALS.get(code)):
+                return f"the machine refused it: {reason} (reason {code:04x})"
             return "the machine refused the command" + (
-                f" (reason {code})" if code is not None else ""
+                f" (reason {code:04x})" if code is not None else ""
             )
         if code is None:
             return "the air conditioner refused the command"

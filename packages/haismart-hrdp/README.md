@@ -28,9 +28,10 @@ SE-Asia appliances). No Home Assistant coupling, no cloud.
   the library (`device_models.json.gz`), and `model_for(uplus_id)` returns one. `DeviceModel.decode`
   reads a report at those positions — the same base-92 word geometry the air-conditioner path uses —
   and `encode_write` builds a single-parameter write for a field the map marks writable.
-  ⛔ `placeable_limit` refuses fields at or past a reserved run the firmware may have omitted: a map
-  can describe a longer report than a given firmware sends, and a field placed past the gap reads as
-  a plausible, wrong number.
+  ⛔ `placeable_limit` refuses fields at or past a gap of two or more undeclared words when a report
+  is shorter than its map: past such a gap a field could sit at an unknown offset and read as a
+  plausible, wrong number. It is a guard — every report held here is exactly as long as its map,
+  once a multi-word field is counted the way it is read, backwards from its published word.
 - **What entities an appliance should have** (`entity_spec.py`). Given a model and the device's own
   declaration, `specs_for` returns one spec per field — control kind, English name, unit, device
   class, state class, range, options — with the declaration as the gate, so nothing a unit does not

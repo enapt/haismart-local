@@ -189,7 +189,7 @@
         "data_description": {
           "scan_interval": "À quelle fréquence demander son état à l'appareil. Chaque interrogation est une session locale complète, et elle ne sert qu'à détecter les changements faits depuis la télécommande ou l'application — les commandes envoyées depuis Home Assistant se répercutent immédiatement de toute façon.",
           "appliance_kind": "Affiché uniquement pour un appareil qui ne s'est pas identifié. Un lave-linge, un sèche-linge ou un lave-linge séchant dispose de capteurs en lecture seule et jamais d'un thermostat de climatiseur.",
-          "laundry_controls": "Ajoute des boutons de démarrage, de pause et d'annulation pour chaque tambour, ainsi que les réglages de programme et d'options que la machine permet de modifier un par un. Désactivé par défaut. Chaque commande exige toujours que le contrôle à distance soit activé sur le panneau de la machine pour ce tambour, et rien n'est envoyé tant qu'il est désactivé."
+          "laundry_controls": "Ajoute des boutons de démarrage, de pause et d'annulation pour chaque tambour, ainsi que les réglages d'options que la machine permet de modifier un par un. Le programme lui-même se choisit sur le panneau de la machine. Désactivé par défaut. Chaque commande exige toujours que le contrôle à distance soit activé sur le panneau de la machine pour ce tambour, et rien n'est envoyé tant qu'il est désactivé."
         }
       }
     }

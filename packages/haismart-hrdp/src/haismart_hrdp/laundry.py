@@ -12,12 +12,25 @@ real room. So the integration builds these controls only behind an option, and e
 gated on the machine's OWN remote-control flag for that drum -- a flag set only at the panel, which
 the machine enforces anyway.
 
-Prior art agrees on the shape. Zuz666/uplus-reborn's twin-drum unit (HWD120-B1558U) is commanded
-per drum, the Remote Control flag sits at the same report position as ``washerRemoteCtrValid``
-here (6D02 word 3 bit 1), and a command is proven only by a fresh report afterwards. banto6/haier's
-washers ran a spin-only cycle when a programme and its start were chained by machine (#130, #241,
-#288), which is why choosing a programme and starting it are separate actions here, and a programme
-cannot be changed under a running drum.
+Prior art agrees on the shape. Zuz666/uplus-reborn's twin-drum HWD120-B1558U (a ``0501``-class
+unit) is commanded per drum with the same ``0x80`` drum bit, starts a new cycle with ONE group write
+and never with its programme setter, and treats a command as proven only by a fresh report
+afterwards. Its single remote flag is machine-wide (``6D01`` word 3 bit 1); this unit has one per
+drum, as Haier's CLC108 laundry centre does. banto6/haier's washers ran spin-only cycles when the
+programme and the start were sent as separate writes -- by hand too, seconds apart (#130, #241,
+#288). Remote control lapses when a cycle ends, the panel knob is turned or the door is opened, so
+expect to enable it at the panel once per cycle.
+
+⛔ **The programme is chosen at the machine's panel, never written from here.** Haier's own app
+never selects one with a single-parameter write: it sends one group command carrying the programme
+AND that programme's whole parameter set (``grOnlineWash`` / ``grCommonDry``), and a real washer's
+board traffic shows exactly that -- one group frame took it from idle to running, with no ``5Dxx``
+write anywhere in the capture. A programme written on its own would load without its parameters,
+which is the likeliest route to the spin-only cycles above. Starting (and resuming) on its own IS a
+documented single command, so start, pause and cancel are offered; so are the options Haier marks
+writable on their own.
+
+The machine's own refusal codes are in :data:`LAUNDRY_REFUSALS`, so a refused command says why.
 """
 from __future__ import annotations
 
@@ -29,6 +42,7 @@ from typing import Any
 __all__ = [
     "DRUMS",
     "LAUNDRY_ACTIONS",
+    "LAUNDRY_REFUSALS",
     "MACHINE_WIDE",
     "Drum",
     "LaundryAction",
@@ -49,19 +63,28 @@ class Drum:
     key: str                    # "washer" / "dryer"
     report: str                 # its status report
     remote_valid: str           # the panel-set flag that allows remote control of it
-    running_mode: str           # 1 = start / resume, 2 = pause (epp 1 / 0)
-    programme: str              # its programme selection
+    running_mode: str           # 1 = start / resume, 2 = not running (epp 1 / 0)
+    programme: str              # its programme selection (read; chosen at the panel)
     return_standby: str         # write-only: abandon the cycle and return to standby
+    phase: str                  # where in a cycle the drum is
+    idle_phases: frozenset[int]  # the phases with nothing in progress: standby, or finished
 
 
+#: ``running_mode`` 2 is 暂停 ("pause") in the model, but the machine reports it in standby too -- the
+#: idle dryer of the capture reads 2 at phase 0 -- so it cannot tell "paused mid-cycle, water in the
+#: drum" from "nothing to do". The PHASE can, and is what every gate below reads.
 DRUMS: Mapping[str, Drum] = MappingProxyType({
     "washer": Drum(
         "washer", "6D02", "washerRemoteCtrValid", "washerRunningMode",
         "washerUnifiedProgramSettings", "washerReturnStandby",
+        # 0 待机/未启动 standby · 14 结束 end · 18/19 the post-wash dry / detangle finished
+        "laundryCyclePhase", frozenset({0, 14, 18, 19}),
     ),
     "dryer": Drum(
         "dryer", "6D01", "dryerRemoteCtrValid", "dryerRunningMode",
         "dryerUnifiedProgramSettings", "dryerReturnStandby",
+        # 0 待机状态 standby · 6 程序结束 finished
+        "dryerCyclePhase", frozenset({0, 6}),
     ),
 })
 
@@ -106,6 +129,39 @@ _NOT_OFFERED = frozenset({
     # Start and pause are buttons, with their own gate; as a select they would read "Paused"
     # in standby and start a cycle when changed.
     "washerRunningMode", "dryerRunningMode",
+    # The programme: Haier sets one only inside a group command with its parameters (module
+    # docstring). Chosen at the panel.
+    "washerUnifiedProgramSettings", "dryerUnifiedProgramSettings",
+    # Haier's washer-dryer manual: the network can neither set nor clear the child lock
+    # (物联网不能解除童锁，也不能通过物联网设置童锁) -- and the machine refuses with code 0009 while it is on.
+    "childLockStatus",
+    # One-shot actions and factory resets. None has a report position, so none qualifies anyway;
+    # named so that a later map which gave one a position still could not offer it.
+    "dryerResetOpt", "washerResetOpt", "unlockShutdown", "maxSpinIntDry", "sendTestCmd",
+})
+
+#: Why a laundry board refused a command -- Haier's laundry refusal table (UART protocol
+#: specification, appendix 9, 无效信息表), for a unit whose own model publishes no reasons of its
+#: own. The 0504's does not.
+LAUNDRY_REFUSALS: Mapping[int, str] = MappingProxyType({
+    0x0000: "invalid command",
+    0x0001: "no programme selected, so it cannot start",
+    0x0002: "it cannot be set once the programme is running",
+    0x0003: "it cannot be set while the machine is off",
+    0x0004: "it cannot be set while running",
+    0x0005: "the value is outside what this programme allows",
+    0x0006: "this function is not available in this programme",
+    0x0007: "this setting cannot be adjusted in this programme",
+    0x0008: "this programme is not available in this mode",
+    0x0009: "the child lock is on -- unlock it at the machine first",
+    0x000A: "the last rinse is under way, so the rinse count cannot change",
+    0x000B: "this stage has finished, so it cannot be set",
+    0x000C: "the load weight cannot be set in this programme",
+    0x000D: "it cannot be set until the programme ends, or it is already set",
+    0x000E: "the setting is wrong",
+    0x000F: "remote control is not activated -- turn it on at the machine's panel",
+    0x0010: "the door was opened, which switches remote control off until it is turned on again",
+    0x0011: "the drum is too hot to start",
 })
 
 

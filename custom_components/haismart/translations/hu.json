@@ -189,7 +189,7 @@
         "data_description": {
           "scan_interval": "Milyen gyakran kérdezze le a készülék állapotát. Minden lekérdezés egy teljes helyi munkamenet, és kizárólag azért van, hogy észrevegye a távirányítóval vagy az alkalmazással végzett módosításokat – a Home Assistantból küldött parancsok amúgy is azonnal frissülnek.",
           "appliance_kind": "Csak olyan készüléknél jelenik meg, amely nem azonosította magát. A mosógép, szárítógép vagy mosó-szárítógép csak olvasható érzékelőket kap, és soha nem kap légkondicionáló-termosztátot.",
-          "laundry_controls": "Indítás, szüneteltetés és megszakítás gombokat ad hozzá minden dobhoz, valamint azokat a program- és opcióbeállításokat, amelyeket a gép egyenként enged módosítani. Alapértelmezetten ki van kapcsolva. Minden parancshoz továbbra is be kell kapcsolni a távvezérlést a gép kezelőpaneljén az adott dobhoz, és amíg az ki van kapcsolva, semmilyen parancs nem kerül elküldésre."
+          "laundry_controls": "Indítás, szüneteltetés és megszakítás gombokat ad hozzá minden dobhoz, valamint azokat az opcióbeállításokat, amelyeket a gép egyenként enged módosítani. Magát a programot a gép kezelőpaneljén kell kiválasztani. Alapértelmezetten ki van kapcsolva. Minden parancshoz továbbra is be kell kapcsolni a távvezérlést a gép kezelőpaneljén az adott dobhoz, és amíg az ki van kapcsolva, semmilyen parancs nem kerül elküldésre."
         }
       }
     }

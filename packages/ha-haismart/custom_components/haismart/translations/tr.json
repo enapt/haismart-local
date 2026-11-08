@@ -189,7 +189,7 @@
         "data_description": {
           "scan_interval": "Cihaza durumunun ne sıklıkla sorulacağı. Her sorgulama tam bir yerel oturumdur ve yalnızca kumandayla veya uygulamayla yapılan değişiklikleri fark etmek için vardır — Home Assistant'tan gönderdiğiniz komutlar zaten anında yansır.",
           "appliance_kind": "Yalnızca kendini tanıtmayan cihazlarda gösterilir. Çamaşır makinesi, kurutma makinesi veya kurutmalı çamaşır makinesi salt okunur sensörler alır ve asla klima termostatı almaz.",
-          "laundry_controls": "Her tambur için başlat, duraklat ve iptal düğmelerinin yanı sıra makinenin tek tek değiştirilmesine izin verdiği program ve seçenek ayarlarını ekler. Varsayılan olarak kapalıdır. Her komut için yine de makinenin panelinden o tambur için uzaktan kontrolün açılmış olması gerekir; kapalıyken hiçbir komut gönderilmez."
+          "laundry_controls": "Her tambur için başlat, duraklat ve iptal düğmelerinin yanı sıra makinenin tek tek değiştirilmesine izin verdiği seçenek ayarlarını ekler. Programın kendisi makinenin panelinden seçilir. Varsayılan olarak kapalıdır. Her komut için yine de makinenin panelinden o tambur için uzaktan kontrolün açılmış olması gerekir; kapalıyken hiçbir komut gönderilmez."
         }
       }
     }

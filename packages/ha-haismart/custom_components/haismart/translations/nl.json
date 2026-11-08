@@ -189,7 +189,7 @@
         "data_description": {
           "scan_interval": "Hoe vaak het apparaat naar zijn status wordt gevraagd. Elke opvraging is een volledige lokale sessie en bestaat alleen om wijzigingen op te merken die met de afstandsbediening of de app zijn gemaakt — opdrachten die je vanuit Home Assistant stuurt, worden hoe dan ook meteen verwerkt.",
           "appliance_kind": "Alleen getoond voor een apparaat dat zich niet heeft geïdentificeerd. Een wasmachine, droger of was-droogcombinatie krijgt alleen-lezen sensoren en nooit een airco-thermostaat.",
-          "laundry_controls": "Voegt voor elke trommel knoppen toe om te starten, te pauzeren en te annuleren, plus de programma- en optie-instellingen die de machine één voor één laat wijzigen. Standaard uitgeschakeld. Elke opdracht vereist nog steeds dat bediening op afstand voor die trommel op het bedieningspaneel van de machine is ingeschakeld; zolang die uit staat, wordt er niets verzonden."
+          "laundry_controls": "Voegt voor elke trommel knoppen toe om te starten, te pauzeren en te annuleren, plus de optie-instellingen die de machine één voor één laat wijzigen. Het programma zelf kies je op het bedieningspaneel van de machine. Standaard uitgeschakeld. Elke opdracht vereist nog steeds dat bediening op afstand voor die trommel op het bedieningspaneel van de machine is ingeschakeld; zolang die uit staat, wordt er niets verzonden."
         }
       }
     }

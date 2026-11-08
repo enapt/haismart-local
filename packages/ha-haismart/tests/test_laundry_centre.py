@@ -233,14 +233,25 @@ async def test_each_drum_button_sends_its_own_single_command(
     assert frame[10:12].hex() == frame_cmd and frame[12:14].hex() == payload
 
 
-async def test_a_programme_is_not_changed_under_a_running_drum(
+async def test_the_programme_and_the_child_lock_are_never_written(
     hass: HomeAssistant, mock_uss
 ) -> None:
-    entry = await _setup_controls(hass, mock_uss, remote=True, running=True)
-    coordinator = entry.runtime_data
+    """Both are read, neither is a control.
+
+    Haier's app sets a programme only inside a group command carrying its whole parameter set,
+    and its manual says the network can neither set nor clear the child lock.
+    """
+    entry = await _setup_controls(hass, mock_uss, remote=True)
+    controls = {
+        k for k, e in _entities(hass, entry).items() if e.domain in ("select", "switch", "number")
+    }
+    assert not {"washerUnifiedProgramSettings", "dryerUnifiedProgramSettings",
+                "childLockStatus"} & controls
+    assert "washerUnifiedProgramSettings" in _entities(hass, entry)     # still read, as a sensor
     mock_uss.send.reset_mock()
-    with pytest.raises(HomeAssistantError, match="the washer is running"):
-        await coordinator.async_send_control({"washerUnifiedProgramSettings": 3})
+    for change in ({"washerUnifiedProgramSettings": 3}, {"childLockStatus": False}):
+        with pytest.raises(HomeAssistantError, match="not a laundry control"):
+            await entry.runtime_data.async_send_control(change)
     mock_uss.send.assert_not_called()
 
 
@@ -374,8 +385,89 @@ async def test_a_change_report_is_not_read_as_the_dryer(hass: HomeAssistant, moc
 async def test_machine_wide_settings_need_both_drums(hass: HomeAssistant, mock_uss) -> None:
     entry = await _controls(hass, mock_uss, [_dryer(True), _washer(False)])
     with pytest.raises(HomeAssistantError, match="not enabled for the washer"):
-        await entry.runtime_data.async_send_control({"childLockStatus": False})
+        await entry.runtime_data.async_send_control({"buzzerDisabled": True})
     mock_uss.send.assert_not_called()
+
+
+def _with_field(blob: bytes, status_cmd: str, name: str, raw: int) -> bytes:
+    """``blob`` with one single-word field set to ``raw``, at the position the class publishes."""
+    from haismart_hrdp.device_model import model_for
+
+    field = model_for(CAPTURE["typeid"]).field(name)
+    assert field is not None and field.status_cmd == status_cmd and field.first_word == field.word
+    at = BASE + 2 * (field.word - 1)
+    value = int.from_bytes(blob[at:at + 2], "big")
+    mask = ((1 << field.length) - 1) << field.bit
+    value = (value & ~mask) | (raw << field.bit)
+    return blob[:at] + value.to_bytes(2, "big") + blob[at + 2:]
+
+
+DRYER_IDLE = bytes.fromhex(CAPTURE["frames"]["6d01_dryer_idle"])
+
+
+async def test_nothing_is_sent_while_the_child_lock_is_on(hass: HomeAssistant, mock_uss) -> None:
+    """Haier's app refuses every command with the lock on, and the machine answers 0009."""
+    locked = _with_field(_dryer(True), "6D01", "childLockStatus", 1)
+    entry = await _controls(hass, mock_uss, [locked, _washer(True)])
+    with pytest.raises(HomeAssistantError, match="child lock is on"):
+        await entry.runtime_data.async_send_control({"washerRunningMode": 1})
+    mock_uss.send.assert_not_called()
+
+
+async def test_power_off_waits_for_a_paused_drum(hass: HomeAssistant, mock_uss) -> None:
+    """Paused mid-wash reads the same running mode as idle; only the phase tells them apart."""
+    dryer_idle = _with_bit(DRYER_IDLE, 1, 3, True)
+    paused = _with_field(_washer(True), "6D02", "laundryCyclePhase", 5)     # 5 = washing
+    entry = await _controls(hass, mock_uss, [dryer_idle, paused])
+    report = entry.runtime_data._laundry_reports()["washer"]
+    assert report["washerRunningMode"] == 2 and report["laundryCyclePhase"] == 5
+    with pytest.raises(HomeAssistantError, match="cycle in progress"):
+        await entry.runtime_data.async_send_control({"onOffStatus": False})
+    mock_uss.send.assert_not_called()
+
+    # Both drums idle: the same command goes.
+    mock_uss.read.return_value = [dryer_idle, _washer(True)]
+    await entry.runtime_data.async_send_control({"onOffStatus": False})
+    assert mock_uss.send.last_frame[10:14].hex() == "5d200000"
+
+
+async def test_cancel_pauses_a_running_drum_first(hass: HomeAssistant, mock_uss) -> None:
+    """Haier's own sequence: pause, then return to standby."""
+    entry = await _controls(hass, mock_uss, [_dryer(True), _washer(True)])
+    sent: list[str] = []
+    side_effect = mock_uss.send.side_effect
+
+    def _record(*args, **kwargs):
+        result = side_effect(*args, **kwargs)
+        sent.append(mock_uss.send.last_frame[10:14].hex())
+        return result
+
+    mock_uss.send.side_effect = _record
+    await hass.services.async_call(
+        "button", "press", {"entity_id": _entity(hass, entry, "button:dryer_cancel")},
+        blocking=True,
+    )
+    assert sent == ["5d210000", "5d230001"]
+
+    sent.clear()    # an idle drum has nothing to pause
+    await hass.services.async_call(
+        "button", "press", {"entity_id": _entity(hass, entry, "button:washer_cancel")},
+        blocking=True,
+    )
+    assert sent == ["5da40001"]
+
+
+async def test_a_refusal_is_explained_from_haiers_laundry_table(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The unit's own model publishes no reasons; Haier's laundry table names code 000f."""
+    from haismart_hrdp.uss import EPP_FRAME_TYPE_REFUSED, build_epp_frame
+
+    entry = await _controls(hass, mock_uss, [_dryer(True), _washer(True)])
+    refusal = build_epp_frame(EPP_FRAME_TYPE_REFUSED, b"\x00\x0f")
+    mock_uss.send.return_value = [_dryer(True), refusal]
+    with pytest.raises(HomeAssistantError, match="remote control is not activated"):
+        await entry.runtime_data.async_send_control({"washerRunningMode": 1})
 
 
 async def test_power_off_fails_closed_when_a_drum_is_unknown(hass: HomeAssistant, mock_uss) -> None:

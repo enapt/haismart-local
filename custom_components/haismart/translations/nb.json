@@ -189,7 +189,7 @@
         "data_description": {
           "scan_interval": "Hvor ofte anlegget skal spørres om tilstanden sin. Hver forespørsel er en full lokal økt, og den finnes bare for å fange opp endringer gjort med fjernkontrollen eller appen – kommandoer du sender fra Home Assistant, oppdateres umiddelbart uansett.",
           "appliance_kind": "Vises bare for et apparat som ikke identifiserte seg. En vaskemaskin, tørketrommel eller vaske-tørkemaskin får skrivebeskyttede sensorer og aldri en termostat for klimaanlegg.",
-          "laundry_controls": "Legger til knapper for start, pause og avbryt for hver tromle, pluss de program- og alternativinnstillingene maskinen lar deg endre én om gangen. Av som standard. Hver kommando krever fortsatt at fjernstyring er slått på i maskinens kontrollpanel for den tromlen, og ingenting sendes mens den er slått av."
+          "laundry_controls": "Legger til knapper for start, pause og avbryt for hver tromle, pluss de alternativinnstillingene maskinen lar deg endre én om gangen. Selve programmet velges på maskinens kontrollpanel. Av som standard. Hver kommando krever fortsatt at fjernstyring er slått på i maskinens kontrollpanel for den tromlen, og ingenting sendes mens den er slått av."
         }
       }
     }

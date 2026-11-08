@@ -20,10 +20,27 @@ __all__ = ["LAUNDRY_CLASSES", "laundry_label"]
 #: Device classes these labels apply to.
 LAUNDRY_CLASSES = frozenset({"0504"})
 
+_PROGRAMMES = (
+    "washerUnifiedProgramSettings", "dryerUnifiedProgramSettings",
+    "washerUnifiedClothingMaterial", "dryerUnifiedClothingMaterial",
+)
+
 _BY_ATTRIBUTE: Mapping[tuple[str, str], str] = MappingProxyType({
     ("dryerUnifiedProgramSettings", "智慧洗"): "AI Dry",
     ("washerUnifiedProgramSettings", "智慧洗"): "AI Wash",
     ("washerMessage", "无"): "None",
+    # 漂洗 is a PHASE ("Rinsing") and also a PROGRAMME, which Haier's app calls "Rinse+Spin".
+    **{(name, "漂洗"): "Rinse + spin" for name in _PROGRAMMES},
+    # 熨烫 is the "Easy iron" programme, and on the washer's dry mode a dry-to-iron setting.
+    ("washerDryMode", "熨烫"): "Iron dry",
+    # 暂停 ("pause") is reported in standby too -- the idle dryer of the capture reads it at phase 0
+    # -- so "Paused" would be wrong whenever the drum has nothing to do.
+    ("washerRunningMode", "暂停"): "Not running",
+    ("dryerRunningMode", "暂停"): "Not running",
+    # 新欧标性能 ("new EU performance") is Haier's Eco programme: its own English name for the code
+    # on its CLC108 laundry centre is `eco_40_60_degrees` on the washer and `eco` on the dryer.
+    **{(name, "新欧标性能"): "Eco 40-60" for name in _PROGRAMMES if name.startswith("washer")},
+    **{(name, "新欧标性能"): "Eco" for name in _PROGRAMMES if name.startswith("dryer")},
 })
 
 _LABELS: Mapping[str, str] = MappingProxyType({
@@ -33,9 +50,9 @@ _LABELS: Mapping[str, str] = MappingProxyType({
     "洗涤": "Washing", "洗涤排水": "Wash drain", "中间脱水": "Intermediate spin",
     "漂洗进水": "Rinse fill", "漂洗": "Rinsing", "漂洗排水": "Rinse drain",
     "最终脱水": "Final spin", "冷却": "Cooling down", "预约运行中": "Delayed start",
-    "预约运行": "Delayed start", "洗衣程序运行完抖散中": "Tumbling after wash",
+    "预约运行": "Delayed start", "洗衣程序运行完抖散中": "Detangling after wash",
     "洗衣程序运行完烘干中": "Drying after wash", "洗衣程序运行完烘干结束": "Drying after wash finished",
-    "洗衣程序运行完抖散结束": "Tumbling after wash finished", "护理中": "Care",
+    "洗衣程序运行完抖散结束": "Detangling after wash finished", "护理中": "Care",
     "预洗进水": "Pre-wash fill", "预洗": "Pre-wash", "预洗加热": "Pre-wash heating",
     "预洗排水": "Pre-wash drain", "风干": "Air drying", "检测中": "Detecting",
     "冷风1": "Cool air 1", "冷风2": "Cool air 2", "加热1": "Heating 1", "加热2": "Heating 2",
@@ -95,7 +112,7 @@ _LABELS: Mapping[str, str] = MappingProxyType({
     # --- programmes (one shared list for both drums) ---------------------------------------------
     "空": "None", "棉麻": "Cotton", "化纤": "Synthetics", "羽绒": "Down", "窗帘": "Curtains",
     "混合": "Mixed", "衬衣": "Shirts", "童装": "Kids' wear", "轻柔": "Delicates",
-    "烫烫净": "Hot clean", "羊毛": "Wool", "牛仔": "Denim", "空气洗": "Air wash",
+    "烫烫净": "Hygiene", "羊毛": "Wool", "牛仔": "Denim", "空气洗": "Air wash",
     "筒自洁": "Drum clean", "内衣": "Underwear", "快洗15": "Quick 15", "快洗29": "Quick 29",
     "大件": "Bulky items", "运动服": "Sportswear", "摇篮柔洗": "Cradle gentle", "爱婴洗": "Baby care",
     "即时": "Instant", "真丝": "Silk", "记忆洗": "Memory", "护色洗": "Colour care",
@@ -109,7 +126,7 @@ _LABELS: Mapping[str, str] = MappingProxyType({
     "冲锋衣": "Shell jacket", "App自诊断": "App self-diagnosis", "毛毯洗": "Blanket",
     "智慧洗": "AI wash", "智慧云洗": "AI cloud wash", "浴巾": "Bath towels",
     "紫外除菌": "UV sanitise", "蒸汽除螨": "Steam anti-mite", "巴氏杀菌": "Pasteurise",
-    "超级空气洗": "Super air wash", "超级洗": "Super wash", "FPA快洗30": "FPA quick 30",
+    "超级空气洗": "i-Refresh", "超级洗": "Super wash", "FPA快洗30": "FPA quick 30",
     "快洗烘": "Quick wash & dry", "美颜洗": "Beauty care", "棉麻20": "Cotton 20",
     "新欧标性能": "New EU performance", "欧标性能洗烘": "EU performance wash & dry",
     "香薰": "Aroma", "水雾清新": "Mist refresh", "貂皮": "Mink", "蚕丝被": "Silk quilt",

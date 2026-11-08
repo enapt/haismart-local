@@ -189,7 +189,7 @@
         "data_description": {
           "scan_interval": "Tần suất hỏi trạng thái của thiết bị. Mỗi lần đọc là một phiên cục bộ đầy đủ, và chỉ nhằm phát hiện những thay đổi thực hiện bằng điều khiển từ xa hoặc ứng dụng — các lệnh bạn gửi từ Home Assistant vẫn cập nhật ngay lập tức.",
           "appliance_kind": "Chỉ hiển thị với thiết bị không tự nhận dạng. Máy giặt, máy sấy hoặc máy giặt sấy sẽ có cảm biến chỉ đọc và không bao giờ có bộ điều nhiệt máy điều hòa.",
-          "laundry_controls": "Thêm các nút bắt đầu, tạm dừng và hủy cho từng lồng, cùng với các cài đặt chương trình và tùy chọn mà máy cho phép thay đổi từng mục một. Tắt theo mặc định. Mọi lệnh vẫn cần bật điều khiển từ xa cho lồng đó trên bảng điều khiển của máy, và không có lệnh nào được gửi khi chế độ này tắt."
+          "laundry_controls": "Thêm các nút bắt đầu, tạm dừng và hủy cho từng lồng, cùng với các cài đặt tùy chọn mà máy cho phép thay đổi từng mục một. Bản thân chương trình được chọn trên bảng điều khiển của máy. Tắt theo mặc định. Mọi lệnh vẫn cần bật điều khiển từ xa cho lồng đó trên bảng điều khiển của máy, và không có lệnh nào được gửi khi chế độ này tắt."
         }
       }
     }

@@ -130,6 +130,16 @@ def test_no_two_values_of_one_attribute_share_a_label() -> None:
     assert not clashes, clashes
 
 
+def test_one_word_is_labelled_for_what_it_means_on_each_attribute() -> None:
+    """The same Chinese word is a phase on one attribute and a programme or setting on another."""
+    options = {spec.attribute: dict(spec.options) for spec in _laundry_specs()}
+    assert options["laundryCyclePhase"]["9"] == "Rinsing"                  # 漂洗, the phase
+    assert options["washerUnifiedClothingMaterial"]["27"] == "Rinse + spin"  # 漂洗, the programme
+    assert options["washerDryMode"]["3"] == "Iron dry"                     # 熨烫, a dry mode
+    # 暂停 is reported in standby too, so it must not claim the drum was paused.
+    assert options["dryerRunningMode"] == {"1": "Running", "2": "Not running"}
+
+
 def test_the_end_of_cycle_states_keep_the_labels_automations_use() -> None:
     options = {spec.attribute: dict(spec.options) for spec in _laundry_specs()}
     assert options["dryerCyclePhase"]["6"] == "Finished"
@@ -161,16 +171,18 @@ def test_only_individually_writable_visible_settings_are_offered() -> None:
     assert model is not None
     offered = laundry_writable(model.fields, CAPTURE["digital_model"]["attributes"])
     declared = {a["name"]: a for a in CAPTURE["digital_model"]["attributes"]}
-    assert {"washerUnifiedProgramSettings", "dryerUnifiedProgramSettings", "spinSpeed",
-            "washTemp", "childLockStatus", "dryerDryLevel"} <= offered
+    assert {"spinSpeed", "washTemp", "dryerDryLevel", "buzzerDisabled"} <= offered
+    assert len(offered) == 42
     for name in offered:
         assert "I" in declared[name]["operationType"], name     # never a group-only attribute
         assert model.field(name).epp_cmd, name
-    # ⛔ Never offered: the safeguard, remote power-on, the measured load, and start/pause as a
-    # dropdown (they are buttons).
+    # ⛔ Never offered: the safeguard, remote power-on, the measured load, start/pause as a
+    # dropdown (they are buttons), the programme (Haier sets one only inside a group command with
+    # its parameters) and the child lock (the network can neither set nor clear it).
     assert not offered & {
         "longTimeAuthorizationStatus", "dryerLongTimeAuthorizationStatus", "remotePowerOn",
         "weight", "washerRunningMode", "dryerRunningMode",
+        "washerUnifiedProgramSettings", "dryerUnifiedProgramSettings", "childLockStatus",
     }
 
 

@@ -25,9 +25,10 @@ right, check whether your account is actually a Haier / Haismart one — hOn and
 live on entirely different servers and no country code will work.
 
 **"Haier's servers could not be reached"** is a different failure and not a password problem: Home
-Assistant could not reach Haier at all — DNS, a firewall rule, or an outage. Check that the Home
-Assistant host itself can resolve and reach `uhome-sea.haieriot.net`, Haier's sign-in server, then
-retry.
+Assistant could not reach Haier at all — DNS, a firewall rule, or an outage — or Haier's own servers
+answered with an error. Check that the Home Assistant host itself can resolve and reach
+`uhome-sea.haieriot.net`, Haier's sign-in server, then retry; if it can, the outage is Haier's and
+waiting is the fix.
 
 **"This appliance is not on that Haier account"** appears when you re-enter your account after a key
 change: the sign-in worked, but the appliance belongs to a different account. Sign in with that one,
@@ -41,7 +42,8 @@ or share the appliance to this account in the Haier app first.
 The AC answered and the connection is fine, but Home Assistant couldn't read the reply. Two causes:
 
 - **Stale local key** — keys rotate server-side. If you signed in with your account, the new key is
-  fetched automatically. If Haier cannot be reached, it keeps retrying quietly for up to 30 minutes.
+  fetched automatically. If Haier cannot be reached, or its servers answer with an error, it keeps
+  retrying quietly for up to 30 minutes.
   Failing that, or with no account on this unit, an account another appliance here uses is tried
   without asking you anything, and only then are you asked to re-authenticate. The integration tells you which
   situation you are in rather than making you guess — see
@@ -141,7 +143,7 @@ The integration will tell you, in Settings → Repairs, which of three situation
 |---|---|---|
 | *"its key will change and this setup cannot follow"* | The unit is still online and this entry has no account, so it cannot follow. Raised **before** anything breaks. | Add your account, or block the unit from the internet — either one ends it |
 | *"localKey rotated — manual re-key needed"* | The key changed and there is no account to fetch a new one with | Reconfigure → *Add my Haier account*, then it never asks again |
-| *"its key changed and the automatic re-fetch did not work"* | Your account **is** stored and the automatic fetch failed: Haier refused the stored sign-in, or its key service stayed unreachable for 30 minutes. Shorter outages are retried quietly | Sign in again from the prompt. If it recurs, something is blocking Haier's key service — or blocking the unit permanently is the cleaner fix |
+| *"its key changed and the automatic re-fetch did not work"* | Your account **is** stored and the automatic fetch failed: Haier refused the stored sign-in, or its key service stayed unreachable — or kept failing with server errors — for 30 minutes. Shorter outages are retried quietly | Sign in again from the prompt. If it recurs, something is blocking Haier's key service — or blocking the unit permanently is the cleaner fix |
 
 **Adding your account to an existing unit** takes a minute and does not disturb anything: Settings →
 Devices & Services → Haismart → the device → **Reconfigure** → *Add my Haier account*. Same

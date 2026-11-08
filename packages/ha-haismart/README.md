@@ -9,10 +9,12 @@ grSetDAC group-set on most air conditioners, and one setting at a time on the ce
 compact family and every other appliance. No cloud at runtime.
 
 **Platforms are per entry, not global.** `PLATFORMS_BY_KIND` forwards only what the appliance
-actually is, so a water heater is set up with `water_heater` and gets no thermostat, and an air
-conditioner gets the full air-conditioner platform list. An air conditioner keeps its
-hand-built entity set; every other category has its entities generated from
-`haismart_hrdp.entity_spec` — see [`docs/appliances.md`](../../docs/appliances.md).
+actually is, so a water heater is set up with `water_heater` and gets no thermostat, a washer-dryer
+gets sensors and binary sensors (plus buttons, selects, numbers and switches once its owner turns
+its controls on), and an air conditioner gets the full air-conditioner platform list. An air
+conditioner keeps its hand-built entity set; every other category has its entities generated from
+`haismart_hrdp.entity_spec`, each carrying the attribute's raw value as `haier_value` beside its
+label — see [`docs/appliances.md`](../../docs/appliances.md).
 
 ## What it provides
 
@@ -37,7 +39,12 @@ hand-built entity set; every other category has its entities generated from
     manifest matcher + `async_step_dhcp` surface each AC as a discovered device (host + device ID prefilled).
     (These units do **not** announce `_cae._udp` mDNS — so zeroconf discovery is
     kept only as a dormant future-proof.) The AC's `localKey` **version** is stored so the coordinator detects
-    rotation and re-fetches the fresh key automatically. Options flow sets the poll interval. Unique-ID = MAC.
+    rotation and re-fetches the fresh key automatically. Unique-ID = MAC.
+  - **"What kind of appliance is this?"** is asked only when the appliance identified itself and
+    nothing recognised it (`haismart_hrdp.appliance.asks_owner`): laundry, not an air conditioner, or
+    decide from its reports. A class the catalogue names is never re-typed by the answer.
+  - The **options flow** sets the poll interval, that answer where it can still decide, and — on a
+    laundry appliance — whether its controls are offered (off by default).
 - **Polling coordinator** (`coordinator.py`): one `DataUpdateCoordinator` per AC. Each refresh is one
   short-lived uSS session (`async_read_status`); control ops (`async_send_control`) are seeded from the
   latest status so a group-set preserves every unchanged attribute. A rotation is caught in the same
@@ -46,7 +53,8 @@ hand-built entity set; every other category has its entities generated from
   **auto-refreshes the localKey from the cloud MQTT gateway** (`_async_gateway_refresh` — mints a
   fresh token, derives the gateway clientId, fetches via
   `haismart_extractor.gateway.get_localkey_via_gateway`, updates the key in place) and retries. If
-  Haier cannot be reached, later polls retry quietly for up to `ROTATION_OUTAGE_GRACE` (30 min; the
+  Haier cannot be reached or answers with a server error (`haismart_extractor.cloud_unreachable`:
+  a connection failure or an HTTP 5xx), later polls retry quietly for up to `ROTATION_OUTAGE_GRACE` (30 min; the
   clock is kept per entry, so it runs out across setup retries). With no account, a refusal, or an
   outage past that, it raises `ConfigEntryAuthFailed` (→ reauth) **and a repair** that says which
   case it is.
@@ -105,14 +113,19 @@ hand-built entity set; every other category has its entities generated from
 - **Write safety** (two gates): every field/value is gated by the library's confirmed encoder (it
   raises rather than send anything not in its allowlist), **and** the coordinator
   validates every change against the device's pulled **digital model** (`validate_write` — writable + temp
-  range + allowed enums) before encoding. No path sends a guessed or out-of-spec frame.
+  range + allowed enums) before encoding. No path sends a guessed or out-of-spec frame. A laundry
+  command is additionally refused before anything is sent unless a fresh read shows that drum's
+  remote-control flag on and the child lock off, and power-off waits until both drums are idle by
+  their cycle phase (`_async_check_laundry_write`); a refusal names its reason from Haier's laundry
+  refusal table where the unit publishes none of its own.
 - **Repairs** (`homeassistant.helpers.issue_registry`): a warning before a rotation, on an entry with no
   account whose unit is still online; a manual re-key notice when there is no account; a re-fetch
   failure when the stored account's fetch failed; and one for an unrecognised report layout. The key
   repairs clear once a gateway refresh or a reauth restores a working key.
 - **Diagnostics** (`diagnostics.py`): redacted snapshot — keeps the decrypted status bytes for offset
   debugging, every LAN frame kind seen, the uSS message trace, the raw feature codes and a summary of
-  the control channel; redacts the key, the device ID, the LAN address (the entry's host and the one
+  the control channel — including the last ten commands, each with the exact frame sent and every
+  reply frame; redacts the key, the device ID, the LAN address (the entry's host and the one
   the unit reports; `host_matches` is kept), the tokens, the cloud client ID and the gateway
   credentials. The stored digital model is kept, with any per-device identifier inside it redacted.
 

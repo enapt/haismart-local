@@ -17,6 +17,13 @@ commands imply others live in its **published model**, fetched separately by `ge
 merged onto the shadow. Its URL cannot be constructed: the resource service is asked for a listing and
 answers with one, the file is downloaded and checked against the MD5 it gives.
 
+**Errors say whether Haier refused or could not answer.** Every cloud failure is a `CloudError`.
+`CloudConnectionError` means the request never completed (DNS, refused, timed out);
+`CloudHTTPError` means Haier answered with an HTTP status other than 200, carried as `.status`; a
+refusal proper is HTTP 200 with a non-zero `retCode`, raised as a plain `CloudError`.
+`cloud_unreachable(err)` is the one test for "an outage, not a refusal" — a connection failure or a
+5xx — so a caller deciding whether to ask the user to sign in again does not have to rebuild it.
+
 The CONNECT `username`/`password` are derived, not stored (`derive_gateway_auth`):
 `username = "01" + 8 digits`, `password = hex(AES-128-CBC(MD5(body), iv=0, BE16(9)+"haier_sdk" padded))`.
 The gateway recomputes the password from the username, so a freshly generated pair connects.

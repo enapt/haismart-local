@@ -7,7 +7,9 @@ SE-Asia appliances). No Home Assistant coupling, no cloud.
 
 - Plaintext handshake on TCP `:56800`, then AES-128-CBC biz-data (key = `MD5(localKey)`).
 - **Read:** `read_status` / `async_read_status` → `parse_full_status` decodes power, target / indoor /
-  outdoor temperature, mode, fan, swing, and the secondary toggles.
+  outdoor temperature, mode, fan, swing, and the secondary toggles. A room or outdoor reading outside
+  −40…70 °C, or one of the values a unit sends for a probe it does not have, reads as no reading —
+  the same band in every report family (coil and discharge temperatures keep a wider one).
 - **Control:** the `grSetDAC` group-set write path (`grsetdac_baseline_from_status` →
   `set_grsetdac_field` → `async_send_op`), where the encoder only emits fields and values in its
   allowlist. Appliances that publish no group-set command are written **one setting at a time**
@@ -38,7 +40,16 @@ SE-Asia appliances). No Home Assistant coupling, no cloud.
   declare is offered. Indexed runs of read-only booleans (a schedule grid published as one flag per
   hour) collapse into a single summary rather than 192 entities.
 - **What KIND of appliance it is** (`appliance.py`): `kind_for(uplus_id)` from the class field of the
-  typeid, `label_for` for its English category name.
+  typeid — air conditioner, water heater, laundry, or other — then the laundry family (`05xx`) and
+  the cloud's category label; `label_for` for its English category name. `asks_owner` and
+  `identified_not_air_conditioner` say when an appliance is unidentified and when it is positively
+  not an air conditioner, so an unrecognised report that happens to be an AC's length is never
+  given a thermostat.
+- **Laundry** (`laundry.py`, `laundry_labels.py`): the `0504` twin washer + dryer's two drums — each
+  drum's status report, its remote-control flag, cycle phase and write-only commands — which
+  settings may be written one at a time (`laundry_writable`, which never offers the programme or
+  the child lock), Haier's laundry refusal codes (`LAUNDRY_REFUSALS`), and English labels for the
+  class's enum values, scoped to that class.
 - **One decoder, provably** (`ac_view.py`). A shim that produces the air-conditioner state dict from
   the byte map alone, so the hand-derived decoder and the published map can be compared key for key.
   ⓘ Nothing decodes with it yet — it exists to measure the gap before anything is switched over.

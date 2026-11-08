@@ -399,38 +399,6 @@ kind's platform list — but a reader diffing two diagnostics files would otherw
 twelve-degree discrepancy that does not exist.
 
 
-### 69. `check-translations.py` compares KEYS, not VALUES — an English rewording can silently skip 30 locales
-
-Raised 2026-09-13 by item 68, which found a concrete instance rather than a hypothetical one.
-
-`scripts/check-translations.py` asserts that all 31 locale files carry the same **288 keys**. It says
-nothing about whether a value still corresponds to the English it was translated from. So when
-`issues/unknown_report_layout/title` was reworded in English from "air conditioner" to "appliance"
-some sessions ago, **all 30 locale files kept the old wording and CI stayed green.** Nobody noticed
-until an unrelated sweep grepped the locales for the old noun. ⓘ Thai carried a second one
-(`config/step/host/description` names the appliance where the English uses a `{device}` placeholder).
-
-⚠️ **The failure is silent and it accumulates**: every future English edit that forgets the locales
-adds another stale string, and the only signal is somebody happening to read that language.
-
-**What would close it:** record a fingerprint of the English value each locale was translated from
-(a hash beside each key, or a `translations/.source-hashes.json`), and fail the check when the
-English has moved and the locale has not. That turns "this locale is stale" from something nobody
-can see into a CI failure naming the key. ⛔ It does **not** need a translation service — it only has
-to detect drift and say which keys to re-translate.
-
-ⓘ Cheap partial in the meantime: a lint that greps each locale for a small per-language list of
-words the English no longer uses. That is exactly what found this one, done by hand.
-
-⚠️ **There is a second surface with the same problem and no check at all: the five translated
-READMEs** under `docs/i18n/` (Indonesian, Thai, Vietnamese, Malay, Filipino). They are hand-written
-prose, not key/value files, so `check-translations.py` never looks at them. All five described an
-air-conditioner-only integration — title, support section and entity list — for as long as it took
-somebody to read one; they were brought into line on 2026-09-13. A value-fingerprint check for the
-locale JSONs would not catch this one, because there are no keys to fingerprint. The realistic guard
-is a rule rather than a tool: **a README edit that changes what the integration supports is not
-finished until the five pages under `docs/i18n/` say the same thing.**
-
 ### 67. The two decode paths apply DIFFERENT plausibility bands to the same reading
 
 Surfaced 2026-09-13 while building `haismart_hrdp.ac_view` to compare the two decoders. A sensor
@@ -1822,6 +1790,20 @@ standard states that a multi-appliance system *must* use the interactive convers
 those cabinets use the simpler one where the module asks and the appliance only answers — which
 their own refusals confirm. So an appliance of that class is not one of these systems, however many
 indoor units a building has. This needs hardware that actually talks the interactive mode.
+
+### 69. ✅ SETTLED — the translation check compares values, not only keys
+
+Raised 2026-09-13 by item 68, which found an English string reworded with all 30 locales left on the
+old wording, and CI green.
+
+**Fixed 2026-11-08.** `scripts/check-translations.py` checks VALUES too: `scripts/translation-sources.json`
+fingerprints, for every key, the English and each language's text as last recorded. When the
+English moves, the check fails and names every language still carrying the text it had before;
+when every language has moved as well, it still fails until `--record` accepts the new state, so
+the next English change is compared against the right translations. A new key or a removed one
+needs `--record` too. CI's lint job and `release.sh` already run the script. Tests check it against
+known answers in a copy of the component. ⓘ The baseline was recorded from the files as they stood,
+so it vouches for every change from now on, not for drift that happened before.
 
 ### 73. ✅ SETTLED — a server error is an outage, not a refusal; the key refresh retries it
 

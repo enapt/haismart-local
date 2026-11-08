@@ -80,8 +80,15 @@ strict key parity — a key present in some files but not others fails, so addin
 alone will not do.
 
 ```bash
-python3 scripts/check-translations.py    # key parity + placeholder integrity across every language
+python3 scripts/check-translations.py            # keys, placeholders, and the English under each translation
+python3 scripts/check-translations.py --record   # after translating: accept the new state
 ```
+
+It also checks that every translation was made from the English it now sits under.
+`scripts/translation-sources.json` fingerprints the English and each language's text for every key,
+so **rewording an English string fails the check** and names each language still carrying the
+old text. Translate those, then run `--record`, and commit the updated file with the change. A new
+key needs `--record` too, once its translations are in.
 
 If you can't provide a real translation for a language, use the English string for now (present and
 non-empty passes the check); a later PR can localise it. Diagnostic engineering entities can instead

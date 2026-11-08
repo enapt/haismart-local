@@ -47,9 +47,9 @@ menyiapkan dirinya sendiri untuk unit yang belum pernah kami lihat.
 
 ### Perangkat lainnya
 
-Pemanas air (listrik, gas, dan pompa kalor), kulkas, mesin cuci, mesin pencuci piring, penghisap
-asap dapur, kompor gas, lemari sterilisasi, oven, dan pembersih udara juga didukung — **165 tipe
-produk dalam 36 kelas perangkat** — tetapi melalui mekanisme yang berbeda: bukan kode khusus per
+Pemanas air (listrik, gas, dan pompa kalor), kulkas, mesin cuci, mesin cuci-pengering, mesin pencuci piring, penghisap
+asap dapur, kompor gas, lemari sterilisasi, oven, dan pembersih udara juga didukung — **166 tipe
+produk dalam 37 kelas perangkat** — tetapi melalui mekanisme yang berbeda: bukan kode khusus per
 perangkat, melainkan peta byte resmi Haier untuk tipe produk itu, disaring oleh deklarasi unit Anda
 sendiri tentang fitur apa yang benar-benar dimilikinya.
 

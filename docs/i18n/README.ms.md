@@ -50,9 +50,9 @@ jadi ia menyediakan dirinya sendiri untuk unit yang belum pernah kami lihat.
 
 ### Perkakas lain
 
-Pemanas air (elektrik, gas dan pam haba), peti sejuk, mesin basuh, mesin basuh pinggan, penghisap
-asap dapur, dapur gas, kabinet pensteril, ketuhar dan penulen udara turut disokong — **165 jenis
-produk dalam 36 kelas peranti** — tetapi melalui mekanisme yang berbeza: bukan kod khusus bagi
+Pemanas air (elektrik, gas dan pam haba), peti sejuk, mesin basuh, mesin basuh-pengering, mesin basuh pinggan, penghisap
+asap dapur, dapur gas, kabinet pensteril, ketuhar dan penulen udara turut disokong — **166 jenis
+produk dalam 37 kelas peranti** — tetapi melalui mekanisme yang berbeza: bukan kod khusus bagi
 setiap perkakas, sebaliknya peta bait rasmi Haier bagi jenis produk itu, ditapis oleh perisytiharan
 unit anda sendiri tentang ciri yang benar-benar ada padanya.
 

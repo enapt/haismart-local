@@ -45,8 +45,8 @@ máy chưa ai ở đây từng thấy.
 
 ### Các thiết bị khác
 
-Máy nước nóng (điện, gas và bơm nhiệt), tủ lạnh, máy giặt, máy rửa bát, máy hút mùi, bếp gas, tủ
-tiệt trùng, lò nướng và máy lọc không khí cũng được hỗ trợ — **165 loại sản phẩm thuộc 36 lớp thiết
+Máy nước nóng (điện, gas và bơm nhiệt), tủ lạnh, máy giặt, máy giặt sấy, máy rửa bát, máy hút mùi, bếp gas, tủ
+tiệt trùng, lò nướng và máy lọc không khí cũng được hỗ trợ — **166 loại sản phẩm thuộc 37 lớp thiết
 bị** — nhưng bằng một cơ chế khác: không có mã riêng cho từng thiết bị, mà dùng bản đồ byte chính
 thức của Haier cho loại sản phẩm đó, lọc qua phần khai báo của chính máy bạn về những tính năng nó
 thực sự có.

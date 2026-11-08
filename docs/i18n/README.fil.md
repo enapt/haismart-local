@@ -51,8 +51,8 @@ aling kalagayan, kaya kaya nitong i-configure ang sarili para sa unit na hindi p
 ### Iba pang appliance
 
 Suportado rin ang mga water heater (kuryente, gas at heat pump), refrigerator, washing machine,
-dishwasher, range hood, gas stove, sterilising cabinet, oven at air purifier — **165 uri ng produkto
-sa 36 na klase ng device** — ngunit sa ibang paraan: walang kodigong nakalaan sa bawat appliance,
+washer-dryer, dishwasher, range hood, gas stove, sterilising cabinet, oven at air purifier — **166 uri ng produkto
+sa 37 na klase ng device** — ngunit sa ibang paraan: walang kodigong nakalaan sa bawat appliance,
 kundi ang opisyal na byte map ng Haier para sa uring iyon, sinala ng deklarasyon mismo ng inyong
 unit kung alin sa mga iyon ang talagang mayroon ito.
 

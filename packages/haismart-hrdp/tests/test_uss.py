@@ -2563,6 +2563,29 @@ def test_a_confirmed_field_is_bounded_only_by_physics() -> None:
     assert _PLAUSIBLE_TEMP_C[1] >= 140.0
 
 
+@pytest.mark.parametrize(("raw", "celsius"), [
+    (164, None),     # 100 C: not air -- dropped by every family
+    (135, None),     # 71 C
+    (134, 70.0),
+    (29, -35.0),     # a heat pump's outdoor air on a cold night: kept by every family
+    (24, -40.0),
+    (23, None),      # -41 C
+])
+def test_air_temperatures_use_one_band_in_every_family(raw: int, celsius: float | None) -> None:
+    """FUTURE_WORK 67: the classic family and the wire families once published the same outdoor
+    reading differently (-70..150 against -30..70). One band now, on the same physical quantity."""
+    from haismart_hrdp.uss import parse_full_status, status_layout
+    from haismart_hrdp.wire_models import WireField
+
+    layout = status_layout(REAL_STATUS_DOWN)
+    assert layout is not None
+    classic = bytearray(REAL_STATUS_DOWN)
+    classic[layout.outdoor_temp] = raw
+    wire = WireField(1, 0, 8, kind="temp", c=-64.0)
+    assert parse_full_status(bytes(classic))["outdoor_temperature"] == celsius
+    assert wire.read(bytes(92) + bytes([0, raw])) == celsius
+
+
 def test_the_209_byte_counter_is_in_watt_hours_by_its_own_two_readings():
     """Two readings of the same appliance five days apart settle the unit, on physical grounds.
 

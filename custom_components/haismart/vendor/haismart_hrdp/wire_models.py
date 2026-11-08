@@ -45,7 +45,12 @@ from .panel import PANEL_BOOL_CONTROLS, PANEL_ENUM_CONTROLS, PANEL_EXTRA_POSITIO
 _ATTR_BASE = 92          # first attribute byte; word N (1-based) starts at _ATTR_BASE + 2*(N-1)
 _PLAUSIBLE_INDOOR_C = (0.0, 60.0)   # a decoded indoorTemperature outside this ⇒ wrong family
 _PLAUSIBLE_TARGET_C = (10.0, 40.0)  # setpoints live in ~16..30; a wide band still catches a mis-decode
-_PLAUSIBLE_SENSOR_C = (-30.0, 70.0)  # band for a ``"temp"`` field (see :class:`WireField`)
+# The band for a reading of AIR -- the room and the outdoor temperature -- in EVERY family: this one
+# for the wire families' ``"temp"`` fields, and `uss._sensor_temp` for the classic family's. One
+# band, so the same probe reading is not published by one family and dropped by another. The floor
+# is -40 C rather than a comfort band's, because heat pumps run, and report, well below freezing.
+# Engineering readings (coil, discharge, defrost) are a different kind and keep `uss`'s wider band.
+_PLAUSIBLE_AMBIENT_C = (-40.0, 70.0)
 _SENSOR_ABSENT = (0x00, 0xFF)        # raw values a unit reports for a probe it does not have
 
 
@@ -68,7 +73,7 @@ class WireField:
     * ``"bool"``  -> ``bool(raw)``
     * ``"int"``   -> ``raw * k + c`` (a temperature/number)
     * ``"temp"``  -> ``raw * k + c``, but ``None`` for a raw value that means "no such probe"
-      (``0x00``/``0xFF``) or that lands outside :data:`_PLAUSIBLE_SENSOR_C`. Use this for a *sensor*
+      (``0x00``/``0xFF``) or that lands outside :data:`_PLAUSIBLE_AMBIENT_C`. Use this for an *air*
       reading rather than ``"int"``: a unit without an outdoor probe reports 0, which the raw formula
       would turn into a confident −64 °C, and one fabricated MEASUREMENT permanently skews the
       min/max/mean of a user's long-term statistics. This mirrors ``uss._sensor_temp`` on the classic
@@ -130,7 +135,7 @@ class WireField:
             if raw in _SENSOR_ABSENT:
                 return None
             value = raw * self.k + self.c
-            lo, hi = _PLAUSIBLE_SENSOR_C
+            lo, hi = _PLAUSIBLE_AMBIENT_C
             return value if lo <= value <= hi else None
         return raw * self.k + self.c
 

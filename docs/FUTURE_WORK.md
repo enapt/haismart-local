@@ -399,30 +399,6 @@ kind's platform list — but a reader diffing two diagnostics files would otherw
 twelve-degree discrepancy that does not exist.
 
 
-### 67. The two decode paths apply DIFFERENT plausibility bands to the same reading
-
-Surfaced 2026-09-13 while building `haismart_hrdp.ac_view` to compare the two decoders. A sensor
-temperature is vetoed as implausible by a band, and there are two of them:
-
-| path | constant | band |
-|---|---|---|
-| the classic family, via `uss._sensor_temp` | `uss._PLAUSIBLE_TEMP_C` | **−70 … 150 °C** |
-| every `wire_models` family (ext-36, ext-46, compact-12, `0d12`, `japan-wall`) | `_PLAUSIBLE_SENSOR_C` | **−30 … 70 °C** |
-
-⇒ **An outdoor probe reading 100 °C is published by one path and dropped by the other, on two air
-conditioners, today.** Neither is wrong on its face — the wider one admits a discharge-line
-temperature, the narrower one is right for ambient air — but they are applied to the *same*
-attribute on different families, which nothing states and nothing tests.
-
-⚠️ **Not fixed here, deliberately.** `ac_view` reproduces both, per family, because its job is to
-show what ships; a flip that also changed a band would make any regression unattributable. Fixing it
-is a behaviour change for real units and belongs on its own, with the oracle and the stored-capture
-regression behind it.
-
-**What closes it:** decide which band an ambient sensor should have, apply it in both paths, and run
-the oracle plus `tools/re/decoder_equivalence.py` over every capture. ⓘ No capture on disk contains
-a reading in the disputed 70…150 °C range, so nothing observed is affected — this is latent.
-
 ### 64. Group-command writes are decoded but not offered — one capture of one exists, none sent from here
 
 A water heater's reservation times, a washing machine's programme settings and a fridge's zone
@@ -1790,6 +1766,25 @@ standard states that a multi-appliance system *must* use the interactive convers
 those cabinets use the simpler one where the module asks and the appliance only answers — which
 their own refusals confirm. So an appliance of that class is not one of these systems, however many
 indoor units a building has. This needs hardware that actually talks the interactive mode.
+
+### 67. ✅ SETTLED — air temperatures use one plausibility band in every family
+
+Surfaced 2026-09-13 while building `haismart_hrdp.ac_view`: the room and outdoor air temperature
+was vetoed by two different bands depending on the family — the classic family's `uss._sensor_temp`
+at **−70 … 150 °C**, every `wire_models` family (ext-36, ext-46, compact-12, `0d12`, `japan-wall`) at
+**−30 … 70 °C** — so a 100 °C outdoor reading was published by one family and dropped by another.
+
+**Fixed 2026-11-08: one band for air, in every family** — `wire_models._PLAUSIBLE_AMBIENT_C`,
+**−40 … 70 °C**, applied by both paths and reproduced by `ac_view`. The floor is −40 °C rather than
+the wire families' −30 °C, because heat pumps run, and report outdoor air, below −30 °C, and the
+classic family showed those readings before. The ENGINEERING readings (coil, discharge, defrost)
+are a different quantity and keep `uss._PLAUSIBLE_TEMP_C`, −70 … 150 °C, everywhere — a narrow band
+once dropped a real 80 °C discharge reading.
+
+Checked as the item asked: the vendor-decoder oracle (`tools/re/oracle_sweep.py`) gives
+byte-identical output before and after, `decoder_equivalence` and its shim are unchanged, and all
+53 stored reports decode identically — no capture holds an air reading in the range the two bands
+disagreed on. A test pins both families to the same answer at both edges.
 
 ### 69. ✅ SETTLED — the translation check compares values, not only keys
 

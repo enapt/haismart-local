@@ -40,6 +40,7 @@ from .device_model import model_for, read_field
 from .panel import PANEL_BOOL_CONTROLS, PANEL_ENUM_CONTROLS, PANEL_EXTRA_POSITIONS
 from .profiles import model_enum_codes
 from .wire_models import (
+    _PLAUSIBLE_AMBIENT_C,
     JAPAN_WALL_TYPEIDS,
     OPERATION_SOURCE,
     VALUE_PARAM_ONLY,
@@ -1102,6 +1103,10 @@ _MAX_WORDS = 12   # sanity bound: no observed grSetDAC block exceeds this
 # room air. Worse than the lost reading is the shape of the failure: a masked decode looks exactly
 # like absent hardware, so it gets ignored, whereas an implausible *number* gets reported and
 # fixed. A narrow band on a confirmed field buys nothing and hides the bugs worth finding.
+#
+# ⇒ This band is for ENGINEERING readings (coil, discharge, defrost). The room and outdoor AIR
+# temperatures use `wire_models._PLAUSIBLE_AMBIENT_C`, the band every other family applies to them,
+# so a reading is published or dropped the same way whichever family reports it.
 _PLAUSIBLE_TEMP_C = (-70.0, 150.0)
 
 
@@ -1287,8 +1292,12 @@ def parse_full_status(
         out["partial"] = True
         return out
 
-    out["current_temperature"] = _sensor_temp(data[layout.indoor_temp], scale=0.5, offset=0.0)
-    out["outdoor_temperature"] = _sensor_temp(data[layout.outdoor_temp], scale=1.0, offset=-64.0)
+    out["current_temperature"] = _sensor_temp(
+        data[layout.indoor_temp], scale=0.5, offset=0.0, band=_PLAUSIBLE_AMBIENT_C
+    )
+    out["outdoor_temperature"] = _sensor_temp(
+        data[layout.outdoor_temp], scale=1.0, offset=-64.0, band=_PLAUSIBLE_AMBIENT_C
+    )
     # The unit states its own heat capability: bit 7 of the byte after the outdoor reading is set on
     # a cooling-only unit. Worth having because it needs no model of any kind -- it is the one signal
     # that distinguishes a reverse-cycle unit from a cooling-only one without asking anything else.
@@ -1327,18 +1336,22 @@ def parse_full_status(
     return out
 
 
-def _sensor_temp(raw: int, *, scale: float, offset: float) -> float | None:
+def _sensor_temp(
+    raw: int, *, scale: float, offset: float,
+    band: tuple[float, float] = _PLAUSIBLE_TEMP_C,
+) -> float | None:
     """Decode a temperature byte, or ``None`` when the unit clearly has no such sensor.
 
     A model without (say) an outdoor probe reports 0 for it, which the raw formula turns into a
     confident -64.0 C. Published as a MEASUREMENT that lands in long-term statistics, one fabricated
     reading permanently skews the min/max/mean of a user's history, so an absent sensor must read as
-    absent. 0x00/0xFF are the observed sentinels; the band catches the rest.
+    absent. 0x00/0xFF are the observed sentinels; the band catches the rest -- the engineering band
+    by default, and `wire_models._PLAUSIBLE_AMBIENT_C` for the room and outdoor air.
     """
     if raw in (0x00, 0xFF):
         return None
     value = raw * scale + offset
-    lo, hi = _PLAUSIBLE_TEMP_C
+    lo, hi = band
     return value if lo <= value <= hi else None
 
 

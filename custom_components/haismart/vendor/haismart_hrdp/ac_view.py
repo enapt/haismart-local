@@ -67,15 +67,11 @@ _PRESENTED: dict[str, tuple[str, Any, bool]] = {
 #: profile's enum maps are keyed that way (``profile.normalized_mode("1")``).
 _AS_STD_STRING = frozenset({"operation_mode", "wind_speed"})
 
-#: ⛔⛔ THE TWO EXISTING PATHS APPLY DIFFERENT BANDS TO THE SAME READING, and this reproduces that
-#: rather than quietly picking one — an inconsistency the equivalence work surfaced:
-#:
-#:   * the classic family goes through ``uss._sensor_temp`` → **(−70, 150) °C**
-#:   * every :mod:`haismart_hrdp.wire_models` family → ``_PLAUSIBLE_SENSOR_C`` → **(−30, 70) °C**
-#:
-#: So an outdoor probe reading 100 °C is published by one path and dropped by the other, on two air
-#: conditioners, today. ⚠️ Worth fixing — but not silently and not here: this module's job is to
-#: reproduce what ships, and a flip that also changed a band would make any regression unattributable.
+#: Both shipped paths apply ONE band to the room and outdoor air temperature,
+#: ``wire_models._PLAUSIBLE_AMBIENT_C`` (−40…70 °C) — the classic family through ``uss._sensor_temp``,
+#: every other family through its ``"temp"`` fields. They once differed (−70…150 against −30…70), so
+#: a 100 °C outdoor reading was published by one family and dropped by another; this module
+#: reproduced that until the two were unified, and now reproduces the one band.
 #:
 #: ⓘ And the band belongs on THIS side of the boundary whatever its value. It is hardware-confirmed
 #: for air conditioners and nothing else: the published map's own range for ``outdoorTemperature`` is
@@ -92,11 +88,11 @@ _SENSOR_READINGS = frozenset({"current_temperature", "outdoor_temperature"})
 
 
 def _band(report_length: int) -> tuple[float, float]:
-    """The plausibility band the SHIPPED decoder would apply to a report of this length."""
-    from .uss import _PLAUSIBLE_TEMP_C, STATUS_LAYOUTS
-    from .wire_models import _PLAUSIBLE_SENSOR_C
+    """The plausibility band the SHIPPED decoder applies to an air reading -- the same in every
+    family, whatever the report's length."""
+    from .wire_models import _PLAUSIBLE_AMBIENT_C
 
-    return _PLAUSIBLE_TEMP_C if report_length in STATUS_LAYOUTS else _PLAUSIBLE_SENSOR_C
+    return _PLAUSIBLE_AMBIENT_C
 
 
 def ac_state(

@@ -84,10 +84,10 @@ label. If something decodes oddly, that's a
 
 ### Everything else
 
-Water heaters (electric, gas and heat-pump), refrigerators, washing machines, dishwashers, cooker
-hoods, gas hobs, sterilising cabinets, ovens and air purifiers are covered too — **165 product types
-across 36 device classes** — but through a different mechanism, and the difference is worth knowing
-before you rely on it.
+Water heaters (electric, gas and heat-pump), refrigerators, washing machines, a twin washer + dryer,
+dishwashers, cooker hoods, gas hobs, sterilising cabinets, ovens and air purifiers are covered too —
+**166 product types across 37 device classes** — but through a different mechanism, and the
+difference is worth knowing before you rely on it.
 
 There is no appliance-specific code behind any of them. Haier publishes, per product type, the
 position and meaning of every field in a status report; the integration ships those maps and fetches
@@ -100,7 +100,7 @@ here.** One non-air-conditioner has been commanded successfully — a heat-pump 
 setpoint, accepted by the appliance and read back — but that is one attribute on one unit, not a
 guarantee for the rest. The decode
 is checked against every capture held here — air conditioners from four families, a heat-pump water
-heater and a washing machine. If you own one of the rest, it should come up correctly and its diagnostics will
+heater, a washing machine and a twin washer + dryer. If you own one of the rest, it should come up correctly and its diagnostics will
 say exactly what was decoded; please
 [open an issue](docs/TROUBLESHOOTING.md#before-you-open-an-issue) either way, including one that
 just works. Two things are deliberately withheld until somebody can verify them: settings written
@@ -182,6 +182,7 @@ wish list — your unit gets the subset it declares:
 | **Water heaters** (electric) | 76 | Target and current temperature · heating status · tank volume · power draw · reservation schedules with their own temperatures · changed-by |
 | **Refrigerators** | 16 | Fridge and freezer temperatures, targets and sensor readings · door status · quick-freeze and quick-chill · intelligence mode · interior light · ambient sensor |
 | **Washing machines** | 15 | Spin speed · cycle phase · remaining wash time · actual load weight · detergent level · water used · permanent-press and loosen options · child-lock |
+| **Twin washer + dryer** | 1 | Both drums, each from its own status report: programme, cycle phase, remaining time, door and door lock, spin, temperature, dry level, dosing · read-only unless you turn its controls on ([details](docs/appliances.md#twin-washer--dryer-0504)) |
 | **Gas water heaters** | 9 | Target and outlet temperature · water flow · valve and flow status · safety lock · energy saving · smart temperature sensing · methane alarm |
 | **Sterilising cabinets** | 5 | Air quality · humidity · air-cleaning status · door smart-open · lock · clock |
 | **Cooker hoods** | 4 | Fan speed (level and percent) · scene lighting · self-clean · smart wind and pressurise · gesture control · presence sensing |
@@ -390,6 +391,12 @@ Protocol details, if you want to dig in: [`PROTOCOL.md`](PROTOCOL.md).
 - [**@nutkkc**](https://github.com/nutkkc) — the central-cabinet work: captures, diagnostics and
   patient hardware testing of the one-setting-at-a-time control path, the vanes and the running
   telemetry on a `0d012` roof cabinet. ขอบคุณมาก 🙏
+- [**@kucau0901**](https://github.com/kucau0901) (Yusri Salleh) — the first laundry appliance: the
+  HWD140 twin washer + dryer read from both of its status reports with English labels for every
+  state, its opt-in controls and the safety gates around them, the "what kind of appliance is
+  this?" question at setup that keeps a non-AC from ever getting a thermostat, and the raw values
+  behind his [laundry dashboard card](https://github.com/kucau0901/haismart-laundry-card).
+  Terima kasih banyak 🙏
 
 Earlier independent work on Haier's local protocols:
 

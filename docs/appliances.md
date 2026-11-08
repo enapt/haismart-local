@@ -10,7 +10,7 @@ There is no per-appliance code. Nobody here wrote a washing-machine driver.
 
 Haier publishes, per product class, the **byte-level layout of a status report**: for every field,
 which word and bit it sits at, how long it is, how to scale it, what its options mean and what its
-faults are called. The integration ships that map for **165 product types across 36 device classes**,
+faults are called. The integration ships that map for **166 product types across 37 device classes**,
 and fetches it on demand for a class it does not carry.
 
 That map alone is not enough, because it describes what the *class* can carry, not what *your unit*
@@ -44,7 +44,7 @@ works. A diagnostics download says exactly what was decoded, and is the whole of
 
 ## The device classes carried
 
-165 product types, 36 classes. The class is the identifier the appliance announces; it is on the
+166 product types, 37 classes. The class is the identifier the appliance announces; it is on the
 **Model ID** diagnostic sensor's `uplus_id` attribute if you want to check yours.
 
 ### Air conditioners — 28 product types
@@ -184,8 +184,8 @@ changes and a wrong one is rejected, whereas a group write sends a whole block, 
 would change several settings at once with nothing to report it. These stay read-only until one can
 be verified against a real appliance.
 
-**Classes published only in Haier's older profile format.** Of the 192 product types the
-manufacturer publishes a configuration for, **165 use the current format and are carried; the other
+**Classes published only in Haier's older profile format.** Of the 193 product types the
+manufacturer publishes a configuration for, **166 use the current format and are carried; the other
 27 use an older V2 text profile** which keys fields by a Chinese label and a base-36 id, where the
 declaration gate speaks English attribute names — there is no bridge between the two. This affects
 classes `0101`, `0102`, `0104`, `0202`, `0401`, `0502`, `0601`, `0602`, `0903` and `1801`, plus a few

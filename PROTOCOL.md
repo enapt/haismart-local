@@ -657,7 +657,7 @@ at runtime, and a successful decode means a report of an unrecognised length rai
 unknown-layout repair.
 
 **For every other appliance category it is the decoder itself.** The integration carries the map for
-165 product types across 36 device classes, and a status report from one of those is read at the
+166 product types across 37 device classes, and a status report from one of those is read at the
 positions the manufacturer states rather than at positions inferred from a relative's layout. A
 class the bundle does not carry is fetched on demand — unauthenticated, keyed on the uPlusId the
 appliance itself announces, and verified against the published MD5 — then cached on the config

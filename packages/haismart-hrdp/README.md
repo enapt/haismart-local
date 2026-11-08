@@ -24,7 +24,7 @@ SE-Asia appliances). No Home Assistant coupling, no cloud.
   `partial`, never guessed at — and `probe_layout()` will rank candidates for it.
 - **Any appliance category, from the manufacturer's own byte map** (`device_model.py`). Haier
   publishes, per product type, the word/bit/width of every field in a status report plus its scaling,
-  enum labels and fault table; a bundle of **165 product types across 36 device classes** ships with
+  enum labels and fault table; a bundle of **166 product types across 37 device classes** ships with
   the library (`device_models.json.gz`), and `model_for(uplus_id)` returns one. `DeviceModel.decode`
   reads a report at those positions — the same base-92 word geometry the air-conditioner path uses —
   and `encode_write` builds a single-parameter write for a field the map marks writable.

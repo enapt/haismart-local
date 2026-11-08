@@ -20,6 +20,22 @@ except ImportError:  # pragma: no cover
     collect_ignore = ["test_config_flow.py", "test_init.py"]
 
 
+def find_device(hass, device_id: str = "A1B2C3D4E5F6"):
+    """The integration's device for ``device_id``, on any Home Assistant version.
+
+    Walks the registry instead of calling `async_get_device`, which Home Assistant 2026.10
+    deprecates (removed in 2027.8), or `async_get_device_by_identifier`, which older releases lack.
+    """
+    from homeassistant.helpers import device_registry as dr
+
+    from custom_components.haismart.const import DOMAIN
+
+    return next(
+        (d for d in dr.async_get(hass).devices.values() if (DOMAIN, device_id) in d.identifiers),
+        None,
+    )
+
+
 def make_status_frame(
     *,
     power: bool = True,

@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from conftest import (
+    find_device,
     heat_capable_digital_model,
     locking_digital_model,
     make_compact12_frame,
@@ -2530,7 +2531,6 @@ async def test_all_zero_uplus_id_is_not_learned(hass: HomeAssistant, mock_uss) -
 async def test_firmware_reaches_the_device_registry(hass: HomeAssistant, mock_uss) -> None:
     """Firmware belongs on the device page as a version, not as an entity."""
     from haismart_hrdp.udiscovery import DeviceInfo
-    from homeassistant.helpers import device_registry as dr
 
     mock_uss.cloud.return_value = DeviceInfo(
         device_id="A1B2C3D4E5F6",
@@ -2540,9 +2540,40 @@ async def test_firmware_reaches_the_device_registry(hass: HomeAssistant, mock_us
     )
     await _setup(hass)
 
-    device = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, "A1B2C3D4E5F6")})
+    device = find_device(hass)
     assert device is not None
     assert device.sw_version == "e_4.3.00 / R_6.0.01"
+
+
+async def test_the_device_lookup_avoids_the_deprecated_registry_call(
+    hass: HomeAssistant, mock_uss, monkeypatch
+) -> None:
+    """`async_get_device` is deprecated in Home Assistant 2026.10 and removed in 2027.8.
+
+    Where the entry-scoped lookup exists, the integration must use it -- with its own entry id --
+    and never the unscoped one. Stubbed in here so the check also runs on older Home Assistant.
+    """
+    from homeassistant.helpers import device_registry as dr
+
+    calls: list[tuple] = []
+
+    def _by_identifier(self, identifier, config_entry_id):
+        calls.append((identifier, config_entry_id))
+        return next(
+            (d for d in self.devices.values()
+             if identifier in d.identifiers and config_entry_id in d.config_entries),
+            None,
+        )
+
+    def _deprecated(self, *args, **kwargs):
+        raise AssertionError("the deprecated async_get_device was called")
+
+    monkeypatch.setattr(dr.DeviceRegistry, "async_get_device_by_identifier", _by_identifier,
+                        raising=False)
+    monkeypatch.setattr(dr.DeviceRegistry, "async_get_device", _deprecated)
+    entry = await _setup(hass)
+    entry.runtime_data._sync_device_registry()
+    assert calls and calls[-1] == ((DOMAIN, "A1B2C3D4E5F6"), entry.entry_id)
 
 
 async def test_firmware_learned_late_still_reaches_the_device_page(
@@ -2554,12 +2585,10 @@ async def test_firmware_learned_late_still_reaches_the_device_page(
     to show no firmware version for the rest of the run even once it started answering.
     """
     from haismart_hrdp.udiscovery import DeviceInfo
-    from homeassistant.helpers import device_registry as dr
 
     mock_uss.cloud.return_value = None                       # silent at setup
     await _setup(hass)
-    registry = dr.async_get(hass)
-    device = registry.async_get_device(identifiers={(DOMAIN, "A1B2C3D4E5F6")})
+    device = find_device(hass)
     assert device is not None and device.sw_version is None
 
     mock_uss.cloud.return_value = DeviceInfo(
@@ -2571,7 +2600,7 @@ async def test_firmware_learned_late_still_reaches_the_device_page(
     freezer.tick(timedelta(seconds=UDISCOVERY_INTERVAL + 1))
     await _tick(hass, freezer)
 
-    device = registry.async_get_device(identifiers={(DOMAIN, "A1B2C3D4E5F6")})
+    device = find_device(hass)
     assert device.sw_version == "e_4.3.00 / R_6.0.01"
 
 
@@ -2619,9 +2648,8 @@ async def test_ac_that_moved_on_dhcp_is_followed_automatically(
     # recovered inside the same cycle: the user never sees it go unavailable
     assert hass.states.get(CLIMATE).state == "cool"
     # ...and the device page's link follows too, rather than pointing at the address it left
-    from homeassistant.helpers import device_registry as dr
 
-    device = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, "A1B2C3D4E5F6")})
+    device = find_device(hass)
     assert device.configuration_url == "http://192.168.1.77"
 
 

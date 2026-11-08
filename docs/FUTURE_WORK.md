@@ -21,15 +21,6 @@ keeps its own when it moves between the two sections. Expect the sequence to hav
 
 ## Open items
 
-### 77. `device_registry.async_get_device` is deprecated — stops working in Home Assistant 2027.8
-
-**Found 2026-11-08** on the owner's box (Home Assistant's own log, from 2026-10-29 on, after an HA
-update): `coordinator.py` looks its device up with `registry.async_get_device(identifiers=...)`,
-which Home Assistant now warns about because device identifiers are no longer unique across config
-entries, and names `async_get_device_by_identifier` / `async_get_devices` as the replacements. It
-works today and stops in 2027.8. The fix needs the replacement's exact signature from a current
-Home Assistant, and a fallback for the older Home Assistant the local test environment runs.
-
 ### 76. The 0504 washer-dryer's controls — nothing yet seen accepted; settle the start first
 
 **Found 2026-11-08** (kucau0901's fork, brought in). The twin washer + dryer reads correctly from
@@ -1856,6 +1847,16 @@ standard states that a multi-appliance system *must* use the interactive convers
 those cabinets use the simpler one where the module asks and the appliance only answers — which
 their own refusals confirm. So an appliance of that class is not one of these systems, however many
 indoor units a building has. This needs hardware that actually talks the interactive mode.
+
+### 77. ✅ SETTLED — the device lookup no longer uses the call Home Assistant deprecated
+
+**Found 2026-11-08** on the owner's box: Home Assistant 2026.10 deprecates the unscoped
+`device_registry.async_get_device(identifiers=...)` (removed in 2027.8), because identifiers are
+now unique only within a config entry. **Fixed:** the coordinator's device lookup uses
+`async_get_device_by_identifier(identifier, entry_id)` where Home Assistant has it and the old call
+on releases that predate it. A test stubs the new lookup and makes the deprecated one fail, so the
+check also runs on the older Home Assistant of the local test environment; the tests' own lookups
+walk the registry, which every release supports.
 
 ### 74. ✅ SETTLED — the byte-map state no longer lays the older report over the newer
 

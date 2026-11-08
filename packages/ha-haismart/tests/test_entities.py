@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
 
+from conftest import find_device
 from haismart_hrdp.entity_spec import Control, EntitySpec
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
@@ -34,7 +35,7 @@ async def _device(hass: HomeAssistant, **extra) -> dr.DeviceEntry:
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    device = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, "A1B2C3D4E5F6")})
+    device = find_device(hass)
     assert device is not None
     return device
 

@@ -53,18 +53,15 @@ def test_the_dryer_and_the_washer_each_answer_their_own_status_command() -> None
     assert epp_command(FRAMES["6d02_washer_idle"]).hex() == "6d02"
 
 
-#: The dryer's report is one word shorter than its map's extent, so `placeable_limit` withholds the
-#: fields past the first omitted word. The cloud agrees with what those words hold, but one capture
-#: is not the evidence that rule asks for, so they stay withheld until more captures exist.
-_WITHHELD_6D01 = {
-    "dryerAirWashMode", "dryerDryMode", "dryerEndDisplayDuration", "dryerWeight",
-    "dryerWindForceLevel",
-}
+#: Nothing is withheld from either report. Each is exactly as long as its map -- the dryer's 36 words,
+#: the washer's 66 -- once a multi-word field is counted the way it is read, backwards from its
+#: published word. Counted forwards, the dryer's two programme-name strings pushed its extent to 42
+#: and left a phantom gap at word 14, and five fields the cloud confirms were dropped.
 
 
 @pytest.mark.parametrize(
     ("frame", "status_cmd", "withheld"),
-    [("6d01_dryer_running", "6D01", _WITHHELD_6D01), ("6d02_washer_idle", "6D02", set())],
+    [("6d01_dryer_running", "6D01", set()), ("6d02_washer_idle", "6D02", set())],
 )
 def test_every_placed_field_agrees_with_the_cloud(
     frame: str, status_cmd: str, withheld: set[str]

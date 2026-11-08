@@ -160,9 +160,21 @@ class ModelField:
         return None
 
     @property
+    def first_word(self) -> int:
+        """The lowest word this field touches.
+
+        Significance grows BACKWARDS through the array (:func:`read_field`), so a field longer than
+        what is left of its published word reaches into the words before it: a 160-bit string
+        published at word 23 occupies words 14..23.
+        """
+        return self.word - (self.bit + self.length - 1) // 16
+
+    @property
     def last_word(self) -> int:
-        """The highest word this field touches (a field can span several)."""
-        return self.word + (self.length + 15) // 16 - 1
+        """The highest word this field touches: its published word, or an earlier one for a ``bit``
+        past 15. Never a later one -- a multi-word field extends backwards, see :attr:`first_word`.
+        """
+        return self.word - self.bit // 16
 
     def read(self, data: bytes, *, base: int = ATTR_BASE) -> Any:
         """This field's published value in ``data``, or ``None`` if it cannot be read."""
@@ -368,9 +380,14 @@ class DeviceModel:
         is ordinary padding and every device sends it. A **run** of them is a reserved block, and
         whether a given firmware emits it is a property of that firmware, not of the map — so when a
         report comes up short, everything from such a run onward may have shifted and cannot be
-        placed. Prior art's washing machine is the case: its map declares w1–w34, then nothing until
-        w44, and the firmware simply omits w35–w43, putting the programme-name strings nine words
-        earlier than the map says. The numbers below w35 decode perfectly in the same frame.
+        placed.
+
+        ⚠️ Coverage is counted the way :func:`read_field` reads: a multi-word field occupies the
+        words BEFORE its published one. Counted forwards, the programme-name strings every laundry
+        map carries leave a phantom gap below them and push the extent past the report's real end --
+        which is how a complete washer report, and a complete washer-dryer report, once read as
+        missing a block. Both are exactly as long as their maps, and every field in them sits where
+        the map says.
 
         Two words is the threshold. One-word gaps are common (the water heater has exactly one, the
         `0d12` cabinet one) and are demonstrably sent, so treating those as suspect would refuse to
@@ -383,7 +400,7 @@ class DeviceModel:
     def _scan_omitted(self, status_cmd: str) -> int | None:
         covered: set[int] = set()
         for f in self.fields_for(status_cmd):
-            covered.update(range(f.word, f.last_word + 1))
+            covered.update(range(f.first_word, f.last_word + 1))
         run_start: int | None = None
         for word in range(1, self.extent(status_cmd) + 1):
             if word in covered:

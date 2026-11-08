@@ -9,15 +9,16 @@ Two things it establishes that the water heater could not:
 
 * the same published map decodes a **UART** frame as well as a LAN one — only the word array's base
   differs (12 vs 92), which is a property of the transport;
-* ⛔ **a map can describe a longer report than a firmware sends**, and past the reserved block it
-  omits, every field is at an unknown offset. This capture is exactly that case, and it is why
-  :meth:`DeviceModel.placeable_limit` exists.
+* ⛔ **a multi-word field occupies the words BEFORE its published one.** The two programme-name
+  strings, 160 bits each, are published at w44 and w54 and sit at w35–w44 and w45–w54. Counted
+  forwards they look nine words late and the report looks short of a reserved block; counted the
+  way they are read, the report is exactly as long as its map.
 """
 from __future__ import annotations
 
 import pytest
 
-from haismart_hrdp.device_model import model_for
+from haismart_hrdp.device_model import model_for, read_field
 
 # 201c51890c31c308 **0501** ... — the washing-machine class. Read out of the capture's own `71`
 # reply (the 32-byte TYPEID the module returns when the board asks), then fetched from Haier.
@@ -77,28 +78,44 @@ def test_the_second_frame_moves_the_way_a_wash_does() -> None:
     assert running["totalElectricityUsed"] > idle["totalElectricityUsed"]
 
 
-def test_a_reserved_block_the_firmware_omits_makes_the_tail_unplaceable() -> None:
-    """⛔ The hazard, and the reason a published map is not sufficient on its own.
+def test_the_report_is_exactly_as_long_as_its_map() -> None:
+    """Nothing is omitted: every field, the strings included, sits where the map says.
 
-    This washer's map declares fields at w1–w34, says nothing about w35–w43, then resumes at w44
-    with two programme-name strings. The firmware does not send the reserved block: the strings are
-    really at w35 and w45, nine words earlier. Placed where the map says, they read as zeros — and
-    a neighbouring numeric field would have read as a plausible, wrong number.
-
-    So the tail is refused. The 90 attributes below the block decode perfectly in the same frame,
-    which is what makes this a limit worth drawing precisely rather than a reason to distrust the
-    map.
+    The strings are the proof, because text cannot decode by coincidence: read at their published
+    positions they are the programme the washer was on in each frame. And past them, the map's
+    last three fields decode too -- so the firmware sent the whole layout.
     """
     model = model_for(WASHER)
     assert model is not None
-    assert model.extent() == 63                       # what the map describes
+    assert model.extent() == 56                       # what the map describes
     assert (len(WASHER_IDLE) - UART_BASE) // 2 == 56  # what the firmware sends
-    assert model.first_omitted_word() == 35
-    assert model.placeable_limit(len(WASHER_IDLE), base=UART_BASE) == 34
+    assert model.first_omitted_word() is None
+    assert model.placeable_limit(len(WASHER_IDLE), base=UART_BASE) is None
+
+    name = model.field("localProgName1")
+    assert (name.first_word, name.last_word) == (35, 44)
+    for frame, programme in ((WASHER_IDLE, b"eco40_60"), (WASHER_RUNNING, b"smart_local")):
+        raw = read_field(frame, name.word, name.bit, name.length, base=UART_BASE)
+        assert raw.to_bytes(name.length // 8, "big").rstrip(b"\0") == programme
 
     state = model.decode(WASHER_IDLE, base=UART_BASE)
+    # Text (caeType 13) is never a value -- two such fields on other classes are credentials.
     assert "localProgName1" not in state and "localProgName2" not in state
-    assert len(state) == 90
+    assert {"dryProgFlag", "dryType", "dryTime"} <= set(state)
+
+
+def test_a_short_report_is_refused_past_a_real_gap() -> None:
+    """The rule still stands where a map really has a gap and a report really comes up short.
+
+    The 0504 washer-dryer's washer report (6D02) declares nothing at words 24-25. Cut the report
+    short and everything from that gap on is refused rather than guessed at.
+    """
+    model = model_for("201c51890c31c308050400218004514845000000000000000000000000000040")
+    assert model is not None
+    assert model.first_omitted_word("6D02") == 24
+    full = 92 + 2 * model.extent("6D02") + 1
+    assert model.placeable_limit(full, status_cmd="6D02") is None
+    assert model.placeable_limit(full - 4, status_cmd="6D02") == 23
 
 
 def test_a_full_length_report_places_everything() -> None:

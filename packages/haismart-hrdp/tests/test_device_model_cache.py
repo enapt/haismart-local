@@ -39,7 +39,7 @@ def _first_omitted_scan(model, status_cmd):
     covered: set[int] = set()
     for f in model.fields:
         if f.status_cmd == status_cmd:
-            covered.update(range(f.word, f.last_word + 1))
+            covered.update(range(f.first_word, f.last_word + 1))
     extent = max((f.last_word for f in model.fields if f.status_cmd == status_cmd), default=0)
     run_start = None
     for word in range(1, extent + 1):

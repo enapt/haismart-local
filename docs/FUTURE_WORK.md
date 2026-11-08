@@ -21,6 +21,15 @@ keeps its own when it moves between the two sections. Expect the sequence to hav
 
 ## Open items
 
+### 77. `device_registry.async_get_device` is deprecated — stops working in Home Assistant 2027.8
+
+**Found 2026-11-08** on the owner's box (Home Assistant's own log, from 2026-10-29 on, after an HA
+update): `coordinator.py` looks its device up with `registry.async_get_device(identifiers=...)`,
+which Home Assistant now warns about because device identifiers are no longer unique across config
+entries, and names `async_get_device_by_identifier` / `async_get_devices` as the replacements. It
+works today and stops in 2027.8. The fix needs the replacement's exact signature from a current
+Home Assistant, and a fallback for the older Home Assistant the local test environment runs.
+
 ### 76. The 0504 washer-dryer's controls — nothing yet seen accepted; settle the start first
 
 **Found 2026-11-08** (kucau0901's fork, brought in). The twin washer + dryer reads correctly from

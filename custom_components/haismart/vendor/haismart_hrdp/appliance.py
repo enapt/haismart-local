@@ -159,10 +159,10 @@ _APP_TYPE_KINDS: Mapping[str, ApplianceKind] = MappingProxyType({
 # The laundry FAMILY: a class whose first two digits are 05. Used only for a 05xx class this module
 # has no row for -- a named class keeps exactly what its row says -- and only ever to say "laundry",
 # which builds sensors and nothing that writes, so a wrong answer costs a reading, never a command.
-# The evidence that 05 is laundry and nothing else: every 05xx configFile Haier ships names a washer
-# (0501 单滚筒XQG…, 0502 the same in the V2 text format, 0504 AWD14_BD4LCU1L — a twin washer +
-# dryer), and the SEA app files its washer-and-dryer cards under middle classes 4 and 5 of that
-# family (`washerAndDryerMiddleClass_4` / `_5`, libapp.so of com.haier.uhome.uplus.seasia 5.7.0).
+# The evidence that 05 is laundry and nothing else: every 05xx configFile Haier publishes names a
+# washer (0501 单滚筒…, 0502 the same in the V2 text format, 0504 AWD14_BD4LCU1L — a twin washer +
+# dryer), and Haier's own product catalogue files its laundry under three categories, "Roller
+# Washer", "Top Load Washer" and "Dryer" -- the labels `_LAUNDRY_LABEL` below matches.
 _LAUNDRY_FAMILY = "05"
 
 # A cloud category that names laundry, for a device whose class we cannot read or have no row for.

@@ -261,6 +261,36 @@ async def test_turning_controls_off_again_removes_them(hass: HomeAssistant, mock
     assert {e.domain for e in _entities(hass, entry).values()} <= {"sensor", "binary_sensor"}
 
 
+async def test_rows_are_kept_while_the_byte_map_is_missing(hass: HomeAssistant, laundry) -> None:
+    """Without its map a laundry appliance builds none of its readings, so all of them look gone.
+
+    A reading's row must wait for the map: a class the bundle does not carry fetches it on demand,
+    and removing every row on a failed fetch would lose the owner's names and areas for nothing.
+    A thermostat left by a misread report is not one of its readings, and still goes.
+    """
+    from unittest.mock import PropertyMock, patch
+
+    from custom_components.haismart.coordinator import HaismartCoordinator
+
+    entry = _entry()
+    entry.add_to_hass(hass)
+    registry = er.async_get(hass)
+    reading = registry.async_get_or_create(
+        "sensor", DOMAIN, "A1B2C3D4E5F6_dryerCyclePhase", config_entry=entry
+    )
+    thermostat = registry.async_get_or_create(
+        "climate", DOMAIN, "A1B2C3D4E5F6_climate", config_entry=entry
+    )
+    with patch.object(
+        HaismartCoordinator, "device_model", new_callable=PropertyMock, return_value=None
+    ):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+    assert str(entry.runtime_data.appliance_kind) == "laundry"
+    assert registry.async_get(reading.entity_id) is not None
+    assert registry.async_get(thermostat.entity_id) is None
+
+
 async def test_a_big_data_report_never_overrides_the_status_reports(
     hass: HomeAssistant, mock_uss
 ) -> None:

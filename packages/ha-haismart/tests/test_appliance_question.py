@@ -181,6 +181,8 @@ async def test_the_options_offer_the_question_only_where_it_is_open(
             )
             assert done["type"] == FlowResultType.CREATE_ENTRY
             assert entry.options[CONF_APPLIANCE_KIND] == KIND_NOT_AIR_CONDITIONER
+            # The new options reload the entry; let that finish before unloading it.
+            await hass.async_block_till_done()
         await hass.config_entries.async_unload(entry.entry_id)
         await hass.config_entries.async_remove(entry.entry_id)
         await hass.async_block_till_done()

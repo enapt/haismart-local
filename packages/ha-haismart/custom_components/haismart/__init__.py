@@ -5,6 +5,7 @@ import asyncio
 import contextlib
 import logging
 
+from haismart_hrdp import declared_attribute_names
 from haismart_hrdp import preload as _preload_model_rules
 from haismart_hrdp.appliance import ApplianceKind
 from haismart_hrdp.device_model import preload as _preload_device_models
@@ -135,8 +136,19 @@ def _drop_entities_no_longer_provided(
       the cases where what setup builds comes from the appliance's own map, not from a poll that
       might have gone wrong. An air conditioner or a water heater is never touched;
     * only a row with no live entity after every platform has been set up (every entity here is
-      added during setup) and that the owner has not disabled, which also leaves no live entity.
+      added during setup) and that the owner has not disabled, which also leaves no live entity;
+    * while the byte map is missing, never a row named after one of the appliance's own declared
+      attributes. Without the map none of its readings is built, so all of them look gone -- and
+      for a class the bundle does not carry, a failed on-demand fetch would otherwise cost the
+      owner every name and area they had set. They come back with the map; what goes is what no
+      map could build, such as the thermostat a misread report left behind.
     """
+    keep: frozenset[str] = frozenset()
+    if coordinator.device_model is None:
+        keep = frozenset(
+            f"{coordinator.device_id}_{name}"
+            for name in declared_attribute_names(coordinator.digital_model)
+        )
     if not (
         coordinator.appliance_kind is ApplianceKind.LAUNDRY
         or (coordinator.ruled_out_air_conditioner and coordinator.model_decoded)
@@ -144,7 +156,7 @@ def _drop_entities_no_longer_provided(
         return
     registry = er.async_get(hass)
     for row in er.async_entries_for_config_entry(registry, entry.entry_id):
-        if row.disabled_by is not None:
+        if row.disabled_by is not None or row.unique_id in keep:
             continue
         state = hass.states.get(row.entity_id)
         if state is None or state.attributes.get(ATTR_RESTORED):

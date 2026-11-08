@@ -144,10 +144,10 @@
         "description": "Home Assistant našiel jednotku Haier na adrese {host} (`{device_id}`).\n\nJej lokálny kľúč sa načíta z účtu Haier, ktorý ste už pridali, takže netreba nič zadávať. Pridajte ju voľbou **Odoslať**."
       },
       "appliance_kind": {
-        "title": "O aké zariadenie ide?",
-        "description": "Toto zariadenie sa neidentifikovalo ako nič, čo táto integrácia rozpozná, a preto sa pýta vás.\n\nAk ide o práčku, sušičku alebo práčku so sušičkou, uveďte to: dostane potom senzory len na čítanie pre oba bubny, nikdy nie termostat klimatizácie. Neskôr to môžete zmeniť v možnostiach integrácie.",
+        "title": "O akú jednotku ide?",
+        "description": "Táto jednotka sa neidentifikovala ako nič, čo táto integrácia rozpozná, a preto sa pýta vás.\n\nAk ide o práčku, sušičku alebo práčku so sušičkou, uveďte to: dostane potom senzory len na čítanie pre oba bubny, nikdy nie termostat klimatizácie. Neskôr to môžete zmeniť v možnostiach integrácie.",
         "data": {
-          "appliance_kind": "Zariadenie"
+          "appliance_kind": "Jednotka"
         },
         "data_description": {
           "appliance_kind": "Nie ste si istí? Ponechajte „Rozhodnúť podľa jeho hlásení“. To sa stane aj bez odpovede a hodí sa to pre klimatizáciu."
@@ -183,12 +183,12 @@
         "title": "Možnosti Haismart",
         "data": {
           "scan_interval": "Interval dopytovania na stav (sekundy)",
-          "appliance_kind": "Zariadenie",
+          "appliance_kind": "Jednotka",
           "laundry_controls": "Povoliť ovládanie práčky a sušičky"
         },
         "data_description": {
           "scan_interval": "Ako často sa jednotky pýtať na jej stav. Každý dopyt je plnohodnotná lokálna relácia a existuje len preto, aby zachytil zmeny vykonané diaľkovým ovládačom alebo aplikáciou – príkazy odoslané z Home Assistanta sa prejavia okamžite tak či tak.",
-          "appliance_kind": "Zobrazuje sa len pri zariadení, ktoré sa neidentifikovalo. Práčka, sušička alebo práčka so sušičkou dostane senzory len na čítanie, nikdy nie termostat klimatizácie.",
+          "appliance_kind": "Zobrazuje sa len pri jednotke, ktorá sa neidentifikovala. Práčka, sušička alebo práčka so sušičkou dostane senzory len na čítanie, nikdy nie termostat klimatizácie.",
           "laundry_controls": "Pridá ku každému bubnu tlačidlá na spustenie, pozastavenie a zrušenie a tiež nastavenia možností, ktoré stroj dovoľuje meniť po jednom. Samotný program sa volí na paneli stroja. Predvolene vypnuté. Každý príkaz stále vyžaduje zapnuté diaľkové ovládanie na paneli stroja pre daný bubon; kým je vypnuté, nič sa neodosiela."
         }
       }
@@ -589,7 +589,7 @@
     },
     "key_will_rotate": {
       "title": "{name}: kľúč sa zmení a toto nastavenie ho nedokáže nasledovať",
-      "description": "Táto jednotka stále dosiahne na servery Haier, takže dostáva nový lokálny kľúč niekoľkokrát denne. Bola pridaná bez účtu Haier, takže Home Assistant nový kľúč nezíska — pri najbližšom reštarte po zmene kľúča zariadenie prestane fungovať a bude to vyzerať, že prišlo o konfiguráciu.\n\nDve trvalé riešenia, obe vykonajte, kým všetko funguje:\n\n- **Pridajte účet Haier**: Nastavenia → Zariadenia a služby → Haismart → zariadenie → Znovu nastaviť → *Pridať účet Haier*. Zmeny kľúča sa potom sťahujú automaticky.\n- **Alebo zariadeniu na smerovači zablokujte prístup na internet**. Kľúč sa potom prestane meniť a ten, ktorý máte, zostane platný. Miestne ovládanie v oboch prípadoch funguje ďalej.\n\nTáto správa zmizne sama, len čo bude platiť jedno z toho."
+      "description": "Táto jednotka stále dosiahne na servery Haier, takže dostáva nový lokálny kľúč niekoľkokrát denne. Bola pridaná bez účtu Haier, takže Home Assistant nový kľúč nezíska — pri najbližšom reštarte po zmene kľúča zariadenie prestane fungovať a bude to vyzerať, že prišlo o konfiguráciu.\n\nDve trvalé riešenia, obe vykonajte, kým všetko funguje:\n\n- **Pridajte účet Haier**: Nastavenia → Zariadenia a služby → Haismart → zariadenie → Znovu nastaviť → *Pridať môj účet Haier, aby sa kľúč obnovoval sám*. Zmeny kľúča sa potom sťahujú automaticky.\n- **Alebo zariadeniu na smerovači zablokujte prístup na internet**. Kľúč sa potom prestane meniť a ten, ktorý máte, zostane platný. Miestne ovládanie v oboch prípadoch funguje ďalej.\n\nTáto správa zmizne sama, len čo bude platiť jedno z toho."
     },
     "key_refresh_failed": {
       "title": "{name}: kľúč sa zmenil a automatické načítanie nefungovalo",
@@ -618,7 +618,7 @@
       "options": {
         "auto": "Rozhodnúť podľa jeho hlásení",
         "laundry": "Práčka, sušička alebo práčka so sušičkou",
-        "not_air_conditioner": "Iné zariadenie, nie klimatizácia"
+        "not_air_conditioner": "Iná jednotka, nie klimatizácia"
       }
     }
   }

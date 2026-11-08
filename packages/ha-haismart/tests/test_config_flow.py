@@ -737,6 +737,23 @@ def test_strings_and_english_translation_are_in_sync() -> None:
     assert a == b, "strings.json and translations/en.json have diverged"
 
 
+def test_the_key_repair_names_the_menu_item_as_the_menu_shows_it() -> None:
+    """The repair tells the owner which menu item to choose, so it must quote that item exactly --
+    in every language, against that language's own menu. They had drifted apart in all 31."""
+    import json
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1] / "custom_components" / "haismart"
+    files = [root / "strings.json", *sorted((root / "translations").glob("*.json"))]
+    wrong = {}
+    for path in files:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        label = data["config"]["step"]["reconfigure"]["menu_options"]["reconfigure_cloud"]
+        if f"*{label}*" not in data["issues"]["key_will_rotate"]["description"]:
+            wrong[path.name] = label
+    assert len(files) == 32 and not wrong, wrong
+
+
 async def test_key_retry_succeeds_on_the_second_attempt(hass: HomeAssistant, mock_uss) -> None:
     """The retry offered by key_failed actually re-runs the fetch and completes setup."""
     from unittest.mock import AsyncMock, patch

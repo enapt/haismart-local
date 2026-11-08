@@ -35,9 +35,9 @@ from haismart_extractor import (
 )
 from haismart_extractor.cloud import (
     SEA_APP_CREDENTIALS,
-    CloudConnectionError,
     CloudError,
     Domains,
+    cloud_unreachable,
     get_public_device_config,
 )
 from haismart_hrdp import (
@@ -3909,7 +3909,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 # Carried through the gateway attempt below: the stored token it falls back on is
                 # usually a day old and expired, so the broker's refusal of THAT says nothing about
                 # the account -- the refresh that would have renewed it never reached Haier.
-                refresh_unreachable = isinstance(err, (CloudConnectionError, OSError))
+                # A connection that never completed, or Haier's server failing (HTTP 5xx).
+                refresh_unreachable = cloud_unreachable(err)
         self._refresh_unreachable = refresh_unreachable
         if not access_token:
             return False

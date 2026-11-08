@@ -615,6 +615,24 @@ async def test_login_wrong_region_gets_its_own_error(hass: HomeAssistant, mock_u
     assert _login_error_for(bad_password) == "cloud_auth"
 
 
+
+async def test_a_server_error_at_sign_in_is_not_blamed_on_the_password(hass: HomeAssistant) -> None:
+    """HTTP 5xx is Haier failing to answer: "cannot reach Haier", never "check your password"."""
+    from haismart_extractor.cloud import CloudHTTPError
+
+    from custom_components.haismart.config_flow import CloudAuthError, _login_error_for
+
+    def wrapped(cause: Exception) -> CloudAuthError:
+        try:
+            raise CloudAuthError(str(cause)) from cause
+        except CloudAuthError as err:
+            return err
+
+    server_error = wrapped(CloudHTTPError("login -> HTTP 502", 502))
+    assert _login_error_for(server_error) == "cloud_unreachable"
+    assert _login_error_for(wrapped(CloudHTTPError("login -> HTTP 401", 401))) == "cloud_auth"
+
+
 async def test_device_list_failure_after_a_real_sign_in_keeps_its_own_message(
     hass: HomeAssistant, mock_uss
 ) -> None:

@@ -922,7 +922,7 @@ class HaierCloud:
         headers = self._headers(urlsplit(url).path, body, timestamp)
         resp = await self._transport(Request("POST", url, headers, body))
         if resp.status != 200:
-            raise CloudError(f"{path} -> HTTP {resp.status}: {resp.text[:200]}")
+            raise CloudHTTPError(f"{path} -> HTTP {resp.status}: {resp.text[:200]}", resp.status)
         return resp.json()
 
     async def get(self, host: str, path: str) -> dict:
@@ -932,7 +932,7 @@ class HaierCloud:
         headers = self._headers(urlsplit(url).path, "", timestamp)
         resp = await self._transport(Request("GET", url, headers, ""))
         if resp.status != 200:
-            raise CloudError(f"{path} -> HTTP {resp.status}: {resp.text[:200]}")
+            raise CloudHTTPError(f"{path} -> HTTP {resp.status}: {resp.text[:200]}", resp.status)
         return resp.json()
 
     async def get_digital_model(self, device_id: str) -> dict:
@@ -1281,6 +1281,20 @@ class CloudError(Exception):
     """A cloud request failed (non-200 or malformed response)."""
 
 
+class CloudHTTPError(CloudError):
+    """The cloud answered with an HTTP status other than 200; ``status`` carries it.
+
+    A subclass of :class:`CloudError`, so every ``except CloudError`` still catches it. The status
+    matters to a caller deciding whether the ACCOUNT was refused: a 5xx is the server failing, not
+    the server saying no -- see :func:`cloud_unreachable`. A refusal proper arrives as HTTP 200 with
+    a non-zero ``retCode``, and stays a plain :class:`CloudError`.
+    """
+
+    def __init__(self, message: str, status: int) -> None:
+        super().__init__(message)
+        self.status = status
+
+
 class CloudConnectionError(CloudError):
     """The cloud host could not be reached at all -- DNS, a refused/unroutable connection, a timeout.
 
@@ -1289,3 +1303,16 @@ class CloudConnectionError(CloudError):
     with an error". :func:`httpx_transport` raises it for the transport-layer failures httpx reports
     (see :data:`HTTPX_REQUEST_ERRORS`); a sign-in flow uses the distinction to say "cannot reach
     Haier" instead of "check your password" when the network, not the credentials, is at fault."""
+
+
+def cloud_unreachable(err: BaseException | None) -> bool:
+    """Whether ``err`` says Haier could not be reached or could not answer -- not that it refused.
+
+    The one place this is decided, so a sign-in form and a key refresh cannot disagree about the
+    same failure: a connection that never completed (DNS, refused, timed out), or a server error
+    (HTTP 5xx). Anything else -- a 4xx, a non-zero ``retCode`` -- is Haier answering, and a caller
+    should treat it as a refusal.
+    """
+    if isinstance(err, (CloudConnectionError, OSError)):     # TimeoutError is an OSError
+        return True
+    return isinstance(err, CloudHTTPError) and err.status >= 500

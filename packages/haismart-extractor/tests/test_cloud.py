@@ -105,6 +105,31 @@ async def test_non_200_raises_cloud_error() -> None:
         await cloud.get_device_7d("D")
 
 
+@pytest.mark.parametrize(("status", "unreachable"), [(500, True), (503, True), (401, False), (404, False)])
+async def test_an_http_error_carries_its_status_and_only_5xx_is_unreachable(
+    status: int, unreachable: bool
+) -> None:
+    """A server error is Haier failing to answer; a 4xx is Haier answering. Only the first may be
+    retried quietly -- the second, like a non-zero retCode, is a refusal."""
+    from haismart_extractor.cloud import CloudHTTPError, cloud_unreachable
+
+    cloud = HaierCloud(AppCredentials("a", "k", "c"), "T", transport=Capture(Response(status, "x")))
+    with pytest.raises(CloudHTTPError) as caught:
+        await cloud.refresh_token("RT")
+    assert caught.value.status == status
+    assert isinstance(caught.value, CloudError)          # every `except CloudError` still catches it
+    assert cloud_unreachable(caught.value) is unreachable
+
+
+def test_what_counts_as_unreachable() -> None:
+    from haismart_extractor.cloud import CloudConnectionError, cloud_unreachable
+
+    assert cloud_unreachable(CloudConnectionError("could not connect"))
+    assert cloud_unreachable(TimeoutError())
+    assert not cloud_unreachable(CloudError("refreshToken -> retCode 30003: Authorization exception"))
+    assert not cloud_unreachable(None)
+
+
 async def test_refresh_token_pipeline_and_parse() -> None:
     # canned response mirrors the live  shape (accountToken rotates; refreshToken reused)
     resp_json = json.dumps({

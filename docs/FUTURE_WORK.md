@@ -116,31 +116,6 @@ list as no answer: the re-authentication form says Haier could not be reached, n
 appliance belongs to a different account.
 
 
-### 73. Key-outage handling: what still counts as a refusal
-
-When a localKey rotates and the re-fetch fails, the integration retries quietly for up to 30 minutes
-if Haier could not be **reached**, and asks for a reauth at once if Haier **refused**. Two
-server-side outages still read as refusals, so they ask for a reauth straight away:
-
-* **An HTTP 5xx on the token refresh.** It raises the plain cloud error, not the connection error,
-  so the refresh is not marked unreachable. Telling a 5xx apart needs the status carried on the
-  error. A reply that answers with a non-zero `retCode` is Haier refusing, and must stay a refusal.
-* **A broker that refuses by hanging up after the 30 minutes.** A hang-up is treated as the network
-  for the grace period, then escalates — by design, since a refusal can look exactly like that.
-
-MQTT's own "server unavailable" (`CONNACK` return code 3) counts as unreachable, and the grace
-period's clock is kept per configuration entry, so it runs out across setup retries.
-
-Also noted, not a defect: a unit that is asked for extended status and never answers holds the
-session for the full read timeout on each silent cycle (4.0 s, against the 0.6 s idle window that
-ends a read otherwise). On a
-unit that has never answered it is bounded: three silent cycles for each of the two published query
-forms, then the query stops. On a unit that has answered before, every silent cycle pays it.
-
-**What closes it:** a status-bearing cloud error for the 5xx case. Nothing to do for the other two
-unless a report shows them costing someone a needless sign-in.
-
-
 ### 63. Issue #13 — a heat-pump water heater, decoded and commanded through Haier's byte map; three declared controls never exercised
 
 **Reported 2026-09-09 (issue #13), and it is the best-controlled report this project has had from a
@@ -1847,6 +1822,27 @@ standard states that a multi-appliance system *must* use the interactive convers
 those cabinets use the simpler one where the module asks and the appliance only answers — which
 their own refusals confirm. So an appliance of that class is not one of these systems, however many
 indoor units a building has. This needs hardware that actually talks the interactive mode.
+
+### 73. ✅ SETTLED — a server error is an outage, not a refusal; the key refresh retries it
+
+When a localKey rotates and the re-fetch fails, the integration retries quietly for up to 30 minutes
+if Haier could not be **reached**, and asks for a reauth at once if Haier **refused**.
+
+**Fixed 2026-11-08: an HTTP 5xx now counts as Haier failing to answer, not refusing.** A non-200
+reply raises `CloudHTTPError`, which carries the status, and one helper —
+`haismart_extractor.cloud.cloud_unreachable` — decides "unreachable" for both callers: a connection
+that never completed, or a 5xx. The key refresh retries quietly on it, and the sign-in form says
+"cannot reach Haier" rather than "check your password". A 4xx or a non-zero `retCode` is Haier
+answering, and stays a refusal.
+
+**By design, unchanged:** a broker that refuses by hanging up is treated as the network for the
+grace period, then escalates, since a refusal can look exactly like that. MQTT's own "server
+unavailable" (`CONNACK` return code 3) counts as unreachable, and the grace period's clock is kept
+per configuration entry.
+
+Also noted, not a defect: a unit asked for extended status that never answers holds the session for
+the full read timeout on each silent cycle (4.0 s, against the 0.6 s idle window); on a unit that
+has never answered, three silent cycles per query form stop the query.
 
 ### 77. ✅ SETTLED — the device lookup no longer uses the call Home Assistant deprecated
 

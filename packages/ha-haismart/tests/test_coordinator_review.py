@@ -180,6 +180,24 @@ async def test_an_unreachable_token_refresh_is_not_blamed_on_the_stale_token(
     assert not hass.config_entries.flow.async_progress_by_handler(DOMAIN)
 
 
+@pytest.mark.parametrize(("status", "reauth"), [(503, False), (401, True)])
+async def test_a_server_error_on_the_token_refresh_is_an_outage_not_a_refusal(
+    hass: HomeAssistant, mock_uss, status: int, reauth: bool
+) -> None:
+    """FUTURE_WORK 73: a 5xx on the refresh is Haier failing to answer, so the stale token's
+    refusal that follows says nothing about the account -- retry. A 4xx is Haier answering."""
+    from haismart_extractor.cloud import CloudHTTPError
+
+    coordinator = await _setup_entry(hass, _gateway_entry(refresh_token="rt-durable"))
+    mock_uss.read.side_effect = LocalKeyRotated(device_version=5, held_version=4)
+    with (
+        patch(REFRESH, side_effect=CloudHTTPError(f"refreshToken -> HTTP {status}", status)),
+        patch(GATEWAY, side_effect=GatewayError("gateway errNo=110001 for dev")),
+    ):
+        with pytest.raises(ConfigEntryAuthFailed if reauth else UpdateFailed):
+            await coordinator._async_read_cycle()
+
+
 async def test_an_outage_that_outlasts_the_grace_period_escalates(
     hass: HomeAssistant, mock_uss
 ) -> None:

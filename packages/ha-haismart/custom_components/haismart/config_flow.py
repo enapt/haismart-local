@@ -32,10 +32,10 @@ import voluptuous as vol
 from haismart_extractor import GatewayCreds, GatewayError, get_localkey_via_gateway
 from haismart_extractor.cloud import (
     SEA_APP_CREDENTIALS,
-    CloudConnectionError,
     CloudError,
     Domains,
     HaierCloud,
+    cloud_unreachable,
     get_public_device_config,
 )
 from haismart_hrdp import (
@@ -374,7 +374,8 @@ def _login_error_for(err: Exception) -> str:
     # the server never answered, so "check your email and password" sends the user the wrong way.
     # `_async_login_cloud` re-raises the original as the cause, so the connection case is a type
     # test, not a string sniff -- a genuine rejection always carries a retCode instead.
-    if isinstance(getattr(err, "__cause__", None), (CloudConnectionError, TimeoutError, OSError)):
+    # A server error (HTTP 5xx) is the same: Haier failed to answer, it did not refuse.
+    if cloud_unreachable(getattr(err, "__cause__", None)):
         return "cloud_unreachable"
     text = str(err)
     if "30032" in text:

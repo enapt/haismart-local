@@ -77,12 +77,9 @@ table without anyone here owning one.
 | Product code | Model | Report | Notes |
 |---|---|---|---|
 | `GK0GXZE0J` | Heat-pump water heater (class `2001`) | 167-byte | Reported in [issue #13](https://github.com/enapt/haismart-local/issues/13) with five diagnostics downloads, one variable changed each. Decoded from Haier's published map for the class and **cross-checked against Haier's own cloud shadow: 26 of 26 attributes on every capture, 130/130, no disagreements.** Driven end to end through a real Home Assistant instance: 27 entities, a `water_heater` at its declared **35–75 °C** with the 8 modes the unit lists, its working state, remaining hot water, dual-source heating, the reservation schedule and a 32-fault table. ✅ **Commanded and read back on the reporter's own hardware** — a setpoint change sent from Home Assistant was accepted by the appliance (2026-09-14). ⚠️ That is the setpoint only; the unit's other three writable settings have not been exercised. |
+| — | HWD140-BD14LCGNU1 twin washer + dryer (class `0504`) | 165 + 225-byte | Contributed by [@kucau0901](https://github.com/kucau0901), who owns one: run through Home Assistant on the owner's own unit, which **read it correctly from both of its status reports** — the dryer's `6D01` and the washer's `6D02`, each under its own command. **Every field agrees with Haier's own cloud for the same moment: 44 of 44 dryer, 111 of 111 washer.** Read-only by default. ⚠️ Its opt-in controls (start, pause, cancel and 42 options per [the appliance notes](docs/appliances.md#twin-washer--dryer-0504)) have **not yet been seen accepted** by the machine. |
 
-> A twin washer + dryer (class `0504`, HWD140-BD14LCGNU1) reads **read-only** from both of its
-> status reports, the dryer's `6D01` and the washer's `6D02`, checked field by field against Haier's
-> cloud on a real capture. See [`docs/appliances.md`](docs/appliances.md#twin-washer--dryer-0504).
-
-> A washing machine (class `0501`) has also had its traffic decoded correctly — 90 attributes, from
+> A washing machine (class `0501`) has also had its traffic decoded correctly — 93 attributes, from
 > a board-level capture published by another project — but it has never been driven through Home
 > Assistant and never commanded. It is not listed above because nothing here has run against one.
 

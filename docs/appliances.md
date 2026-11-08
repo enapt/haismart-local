@@ -92,56 +92,68 @@ entity type as support for it is confirmed.
 
 The HWD140-BD14LCGNU1 laundry centre is one appliance with two drums, and it reports them in **two
 status frames every session**: the dryer in `6D01` (165 bytes) and the washer in `6D02` (225 bytes).
-Both are decoded from the unit's published map and merged into one state. A frame that stops
-arriving ages out after two minutes, so that drum's entities go unknown instead of freezing.
+Each is decoded under its own command from the unit's published map and merged into one state. A
+frame that stops arriving ages out after two minutes, so that drum's entities go unknown instead of
+freezing.
 
-It is identified by its class field, which matters here: its dryer report is exactly as long as the
-extended-36 air-conditioner family, and before the class was named it came up as an air conditioner
-with a thermostat and AC switches. Identified as laundry, it gets **sensors and binary sensors** by
-default. Controls are an opt-in, described below, because no write has been confirmed on any
-laundry class yet.
+It is identified by its class field. That matters here, because its dryer report is exactly as long
+as the extended-36 air-conditioner family's: read by length alone it looks like an air conditioner.
+Identified as laundry, it gets **sensors and binary sensors** by default and never a thermostat.
 
-Every field decoded from both frames of one real capture agrees with Haier's own cloud shadow for
-the same moment: 37 of the dryer's 44 and 109 of the washer's 111. Each frame also carries two
-programme-name text blocks, which are not decoded. The other five dryer fields sit past the report's
-first omitted word, and `placeable_limit` withholds them until more captures exist.
+**Both reports are exactly as long as their maps, and every field in them agrees with Haier's own
+cloud** for the same moment: all 44 of the dryer's and all 111 of the washer's, on a real capture.
+Each drum also carries two programme-name text fields, the programme's identifier
+(`smart_local`) and its display name; they are text, so they become no entity.
 
-The map also files a **big-data report per drum**: `7D01` (dryer) and `7D02` (washer). The unit
-never answered the extended query that asks for one, so they are read only if the machine pushes
-them. Each is decoded under its own command and placed underneath the status reports, which are
-fresher wherever the two overlap (81 of the washer's names repeat). The readings only they carry,
-such as motor current, valve states and the dryer's energy totals, are not declared by this unit's
-own model. The app does not show them either, so they stay hidden.
+The map also files a **big-data report per drum**: `7D01` (dryer) and `7D02` (washer). None of
+Haier's laundry configurations publishes the query that asks for one, so they are read only if the
+machine pushes them, decoded under their own command and placed underneath the status reports. The
+readings only they carry, such as motor current, valve states and the dryer's energy totals, are not
+declared by this unit's own model, so they stay hidden.
 
 ### Controls (off by default)
 
 Turn on **Configure → Enable washer and dryer controls** to get:
 
-* **Start or resume**, **Pause** and **Cancel** buttons for each drum. Start runs whatever programme
-  the drum has selected; the machine uses one value for start and resume. Cancel (`ReturnStandby`)
-  abandons the cycle and returns the drum to standby.
-* The settings the machine's configFile marks as writable **on their own** (`operationType` `I`):
-  each drum's programme, spin speed, wash temperature, dry level and temperature, child lock, the
-  dosing and care options. That is 45 in all. Settings it writes only inside a group command are
-  not offered.
+* **Start or resume**, **Pause** and **Cancel** buttons for each drum. Start runs the programme
+  chosen at the drum's panel; the machine uses one value for start and resume. Cancel abandons the
+  cycle: a running drum is paused first, then returned to standby, which is the sequence Haier's own
+  app uses.
+* The options the machine's configuration marks as writable **on their own** (`operationType`
+  `I`): spin speed, wash temperature, dry level and temperature, the dosing and care options and
+  so on, 42 in all. Settings it writes only inside a group command are not offered.
+
+**The programme itself is chosen at the machine's panel.** Haier's app never sets a programme with
+a single-parameter write: it sends one group command carrying the programme and that programme's
+whole parameter set, and a washing machine's board traffic shows exactly that. A programme written
+on its own would load without its parameters, and on other Haier washers writing the programme and
+the start separately gave spin-only cycles. The **child lock** is not offered either: Haier's
+manual says the network can neither set nor clear it.
 
 Every command is a single-parameter `5Dxx` write; the washer drum's carry the `0x80` drum bit. Each
 one is refused before anything is sent unless:
 
-* that drum's **remote-control flag is on**. It is set at the machine's panel, and the machine
-  refuses remote commands without it anyway;
-* for a programme change, the drum is **not running**. Pick the programme, check that it took,
-  then start. Chaining the two by machine gave spin-only cycles on other Haier washers;
-* for power off, **neither drum is running**.
+* that drum's **remote-control flag is on**. It is set at the machine's panel, and on Haier's
+  washers it lapses again when a cycle ends, the programme knob is turned or the door is opened, so
+  expect to enable it once per cycle;
+* the **child lock is off** — Haier's app refuses every command while it is on;
+* for power off, **both drums are idle** by their cycle phase (standby or finished). The running
+  mode cannot tell that apart from paused mid-cycle: it reads the same either way.
 
-Four writable settings are never offered: the "long-term authorisation" pair, which would keep
-remote control allowed with no panel action; remote power-on; and the measured load weight.
+Never offered: the "long-term authorisation" pair, which would keep remote control allowed with no
+panel action; remote power-on; the measured load weight; and the factory resets.
 
-⚠️ No laundry command has been seen accepted yet. The first one sent tells: a refusal shows as an
-error naming the reason, and the diagnostics file records every command and its reply. Haier's
-configFile also defines the group commands the app can start a programme with (`grCommonDry`
-0x60/0001, `grOnlineWash` 0x60/8006, with every member's word and bit). They are not used yet, and
-are the next step only if the single-parameter start turns out not to be enough.
+A refused command says why, in Haier's own words: this unit's model publishes no refusal reasons,
+so they come from Haier's laundry refusal table — "remote control is not activated", "the door was
+opened", "the child lock is on", "this setting cannot be adjusted in this programme" and the rest.
+
+⚠️ No laundry command has been seen accepted yet, and starting a cycle from standby with the single
+start command has no confirmed precedent on any Haier washer — the projects that start one send
+the group command. The first one sent tells: a refusal shows as an error naming the reason, and the
+diagnostics file records every command and its reply. Haier's configuration also defines the group
+commands the app starts a programme with (`grCommonDry` 0x60/0001, `grOnlineWash` 0x60/8006, with
+every member's word and bit). The dryer's mostly mirrors its status report and could be filled from
+it; the washer's carries forty motor and water parameters no report holds.
 
 ## How an appliance is identified, and what happens when it is not
 
@@ -177,9 +189,10 @@ that sit behind a Haier gateway do not speak this local protocol and have no add
 No byte map changes that — they are out of reach, not merely unimplemented.
 
 **Settings written through a group command.** Some settings are not written one at a time but as a
-block: a water heater's reservation times, a washing machine's programme. No capture anywhere —
-this project's or anyone else's — shows one of these being sent to a non-air-conditioner. The
-asymmetry is what makes this worth waiting on: a single-parameter write names the one attribute it
+block: a water heater's reservation times, a washing machine's programme. One capture shows one
+being sent to a non-air-conditioner — a washing machine's board traffic from another project, where
+a single group command starts a cycle — and none shows one sent from Home Assistant. The asymmetry
+is what makes this worth waiting on: a single-parameter write names the one attribute it
 changes and a wrong one is rejected, whereas a group write sends a whole block, so a wrong layout
 would change several settings at once with nothing to report it. These stay read-only until one can
 be verified against a real appliance.

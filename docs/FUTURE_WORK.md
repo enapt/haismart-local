@@ -21,6 +21,38 @@ keeps its own when it moves between the two sections. Expect the sequence to hav
 
 ## Open items
 
+### 76. The 0504 washer-dryer's controls — nothing yet seen accepted; settle the start first
+
+**Found 2026-11-08** (kucau0901's fork, brought in). The twin washer + dryer reads correctly from
+both of its status reports — every field against Haier's cloud, 44/44 and 111/111 — and its
+controls are an opt-in: start / pause / cancel per drum and 42 options written one at a time, each
+gated on that drum's panel remote-control flag, the child lock and, for power-off, both drums idle
+by phase. **None of them has been seen accepted by the machine.**
+
+**What to settle, in order:**
+
+1. **Start from standby with the single start command** (`5DA1`/`5D21` = 1). Haier documents it
+   and its app has a single-command start, but every washer start seen on the wire — another
+   project's twin-drum unit, and the washing-machine board traffic in item 64 — was ONE group
+   command carrying the programme and its parameters. If the single start is refused (`0001` "no
+   programme selected", or nothing moves), the route is that group command: the dryer's
+   `grCommonDry` (0x60/0001) mostly mirrors its own status report and can be filled from it; the
+   washer's `grOnlineWash` (0x60/8006) carries forty motor and water parameters no report holds, so
+   it cannot be filled from a report and stays out of reach.
+2. **Pause and resume** (the same command, 2 / 1) — the likeliest to work.
+3. **Cancel** — pause, then `ReturnStandby`, as Haier's app does; `ReturnStandby` is also how
+   Haier's European app stops a cycle on its dryers.
+4. **An option** (spin speed, temperature) on a drum in standby.
+
+Each refusal now names its reason from Haier's laundry refusal table, and diagnostics keep the last
+ten commands with the frame sent and every reply, so one owner's first attempt answers each step.
+
+**Open on the side:** the second remote flag pair (`remoteCtrEnabled` / `dryerRemoteCtrEnabled`,
+远程控制设置使能 — "remote control setting enabled") beside the gated `…RemoteCtrValid` has no stated
+meaning anywhere we looked; both were false in the capture. And how often the machine pushes its
+per-drum big data (`7D01`/`7D02`) is unknown — no laundry configuration publishes the query, so it
+is held up to 15 minutes if it ever arrives (`BIGDATA_MAX_AGE`, provisional).
+
 ### 75. The status that opens a session can lag a change made outside Home Assistant — checked and corrected where the extended report carries the settings
 
 **Found 2026-10-11 (issue #19, item 38).** In one poll of an AQUA wall unit, the status push said on,
@@ -448,7 +480,7 @@ regression behind it.
 the oracle plus `tools/re/decoder_equivalence.py` over every capture. ⓘ No capture on disk contains
 a reading in the disputed 70…150 °C range, so nothing observed is affected — this is latent.
 
-### 64. Group-command writes are decoded but not offered — no capture of one exists
+### 64. Group-command writes are decoded but not offered — one capture of one exists, none sent from here
 
 A water heater's reservation times, a washing machine's programme settings and a fridge's zone
 setpoints are not written one parameter at a time. Haier publishes them as an `Operation`: a frame
@@ -466,14 +498,19 @@ can see, and nothing else moves. A group set packs a whole word block and the ap
 of it — so a layout that is wrong by one word sets several settings at once, silently, and the unit
 has no way to tell us. On a gas water heater or a washing machine that is not a trivial mistake.
 
-⛔ **And there is no validation available.** No capture held by this project or found in prior art
-contains a group op being *sent* to a non-air-conditioner. The washing machine capture is a genuine
-both-directions UART tap and the only writes in it are `4d01` status queries. The air conditioners'
-`grSetDAC` was confirmed on hardware, which is exactly the evidence these lack.
+⛔ **And there is little validation available.** ⚠️ Corrected 2026-11-08: the washing-machine
+capture is NOT write-free. Besides its `4d01` status queries it carries **one group op**,
+`60 / 0006` (the class's `grOnlineWash`), length and checksum valid, after which the board's very
+next report shows programme 56 running — the app starting a cycle in one command, with the
+programme and its parameters in it. That is one capture of the shape, from another project's unit;
+no group op has been sent to a non-air-conditioner from this integration, and the air conditioners'
+`grSetDAC`, confirmed on hardware, is still the only group write verified here. Item 76 is where a
+laundry group start would be needed first.
 
-**What closes it:** one capture of a group op on the wire for any non-AC appliance — a UART tap, or
-a diagnostics download taken immediately after setting a reservation in the Haismart app, which
-would leave the op in `lan_frames`.
+**What closes it:** a group op built from Haier's map, sent to a non-air-conditioner and accepted —
+checked against the appliance's next report. The washing-machine capture shows the shape a laundry
+start takes; a diagnostics download taken right after setting a reservation in the Haismart app
+would show a water heater's, since it would leave the op in `lan_frames`.
 
 ### 65. A unit can un-provision ITSELF on its mainboard's orders — `FD` 清除用户信息
 

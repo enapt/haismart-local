@@ -1309,10 +1309,11 @@ def cloud_unreachable(err: BaseException | None) -> bool:
     """Whether ``err`` says Haier could not be reached or could not answer -- not that it refused.
 
     The one place this is decided, so a sign-in form and a key refresh cannot disagree about the
-    same failure: a connection that never completed (DNS, refused, timed out), or a server error
-    (HTTP 5xx). Anything else -- a 4xx, a non-zero ``retCode`` -- is Haier answering, and a caller
-    should treat it as a refusal.
+    same failure: a connection that never completed (DNS, refused, timed out), a server error
+    (HTTP 5xx), or the server timing the request out or throttling it (408, 429) -- none of which
+    says anything about the account. Anything else -- another 4xx, a non-zero ``retCode`` -- is
+    Haier answering, and a caller should treat it as a refusal.
     """
     if isinstance(err, (CloudConnectionError, OSError)):     # TimeoutError is an OSError
         return True
-    return isinstance(err, CloudHTTPError) and err.status >= 500
+    return isinstance(err, CloudHTTPError) and (err.status >= 500 or err.status in (408, 429))

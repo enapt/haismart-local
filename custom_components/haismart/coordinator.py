@@ -1754,7 +1754,9 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 refuse("no fresh report from the dryer, which carries the child lock; try again")
             if machine.get("childLockStatus") is True:
                 refuse("the child lock is on -- unlock it at the machine first")
-            if name == "onOffStatus" and not value and not all(
+            # Anything but an explicit True is treated as switching off, so an unexpected value
+            # takes the gated path rather than skipping it.
+            if name == "onOffStatus" and value is not True and not all(
                 self._laundry_drum_idle(key, report) for key, report in reports.items()
             ):
                 refuse("a drum has a cycle in progress or its state is unknown; cancel it first")

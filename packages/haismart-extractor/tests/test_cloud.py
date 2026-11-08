@@ -105,8 +105,10 @@ async def test_non_200_raises_cloud_error() -> None:
         await cloud.get_device_7d("D")
 
 
-@pytest.mark.parametrize(("status", "unreachable"), [(500, True), (503, True), (401, False), (404, False)])
-async def test_an_http_error_carries_its_status_and_only_5xx_is_unreachable(
+@pytest.mark.parametrize(("status", "unreachable"), [
+    (500, True), (503, True), (408, True), (429, True), (401, False), (403, False), (404, False),
+])
+async def test_an_http_error_carries_its_status_and_only_an_outage_is_unreachable(
     status: int, unreachable: bool
 ) -> None:
     """A server error is Haier failing to answer; a 4xx is Haier answering. Only the first may be

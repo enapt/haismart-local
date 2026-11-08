@@ -431,6 +431,19 @@ async def test_power_off_waits_for_a_paused_drum(hass: HomeAssistant, mock_uss) 
     assert mock_uss.send.last_frame[10:14].hex() == "5d200000"
 
 
+async def test_an_unexpected_power_value_still_waits_for_idle_drums(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Only an explicit True skips the idle check; any other value is gated as switching off."""
+    dryer_idle = _with_bit(DRYER_IDLE, 1, 3, True)
+    paused = _with_field(_washer(True), "6D02", "laundryCyclePhase", 5)
+    entry = await _controls(hass, mock_uss, [dryer_idle, paused])
+    for value in ("false", 0, None):
+        with pytest.raises(HomeAssistantError):
+            await entry.runtime_data.async_send_control({"onOffStatus": value})
+    mock_uss.send.assert_not_called()
+
+
 async def test_cancel_pauses_a_running_drum_first(hass: HomeAssistant, mock_uss) -> None:
     """Haier's own sequence: pause, then return to standby."""
     entry = await _controls(hass, mock_uss, [_dryer(True), _washer(True)])

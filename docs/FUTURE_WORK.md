@@ -47,7 +47,12 @@ by phase. **None of them has been seen accepted by the machine.**
 Each refusal now names its reason from Haier's laundry refusal table, and diagnostics keep the last
 ten commands with the frame sent and every reply, so one owner's first attempt answers each step.
 
-**Open on the side:** the second remote flag pair (`remoteCtrEnabled` / `dryerRemoteCtrEnabled`,
+**Open on the side:** the gates read each drum's own report up to 60 s old, and on the air
+conditioners the report that opens a session was found to be a replayed copy that can lag (item
+75). If the laundry board's does too, a remote-control flag that lapsed at the end of a cycle could
+still read on for one command; the machine enforces the flag itself, so the cost is a refusal, not
+an unwanted start. Asking the board directly (`4D01`) before a command would close it, once a
+laundry capture shows whether its opening report lags. The second remote flag pair (`remoteCtrEnabled` / `dryerRemoteCtrEnabled`,
 远程控制设置使能 — "remote control setting enabled") beside the gated `…RemoteCtrValid` has no stated
 meaning anywhere we looked; both were false in the capture. And how often the machine pushes its
 per-drum big data (`7D01`/`7D02`) is unknown — no laundry configuration publishes the query, so it
@@ -1808,9 +1813,9 @@ if Haier could not be **reached**, and asks for a reauth at once if Haier **refu
 **Fixed 2026-11-08: an HTTP 5xx now counts as Haier failing to answer, not refusing.** A non-200
 reply raises `CloudHTTPError`, which carries the status, and one helper —
 `haismart_extractor.cloud.cloud_unreachable` — decides "unreachable" for both callers: a connection
-that never completed, or a 5xx. The key refresh retries quietly on it, and the sign-in form says
-"cannot reach Haier" rather than "check your password". A 4xx or a non-zero `retCode` is Haier
-answering, and stays a refusal.
+that never completed, a 5xx, or a 408/429 (the server timing the request out or throttling it). The key refresh retries quietly on it, and the sign-in form says
+"cannot reach Haier" rather than "check your password". Any other 4xx, or a non-zero `retCode`, is
+Haier answering, and stays a refusal.
 
 **By design, unchanged:** a broker that refuses by hanging up is treated as the network for the
 grace period, then escalates, since a refusal can look exactly like that. MQTT's own "server

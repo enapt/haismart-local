@@ -21,8 +21,8 @@ answers with one, the file is downloaded and checked against the MD5 it gives.
 `CloudConnectionError` means the request never completed (DNS, refused, timed out);
 `CloudHTTPError` means Haier answered with an HTTP status other than 200, carried as `.status`; a
 refusal proper is HTTP 200 with a non-zero `retCode`, raised as a plain `CloudError`.
-`cloud_unreachable(err)` is the one test for "an outage, not a refusal" — a connection failure or a
-5xx — so a caller deciding whether to ask the user to sign in again does not have to rebuild it.
+`cloud_unreachable(err)` is the one test for "an outage, not a refusal" — a connection failure, a
+5xx, or a timeout or throttling reply (408, 429) — so a caller deciding whether to ask the user to sign in again does not have to rebuild it.
 
 The CONNECT `username`/`password` are derived, not stored (`derive_gateway_auth`):
 `username = "01" + 8 digits`, `password = hex(AES-128-CBC(MD5(body), iv=0, BE16(9)+"haier_sdk" padded))`.

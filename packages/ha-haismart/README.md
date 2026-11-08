@@ -54,7 +54,7 @@ label — see [`docs/appliances.md`](../../docs/appliances.md).
   fresh token, derives the gateway clientId, fetches via
   `haismart_extractor.gateway.get_localkey_via_gateway`, updates the key in place) and retries. If
   Haier cannot be reached or answers with a server error (`haismart_extractor.cloud_unreachable`:
-  a connection failure or an HTTP 5xx), later polls retry quietly for up to `ROTATION_OUTAGE_GRACE` (30 min; the
+  a connection failure, an HTTP 5xx, or a 408/429), later polls retry quietly for up to `ROTATION_OUTAGE_GRACE` (30 min; the
   clock is kept per entry, so it runs out across setup retries). With no account, a refusal, or an
   outage past that, it raises `ConfigEntryAuthFailed` (→ reauth) **and a repair** that says which
   case it is.

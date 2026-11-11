@@ -2708,8 +2708,8 @@ async def test_options_change_still_reloads(hass: HomeAssistant, mock_uss) -> No
     """Saving new options rebuilds the entry: a new poll interval needs one.
 
     Through the options flow, as a user changes them. The reload is the options flow's own where
-    the core has a self-reloading one, and the update listener's on older cores; either way it
-    happens once.
+    the core has a self-reloading one, and the update listener's on older cores; either way the
+    entry is rebuilt with the new interval.
     """
     entry = await _setup(hass)
     before = entry.runtime_data
@@ -2727,9 +2727,10 @@ async def test_an_entry_never_combines_a_listener_with_self_reloading_flows(
 ) -> None:
     """Home Assistant reports an update listener combined with the config flow's own reloads.
 
-    A discovery that moves the host, a reauth and a reconfigure all reload the entry themselves;
-    an update listener on the same entry reloads it a second time, which the core logs and, from
-    2026.12, refuses. Where the core's options flow reloads by itself, the entry has no listener.
+    A discovery that moves the host, a reauth and a reconfigure all reload the entry themselves,
+    and the core logs a report when the entry they reload has an update listener -- for the
+    listener being there, whatever it does -- and marks that to stop working in 2026.12. Where the
+    core's options flow reloads by itself, the entry has no listener.
     """
     from custom_components.haismart.const import OPTIONS_FLOW_RELOADS
 

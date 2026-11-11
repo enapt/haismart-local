@@ -26,5 +26,9 @@ done
 # rather than letting CI be the first thing that notices.
 echo "=== HACS build in sync ==="
 "$root/scripts/check-hacs-build.sh" || fail=1
+# The skip gate CI runs on the Home Assistant suite's report, checked against known answers: a gate
+# that accepted everything would look exactly like a suite that ran.
+echo "=== skip gate ==="
+"$py" "$root/scripts/check-junit.py" --selftest || fail=1
 
 exit $fail

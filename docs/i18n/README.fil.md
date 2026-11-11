@@ -98,11 +98,27 @@ ng paggana.
 
 ## Pag-install
 
+**Home Assistant 2026.11 at mas bago (Marketplace):**
+
+1. **Settings → Marketplace → Add from link** (kanang itaas).
+1. GitHub link: `https://github.com/enapt/haismart-local` → **Add**. Sa unang beses, hihilingin ng
+   Marketplace na ikonekta mo ang GitHub.
+1. I-download ito, saka **i-restart ang Home Assistant.**
+
+**Home Assistant 2026.10 at mas luma (HACS):**
+
 1. Tiyaking naka-install ang [HACS](https://hacs.xyz/).
 1. HACS → three-dot menu → **Custom repositories** → `https://github.com/enapt/haismart-local`, uri
    na **Integration** → **Add**.
 1. Hanapin ang **Haismart** → **Download**.
 1. **I-restart ang Home Assistant.** Sa startup lamang nilo-load ang custom integration code.
+
+Naka-install na sa HACS? Wala kang kailangang gawin pag-upgrade sa Home Assistant 2026.11: kusa nitong
+inililipat sa Marketplace ang mga na-install ng HACS.
+
+**Isang kopya lang ang i-install.** Ang mga fork ng repository na ito ay nag-i-install ng parehong
+`haismart` integration sa parehong folder. Para lumipat mula sa isang fork, alisin muna ang fork, saka
+i-install ang repository na ito at i-restart. Mananatili ang iyong mga appliance.
 
 Pagkatapos: **Settings → Devices & Services → + Add Integration → Haismart**.
 

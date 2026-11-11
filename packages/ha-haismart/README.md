@@ -152,13 +152,15 @@ local)** from the UI.
 `custom_components/` + `hacs.json`). This package is the source of truth; the repo root carries a
 generated, ready-to-install copy with the helper libraries vendored inside it (produced by
 [`scripts/build-hacs.sh`](../../scripts/build-hacs.sh) — re-run it after changing anything here). Install
-from the repo root via HACS as a custom repository, or use the manual copy above.
+from the repo root as a custom repository — in the Marketplace on Home Assistant 2026.11 and later,
+in HACS before that — or use the manual copy above.
 
 ## Develop / test
 
 ```bash
-pip install homeassistant pytest-homeassistant-custom-component
-python -m pytest -q     # skip cleanly if the HA plugin isn't installed
+pip install homeassistant pytest-homeassistant                   # Home Assistant 2026.11+
+pip install homeassistant pytest-homeassistant-custom-component  # earlier cores
+python -m pytest -q     # without either, only the tests that need no Home Assistant run
 ```
 
 Installing the HA plugin into the shared `.venv` also pulls in `pytest-socket`, which disables

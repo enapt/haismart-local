@@ -88,11 +88,27 @@ nó.
 
 ## Cài đặt
 
+**Home Assistant 2026.11 trở lên (Marketplace):**
+
+1. **Settings → Marketplace → Add from link** (góc trên bên phải).
+1. GitHub link: `https://github.com/enapt/haismart-local` → **Add**. Lần đầu, Marketplace sẽ yêu cầu
+   bạn kết nối GitHub.
+1. Tải về, rồi **khởi động lại Home Assistant.**
+
+**Home Assistant 2026.10 trở về trước (HACS):**
+
 1. Bảo đảm đã cài [HACS](https://hacs.xyz/).
 1. HACS → menu ba chấm → **Custom repositories** → `https://github.com/enapt/haismart-local`,
    loại **Integration** → **Add**.
 1. Tìm **Haismart** → **Download**.
 1. **Khởi động lại Home Assistant.** Mã của tích hợp tùy chỉnh chỉ được nạp lúc khởi động.
+
+Đã cài qua HACS? Không cần làm gì khi nâng cấp lên Home Assistant 2026.11: bản cài HACS được tự động
+chuyển sang Marketplace.
+
+**Chỉ cài một bản.** Các bản fork của kho này cài cùng tích hợp `haismart` vào cùng thư mục. Để chuyển
+từ một bản fork, hãy gỡ bản fork trước, rồi cài kho này và khởi động lại. Thiết bị của bạn vẫn được
+giữ nguyên.
 
 Sau đó: **Settings → Devices & Services → + Add Integration → Haismart**.
 

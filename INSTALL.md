@@ -24,11 +24,19 @@ real use/testing.
 
 ## 1. Install
 
-### HACS (recommended)
+### The Marketplace or HACS (recommended)
 
-In **HACS → ⋮ → Custom repositories**, add `https://github.com/enapt/haismart-local` with category
-**Integration**. Install **Haismart (Haier local)**, then **restart Home Assistant**. The component is
-self-contained (the two helper libraries are vendored into it), so there is **no pip step**.
+On Home Assistant 2026.11 and later, open **Settings → Marketplace → Add from link**, enter
+`https://github.com/enapt/haismart-local` and select **Add** (the first time, the Marketplace asks you
+to connect GitHub). On earlier releases, in **HACS → ⋮ → Custom repositories**, add the same URL with
+category **Integration**. Install **Haismart (Haier local)**, then **restart Home Assistant**. The
+component is self-contained (the two helper libraries are vendored into it), so there is **no pip
+step**. An install made with HACS moves into the Marketplace by itself when Home Assistant 2026.11
+first starts.
+
+Install one copy: forks of this repository install the same `haismart` integration into the same
+folder. To switch from one, remove it first, then install this repository and restart; the
+appliances you set up are kept.
 
 ### Manual copy
 

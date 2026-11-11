@@ -10,10 +10,15 @@ cloud-reachability); see [PROTOCOL.md](PROTOCOL.md) for both.
 
 ```bash
 python3 -m venv --system-site-packages .venv && . .venv/bin/activate
-pip install pytest pytest-asyncio cryptography httpx ruff
-# for the Home Assistant integration tests:
-pip install homeassistant pytest-homeassistant-custom-component
+pip install pytest pytest-asyncio cryptography httpx ruff aiodiscover
+# for the Home Assistant integration tests, the test package that matches your core:
+pip install homeassistant pytest-homeassistant                   # Home Assistant 2026.11+ (Python 3.14)
+pip install homeassistant pytest-homeassistant-custom-component  # earlier cores
 ```
+
+CI runs the suites against three Home Assistant cores — 2026.2.3, 2026.10.4 and the latest — and
+fails on any skipped test, and on any deprecation Home Assistant reports against the integration
+during the run.
 
 ## Tests & lint (must pass before a PR)
 

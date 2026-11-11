@@ -91,11 +91,27 @@ entitas `water_heater` tersendiri, lengkap dengan rentang suhu dan mode kerjanya
 
 ## Pemasangan
 
+**Home Assistant 2026.11 dan yang lebih baru (Marketplace):**
+
+1. **Settings → Marketplace → Add from link** (pojok kanan atas).
+1. GitHub link: `https://github.com/enapt/haismart-local` → **Add**. Pertama kali, Marketplace meminta
+   Anda menghubungkan GitHub.
+1. Unduh, lalu **mulai ulang Home Assistant.**
+
+**Home Assistant 2026.10 dan sebelumnya (HACS):**
+
 1. Pastikan [HACS](https://hacs.xyz/) sudah terpasang.
 1. HACS → menu tiga titik → **Custom repositories** → `https://github.com/enapt/haismart-local`,
    tipe **Integration** → **Add**.
 1. Cari **Haismart** → **Download**.
 1. **Mulai ulang Home Assistant.** Kode integrasi khusus hanya dimuat saat startup.
+
+Sudah memasang lewat HACS? Tidak perlu melakukan apa pun saat memperbarui ke Home Assistant
+2026.11: instalasi HACS dipindahkan ke Marketplace secara otomatis.
+
+**Pasang satu salinan saja.** Fork repositori ini memasang integrasi `haismart` yang sama ke folder
+yang sama. Untuk beralih dari fork, hapus fork itu terlebih dahulu, lalu pasang repositori ini dan
+mulai ulang. Perangkat Anda tetap tersimpan.
 
 Lalu: **Settings → Devices & Services → + Add Integration → Haismart**.
 

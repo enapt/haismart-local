@@ -216,17 +216,29 @@ accepted by the appliance.
 
 ## Installation
 
-### Option 1 — HACS (recommended)
+### Option 1 — the Marketplace or HACS (recommended)
 
-1. Make sure [HACS](https://hacs.xyz/) is installed.
-1. Open this repository in HACS:\
+Home Assistant 2026.11 and later have the **Marketplace** built in; earlier releases use
+[HACS](https://hacs.xyz/). The button opens this repository in whichever yours has.
+
+1. On Home Assistant 2026.10 or earlier, make sure HACS is installed.
+1. Open this repository:\
    [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=enapt&repository=haismart-local&category=integration)
-1. Click **Download**, then **Download** again in the version dialog.
+1. Download it (in HACS: **Download**, then **Download** again in the version dialog).
 1. **Restart Home Assistant.** A custom integration's code is only loaded at startup — reloading the
    entry is not enough.
 
 <details>
 <summary>The button didn't work — add it by hand</summary>
+
+**Marketplace (Home Assistant 2026.11 and later):**
+
+1. **Settings** → **Marketplace** → **Add from link**, top right.
+1. GitHub link: `https://github.com/enapt/haismart-local` → **Add**. The first time, the Marketplace
+   asks you to connect GitHub.
+1. Download it, then restart Home Assistant.
+
+**HACS (Home Assistant 2026.10 and earlier):**
 
 1. Open **HACS** from the sidebar.
 1. Three-dot menu, top right → **Custom repositories**.
@@ -235,6 +247,15 @@ accepted by the appliance.
 1. Restart Home Assistant.
 
 </details>
+
+**Installed it with HACS already?** There is nothing to do on upgrading to Home Assistant 2026.11: it
+moves what HACS installed into the Marketplace when it first starts, and new releases keep arriving
+under **Settings** → **Updates**.
+
+**Install one copy.** Forks of this repository install the same `haismart` integration into the
+same folder, so a second copy overwrites the first one's files while both keep offering updates. To
+switch from a fork to this repository, remove the fork in HACS or the Marketplace first, then install
+this one and restart. Your appliances are kept: they belong to the integration, not to the copy.
 
 <details>
 <summary>Option 2 — manual installation</summary>

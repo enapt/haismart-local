@@ -1833,8 +1833,46 @@ has never answered, three silent cycles per query form stop the query.
 now unique only within a config entry. **Fixed:** the coordinator's device lookup uses
 `async_get_device_by_identifier(identifier, entry_id)` where Home Assistant has it and the old call
 on releases that predate it. A test stubs the new lookup and makes the deprecated one fail, so the
-check also runs on the older Home Assistant of the local test environment; the tests' own lookups
-walk the registry, which every release supports.
+check also runs on the older Home Assistant of the local test environment. The tests' own lookups
+go through each entry's devices (`async_entries_for_config_entry`), which every release supports;
+reading `device_registry.devices` as a mapping, as they first did, is deprecated in 2026.10 as well
+(item 78).
+
+### 78. ✅ SETTLED — CI tests the Home Assistant cores people run, and fails on what those cores report
+
+**Found 2026-11-11.** CI installed Home Assistant unpinned on Python 3.13, which resolves to
+2026.2.3 — the newest core Python 3.13 can install. Home Assistant 2026.10 and 2026.11 need Python
+3.14, so nothing tested the releases users run. Against 2026.10.4 the integration suite had 15
+failures and 58 errors; on 2026.11.1 it did not start. And on 2026.2.3, 11 tests had been skipping
+in CI all along: the 10 DHCP-discovery tests (they took `DhcpServiceInfo` from the DHCP component,
+which needs `aiodhcpwatcher`) and the ARP host lookup (`aiodiscover`). The old gate counted
+collected tests, so a skip passed it.
+
+**What the newer cores report against the integration, now fixed:**
+* An update listener beside the config flow's own reloads — a discovery that moves the host, a
+  reauth, a reconfigure — reloads the entry twice. Home Assistant logs it and refuses it from
+  2026.12. Where the core has a self-reloading options flow (`OptionsFlowWithReload`), that does the
+  reload and the entry registers no listener (`const.OPTIONS_FLOW_RELOADS`); older cores keep the
+  listener.
+* 2026.11 renames the climate and water-heater temperature members to `native_*`, serving the old
+  ones until 2027.11 with a log line for each class that provides them. Each entity class provides
+  the set its core defines, never both.
+* The DHCP component no longer re-exports `DhcpServiceInfo`; the type comes from
+  `homeassistant.helpers.service_info.dhcp`.
+
+**The harness:** 2026.11 publishes its fixtures as `pytest-homeassistant` (earlier cores pair with
+`pytest-homeassistant-custom-component`); the tests import the helpers through
+`tests/ha_compat.py`. 2026.11 swaps `httpx` for `httpx2` on first import and refuses if `httpx` is
+already loaded, so respx's plugin is left out, as `pytest-homeassistant` documents, and the two
+library suites leave out the Home Assistant plugin. The diagnostics handshake probe tried to connect
+in every diagnostics test — `pytest-socket` blocked it, the probe caught the error, and newer test
+packages fail the test — so an autouse fixture answers it as an unreachable unit.
+
+**The gates:** three CI lanes (2026.2.3 on Python 3.13, 2026.10.4 and the latest on 3.14), weekly
+as well as on every push; `scripts/check-junit.py` fails the run on any skip; and the integration
+suite fails when Home Assistant logs a deprecation against `haismart` during the run, which was
+shown to fire by putting the old climate members and the listener back on 2026.11.1. Verified on
+2025.1.4, 2026.2.3, 2026.10.4 and 2026.11.1, no skips.
 
 ### 74. ✅ SETTLED — the byte-map state no longer lays the older report over the newer
 

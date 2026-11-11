@@ -17,13 +17,13 @@ from __future__ import annotations
 import json
 
 import pytest
+from ha_compat import MockConfigEntry
 from haismart_hrdp.appliance import CLASS_LABELS
 from haismart_hrdp.device_model import ATTR_BASE, known_typeids, model_for
 from haismart_hrdp.entity_spec import specs_for
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.haismart.const import (
     CONF_DEVICE_ID,

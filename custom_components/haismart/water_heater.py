@@ -24,6 +24,11 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .coordinator import HaismartConfigEntry, HaismartCoordinator
 from .entity import HaismartEntity
 
+#: Home Assistant 2026.11 names the temperature members `native_*` and logs a deprecation for an
+#: entity class that provides the old ones (served until 2027.11). Provide whichever set this core
+#: defines -- never both.
+NATIVE_TEMPERATURES = hasattr(WaterHeaterEntity, "native_target_temperature")
+
 # The attribute names this platform reads, all published by the manufacturer's map.
 _CURRENT_TEMPERATURE = "currentTemperature"
 _TARGET_TEMPERATURE = "targetTemperature"
@@ -67,7 +72,10 @@ class HaismartWaterHeater(HaismartEntity, WaterHeaterEntity):
     """A Haier water heater, driven entirely by what its own model declares."""
 
     _attr_name = None                    # the device name is the entity name
-    _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    if NATIVE_TEMPERATURES:
+        _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
+    else:
+        _attr_temperature_unit = UnitOfTemperature.CELSIUS
 
     def __init__(self, coordinator: HaismartCoordinator) -> None:
         super().__init__(coordinator)
@@ -118,15 +126,20 @@ class HaismartWaterHeater(HaismartEntity, WaterHeaterEntity):
         # showing none.
         return super().available and bool(self._state)
 
-    @property
-    def current_temperature(self) -> float | None:
+    def _current_temperature(self) -> float | None:
         value = self._state.get(_CURRENT_TEMPERATURE)
         return float(value) if isinstance(value, (int, float)) else None
 
-    @property
-    def target_temperature(self) -> float | None:
+    def _target_temperature(self) -> float | None:
         value = self._state.get(_TARGET_TEMPERATURE)
         return float(value) if isinstance(value, (int, float)) else None
+
+    if NATIVE_TEMPERATURES:
+        native_current_temperature = property(_current_temperature)
+        native_target_temperature = property(_target_temperature)
+    else:
+        current_temperature = property(_current_temperature)
+        target_temperature = property(_target_temperature)
 
     @property
     def operation_list(self) -> list[str] | None:

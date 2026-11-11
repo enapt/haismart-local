@@ -24,6 +24,10 @@ packages = ["src/haismart_hrdp"]
 pythonpath = ["src"]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# The library needs no Home Assistant. Its test package, `pytest-homeassistant` (2026.11+), registers
+# itself for every pytest run in the environment it is installed in, which would import Home
+# Assistant here -- and that import refuses to run once respx's plugin has loaded httpx.
+addopts = "-p no:pytest_homeassistant"
 
 [tool.ruff]
 # 110, not 88/100: this library documents binary wire layouts inline — aligned byte-offset

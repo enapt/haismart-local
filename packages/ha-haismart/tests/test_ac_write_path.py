@@ -22,12 +22,12 @@ from pathlib import Path
 
 import pytest
 from conftest import heat_capable_digital_model, make_status_frame
+from ha_compat import MockConfigEntry
 from homeassistant.components.climate import DOMAIN as CLIMATE_DOMAIN
 from homeassistant.components.climate import HVACMode
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import ATTR_ENTITY_ID, SERVICE_TURN_OFF, SERVICE_TURN_ON
 from homeassistant.core import HomeAssistant
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.haismart.const import (
     CONF_DEVICE_ID,

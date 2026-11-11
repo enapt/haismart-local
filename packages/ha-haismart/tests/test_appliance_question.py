@@ -14,10 +14,10 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+from ha_compat import MockConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.haismart.const import (
     CONF_APP_TYPE,
@@ -194,7 +194,10 @@ async def test_changing_the_answer_removes_what_the_appliance_no_longer_has(
     """No unavailable thermostat or AC switch left behind: the 0504 unit was left with 13."""
     entry = _entry(UNKNOWN)
     assert "climate" in await _domains(hass, entry)
-    hass.config_entries.async_update_entry(entry, options={CONF_APPLIANCE_KIND: KIND_LAUNDRY})
+    form = await hass.config_entries.options.async_init(entry.entry_id)
+    await hass.config_entries.options.async_configure(
+        form["flow_id"], {CONF_APPLIANCE_KIND: KIND_LAUNDRY, CONF_SCAN_INTERVAL: 30}
+    )
     await hass.async_block_till_done()
     registry = er.async_get(hass)
     left = {e.domain for e in registry.entities.values() if e.config_entry_id == entry.entry_id}

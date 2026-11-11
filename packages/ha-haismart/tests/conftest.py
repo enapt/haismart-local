@@ -1,39 +1,63 @@
 """Test config for the HA integration.
 
-These tests need Home Assistant + pytest-homeassistant-custom-component. When those are not
-installed (e.g. the library-only CI job), skip the HA test files cleanly rather than erroring.
+These tests need Home Assistant and the test package that matches it: `pytest-homeassistant` for
+Home Assistant 2026.11 and later (its plugin registers itself), or
+`pytest-homeassistant-custom-component` before that. Without either, every test file that imports
+Home Assistant is left out of collection rather than erroring, and the rest still run. CI fails a
+run that skips anything, so a missing package cannot pass as green there.
 
-No sockets are opened. The uSS read cycle (`async_read_status`) and the key-free version probe
+No sockets are opened, and `pytest-socket` (installed with either test package) turns an attempt
+into a test error. The uSS read cycle (`async_read_status`) and the key-free version probe
 (`probe_localkey_version`) are mocked at the point of use, fed with synthetic 127-byte
 full-status reports built by `make_status_frame` (same offsets `parse_full_status` decodes); the
-outbound cloud transport is refused for every test by `refused_cloud_requests` below.
+outbound cloud transport is refused by `refused_cloud_requests` and the diagnostics handshake probe
+by `unreachable_handshake_probe`, both below, for every test.
 """
 from __future__ import annotations
 
-try:
-    import pytest_homeassistant_custom_component  # noqa: F401
+import re
+from pathlib import Path
 
-    pytest_plugins = ["pytest_homeassistant_custom_component"]
+try:  # Home Assistant 2026.11+; the plugin registers itself through its entry point
+    import pytest_homeassistant  # noqa: F401
+
     _HA_AVAILABLE = True
-except ImportError:  # pragma: no cover
-    _HA_AVAILABLE = False
-    collect_ignore = ["test_config_flow.py", "test_init.py"]
+except ImportError:
+    try:
+        import pytest_homeassistant_custom_component  # noqa: F401
+
+        pytest_plugins = ["pytest_homeassistant_custom_component"]
+        _HA_AVAILABLE = True
+    except ImportError:  # pragma: no cover - no Home Assistant test package installed
+        _HA_AVAILABLE = False
+        _NEEDS_HA = re.compile(
+            r"^(from|import) (homeassistant|ha_compat|pytest_homeassistant)", re.M
+        )
+        collect_ignore = [
+            path.name
+            for path in Path(__file__).parent.glob("test_*.py")
+            if _NEEDS_HA.search(path.read_text(encoding="utf-8"))
+        ]
 
 
 def find_device(hass, device_id: str = "A1B2C3D4E5F6"):
     """The integration's device for ``device_id``, on any Home Assistant version.
 
-    Walks the registry instead of calling `async_get_device`, which Home Assistant 2026.10
-    deprecates (removed in 2027.8), or `async_get_device_by_identifier`, which older releases lack.
+    Looks through each of the integration's config entries rather than calling
+    `async_get_device` (deprecated in Home Assistant 2026.10, removed in 2027.8), reading the
+    registry's `devices` as a mapping (deprecated with it), or `async_get_device_by_identifier`
+    (which older releases lack). `async_entries_for_config_entry` exists in every release.
     """
     from homeassistant.helpers import device_registry as dr
 
     from custom_components.haismart.const import DOMAIN
 
-    return next(
-        (d for d in dr.async_get(hass).devices.values() if (DOMAIN, device_id) in d.identifiers),
-        None,
-    )
+    registry = dr.async_get(hass)
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        for device in dr.async_entries_for_config_entry(registry, entry.entry_id):
+            if (DOMAIN, device_id) in device.identifiers:
+                return device
+    return None
 
 
 def make_status_frame(
@@ -324,12 +348,46 @@ def vane_positions_digital_model(
 
 
 if _HA_AVAILABLE:
+    import logging
     from unittest.mock import DEFAULT, AsyncMock, patch
 
     import pytest
     from haismart_hrdp.udiscovery import CLOUD_STATE_CONNECTED, DeviceInfo
 
     LOCALKEY_VERSION = 4
+
+    # Home Assistant's own reports that this integration uses something deprecated: the lines a
+    # user finds in their log, with a date after which it stops working. They are warnings, so a
+    # suite that triggers them still passes; collected here, they fail the run instead, on every
+    # core CI tests -- which is how a deprecation is seen before the release that removes it.
+    _DEPRECATION_PHRASES = (
+        "Detected that custom integration",
+        "please report it to",
+        "please create a bug report",
+    )
+    _DEPRECATION_REPORTS: list[str] = []
+
+    class _DeprecationReports(logging.Handler):
+        def emit(self, record: logging.LogRecord) -> None:
+            message = record.getMessage()
+            if "haismart" in message and any(p in message for p in _DEPRECATION_PHRASES):
+                _DEPRECATION_REPORTS.append(message)
+
+    _DEPRECATION_HANDLER = _DeprecationReports(level=logging.WARNING)
+
+    def pytest_configure(config):  # noqa: ANN001, ANN201
+        logging.getLogger().addHandler(_DEPRECATION_HANDLER)
+
+    def pytest_sessionfinish(session, exitstatus):  # noqa: ANN001, ANN201
+        logging.getLogger().removeHandler(_DEPRECATION_HANDLER)
+        if not _DEPRECATION_REPORTS:
+            return
+        reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+        if reporter is not None:
+            reporter.write_sep("=", "Home Assistant reported deprecated use", red=True)
+            for message in sorted(set(_DEPRECATION_REPORTS)):
+                reporter.write_line(message)
+        session.exitstatus = pytest.ExitCode.TESTS_FAILED
 
     @pytest.fixture(autouse=True)
     def _enable_custom_integrations(enable_custom_integrations):  # noqa: ANN001, ANN201
@@ -343,8 +401,9 @@ if _HA_AVAILABLE:
         and an entry carrying credentials makes that a real HTTPS request to Haier. Being a
         background task it can outlive the test body and run during teardown, which is exactly what
         it did — the suite intermittently resolved and dialled a real host while tearing a test
-        down. Nothing else stops it: this project's environment has no `pytest-socket`, so the
-        suite is not sandboxed from the network by anything but this.
+        down. `pytest-socket` blocks the connection itself, but a blocked attempt is caught by the
+        callers and fails nothing on older test packages, so this is what keeps the request from
+        being made at all.
 
         Refusing it here rather than in the tests that happen to trigger it is deliberate. Every
         cloud call in the integration goes through this one transport by design, so this is the
@@ -365,6 +424,26 @@ if _HA_AVAILABLE:
             "custom_components.haismart.config_flow.async_cloud_transport", return_value=_refuse
         ):
             yield refused
+
+    @pytest.fixture(autouse=True)
+    def unreachable_handshake_probe():  # noqa: ANN202
+        """Make the diagnostics handshake probe behave as if the appliance were unreachable.
+
+        Downloading diagnostics opens a TCP connection to the entry's host to record the
+        appliance's handshake reply. In a test that host is an illustrative address, and the
+        attempt is blocked by `pytest-socket`; the probe catches the error, so on older test
+        packages the attempt passed unnoticed, and the current ones fail the test for it. Refusing
+        it here, as a down unit would, is a path the diagnostics already handle. The tests about
+        the reply itself patch the same name inside this and get their own answer.
+        """
+
+        def _unreachable(*args, **kwargs):  # noqa: ANN002, ANN003, ANN202
+            raise OSError("the test suite opens no sockets")
+
+        with patch(
+            "custom_components.haismart.diagnostics.probe_handshake_reply", side_effect=_unreachable
+        ):
+            yield
 
     @pytest.fixture
     def mock_uss():

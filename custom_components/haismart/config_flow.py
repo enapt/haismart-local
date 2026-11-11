@@ -53,6 +53,7 @@ from haismart_hrdp.model_rules import (
 from haismart_hrdp.model_rules import (
     preload as _preload_model_rules,
 )
+from homeassistant import config_entries
 from homeassistant.config_entries import (
     ConfigEntryState,
     ConfigFlow,
@@ -82,7 +83,8 @@ except ImportError:  # pragma: no cover - HA < 2025.2
     from homeassistant.components.zeroconf import ZeroconfServiceInfo
 
 if TYPE_CHECKING:
-    from homeassistant.components.dhcp import DhcpServiceInfo
+    # The DHCP component does not re-export this; its own module has it from HA 2025.2 on.
+    from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 
 from haismart_hrdp.appliance import (
     ApplianceKind,
@@ -117,6 +119,7 @@ from .const import (
     DOMAIN,
     KIND_AUTO,
     MIN_SCAN_INTERVAL,
+    OPTIONS_FLOW_RELOADS,
     READ_TIMEOUT,
     UDISCOVERY_TIMEOUT,
 )
@@ -1790,7 +1793,14 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         return HaismartOptionsFlow()
 
 
-class HaismartOptionsFlow(OptionsFlow):
+#: Reloads the entry when the saved options differ, on cores that have it (see
+#: `const.OPTIONS_FLOW_RELOADS`); the entry's update listener does the same on the others.
+_OptionsFlowBase: type[OptionsFlow] = (
+    config_entries.OptionsFlowWithReload if OPTIONS_FLOW_RELOADS else OptionsFlow
+)
+
+
+class HaismartOptionsFlow(_OptionsFlowBase):
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:

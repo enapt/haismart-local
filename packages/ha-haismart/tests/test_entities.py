@@ -4,10 +4,10 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock
 
 from conftest import find_device
+from ha_compat import MockConfigEntry
 from haismart_hrdp.entity_spec import Control, EntitySpec
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.haismart.const import (
     CONF_DEVICE_ID,

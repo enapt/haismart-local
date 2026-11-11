@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 
 import pytest
+from ha_compat import MockConfigEntry
 from homeassistant.components.water_heater import (
     ATTR_OPERATION_LIST,
     ATTR_OPERATION_MODE,
@@ -23,7 +24,6 @@ from homeassistant.components.water_heater import (
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import ATTR_ENTITY_ID, ATTR_TEMPERATURE, SERVICE_TURN_OFF
 from homeassistant.core import HomeAssistant
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.haismart.const import (
     CONF_DEVICE_ID,

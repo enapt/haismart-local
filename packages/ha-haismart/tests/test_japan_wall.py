@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 
 import pytest
+from ha_compat import MockConfigEntry
 from haismart_hrdp import getallproperty_epp_frame
 from homeassistant.components.climate import DOMAIN as CLIMATE_DOMAIN
 from homeassistant.config_entries import ConfigEntryState
@@ -19,7 +20,6 @@ from homeassistant.const import ATTR_ENTITY_ID, SERVICE_TURN_OFF
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.haismart.const import (
     CONF_ABSENT_READINGS,

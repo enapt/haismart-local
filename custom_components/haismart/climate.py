@@ -30,6 +30,11 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .coordinator import HaismartConfigEntry, HaismartCoordinator
 from .entity import HaismartEntity
 
+#: Home Assistant 2026.11 names the temperature members `native_*`. It still serves the old names
+#: until 2027.11, but logs a deprecation for every entity class that provides them, so the class
+#: below provides whichever set this core defines -- never both.
+NATIVE_TEMPERATURES = hasattr(ClimateEntity, "native_target_temperature")
+
 #: The setpoint is encoded as whole degrees above this (see `_temperature_code`).
 _WIRE_MIN_TEMP = 16
 
@@ -146,7 +151,10 @@ async def async_setup_entry(
 
 class HaismartClimate(HaismartEntity, ClimateEntity):
     _attr_name = None  # the device name is the entity name
-    _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    if NATIVE_TEMPERATURES:
+        _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
+    else:
+        _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_supported_features = (
         ClimateEntityFeature.TARGET_TEMPERATURE
         | ClimateEntityFeature.FAN_MODE
@@ -376,13 +384,20 @@ class HaismartClimate(HaismartEntity, ClimateEntity):
             return HVACAction.COOLING
         return _RUNNING_ACTION.get(mode)
 
-    @property
-    def current_temperature(self) -> float | None:
+    def _current_temperature(self) -> float | None:
         return self._state.get("current_temperature")
 
-    @property
-    def target_temperature(self) -> float | None:
+    def _target_temperature(self) -> float | None:
         return self._state.get("target_temperature")
+
+    # In degrees Celsius either way: the newer core converts from the native unit exactly as the
+    # older one converted from `temperature_unit`.
+    if NATIVE_TEMPERATURES:
+        native_current_temperature = property(_current_temperature)
+        native_target_temperature = property(_target_temperature)
+    else:
+        current_temperature = property(_current_temperature)
+        target_temperature = property(_target_temperature)
 
     @property
     def fan_mode(self) -> str | None:

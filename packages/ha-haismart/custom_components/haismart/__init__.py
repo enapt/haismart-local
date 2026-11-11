@@ -17,6 +17,7 @@ from .const import (
     DEVICE_MAP_TIMEOUT,
     IDENTITY_TOPUP_TIMEOUT,
     LAUNDRY_CONTROL_PLATFORMS,
+    OPTIONS_FLOW_RELOADS,
     PLATFORMS,
     platforms_for,
 )
@@ -95,7 +96,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: HaismartConfigEntry) -> 
                     await coordinator.async_refresh()
 
     entry.runtime_data = coordinator
-    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
+    if not OPTIONS_FLOW_RELOADS:
+        # Older cores: the options flow cannot reload the entry, so the listener does.
+        entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     # Which platforms this appliance gets, rather than all of them. Decided AFTER the first refresh
     # on purpose: identifying the device is a catalogue lookup and needs no poll, but the
     # no-regression clause for a device we CANNOT identify asks whether its report actually decodes
@@ -167,6 +170,9 @@ def _drop_entities_no_longer_provided(
 
 async def _async_update_listener(hass: HomeAssistant, entry: HaismartConfigEntry) -> None:
     """Reload when the OPTIONS change (poll interval) -- and only then.
+
+    Registered only on cores whose options flow cannot reload the entry itself
+    (`OPTIONS_FLOW_RELOADS`); on the others the options flow does exactly this.
 
     Update listeners fire on any entry change, data included, and the coordinator writes to
     ``entry.data`` at runtime: a rotated localKey, a uPlusId learned from the device, a DHCP move

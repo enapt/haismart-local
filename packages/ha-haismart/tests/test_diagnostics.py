@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import json
 
+from ha_compat import MockConfigEntry
 from homeassistant.core import HomeAssistant
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.haismart.const import (
     CONF_DEVICE_ID,

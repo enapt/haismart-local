@@ -4,11 +4,11 @@ from __future__ import annotations
 from ipaddress import ip_address
 
 import pytest
+from ha_compat import DhcpServiceInfo, MockConfigEntry
 from haismart_extractor.cloud import CloudError
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.haismart.const import (
     CONF_DEVICE_ID,
@@ -179,8 +179,7 @@ async def test_zeroconf_updates_host_of_configured_entry(
 
 async def test_dhcp_flow_prefills_host_and_device(hass: HomeAssistant, mock_uss) -> None:
     """DHCP discovery (deviceId = MAC, OUI AC:B7:22) prefills host + deviceId; user adds the key."""
-    dhcp_mod = pytest.importorskip("homeassistant.components.dhcp")  # needs aiodhcpwatcher
-    info = dhcp_mod.DhcpServiceInfo(
+    info = DhcpServiceInfo(
         ip="192.168.1.50", hostname="haier-ac", macaddress="acb722aabbcc"
     )
     result = await hass.config_entries.flow.async_init(
@@ -1724,9 +1723,7 @@ def _two_devices():
 
 async def _dhcp_discover(hass, extra_patches, ip="192.168.1.51", mac="acb722aabbcc"):
     from contextlib import ExitStack
-
-    dhcp_mod = pytest.importorskip("homeassistant.components.dhcp")
-    info = dhcp_mod.DhcpServiceInfo(ip=ip, hostname="haier-ac", macaddress=mac)
+    info = DhcpServiceInfo(ip=ip, hostname="haier-ac", macaddress=mac)
     with ExitStack() as stack:
         for p in extra_patches:
             stack.enter_context(p)
@@ -2051,8 +2048,7 @@ async def test_discovery_never_adds_an_appliance_on_its_own(
     from contextlib import ExitStack
 
     _cloud_entry().add_to_hass(hass)
-    dhcp_mod = pytest.importorskip("homeassistant.components.dhcp")
-    info = dhcp_mod.DhcpServiceInfo(
+    info = DhcpServiceInfo(
         ip="192.168.1.51", hostname="haier-ac", macaddress="acb722aabbcc"
     )
     with ExitStack() as stack:
@@ -2227,9 +2223,7 @@ async def test_signing_in_works_while_a_discovery_card_is_pending(
     Nothing about it is visible without a discovery flow open at the same time, which no test did.
     """
     from unittest.mock import patch
-
-    dhcp_mod = pytest.importorskip("homeassistant.components.dhcp")
-    info = dhcp_mod.DhcpServiceInfo(
+    info = DhcpServiceInfo(
         ip="192.168.1.50", hostname="haier-ac", macaddress="a1b2c3d4e5f6"
     )
     card = await hass.config_entries.flow.async_init(
@@ -2259,8 +2253,7 @@ async def test_the_offline_form_also_survives_a_pending_discovery_card(
     hass: HomeAssistant, mock_uss
 ) -> None:
     """The same collision, on the route someone with a saved key would take."""
-    dhcp_mod = pytest.importorskip("homeassistant.components.dhcp")
-    info = dhcp_mod.DhcpServiceInfo(
+    info = DhcpServiceInfo(
         ip="192.168.1.50", hostname="haier-ac", macaddress="a1b2c3d4e5f6"
     )
     await hass.config_entries.flow.async_init(DOMAIN, context={"source": "dhcp"}, data=info)
@@ -2282,8 +2275,7 @@ async def test_two_announcements_of_one_appliance_still_collapse_to_one_card(
     The discovery steps keep `raise_on_progress`, so a second DHCP announcement of an appliance
     already sitting in the Discovered box is refused rather than producing a second card.
     """
-    dhcp_mod = pytest.importorskip("homeassistant.components.dhcp")
-    info = dhcp_mod.DhcpServiceInfo(
+    info = DhcpServiceInfo(
         ip="192.168.1.50", hostname="haier-ac", macaddress="a1b2c3d4e5f6"
     )
     first = await hass.config_entries.flow.async_init(

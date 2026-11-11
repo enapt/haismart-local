@@ -5,39 +5,59 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  # Weekly as well: the `latest` lane installs whatever Home Assistant is current, so a new release
+  # that deprecates or removes something this integration uses fails here without a commit.
+  schedule:
+    - cron: "0 4 * * 1"
 
 permissions: {}
 
 jobs:
   pytest:
-    name: pytest (all three packages)
+    name: pytest (HA ${{ matrix.homeassistant }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Each Home Assistant needs its own Python and the test package built for it:
+        # `pytest-homeassistant-custom-component` up to 2026.10, the official `pytest-homeassistant`
+        # from 2026.11. 2026.2.3 is the newest core Python 3.13 can install; `latest` is unpinned
+        # on purpose and gets the newest core with its matching test package.
+        include:
+          - homeassistant: "2026.2.3"
+            python: "3.13"
+            install: "homeassistant==2026.2.3 pytest-homeassistant-custom-component==0.13.316"
+          - homeassistant: "2026.10.4"
+            python: "3.14"
+            install: "homeassistant==2026.10.4 pytest-homeassistant-custom-component==0.13.375"
+          - homeassistant: "latest"
+            python: "3.14"
+            install: "homeassistant pytest-homeassistant"
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.13"
+          python-version: ${{ matrix.python }}
       - name: Install dependencies
-        # Home Assistant and its pytest plugin are installed deliberately: the ha-haismart suite
-        # SKIPS ITSELF when they are missing (see packages/ha-haismart/tests/conftest.py), so
-        # without them CI would report green while never running a single integration test.
+        # Home Assistant and its test package are installed deliberately: the ha-haismart suite
+        # leaves out every test that needs them when they are missing. aiodiscover is what the
+        # ARP host lookup's test imports; without it that test skips. The skip gate below fails
+        # the job on any of this.
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest pytest-asyncio cryptography httpx
-          python -m pip install homeassistant pytest-homeassistant-custom-component
+          python -m pip install pytest pytest-asyncio cryptography httpx aiodiscover
+          python -m pip install ${{ matrix.install }}
+          python -c "import homeassistant.const as c; print('Home Assistant', c.__version__)"
       - name: Run all suites
+        env:
+          HA_JUNIT: ${{ runner.temp }}/ha-junit.xml
         run: ./scripts/test.sh
-      - name: Fail if the Home Assistant suite silently skipped
-        run: |
-          cd packages/ha-haismart
-          python -m pytest -q -p no:cacheprovider --collect-only > /tmp/collected.txt
-          grep -qE "[1-9][0-9]* tests? collected" /tmp/collected.txt || {
-            echo "::error::the ha-haismart suite collected no tests - the HA plugin is missing"
-            cat /tmp/collected.txt
-            exit 1
-          }
+      - name: Fail if the Home Assistant suite skipped anything
+        # pytest exits 0 when tests are skipped or none are collected, so a missing package passes
+        # as green without this. The report is written by test.sh.
+        run: python scripts/check-junit.py "${RUNNER_TEMP}/ha-junit.xml"
 
   build:
     name: HACS build is in sync

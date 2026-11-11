@@ -8,6 +8,10 @@
 pythonpath = ["../haismart-hrdp/src", "../haismart-extractor/src", "."]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+# Home Assistant 2026.11+ swaps httpx for httpx2 when it is first imported, and refuses if httpx is
+# already loaded. respx's pytest plugin imports httpx before Home Assistant's plugin loads, so it is
+# left out, as `pytest-homeassistant` documents; respx itself still works for its HTTP mocks.
+addopts = "-p no:respx"
 
 [tool.ruff]
 line-length = 100

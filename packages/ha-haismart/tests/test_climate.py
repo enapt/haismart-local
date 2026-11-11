@@ -6,11 +6,11 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from conftest import heat_capable_digital_model
+from ha_compat import MockConfigEntry
 from homeassistant.components.climate import DOMAIN as CLIMATE_DOMAIN
 from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.haismart.const import (
     CONF_DEVICE_ID,

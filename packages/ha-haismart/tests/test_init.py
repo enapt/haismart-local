@@ -19,16 +19,16 @@ from conftest import (
     make_status_frame,
     vane_positions_digital_model,
 )
+from ha_compat import (
+    MockConfigEntry,
+    async_fire_time_changed,
+)
 from haismart_extractor import HaierCloud
 from homeassistant.components.climate import ClimateEntityFeature
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import entity_registry as er
-from pytest_homeassistant_custom_component.common import (
-    MockConfigEntry,
-    async_fire_time_changed,
-)
 
 from custom_components.haismart.const import (
     CONF_DEVICE_ID,
@@ -2559,9 +2559,11 @@ async def test_the_device_lookup_avoids_the_deprecated_registry_call(
 
     def _by_identifier(self, identifier, config_entry_id):
         calls.append((identifier, config_entry_id))
+        # Not `self.devices` as a mapping: Home Assistant 2026.10 reports that too, and the report
+        # is attributed to the integration because the integration is what called this stub.
         return next(
-            (d for d in self.devices.values()
-             if identifier in d.identifiers and config_entry_id in d.config_entries),
+            (d for d in dr.async_entries_for_config_entry(self, config_entry_id)
+             if identifier in d.identifiers),
             None,
         )
 
@@ -2703,15 +2705,61 @@ async def test_runtime_data_writes_do_not_reload_the_integration(
 
 
 async def test_options_change_still_reloads(hass: HomeAssistant, mock_uss) -> None:
-    """The listener must still do its actual job: a new poll interval needs a rebuild."""
+    """Saving new options rebuilds the entry: a new poll interval needs one.
+
+    Through the options flow, as a user changes them. The reload is the options flow's own where
+    the core has a self-reloading one, and the update listener's on older cores; either way it
+    happens once.
+    """
     entry = await _setup(hass)
     before = entry.runtime_data
 
-    hass.config_entries.async_update_entry(entry, options={CONF_SCAN_INTERVAL: 60})
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    await hass.config_entries.options.async_configure(result["flow_id"], {CONF_SCAN_INTERVAL: 60})
     await hass.async_block_till_done()
 
     assert entry.runtime_data is not before
     assert entry.runtime_data.update_interval == timedelta(seconds=60)
+
+
+async def test_an_entry_never_combines_a_listener_with_self_reloading_flows(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Home Assistant reports an update listener combined with the config flow's own reloads.
+
+    A discovery that moves the host, a reauth and a reconfigure all reload the entry themselves;
+    an update listener on the same entry reloads it a second time, which the core logs and, from
+    2026.12, refuses. Where the core's options flow reloads by itself, the entry has no listener.
+    """
+    from custom_components.haismart.const import OPTIONS_FLOW_RELOADS
+
+    entry = await _setup(hass)
+    assert bool(entry.update_listeners) is not OPTIONS_FLOW_RELOADS
+
+
+def test_the_temperature_members_are_the_ones_this_core_defines() -> None:
+    """Home Assistant 2026.11 names them `native_*` and logs a deprecation for the old ones.
+
+    Each entity class provides exactly one set -- the core's -- so a newer core logs nothing and
+    an older one still has the names it reads.
+    """
+    from homeassistant.components.climate import ClimateEntity
+    from homeassistant.components.water_heater import WaterHeaterEntity
+
+    from custom_components.haismart.climate import HaismartClimate
+    from custom_components.haismart.water_heater import HaismartWaterHeater
+
+    native = ("native_current_temperature", "native_target_temperature",
+              "_attr_native_temperature_unit")
+    legacy = ("current_temperature", "target_temperature", "_attr_temperature_unit")
+    pairs = ((HaismartClimate, ClimateEntity), (HaismartWaterHeater, WaterHeaterEntity))
+    for entity, base in pairs:
+        provided, absent = (
+            (native, legacy) if hasattr(base, "native_target_temperature") else (legacy, native)
+        )
+        own = vars(entity)
+        assert all(name in own for name in provided), (entity.__name__, provided)
+        assert not any(name in own for name in absent), (entity.__name__, absent)
 
 
 async def test_model_id_sensor_is_enabled_and_independent_of_the_key_sensor(

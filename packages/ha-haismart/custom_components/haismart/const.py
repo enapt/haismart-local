@@ -2,9 +2,17 @@
 from __future__ import annotations
 
 from haismart_hrdp.appliance import ApplianceKind
+from homeassistant import config_entries
 from homeassistant.const import Platform
 
 DOMAIN = "haismart"
+
+#: Whether this core's options flow reloads the entry itself when the options change. Where it
+#: does, the entry registers no update listener: Home Assistant reports a listener combined with
+#: the config flow's own reloads (a discovery that moves the host, a reauth, a reconfigure), which
+#: reload the entry twice, and refuses the combination from 2026.12. Older cores have no
+#: self-reloading options flow, and a listener is how the options take effect there.
+OPTIONS_FLOW_RELOADS = hasattr(config_entries, "OptionsFlowWithReload")
 
 # Every platform this integration has. Kept as the AIR CONDITIONER set below rather than used
 # directly: forwarding CLIMATE for every entry is what put an AC thermostat -- cool / dry /

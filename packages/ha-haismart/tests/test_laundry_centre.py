@@ -16,10 +16,10 @@ import json
 from pathlib import Path
 
 import pytest
+from ha_compat import MockConfigEntry
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.haismart.const import (
     CONF_APP_TYPE,
@@ -138,7 +138,7 @@ async def test_a_session_with_only_the_washer_frame_reads_it_as_the_washer(
 
 from homeassistant.exceptions import HomeAssistantError  # noqa: E402
 
-from custom_components.haismart.const import CONF_LAUNDRY_CONTROLS  # noqa: E402
+from custom_components.haismart.const import CONF_LAUNDRY_CONTROLS, CONF_SCAN_INTERVAL  # noqa: E402
 
 BASE = 92   # where the word array starts in a LAN status message
 
@@ -267,7 +267,10 @@ async def test_a_laundry_write_never_reaches_the_air_conditioner_paths(
 
 async def test_turning_controls_off_again_removes_them(hass: HomeAssistant, mock_uss) -> None:
     entry = await _setup_controls(hass, mock_uss, remote=True)
-    hass.config_entries.async_update_entry(entry, options={CONF_LAUNDRY_CONTROLS: False})
+    form = await hass.config_entries.options.async_init(entry.entry_id)
+    await hass.config_entries.options.async_configure(
+        form["flow_id"], {CONF_LAUNDRY_CONTROLS: False, CONF_SCAN_INTERVAL: 30}
+    )
     await hass.async_block_till_done()
     assert {e.domain for e in _entities(hass, entry).values()} <= {"sensor", "binary_sensor"}
 

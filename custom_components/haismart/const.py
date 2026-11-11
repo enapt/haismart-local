@@ -7,11 +7,14 @@ from homeassistant.const import Platform
 
 DOMAIN = "haismart"
 
-#: Whether this core's options flow reloads the entry itself when the options change. Where it
-#: does, the entry registers no update listener: Home Assistant reports a listener combined with
-#: the config flow's own reloads (a discovery that moves the host, a reauth, a reconfigure), which
-#: reload the entry twice, and refuses the combination from 2026.12. Older cores have no
-#: self-reloading options flow, and a listener is how the options take effect there.
+#: Whether this core's options flow reloads the entry itself when the options change (2025.8+).
+#: Where it does, the entry registers no update listener. Home Assistant logs a report whenever a
+#: config flow schedules its own reload of an entry that has a listener -- a discovery that moves
+#: the host, a reauth, a reconfigure -- and marks it to stop working in 2026.12; the
+#: subentry-reconfigure path already raises. The report is about the listener being there, not
+#: about a second reload: ours reloads only when the options change, and those flows change the
+#: data. Older cores have no self-reloading options flow, and a listener is how the options take
+#: effect there; none of them has the raise either (it arrived in 2025.9).
 OPTIONS_FLOW_RELOADS = hasattr(config_entries, "OptionsFlowWithReload")
 
 # Every platform this integration has. Kept as the AIR CONDITIONER set below rather than used

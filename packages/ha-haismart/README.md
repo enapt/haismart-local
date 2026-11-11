@@ -160,7 +160,7 @@ in HACS before that — or use the manual copy above.
 ```bash
 pip install homeassistant pytest-homeassistant                   # Home Assistant 2026.11+
 pip install homeassistant pytest-homeassistant-custom-component  # earlier cores
-python -m pytest -q     # without either, only the tests that need no Home Assistant run
+python -m pytest -q     # without either, no test runs: every one needs Home Assistant
 ```
 
 Installing the HA plugin into the shared `.venv` also pulls in `pytest-socket`, which disables

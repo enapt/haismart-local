@@ -55,8 +55,8 @@ jobs:
           HA_JUNIT: ${{ runner.temp }}/ha-junit.xml
         run: ./scripts/test.sh
       - name: Fail if the Home Assistant suite skipped anything
-        # pytest exits 0 when tests are skipped or none are collected, so a missing package passes
-        # as green without this. The report is written by test.sh.
+        # pytest exits 0 when tests are skipped, and the suite ends cleanly when Home Assistant is
+        # missing, so a missing package passes as green without this. test.sh writes the report.
         run: python scripts/check-junit.py "${RUNNER_TEMP}/ha-junit.xml"
 
   build:

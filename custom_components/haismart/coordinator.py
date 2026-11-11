@@ -699,6 +699,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._rediscover_next = 0.0
         # Snapshot of the options this coordinator was built with, so the entry's update listener
         # can tell an options change (reload) from the runtime data writes below (do not reload).
+        # Only cores without `OptionsFlowWithReload` register that listener
+        # (`const.OPTIONS_FLOW_RELOADS`); on the others nothing reads this.
         self.options: dict[str, Any] = dict(entry.options)
         # True when the last report was decoded from Haier's own byte map for this typeid (the
         # device_model path) rather than from a hand-written AC family. Suppresses the

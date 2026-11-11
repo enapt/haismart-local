@@ -2,9 +2,10 @@
 
 These tests need Home Assistant and the test package that matches it: `pytest-homeassistant` for
 Home Assistant 2026.11 and later (its plugin registers itself), or
-`pytest-homeassistant-custom-component` before that. Without either, every test file that imports
-Home Assistant is left out of collection rather than erroring, and the rest still run. CI fails a
-run that skips anything, so a missing package cannot pass as green there.
+`pytest-homeassistant-custom-component` before that. Without either, every test file is left out of
+collection rather than erroring -- each imports Home Assistant, directly or through the
+integration's own modules -- and the run ends with a notice saying so. CI fails a run that skips
+or runs nothing, so a missing package cannot pass as green there.
 
 No sockets are opened, and `pytest-socket` (installed with either test package) turns an attempt
 into a test error. The uSS read cycle (`async_read_status`) and the key-free version probe
@@ -30,14 +31,30 @@ except ImportError:
         _HA_AVAILABLE = True
     except ImportError:  # pragma: no cover - no Home Assistant test package installed
         _HA_AVAILABLE = False
+        # The integration's own modules count: importing any of them imports Home Assistant.
         _NEEDS_HA = re.compile(
-            r"^(from|import) (homeassistant|ha_compat|pytest_homeassistant)", re.M
+            r"^(from|import) (homeassistant|ha_compat|pytest_homeassistant|custom_components)",
+            re.M,
         )
         collect_ignore = [
             path.name
             for path in Path(__file__).parent.glob("test_*.py")
             if _NEEDS_HA.search(path.read_text(encoding="utf-8"))
         ]
+
+        def pytest_sessionfinish(session, exitstatus):  # noqa: ANN001, ANN201
+            # Every file here needs Home Assistant, so without it nothing is collected, which
+            # pytest reports as exit 5. Say why instead of failing a library-only run; CI's skip
+            # gate (scripts/check-junit.py) still fails a run in which nothing ran.
+            import pytest
+
+            if exitstatus == pytest.ExitCode.NO_TESTS_COLLECTED:
+                reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+                if reporter is not None:
+                    reporter.write_sep(
+                        "=", "Home Assistant is not installed: no ha-haismart test ran", yellow=True
+                    )
+                session.exitstatus = pytest.ExitCode.OK
 
 
 def find_device(hass, device_id: str = "A1B2C3D4E5F6"):
@@ -360,8 +377,15 @@ if _HA_AVAILABLE:
     # user finds in their log, with a date after which it stops working. They are warnings, so a
     # suite that triggers them still passes; collected here, they fail the run instead, on every
     # core CI tests -- which is how a deprecation is seen before the release that removes it.
+    # Home Assistant words them several ways, and not every one names the integration in its text:
+    # a report it cannot attribute says "Detected code that ..." and either logs on the entity's
+    # own module logger (`custom_components.haismart.climate`) or attaches the stack, which runs
+    # through our code. So "haismart" is looked for in the message, the logger name and the stack.
     _DEPRECATION_PHRASES = (
         "Detected that custom integration",
+        "Detected code that",
+        "provides the deprecated",
+        "The deprecated ",
         "please report it to",
         "please create a bug report",
     )
@@ -370,8 +394,11 @@ if _HA_AVAILABLE:
     class _DeprecationReports(logging.Handler):
         def emit(self, record: logging.LogRecord) -> None:
             message = record.getMessage()
-            if "haismart" in message and any(p in message for p in _DEPRECATION_PHRASES):
-                _DEPRECATION_REPORTS.append(message)
+            if not any(p in message for p in _DEPRECATION_PHRASES):
+                return
+            where = f"{message}\n{record.name}\n{record.stack_info or ''}".lower()
+            if "haismart" in where:
+                _DEPRECATION_REPORTS.append(f"[{record.name}] {message}")
 
     _DEPRECATION_HANDLER = _DeprecationReports(level=logging.WARNING)
 

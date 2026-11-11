@@ -1849,11 +1849,16 @@ which needs `aiodhcpwatcher`) and the ARP host lookup (`aiodiscover`). The old g
 collected tests, so a skip passed it.
 
 **What the newer cores report against the integration, now fixed:**
-* An update listener beside the config flow's own reloads — a discovery that moves the host, a
-  reauth, a reconfigure — reloads the entry twice. Home Assistant logs it and refuses it from
-  2026.12. Where the core has a self-reloading options flow (`OptionsFlowWithReload`), that does the
-  reload and the entry registers no listener (`const.OPTIONS_FLOW_RELOADS`); older cores keep the
-  listener.
+* Home Assistant logs a report whenever a config flow schedules its own reload of an entry that has
+  an update listener — a discovery that moves the host, a reauth, a reconfigure — and marks it to
+  stop working in 2026.12. The report is about the listener being registered: ours reloads only when
+  the options change, and those flows change the data, so the entry was reloaded once. ⛔ Withdrawn:
+  "the listener and the flow reload the entry twice" (said here and in `const.py` when this item was
+  first written; an independent review read the listener's early return). Where the core has a
+  self-reloading options flow (`OptionsFlowWithReload`, 2025.8+), that does the reload and the entry
+  registers no listener (`const.OPTIONS_FLOW_RELOADS`); older cores keep the listener, and none of
+  them raises over it (the raise arrived in 2025.9, checked against every release's
+  `config_entries.py`).
 * 2026.11 renames the climate and water-heater temperature members to `native_*`, serving the old
   ones until 2027.11 with a log line for each class that provides them. Each entity class provides
   the set its core defines, never both.
@@ -1869,9 +1874,15 @@ in every diagnostics test — `pytest-socket` blocked it, the probe caught the e
 packages fail the test — so an autouse fixture answers it as an unreachable unit.
 
 **The gates:** three CI lanes (2026.2.3 on Python 3.13, 2026.10.4 and the latest on 3.14), weekly
-as well as on every push; `scripts/check-junit.py` fails the run on any skip; and the integration
-suite fails when Home Assistant logs a deprecation against `haismart` during the run, which was
-shown to fire by putting the old climate members and the listener back on 2026.11.1. Verified on
+as well as on every push; `scripts/check-junit.py` fails the run on any skip, and on a run in which
+nothing executed; and the integration suite fails when Home Assistant logs a deprecation against
+`haismart` during the run. That gate looks for `haismart` in the message, the logger name and the
+attached stack, because a report Home Assistant cannot attribute ("Detected code that reads the
+deprecated `HaismartClimate.target_temperature` …") names the integration only through its logger
+(`custom_components.haismart.climate`). It was shown to fire by putting the old climate members and
+the listener back on 2026.11.1, and by a test reading `target_temperature` there, which the
+message-only match let through. Without Home Assistant every test file is left out (each needs it,
+directly or through the integration's modules) and the run ends with a notice. Verified on
 2025.1.4, 2026.2.3, 2026.10.4 and 2026.11.1, no skips.
 
 ### 74. ✅ SETTLED — the byte-map state no longer lays the older report over the newer

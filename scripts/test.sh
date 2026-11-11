@@ -17,7 +17,8 @@ for pkg in haismart-hrdp haismart-extractor ha-haismart; do
   if [ "$pkg" = ha-haismart ] && [ -n "${HA_JUNIT:-}" ]; then
     junit=(--junitxml="$HA_JUNIT")
   fi
-  ( cd "$root/packages/$pkg" && "$py" -m pytest -q -p no:cacheprovider "${junit[@]}" ) || fail=1
+  # ${junit[@]+...}: an empty array is "unbound" under set -u in bash before 4.4 (macOS /bin/bash).
+  ( cd "$root/packages/$pkg" && "$py" -m pytest -q -p no:cacheprovider ${junit[@]+"${junit[@]}"} ) || fail=1
   echo
 done
 # custom_components/ is generated from packages/ and committed for HACS. The suites above import

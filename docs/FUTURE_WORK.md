@@ -21,9 +21,10 @@ keeps its own when it moves between the two sections. Expect the sequence to hav
 
 ## Open items
 
-### 79. A wall unit whose sessions carry no status report — read from the status its big-data report carries; confirm on the unit
+### 79. A wall unit whose sessions carry no status report — read from the status its big-data report carries (confirmed on the unit); its commands are unseen
 
-**Found 2026-11-12 (issue #21).** An HS-18VRSA05W (Haier's SE-Asia 2024 family) opened every
+**Found 2026-11-12 (issue #21).** An HS-18VRSA05 (Haier's SE-Asia 2024 family; the issue says -05W,
+its cloud record -05S; Wi-Fi module `e_20.0.2`, SDK 2.00, a voice module) opened every
 session with two identical copies of its big-data report (`06/7d01`, 189 bytes) and nothing else:
 no status report and no fault frame, so no status decoded and setup failed on every retry. Its
 sibling HS-24VRRA05, the same product id for the same owner, works. Every other unit seen opens a
@@ -49,13 +50,23 @@ session's frames under `status-query`. The report's compressor current sits at i
 (the maximum every one of Haier's maps publishes for it) beside a real 155 W, so it is not
 published and its sensor is retired; the power, which the unit measures, stays.
 
+**Confirmed on the unit (2026-11-13, the reporter's diagnostics on v0.75.1).** Set up and polling;
+every poll carried only the two big-data reports, the status was read from them, and the `4D01`
+session was never needed. Haier's map decode of the report agrees with Haier's cloud, read live in
+the same download, on 46 of 48 shared attributes — power, mode, setpoint, fan, both vanes,
+temperatures, energy. The two that differ are the voice assistant's own settings (microphone
+on/off, voice language), which no entity shows. The current sensor was retired as intended.
+
 **Residue:**
-* Confirmed on the reporter's captured bytes only, not yet on the unit.
 * Whether this module answers `4D01` over the LAN is unknown (it is answered on `e_4.3.00`); the
   read does not depend on it.
 * Its command sessions have not been seen. A group set is seeded from the polled status (a command
   session that carries no status push falls back to it), and a reply with no status in it is
-  followed by a poll. Whether the unit accepts the group set, and what it answers, is unknown.
+  followed by a poll. Whether the unit accepts the group set, and what it answers, is unknown. The
+  reporter's second download, meant to show a command, holds none: both files come from the same
+  poll, and only the cloud's setpoint moved (24 → 26). A command that fails at the connection is
+  not recorded in diagnostics at all, so that file cannot tell a change made outside Home Assistant
+  from a command that raised an error after the unit applied it.
 * Reading the status out of a big-data report is this integration's step, not Haier's app's: the
   app asks `getAllProperty` every time it connects, repeating it until it has the attributes, and
   does not read a big-data report on the local channel. The step rests on the family's own map, on
@@ -67,8 +78,8 @@ published and its sensor is retired; the power, which the unit measures, stays.
   clients (the owner's two units do so on every poll). The map and the wire were followed.
 * Why this module replays its big-data report where issue #8's replays the status is not known.
 
-**What would settle it:** the reporter's diagnostics download after updating, taken once with the
-unit running and once after a command from Home Assistant.
+**What would settle it:** a temperature change made from Home Assistant, with a diagnostics download
+taken after the next poll (30 s later), and whether Home Assistant showed an error.
 
 ### 76. The 0504 washer-dryer's controls — nothing yet seen accepted; settle the start first
 

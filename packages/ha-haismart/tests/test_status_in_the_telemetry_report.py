@@ -16,8 +16,10 @@ from homeassistant.components.climate import DOMAIN as CLIMATE_DOMAIN
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import ATTR_ENTITY_ID, ATTR_TEMPERATURE
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 
 from custom_components.haismart.const import (
+    CONF_ABSENT_READINGS,
     CONF_DEVICE_ID,
     CONF_HOST,
     CONF_LOCAL_KEY,
@@ -109,6 +111,23 @@ async def test_a_unit_that_sends_only_its_big_data_report_sets_up(
     # read from what the session carried: no extra session was needed
     assert _GET_ALL not in asked
     assert len(entry.runtime_data.last_raw_status) == 175
+    assert float(hass.states.get("sensor.office_power").state) == 155
+
+
+async def test_a_current_the_unit_does_not_measure_gets_no_sensor(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The report's current sits at its 51.1 A ceiling beside 155 W: not a reading. Its sensor is
+    retired, while power -- which the unit does measure -- stays."""
+    mock_uss.read.side_effect, _ = _reads([SEQUENCE, BIGDATA, BIGDATA])
+    entry = await _setup(hass)
+
+    registry = er.async_get(hass)
+    assert registry.async_get_entity_id(
+        "sensor", DOMAIN, f"{entry.unique_id}_compressor_current_a"
+    ) is None
+    assert "compressor_current_a" in entry.data[CONF_ABSENT_READINGS]
+    assert "power_w" not in entry.data[CONF_ABSENT_READINGS]
     assert float(hass.states.get("sensor.office_power").state) == 155
 
 

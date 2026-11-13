@@ -2942,6 +2942,17 @@ def test_a_current_the_appliance_contradicts_is_not_published():
     assert got["coil_temperature"] == 27.0        # ...while its temperatures are real
 
 
+def test_a_current_at_its_ceiling_beside_real_power_is_not_published():
+    """The same family's frame with power drawn: the current is still pinned at 51.1 A, which is
+    the field's published maximum and no reading at a few hundred watts, so it is dropped -- and
+    the power kept. (At 0 W the rule above already zeroes it.)"""
+    frame = bytearray(_EXT23)
+    frame[2 * 16:2 * 17] = (310).to_bytes(2, "big")          # word 17: power, watts
+    got = uss.parse_extended_status(_telemetry_frame(bytes(frame)))
+    assert got["power_w"] == 310
+    assert "compressor_current_a" not in got
+
+
 def test_a_span_no_profile_describes_yields_nothing():
     """The central cabinets' telemetry is 28 words and no profile of that class exists, so it stays
     undecoded rather than being read against a neighbouring family's map."""

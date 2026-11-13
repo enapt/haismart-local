@@ -923,8 +923,10 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 # itself, so they must never hang on whether the telemetry question gets a reply.
                 # Restoring them here also heals an entry that recorded one under the old rule,
                 # which refused the whole key set at once: that took issue #8's power sensor away
-                # from the one family with a measured wattage, because that unit ignores the
-                # telemetry query while reporting watts in every status frame.
+                # from the one family with a measured wattage, because no telemetry answer was
+                # decoded from that unit while it reported watts in every status frame. (Whether it
+                # answered at all is not known: the decoder of that time read only 141-byte
+                # reports, and this family's is 189.)
                 in_status = [k for k in EXTENDED_READING_KEYS if k in state]
                 if in_status:
                     self._async_reading_returned(in_status)
@@ -953,6 +955,13 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     # because `state` already holds it here.
                     if "power_w" not in telemetry and "power_w" not in state:
                         self._async_reading_refused(("power_w", "compressor_current_a"))
+                    elif "compressor_current_a" not in telemetry:
+                        # Power measured, current not: the field sits at its 51.1 A ceiling beside
+                        # a real wattage (issue #21: 155 W, under one amp), and the decode drops it
+                        # on every frame alike. Every telemetry map publishes the current, so it
+                        # is missing only when the frame's own value was not a reading; a frame
+                        # that later carries one gives the sensor back (above).
+                        self._async_reading_refused(("compressor_current_a",))
                 elif extended_blob is not None:
                     # The unit ANSWERED the telemetry query, with a big-data frame this build has no
                     # field map for -- a newer or larger model than any published layout. That is

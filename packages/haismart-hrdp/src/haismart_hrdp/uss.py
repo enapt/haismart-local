@@ -1405,6 +1405,11 @@ _ACTUATOR_OFF = 0
 # is treated as "no data" rather than published into long-term statistics.
 _MAX_PLAUSIBLE_W = 20_000
 _MAX_PLAUSIBLE_A = 100.0
+#: `compressorCurrent` at the top of its range: 51.1 A, which every one of Haier's maps that carries
+#: the field publishes as its maximum. Families that do not measure current park it here (the 0d012
+#: cabinets, constant from 0 to 103 Hz; issue #21's wall unit, beside 155 W), so a current at this
+#: value is never published as a reading.
+_CURRENT_RAILED_AT_MAX = 0x01FF
 
 
 #: The vendor's telemetry names, mapped onto the keys this library publishes.
@@ -1511,6 +1516,14 @@ def _extended_from_published_map(
     # ⚠️ A family that measured current and not power would lose its current here. None does.
     if out.get("power_w") == 0 and out.get("compressor_current_a"):
         out["compressor_current_a"] = 0.0
+    elif out.get("power_w") and any(
+        f.name == "compressorCurrent"
+        and read_field(payload, f.word, f.bit, f.length, base=0) == _CURRENT_RAILED_AT_MAX
+        for f in fields
+    ):
+        # Real power beside a current pinned at its ceiling: the power is a measurement, the
+        # current is not (a few hundred watts is about one amp, not fifty).
+        out.pop("compressor_current_a", None)
     return out
 
 
@@ -1673,9 +1686,12 @@ def parse_extended_status(data: bytes, *, uplus_id: str | None = None) -> dict[s
     # hundreds of watts under load, so this only removes a value that was never real, and it does so
     # identically whether the unit is idle or running -- no flicker. The compressor drive frequency
     # and the refrigeration temperatures, which DO track the load, are kept.
-    _CURRENT_RAILED_AT_MAX = 0x01FF
     if raw_current == _CURRENT_RAILED_AT_MAX and not out.get("power_w"):
         out.pop("power_w", None)
+        out.pop("compressor_current_a", None)
+    elif raw_current == _CURRENT_RAILED_AT_MAX:
+        # Real power beside the ceiling (issue #21: 155 W, which its input-power register repeats,
+        # against 51.1 A): this unit measures power and not current, so only the current goes.
         out.pop("compressor_current_a", None)
     elif not out.get("power_w") and out.get("compressor_current_a"):
         # A real family that is simply idle: current with no power is not a measurement, so zero it

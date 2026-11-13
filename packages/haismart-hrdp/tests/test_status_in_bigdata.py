@@ -141,3 +141,13 @@ def test_the_telemetry_it_carries_still_decodes() -> None:
     assert telemetry["compressor_frequency_hz"] == 0
     assert telemetry["coil_temperature"] == 28.0
     assert telemetry["expansion_valve_opening"] == 480
+
+
+def test_a_current_pinned_at_its_ceiling_beside_real_power_is_not_published() -> None:
+    """The frame reads 155 W (its input-power register agrees) and a current of `0x01FF`: the
+    51.1 A Haier's own maps give as the field's maximum, in every one that carries it. Fifty amps
+    at 155 W is not a reading -- 155 W is under one amp at any mains voltage. The current is
+    dropped and the power, which the unit does measure, is kept."""
+    telemetry = parse_extended_status(ISSUE21_BIGDATA, uplus_id=SEA_2024)
+    assert "compressor_current_a" not in telemetry
+    assert telemetry["power_w"] == 155

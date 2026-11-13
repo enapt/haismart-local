@@ -279,8 +279,9 @@ async def test_a_reading_the_status_report_carries_survives_the_telemetry_refusa
 ) -> None:
     """Refusing the telemetry query must not take away a reading the status report itself answers.
 
-    The 175-byte family reads live input power out of its own status report (word 41) and never
-    answers the extended-status query -- both at once, on the same unit. Refusing the whole key set
+    The 175-byte family reads live input power out of its own status report (word 41), and issue
+    #8's unit gave no telemetry answer the decoder of the day could read -- both at once, on the
+    same unit. Refusing the whole key set
     when the query went unanswered deleted that unit's working power sensor (issue #8, the one
     family with a measured wattage). The refusal may only reach the readings the report does not
     carry.

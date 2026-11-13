@@ -28,9 +28,12 @@ session with two identical copies of its big-data report (`06/7d01`, 189 bytes) 
 no status report and no fault frame, so no status decoded and setup failed on every retry. Its
 sibling HS-24VRRA05, the same product id for the same owner, works. Every other unit seen opens a
 session with its status report and fault frame. Both copies carry the envelope counter of a
-report, not of an answer to our query, so the unit did not answer the telemetry query either —
-which no unit of this family has (issue #8's never did; Haier's serial standard makes `4DFE` a
-master-slave-mode query).
+report, not of an answer to our query (45 answers and 121 reports in the stored captures, no
+exception), so the unit did not answer the telemetry query within the session either. Haier's
+serial standard makes `4DFE` a master-slave-mode query. Whether issue #8's unit of the same family
+answers it is NOT known: its files recorded no answer, but the decoder of that time read only the
+141-byte report, so a 189-byte answer would have gone unseen, and those files keep no frame
+ledger.
 
 **What is done.** The family's byte map repeats the whole status report at the head of its
 big-data report — all 91 attributes at the same word and bit with the same value table, 41 of its
@@ -42,7 +45,9 @@ have that shape, and on the only other one with captured pairs (japan-wall) the 
 way equals the same session's push byte for byte. A session that carries no status in either form
 asks `getAllProperty` (`4D01`) in one further session, which Haier's serial standard has every
 appliance answer with its full status; that answer is taken first. Diagnostics record that
-session's frames under `status-query`.
+session's frames under `status-query`. The report's compressor current sits at its 51.1 A ceiling
+(the maximum every one of Haier's maps publishes for it) beside a real 155 W, so it is not
+published and its sensor is retired; the power, which the unit measures, stays.
 
 **Residue:**
 * Confirmed on the reporter's captured bytes only, not yet on the unit.
@@ -51,6 +56,12 @@ session's frames under `status-query`.
 * Its command sessions have not been seen. A group set is seeded from the polled status (a command
   session that carries no status push falls back to it), and a reply with no status in it is
   followed by a poll. Whether the unit accepts the group set, and what it answers, is unknown.
+* Reading the status out of a big-data report is this integration's step, not Haier's app's: the
+  app asks `getAllProperty` every time it connects, repeating it until it has the attributes, and
+  does not read a big-data report on the local channel. The step rests on the family's own map, on
+  the one other such family with captured pairs, and on ESPHome's Haier component, which reads a
+  `7D01` through the same handler and offsets as a `6D01`. If the reporter's unit shows the
+  big-data copy lagging a change, the lever is to ask `4D01` first for this unit.
 * Haier's developer documents say a big-data report should not repeat the user data and goes only
   to the cloud. The family's own map repeats it in full, and these modules relay the report to LAN
   clients (the owner's two units do so on every poll). The map and the wire were followed.

@@ -2087,7 +2087,14 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Some of what arrives is a kind we know and deliberately do not read. Naming those keeps
         # the log about the frames nobody has identified, which is what an unfamiliar model looks
         # like and the only reason this message exists.
-        known = [d for b in blobs if (d := describe_epp_frame(b))]
+        # A big-data report is named by what decodes from it, as the frame ledger does: called one
+        # "with no known field map" while its telemetry decoded, issue #21's log pointed at a
+        # missing map when what was missing was the status report.
+        known = [
+            "a big-data report (7d01) whose telemetry decodes"
+            if parse_extended_status(b, uplus_id=self.uplus_id) else d
+            for b in blobs if (d := describe_epp_frame(b))
+        ]
         _LOGGER.debug(
             "%s: localKey is good (%d payload(s) decrypted) but no full-status report decoded — "
             "unrecognised frame (no 2715 signature, or shorter than the attribute vector).%s "

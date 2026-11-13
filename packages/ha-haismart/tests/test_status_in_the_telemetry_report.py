@@ -191,6 +191,33 @@ async def test_an_unanswered_question_still_fails_the_cycle(
     assert asked.count(_GET_ALL) == 1, "one question per cycle"
 
 
+async def test_the_log_names_a_big_data_report_by_what_decodes_from_it(
+    hass: HomeAssistant, mock_uss, caplog
+) -> None:
+    """When nothing yields a status, the debug log lists what the unit sent. The reporter's log
+    called this report one "with no known field map for its size" -- while its telemetry decoded
+    -- which pointed the investigation at a missing map instead of a missing status report."""
+    other_family = "2008610800820324021200118012560000000000000000000000000000000040"
+    mock_uss.read.side_effect, _ = _reads([SEQUENCE, BIGDATA])
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="Office", unique_id="A1B2C3D4E5",
+        data={
+            CONF_HOST: "192.168.1.50", CONF_DEVICE_ID: "A1B2C3D4E5",
+            CONF_LOCAL_KEY: "00112233445566778899aabbccddeeff", CONF_PRODUCT_CODE: "AAD378Z00",
+            CONF_LOCALKEY_VERSION: 4, CONF_UPLUS_ID: other_family,   # a map that does not repeat it
+        },
+    )
+    entry.add_to_hass(hass)
+    caplog.set_level("DEBUG", logger="custom_components.haismart")
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.SETUP_RETRY
+    line = next(r.getMessage() for r in caplog.records if "localKey is good" in r.getMessage())
+    assert "no known field map" not in line
+    assert "a big-data report (7d01) whose telemetry decodes" in line
+
+
 async def test_a_session_that_decrypted_nothing_is_not_asked_again(
     hass: HomeAssistant, mock_uss
 ) -> None:

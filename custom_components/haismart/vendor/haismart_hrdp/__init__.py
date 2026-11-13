@@ -146,6 +146,7 @@ from .uss import (
     refusal_code,
     reply_refused,
     set_grsetdac_field,
+    status_from_bigdata,
     status_layout,
 )
 from .wire_models import (
@@ -208,6 +209,7 @@ __all__ = [
     "parse_alarm_frame",
     "parse_extended_status",
     "parse_full_status",
+    "status_from_bigdata",
     "status_layout",
     "derive_status_layout",
     "is_control_baseline",

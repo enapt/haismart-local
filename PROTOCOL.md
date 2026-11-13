@@ -33,7 +33,8 @@ behind it.
    A declared length below `0x0A` cannot be a real frame — the header alone is 16 bytes.
 
 2. **Handshake** (plaintext): client `HELLO` → AC `HELLO_RESP` → client `HELLO_DONE` → AC
-   `HELLO_DONE_RESP`, after which the AC pushes status as `0xEAC4` messages.
+   `HELLO_DONE_RESP`, after which the AC pushes its reports as `0xEAC4` messages: on every unit but
+   one, its status report and its fault frame.
 
    That first status is a **report** (EPP frame type `06`, `6d01`) that the module passes on, not the
    appliance's answer to a question. The answer is asked for with getAllProperty (frame type `01`,
@@ -42,6 +43,15 @@ behind it.
    integration carries repeat power, setpoint and mode in their `7d01` (fan speed too, on all but the
    two `0214` maps). When that answer and the push disagree about a setting, the integration
    asks `4D01` in one further session and uses the `02` reply.
+
+   The one exception opens every session with its big-data report (`06/7d01`) instead — two
+   copies, no status, no fault frame. Its family's byte map repeats the whole status report at the
+   head of that report: every status attribute at the same word and bit, with the same value table.
+   For any family whose map has that shape (32 of the 93 vendor maps that publish a big-data
+   report), a session with no status report is read from the status its big-data report carries.
+   A session with no status in either form is answered by asking `4D01` in one further session.
+   The envelope counter at bytes 72..75 tells the two kinds of frame apart: `0` on a report the
+   module pushes, the request's own counter on an answer to it.
 
    `HELLO_RESP`'s payload is `status(BE32) || localkey_version(BE32)`. **`status` must be 1.** A unit
    that answers with a different status has refused the session: it will accept `HELLO_DONE`, push

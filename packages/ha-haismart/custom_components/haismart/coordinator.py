@@ -19,7 +19,7 @@ import asyncio
 import json
 import logging
 from collections import deque
-from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
+from collections.abc import AsyncIterator, Callable, Collection, Iterable, Mapping, Sequence
 from dataclasses import replace
 from datetime import timedelta
 from functools import partial
@@ -92,6 +92,7 @@ from haismart_hrdp import (
     rules_for_product,
     select_wire_model,
     set_grsetdac_field,
+    status_from_bigdata,
     udiscovery,
     uplus_class,
     validate_write,
@@ -870,7 +871,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
         self._record_frames(blobs, "poll")
 
-        for blob in blobs:
+        async for blob in self._status_candidates(blobs):
             if state := parse_full_status(
                 blob,
                 self.profile,
@@ -878,7 +879,9 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 uplus_id=self.uplus_id,
                 order=self.declared_group_order,
             ):
-                if extended_blob is not None and (
+                # Only a REPORT is checked against the extended one: an `02` is the appliance's own
+                # answer to the question the check would ask.
+                if extended_blob is not None and epp_frame_type(blob) != 0x02 and (
                     checked := await self._async_check_push(blob, extended_blob)
                 ) is not None:
                     blob, state = checked
@@ -1052,6 +1055,61 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             f"no decodable status from {self.host} ({misses} consecutive misses)"
         )
 
+    async def _status_candidates(self, blobs: list[bytes]) -> AsyncIterator[bytes]:
+        """The frames that may hold this cycle's status report, best first, fetched only as needed.
+
+        The read loop takes the first that decodes, so a later source is consulted only when every
+        earlier one failed:
+
+        1. What the session carried. Every unit met before issue #21 opens a session with its
+           status report, and that is what this cycle used to depend on entirely.
+        2. The status a big-data report carries, for a family whose byte map repeats the whole
+           status report at its head (`status_from_bigdata`). Issue #21's unit sent only that
+           report -- twice per session, with no status and no alarm frame -- while its sibling
+           with the same product id sent the status as usual.
+        3. The appliance's answer to ``getAllProperty`` (``4D01``), in one extra read-only
+           session: Haier's serial standard has every appliance answer it with its full status
+           (``02``), and that answer is put first. Asked only when the session decrypted at all --
+           an empty session means the key is wrong, and a second one would fail the same way.
+        """
+        for blob in blobs:
+            yield blob
+        for blob in blobs:
+            if (carried := status_from_bigdata(blob, self.uplus_id)) is not None:
+                _LOGGER.debug(
+                    "%s sent no status report this session; reading the one its %d-byte big-data "
+                    "report carries", self.host, len(blob),
+                )
+                yield carried
+        if not blobs:
+            return
+        _LOGGER.debug(
+            "%s sent no status report this session; asking for one (getAllProperty)", self.host
+        )
+        reply = await self._async_ask_status("status-query")
+        for blob in sorted(reply, key=lambda b: epp_frame_type(b) != 0x02):
+            yield blob
+
+    async def _async_ask_status(self, session: str) -> list[bytes]:
+        """One extra read-only session that asks for the appliance's status (``4D01``).
+
+        Its decrypted frames, recorded for diagnostics under ``session``, or ``[]`` when the
+        session failed. Never raises for a failed connection: the caller already has a cycle to
+        report, and this was only ever a second chance at it.
+        """
+        try:
+            async with self._session:
+                reply = await async_read_status(
+                    self.host, self.device_id, self._local_key, timeout=READ_TIMEOUT,
+                    expect_localkey_version=self.localkey_version or None,
+                    extra_request=getallproperty_epp_frame(),
+                )
+        except (LocalKeyRotated, TimeoutError, OSError, RuntimeError, ValueError) as err:
+            _LOGGER.debug("%s: asking for its status failed: %s", self.host, err)
+            return []
+        self._record_frames(reply, session)
+        return reply
+
     async def _async_read(self) -> list[bytes]:
         """One read cycle against the current host, holding the single-session lock."""
         trace: list[dict[str, Any]] = []
@@ -1138,19 +1196,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "answer": None,
         }
         self.status_checks["last"] = record
-        try:
-            async with self._session:
-                reply = await async_read_status(
-                    self.host, self.device_id, self._local_key, timeout=READ_TIMEOUT,
-                    expect_localkey_version=self.localkey_version or None,
-                    extra_request=getallproperty_epp_frame(),
-                )
-        except (LocalKeyRotated, TimeoutError, OSError, RuntimeError, ValueError) as err:
-            _LOGGER.debug(
-                "%s: asking for its status after a disagreement failed: %s", self.host, err
-            )
+        if not (reply := await self._async_ask_status("check")):
             return None
-        self._record_frames(reply, "check")
         for blob in reversed(reply):
             if epp_frame_type(blob) != 0x02:
                 continue      # the session's own push is the report in question, not an answer
@@ -2333,7 +2380,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # The AC echoes its UPDATED state on the op's own connection (the protocol), so confirm
         # from that reply directly — instant, one fewer connection. Fall back to a read cycle only
         # if the reply carried no decodable full-status report.
-        # ⚠️ ORDER MATTERS, and it used to be the other way round. Every op connection begins with
+        # ⚠️ ORDER MATTERS, and it used to be the other way round. On every unit whose command
+        # sessions have been seen, an op connection begins with
         # the unit's routine status push (frameType 0x06) and alarm push (0x04) before the answer to
         # *our* frame arrives (0x02 accepted / 0x03 refused). So a REFUSED command still carries a
         # perfectly decodable status blob -- the push -- and taking that as "the unit answered with

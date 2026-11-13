@@ -1684,6 +1684,56 @@ def parse_extended_status(data: bytes, *, uplus_id: str | None = None) -> dict[s
     return out
 
 
+@functools.lru_cache(maxsize=16)
+def _status_words_in_bigdata(uplus_id: str | None) -> int:
+    """How many leading words of this family's ``7D01`` report are its whole status report, or 0.
+
+    Non-zero only when Haier's byte map for the family places EVERY ``6D01`` attribute in ``7D01``
+    at the same word, bit and length with the same value table -- then the big-data report's
+    leading words are, attribute for attribute, the status report's. Repeating a setting is not
+    enough: the 0d12 cabinets and the classic shared wall units place their vanes alike in both
+    reports but count them in different codes, so those read nothing from here.
+    """
+    if (model := model_for(uplus_id)) is None:
+        return 0
+    status = model.fields_for("6D01")
+    bigdata = {f.name: f for f in model.fields_for("7D01")}
+    if not status:
+        return 0
+    for field in status:
+        twin = bigdata.get(field.name)
+        if twin is None or (twin.word, twin.bit, twin.length, twin.variants) != (
+            field.word, field.bit, field.length, field.variants
+        ):
+            return 0
+    return model.extent("6D01")
+
+
+def status_from_bigdata(data: bytes, uplus_id: str | None) -> bytes | None:
+    """The status report a big-data (``7d01``) report carries, or ``None`` if it carries none.
+
+    One wall unit (issue #21, Haier's SE-Asia 2024 family) opened every session with its big-data
+    report and no status report at all, so nothing decoded. Its family's byte map repeats the whole
+    status report at the head of the big-data one (:func:`_status_words_in_bigdata`), so those
+    words ARE the status: this returns them as the ``6d01`` report the family sends, under the
+    frame type the big-data report arrived with -- still a report, never an answer to a query --
+    behind the same envelope, so every reader of a status report takes it unchanged.
+
+    ``None`` for anything else: another frame, a report whose declared length disagrees with its
+    size, a family whose map does not repeat its status exactly, or a report too short to hold it.
+    """
+    at = data.find(EPP_FRAME_HEAD)
+    if at < 0 or data[at + 10:at + 12] != _EPP_RPT_EXTENDED:
+        return None
+    if len(data) < at + 13 or data[at + 2] != len(data) - at - 3:
+        return None
+    words = _status_words_in_bigdata(uplus_id)
+    payload = data[at + 12:-1]
+    if not words or len(payload) < 2 * words:
+        return None
+    return data[:at] + build_epp_frame(data[at + 9], _EPP_RPT_STATUS, payload[:2 * words])
+
+
 # --- fault bitmap -------------------------------------------------------------
 
 # The unit pushes a fault frame alongside every status report, and answers a fault query with the
@@ -2170,7 +2220,8 @@ async def async_send_op(ip: str, device_id: str, local_key: str, epp_frame: byte
     blobs pushed in reply (so the caller can confirm the new state).
 
     Seeding a group-set (read-modify-write): pass ``build_frame`` instead of ``epp_frame``. The AC pushes
-    its current status right after the handshake (same as a read), so we hand that in-session
+    its current status right after the handshake (same as a read; one unit pushes none, issue #21),
+    so we hand that in-session
     baseline blob (or ``None`` if none arrived) to ``build_frame`` to construct the op — no separate
     read connection, so control stays snappy and the AC isn't hit twice. ⚠️ That status is a report
     the module replays, not the appliance's answer, and it can lag a change made elsewhere (issue

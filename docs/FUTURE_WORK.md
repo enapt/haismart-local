@@ -21,6 +21,44 @@ keeps its own when it moves between the two sections. Expect the sequence to hav
 
 ## Open items
 
+### 79. A wall unit whose sessions carry no status report — read from the status its big-data report carries; confirm on the unit
+
+**Found 2026-11-12 (issue #21).** An HS-18VRSA05W (Haier's SE-Asia 2024 family) opened every
+session with two identical copies of its big-data report (`06/7d01`, 189 bytes) and nothing else:
+no status report and no fault frame, so no status decoded and setup failed on every retry. Its
+sibling HS-24VRRA05, the same product id for the same owner, works. Every other unit seen opens a
+session with its status report and fault frame. Both copies carry the envelope counter of a
+report, not of an answer to our query, so the unit did not answer the telemetry query either —
+which no unit of this family has (issue #8's never did; Haier's serial standard makes `4DFE` a
+master-slave-mode query).
+
+**What is done.** The family's byte map repeats the whole status report at the head of its
+big-data report — all 91 attributes at the same word and bit with the same value table, 41 of its
+48 words — and the reporter's frame lines up with a real 175-byte status report of the family
+(issue #8's) word for word where they should agree. So when a session carries no status report,
+the status is read from the one its big-data report carries (`uss.status_from_bigdata`). The rule
+comes from the map, not the identifier: 32 of the 93 vendor maps that publish a big-data report
+have that shape, and on the only other one with captured pairs (japan-wall) the status read this
+way equals the same session's push byte for byte. A session that carries no status in either form
+asks `getAllProperty` (`4D01`) in one further session, which Haier's serial standard has every
+appliance answer with its full status; that answer is taken first. Diagnostics record that
+session's frames under `status-query`.
+
+**Residue:**
+* Confirmed on the reporter's captured bytes only, not yet on the unit.
+* Whether this module answers `4D01` over the LAN is unknown (it is answered on `e_4.3.00`); the
+  read does not depend on it.
+* Its command sessions have not been seen. A group set is seeded from the polled status (a command
+  session that carries no status push falls back to it), and a reply with no status in it is
+  followed by a poll. Whether the unit accepts the group set, and what it answers, is unknown.
+* Haier's developer documents say a big-data report should not repeat the user data and goes only
+  to the cloud. The family's own map repeats it in full, and these modules relay the report to LAN
+  clients (the owner's two units do so on every poll). The map and the wire were followed.
+* Why this module replays its big-data report where issue #8's replays the status is not known.
+
+**What would settle it:** the reporter's diagnostics download after updating, taken once with the
+unit running and once after a command from Home Assistant.
+
 ### 76. The 0504 washer-dryer's controls — nothing yet seen accepted; settle the start first
 
 **Found 2026-11-08** (kucau0901's fork, brought in). The twin washer + dryer reads correctly from
@@ -2358,7 +2396,8 @@ through it (item 38 — those families are commanded through their own frame ins
 that introduces a new departure fails the suite instead of quietly being offered frame positions its
 own contract contradicts.
 
-**44. A refused command was reported as SUCCESS — fixed.** Every op connection opens with
+**44. A refused command was reported as SUCCESS — fixed.** On every unit whose command sessions
+have been seen, an op connection opens with
 the unit's routine status push (frameType `0x06`) and alarm push (`0x04`) *before* the answer to our
 own frame arrives, so a refusal always travels alongside a perfectly decodable status blob. Taking
 that blob as "the unit answered with its updated state" reported the refusal as success and displayed

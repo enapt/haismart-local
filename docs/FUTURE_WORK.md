@@ -21,12 +21,13 @@ keeps its own when it moves between the two sections. Expect the sequence to hav
 
 ## Open items
 
-### 79. A wall unit whose sessions carry no status report — read from the status its big-data report carries (confirmed on the unit); its commands are unseen
+### 79. A wall unit whose sessions often carry no status report — read from the status its big-data report carries; the read and a command confirmed on the unit
 
 **Found 2026-11-12 (issue #21).** An HS-18VRSA05 (Haier's SE-Asia 2024 family; the issue says -05W,
 its cloud record -05S; Wi-Fi module `e_20.0.2`, SDK 2.00, a voice module) opened every
-session with two identical copies of its big-data report (`06/7d01`, 189 bytes) and nothing else:
-no status report and no fault frame, so no status decoded and setup failed on every retry. Its
+session in the issue's log with two identical copies of its big-data report (`06/7d01`, 189 bytes)
+and nothing else: no status report and no fault frame, so no status decoded and setup failed on
+every retry. (Later sessions sometimes carry a status report as well; see below.) Its
 sibling HS-24VRRA05, the same product id for the same owner, works. Every other unit seen opens a
 session with its status report and fault frame. Both copies carry the envelope counter of a
 report, not of an answer to our query (45 answers and 121 reports in the stored captures, no
@@ -57,22 +58,38 @@ the same download, on 46 of 48 shared attributes — power, mode, setpoint, fan,
 temperatures, energy. The two that differ are the voice assistant's own settings (microphone
 on/off, voice language), which no entity shows. The current sensor was retired as intended.
 
+**A command from Home Assistant, confirmed on the unit (2026-11-13, the reporter's next two
+downloads, the same Home Assistant run).** A setpoint change from 26 to 29 °C went out as the
+family's five-word group set (`6001`); the five words differed from the status in the download
+before it only in the setpoint byte. The unit accepted it: its
+answer (`02/6d01`) and the report after it (`06/6d01`) both carry exactly the five words sent, the
+next polls read 29 °C, and Haier's cloud reads 29 °C. Power, mode, fan and the vanes go out in
+the same five words but were not changed in this test. The setpoint before it, 24 → 26 °C from
+Haier's app, was also read correctly by the next poll in the download, so neither change showed
+the big-data copy lagging.
+
+These downloads also show the unit sending a status report (`06/6d01`) in some sessions: none in
+the first nine polls of this run, three in the fourteen polls after the change from Haier's app,
+none in the two polls after Home Assistant's command. Each agreed with the same session's
+big-data copy on every setting the group set carries, so the push check never asked `4D01`. Two
+attributes differ between the reports: in the pushed status the voice assistant's settings
+(microphone, language) match Haier's cloud, while the unit's answer to the command and its
+big-data report carry other values. Neither reaches an entity. What makes the unit send a status
+report in one session and not in another is not known; the read takes whichever the session
+carries.
+
 **Residue:**
 * Whether this module answers `4D01` over the LAN is unknown (it is answered on `e_4.3.00`); the
   read does not depend on it.
-* Its command sessions have not been seen. A group set is seeded from the polled status (a command
-  session that carries no status push falls back to it), and a reply with no status in it is
-  followed by a poll. Whether the unit accepts the group set, and what it answers, is unknown. The
-  reporter's second download, meant to show a command, holds none: both files come from the same
-  poll, and only the cloud's setpoint moved (24 → 26). A command that fails at the connection is
-  not recorded in diagnostics at all, so that file cannot tell a change made outside Home Assistant
-  from a command that raised an error after the unit applied it.
+* One command has been seen on this unit, a setpoint change; the other settings in the same
+  group set have not been changed on it. A command that fails at the connection is not recorded
+  in diagnostics at all, so a failed one would need the error Home Assistant showed.
 * Reading the status out of a big-data report is this integration's step, not Haier's app's: the
   app asks `getAllProperty` every time it connects, repeating it until it has the attributes, and
   does not read a big-data report on the local channel. The step rests on the family's own map, on
   the one other such family with captured pairs, and on ESPHome's Haier component, which reads a
-  `7D01` through the same handler and offsets as a `6D01`. If the reporter's unit shows the
-  big-data copy lagging a change, the lever is to ask `4D01` first for this unit.
+  `7D01` through the same handler and offsets as a `6D01`. Neither change seen so far showed the
+  big-data copy lagging; if one does, the lever is to ask `4D01` first for this unit.
 * Haier's developer documents say a big-data report should not repeat the user data and goes only
   to the cloud. The family's own map repeats it in full, and these modules relay the report to LAN
   clients (the owner's two units do so on every poll). The map and the wire were followed.

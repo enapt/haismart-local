@@ -1728,12 +1728,13 @@ def _status_words_in_bigdata(uplus_id: str | None) -> int:
 def status_from_bigdata(data: bytes, uplus_id: str | None) -> bytes | None:
     """The status report a big-data (``7d01``) report carries, or ``None`` if it carries none.
 
-    One wall unit (issue #21, Haier's SE-Asia 2024 family) opened every session with its big-data
-    report and no status report at all, so nothing decoded. Its family's byte map repeats the whole
-    status report at the head of the big-data one (:func:`_status_words_in_bigdata`), so those
-    words ARE the status: this returns them as the ``6d01`` report the family sends, under the
-    frame type the big-data report arrived with -- still a report, never an answer to a query --
-    behind the same envelope, so every reader of a status report takes it unchanged.
+    One wall unit (issue #21, Haier's SE-Asia 2024 family) opened every session of its first log
+    with its big-data report and no status report at all, so nothing decoded. Its family's byte map
+    repeats the whole status report at the head of the big-data one
+    (:func:`_status_words_in_bigdata`), so those words ARE the status: this returns them as the
+    ``6d01`` report the family sends, under the frame type the big-data report arrived with -- still
+    a report, never an answer to a query -- behind the same envelope, so every reader of a status
+    report takes it unchanged.
 
     ``None`` for anything else: another frame, a report whose declared length disagrees with its
     size, a family whose map does not repeat its status exactly, or a report too short to hold it.
@@ -2236,7 +2237,7 @@ async def async_send_op(ip: str, device_id: str, local_key: str, epp_frame: byte
     blobs pushed in reply (so the caller can confirm the new state).
 
     Seeding a group-set (read-modify-write): pass ``build_frame`` instead of ``epp_frame``. The AC pushes
-    its current status right after the handshake (same as a read; one unit pushes none, issue #21),
+    its current status right after the handshake (same as a read; one unit often pushes none, issue #21),
     so we hand that in-session
     baseline blob (or ``None`` if none arrived) to ``build_frame`` to construct the op — no separate
     read connection, so control stays snappy and the AC isn't hit twice. ⚠️ That status is a report

@@ -1,11 +1,11 @@
 """The status report a family's big-data report carries (issue #21).
 
-A wall unit of Haier's SE-Asia 2024 family opened every session with its big-data report (`7d01`)
-and no status report at all, so nothing decoded and setup failed. Haier's own byte map for that
-family repeats every status attribute in the big-data report at the same word and bit with the same
-value table, and the report's leading words are the status report's words -- so the status is read
-from there. The rule comes from the map, not from the identifier: it applies to any family whose
-map has that shape, and to no other.
+A wall unit of Haier's SE-Asia 2024 family opened every session of its first log with its big-data
+report (`7d01`) and no status report at all, so nothing decoded and setup failed. Haier's own byte
+map for that family repeats every status attribute in the big-data report at the same word and bit
+with the same value table, and the report's leading words are the status report's words -- so the
+status is read from there. The rule comes from the map, not from the identifier: it applies to any
+family whose map has that shape, and to no other.
 """
 from __future__ import annotations
 
@@ -27,10 +27,11 @@ JP_2024 = "2008610800820324021200118018500000000000000000000000000000000040"
 CABINET = "201c10c7088081000d1205464544850000009cd68e692c104e2a333eab95d140"
 CLASSIC = "2008610800820324021200118012560000000000000000000000000000000040"
 
-#: Issue #21's report, as the unit sent it in every session -- only the envelope's device id is
-#: replaced with an illustrative one. On, cooling to 29 C in a 29 C room, fan auto, outdoors 28 C,
-#: 155 W with the compressor stopped, 253,206 Wh so far. The envelope is the one tag set seen only
-#: on this unit (`05 08 …`, then `06 0a` and a ten-character id); the frame still starts at byte 80.
+#: Issue #21's report, as the unit sent it in every session of its first log -- only the envelope's
+#: device id is replaced with an illustrative one. On, cooling to 29 C in a 29 C room, fan auto,
+#: outdoors 28 C, 155 W with the compressor stopped, 253,206 Wh so far. The envelope is the one tag
+#: set seen only on this unit (`05 08 …`, then `06 0a` and a ten-character id); the frame still
+#: starts at byte 80.
 ISSUE21_BIGDATA = bytes.fromhex(
     "00002715000000004e560100000302000005080000000000000000060a413142324333443445350000000000000000"
     "00000000000000000000000000000000000000000000000000000000000000006effff6a000000000000067d012064"

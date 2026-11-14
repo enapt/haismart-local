@@ -1073,9 +1073,9 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         1. What the session carried. Every unit met before issue #21 opens a session with its
            status report, and that is what this cycle used to depend on entirely.
         2. The status a big-data report carries, for a family whose byte map repeats the whole
-           status report at its head (`status_from_bigdata`). Issue #21's unit sent only that
-           report -- twice per session, with no status and no alarm frame -- while its sibling
-           with the same product id sent the status as usual.
+           status report at its head (`status_from_bigdata`). Issue #21's unit often sends only
+           that report -- twice per session, with no status and no alarm frame -- while its sibling
+           with the same product id sends the status as usual.
         3. The appliance's answer to ``getAllProperty`` (``4D01``), in one extra read-only
            session: Haier's serial standard has every appliance answer it with its full status
            (``02``), and that answer is put first. Asked only when the session decrypted at all --

@@ -1,11 +1,11 @@
 """Issue #21 — a wall unit whose sessions carry no status report, end to end.
 
-An HS-18VRSA05W (Haier's SE-Asia 2024 family) opened every session with two copies of its big-data
-report and nothing else, so no status decoded and setup failed on every retry. Its sibling with the
-same product id worked. The family's byte map repeats the whole status report at the head of the
-big-data one, so the status is read from there; and a session that carries no status at all, in
-either form, is answered by asking the appliance (`getAllProperty`), which Haier's serial standard
-requires every appliance to answer.
+An HS-18VRSA05W (Haier's SE-Asia 2024 family) opened every session of its first log with two copies
+of its big-data report and nothing else, so no status decoded and setup failed on every retry. Its
+sibling with the same product id worked. The family's byte map repeats the whole status report at
+the head of the big-data one, so the status is read from there; and a session that carries no status
+at all, in either form, is answered by asking the appliance (`getAllProperty`), which Haier's serial
+standard requires every appliance to answer.
 """
 from __future__ import annotations
 

@@ -63,7 +63,7 @@ downloads, the same Home Assistant run).** A setpoint change from 26 to 29 °C w
 family's five-word group set (`6001`); the five words differed from the status in the download
 before it only in the setpoint byte. The unit accepted it: its
 answer (`02/6d01`) and the report after it (`06/6d01`) both carry exactly the five words sent, the
-next polls read 29 °C, and Haier's cloud reads 29 °C. Power, mode, fan and the vanes go out in
+last poll in the download reads 29 °C, and Haier's cloud reads 29 °C. Power, mode, fan and the vanes go out in
 the same five words but were not changed in this test. The setpoint before it, 24 → 26 °C from
 Haier's app, was also read correctly by the next poll in the download, so neither change showed
 the big-data copy lagging.

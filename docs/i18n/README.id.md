@@ -47,11 +47,16 @@ menyiapkan dirinya sendiri untuk unit yang belum pernah kami lihat.
 
 ### Perangkat lainnya
 
-Pemanas air (listrik, gas, dan pompa kalor), kulkas, mesin cuci, mesin cuci-pengering, mesin pencuci piring, penghisap
+Pemanas air (listrik, gas, dan pompa kalor), kulkas, mesin cuci, mesin cuci-pengering, penghisap
 asap dapur, kompor gas, lemari sterilisasi, oven, dan pembersih udara juga didukung — **166 tipe
 produk dalam 37 kelas perangkat** — tetapi melalui mekanisme yang berbeda: bukan kode khusus per
 perangkat, melainkan peta byte resmi Haier untuk tipe produk itu, disaring oleh deklarasi unit Anda
 sendiri tentang fitur apa yang benar-benar dimilikinya.
+
+Kontrol pada perangkat-perangkat ini, kecuali pemanas air, mati secara bawaan; nyalakan di
+**Configure** integrasi. Kompor gas, oven, dan lemari sterilisasi tidak pernah mendapat kontrol, dan
+tidak ada perangkat yang mendapat kontrol untuk apa pun yang menyalakan api, memanaskan, atau
+memasak — semua pembacaan tetap ada.
 
 ⚠️ Petanya berasal dari pabrikan, **tetapi sebagian besar kategori tersebut belum pernah diuji pada
 perangkat nyata di sini**. Sejauh ini hanya **satu** pengaturan pada perangkat selain AC yang pernah
@@ -145,7 +150,7 @@ tetap mencakup seluruh nama kerusakan.
 
 > Kunci adalah satu-satunya hal yang tidak akan diberikan oleh perangkat. Jika Anda tidak
 > menyimpannya —
-> dari sensor *Local key* pemasangan sebelumnya, atau dari cadangan — gunakan **Masuk** saja; cara
+> dari **Konfigurasi ulang → Tampilkan kunci lokal** pemasangan sebelumnya, atau dari cadangan — gunakan **Masuk** saja; cara
 > itu mengambilkannya untuk Anda.
 
 ### Kalau perangkat terus meminta kunci baru

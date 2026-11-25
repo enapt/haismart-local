@@ -21,6 +21,41 @@ keeps its own when it moves between the two sections. Expect the sequence to hav
 
 ## Open items
 
+### 80. Controls on appliances no command has been confirmed on — off until their owner turns them on; heat sources never
+
+**2026-11-25 (the review of the HACS default-catalog submission, hacs/default#13895).** Only one
+setting on an appliance that is not an air conditioner has been seen accepted: the `2001` heat-pump
+water heater's setpoint (item 63). Everything else is generated from Haier's byte map, and the
+generic layer used to build a control for every field the map publishes a write id for — on a gas
+hob that is each burner's ignition, on an oven a bake temperature up to 300 °C. So:
+
+* **Air conditioners and water heaters** keep their controls.
+* **Laundry** — the `0504` and now the `0501` front loader, which is laundry by its class — is
+  read-only until its owner turns its controls on, and every command is gated on the machine's own
+  remote-control flag, the child lock and, for power-off, an idle phase (`laundry.LAYOUTS`). All 15
+  bundled `0501` maps publish `remoteCtrValid`, `runningMode`, `cyclePhase` and `returnStandby`
+  (`5D24`) identically.
+* **Every other class** is read-only until its owner turns on *Enable controls (unconfirmed)*, which
+  is offered only for a class Haier names (`appliance.controls_can_be_offered`).
+* **A heat source never gets a control** — `HEAT_SOURCE_CLASSES`: the `1d01` gas hob, the `1a01` and
+  `3e01` steam ovens, the `0b11`/`0b12` sterilising cabinets — and no appliance gets one for an
+  attribute whose name says it lights, heats or cooks (`appliance.heats_or_ignites`; on the shipped
+  catalogue that withholds a cooker hood's heated self-clean and cooking reminder). The coordinator
+  also refuses, before anything is sent, any command to an appliance known not to be an air
+  conditioner that is not one of its own offered writes.
+
+**What is open:** not one command to any of these classes has been seen accepted. The first owner
+who turns the controls on is the test, per class: a refusal names its reason, and diagnostics keep
+the last ten commands with the frame sent and every reply. For the `0501`, settle the steps in item
+76's order — the single-command start from standby has no confirmed precedent on any Haier washer.
+
+**On the side:** the name rule is a guard, not a classification — a false match leaves a setting
+read-only and that is the intended direction of error. Water heaters still get every control their
+map and model publish; only the `2001` setpoint is confirmed (item 63). The gas classes
+`1812`–`1817` publish power, setpoints, flows and modes, and no ignition or flame attribute — but
+power on a gas water heater does enable its burner, so this is the next place to look if the review
+asks for more.
+
 ### 79. A wall unit whose sessions often carry no status report — read from the status its big-data report carries; the read and a command confirmed on the unit
 
 **Found 2026-11-12 (issue #21).** An HS-18VRSA05 (Haier's SE-Asia 2024 family; the issue says -05W,

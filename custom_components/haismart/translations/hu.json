@@ -34,7 +34,7 @@
       },
       "manual": {
         "title": "Eszközadatok",
-        "description": "Csak a készülék helyi kulcsára van szüksége — egy korábbi telepítés „Helyi kulcs” érzékelőjéből vagy biztonsági mentésből. A Home Assistant megkeresi a készüléket a hálózatán, és minden mást magától a készüléktől kérdez meg.\n\nA kulcs magáról a készülékről nem olvasható le. Ha nincs elmentve, lépjen vissza és jelentkezzen be — így a rendszer lekéri Ön helyett.",
+        "description": "Csak a készülék helyi kulcsára van szüksége — egy korábbi telepítésből (Újrakonfigurálás → „Helyi kulcs megjelenítése”) vagy biztonsági mentésből. A Home Assistant megkeresi a készüléket a hálózatán, és minden mást magától a készüléktől kérdez meg.\n\nA kulcs magáról a készülékről nem olvasható le. Ha nincs elmentve, lépjen vissza és jelentkezzen be — így a rendszer lekéri Ön helyett.",
         "data": {
           "host": "IP-cím",
           "device_id": "Eszközazonosító",
@@ -55,7 +55,7 @@
           "local_key": "Helyi kulcs (32 hexadecimális karakter)"
         },
         "data_description": {
-          "local_key": "Kapcsold be az eszköz oldalán a „Helyi kulcs” diagnosztikai érzékelőt az aktuális kulcs leolvasásához, vagy add hozzá újra a készüléket a Haier-fiókoddal, hogy automatikusan letöltődjön."
+          "local_key": "A készülék új kulcsa. Az itt tárolt már nem működik; ha nincs meg az új, lépjen vissza és jelentkezzen be, hogy a rendszer letöltse."
         }
       },
       "host": {
@@ -70,7 +70,7 @@
       },
       "key_failed": {
         "title": "A kulcs automatikus letöltése nem sikerült",
-        "description": "A Home Assistant bejelentkezett, de nem tudta lekérni ennek a készüléknek a helyi kulcsát a Haier kiszolgálóiról — vagy a kapott kulcs nem fejti vissza a készülék állapotát.{note}\n\nEz gyakran átmeneti, ezért általában érdemes újrapróbálni. Ha továbbra is sikertelen, kézzel is megadhatja az adatokat, a kulcs azonban a készülékről nem olvasható le — egy korábbi telepítés „Helyi kulcs” érzékelőjéből vagy biztonsági mentésből lenne rá szüksége.",
+        "description": "A Home Assistant bejelentkezett, de nem tudta lekérni ennek a készüléknek a helyi kulcsát a Haier kiszolgálóiról — vagy a kapott kulcs nem fejti vissza a készülék állapotát.{note}\n\nEz gyakran átmeneti, ezért általában érdemes újrapróbálni. Ha továbbra is sikertelen, kézzel is megadhatja az adatokat, a kulcs azonban a készülékről nem olvasható le — egy korábbi telepítésből (Újrakonfigurálás → „Helyi kulcs megjelenítése”) vagy biztonsági mentésből lenne rá szüksége.",
         "menu_options": {
           "key_retry": "A kulcs letöltésének újbóli megkísérlése",
           "manual": "Inkább kézzel adom meg az adatokat"
@@ -81,7 +81,8 @@
         "description": "Módosítsd, hogyan éri el a Home Assistant ezt az egységet, anélkül hogy eltávolítanád és elveszítenéd az előzményeit.",
         "menu_options": {
           "reconfigure_host": "IP-cím módosítása",
-          "reconfigure_cloud": "A Haier-fiókom hozzáadása, hogy a kulcs magától frissüljön"
+          "reconfigure_cloud": "A Haier-fiókom hozzáadása, hogy a kulcs magától frissüljön",
+          "reconfigure_local_key": "Helyi kulcs megjelenítése"
         }
       },
       "reconfigure_host": {
@@ -105,6 +106,10 @@
         "data_description": {
           "zone_info": "Az az ország, ahol a fiókot létrehozták; nem feltétlenül ott laksz, és nem feltétlenül ott van a készülék."
         }
+      },
+      "reconfigure_local_key": {
+        "title": "Helyi kulcs",
+        "description": "A hálózatán bárki, akinél ez a kulcs van, vezérelheti a készüléket, ezért tartsa titokban. Ebben a bejegyzésben van tárolva, így minden Home Assistant-biztonsági mentés már tartalmazza.\n\n- Helyi kulcs: `{local_key}` (verzió: {localkey_version})\n- Eszközazonosító: `{device_id}`\n- IP-cím: `{host}`\n- Modellazonosító: `{uplus_id}`\n\nHa Haier-fiók nélkül szeretné újra hozzáadni a készüléket, adja meg ezt a kulcsot, amikor a beállítás kéri. Ennek bezárása semmit sem változtat."
       },
       "reauth": {
         "title": "Ennek a készüléknek új kulcsra van szüksége",
@@ -174,7 +179,8 @@
       "unknown": "Váratlan hiba – az eszköz bejelentkezési üzenete értelmezhetetlen volt.",
       "no_devices": "Bejelentkezve mint {username}, de ehhez a Haier-fiókhoz nem tartozik eszköz. Ha az alkalmazásba Google- vagy Facebook-fiókkal lépsz be, előbb oszd meg a készüléket ezzel a fiókkal az alkalmazásban, majd próbáld újra.",
       "already_in_progress": "Ennek a készüléknek a beállítása már folyamatban van.",
-      "account_no_devices": "Az itt már beállított Haier-fiók már nem sorol fel eszközöket. Ellenőrizze, hogy a készülék még mindig ebben a fiókban szerepel-e a Haier alkalmazásban, majd próbálja újra."
+      "account_no_devices": "Az itt már beállított Haier-fiók már nem sorol fel eszközöket. Ellenőrizze, hogy a készülék még mindig ebben a fiókban szerepel-e a Haier alkalmazásban, majd próbálja újra.",
+      "local_key_shown": "Semmi sem változott."
     }
   },
   "options": {
@@ -184,12 +190,14 @@
         "data": {
           "scan_interval": "Állapotlekérdezés gyakorisága (másodperc)",
           "appliance_kind": "Készülék",
-          "laundry_controls": "Mosógép- és szárítógép-vezérlés engedélyezése"
+          "laundry_controls": "Mosógép- és szárítógép-vezérlés engedélyezése",
+          "appliance_controls": "Vezérlés engedélyezése (nem megerősített)"
         },
         "data_description": {
           "scan_interval": "Milyen gyakran kérdezze le a készülék állapotát. Minden lekérdezés egy teljes helyi munkamenet, és kizárólag azért van, hogy észrevegye a távirányítóval vagy az alkalmazással végzett módosításokat – a Home Assistantból küldött parancsok amúgy is azonnal frissülnek.",
           "appliance_kind": "Csak olyan készüléknél jelenik meg, amely nem azonosította magát. A mosógép, szárítógép vagy mosó-szárítógép csak olvasható érzékelőket kap, és soha nem kap légkondicionáló-termosztátot.",
-          "laundry_controls": "Indítás, szüneteltetés és megszakítás gombokat ad hozzá minden dobhoz, valamint azokat az opcióbeállításokat, amelyeket a gép egyenként enged módosítani. Magát a programot a gép kezelőpaneljén kell kiválasztani. Alapértelmezetten ki van kapcsolva. Minden parancshoz továbbra is be kell kapcsolni a távvezérlést a gép kezelőpaneljén az adott dobhoz, és amíg az ki van kapcsolva, semmilyen parancs nem kerül elküldésre."
+          "laundry_controls": "Indítás, szüneteltetés és megszakítás gombokat ad hozzá minden dobhoz, valamint azokat az opcióbeállításokat, amelyeket a gép egyenként enged módosítani. Magát a programot a gép kezelőpaneljén kell kiválasztani. Alapértelmezetten ki van kapcsolva. Minden parancshoz továbbra is be kell kapcsolni a távvezérlést a gép kezelőpaneljén az adott dobhoz, és amíg az ki van kapcsolva, semmilyen parancs nem kerül elküldésre.",
+          "appliance_controls": "Kapcsolókat, választólistákat és számmezőket ad azokhoz a beállításokhoz, amelyeket a készülék modellje módosíthatónak tesz közzé. Egyetlen parancsról sem erősítették meg, hogy működik ezen a készüléktípuson, ezért alapértelmezetten ki van kapcsolva, és egy beállítás elutasításra kerülhet. Semmi, ami gyújt, fűt vagy főz, nem kerül soha felajánlásra."
         }
       }
     }
@@ -240,9 +248,6 @@
       },
       "last_self_clean": {
         "name": "Utolsó öntisztítás"
-      },
-      "local_key": {
-        "name": "Helyi kulcs"
       },
       "occupancy": {
         "name": "Jelenlét",

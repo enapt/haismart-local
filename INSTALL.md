@@ -128,8 +128,8 @@ can't rotate and your stored key stays valid indefinitely. This is **optional** 
 > (Option A), not a device. If everything for that AC goes **unavailable** rather than the Cloud
 > connection sensor going **off**, that is what has happened.
 
-> **Before blocking:** note each AC's current key and its version from its *Local key* diagnostic sensor
-> (a diagnostics download carries the version but redacts the key), or read the version with
+> **Before blocking:** note each AC's current key and its version from **Reconfigure → Show the local
+> key** on its entry (a diagnostics download carries the version but redacts the key), or read the version with
 > `probe_localkey_version(ip, deviceId)`. Keep a copy as your escape hatch; you can always re-add via the **offline** path — Home Assistant finds the
 > unit on the network itself, so only the key is needed — with no cloud involved.
 
@@ -188,8 +188,8 @@ with the sensor below rather than assuming.
    faster: about 10 seconds.) If it stays **on**, the AC is still getting out → use Option B.
 2. Confirm local read/control still works right after blocking (some IoT gear sulks without cloud — these
    don't, but check): change the setpoint in HA.
-3. Confirm the key stops rotating. A cut-off unit does **not** rotate at all. So a `Local key` version
-   that hasn't moved in a day is corroboration — but the sensor in step 1 is the signal, since a quiet
+3. Confirm the key stops rotating. A cut-off unit does **not** rotate at all. So a key version
+   (Reconfigure → Show the local key, or a diagnostics download) that hasn't moved in a day is corroboration — but the sensor in step 1 is the signal, since a quiet
    period proves nothing on its own (a connected but idle unit can also go a week without rotating).
 
 ### What you keep, and what you give up
@@ -214,12 +214,11 @@ the rule being removed, with no re-pairing.
 stored on the AC; with no server to push a rotation, your key stays valid, and the integration drives the AC
 locally forever. To be fully immune:
 
-1. **Archive every AC's localKey now** (while the cloud is alive). Each AC has a **Local key** diagnostic
-   sensor (disabled by default). Enable it on the device page → its state is the key and its attributes
-   carry host + deviceId + version + model ID. It then rides along in your HA backups automatically. Keep
-   those safe — the key grants ongoing local control. (The **Model ID** sensor shows the same identifier
-   without exposing the key, and is on by default; both are in your backups either way, since the values
-   are stored with the integration's settings.)
+1. **Archive every AC's localKey now** (while the cloud is alive). On each AC's entry choose
+   **Reconfigure → Show the local key**: it shows the key and its version with the host, device ID and
+   model ID, changes nothing, and only an administrator can open it. The key is also in every HA backup,
+   because it is stored with the integration's settings. Keep those safe — the key grants ongoing local
+   control. (The **Model ID** sensor shows the model identifier without the key, and is on by default.)
 2. **Onboard each AC via the config-flow offline path** (pick the unit from the network scan, paste the
    key from the backup). It needs
    **zero cloud** — no login, no gateway — so nothing depends on Haier being up. The model ID it needs to

@@ -1,10 +1,12 @@
 """What a laundry appliance may be told to do, and what must hold before it is.
 
-Everything here is Haier's own configFile for the class, not inference: the ``0504`` laundry centre
-(AWD14_BD4LCU1L, sold as HWD140-BD14LCGNU1) publishes, per attribute, whether it is writable at all
-(``writable``), whether it may be written ON ITS OWN (``operationType`` ``I`` or ``IG``, against
-``G`` = only inside a group command) and the single-parameter command that writes it (``eppCmd``,
-``5Dxx``; the washer drum's carry the ``0x80`` drum bit, ``5D82``-``5DD2``).
+Everything here is Haier's own configFile for the class, not inference. Each class publishes, per
+attribute, whether it is writable at all (``writable``), whether it may be written ON ITS OWN
+(``operationType`` ``I`` or ``IG``, against ``G`` = only inside a group command) and the
+single-parameter command that writes it (``eppCmd``, ``5Dxx``). Two classes are laid out here
+(:data:`LAYOUTS`): the ``0504`` laundry centre (AWD14_BD4LCU1L, sold as HWD140-BD14LCGNU1), whose
+washer drum's commands carry the ``0x80`` drum bit (``5D82``-``5DD2``), and the ``0501`` front
+loader, one drum reporting in ``6D01``. A laundry class with no layout has no controls at all.
 
 ⛔ **Off unless the owner turns it on.** No laundry write has been observed being accepted yet, and
 the costs are not symmetrical: a dryer started from a dashboard by mistake is a real thing in a
@@ -40,20 +42,15 @@ from types import MappingProxyType
 from typing import Any
 
 __all__ = [
-    "DRUMS",
-    "LAUNDRY_ACTIONS",
     "LAUNDRY_REFUSALS",
+    "LAYOUTS",
     "MACHINE_WIDE",
     "Drum",
     "LaundryAction",
-    "drum_of",
-    "drums_for",
+    "LaundryLayout",
     "laundry_writable",
+    "layout_for",
 ]
-
-#: Status report → which drum it describes. The dryer reports in ``6D01``/``7D01`` and the washer
-#: in ``6D02``/``7D02``. ``6D01`` is also the machine's common report (see :data:`MACHINE_WIDE`).
-_DRUM_OF_REPORT = {"6D01": "dryer", "7D01": "dryer", "6D02": "washer", "7D02": "washer"}
 
 
 @dataclass(frozen=True)
@@ -70,23 +67,10 @@ class Drum:
     idle_phases: frozenset[int]  # the phases with nothing in progress: standby, or finished
 
 
-#: ``running_mode`` 2 is 暂停 ("pause") in the model, but the machine reports it in standby too -- the
-#: idle dryer of the capture reads 2 at phase 0 -- so it cannot tell "paused mid-cycle, water in the
-#: drum" from "nothing to do". The PHASE can, and is what every gate below reads.
-DRUMS: Mapping[str, Drum] = MappingProxyType({
-    "washer": Drum(
-        "washer", "6D02", "washerRemoteCtrValid", "washerRunningMode",
-        "washerUnifiedProgramSettings", "washerReturnStandby",
-        # 0 待机/未启动 standby · 14 结束 end · 18/19 the post-wash dry / detangle finished
-        "laundryCyclePhase", frozenset({0, 14, 18, 19}),
-    ),
-    "dryer": Drum(
-        "dryer", "6D01", "dryerRemoteCtrValid", "dryerRunningMode",
-        "dryerUnifiedProgramSettings", "dryerReturnStandby",
-        # 0 待机状态 standby · 6 程序结束 finished
-        "dryerCyclePhase", frozenset({0, 6}),
-    ),
-})
+#: The washer's phases with nothing in progress: 0 待机/未启动 standby · 14 结束 end · 18/19 the
+#: post-wash dry / detangle finished. One table: the 0504's washer drum (``laundryCyclePhase``) and
+#: the 0501 (``cyclePhase``) publish the same twenty phases with the same descriptions.
+_WASHER_IDLE = frozenset({0, 14, 18, 19})
 
 
 @dataclass(frozen=True)
@@ -107,14 +91,92 @@ class LaundryAction:
         return bytes.fromhex(self.epp_cmd), self.value.to_bytes(2, "big")
 
 
-#: Per device class. ``washerReturnStandby`` / ``dryerReturnStandby`` are 返回待机 -- the cancel
-#: the panel's own "cancel" performs: the cycle is abandoned and the drum goes back to standby.
-LAUNDRY_ACTIONS: Mapping[str, Mapping[str, LaundryAction]] = MappingProxyType({
-    "0504": MappingProxyType({
-        "washerReturnStandby": LaundryAction("washerReturnStandby", "washer", "5DA4", 1),
-        "dryerReturnStandby": LaundryAction("dryerReturnStandby", "dryer", "5D23", 1),
-    }),
+@dataclass(frozen=True)
+class LaundryLayout:
+    """One laundry class's drums, the reports each is read from, and its write-only commands."""
+
+    drums: Mapping[str, Drum]
+    #: status report -> the drum it describes, big-data reports included
+    reports: Mapping[str, str]
+    #: write-only commands (each drum's cancel), by attribute name
+    actions: Mapping[str, LaundryAction]
+    #: the drum whose report files the panel child lock
+    lock_drum: str
+
+    def drum_of(self, report: str | None) -> str | None:
+        """Which drum a status report (``6D01`` ...) describes, or ``None``."""
+        return self.reports.get((report or "").upper())
+
+    def drums_for(self, name: str, report: str | None) -> tuple[str, ...]:
+        """The drums a write of ``name`` (filed under ``report``) must be allowed on."""
+        if name in MACHINE_WIDE:
+            return tuple(self.drums)
+        drum = self.drum_of(report)
+        return (drum,) if drum is not None else ()
+
+    def gate_fields(self) -> frozenset[str]:
+        """The attributes every gate reads: without all of them, nothing can be allowed."""
+        return frozenset(
+            name
+            for drum in self.drums.values()
+            for name in (drum.remote_valid, drum.running_mode, drum.phase)
+        )
+
+
+#: Per device class. ``running_mode`` 2 is 暂停 ("pause") in the model, but the machine reports it in
+#: standby too -- the idle 0504 dryer of the capture reads 2 at phase 0 -- so it cannot tell "paused
+#: mid-cycle, water in the drum" from "nothing to do". The PHASE can, and is what every gate reads.
+#: Each ``…ReturnStandby`` is 返回待机 -- the cancel the panel's own "cancel" performs: the cycle is
+#: abandoned and the drum goes back to standby. Write-only, so quoted from the configFile.
+LAYOUTS: Mapping[str, LaundryLayout] = MappingProxyType({
+    # The twin washer + dryer: the dryer reports in 6D01/7D01, the washer in 6D02/7D02. 6D01 is
+    # also the machine's common report (see `MACHINE_WIDE`), and files the child lock.
+    "0504": LaundryLayout(
+        drums=MappingProxyType({
+            "washer": Drum(
+                "washer", "6D02", "washerRemoteCtrValid", "washerRunningMode",
+                "washerUnifiedProgramSettings", "washerReturnStandby",
+                "laundryCyclePhase", _WASHER_IDLE,
+            ),
+            "dryer": Drum(
+                "dryer", "6D01", "dryerRemoteCtrValid", "dryerRunningMode",
+                "dryerUnifiedProgramSettings", "dryerReturnStandby",
+                # 0 待机状态 standby · 6 程序结束 finished
+                "dryerCyclePhase", frozenset({0, 6}),
+            ),
+        }),
+        reports=MappingProxyType(
+            {"6D01": "dryer", "7D01": "dryer", "6D02": "washer", "7D02": "washer"}
+        ),
+        actions=MappingProxyType({
+            "washerReturnStandby": LaundryAction("washerReturnStandby", "washer", "5DA4", 1),
+            "dryerReturnStandby": LaundryAction("dryerReturnStandby", "dryer", "5D23", 1),
+        }),
+        lock_drum="dryer",
+    ),
+    # The front loader: one drum, everything in 6D01/7D01. All 15 bundled configFiles of the class
+    # publish these five attributes at the same report and the same values -- `runningMode` 1 start
+    # / 2 pause (epp 1 / 0), `returnStandby` 5D24 with the single value 1, and `cyclePhase` with the
+    # washer phase table above.
+    "0501": LaundryLayout(
+        drums=MappingProxyType({
+            "washer": Drum(
+                "washer", "6D01", "remoteCtrValid", "runningMode",
+                "laundryCycle", "returnStandby", "cyclePhase", _WASHER_IDLE,
+            ),
+        }),
+        reports=MappingProxyType({"6D01": "washer", "7D01": "washer"}),
+        actions=MappingProxyType({
+            "returnStandby": LaundryAction("returnStandby", "washer", "5D24", 1),
+        }),
+        lock_drum="washer",
+    ),
 })
+
+
+def layout_for(device_class: str | None) -> LaundryLayout | None:
+    """The laundry layout of a device class (``"0504"`` ...), or ``None`` where there is none."""
+    return LAYOUTS.get((device_class or "").lower())
 
 #: Writable on their own, but not offered. Each would change something an owner would not expect
 #: a dashboard toggle to change:
@@ -126,18 +188,16 @@ _NOT_OFFERED = frozenset({
     "remotePowerOn",
     # The load weight the machine measures for itself; set by hand it misleads the dosing.
     "weight",
-    # Start and pause are buttons, with their own gate; as a select they would read "Paused"
-    # in standby and start a cycle when changed.
-    "washerRunningMode", "dryerRunningMode",
-    # The programme: Haier sets one only inside a group command with its parameters (module
-    # docstring). Chosen at the panel.
-    "washerUnifiedProgramSettings", "dryerUnifiedProgramSettings",
+    # Each drum's start/pause (a button, with its own gate; as a select it would read "Paused" in
+    # standby and start a cycle when changed) and its programme (Haier sets one only inside a group
+    # command with its parameters -- module docstring) are taken from the layout's drums.
     # Haier's washer-dryer manual: the network can neither set nor clear the child lock
     # (物联网不能解除童锁，也不能通过物联网设置童锁) -- and the machine refuses with code 0009 while it is on.
     "childLockStatus",
     # One-shot actions and factory resets. None has a report position, so none qualifies anyway;
     # named so that a later map which gave one a position still could not offer it.
-    "dryerResetOpt", "washerResetOpt", "unlockShutdown", "maxSpinIntDry", "sendTestCmd",
+    "dryerResetOpt", "washerResetOpt", "resetOpt", "unlockShutdown", "maxSpinIntDry",
+    "sendTestCmd",
 })
 
 #: Why a laundry board refused a command -- Haier's laundry refusal table (UART protocol
@@ -171,21 +231,10 @@ LAUNDRY_REFUSALS: Mapping[int, str] = MappingProxyType({
 MACHINE_WIDE = frozenset({"onOffStatus", "childLockStatus", "buzzerDisabled", "wdLinkageStatus"})
 
 
-def drums_for(name: str, report: str | None) -> tuple[str, ...]:
-    """The drums a write of ``name`` (filed under ``report``) must be allowed on: one, or both."""
-    if name in MACHINE_WIDE:
-        return tuple(DRUMS)
-    drum = drum_of(report)
-    return (drum,) if drum is not None else ()
-
-
-def drum_of(report: str | None) -> str | None:
-    """Which drum a status report (``6D01`` ...) describes, or ``None``."""
-    return _DRUM_OF_REPORT.get((report or "").upper())
-
-
 def laundry_writable(
-    fields: Iterable[Any], declared: Iterable[Mapping[str, Any]] | None
+    layout: LaundryLayout | None,
+    fields: Iterable[Any],
+    declared: Iterable[Mapping[str, Any]] | None,
 ) -> frozenset[str]:
     """The attributes a laundry appliance may be written one at a time, from its own two sources.
 
@@ -193,7 +242,16 @@ def laundry_writable(
     ``declared`` the unit's digital-model attributes. An attribute qualifies only when the map
     publishes a single-parameter write id for it in a status report it also reads back from, AND
     the unit declares it writable, individually (``operationType`` containing ``I``), and visible.
+
+    ⛔ Nothing at all without a layout, or where the map lacks one of the attributes the gates read
+    (:meth:`LaundryLayout.gate_fields`): a control no gate can ever allow is not offered.
     """
+    fields = tuple(fields)
+    if layout is None or not layout.gate_fields() <= {f.name for f in fields}:
+        return frozenset()
+    withheld = _NOT_OFFERED | {
+        name for drum in layout.drums.values() for name in (drum.running_mode, drum.programme)
+    }
     by_name = {a.get("name"): a for a in (declared or ()) if a.get("name")}
     offered: set[str] = set()
     for field in fields:
@@ -202,8 +260,8 @@ def laundry_writable(
             attr is None
             or not field.epp_cmd
             or not field.writable
-            or drum_of(field.status_cmd) is None
-            or field.name in _NOT_OFFERED
+            or layout.drum_of(field.status_cmd) is None
+            or field.name in withheld
         ):
             continue
         if not attr.get("writable") or attr.get("invisible"):

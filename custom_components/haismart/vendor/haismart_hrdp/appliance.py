@@ -37,7 +37,10 @@ __all__ = [
     "asks_owner",
     "CLASS_KINDS",
     "CLASS_LABELS",
+    "HEAT_SOURCE_CLASSES",
     "class_of",
+    "controls_can_be_offered",
+    "heats_or_ignites",
     "identified_not_air_conditioner",
     "kind_for",
     "label_for",
@@ -49,9 +52,10 @@ class ApplianceKind(StrEnum):
 
     AIR_CONDITIONER = "air_conditioner"
     WATER_HEATER = "water_heater"
-    # A washer, dryer or twin washer + dryer. Read-only by construction (see `PLATFORMS_BY_KIND`):
-    # its whole state is the manufacturer's byte map, split across two status frames (6D01 dryer,
-    # 6D02 washer on the 0504 laundry centre), and no hand-built family describes any of it.
+    # A washer, dryer or twin washer + dryer. Read-only unless its owner turns its controls on, and
+    # then gated on the machine's own remote-control flag (see `laundry`): its whole state is the
+    # manufacturer's byte map -- split across two status frames on the 0504 laundry centre (6D01
+    # dryer, 6D02 washer) -- and no hand-built family describes any of it.
     LAUNDRY = "laundry"
     OTHER = "other"
 
@@ -79,6 +83,11 @@ CLASS_KINDS: Mapping[str, ApplianceKind] = MappingProxyType({
     "1817": ApplianceKind.WATER_HEATER,      # 500S / 788零冷水燃气热水器
     "2001": ApplianceKind.WATER_HEATER,      # 热泵热水器 — heat pump (issue #13)
     # --- laundry ----------------------------------------------------------------------------------
+    # 单滚筒XQG… / 单滚筒EG… — front-loading washing machine. Every one of its 15 bundled configFiles
+    # publishes the controls the laundry gates read: the panel's remote-control flag
+    # (`remoteCtrValid`), the cycle phase (`cyclePhase`), start/pause (`runningMode`) and the
+    # return-to-standby cancel (`returnStandby`, 5D24) -- see `laundry.LAYOUTS`.
+    "0501": ApplianceKind.LAUNDRY,
     # AWD14_BD4LCU1L越南中子 — twin washer + dryer (HWD140-BD14LCGNU1); its configFile files washer
     # fields under 6D02/7D02 and dryer fields under 6D01/7D01, and the cloud labels it Roller Washer.
     "0504": ApplianceKind.LAUNDRY,
@@ -93,11 +102,12 @@ CLASS_KINDS: Mapping[str, ApplianceKind] = MappingProxyType({
 # Also unlisted, and known to be something else — each would be a real appliance kind of its own,
 # and none has ever been seen in the field by this project:
 #   0121 0122 0123 0124 0128  BCD_… / 风冷三门 — refrigerators
-#   0501 0502                 单滚筒XQG… — washing machines (0501 keeps its generic, model-driven
-#                             entities; an unnamed 05xx such as 0502 resolves to LAUNDRY by family)
+#   0502                      单滚筒XQG… — washing machine, V2 text profile only (an unnamed 05xx
+#                             such as this one resolves to LAUNDRY by family)
 #   0901 0902                 烟机 / 定频油烟机 — cooker hoods
 #   0b11 0b12                 消毒柜 — sterilising cabinets
-#   1a01                      S45TXXXU1 — dishwasher
+#   1a01                      S45TXXXU1 — steam oven (its own model's deviceType is 蒸箱; bake,
+#                             grill and pizza modes, oven alarms)
 #   1d01                      燃气灶 — gas hob
 #   2101                      空气净化器 — air purifier
 #   3e01                      H3蒸烤箱 — steam oven
@@ -122,7 +132,7 @@ CLASS_LABELS: Mapping[str, str] = MappingProxyType({
     "2001": "Heat-pump water heater",
     "0901": "Cooker hood", "0902": "Cooker hood",
     "0b11": "Sterilising cabinet", "0b12": "Sterilising cabinet",
-    "1a01": "Dishwasher",
+    "1a01": "Steam oven",
     "1d01": "Gas hob",
     "2101": "Air purifier",
     "3e01": "Steam oven",
@@ -131,6 +141,46 @@ CLASS_LABELS: Mapping[str, str] = MappingProxyType({
     "150e": "Body-composition scale",
     "2702": "Sensor",
 })
+
+
+# Appliances whose purpose is heat or flame: a gas hob, the ovens, and the sterilising cabinets (which
+# reach sterilising temperatures). No control is ever built for one of these, whatever its byte map
+# publishes as writable and whatever its owner opts into. A burner lit or an oven heated from a
+# dashboard, by an automation or by somebody who mistook the entity, is not a risk a setting can
+# be allowed to carry -- and not one command to any of these classes has ever been observed being
+# accepted. Their readings are unaffected.
+HEAT_SOURCE_CLASSES = frozenset({"1d01", "1a01", "3e01", "0b11", "0b12"})
+
+# Attribute names that light, heat or cook, for the classes that may have controls at all. Matched
+# loosely on purpose, because the cost is lopsided: a false match only leaves a setting read-only.
+# On the shipped catalogue it withholds a cooker hood's heated self-clean (`meltWashStatus`) and its
+# cooking reminder, and matches nothing on a refrigerator.
+_HEATS_OR_IGNITES = re.compile(
+    r"ignit|flame|fire|burn|bake|grill|roast|broil|heat|cook|steam|melt|pyro|oven",
+    re.IGNORECASE,
+)
+
+
+def heats_or_ignites(name: str) -> bool:
+    """Whether an attribute's name says it lights, heats or cooks -- never offered as a control."""
+    return bool(_HEATS_OR_IGNITES.search(name))
+
+
+def controls_can_be_offered(uplus_id: str | None) -> bool:
+    """Whether an owner may turn on the controls of an appliance that is not an air conditioner,
+    a water heater or laundry.
+
+    Only for a class Haier names (`CLASS_LABELS`) that is not a heat source. A class nobody here can
+    name could be anything -- including an oven nobody has catalogued -- so it stays read-only.
+    Laundry has its own option and its own gates, and the other two kinds their own platforms.
+    """
+    device_class = class_of(uplus_id)
+    return (
+        device_class is not None
+        and kind_for(uplus_id) is ApplianceKind.OTHER
+        and device_class in CLASS_LABELS
+        and device_class not in HEAT_SOURCE_CLASSES
+    )
 
 
 def label_for(uplus_id: str | None) -> str | None:
@@ -158,7 +208,8 @@ _APP_TYPE_KINDS: Mapping[str, ApplianceKind] = MappingProxyType({
 
 # The laundry FAMILY: a class whose first two digits are 05. Used only for a 05xx class this module
 # has no row for -- a named class keeps exactly what its row says -- and only ever to say "laundry",
-# which builds sensors and nothing that writes, so a wrong answer costs a reading, never a command.
+# which builds sensors and nothing that writes: such a class has no entry in `laundry.LAYOUTS`, so
+# its controls cannot be turned on, and a wrong answer costs a reading, never a command.
 # The evidence that 05 is laundry and nothing else: every 05xx configFile Haier publishes names a
 # washer (0501 单滚筒…, 0502 the same in the V2 text format, 0504 AWD14_BD4LCU1L — a twin washer +
 # dryer), and Haier's own product catalogue files its laundry under three categories, "Roller
@@ -198,8 +249,8 @@ def kind_for(uplus_id: str | None, app_type_name: str | None = None) -> Applianc
     device_class = class_of(uplus_id)
     if device_class is not None and device_class in CLASS_KINDS:
         return CLASS_KINDS[device_class]
-    # A class we have a name for is settled by that name, whatever the cloud calls it: a 0501
-    # front loader is a "Roller Washer" too, and a label must not quietly change what it gets.
+    # A class we have a name for is settled by that name, whatever the cloud calls it: a label must
+    # not quietly change what an appliance gets.
     if device_class is not None and device_class in CLASS_LABELS:
         return ApplianceKind.OTHER
     if device_class is not None and device_class.startswith(_LAUNDRY_FAMILY):
@@ -219,7 +270,7 @@ def identified_not_air_conditioner(uplus_id: str | None, app_type_name: str | No
     decodes as one, because some uncatalogued classes are working air conditioners -- but a report
     length is not an identity: the 0504 dryer's 165-byte report is also an AC family's length, and
     read that way it had a setpoint, a mode and a 50.5 °C "room". A class Haier names as something
-    else (a refrigerator, a 0501 washer, a hood) has answered the question, so its report is never
+    else (a refrigerator, a washer, a hood) has answered the question, so its report is never
     read as an AC's, whichever length it happens to be.
     """
     kind = kind_for(uplus_id, app_type_name)

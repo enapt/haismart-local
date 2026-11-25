@@ -45,11 +45,15 @@ máy chưa ai ở đây từng thấy.
 
 ### Các thiết bị khác
 
-Máy nước nóng (điện, gas và bơm nhiệt), tủ lạnh, máy giặt, máy giặt sấy, máy rửa bát, máy hút mùi, bếp gas, tủ
+Máy nước nóng (điện, gas và bơm nhiệt), tủ lạnh, máy giặt, máy giặt sấy, máy hút mùi, bếp gas, tủ
 tiệt trùng, lò nướng và máy lọc không khí cũng được hỗ trợ — **166 loại sản phẩm thuộc 37 lớp thiết
 bị** — nhưng bằng một cơ chế khác: không có mã riêng cho từng thiết bị, mà dùng bản đồ byte chính
 thức của Haier cho loại sản phẩm đó, lọc qua phần khai báo của chính máy bạn về những tính năng nó
 thực sự có.
+
+Điều khiển trên các thiết bị này, trừ máy nước nóng, tắt theo mặc định; bật trong **Configure** của
+tích hợp. Bếp gas, lò nướng và tủ tiệt trùng không bao giờ có điều khiển, và không thiết bị nào có
+điều khiển cho thứ đánh lửa, làm nóng hay nấu nướng — mọi giá trị đọc vẫn còn đủ.
 
 ⚠️ Bản đồ đó là của nhà sản xuất, **nhưng phần lớn các danh mục chưa từng được thử trên máy thật ở
 đây**. Cho đến nay chỉ **một** thiết lập trên thiết bị không phải điều hòa từng được gửi thành công
@@ -137,8 +141,8 @@ máy của bạn, theo số in trên nhãn. Trả lời câu này rất đáng: 
 dụng và danh sách tính năng thực tế của máy bạn. **Bỏ qua cũng không sao** — hệ thống sẽ dùng những
 quy tắc mà mọi model trong dòng đó đều thống nhất, và vẫn bao gồm đầy đủ tên các lỗi.
 
-> Khóa là thứ duy nhất thiết bị sẽ không đưa cho bạn. Nếu bạn không lưu khóa nào — từ cảm biến
-> *Local key* của lần cài trước, hoặc từ bản sao lưu — hãy dùng **Đăng nhập**; cách đó sẽ lấy khóa
+> Khóa là thứ duy nhất thiết bị sẽ không đưa cho bạn. Nếu bạn không lưu khóa nào — từ
+> **Cấu hình lại → Hiển thị khóa cục bộ** của lần cài trước, hoặc từ bản sao lưu — hãy dùng **Đăng nhập**; cách đó sẽ lấy khóa
 > giúp bạn.
 
 ### Nếu máy cứ đòi khóa mới

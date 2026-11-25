@@ -90,9 +90,12 @@ from haismart_hrdp.appliance import (
     ApplianceKind,
     answer_applies,
     asks_owner,
+    class_of,
+    controls_can_be_offered,
     kind_for,
     label_for,
 )
+from haismart_hrdp.laundry import layout_for
 
 from .cloud_transport import async_cloud_transport
 from .const import (
@@ -100,6 +103,7 @@ from .const import (
     APPLIANCE_KIND_CHOICES,
     CONF_ACCESS_TOKEN,
     CONF_APP_TYPE,
+    CONF_APPLIANCE_CONTROLS,
     CONF_APPLIANCE_KIND,
     CONF_CLOUD_CLIENT_ID,
     CONF_DEVICE_ID,
@@ -1531,7 +1535,35 @@ class HaismartConfigFlow(ConfigFlow, domain=DOMAIN):
         if not entry.data.get(CONF_REFRESH_TOKEN):
             # only worth offering when it would actually change something
             options.append("reconfigure_cloud")
+        options.append("reconfigure_local_key")
         return self.async_show_menu(step_id="reconfigure", menu_options=options)
+
+    async def async_step_reconfigure_local_key(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Show the appliance's current localKey, for copying out. Changes nothing.
+
+        The key controls the appliance from anywhere on the network, so it is shown here and
+        nowhere else: a config flow is open to administrators only, whereas an entity's state is
+        visible to every user and is kept by the recorder. Beside it, everything else a manual
+        re-add can use, so one screen is a complete record of how to reach the unit with no
+        account.
+        """
+        entry = self._get_reconfigure_entry()
+        if user_input is not None:
+            return self.async_abort(reason="local_key_shown")
+        data = entry.data
+        return self.async_show_form(
+            step_id="reconfigure_local_key",
+            data_schema=vol.Schema({}),
+            description_placeholders={
+                CONF_LOCAL_KEY: data.get(CONF_LOCAL_KEY) or "-",
+                CONF_LOCALKEY_VERSION: str(data.get(CONF_LOCALKEY_VERSION) or "-"),
+                CONF_DEVICE_ID: data.get(CONF_DEVICE_ID) or "-",
+                CONF_HOST: data.get(CONF_HOST) or "-",
+                CONF_UPLUS_ID: data.get(CONF_UPLUS_ID) or "-",
+            },
+        )
 
     async def async_step_reconfigure_host(
         self, user_input: dict[str, Any] | None = None
@@ -1820,29 +1852,28 @@ class HaismartOptionsFlow(_OptionsFlowBase):
                 or CONF_APPLIANCE_KIND in entry.options
             )
         )
-        # Laundry controls, for an entry that is laundry now -- by class, label or answer.
-        coordinator = getattr(entry, "runtime_data", None)
-        is_laundry = (
-            coordinator.appliance_kind if coordinator is not None else kind
-        ) is ApplianceKind.LAUNDRY
+        # Controls, where this appliance can have them: laundry with a known layout, or a named
+        # class that is not a heat source. Never for an AC (its controls are always on) or a water
+        # heater. Both follow from the class alone, which the coordinator stores in the entry once
+        # it learns it -- so they hold for an entry that is not loaded too. (The owner's answer
+        # applies only to a class nobody names, which has no layout and is offered nothing.)
+        laundry = kind is ApplianceKind.LAUNDRY and layout_for(class_of(uplus_id)) is not None
+        appliance = controls_can_be_offered(uplus_id)
         if user_input is not None:
-            # This form replaces the options wholesale, so an answer it did not show is carried.
+            # This form replaces the options wholesale, so a value it did not show is carried.
             if not offered and CONF_APPLIANCE_KIND in entry.options:
                 user_input = {**user_input, CONF_APPLIANCE_KIND: entry.options[CONF_APPLIANCE_KIND]}
-            if not is_laundry and CONF_LAUNDRY_CONTROLS in entry.options:
-                user_input = {
-                    **user_input, CONF_LAUNDRY_CONTROLS: entry.options[CONF_LAUNDRY_CONTROLS]
-                }
+            for shown, key in ((laundry, CONF_LAUNDRY_CONTROLS),
+                               (appliance, CONF_APPLIANCE_CONTROLS)):
+                if not shown and key in entry.options:
+                    user_input = {**user_input, key: entry.options[key]}
             return self.async_create_entry(data=user_input)
-        if is_laundry:
-            kind_field_laundry: dict[Any, Any] = {
-                vol.Required(
-                    CONF_LAUNDRY_CONTROLS,
-                    default=bool(entry.options.get(CONF_LAUNDRY_CONTROLS, False)),
-                ): BooleanSelector(),
-            }
-        else:
-            kind_field_laundry = {}
+        control_fields: dict[Any, Any] = {}
+        for shown, key in ((laundry, CONF_LAUNDRY_CONTROLS), (appliance, CONF_APPLIANCE_CONTROLS)):
+            if shown:
+                control_fields[
+                    vol.Required(key, default=bool(entry.options.get(key, False)))
+                ] = BooleanSelector()
         kind_field: dict[Any, Any] = {}
         if offered:
             kind_field = {
@@ -1856,7 +1887,7 @@ class HaismartOptionsFlow(_OptionsFlowBase):
             data_schema=vol.Schema(
                 {
                     **kind_field,
-                    **kind_field_laundry,
+                    **control_fields,
                     vol.Required(
                         CONF_SCAN_INTERVAL,
                         default=self.config_entry.options.get(

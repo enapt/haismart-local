@@ -34,7 +34,7 @@
       },
       "manual": {
         "title": "Gerätedaten",
-        "description": "Sie brauchen nur den lokalen Schlüssel dieses Geräts — aus dem Sensor „Lokaler Schlüssel“ einer früheren Installation oder aus einem Backup. Home Assistant sucht das Gerät in Ihrem Netzwerk und fragt alles Übrige direkt beim Gerät ab.\n\nDer Schlüssel lässt sich dem Gerät selbst nicht entnehmen. Wenn Sie keinen gespeichert haben, gehen Sie zurück und melden Sie sich an — damit wird er für Sie abgerufen.",
+        "description": "Sie brauchen nur den lokalen Schlüssel dieses Geräts — aus einer früheren Installation (Neu konfigurieren → „Lokalen Schlüssel anzeigen“) oder aus einem Backup. Home Assistant sucht das Gerät in Ihrem Netzwerk und fragt alles Übrige direkt beim Gerät ab.\n\nDer Schlüssel lässt sich dem Gerät selbst nicht entnehmen. Wenn Sie keinen gespeichert haben, gehen Sie zurück und melden Sie sich an — damit wird er für Sie abgerufen.",
         "data": {
           "host": "IP-Adresse",
           "device_id": "Geräte-ID",
@@ -55,7 +55,7 @@
           "local_key": "Lokaler Schlüssel (32 Hex-Zeichen)"
         },
         "data_description": {
-          "local_key": "Aktiviere den Diagnosesensor „Lokaler Schlüssel“ auf der Geräteseite, um den aktuellen Schlüssel abzulesen, oder füge das Gerät erneut mit deinem Haier-Konto hinzu, damit er automatisch geholt wird."
+          "local_key": "Der neue Schlüssel des Geräts. Der hier gespeicherte funktioniert nicht mehr; wenn Sie den neuen nicht haben, gehen Sie zurück und melden Sie sich an, damit er abgerufen wird."
         }
       },
       "host": {
@@ -70,7 +70,7 @@
       },
       "key_failed": {
         "title": "Schlüssel konnte nicht automatisch geholt werden",
-        "description": "Home Assistant hat sich angemeldet, konnte den lokalen Schlüssel dieses Geräts aber nicht von Haiers Servern abrufen — oder der erhaltene Schlüssel entschlüsselt den Status des Geräts nicht.{note}\n\nDas ist oft vorübergehend, ein erneuter Versuch lohnt sich meist. Wenn es weiterhin fehlschlägt, können Sie die Daten von Hand eingeben; den Schlüssel können Sie dem Gerät allerdings nicht entnehmen — Sie bräuchten ihn aus dem Sensor „Lokaler Schlüssel“ einer früheren Installation oder aus einem Backup.",
+        "description": "Home Assistant hat sich angemeldet, konnte den lokalen Schlüssel dieses Geräts aber nicht von Haiers Servern abrufen — oder der erhaltene Schlüssel entschlüsselt den Status des Geräts nicht.{note}\n\nDas ist oft vorübergehend, ein erneuter Versuch lohnt sich meist. Wenn es weiterhin fehlschlägt, können Sie die Daten von Hand eingeben; den Schlüssel können Sie dem Gerät allerdings nicht entnehmen — Sie bräuchten ihn aus einer früheren Installation (Neu konfigurieren → „Lokalen Schlüssel anzeigen“) oder aus einem Backup.",
         "menu_options": {
           "key_retry": "Erneut versuchen, den Schlüssel zu holen",
           "manual": "Stattdessen die Daten von Hand eingeben"
@@ -81,7 +81,8 @@
         "description": "Ändere, wie Home Assistant dieses Gerät erreicht, ohne es zu entfernen und seinen Verlauf zu verlieren.",
         "menu_options": {
           "reconfigure_host": "IP-Adresse ändern",
-          "reconfigure_cloud": "Mein Haier-Konto hinzufügen, damit sich der Schlüssel selbst erneuert"
+          "reconfigure_cloud": "Mein Haier-Konto hinzufügen, damit sich der Schlüssel selbst erneuert",
+          "reconfigure_local_key": "Lokalen Schlüssel anzeigen"
         }
       },
       "reconfigure_host": {
@@ -105,6 +106,10 @@
         "data_description": {
           "zone_info": "Das Land, in dem das Konto erstellt wurde. Es kann sich von deinem Wohnort oder dem Standort des Geräts unterscheiden."
         }
+      },
+      "reconfigure_local_key": {
+        "title": "Lokaler Schlüssel",
+        "description": "Jeder in Ihrem Netzwerk, der diesen Schlüssel hat, kann das Gerät steuern – halten Sie ihn also geheim. Er ist in diesem Eintrag gespeichert, daher enthält ihn jedes Home-Assistant-Backup bereits.\n\n- Lokaler Schlüssel: `{local_key}` (Version {localkey_version})\n- Geräte-ID: `{device_id}`\n- IP-Adresse: `{host}`\n- Modell-ID: `{uplus_id}`\n\nUm das Gerät ohne Haier-Konto erneut hinzuzufügen, geben Sie diesen Schlüssel ein, wenn die Einrichtung danach fragt. Das Schließen dieses Fensters ändert nichts."
       },
       "reauth": {
         "title": "Dieses Gerät braucht einen neuen Schlüssel",
@@ -174,7 +179,8 @@
       "unknown": "Unerwarteter Fehler – die Ankündigung des Geräts wurde nicht verstanden.",
       "no_devices": "Als {username} angemeldet, aber dieses Haier-Konto hat keine Geräte. Wenn du dich in der App mit Google oder Facebook anmeldest, teile das Gerät zuerst in der App mit diesem Konto und versuche es dann erneut.",
       "already_in_progress": "Dieses Gerät wird bereits eingerichtet.",
-      "account_no_devices": "Das hier bereits eingerichtete Haier-Konto führt keine Geräte mehr auf. Prüfen Sie, ob das Gerät in der Haier-App noch unter diesem Konto liegt, und versuchen Sie es erneut."
+      "account_no_devices": "Das hier bereits eingerichtete Haier-Konto führt keine Geräte mehr auf. Prüfen Sie, ob das Gerät in der Haier-App noch unter diesem Konto liegt, und versuchen Sie es erneut.",
+      "local_key_shown": "Es wurde nichts geändert."
     }
   },
   "options": {
@@ -184,12 +190,14 @@
         "data": {
           "scan_interval": "Abfrageintervall für den Status (Sekunden)",
           "appliance_kind": "Gerät",
-          "laundry_controls": "Steuerung für Waschmaschine und Trockner aktivieren"
+          "laundry_controls": "Steuerung für Waschmaschine und Trockner aktivieren",
+          "appliance_controls": "Steuerung aktivieren (unbestätigt)"
         },
         "data_description": {
           "scan_interval": "Wie oft das Gerät nach seinem Zustand gefragt wird. Jede Abfrage ist eine vollständige lokale Sitzung und dient allein dazu, Änderungen über die Fernbedienung oder die App mitzubekommen – Befehle, die du aus Home Assistant sendest, werden ohnehin sofort übernommen.",
           "appliance_kind": "Wird nur für ein Gerät angezeigt, das sich nicht identifiziert hat. Eine Waschmaschine, ein Trockner oder ein Waschtrockner erhält schreibgeschützte Sensoren und nie einen Klimaanlagen-Thermostat.",
-          "laundry_controls": "Fügt für jede Trommel Schaltflächen zum Starten, Pausieren und Abbrechen hinzu, dazu die Optionseinstellungen, die sich am Gerät einzeln ändern lassen. Das Programm selbst wird am Bedienfeld des Geräts gewählt. Standardmäßig deaktiviert. Jeder Befehl setzt weiterhin voraus, dass die Fernsteuerung für diese Trommel am Bedienfeld des Geräts eingeschaltet ist; solange sie aus ist, wird nichts gesendet."
+          "laundry_controls": "Fügt für jede Trommel Schaltflächen zum Starten, Pausieren und Abbrechen hinzu, dazu die Optionseinstellungen, die sich am Gerät einzeln ändern lassen. Das Programm selbst wird am Bedienfeld des Geräts gewählt. Standardmäßig deaktiviert. Jeder Befehl setzt weiterhin voraus, dass die Fernsteuerung für diese Trommel am Bedienfeld des Geräts eingeschaltet ist; solange sie aus ist, wird nichts gesendet.",
+          "appliance_controls": "Fügt Schalter, Auswahllisten und Zahlenfelder für die Einstellungen hinzu, die das Modell dieses Geräts als änderbar veröffentlicht. Für diese Art von Gerät ist noch kein funktionierender Befehl bestätigt, daher ist dies standardmäßig aus, und eine Einstellung kann abgelehnt werden. Nichts, was zündet, heizt oder gart, wird je angeboten."
         }
       }
     }
@@ -240,9 +248,6 @@
       },
       "last_self_clean": {
         "name": "Letzte Selbstreinigung"
-      },
-      "local_key": {
-        "name": "Lokaler Schlüssel"
       },
       "occupancy": {
         "name": "Belegung",

@@ -34,7 +34,7 @@
       },
       "manual": {
         "title": "Device details",
-        "description": "The only thing you need is this unit's local key — from a previous install's Local key sensor, or a backup. Home Assistant looks for the appliance on your network and asks it for everything else.\n\nThere is no way to read the key off the unit itself. If you do not have one saved, go back and sign in — that fetches it for you.",
+        "description": "The only thing you need is this unit's local key — from a previous install (Reconfigure → Show the local key), or a backup. Home Assistant looks for the appliance on your network and asks it for everything else.\n\nThere is no way to read the key off the unit itself. If you do not have one saved, go back and sign in — that fetches it for you.",
         "data": {
           "host": "IP address",
           "device_id": "Device ID",
@@ -55,7 +55,7 @@
           "local_key": "Local key (32-char hex)"
         },
         "data_description": {
-          "local_key": "Enable the Local key diagnostic sensor on the device page to read the current one, or re-add the appliance with your Haier account to have it fetched automatically."
+          "local_key": "The appliance's new key. The one stored here no longer works; if you do not have the new one, go back and sign in to have it fetched."
         }
       },
       "host": {
@@ -70,7 +70,7 @@
       },
       "key_failed": {
         "title": "Could not fetch the key automatically",
-        "description": "Home Assistant signed in, but could not retrieve this appliance's local key from Haier's servers — or the key it got does not decrypt the unit's status.{note}\n\nThis is often temporary, so trying again is usually worth it. If it keeps failing you can enter the details by hand, though the key is not something you can read off the unit — you would need it from a previous install's Local key sensor or a backup.",
+        "description": "Home Assistant signed in, but could not retrieve this appliance's local key from Haier's servers — or the key it got does not decrypt the unit's status.{note}\n\nThis is often temporary, so trying again is usually worth it. If it keeps failing you can enter the details by hand, though the key is not something you can read off the unit — you would need it from a previous install (Reconfigure → Show the local key) or a backup.",
         "menu_options": {
           "key_retry": "Try fetching the key again",
           "manual": "Enter the details by hand instead"
@@ -81,7 +81,8 @@
         "description": "Change how Home Assistant reaches this unit, without removing it and losing its history.",
         "menu_options": {
           "reconfigure_host": "Change the IP address",
-          "reconfigure_cloud": "Add my Haier account, so the key refreshes itself"
+          "reconfigure_cloud": "Add my Haier account, so the key refreshes itself",
+          "reconfigure_local_key": "Show the local key"
         }
       },
       "reconfigure_host": {
@@ -105,6 +106,10 @@
         "data_description": {
           "zone_info": "The country the account was created in, which may not be where you live or where the appliance is installed."
         }
+      },
+      "reconfigure_local_key": {
+        "title": "Local key",
+        "description": "Anyone on your network who has this key can control the appliance, so keep it private. It is stored in this entry, so every Home Assistant backup already includes it.\n\n- Local key: `{local_key}` (version {localkey_version})\n- Device ID: `{device_id}`\n- IP address: `{host}`\n- Model ID: `{uplus_id}`\n\nTo add the appliance again without a Haier account, enter this key when setup asks for it. Closing this changes nothing."
       },
       "reauth": {
         "title": "This appliance needs a new key",
@@ -174,7 +179,8 @@
       "unknown": "Unexpected error — the device announcement wasn't understood.",
       "no_devices": "Signed in as {username}, but this Haier account has no devices. If you sign in to the app with Google or Facebook, share the appliance to this account in the app first, then try again.",
       "already_in_progress": "This appliance is already being set up.",
-      "account_no_devices": "The Haier account already set up here no longer lists any devices. Check the appliance is still in the Haier app under this account, then try again."
+      "account_no_devices": "The Haier account already set up here no longer lists any devices. Check the appliance is still in the Haier app under this account, then try again.",
+      "local_key_shown": "Nothing was changed."
     }
   },
   "options": {
@@ -184,12 +190,14 @@
         "data": {
           "scan_interval": "Status poll interval (seconds)",
           "appliance_kind": "Appliance",
-          "laundry_controls": "Enable washer and dryer controls"
+          "laundry_controls": "Enable washer and dryer controls",
+          "appliance_controls": "Enable controls (unconfirmed)"
         },
         "data_description": {
           "scan_interval": "How often to ask the appliance for its state. Each poll is a full local session, and it exists only to notice changes made with the remote or the app — commands you send from Home Assistant update instantly regardless.",
           "appliance_kind": "Only shown for an appliance that did not identify itself. A washer, dryer or washer-dryer gets read-only sensors and never an air-conditioner thermostat.",
-          "laundry_controls": "Adds start, pause and cancel buttons for each drum, plus the option settings the machine allows to be changed one at a time. The programme itself is chosen at the machine's panel. Off by default. Every command still needs remote control turned on at the machine's panel for that drum, and nothing is sent while it is off."
+          "laundry_controls": "Adds start, pause and cancel buttons for each drum, plus the option settings the machine allows to be changed one at a time. The programme itself is chosen at the machine's panel. Off by default. Every command still needs remote control turned on at the machine's panel for that drum, and nothing is sent while it is off.",
+          "appliance_controls": "Adds switches, selects and numbers for the settings this appliance's model publishes as changeable. No command to this kind of appliance has been confirmed to work, so this is off by default and a setting may be refused. Nothing that lights, heats or cooks is ever offered."
         }
       }
     }
@@ -240,9 +248,6 @@
       },
       "last_self_clean": {
         "name": "Last self-clean"
-      },
-      "local_key": {
-        "name": "Local key"
       },
       "occupancy": {
         "name": "Occupancy",

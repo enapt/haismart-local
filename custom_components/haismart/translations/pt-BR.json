@@ -34,7 +34,7 @@
       },
       "manual": {
         "title": "Dados do dispositivo",
-        "description": "A única coisa de que você precisa é a chave local desta unidade — do sensor “Chave local” de uma instalação anterior, ou de um backup. O Home Assistant procura o aparelho na sua rede e pergunta todo o resto a ele.\n\nNão há como ler a chave na própria unidade. Se você não tiver uma salva, volte e faça login — assim ela é obtida para você.",
+        "description": "A única coisa de que você precisa é a chave local desta unidade — de uma instalação anterior (Reconfigurar → “Mostrar a chave local”), ou de um backup. O Home Assistant procura o aparelho na sua rede e pergunta todo o resto a ele.\n\nNão há como ler a chave na própria unidade. Se você não tiver uma salva, volte e faça login — assim ela é obtida para você.",
         "data": {
           "host": "Endereço IP",
           "device_id": "ID do dispositivo",
@@ -55,7 +55,7 @@
           "local_key": "Chave local (32 caracteres hexadecimais)"
         },
         "data_description": {
-          "local_key": "Ative o sensor de diagnóstico «Chave local» na página do dispositivo para ler a chave atual, ou adicione o aparelho novamente com sua conta Haier para que ela seja obtida automaticamente."
+          "local_key": "A nova chave do aparelho. A salva aqui não funciona mais; se você não tiver a nova, volte e entre na sua conta para que ela seja obtida."
         }
       },
       "host": {
@@ -70,7 +70,7 @@
       },
       "key_failed": {
         "title": "Não foi possível obter a chave automaticamente",
-        "description": "O Home Assistant fez login, mas não conseguiu obter a chave local deste aparelho nos servidores da Haier — ou a chave obtida não descriptografa o status da unidade.{note}\n\nIsso costuma ser temporário, então geralmente vale a pena tentar de novo. Se continuar falhando, você pode inserir os dados manualmente, embora a chave não possa ser lida na unidade: você precisaria dela pelo sensor “Chave local” de uma instalação anterior ou por um backup.",
+        "description": "O Home Assistant fez login, mas não conseguiu obter a chave local deste aparelho nos servidores da Haier — ou a chave obtida não descriptografa o status da unidade.{note}\n\nIsso costuma ser temporário, então geralmente vale a pena tentar de novo. Se continuar falhando, você pode inserir os dados manualmente, embora a chave não possa ser lida na unidade: você precisaria dela de uma instalação anterior (Reconfigurar → “Mostrar a chave local”) ou de um backup.",
         "menu_options": {
           "key_retry": "Tentar obter a chave novamente",
           "manual": "Informar os dados manualmente"
@@ -81,7 +81,8 @@
         "description": "Altere como o Home Assistant alcança este aparelho, sem removê-lo e perder o histórico.",
         "menu_options": {
           "reconfigure_host": "Alterar o endereço IP",
-          "reconfigure_cloud": "Adicionar minha conta Haier, para a chave se renovar sozinha"
+          "reconfigure_cloud": "Adicionar minha conta Haier, para a chave se renovar sozinha",
+          "reconfigure_local_key": "Mostrar a chave local"
         }
       },
       "reconfigure_host": {
@@ -105,6 +106,10 @@
         "data_description": {
           "zone_info": "O país em que a conta foi criada, que pode não ser onde você mora nem onde o aparelho está instalado."
         }
+      },
+      "reconfigure_local_key": {
+        "title": "Chave local",
+        "description": "Qualquer pessoa na sua rede que tenha esta chave pode controlar o aparelho, então mantenha-a em sigilo. Ela fica salva nesta entrada, por isso todo backup do Home Assistant já a inclui.\n\n- Chave local: `{local_key}` (versão {localkey_version})\n- ID do dispositivo: `{device_id}`\n- Endereço IP: `{host}`\n- ID do modelo: `{uplus_id}`\n\nPara adicionar o aparelho de novo sem uma conta Haier, insira esta chave quando a configuração pedir. Fechar esta janela não altera nada."
       },
       "reauth": {
         "title": "Este aparelho precisa de uma nova chave",
@@ -174,7 +179,8 @@
       "unknown": "Erro inesperado — o anúncio do dispositivo não foi compreendido.",
       "no_devices": "Conectado como {username}, mas esta conta Haier não tem dispositivos. Se você entra no aplicativo com Google ou Facebook, compartilhe primeiro o aparelho com esta conta no aplicativo e tente de novo.",
       "already_in_progress": "Este aparelho já está sendo configurado.",
-      "account_no_devices": "A conta Haier já configurada aqui não lista mais nenhum dispositivo. Verifique se o aparelho ainda está no aplicativo Haier nesta conta e tente de novo."
+      "account_no_devices": "A conta Haier já configurada aqui não lista mais nenhum dispositivo. Verifique se o aparelho ainda está no aplicativo Haier nesta conta e tente de novo.",
+      "local_key_shown": "Nada foi alterado."
     }
   },
   "options": {
@@ -184,12 +190,14 @@
         "data": {
           "scan_interval": "Intervalo de consulta de estado (segundos)",
           "appliance_kind": "Aparelho",
-          "laundry_controls": "Ativar os controles da lavadora e da secadora"
+          "laundry_controls": "Ativar os controles da lavadora e da secadora",
+          "appliance_controls": "Ativar os controles (não confirmados)"
         },
         "data_description": {
           "scan_interval": "Com que frequência perguntar o estado ao aparelho. Cada consulta é uma sessão local completa e existe apenas para perceber mudanças feitas pelo controle remoto ou pelo aplicativo — os comandos enviados do Home Assistant são atualizados na hora de qualquer forma.",
           "appliance_kind": "Exibido apenas para um aparelho que não se identificou. Uma lavadora, secadora ou lava e seca recebe sensores somente leitura e nunca um termostato de ar-condicionado.",
-          "laundry_controls": "Adiciona botões de iniciar, pausar e cancelar para cada tambor, além das configurações de opções que a máquina permite alterar uma de cada vez. O programa em si é escolhido no painel da máquina. Desativado por padrão. Cada comando ainda exige que a função de controle remoto esteja ativada no painel da máquina para aquele tambor, e nada é enviado enquanto ela estiver desativada."
+          "laundry_controls": "Adiciona botões de iniciar, pausar e cancelar para cada tambor, além das configurações de opções que a máquina permite alterar uma de cada vez. O programa em si é escolhido no painel da máquina. Desativado por padrão. Cada comando ainda exige que a função de controle remoto esteja ativada no painel da máquina para aquele tambor, e nada é enviado enquanto ela estiver desativada.",
+          "appliance_controls": "Adiciona interruptores, seletores e campos numéricos para as configurações que o modelo deste aparelho publica como alteráveis. Nenhum comando para este tipo de aparelho foi confirmado como funcional, então isto fica desativado por padrão e uma configuração pode ser recusada. Nada que acenda chama, aqueça ou cozinhe é oferecido."
         }
       }
     }
@@ -240,9 +248,6 @@
       },
       "last_self_clean": {
         "name": "Última autolimpeza"
-      },
-      "local_key": {
-        "name": "Chave local"
       },
       "occupancy": {
         "name": "Ocupação",

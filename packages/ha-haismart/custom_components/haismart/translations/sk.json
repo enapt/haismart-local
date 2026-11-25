@@ -34,7 +34,7 @@
       },
       "manual": {
         "title": "Údaje o zariadení",
-        "description": "Jediné, čo potrebujete, je lokálny kľúč tejto jednotky — zo senzora „Lokálny kľúč“ predchádzajúcej inštalácie alebo zo zálohy. Home Assistant jednotku vo vašej sieti vyhľadá sám a na všetko ostatné sa spýta priamo jej.\n\nKľúč sa z jednotky prečítať nedá. Ak žiadny uložený nemáte, vráťte sa a prihláste sa — tým sa získa za vás.",
+        "description": "Jediné, čo potrebujete, je lokálny kľúč tejto jednotky — z predchádzajúcej inštalácie (Prekonfigurovať → „Zobraziť lokálny kľúč“) alebo zo zálohy. Home Assistant jednotku vo vašej sieti vyhľadá sám a na všetko ostatné sa spýta priamo jej.\n\nKľúč sa z jednotky prečítať nedá. Ak žiadny uložený nemáte, vráťte sa a prihláste sa — tým sa získa za vás.",
         "data": {
           "host": "IP adresa",
           "device_id": "ID zariadenia",
@@ -55,7 +55,7 @@
           "local_key": "Lokálny kľúč (32 hexadecimálnych znakov)"
         },
         "data_description": {
-          "local_key": "Na stránke zariadenia zapnite diagnostický senzor „Lokálny kľúč“ a prečítajte si ten aktuálny, alebo jednotku pridajte znova so svojím účtom Haier, aby sa získaval automaticky."
+          "local_key": "Nový kľúč jednotky. Kľúč uložený tu už nefunguje; ak nový nemáte, vráťte sa a prihláste sa, aby sa získal za vás."
         }
       },
       "host": {
@@ -70,7 +70,7 @@
       },
       "key_failed": {
         "title": "Kľúč sa nepodarilo získať automaticky",
-        "description": "Home Assistant sa prihlásil, ale nepodarilo sa mu získať lokálny kľúč tejto jednotky zo serverov Haier — alebo získaný kľúč nedešifruje stav jednotky.{note}\n\nBýva to často dočasné, takže sa zvyčajne oplatí skúsiť to znova. Ak to zlyháva opakovane, môžete údaje zadať ručne, kľúč sa však z jednotky prečítať nedá — potrebovali by ste ho zo senzora „Lokálny kľúč“ predchádzajúcej inštalácie alebo zo zálohy.",
+        "description": "Home Assistant sa prihlásil, ale nepodarilo sa mu získať lokálny kľúč tejto jednotky zo serverov Haier — alebo získaný kľúč nedešifruje stav jednotky.{note}\n\nBýva to často dočasné, takže sa zvyčajne oplatí skúsiť to znova. Ak to zlyháva opakovane, môžete údaje zadať ručne, kľúč sa však z jednotky prečítať nedá — potrebovali by ste ho z predchádzajúcej inštalácie (Prekonfigurovať → „Zobraziť lokálny kľúč“) alebo zo zálohy.",
         "menu_options": {
           "key_retry": "Skúsiť získať kľúč znova",
           "manual": "Zadať údaje ručne"
@@ -81,7 +81,8 @@
         "description": "Zmeňte spôsob, akým sa Home Assistant k tejto jednotke pripája, bez toho, aby ste ju odstránili a prišli o jej históriu.",
         "menu_options": {
           "reconfigure_host": "Zmeniť IP adresu",
-          "reconfigure_cloud": "Pridať môj účet Haier, aby sa kľúč obnovoval sám"
+          "reconfigure_cloud": "Pridať môj účet Haier, aby sa kľúč obnovoval sám",
+          "reconfigure_local_key": "Zobraziť lokálny kľúč"
         }
       },
       "reconfigure_host": {
@@ -105,6 +106,10 @@
         "data_description": {
           "zone_info": "Krajina, v ktorej bol účet vytvorený; nemusí ísť o krajinu, kde bývate alebo kde je jednotka nainštalovaná."
         }
+      },
+      "reconfigure_local_key": {
+        "title": "Lokálny kľúč",
+        "description": "Ktokoľvek vo vašej sieti, kto má tento kľúč, môže jednotku ovládať, preto ho uchovajte v tajnosti. Je uložený v tomto zázname, takže ho každá záloha Home Assistantu už obsahuje.\n\n- Lokálny kľúč: `{local_key}` (verzia {localkey_version})\n- ID zariadenia: `{device_id}`\n- IP adresa: `{host}`\n- ID modelu: `{uplus_id}`\n\nAk chcete jednotku pridať znova bez účtu Haier, zadajte tento kľúč, keď si oň nastavenie požiada. Zatvorením tohto okna sa nič nezmení."
       },
       "reauth": {
         "title": "Táto jednotka potrebuje nový kľúč",
@@ -174,7 +179,8 @@
       "unknown": "Neočakávaná chyba – ohlásenie zariadenia nebolo zrozumiteľné.",
       "no_devices": "Prihlásené ako {username}, ale tento účet Haier nemá žiadne zariadenia. Ak sa do aplikácie prihlasujete cez Google alebo Facebook, najprv v aplikácii zdieľajte jednotku s týmto účtom a potom to skúste znova.",
       "already_in_progress": "Táto jednotka sa už nastavuje.",
-      "account_no_devices": "Účet Haier, ktorý je tu už nastavený, už neuvádza žiadne zariadenia. Skontrolujte, či je jednotka v aplikácii Haier stále pod týmto účtom, a skúste to znova."
+      "account_no_devices": "Účet Haier, ktorý je tu už nastavený, už neuvádza žiadne zariadenia. Skontrolujte, či je jednotka v aplikácii Haier stále pod týmto účtom, a skúste to znova.",
+      "local_key_shown": "Nič sa nezmenilo."
     }
   },
   "options": {
@@ -184,12 +190,14 @@
         "data": {
           "scan_interval": "Interval dopytovania na stav (sekundy)",
           "appliance_kind": "Jednotka",
-          "laundry_controls": "Povoliť ovládanie práčky a sušičky"
+          "laundry_controls": "Povoliť ovládanie práčky a sušičky",
+          "appliance_controls": "Povoliť ovládanie (nepotvrdené)"
         },
         "data_description": {
           "scan_interval": "Ako často sa jednotky pýtať na jej stav. Každý dopyt je plnohodnotná lokálna relácia a existuje len preto, aby zachytil zmeny vykonané diaľkovým ovládačom alebo aplikáciou – príkazy odoslané z Home Assistanta sa prejavia okamžite tak či tak.",
           "appliance_kind": "Zobrazuje sa len pri jednotke, ktorá sa neidentifikovala. Práčka, sušička alebo práčka so sušičkou dostane senzory len na čítanie, nikdy nie termostat klimatizácie.",
-          "laundry_controls": "Pridá ku každému bubnu tlačidlá na spustenie, pozastavenie a zrušenie a tiež nastavenia možností, ktoré stroj dovoľuje meniť po jednom. Samotný program sa volí na paneli stroja. Predvolene vypnuté. Každý príkaz stále vyžaduje zapnuté diaľkové ovládanie na paneli stroja pre daný bubon; kým je vypnuté, nič sa neodosiela."
+          "laundry_controls": "Pridá ku každému bubnu tlačidlá na spustenie, pozastavenie a zrušenie a tiež nastavenia možností, ktoré stroj dovoľuje meniť po jednom. Samotný program sa volí na paneli stroja. Predvolene vypnuté. Každý príkaz stále vyžaduje zapnuté diaľkové ovládanie na paneli stroja pre daný bubon; kým je vypnuté, nič sa neodosiela.",
+          "appliance_controls": "Pridá prepínače, výbery a čísla pre nastavenia, ktoré model tejto jednotky uvádza ako meniteľné. Pri tomto druhu jednotky nebol potvrdený žiadny fungujúci príkaz, preto je to predvolene vypnuté a nastavenie môže byť odmietnuté. Nič, čo zapaľuje, ohrieva alebo varí, sa nikdy neponúka."
         }
       }
     }
@@ -240,9 +248,6 @@
       },
       "last_self_clean": {
         "name": "Posledné samočistenie"
-      },
-      "local_key": {
-        "name": "Lokálny kľúč"
       },
       "occupancy": {
         "name": "Obsadenosť",

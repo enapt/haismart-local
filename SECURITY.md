@@ -22,7 +22,10 @@ performs.
 - Do **not** commit real credentials. `*.local.json` and similar are git-ignored; scrub any pasted logs.
 - Test vectors and examples must use **illustrative** device ids, keys and addresses — never a real
   `localKey`, MAC or LAN address.
-- The **Local key** diagnostic sensor is disabled by default because its value is a secret. The
+- The **local key is never an entity**: an entity's state is visible to every Home Assistant user and
+  kept by the recorder. An administrator reads it under **Reconfigure → Show the local key**, and it
+  is in every backup because it is stored in the config entry. A *Local key* sensor still in an
+  install's entity registry is removed at setup, and the states the recorder kept of it are purged. The
   **Model ID** sensor is enabled by default and is not a secret — it identifies the model, not the unit,
   and is shared by every air conditioner of that type.
 

@@ -85,7 +85,7 @@ label. If something decodes oddly, that's a
 ### Everything else
 
 Water heaters (electric, gas and heat-pump), refrigerators, washing machines, a twin washer + dryer,
-dishwashers, cooker hoods, gas hobs, sterilising cabinets, ovens and air purifiers are covered too —
+cooker hoods, gas hobs, sterilising cabinets, ovens and air purifiers are covered too —
 **166 product types across 37 device classes** — but through a different mechanism, and the
 difference is worth knowing before you rely on it.
 
@@ -135,7 +135,6 @@ One device per air conditioner, with:
 | **Last changed by** *(diagnostic)* | Handset, the unit's own panel, or the network — an automation trigger for when someone picks up the remote |
 | **Model ID** *(diagnostic)* | The identifier that selects your unit's report layout; the full value is on its `uplus_id` attribute. Quote it in a bug report about a model that isn't decoded |
 | **Cloud connection** *(diagnostic, on/off)* | Whether the AC itself can still reach Haier's servers — see [going fully cloud-independent](#going-fully-cloud-independent) |
-| **Local key** *(diagnostic, off by default)* | Your unit's key, so it rides along in HA backups |
 
 Which appear depends on your model: the integration reads your unit's own model and offers only
 what that unit has, so a heat pump gets Heat and a cooling-only unit does not. A setting your AC
@@ -166,8 +165,22 @@ range and option list:
 
 A **water heater** additionally gets a real `water_heater` entity — its own temperature range and
 its own operating modes, not a thermostat's. Categories with a natural Home Assistant entity get one
-as that support is confirmed; everything else is still fully readable and controllable through the
-entities above.
+as that support is confirmed; everything else is fully readable through the entities above.
+
+**Not every appliance gets controls.** Only one setting on an appliance that is not an air
+conditioner has been seen accepted (that water heater's setpoint), so a writable field becomes a
+control only where that is a reasonable risk:
+
+* a **water heater** gets its controls;
+* a **washing machine or washer-dryer** is read-only until you turn on **Configure → Enable washer
+  and dryer controls**, and each command then needs remote control turned on at the machine's own
+  panel;
+* **anything else** — a refrigerator, a cooker hood, an air purifier — is read-only until you turn on
+  **Configure → Enable controls (unconfirmed)**, and a setting may be refused;
+* a **gas hob, an oven or a sterilising cabinet never gets a control**, and no appliance gets one for
+  a setting that lights, heats or cooks. Every reading is still there.
+
+[Appliance support](docs/appliances.md#what-is-actually-proven-and-what-is-not) has the detail.
 
 Every generated entity also carries Haier's own identifier and description for the field
 (`haier_attribute`, `haier_description`) as attributes, so anything named oddly is easy to report
@@ -181,14 +194,14 @@ wish list — your unit gets the subset it declares:
 |---|---:|---|
 | **Water heaters** (electric) | 76 | Target and current temperature · heating status · tank volume · power draw · reservation schedules with their own temperatures · changed-by |
 | **Refrigerators** | 16 | Fridge and freezer temperatures, targets and sensor readings · door status · quick-freeze and quick-chill · intelligence mode · interior light · ambient sensor |
-| **Washing machines** | 15 | Spin speed · cycle phase · remaining wash time · actual load weight · detergent level · water used · permanent-press and loosen options · child-lock |
+| **Washing machines** | 15 | Spin speed · cycle phase · remaining wash time · actual load weight · detergent level · water used · permanent-press and loosen options · child-lock · read-only unless you turn its controls on ([details](docs/appliances.md#washing-machine-0501)) |
 | **Twin washer + dryer** | 1 | Both drums, each from its own status report: programme, cycle phase, remaining time, door and door lock, spin, temperature, dry level, dosing · read-only unless you turn its controls on ([details](docs/appliances.md#twin-washer--dryer-0504)) |
 | **Gas water heaters** | 9 | Target and outlet temperature · water flow · valve and flow status · safety lock · energy saving · smart temperature sensing · methane alarm |
-| **Sterilising cabinets** | 5 | Air quality · humidity · air-cleaning status · door smart-open · lock · clock |
+| **Sterilising cabinets** | 5 | Air quality · humidity · air-cleaning status · door smart-open · lock · clock · read only, never controlled |
 | **Cooker hoods** | 4 | Fan speed (level and percent) · scene lighting · self-clean · smart wind and pressurise · gesture control · presence sensing |
-| **Gas hobs** | 3 | Per-burner ignition and flame status · per-burner target temperature and timers · child-lock |
+| **Gas hobs** | 3 | Per-burner ignition and flame status · per-burner target temperature and timers · child-lock · read only, never controlled |
 | **Heat-pump water heaters** | 2 | Target and current temperature · operating mode · electric-heating and auto-defrost · four reservation schedules · off-peak windows · energy saved |
-| **Dishwashers** · **Steam ovens** | 1 each | Cleaning/bake status and steps · probe and sensor temperatures · waste-water and water-hardness · standby |
+| **Steam ovens** | 2 | Cleaning/bake status and steps · probe and sensor temperatures · waste-water and water-hardness · standby · read only, never controlled |
 | **Air purifiers** | 1 | Air quality (dust and LED) · filter life · humidity · fan velocity · timer |
 
 **A worked example — the heat-pump water heater from [issue #13](https://github.com/enapt/haismart-local/issues/13):**
@@ -286,8 +299,8 @@ finds it on your network, and reads which model it is — you won't paste or cho
 
 **I already have this unit's local key.** The offline route. Home Assistant looks for Haier
 appliances on your network, asks each to identify itself, and lists what answered; you pick yours
-and paste the key. If you have no key saved — from the *Local key* diagnostic sensor of a previous
-install, or a backup — sign in instead: the appliance itself will never hand it over.
+and paste the key. If you have no key saved — from a previous install (its **Reconfigure → Show the
+local key**), or a backup — sign in instead: the appliance itself will never hand it over.
 
 The offline route then asks **which model** you have, from the short list of models sharing your
 unit's product family, by the number printed on its label; signing in needs no answer, because the
@@ -342,9 +355,10 @@ integration or comes from the appliance. The one remaining cloud dependency is t
 can **rotate** the key, which the integration re-fetches. If you'd rather your appliance never
 phoned home at all:
 
-1. **Archive the key first.** Enable the *Local key* diagnostic sensor on the device page — its state
-   is the key, its attributes carry the host, device ID and version, and it rides along in your
-   Home Assistant backups.
+1. **Archive the key first.** On the appliance's entry, choose **Reconfigure → Show the local key**:
+   it shows the key and its version with the device ID, address and model ID, and changes nothing.
+   Only an administrator can open it. The key is also in every Home Assistant backup, because it is
+   stored in the entry.
 2. **Block the appliance's internet access** at your router — the simplest rule that works is denying traffic
    to `43.156.75.60`, Haier's gateway. Keep the LAN open: Home Assistant still needs port 56800.
    DNS blocking has not been verified as a way to cut the units off, so prefer the address rule; and

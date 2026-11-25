@@ -152,6 +152,10 @@ APPLIANCE_KIND_CHOICES = (KIND_AUTO, KIND_LAUNDRY, KIND_NOT_AIR_CONDITIONER)
 # Control of a laundry appliance: off unless the owner turns it on in the entry's options. Every
 # command is still gated on the drum's own panel-set remote-control flag (`haismart_hrdp.laundry`).
 CONF_LAUNDRY_CONTROLS = "laundry_controls"
+# Control of an appliance that is not an air conditioner, a water heater or laundry: off unless the
+# owner turns it on, offered only for a class Haier names that is not a heat source, and never for
+# an attribute that lights, heats or cooks (`haismart_hrdp.appliance.controls_can_be_offered`).
+CONF_APPLIANCE_CONTROLS = "appliance_controls"
 # Haier's byte map for this device's class, fetched once when the shipped bundle does not carry it
 # and cached here so the appliance decodes offline afterwards. Stored as the same PROJECTION the
 # bundle holds -- positions only -- not the quarter-megabyte configFile.

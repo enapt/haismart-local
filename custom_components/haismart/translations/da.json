@@ -34,7 +34,7 @@
       },
       "manual": {
         "title": "Enhedsoplysninger",
-        "description": "Det eneste, du skal bruge, er denne enheds lokale nøgle — fra sensoren “Lokal nøgle” i en tidligere installation eller fra en sikkerhedskopi. Home Assistant leder efter apparatet på dit netværk og spørger det om alt andet.\n\nNøglen kan ikke aflæses på selve enheden. Har du ingen gemt, så gå tilbage og log ind — så hentes den for dig.",
+        "description": "Det eneste, du skal bruge, er denne enheds lokale nøgle — fra en tidligere installation (Omkonfigurer → “Vis den lokale nøgle”) eller fra en sikkerhedskopi. Home Assistant leder efter apparatet på dit netværk og spørger det om alt andet.\n\nNøglen kan ikke aflæses på selve enheden. Har du ingen gemt, så gå tilbage og log ind — så hentes den for dig.",
         "data": {
           "host": "IP-adresse",
           "device_id": "Enheds-ID",
@@ -55,7 +55,7 @@
           "local_key": "Lokal nøgle (32 hex-tegn)"
         },
         "data_description": {
-          "local_key": "Aktivér diagnosesensoren “Lokal nøgle” på enhedssiden for at aflæse den aktuelle, eller tilføj anlægget igen med din Haier-konto, så den hentes automatisk."
+          "local_key": "Apparatets nye nøgle. Den, der er gemt her, virker ikke længere; har du ikke den nye, så gå tilbage og log ind for at få den hentet."
         }
       },
       "host": {
@@ -70,7 +70,7 @@
       },
       "key_failed": {
         "title": "Nøglen kunne ikke hentes automatisk",
-        "description": "Home Assistant loggede ind, men kunne ikke hente dette apparat lokale nøgle fra Haiers servere — eller den hentede nøgle dekrypterer ikke enhedens status.{note}\n\nDet er ofte midlertidigt, så det kan som regel betale sig at prøve igen. Bliver det ved med at fejle, kan du indtaste oplysningerne manuelt, men nøglen kan ikke aflæses på enheden — du skal bruge den fra sensoren “Lokal nøgle” i en tidligere installation eller fra en sikkerhedskopi.",
+        "description": "Home Assistant loggede ind, men kunne ikke hente dette apparat lokale nøgle fra Haiers servere — eller den hentede nøgle dekrypterer ikke enhedens status.{note}\n\nDet er ofte midlertidigt, så det kan som regel betale sig at prøve igen. Bliver det ved med at fejle, kan du indtaste oplysningerne manuelt, men nøglen kan ikke aflæses på enheden — du skal bruge den fra en tidligere installation (Omkonfigurer → “Vis den lokale nøgle”) eller fra en sikkerhedskopi.",
         "menu_options": {
           "key_retry": "Prøv at hente nøglen igen",
           "manual": "Indtast i stedet oplysningerne manuelt"
@@ -81,7 +81,8 @@
         "description": "Ret hvordan Home Assistant når denne enhed, uden at fjerne den og miste dens historik.",
         "menu_options": {
           "reconfigure_host": "Skift IP-adresse",
-          "reconfigure_cloud": "Tilføj min Haier-konto, så nøglen fornyer sig selv"
+          "reconfigure_cloud": "Tilføj min Haier-konto, så nøglen fornyer sig selv",
+          "reconfigure_local_key": "Vis den lokale nøgle"
         }
       },
       "reconfigure_host": {
@@ -105,6 +106,10 @@
         "data_description": {
           "zone_info": "Det land, kontoen blev oprettet i, hvilket måske ikke er der, hvor du bor, eller hvor anlægget er installeret."
         }
+      },
+      "reconfigure_local_key": {
+        "title": "Lokal nøgle",
+        "description": "Alle på dit netværk, der har denne nøgle, kan styre apparatet, så hold den hemmelig. Den er gemt i denne post, så alle sikkerhedskopier af Home Assistant indeholder den allerede.\n\n- Lokal nøgle: `{local_key}` (version {localkey_version})\n- Enheds-ID: `{device_id}`\n- IP-adresse: `{host}`\n- Model-id: `{uplus_id}`\n\nFor at tilføje apparatet igen uden en Haier-konto skal du indtaste denne nøgle, når opsætningen beder om den. Lukker du dette, ændres intet."
       },
       "reauth": {
         "title": "Dette apparat har brug for en ny nøgle",
@@ -174,7 +179,8 @@
       "unknown": "Uventet fejl – enhedens annoncering blev ikke forstået.",
       "no_devices": "Logget ind som {username}, men denne Haier-konto har ingen enheder. Hvis du logger ind i appen med Google eller Facebook, så del først apparatet med denne konto i appen, og prøv derefter igen.",
       "already_in_progress": "Dette apparat er allerede ved at blive sat op.",
-      "account_no_devices": "Den Haier-konto, der allerede er sat op her, viser ikke længere nogen enheder. Kontrollér, at apparatet stadig ligger under denne konto i Haier-appen, og prøv igen."
+      "account_no_devices": "Den Haier-konto, der allerede er sat op her, viser ikke længere nogen enheder. Kontrollér, at apparatet stadig ligger under denne konto i Haier-appen, og prøv igen.",
+      "local_key_shown": "Intet blev ændret."
     }
   },
   "options": {
@@ -184,12 +190,14 @@
         "data": {
           "scan_interval": "Interval for statusforespørgsel (sekunder)",
           "appliance_kind": "Apparat",
-          "laundry_controls": "Aktivér betjening af vaskemaskine og tørretumbler"
+          "laundry_controls": "Aktivér betjening af vaskemaskine og tørretumbler",
+          "appliance_controls": "Aktivér betjening (ubekræftet)"
         },
         "data_description": {
           "scan_interval": "Hvor ofte anlægget skal spørges om sin tilstand. Hver forespørgsel er en fuld lokal session, og den findes udelukkende for at opdage ændringer foretaget med fjernbetjeningen eller appen – kommandoer, du sender fra Home Assistant, opdateres med det samme under alle omstændigheder.",
           "appliance_kind": "Vises kun for et apparat, der ikke identificerede sig. En vaskemaskine, tørretumbler eller vaske-tørremaskine får skrivebeskyttede sensorer og aldrig en klimaanlægstermostat.",
-          "laundry_controls": "Tilføjer knapper til start, pause og annullering for hver tromle samt de tilvalgsindstillinger, som maskinen lader dig ændre én ad gangen. Selve programmet vælges på maskinens betjeningspanel. Slået fra som standard. Hver kommando kræver stadig, at fjernstyring er slået til på maskinens betjeningspanel for den pågældende tromle, og intet sendes, mens den er slået fra."
+          "laundry_controls": "Tilføjer knapper til start, pause og annullering for hver tromle samt de tilvalgsindstillinger, som maskinen lader dig ændre én ad gangen. Selve programmet vælges på maskinens betjeningspanel. Slået fra som standard. Hver kommando kræver stadig, at fjernstyring er slået til på maskinens betjeningspanel for den pågældende tromle, og intet sendes, mens den er slået fra.",
+          "appliance_controls": "Tilføjer kontakter, valglister og tal for de indstillinger, som dette apparats model angiver som ændrbare. Ingen kommando til denne slags apparat er bekræftet at virke, så det er slået fra som standard, og en indstilling kan blive afvist. Intet, der tænder ild, opvarmer eller tilbereder mad, tilbydes nogensinde."
         }
       }
     }
@@ -240,9 +248,6 @@
       },
       "last_self_clean": {
         "name": "Sidste selvrensning"
-      },
-      "local_key": {
-        "name": "Lokal nøgle"
       },
       "occupancy": {
         "name": "Tilstedeværelse",

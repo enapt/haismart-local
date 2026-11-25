@@ -51,10 +51,15 @@ aling kalagayan, kaya kaya nitong i-configure ang sarili para sa unit na hindi p
 ### Iba pang appliance
 
 Suportado rin ang mga water heater (kuryente, gas at heat pump), refrigerator, washing machine,
-washer-dryer, dishwasher, range hood, gas stove, sterilising cabinet, oven at air purifier — **166 uri ng produkto
+washer-dryer, range hood, gas stove, sterilising cabinet, oven at air purifier — **166 uri ng produkto
 sa 37 na klase ng device** — ngunit sa ibang paraan: walang kodigong nakalaan sa bawat appliance,
 kundi ang opisyal na byte map ng Haier para sa uring iyon, sinala ng deklarasyon mismo ng inyong
 unit kung alin sa mga iyon ang talagang mayroon ito.
+
+Naka-off bilang default ang mga kontrol ng mga appliance na ito, maliban sa water heater; i-on ang mga
+ito sa **Configure** ng integration. Hindi kailanman binibigyan ng kontrol ang gas stove, oven at
+sterilising cabinet, at walang appliance na binibigyan ng kontrol para sa anumang nagsisindi,
+nagpapainit o nagluluto — nananatili ang lahat ng pagbasa.
 
 ⚠️ Sa gumawa nanggaling ang mga mapa, **ngunit karamihan sa mga kategoryang iyon ay hindi pa
 nasusubukan sa tunay na kagamitan dito**. Sa ngayon ay **isang** setting pa lamang sa appliance na
@@ -79,8 +84,8 @@ light), pagpipiliang **Eco**, pagpipilian ng **posisyon ng vane** kung inilalath
 ninyo, sensor ng **Fault** na pinangangalanan ang sira kasama ang code na ipinapakita ng unit,
 **self-clean** (isang button at isang sensor), **power** at **energy** kung iniuulat ito ng unit,
 **air quality** kung mayroon itong mga probe, **paalala sa pagpapalit ng filter** kung mayroon nito,
-at mga diagnostic: **Model ID**, **Cloud connection** (kung kaya pa ng aircon na abutin ang mga
-server ng Haier — kapaki-pakinabang kapag hinarangan ninyo ito), at **Local key**.
+at mga diagnostic: **Model ID** at **Cloud connection** (kung kaya pa ng aircon na abutin ang mga
+server ng Haier — kapaki-pakinabang kapag hinarangan ninyo ito).
 
 Nakadepende sa modelo ninyo kung alin ang lalabas: binabasa ng integration ang sariling modelo ng
 unit ninyo at inaalok lamang ang talagang mayroon ito. Buong listahan:
@@ -153,7 +158,7 @@ gagamitin ang mga panuntunang pinagkakasunduan ng lahat ng modelo sa pamilyang i
 nito ang lahat ng pangalan ng depekto.
 
 > Ang key ang tanging bagay na hindi ibibigay ng appliance. Kung wala kayong naka-save — mula sa
-> *Local key* sensor ng dating pag-install, o mula sa backup — gamitin na lamang ang **Sign in**;
+> **Reconfigure → Show the local key** ng dating pag-install, o mula sa backup — gamitin na lamang ang **Sign in**;
 > kukunin nito ang key para sa inyo.
 
 ### Kung paulit-ulit itong humihingi ng bagong key
@@ -172,8 +177,9 @@ Dalawang paraan para tuluyang matapos ito, at mabuting gawin habang gumagana pa 
 - **O harangan ang internet ng appliance** sa inyong router. Titigil na itong magpalit ng key at
   mananatiling wasto ang hawak ninyo. Hindi apektado ang lokal na kontrol sa alinmang paraan.
 
-Bago humarang, **itabi muna ang key**: i-enable ang diagnostic sensor na *Local key* sa page ng
-device — ang halaga nito ay ang key mismo, at kasama ito sa mga backup ng Home Assistant. Ang
+Bago humarang, **itabi muna ang key**: sa entry ng appliance, piliin ang **Reconfigure → Show the local
+key** — ipinapakita nito ang key nang walang binabago, at kasama rin ang key sa bawat backup ng Home
+Assistant. Ang
 pinakasimpleng panuntunang napatunayang gumagana ay ang pagtanggi sa trapiko papunta sa
 `43.156.75.60`, ang gateway ng Haier; iwanang bukas ang LAN, dahil kailangan pa rin ng Home Assistant
 ang port 56800. Huwag gamitin ang mga feature ng router na tinatawag na "MAC filtering" o "IP

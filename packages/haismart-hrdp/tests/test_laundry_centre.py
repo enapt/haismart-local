@@ -41,11 +41,19 @@ def test_it_is_identified_as_laundry_from_its_typeid() -> None:
     assert kind_for(TYPEID) is ApplianceKind.LAUNDRY
 
 
-def test_its_cloud_label_alone_does_not_make_a_0501_washer_laundry() -> None:
-    """⛔ "Roller Washer" is what the cloud calls this unit, and very likely other drums too. A 0501
-    front loader has generic controls today; a label must not quietly make it read-only."""
+def test_a_0501_front_loader_is_laundry_by_its_class() -> None:
+    """The 0501 is a washing machine, so it is laundry -- read-only by default and, with its
+    controls on, behind the same gates as this unit -- whatever the cloud calls it."""
     washer_0501 = "201c51890c31c30805010021800239584d000000000000000000000000000140"
-    assert kind_for(washer_0501, "Roller Washer") is ApplianceKind.OTHER
+    assert kind_for(washer_0501) is ApplianceKind.LAUNDRY
+    assert kind_for(washer_0501, "Refrigerator") is ApplianceKind.LAUNDRY
+
+
+def test_a_cloud_label_cannot_make_a_named_class_laundry() -> None:
+    """⛔ "Roller Washer" is what the cloud calls this unit; a class Haier names as something else
+    keeps what its own name says."""
+    fridge = f"{'0' * 16}0121{'0' * 44}"
+    assert kind_for(fridge, "Roller Washer") is ApplianceKind.OTHER
 
 
 def test_the_dryer_and_the_washer_each_answer_their_own_status_command() -> None:
@@ -165,11 +173,13 @@ def test_laundry_labels_never_rename_another_class_s_states() -> None:
 
 
 def test_only_individually_writable_visible_settings_are_offered() -> None:
-    from haismart_hrdp.laundry import laundry_writable
+    from haismart_hrdp.laundry import laundry_writable, layout_for
 
     model = model_for(TYPEID)
     assert model is not None
-    offered = laundry_writable(model.fields, CAPTURE["digital_model"]["attributes"])
+    offered = laundry_writable(
+        layout_for("0504"), model.fields, CAPTURE["digital_model"]["attributes"]
+    )
     declared = {a["name"]: a for a in CAPTURE["digital_model"]["attributes"]}
     assert {"spinSpeed", "washTemp", "dryerDryLevel", "buzzerDisabled"} <= offered
     assert len(offered) == 42
@@ -187,17 +197,19 @@ def test_only_individually_writable_visible_settings_are_offered() -> None:
 
 
 def test_the_write_ids_are_the_class_s_own_with_the_washer_drum_bit() -> None:
-    from haismart_hrdp.laundry import DRUMS, LAUNDRY_ACTIONS
+    from haismart_hrdp.laundry import layout_for
 
     model = model_for(TYPEID)
     assert model is not None
     assert model.encode_write("washerRunningMode", 1) == (bytes.fromhex("5da1"), b"\x00\x01")
     assert model.encode_write("washerRunningMode", 2) == (bytes.fromhex("5da1"), b"\x00\x00")
     assert model.encode_write("dryerRunningMode", 1) == (bytes.fromhex("5d21"), b"\x00\x01")
-    cancel = LAUNDRY_ACTIONS["0504"]
+    layout = layout_for("0504")
+    assert layout is not None
+    cancel = layout.actions
     assert cancel["washerReturnStandby"].frame_parts() == (bytes.fromhex("5da4"), b"\x00\x01")
     assert cancel["dryerReturnStandby"].frame_parts() == (bytes.fromhex("5d23"), b"\x00\x01")
-    for drum in DRUMS.values():
+    for drum in layout.drums.values():
         assert model.field(drum.remote_valid).status_cmd == drum.report
         assert model.field(drum.running_mode).status_cmd == drum.report
         assert drum.return_standby in cancel
@@ -211,3 +223,66 @@ def test_the_remote_flags_read_off_in_the_capture() -> None:
     washer = model.decode(FRAMES["6d02_washer_idle"], status_cmd="6D02", only=DECLARED)
     assert dryer["dryerRemoteCtrValid"] is False and CLOUD["dryerRemoteCtrValid"] == "false"
     assert washer["washerRemoteCtrValid"] is False and CLOUD["washerRemoteCtrValid"] == "false"
+
+
+# --- the 0501 front loader shares the gates -------------------------------------------------------
+
+
+def _front_loaders() -> list[str]:
+    from haismart_hrdp.device_model import known_typeids
+
+    return sorted(t for t in known_typeids() if t[16:20] == "0501")
+
+
+def test_every_bundled_0501_map_carries_what_its_gates_read() -> None:
+    """The layout is one per class, so it has to hold for every product of the class."""
+    from haismart_hrdp.laundry import layout_for
+
+    layout = layout_for("0501")
+    assert layout is not None
+    drum = layout.drums["washer"]
+    typeids = _front_loaders()
+    assert len(typeids) == 15
+    for typeid in typeids:
+        model = model_for(typeid)
+        assert model is not None
+        for name in layout.gate_fields() | {drum.programme, "childLockStatus"}:
+            field = model.field(name)
+            assert field is not None and field.status_cmd == drum.report, (typeid, name)
+        # start / pause: published 1 and 2, sent as 1 and 0, on the single command 5D21
+        assert model.encode_write(drum.running_mode, 1) == (bytes.fromhex("5d21"), b"\x00\x01")
+        assert model.encode_write(drum.running_mode, 2) == (bytes.fromhex("5d21"), b"\x00\x00")
+    assert layout.actions[drum.return_standby].frame_parts() == (bytes.fromhex("5d24"), b"\x00\x01")
+
+
+def test_a_0501_never_offers_its_programme_start_lock_or_reset() -> None:
+    from haismart_hrdp.laundry import laundry_writable, layout_for
+
+    for typeid in _front_loaders():
+        model = model_for(typeid)
+        assert model is not None
+        # Every writable field declared individually writable: the upper bound.
+        declared = [
+            {"name": f.name, "writable": True, "operationType": "I"}
+            for f in model.writable_fields()
+        ]
+        offered = laundry_writable(layout_for("0501"), model.fields, declared)
+        assert offered, typeid
+        assert not offered & {
+            "laundryCycle", "runningMode", "childLockStatus", "resetOpt", "weight",
+        }, typeid
+
+
+def test_without_a_layout_or_its_gate_fields_nothing_is_offered() -> None:
+    """A control no gate can ever allow is not offered: an unnamed 05xx class has no layout, and a
+    map missing a field the gates read could only ever be refused."""
+    from haismart_hrdp.laundry import laundry_writable, layout_for
+
+    model = model_for(_front_loaders()[0])
+    assert model is not None
+    declared = [{"name": f.name, "writable": True, "operationType": "I"}
+                for f in model.writable_fields()]
+    assert layout_for("0502") is None
+    assert laundry_writable(None, model.fields, declared) == frozenset()
+    without_flag = [f for f in model.fields if f.name != "remoteCtrValid"]
+    assert laundry_writable(layout_for("0501"), without_flag, declared) == frozenset()

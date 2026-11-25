@@ -79,12 +79,3 @@ async def test_a_select_with_duplicate_labels_offers_every_value() -> None:
         assert coordinator.async_send_control.await_args.args[0] == {"fanLevel": value}
     coordinator.data = {"model_state": {"fanLevel": 2}}
     assert select.current_option == select.options[1]
-
-
-def test_the_key_sensor_keeps_addresses_out_of_history() -> None:
-    """Its attributes are a manual-onboarding backup; the recorder has no use for where the unit
-    sits on the LAN or its MAC, and would keep every change of either forever."""
-    from custom_components.haismart.sensor import HaismartLocalKeySensor
-
-    unrecorded = HaismartLocalKeySensor._Entity__combined_unrecorded_attributes  # noqa: SLF001
-    assert {CONF_HOST, "device_id"} <= unrecorded

@@ -105,6 +105,9 @@ from haismart_hrdp import (
 from haismart_hrdp.appliance import (
     ApplianceKind,
     answer_applies,
+    class_of,
+    controls_can_be_offered,
+    heats_or_ignites,
     identified_not_air_conditioner,
     kind_for,
 )
@@ -118,13 +121,11 @@ from haismart_hrdp.device_model import (
 )
 from haismart_hrdp.entity_spec import EntitySpec, specs_for
 from haismart_hrdp.laundry import (
-    DRUMS,
-    LAUNDRY_ACTIONS,
     LAUNDRY_REFUSALS,
     LaundryAction,
-    drum_of,
-    drums_for,
+    LaundryLayout,
     laundry_writable,
+    layout_for,
 )
 from haismart_hrdp.uss import epp_command, epp_frame_type, frame_key
 from homeassistant.config_entries import ConfigEntry
@@ -143,6 +144,7 @@ from .const import (
     CONF_ABSENT_READINGS,
     CONF_ACCESS_TOKEN,
     CONF_APP_TYPE,
+    CONF_APPLIANCE_CONTROLS,
     CONF_APPLIANCE_KIND,
     CONF_CLOUD_CLIENT_ID,
     CONF_DEVICE_ID,
@@ -1599,20 +1601,29 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         model = self.device_model
         if model is None or self.uses_curated_ac_entities:
             return frozenset()
-        if self.appliance_kind is ApplianceKind.LAUNDRY:
+        kind = self.appliance_kind
+        if kind is ApplianceKind.LAUNDRY:
             # Read-only unless the owner turned the controls on; then what the class publishes as
             # writable on its own, plus each drum's start/pause and cancel (the buttons).
-            if not self.laundry_controls_enabled:
+            layout = self.laundry_layout
+            if not self.laundry_controls_enabled or layout is None:
                 return frozenset()
             return (
                 self.laundry_settings
-                | {drum.running_mode for drum in DRUMS.values()}
-                | frozenset(self.laundry_actions)
+                | {drum.running_mode for drum in layout.drums.values()}
+                | frozenset(layout.actions)
             )
+        if kind is ApplianceKind.OTHER and not self.appliance_controls_enabled:
+            # ⛔ Not one command to any of these classes has been observed being accepted, so
+            # nothing is writable until the owner turns the controls on -- and a heat source
+            # (`HEAT_SOURCE_CLASSES`) or a class nobody here can name never offers them at all.
+            return frozenset()
         declared = frozenset(declared_attribute_names(self.digital_model))
         return frozenset(
             f.name for f in model.writable_fields()
-            if not declared or f.name in declared
+            if (not declared or f.name in declared)
+            # Nothing that lights, heats or cooks, whatever the class (a hood's heated self-clean).
+            and not (kind is ApplianceKind.OTHER and heats_or_ignites(f.name))
         )
 
     @property
@@ -1713,18 +1724,34 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     # --- laundry controls -------------------------------------------------------------------
 
     @property
+    def laundry_layout(self) -> LaundryLayout | None:
+        """This laundry appliance's drums and the reports and commands of each, by its class.
+
+        ``None`` for anything that is not laundry, and for a laundry appliance whose class has no
+        layout (an unnamed ``05xx``, or one that is laundry only by its label or its owner's
+        answer): those stay read-only, because no gate could be built for them.
+        """
+        if self.appliance_kind is not ApplianceKind.LAUNDRY:
+            return None
+        return layout_for(class_of(self.uplus_id))
+
+    @property
+    def laundry_controls_available(self) -> bool:
+        """Whether this appliance's controls CAN be turned on: laundry with a known layout."""
+        return self.laundry_layout is not None
+
+    @property
     def laundry_controls_enabled(self) -> bool:
         """Whether the owner turned on control of this laundry appliance (off by default)."""
-        return (
-            self.appliance_kind is ApplianceKind.LAUNDRY
-            and bool(self.config_entry.options.get(CONF_LAUNDRY_CONTROLS))
+        return self.laundry_controls_available and bool(
+            self.config_entry.options.get(CONF_LAUNDRY_CONTROLS)
         )
 
     @property
     def laundry_actions(self) -> Mapping[str, LaundryAction]:
         """This class's write-only commands (each drum's cancel), by attribute name."""
-        device_class = (self.uplus_id or "")[16:20].lower()
-        return LAUNDRY_ACTIONS.get(device_class, {})
+        layout = self.laundry_layout
+        return layout.actions if layout is not None else {}
 
     @property
     def laundry_settings(self) -> frozenset[str]:
@@ -1732,7 +1759,27 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         model = self.device_model
         if model is None:
             return frozenset()
-        return laundry_writable(model.fields, (self.digital_model or {}).get("attributes"))
+        return laundry_writable(
+            self.laundry_layout, model.fields, (self.digital_model or {}).get("attributes")
+        )
+
+    # --- controls of an appliance that is not an AC, a water heater or laundry ----------------
+
+    @property
+    def appliance_controls_available(self) -> bool:
+        """Whether this appliance's controls CAN be turned on (see ``controls_can_be_offered``)."""
+        return (
+            self.appliance_kind is ApplianceKind.OTHER
+            and not self.uses_curated_ac_entities
+            and controls_can_be_offered(self.uplus_id)
+        )
+
+    @property
+    def appliance_controls_enabled(self) -> bool:
+        """Whether the owner turned this appliance's controls on (off by default)."""
+        return self.appliance_controls_available and bool(
+            self.config_entry.options.get(CONF_APPLIANCE_CONTROLS)
+        )
 
     def _laundry_reports(self) -> dict[str, dict[str, Any] | None]:
         """Each drum's OWN latest status report, decoded -- or ``None`` where it is not fresh.
@@ -1743,10 +1790,11 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         report has aged out. A gate must never say yes on a reading like that.
         """
         model = self.device_model
+        layout = self.laundry_layout
         declared = frozenset(declared_attribute_names(self.digital_model))
         now = self.hass.loop.time()
         reports: dict[str, dict[str, Any] | None] = {}
-        for key, drum in DRUMS.items():
+        for key, drum in (layout.drums if layout is not None else {}).items():
             held = self._status_frames.get(drum.report)
             if model is None or held is None or now - held[1] > LAUNDRY_GATE_MAX_AGE:
                 reports[key] = None
@@ -1755,9 +1803,12 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return reports
 
     def _laundry_report_of(self, name: str) -> str | None:
-        if (action := self.laundry_actions.get(name)) is not None:
-            return DRUMS[action.drum].report
-        for drum in DRUMS.values():
+        layout = self.laundry_layout
+        if layout is None:
+            return None
+        if (action := layout.actions.get(name)) is not None:
+            return layout.drums[action.drum].report
+        for drum in layout.drums.values():
             if name == drum.running_mode:
                 return drum.report
         model = self.device_model
@@ -1790,41 +1841,47 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 translation_placeholders={"name": self.config_entry.title, "error": reason},
             )
 
-        if not self.laundry_controls_enabled:
+        layout = self.laundry_layout
+        if not self.laundry_controls_enabled or layout is None:
             refuse("laundry controls are off for this appliance (Configure → enable controls)")
         await self.async_refresh()
         reports = self._laundry_reports()
         for name, value in changes.items():
-            keys = drums_for(name, self._laundry_report_of(name))
+            keys = layout.drums_for(name, self._laundry_report_of(name))
             if not keys:
                 refuse(f"{name} is not a laundry control")
             for key in keys:
                 report = reports[key]
                 if report is None:
                     refuse(f"no fresh report from the {key}; try again in a moment")
-                if report.get(DRUMS[key].remote_valid) is not True:
+                if report.get(layout.drums[key].remote_valid) is not True:
                     refuse(
                         f"remote control is not enabled for the {key} -- turn it on at the "
                         "machine's panel first"
                     )
-            machine = reports["dryer"]
+            machine = reports[layout.lock_drum]
             if machine is None:
-                refuse("no fresh report from the dryer, which carries the child lock; try again")
+                refuse(
+                    f"no fresh report from the {layout.lock_drum}, which carries the child lock; "
+                    "try again"
+                )
             if machine.get("childLockStatus") is True:
                 refuse("the child lock is on -- unlock it at the machine first")
             # Anything but an explicit True is treated as switching off, so an unexpected value
             # takes the gated path rather than skipping it.
             if name == "onOffStatus" and value is not True and not all(
-                self._laundry_drum_idle(key, report) for key, report in reports.items()
+                self._laundry_drum_idle(layout, key, report) for key, report in reports.items()
             ):
                 refuse("a drum has a cycle in progress or its state is unknown; cancel it first")
 
     @staticmethod
-    def _laundry_drum_idle(key: str, report: Mapping[str, Any] | None) -> bool:
+    def _laundry_drum_idle(
+        layout: LaundryLayout, key: str, report: Mapping[str, Any] | None
+    ) -> bool:
         """Whether a drum's own report says nothing is in progress: standby, or finished."""
         if report is None:
             return False
-        drum = DRUMS[key]
+        drum = layout.drums[key]
         phase = report.get(drum.phase)
         return isinstance(phase, int) and phase in drum.idle_phases
 
@@ -1834,7 +1891,9 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         Returning to standby abandons the cycle. The app pauses a running drum before sending it,
         so this does the same; each of the two is a separate, separately gated command.
         """
-        drum = DRUMS[key]
+        layout = self.laundry_layout
+        assert layout is not None                   # the cancel button exists only with one
+        drum = layout.drums[key]
         await self.async_refresh()
         report = self._laundry_reports().get(key)
         if report is not None and report.get(drum.running_mode) == 1:
@@ -1843,18 +1902,19 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     def _recheck_laundry_push(self, changes: Mapping[str, Any], push: bytes | None) -> None:
         """Refuse inside the command's own session if its fresh push shows remote control off."""
-        if push is None or self.appliance_kind is not ApplianceKind.LAUNDRY:
+        layout = self.laundry_layout
+        if push is None or layout is None:
             return
         report = self._own_status_cmd(push)
         model = self.device_model
         if report is None or model is None or not report.startswith("6D"):
             return
-        key = drum_of(report)
+        key = layout.drum_of(report)
         if key is None or not any(
-            key in drums_for(name, self._laundry_report_of(name)) for name in changes
+            key in layout.drums_for(name, self._laundry_report_of(name)) for name in changes
         ):
             return
-        if model.decode(push, status_cmd=report).get(DRUMS[key].remote_valid) is not True:
+        if model.decode(push, status_cmd=report).get(layout.drums[key].remote_valid) is not True:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="control_rejected",
@@ -2160,6 +2220,18 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     },
                 )
             await self._async_check_laundry_write(changes)
+        elif self.ruled_out_air_conditioner and not writes_by_model:
+            # ⛔ The same for an appliance known not to be an air conditioner: only its own map's
+            # commands, and only the ones `model_write_fields` offers. Nothing else here can
+            # describe it, and an AC group set read off its report could carry anything.
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="control_rejected",
+                translation_placeholders={
+                    "name": self.config_entry.title,
+                    "error": f"not a control of this appliance: {', '.join(sorted(changes))}",
+                },
+            )
         if writes_by_model:
             self._validate_model_write(changes)
         else:

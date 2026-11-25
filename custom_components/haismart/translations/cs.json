@@ -34,7 +34,7 @@
       },
       "manual": {
         "title": "Údaje o zařízení",
-        "description": "Jediné, co potřebujete, je lokální klíč této jednotky — ze senzoru „Lokální klíč“ předchozí instalace nebo ze zálohy. Home Assistant jednotku ve vaší síti vyhledá sám a na vše ostatní se zeptá přímo jí.\n\nKlíč nelze z jednotky přečíst. Pokud žádný uložený nemáte, vraťte se a přihlaste se — tím se získá za vás.",
+        "description": "Jediné, co potřebujete, je lokální klíč této jednotky — z předchozí instalace (Překonfigurovat → „Zobrazit lokální klíč“) nebo ze zálohy. Home Assistant jednotku ve vaší síti vyhledá sám a na vše ostatní se zeptá přímo jí.\n\nKlíč nelze z jednotky přečíst. Pokud žádný uložený nemáte, vraťte se a přihlaste se — tím se získá za vás.",
         "data": {
           "host": "IP adresa",
           "device_id": "ID zařízení",
@@ -55,7 +55,7 @@
           "local_key": "Lokální klíč (32 hexadecimálních znaků)"
         },
         "data_description": {
-          "local_key": "Na stránce zařízení zapněte diagnostický senzor „Lokální klíč“ a přečtěte si ten aktuální, nebo jednotku přidejte znovu se svým účtem Haier, aby se získával automaticky."
+          "local_key": "Nový klíč jednotky. Klíč uložený zde již nefunguje; pokud nový nemáte, vraťte se a přihlaste se, aby se získal za vás."
         }
       },
       "host": {
@@ -70,7 +70,7 @@
       },
       "key_failed": {
         "title": "Klíč se nepodařilo získat automaticky",
-        "description": "Home Assistant se přihlásil, ale nepodařilo se mu získat lokální klíč této jednotky ze serverů Haier — nebo získaný klíč nedešifruje stav jednotky.{note}\n\nBývá to často dočasné, takže se obvykle vyplatí zkusit to znovu. Pokud to selhává opakovaně, můžete údaje zadat ručně, klíč však z jednotky přečíst nelze — potřebovali byste jej ze senzoru „Lokální klíč“ předchozí instalace nebo ze zálohy.",
+        "description": "Home Assistant se přihlásil, ale nepodařilo se mu získat lokální klíč této jednotky ze serverů Haier — nebo získaný klíč nedešifruje stav jednotky.{note}\n\nBývá to často dočasné, takže se obvykle vyplatí zkusit to znovu. Pokud to selhává opakovaně, můžete údaje zadat ručně, klíč však z jednotky přečíst nelze — potřebovali byste jej z předchozí instalace (Překonfigurovat → „Zobrazit lokální klíč“) nebo ze zálohy.",
         "menu_options": {
           "key_retry": "Zkusit získat klíč znovu",
           "manual": "Zadat údaje ručně"
@@ -81,7 +81,8 @@
         "description": "Změňte způsob, jakým se Home Assistant k této jednotce připojuje, aniž byste ji odebrali a přišli o její historii.",
         "menu_options": {
           "reconfigure_host": "Změnit IP adresu",
-          "reconfigure_cloud": "Přidat můj účet Haier, aby se klíč obnovoval sám"
+          "reconfigure_cloud": "Přidat můj účet Haier, aby se klíč obnovoval sám",
+          "reconfigure_local_key": "Zobrazit lokální klíč"
         }
       },
       "reconfigure_host": {
@@ -105,6 +106,10 @@
         "data_description": {
           "zone_info": "Země, ve které byl účet vytvořen; nemusí jít o zemi, kde bydlíte nebo kde je jednotka nainstalovaná."
         }
+      },
+      "reconfigure_local_key": {
+        "title": "Lokální klíč",
+        "description": "Kdokoli ve vaší síti, kdo má tento klíč, může jednotku ovládat, proto jej uchovejte v tajnosti. Je uložen v tomto záznamu, takže jej každá záloha Home Assistantu již obsahuje.\n\n- Lokální klíč: `{local_key}` (verze {localkey_version})\n- ID zařízení: `{device_id}`\n- IP adresa: `{host}`\n- ID modelu: `{uplus_id}`\n\nChcete-li jednotku přidat znovu bez účtu Haier, zadejte tento klíč, až si o něj nastavení řekne. Zavřením tohoto okna se nic nezmění."
       },
       "reauth": {
         "title": "Tato jednotka potřebuje nový klíč",
@@ -174,7 +179,8 @@
       "unknown": "Neočekávaná chyba – ohlášení zařízení nebylo srozumitelné.",
       "no_devices": "Přihlášeno jako {username}, ale tento účet Haier nemá žádná zařízení. Pokud se do aplikace přihlašujete přes Google nebo Facebook, nejprve v aplikaci sdílejte jednotku s tímto účtem a poté to zkuste znovu.",
       "already_in_progress": "Tato jednotka se již nastavuje.",
-      "account_no_devices": "Účet Haier, který je zde již nastaven, už neuvádí žádná zařízení. Zkontrolujte, zda je jednotka v aplikaci Haier stále pod tímto účtem, a zkuste to znovu."
+      "account_no_devices": "Účet Haier, který je zde již nastaven, už neuvádí žádná zařízení. Zkontrolujte, zda je jednotka v aplikaci Haier stále pod tímto účtem, a zkuste to znovu.",
+      "local_key_shown": "Nic nebylo změněno."
     }
   },
   "options": {
@@ -184,12 +190,14 @@
         "data": {
           "scan_interval": "Interval dotazování na stav (sekundy)",
           "appliance_kind": "Jednotka",
-          "laundry_controls": "Povolit ovládání pračky a sušičky"
+          "laundry_controls": "Povolit ovládání pračky a sušičky",
+          "appliance_controls": "Povolit ovládání (nepotvrzené)"
         },
         "data_description": {
           "scan_interval": "Jak často se jednotky ptát na její stav. Každý dotaz je plnohodnotná lokální relace a existuje jen proto, aby zachytil změny provedené dálkovým ovladačem nebo aplikací – příkazy odeslané z Home Assistanta se projeví okamžitě tak jako tak.",
           "appliance_kind": "Zobrazuje se jen u jednotky, která se neidentifikovala. Pračka, sušička nebo pračka se sušičkou dostane senzory jen pro čtení, nikdy termostat klimatizace.",
-          "laundry_controls": "Přidá ke každému bubnu tlačítka pro spuštění, pozastavení a zrušení a také nastavení možností, která stroj dovoluje měnit po jednom. Samotný program se volí na panelu stroje. Ve výchozím stavu vypnuto. Každý příkaz stále vyžaduje zapnuté dálkové ovládání na panelu stroje pro daný buben; dokud je vypnuté, nic se neodesílá."
+          "laundry_controls": "Přidá ke každému bubnu tlačítka pro spuštění, pozastavení a zrušení a také nastavení možností, která stroj dovoluje měnit po jednom. Samotný program se volí na panelu stroje. Ve výchozím stavu vypnuto. Každý příkaz stále vyžaduje zapnuté dálkové ovládání na panelu stroje pro daný buben; dokud je vypnuté, nic se neodesílá.",
+          "appliance_controls": "Přidá přepínače, výběry a čísla pro nastavení, která model této jednotky uvádí jako měnitelná. U tohoto druhu jednotky nebyl potvrzen žádný fungující příkaz, proto je to ve výchozím stavu vypnuto a nastavení může být odmítnuto. Nic, co zapaluje, ohřívá nebo vaří, se nikdy nenabízí."
         }
       }
     }
@@ -240,9 +248,6 @@
       },
       "last_self_clean": {
         "name": "Poslední samočištění"
-      },
-      "local_key": {
-        "name": "Lokální klíč"
       },
       "occupancy": {
         "name": "Obsazenost",

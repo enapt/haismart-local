@@ -34,7 +34,7 @@
       },
       "manual": {
         "title": "Dane urządzenia",
-        "description": "Potrzebujesz tylko klucza lokalnego tego urządzenia — z sensora „Klucz lokalny” poprzedniej instalacji lub z kopii zapasowej. Home Assistant sam wyszuka sprzęt w Twojej sieci i o resztę zapyta samo urządzenie.\n\nKlucza nie można odczytać z samego urządzenia. Jeśli nie masz zapisanego, wróć i zaloguj się — wtedy zostanie pobrany za Ciebie.",
+        "description": "Potrzebujesz tylko klucza lokalnego tego urządzenia — z poprzedniej instalacji (Zmień konfigurację → „Pokaż klucz lokalny”) lub z kopii zapasowej. Home Assistant sam wyszuka sprzęt w Twojej sieci i o resztę zapyta samo urządzenie.\n\nKlucza nie można odczytać z samego urządzenia. Jeśli nie masz zapisanego, wróć i zaloguj się — wtedy zostanie pobrany za Ciebie.",
         "data": {
           "host": "Adres IP",
           "device_id": "Identyfikator urządzenia",
@@ -55,7 +55,7 @@
           "local_key": "Klucz lokalny (32 znaki szesnastkowe)"
         },
         "data_description": {
-          "local_key": "Włącz diagnostyczny sensor „Klucz lokalny” na stronie urządzenia, aby odczytać bieżący klucz, albo dodaj sprzęt ponownie przy użyciu konta Haier, aby był pobierany automatycznie."
+          "local_key": "Nowy klucz sprzętu. Klucz zapisany tutaj już nie działa; jeśli nie masz nowego, wróć i zaloguj się, aby został pobrany."
         }
       },
       "host": {
@@ -70,7 +70,7 @@
       },
       "key_failed": {
         "title": "Nie udało się pobrać klucza automatycznie",
-        "description": "Home Assistant zalogował się, ale nie mógł pobrać klucza lokalnego tego sprzętu z serwerów Haier — albo pobrany klucz nie odszyfrowuje stanu urządzenia.{note}\n\nZwykle jest to chwilowe, więc zazwyczaj warto spróbować ponownie. Jeśli błąd się powtarza, możesz wprowadzić dane ręcznie, choć klucza nie da się odczytać z urządzenia — potrzebujesz go z sensora „Klucz lokalny” poprzedniej instalacji lub z kopii zapasowej.",
+        "description": "Home Assistant zalogował się, ale nie mógł pobrać klucza lokalnego tego sprzętu z serwerów Haier — albo pobrany klucz nie odszyfrowuje stanu urządzenia.{note}\n\nZwykle jest to chwilowe, więc zazwyczaj warto spróbować ponownie. Jeśli błąd się powtarza, możesz wprowadzić dane ręcznie, choć klucza nie da się odczytać z urządzenia — potrzebujesz go z poprzedniej instalacji (Zmień konfigurację → „Pokaż klucz lokalny”) lub z kopii zapasowej.",
         "menu_options": {
           "key_retry": "Spróbuj pobrać klucz ponownie",
           "manual": "Zamiast tego wpisz dane ręcznie"
@@ -81,7 +81,8 @@
         "description": "Zmień sposób, w jaki Home Assistant łączy się z tym urządzeniem, bez usuwania go i utraty historii.",
         "menu_options": {
           "reconfigure_host": "Zmień adres IP",
-          "reconfigure_cloud": "Dodaj moje konto Haier, aby klucz odświeżał się sam"
+          "reconfigure_cloud": "Dodaj moje konto Haier, aby klucz odświeżał się sam",
+          "reconfigure_local_key": "Pokaż klucz lokalny"
         }
       },
       "reconfigure_host": {
@@ -105,6 +106,10 @@
         "data_description": {
           "zone_info": "Kraj, w którym założono konto; może być inny niż ten, w którym mieszkasz lub w którym zamontowano sprzęt."
         }
+      },
+      "reconfigure_local_key": {
+        "title": "Klucz lokalny",
+        "description": "Każdy w Twojej sieci, kto ma ten klucz, może sterować sprzętem, więc zachowaj go w tajemnicy. Jest zapisany w tym wpisie, dlatego każda kopia zapasowa Home Assistant już go zawiera.\n\n- Klucz lokalny: `{local_key}` (wersja {localkey_version})\n- Identyfikator urządzenia: `{device_id}`\n- Adres IP: `{host}`\n- Identyfikator modelu: `{uplus_id}`\n\nAby ponownie dodać sprzęt bez konta Haier, wpisz ten klucz, gdy konfiguracja o niego poprosi. Zamknięcie tego okna niczego nie zmienia."
       },
       "reauth": {
         "title": "Ten sprzęt potrzebuje nowego klucza",
@@ -174,7 +179,8 @@
       "unknown": "Nieoczekiwany błąd — nie udało się zrozumieć ogłoszenia urządzenia.",
       "no_devices": "Zalogowano jako {username}, ale to konto Haier nie ma żadnych urządzeń. Jeśli logujesz się w aplikacji przez Google lub Facebooka, najpierw udostępnij sprzęt temu kontu w aplikacji, a potem spróbuj ponownie.",
       "already_in_progress": "Ten sprzęt jest już konfigurowany.",
-      "account_no_devices": "Konto Haier już skonfigurowane tutaj nie wymienia żadnych urządzeń. Sprawdź, czy sprzęt nadal jest w aplikacji Haier na tym koncie, i spróbuj ponownie."
+      "account_no_devices": "Konto Haier już skonfigurowane tutaj nie wymienia żadnych urządzeń. Sprawdź, czy sprzęt nadal jest w aplikacji Haier na tym koncie, i spróbuj ponownie.",
+      "local_key_shown": "Nic nie zostało zmienione."
     }
   },
   "options": {
@@ -184,12 +190,14 @@
         "data": {
           "scan_interval": "Częstotliwość odpytywania o stan (sekundy)",
           "appliance_kind": "Sprzęt",
-          "laundry_controls": "Włącz sterowanie pralką i suszarką"
+          "laundry_controls": "Włącz sterowanie pralką i suszarką",
+          "appliance_controls": "Włącz sterowanie (niepotwierdzone)"
         },
         "data_description": {
           "scan_interval": "Jak często pytać sprzęt o jego stan. Każde odpytanie to pełna sesja lokalna i służy wyłącznie do wychwycenia zmian wprowadzonych pilotem lub aplikacją — polecenia wysyłane z Home Assistanta i tak aktualizują się natychmiast.",
           "appliance_kind": "Widoczne tylko dla sprzętu, który się nie przedstawił. Pralka, suszarka lub pralko-suszarka otrzymuje czujniki tylko do odczytu i nigdy nie dostaje termostatu klimatyzatora.",
-          "laundry_controls": "Dodaje przyciski uruchamiania, wstrzymywania i anulowania dla każdego bębna oraz ustawienia opcji, które maszyna pozwala zmieniać pojedynczo. Sam program wybiera się na panelu maszyny. Domyślnie wyłączone. Każde polecenie nadal wymaga włączenia zdalnego sterowania na panelu maszyny dla danego bębna — dopóki jest wyłączone, nic nie jest wysyłane."
+          "laundry_controls": "Dodaje przyciski uruchamiania, wstrzymywania i anulowania dla każdego bębna oraz ustawienia opcji, które maszyna pozwala zmieniać pojedynczo. Sam program wybiera się na panelu maszyny. Domyślnie wyłączone. Każde polecenie nadal wymaga włączenia zdalnego sterowania na panelu maszyny dla danego bębna — dopóki jest wyłączone, nic nie jest wysyłane.",
+          "appliance_controls": "Dodaje przełączniki, listy wyboru i pola liczbowe dla ustawień, które model tego sprzętu podaje jako zmienne. Żadne polecenie dla tego rodzaju sprzętu nie zostało potwierdzone jako działające, dlatego jest to domyślnie wyłączone, a ustawienie może zostać odrzucone. Nic, co zapala, grzeje lub gotuje, nigdy nie jest oferowane."
         }
       }
     }
@@ -240,9 +248,6 @@
       },
       "last_self_clean": {
         "name": "Ostatnie samoczyszczenie"
-      },
-      "local_key": {
-        "name": "Klucz lokalny"
       },
       "occupancy": {
         "name": "Obecność",

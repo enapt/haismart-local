@@ -34,7 +34,7 @@
       },
       "manual": {
         "title": "Apparaatgegevens",
-        "description": "Het enige dat u nodig heeft is de lokale sleutel van dit apparaat — uit de sensor “Lokale sleutel” van een eerdere installatie, of uit een back-up. Home Assistant zoekt het apparaat op uw netwerk en vraagt de rest rechtstreeks aan het apparaat.\n\nDe sleutel is niet van het apparaat zelf af te lezen. Heeft u er geen bewaard, ga dan terug en log in — dan wordt hij voor u opgehaald.",
+        "description": "Het enige dat u nodig heeft is de lokale sleutel van dit apparaat — uit een eerdere installatie (Opnieuw configureren → “Lokale sleutel tonen”), of uit een back-up. Home Assistant zoekt het apparaat op uw netwerk en vraagt de rest rechtstreeks aan het apparaat.\n\nDe sleutel is niet van het apparaat zelf af te lezen. Heeft u er geen bewaard, ga dan terug en log in — dan wordt hij voor u opgehaald.",
         "data": {
           "host": "IP-adres",
           "device_id": "Apparaat-ID",
@@ -55,7 +55,7 @@
           "local_key": "Lokale sleutel (32 hex-tekens)"
         },
         "data_description": {
-          "local_key": "Schakel op de apparaatpagina de diagnostische sensor 'Lokale sleutel' in om de huidige sleutel af te lezen, of voeg het apparaat opnieuw toe met je Haier-account zodat hij automatisch wordt opgehaald."
+          "local_key": "De nieuwe sleutel van het apparaat. De hier opgeslagen sleutel werkt niet meer; als u de nieuwe niet heeft, ga dan terug en meld u aan om hem op te halen."
         }
       },
       "host": {
@@ -70,7 +70,7 @@
       },
       "key_failed": {
         "title": "Kon de sleutel niet automatisch ophalen",
-        "description": "Home Assistant is ingelogd, maar kon de lokale sleutel van dit apparaat niet ophalen bij de servers van Haier — of de opgehaalde sleutel ontsleutelt de status van het apparaat niet.{note}\n\nDit is vaak tijdelijk, dus opnieuw proberen is meestal de moeite waard. Als het blijft mislukken kunt u de gegevens handmatig invoeren, al is de sleutel niet van het apparaat af te lezen — u zou hem nodig hebben uit de sensor “Lokale sleutel” van een eerdere installatie of uit een back-up.",
+        "description": "Home Assistant is ingelogd, maar kon de lokale sleutel van dit apparaat niet ophalen bij de servers van Haier — of de opgehaalde sleutel ontsleutelt de status van het apparaat niet.{note}\n\nDit is vaak tijdelijk, dus opnieuw proberen is meestal de moeite waard. Als het blijft mislukken kunt u de gegevens handmatig invoeren, al is de sleutel niet van het apparaat af te lezen — u zou hem nodig hebben uit een eerdere installatie (Opnieuw configureren → “Lokale sleutel tonen”) of uit een back-up.",
         "menu_options": {
           "key_retry": "Opnieuw proberen de sleutel op te halen",
           "manual": "In plaats daarvan de gegevens met de hand invoeren"
@@ -81,7 +81,8 @@
         "description": "Wijzig hoe Home Assistant dit apparaat bereikt, zonder het te verwijderen en de geschiedenis kwijt te raken.",
         "menu_options": {
           "reconfigure_host": "IP-adres wijzigen",
-          "reconfigure_cloud": "Mijn Haier-account toevoegen, zodat de sleutel zichzelf vernieuwt"
+          "reconfigure_cloud": "Mijn Haier-account toevoegen, zodat de sleutel zichzelf vernieuwt",
+          "reconfigure_local_key": "Lokale sleutel tonen"
         }
       },
       "reconfigure_host": {
@@ -105,6 +106,10 @@
         "data_description": {
           "zone_info": "Het land waarin het account is aangemaakt; dat kan een ander land zijn dan waar je woont of waar het apparaat hangt."
         }
+      },
+      "reconfigure_local_key": {
+        "title": "Lokale sleutel",
+        "description": "Iedereen op uw netwerk die deze sleutel heeft, kan het apparaat bedienen, dus houd hem geheim. Hij is opgeslagen in deze vermelding, dus elke back-up van Home Assistant bevat hem al.\n\n- Lokale sleutel: `{local_key}` (versie {localkey_version})\n- Apparaat-ID: `{device_id}`\n- IP-adres: `{host}`\n- Model-ID: `{uplus_id}`\n\nOm het apparaat zonder Haier-account opnieuw toe te voegen, voert u deze sleutel in wanneer de installatie erom vraagt. Dit sluiten verandert niets."
       },
       "reauth": {
         "title": "Dit apparaat heeft een nieuwe sleutel nodig",
@@ -174,7 +179,8 @@
       "unknown": "Onverwachte fout — de aankondiging van het apparaat werd niet begrepen.",
       "no_devices": "Aangemeld als {username}, maar dit Haier-account heeft geen apparaten. Meld je je in de app aan met Google of Facebook, deel het apparaat dan eerst met dit account in de app en probeer het daarna opnieuw.",
       "already_in_progress": "Dit apparaat wordt al ingesteld.",
-      "account_no_devices": "Het hier al ingestelde Haier-account vermeldt geen apparaten meer. Controleer of het apparaat nog onder dit account in de Haier-app staat en probeer het opnieuw."
+      "account_no_devices": "Het hier al ingestelde Haier-account vermeldt geen apparaten meer. Controleer of het apparaat nog onder dit account in de Haier-app staat en probeer het opnieuw.",
+      "local_key_shown": "Er is niets gewijzigd."
     }
   },
   "options": {
@@ -184,12 +190,14 @@
         "data": {
           "scan_interval": "Interval voor statusopvraging (seconden)",
           "appliance_kind": "Apparaat",
-          "laundry_controls": "Bediening van wasmachine en droger inschakelen"
+          "laundry_controls": "Bediening van wasmachine en droger inschakelen",
+          "appliance_controls": "Bediening inschakelen (onbevestigd)"
         },
         "data_description": {
           "scan_interval": "Hoe vaak het apparaat naar zijn status wordt gevraagd. Elke opvraging is een volledige lokale sessie en bestaat alleen om wijzigingen op te merken die met de afstandsbediening of de app zijn gemaakt — opdrachten die je vanuit Home Assistant stuurt, worden hoe dan ook meteen verwerkt.",
           "appliance_kind": "Alleen getoond voor een apparaat dat zich niet heeft geïdentificeerd. Een wasmachine, droger of was-droogcombinatie krijgt alleen-lezen sensoren en nooit een airco-thermostaat.",
-          "laundry_controls": "Voegt voor elke trommel knoppen toe om te starten, te pauzeren en te annuleren, plus de optie-instellingen die de machine één voor één laat wijzigen. Het programma zelf kies je op het bedieningspaneel van de machine. Standaard uitgeschakeld. Elke opdracht vereist nog steeds dat bediening op afstand voor die trommel op het bedieningspaneel van de machine is ingeschakeld; zolang die uit staat, wordt er niets verzonden."
+          "laundry_controls": "Voegt voor elke trommel knoppen toe om te starten, te pauzeren en te annuleren, plus de optie-instellingen die de machine één voor één laat wijzigen. Het programma zelf kies je op het bedieningspaneel van de machine. Standaard uitgeschakeld. Elke opdracht vereist nog steeds dat bediening op afstand voor die trommel op het bedieningspaneel van de machine is ingeschakeld; zolang die uit staat, wordt er niets verzonden.",
+          "appliance_controls": "Voegt schakelaars, keuzelijsten en getallen toe voor de instellingen die het model van dit apparaat als wijzigbaar publiceert. Van geen enkel commando aan dit soort apparaat is bevestigd dat het werkt, dus dit staat standaard uit en een instelling kan worden geweigerd. Niets wat ontsteekt, verwarmt of kookt, wordt ooit aangeboden."
         }
       }
     }
@@ -240,9 +248,6 @@
       },
       "last_self_clean": {
         "name": "Laatste zelfreiniging"
-      },
-      "local_key": {
-        "name": "Lokale sleutel"
       },
       "occupancy": {
         "name": "Aanwezigheid",

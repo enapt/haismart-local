@@ -50,11 +50,16 @@ jadi ia menyediakan dirinya sendiri untuk unit yang belum pernah kami lihat.
 
 ### Perkakas lain
 
-Pemanas air (elektrik, gas dan pam haba), peti sejuk, mesin basuh, mesin basuh-pengering, mesin basuh pinggan, penghisap
+Pemanas air (elektrik, gas dan pam haba), peti sejuk, mesin basuh, mesin basuh-pengering, penghisap
 asap dapur, dapur gas, kabinet pensteril, ketuhar dan penulen udara turut disokong — **166 jenis
 produk dalam 37 kelas peranti** — tetapi melalui mekanisme yang berbeza: bukan kod khusus bagi
 setiap perkakas, sebaliknya peta bait rasmi Haier bagi jenis produk itu, ditapis oleh perisytiharan
 unit anda sendiri tentang ciri yang benar-benar ada padanya.
+
+Kawalan pada perkakas ini, kecuali pemanas air, dimatikan secara lalai; hidupkannya dalam
+**Configure** integrasi. Dapur gas, ketuhar dan kabinet pensteril tidak sekali-kali diberi kawalan,
+dan tiada perkakas diberi kawalan bagi apa-apa yang menyalakan api, memanaskan atau memasak — semua
+bacaan kekal ada.
 
 ⚠️ Petanya datang daripada pengeluar, **tetapi kebanyakan kategori itu belum pernah diuji pada
 perkakas sebenar di sini**. Setakat ini hanya **satu** tetapan pada perkakas selain penghawa dingin
@@ -147,7 +152,7 @@ mengapa** — peraturan yang dipersetujui oleh semua model dalam keluarga itu ak
 tetap merangkumi kesemua nama kerosakan.
 
 > Kunci ialah satu-satunya perkara yang tidak akan diberikan oleh perkakas itu. Jika anda tiada
-> simpanan — daripada penderia *Local key* pemasangan terdahulu, atau daripada sandaran — gunakan
+> simpanan — daripada **Reconfigure → Show the local key** pemasangan terdahulu, atau daripada sandaran — gunakan
 > **Log masuk** sahaja; cara itu mengambilkannya untuk anda.
 
 ### Jika ia terus meminta kunci baharu
@@ -166,8 +171,9 @@ berfungsi:
 - **Atau sekat capaian internet perkakas itu** pada penghala anda. Kuncinya berhenti bertukar dan
   yang anda miliki kekal sah. Kawalan setempat tidak terjejas dalam kedua-dua keadaan.
 
-Sebelum menyekat, **simpan kuncinya dahulu**: dayakan penderia diagnostik *Local key* pada halaman
-peranti — nilainya ialah kunci itu, dan ia turut tersimpan dalam sandaran Home Assistant. Peraturan
+Sebelum menyekat, **simpan kuncinya dahulu**: pada entri perkakas, pilih **Reconfigure → Show the local
+key** — ia menunjukkan kunci itu tanpa mengubah apa-apa, dan kunci itu turut tersimpan dalam setiap
+sandaran Home Assistant. Peraturan
 paling mudah yang terbukti berkesan ialah menolak trafik ke `43.156.75.60`, get laluan Haier; biarkan
 LAN terbuka, kerana Home Assistant masih memerlukan port 56800. Jangan gunakan ciri penghala bernama
 "MAC filtering" atau "IP filtering" — ciri itu sering memutuskan peranti daripada LAN sepenuhnya.

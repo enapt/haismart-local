@@ -49,8 +49,6 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
 
 from .const import (
-    CONF_HOST,
-    CONF_LOCALKEY_VERSION,
     CONF_PRODUCT_CODE,
     CONF_UPLUS_ID,
     DOMAIN,
@@ -64,6 +62,11 @@ from .generic import (
     state_class_for,
     unit_for,
 )
+
+# The recorder's domain, named rather than imported: importing the component would load it.
+RECORDER_DOMAIN = "recorder"
+# The unique-id suffix the localKey sensor carried, so an install that still has it can be cleaned.
+LOCAL_KEY_SENSOR_KEY = "local_key"
 
 # Newer Home Assistant renamed these two air-quality units. The old flat constants still work but
 # log a deprecation warning, while the new UnitOf* names do not exist on the version this
@@ -306,10 +309,9 @@ async def async_setup_entry(
         for desc in SENSORS
         if curated and desc.key not in absent and desc.key not in withheld
     ]
-    # opt-in backup entity: exposes the localKey so it rides along in HA backups / can be copied.
-    # It's a secret, so it's diagnostic + DISABLED by default (enable it, back it up, done).
     entities.append(HaismartModelIdSensor(coordinator))
-    entities.append(HaismartLocalKeySensor(coordinator))
+    # The localKey is never an entity: see `_async_retire_local_key_sensor`.
+    await _async_retire_local_key_sensor(hass, coordinator)
     # Read-only enum state for the multi-state optional features a unit declares that the app shows
     # no control for. The ones it renders a select for (and this unit can write) become select
     # entities instead, so they are excluded here to avoid a select and a sensor for the same thing.
@@ -357,6 +359,32 @@ def _drop_withheld_sensors(
         unique_id = f"{coordinator.device_id}_{key}"
         if entity_id := registry.async_get_entity_id(SENSOR_DOMAIN, DOMAIN, unique_id):
             registry.async_remove(entity_id)
+
+
+async def _async_retire_local_key_sensor(
+    hass: HomeAssistant, coordinator: HaismartCoordinator
+) -> None:
+    """Remove a localKey sensor an install still has, and every state the recorder kept of it.
+
+    The localKey controls the appliance from anywhere on the network, so it is not an entity: an
+    entity's state is visible to every user of the instance, admin or not, and is written to the
+    recorder and history. The key lives in the config entry, which every backup carries, and an
+    administrator can read it under Reconfigure → Show the local key.
+
+    The registry row is removed and, where the recorder is running, its recorded states are purged
+    with it. The entity was disabled unless its owner enabled it, so for most installs there is
+    nothing to purge; for the rest, removing the row alone would leave the key in the database.
+    """
+    registry = er.async_get(hass)
+    unique_id = f"{coordinator.device_id}_{LOCAL_KEY_SENSOR_KEY}"
+    entity_id = registry.async_get_entity_id(SENSOR_DOMAIN, DOMAIN, unique_id)
+    if entity_id is None:
+        return
+    if hass.services.has_service(RECORDER_DOMAIN, "purge_entities"):
+        await hass.services.async_call(
+            RECORDER_DOMAIN, "purge_entities", {"entity_id": [entity_id], "keep_days": 0}
+        )
+    registry.async_remove(entity_id)
 
 
 def _drop_superseded_vane_sensors(
@@ -515,10 +543,9 @@ class HaismartSensor(HaismartEntity, SensorEntity):
 class HaismartModelIdSensor(HaismartEntity, SensorEntity):
     """The AC's uPlusId — the identifier that selects its report layout.
 
-    Enabled by default, unlike the localKey sensor it used to be an attribute of. The two were
-    coupled only because they are both wanted for a manual re-add, but they are not alike: the
-    localKey is a secret, whereas the uPlusId is a model identifier shared by every unit of that
-    model. Reading your model ID should not require enabling an entity whose state is your key.
+    Enabled by default: the uPlusId is a model identifier shared by every unit of that model, not a
+    secret. (The localKey, which a manual re-add also needs, is never an entity -- an administrator
+    reads it under Reconfigure.)
 
     It is what a bug report about an undecoded model needs, and it is now obtainable with no cloud
     account at all -- the air conditioner reports it over the key-free discovery query.
@@ -557,44 +584,6 @@ class HaismartModelIdSensor(HaismartEntity, SensorEntity):
             CONF_PRODUCT_CODE: self.coordinator.product_code,
             # the exact identifier -- quote THIS in a report, not the shortened state
             CONF_UPLUS_ID: self.coordinator.uplus_id or None,
-        }
-
-
-class HaismartLocalKeySensor(HaismartEntity, SensorEntity):
-    """The AC's current localKey, for backup/export. Diagnostic + disabled by default (a secret).
-
-    Enable it to see/copy the key (it rides along in HA backups); the attributes carry all the
-    `manual` onboarding path needs (host + deviceId + version + uPlusId), a one-stop
-    cloud-independent backup.
-    Stays current across localKey rotation (the coordinator updates it in place)."""
-
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_entity_registry_enabled_default = False
-    _attr_translation_key = "local_key"
-    _attr_icon = "mdi:key-variant"
-    # The backup attributes are for copying out, not for history: the recorder would keep every
-    # value of the unit's LAN address and MAC for as long as it keeps anything.
-    _unrecorded_attributes = frozenset({CONF_HOST, "device_id"})
-
-    def __init__(self, coordinator: HaismartCoordinator) -> None:
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.device_id}_local_key"
-
-    @property
-    def native_value(self) -> str:
-        return self.coordinator.local_key
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        c = self.coordinator
-        return {
-            CONF_HOST: c.host,
-            "device_id": c.device_id,
-            CONF_LOCALKEY_VERSION: c.localkey_version,
-            CONF_PRODUCT_CODE: c.product_code,
-            # The wire-model key. Worth backing up alongside the localKey: with both, a manual
-            # re-add decodes the AC exactly as a cloud-onboarded one would, with no account.
-            CONF_UPLUS_ID: c.uplus_id,
         }
 
 

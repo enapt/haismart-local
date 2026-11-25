@@ -34,7 +34,7 @@
       },
       "manual": {
         "title": "Datele dispozitivului",
-        "description": "Singurul lucru de care aveți nevoie este cheia locală a acestui aparat — din senzorul „Cheie locală” al unei instalări anterioare sau dintr-o copie de rezervă. Home Assistant caută aparatul în rețeaua dumneavoastră și îl întreabă direct restul.\n\nCheia nu poate fi citită de pe aparatul propriu-zis. Dacă nu aveți una salvată, reveniți și autentificați-vă — astfel este obținută pentru dumneavoastră.",
+        "description": "Singurul lucru de care aveți nevoie este cheia locală a acestui aparat — dintr-o instalare anterioară (Reconfigurare → „Afișează cheia locală”) sau dintr-o copie de rezervă. Home Assistant caută aparatul în rețeaua dumneavoastră și îl întreabă direct restul.\n\nCheia nu poate fi citită de pe aparatul propriu-zis. Dacă nu aveți una salvată, reveniți și autentificați-vă — astfel este obținută pentru dumneavoastră.",
         "data": {
           "host": "Adresă IP",
           "device_id": "ID dispozitiv",
@@ -55,7 +55,7 @@
           "local_key": "Cheie locală (32 de caractere hexazecimale)"
         },
         "data_description": {
-          "local_key": "Activează senzorul de diagnosticare „Cheie locală” din pagina dispozitivului pentru a o citi pe cea curentă, sau adaugă din nou aparatul folosind contul tău Haier, ca să fie preluată automat."
+          "local_key": "Noua cheie a aparatului. Cea stocată aici nu mai funcționează; dacă nu o aveți pe cea nouă, reveniți și autentificați-vă pentru a fi preluată."
         }
       },
       "host": {
@@ -70,7 +70,7 @@
       },
       "key_failed": {
         "title": "Cheia nu a putut fi preluată automat",
-        "description": "Home Assistant s-a autentificat, dar nu a putut obține cheia locală a acestui aparat de pe serverele Haier — sau cheia obținută nu decriptează starea aparatului.{note}\n\nDe obicei este temporar, așa că merită să încercați din nou. Dacă eșuează în continuare, puteți introduce datele manual, însă cheia nu poate fi citită de pe aparat — v-ar trebui din senzorul „Cheie locală” al unei instalări anterioare sau dintr-o copie de rezervă.",
+        "description": "Home Assistant s-a autentificat, dar nu a putut obține cheia locală a acestui aparat de pe serverele Haier — sau cheia obținută nu decriptează starea aparatului.{note}\n\nDe obicei este temporar, așa că merită să încercați din nou. Dacă eșuează în continuare, puteți introduce datele manual, însă cheia nu poate fi citită de pe aparat — v-ar trebui dintr-o instalare anterioară (Reconfigurare → „Afișează cheia locală”) sau dintr-o copie de rezervă.",
         "menu_options": {
           "key_retry": "Încearcă din nou să preiei cheia",
           "manual": "Introdu în schimb datele manual"
@@ -81,7 +81,8 @@
         "description": "Schimbă modul în care Home Assistant ajunge la această unitate, fără să o elimini și să îi pierzi istoricul.",
         "menu_options": {
           "reconfigure_host": "Schimbă adresa IP",
-          "reconfigure_cloud": "Adaugă contul meu Haier, ca să se reînnoiască singură cheia"
+          "reconfigure_cloud": "Adaugă contul meu Haier, ca să se reînnoiască singură cheia",
+          "reconfigure_local_key": "Afișează cheia locală"
         }
       },
       "reconfigure_host": {
@@ -105,6 +106,10 @@
         "data_description": {
           "zone_info": "Țara în care a fost creat contul, care poate să nu fie cea în care locuiești sau în care este montat aparatul."
         }
+      },
+      "reconfigure_local_key": {
+        "title": "Cheie locală",
+        "description": "Oricine din rețeaua dumneavoastră are această cheie poate controla aparatul, așa că păstrați-o secretă. Este stocată în această intrare, deci fiecare copie de rezervă Home Assistant o conține deja.\n\n- Cheie locală: `{local_key}` (versiunea {localkey_version})\n- ID dispozitiv: `{device_id}`\n- Adresă IP: `{host}`\n- ID model: `{uplus_id}`\n\nPentru a adăuga din nou aparatul fără un cont Haier, introduceți această cheie atunci când configurarea o cere. Închiderea acestei ferestre nu schimbă nimic."
       },
       "reauth": {
         "title": "Acest aparat are nevoie de o cheie nouă",
@@ -174,7 +179,8 @@
       "unknown": "Eroare neașteptată — anunțul dispozitivului nu a fost înțeles.",
       "no_devices": "Autentificat ca {username}, dar acest cont Haier nu are dispozitive. Dacă intri în aplicație cu Google sau Facebook, partajează mai întâi aparatul cu acest cont din aplicație, apoi încearcă din nou.",
       "already_in_progress": "Acest aparat este deja în curs de configurare.",
-      "account_no_devices": "Contul Haier deja configurat aici nu mai listează niciun dispozitiv. Verifică dacă aparatul de aparat este încă în aplicația Haier pe acest cont, apoi încearcă din nou."
+      "account_no_devices": "Contul Haier deja configurat aici nu mai listează niciun dispozitiv. Verifică dacă aparatul de aparat este încă în aplicația Haier pe acest cont, apoi încearcă din nou.",
+      "local_key_shown": "Nu s-a modificat nimic."
     }
   },
   "options": {
@@ -184,12 +190,14 @@
         "data": {
           "scan_interval": "Interval de interogare a stării (secunde)",
           "appliance_kind": "Aparat",
-          "laundry_controls": "Activează comenzile mașinii de spălat și ale uscătorului de rufe"
+          "laundry_controls": "Activează comenzile mașinii de spălat și ale uscătorului de rufe",
+          "appliance_controls": "Activează comenzile (neconfirmate)"
         },
         "data_description": {
           "scan_interval": "Cât de des să fie întrebat aparatul despre starea sa. Fiecare interogare este o sesiune locală completă și există doar pentru a observa modificările făcute de la telecomandă sau din aplicație — comenzile trimise din Home Assistant se actualizează instantaneu oricum.",
           "appliance_kind": "Afișat doar pentru un aparat care nu s-a identificat. O mașină de spălat, un uscător de rufe sau o mașină de spălat cu uscător primește senzori doar pentru citire și niciodată un termostat de aer condiționat.",
-          "laundry_controls": "Adaugă butoane de pornire, pauză și anulare pentru fiecare tambur, precum și setările de opțiuni pe care mașina vă permite să le modificați pe rând. Programul în sine se alege de pe panoul mașinii. Dezactivat implicit. Fiecare comandă necesită în continuare activarea controlului de la distanță de pe panoul mașinii pentru acel tambur, iar cât timp acesta este dezactivat nu se trimite nimic."
+          "laundry_controls": "Adaugă butoane de pornire, pauză și anulare pentru fiecare tambur, precum și setările de opțiuni pe care mașina vă permite să le modificați pe rând. Programul în sine se alege de pe panoul mașinii. Dezactivat implicit. Fiecare comandă necesită în continuare activarea controlului de la distanță de pe panoul mașinii pentru acel tambur, iar cât timp acesta este dezactivat nu se trimite nimic.",
+          "appliance_controls": "Adaugă comutatoare, liste de selecție și câmpuri numerice pentru setările pe care modelul acestui aparat le declară modificabile. Nicio comandă către acest tip de aparat nu a fost confirmată ca funcționând, așa că opțiunea este dezactivată implicit și o setare poate fi refuzată. Nu se oferă niciodată nimic care aprinde, încălzește sau gătește."
         }
       }
     }
@@ -240,9 +248,6 @@
       },
       "last_self_clean": {
         "name": "Ultima autocurățare"
-      },
-      "local_key": {
-        "name": "Cheie locală"
       },
       "occupancy": {
         "name": "Ocupare",

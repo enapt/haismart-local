@@ -75,7 +75,7 @@ def test_an_unmapped_class_is_other_and_never_silently_an_air_conditioner() -> N
     Answering OTHER is what lets the caller decline to build a thermostat for a fridge. Answering
     AIR_CONDITIONER would reproduce issue #13 for every one of them.
     """
-    for device_class in ("0121", "0501", "0901", "1d01", "3e01", "2101"):
+    for device_class in ("0121", "0901", "1d01", "3e01", "2101"):
         assert kind_for(f"{'0' * 16}{device_class}{'0' * 44}") is ApplianceKind.OTHER
 
 
@@ -221,3 +221,34 @@ def test_an_answer_can_decide_only_where_no_class_does() -> None:
     for settled in (CLASSIC_AC, WATER_HEATER, _with_class("0121"), _with_class("0504"),
                     _with_class("0502")):
         assert not answer_applies(settled), settled
+
+
+def test_controls_are_offered_only_for_a_named_class_that_is_not_a_heat_source() -> None:
+    from haismart_hrdp.appliance import HEAT_SOURCE_CLASSES, controls_can_be_offered
+
+    assert HEAT_SOURCE_CLASSES == {"1d01", "1a01", "3e01", "0b11", "0b12"}
+    for device_class in HEAT_SOURCE_CLASSES:
+        assert not controls_can_be_offered(_with_class(device_class)), device_class
+    for device_class in ("0121", "0901", "2101"):        # refrigerator, cooker hood, purifier
+        assert controls_can_be_offered(_with_class(device_class)), device_class
+    # Not for a class nobody here can name, nor for the kinds with controls of their own.
+    assert not controls_can_be_offered(_with_class("9a01"))
+    assert not controls_can_be_offered(None)
+    for device_class in ("0212", "2001", "0501", "0504"):
+        assert not controls_can_be_offered(_with_class(device_class)), device_class
+
+
+def test_the_heat_name_rule_withholds_heating_and_nothing_on_a_refrigerator() -> None:
+    from haismart_hrdp.appliance import heats_or_ignites
+    from haismart_hrdp.device_model import known_typeids, model_for
+
+    for name in ("leftIgnitionStatus", "leftFlameStatus", "bakeTargetTemperature",
+                 "fastPreHeatStatus", "meltWashStatus"):
+        assert heats_or_ignites(name), name
+    fridges = [t for t in known_typeids() if t[16:18] == "01"]
+    assert fridges
+    for typeid in fridges:
+        model = model_for(typeid)
+        assert model is not None
+        caught = [f.name for f in model.writable_fields() if heats_or_ignites(f.name)]
+        assert not caught, (typeid, caught)

@@ -28,15 +28,27 @@ Be aware of which tier your appliance falls into.
 | Tier | What it means | Classes |
 |---|---|---|
 | **Confirmed on hardware** | Real units, commanded and read back | Air conditioners `0212`, `0d12` (presence and the four-way louvres provisional), `3912` (a window unit); heat-pump water heater `2001` (**setpoint only** — its other settings are decoded but have never been commanded) |
-| **Decode validated against a real capture** | A real unit's traffic decoded correctly; never driven through Home Assistant, never commanded | Washing machine `0501`; twin washer + dryer `0504` (read-only, see below) |
+| **Decode validated against a real capture** | A real unit's traffic decoded correctly; never driven through Home Assistant, never commanded | Washing machine `0501`; twin washer + dryer `0504` (both read-only unless their controls are turned on, see below) |
 | **By construction** | The manufacturer's map and your unit's declaration; **never seen on hardware here** | every other class below |
 
 ⚠️ **Only one non-air-conditioner setting has ever been commanded successfully** — a heat-pump
 water heater's setpoint, accepted by the appliance and read back (2026-09-14). Every other write on
-every other class is still *published, not proven*: they use the same single-parameter mechanism
-that works on air conditioners, with the command ids Haier publishes for that class. If your
-appliance refuses a command, Home Assistant shows the reason from your appliance's own model, and a
-diagnostics download records the refusal.
+every other class is *published, not proven*, so what you can command depends on the kind:
+
+* a **water heater** gets its controls;
+* a **washing machine or washer-dryer** is read-only until you turn on **Configure → Enable washer
+  and dryer controls**, and every command is then gated on the machine's own panel (see
+  [below](#controls-off-by-default));
+* **any other appliance** is read-only until you turn on **Configure → Enable controls
+  (unconfirmed)**. The option is offered only for a class Haier names; an appliance of a class
+  nobody here can name stays read-only;
+* a **gas hob, an oven or a sterilising cabinet never gets a control**, whatever the option says,
+  and no appliance gets a control for a setting that lights, heats or cooks — a cooker hood's heated
+  self-clean, for one. Their readings are all there.
+
+The controls there are use the same single-parameter mechanism that works on air conditioners, with
+the command ids Haier publishes for that class. If your appliance refuses a command, Home Assistant
+shows the reason from your appliance's own model, and a diagnostics download records the refusal.
 
 If you own any appliance below that is not an air conditioner, **please
 [open an issue](TROUBLESHOOTING.md#before-you-open-an-issue) either way** — including one that simply
@@ -76,16 +88,16 @@ operating modes.
 | `0504` | Twin washer + dryer (laundry centre) |
 | `0901` `0902` | Cooker hoods |
 | `0b11` `0b12` | Sterilising cabinets |
-| `1a01` | Dishwashers |
+| `1a01` `3e01` | Steam ovens |
 | `1d01` | Gas hobs |
 | `2101` | Air purifiers |
-| `3e01` | Steam ovens |
 | `0f01` | Televisions |
 | `150e` | Body-composition scales |
 | `2702` | Sensors |
 | `3b01` | Voice assistants |
 
-These are read and controlled through generic entities. A category gets a dedicated Home Assistant
+These are read through generic entities; which of them can be commanded is set out
+[above](#what-is-actually-proven-and-what-is-not). A category gets a dedicated Home Assistant
 entity type as support for it is confirmed.
 
 ## Twin washer + dryer (`0504`)
@@ -155,6 +167,21 @@ commands the app starts a programme with (`grCommonDry` 0x60/0001, `grOnlineWash
 every member's word and bit). The dryer's mostly mirrors its status report and could be filled from
 it; the washer's carries forty motor and water parameters no report holds.
 
+## Washing machine (`0501`)
+
+The `0501` front loader is laundry too, with one drum: everything it has is in its `6D01` status
+report (and a `7D01` big-data report, where it sends one). It gets sensors and binary sensors by
+default, and **Configure → Enable washer and dryer controls** gives it what the `0504` gets for each
+drum — **Start or resume**, **Pause** and **Cancel**, and the options its configuration marks as
+writable on their own — behind the same gates: the panel's remote-control flag (`remoteCtrValid`),
+the child lock off, and power off only at standby or a finished cycle (`cyclePhase` 0, 14, 18 or 19).
+Cancel is its return-to-standby command, `5D24`. The programme (`laundryCycle`), the child lock and
+the factory reset (`resetOpt`) are never offered.
+
+All 15 `0501` configurations Haier publishes place these attributes at the same positions with the
+same values. The decode is validated against a real unit's board traffic — an HW90-B14959U1's,
+recovered from the esphome-haier issue tracker; no command to a `0501` has been seen accepted.
+
 ## How an appliance is identified, and what happens when it is not
 
 Nothing asks you what your appliance is if the appliance can say so. In order:
@@ -178,8 +205,8 @@ Nothing asks you what your appliance is if the appliance can say so. In order:
    air conditioner set up the usual way is never asked: it is recognised, or it said nothing, and
    the question then appears in the options once the appliance has identified itself.
 
-A class Haier names as something other than an air conditioner (a refrigerator, a hood, a `0501`
-washer) is also never read as one: report length is not identity, and the `0504` dryer's report
+A class Haier names as something other than an air conditioner (a refrigerator, a hood, a washer)
+is also never read as one: report length is not identity, and the `0504` dryer's report
 proved it.
 
 ## What is deliberately not supported

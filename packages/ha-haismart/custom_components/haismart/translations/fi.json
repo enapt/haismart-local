@@ -34,7 +34,7 @@
       },
       "manual": {
         "title": "Laitteen tiedot",
-        "description": "Ainoa tarvitsemasi asia on tämän laitteen paikallinen avain — aiemman asennuksen ”Paikallinen avain” -anturista tai varmuuskopiosta. Home Assistant etsii laitteen verkostasi ja kysyy siltä kaiken muun.\n\nAvainta ei voi lukea itse laitteesta. Jos sinulla ei ole tallennettua avainta, palaa takaisin ja kirjaudu sisään — silloin se haetaan puolestasi.",
+        "description": "Ainoa tarvitsemasi asia on tämän laitteen paikallinen avain — aiemmasta asennuksesta (Määritä uudelleen → ”Näytä paikallinen avain”) tai varmuuskopiosta. Home Assistant etsii laitteen verkostasi ja kysyy siltä kaiken muun.\n\nAvainta ei voi lukea itse laitteesta. Jos sinulla ei ole tallennettua avainta, palaa takaisin ja kirjaudu sisään — silloin se haetaan puolestasi.",
         "data": {
           "host": "IP-osoite",
           "device_id": "Laitetunnus",
@@ -55,7 +55,7 @@
           "local_key": "Paikallinen avain (32 heksamerkkiä)"
         },
         "data_description": {
-          "local_key": "Ota laitesivulla käyttöön diagnostiikka-anturi ”Paikallinen avain” lukeaksesi nykyisen, tai lisää laite uudelleen Haier-tililläsi, jolloin avain haetaan automaattisesti."
+          "local_key": "Laitteen uusi avain. Tähän tallennettu ei enää toimi; jos sinulla ei ole uutta, palaa takaisin ja kirjaudu sisään, jotta se haetaan."
         }
       },
       "host": {
@@ -70,7 +70,7 @@
       },
       "key_failed": {
         "title": "Avainta ei voitu hakea automaattisesti",
-        "description": "Home Assistant kirjautui sisään, mutta ei saanut haettua tämän laitteen paikallista avainta Haierin palvelimilta — tai saatu avain ei pura laitteen tilaa.{note}\n\nTämä on usein tilapäistä, joten uudelleenyritys kannattaa yleensä. Jos virhe toistuu, voit syöttää tiedot käsin, mutta avainta ei voi lukea laitteesta — tarvitsisit sen aiemman asennuksen ”Paikallinen avain” -anturista tai varmuuskopiosta.",
+        "description": "Home Assistant kirjautui sisään, mutta ei saanut haettua tämän laitteen paikallista avainta Haierin palvelimilta — tai saatu avain ei pura laitteen tilaa.{note}\n\nTämä on usein tilapäistä, joten uudelleenyritys kannattaa yleensä. Jos virhe toistuu, voit syöttää tiedot käsin, mutta avainta ei voi lukea laitteesta — tarvitsisit sen aiemmasta asennuksesta (Määritä uudelleen → ”Näytä paikallinen avain”) tai varmuuskopiosta.",
         "menu_options": {
           "key_retry": "Yritä hakea avain uudelleen",
           "manual": "Syötä tiedot sen sijaan käsin"
@@ -81,7 +81,8 @@
         "description": "Muuta tapaa, jolla Home Assistant tavoittaa tämän laitteen, ilman että poistat sen ja menetät sen historian.",
         "menu_options": {
           "reconfigure_host": "Vaihda IP-osoite",
-          "reconfigure_cloud": "Lisää Haier-tilini, jotta avain uusiutuu itsestään"
+          "reconfigure_cloud": "Lisää Haier-tilini, jotta avain uusiutuu itsestään",
+          "reconfigure_local_key": "Näytä paikallinen avain"
         }
       },
       "reconfigure_host": {
@@ -105,6 +106,10 @@
         "data_description": {
           "zone_info": "Maa, jossa tili luotiin. Se ei välttämättä ole asuinmaasi eikä laitteen asennusmaa."
         }
+      },
+      "reconfigure_local_key": {
+        "title": "Paikallinen avain",
+        "description": "Kuka tahansa verkossasi, jolla on tämä avain, voi ohjata laitetta, joten pidä se salassa. Se on tallennettu tähän merkintään, joten jokainen Home Assistantin varmuuskopio sisältää sen jo.\n\n- Paikallinen avain: `{local_key}` (versio {localkey_version})\n- Laitetunnus: `{device_id}`\n- IP-osoite: `{host}`\n- Mallitunnus: `{uplus_id}`\n\nJos haluat lisätä laitteen uudelleen ilman Haier-tiliä, syötä tämä avain, kun asennus pyytää sitä. Tämän sulkeminen ei muuta mitään."
       },
       "reauth": {
         "title": "Tämä laite tarvitsee uuden avaimen",
@@ -174,7 +179,8 @@
       "unknown": "Odottamaton virhe – laitteen ilmoitusta ei ymmärretty.",
       "no_devices": "Kirjauduttu tunnuksella {username}, mutta tällä Haier-tilillä ei ole laitteita. Jos kirjaudut sovellukseen Googlella tai Facebookilla, jaa laite ensin tälle tilille sovelluksessa ja yritä sitten uudelleen.",
       "already_in_progress": "Tämän laitteen määritys on jo käynnissä.",
-      "account_no_devices": "Tässä jo määritetty Haier-tili ei enää listaa laitteita. Tarkista, että laite on yhä Haier-sovelluksessa tällä tilillä, ja yritä uudelleen."
+      "account_no_devices": "Tässä jo määritetty Haier-tili ei enää listaa laitteita. Tarkista, että laite on yhä Haier-sovelluksessa tällä tilillä, ja yritä uudelleen.",
+      "local_key_shown": "Mitään ei muutettu."
     }
   },
   "options": {
@@ -184,12 +190,14 @@
         "data": {
           "scan_interval": "Tilan kyselyväli (sekuntia)",
           "appliance_kind": "Laite",
-          "laundry_controls": "Ota pesukoneen ja kuivausrummun ohjaus käyttöön"
+          "laundry_controls": "Ota pesukoneen ja kuivausrummun ohjaus käyttöön",
+          "appliance_controls": "Ota ohjaus käyttöön (vahvistamaton)"
         },
         "data_description": {
           "scan_interval": "Kuinka usein laitteelta kysytään sen tilaa. Jokainen kysely on täysi paikallinen istunto, ja se on olemassa vain havaitakseen kaukosäätimellä tai sovelluksella tehdyt muutokset – Home Assistantista lähettämäsi komennot päivittyvät joka tapauksessa heti.",
           "appliance_kind": "Näytetään vain laitteelle, joka ei tunnistautunut. Pesukone, kuivausrumpu tai kuivaava pesukone saa vain luku -anturit eikä koskaan ilmastointilaitteen termostaattia.",
-          "laundry_controls": "Lisää kullekin rummulle käynnistys-, tauko- ja peruutuspainikkeet sekä ne valinta-asetukset, joita kone sallii muuttaa yksi kerrallaan. Itse ohjelma valitaan koneen ohjauspaneelista. Oletuksena pois päältä. Jokainen komento edellyttää edelleen, että kyseisen rummun etäohjaus on kytketty päälle koneen ohjauspaneelista, eikä mitään lähetetä, kun se on pois päältä."
+          "laundry_controls": "Lisää kullekin rummulle käynnistys-, tauko- ja peruutuspainikkeet sekä ne valinta-asetukset, joita kone sallii muuttaa yksi kerrallaan. Itse ohjelma valitaan koneen ohjauspaneelista. Oletuksena pois päältä. Jokainen komento edellyttää edelleen, että kyseisen rummun etäohjaus on kytketty päälle koneen ohjauspaneelista, eikä mitään lähetetä, kun se on pois päältä.",
+          "appliance_controls": "Lisää kytkimet, valinnat ja numerokentät asetuksille, jotka tämän laitteen malli ilmoittaa muutettaviksi. Yhdenkään komennon ei ole vahvistettu toimivan tämäntyyppisessä laitteessa, joten tämä on oletuksena pois päältä ja asetus voidaan hylätä. Mitään, mikä sytyttää, lämmittää tai kypsentää, ei koskaan tarjota."
         }
       }
     }
@@ -240,9 +248,6 @@
       },
       "last_self_clean": {
         "name": "Viimeisin itsepuhdistus"
-      },
-      "local_key": {
-        "name": "Paikallinen avain"
       },
       "occupancy": {
         "name": "Läsnäolo",

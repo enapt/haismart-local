@@ -34,7 +34,7 @@
       },
       "manual": {
         "title": "Thông tin thiết bị",
-        "description": "Thứ duy nhất bạn cần là khóa cục bộ của máy này — từ cảm biến “Khóa cục bộ” của lần cài đặt trước, hoặc từ bản sao lưu. Home Assistant sẽ tìm thiết bị trong mạng của bạn và hỏi chính nó mọi thứ còn lại.\n\nKhông có cách nào đọc khóa từ chính chiếc máy. Nếu bạn không lưu khóa nào, hãy quay lại và đăng nhập — cách đó sẽ lấy khóa giúp bạn.",
+        "description": "Thứ duy nhất bạn cần là khóa cục bộ của máy này — từ lần cài đặt trước (Cấu hình lại → “Hiển thị khóa cục bộ”), hoặc từ bản sao lưu. Home Assistant sẽ tìm thiết bị trong mạng của bạn và hỏi chính nó mọi thứ còn lại.\n\nKhông có cách nào đọc khóa từ chính chiếc máy. Nếu bạn không lưu khóa nào, hãy quay lại và đăng nhập — cách đó sẽ lấy khóa giúp bạn.",
         "data": {
           "host": "Địa chỉ IP",
           "device_id": "ID thiết bị",
@@ -55,7 +55,7 @@
           "local_key": "Khóa cục bộ (32 ký tự hex)"
         },
         "data_description": {
-          "local_key": "Bật cảm biến chẩn đoán Khóa cục bộ trên trang thiết bị để đọc khóa hiện tại, hoặc thêm lại thiết bị bằng tài khoản Haier của bạn để khóa được lấy tự động."
+          "local_key": "Khóa mới của thiết bị. Khóa lưu ở đây không còn dùng được; nếu bạn chưa có khóa mới, hãy quay lại và đăng nhập để lấy về."
         }
       },
       "host": {
@@ -70,7 +70,7 @@
       },
       "key_failed": {
         "title": "Không thể lấy khóa tự động",
-        "description": "Home Assistant đã đăng nhập, nhưng không lấy được khóa cục bộ của thiết bị này từ máy chủ Haier — hoặc khóa nhận được không giải mã được trạng thái của máy.{note}\n\nĐiều này thường chỉ là tạm thời, nên thử lại thường có ích. Nếu vẫn lỗi, bạn có thể nhập thông tin thủ công, tuy nhiên khóa không thể đọc được từ máy — bạn sẽ cần lấy từ cảm biến “Khóa cục bộ” của lần cài đặt trước hoặc từ bản sao lưu.",
+        "description": "Home Assistant đã đăng nhập, nhưng không lấy được khóa cục bộ của thiết bị này từ máy chủ Haier — hoặc khóa nhận được không giải mã được trạng thái của máy.{note}\n\nĐiều này thường chỉ là tạm thời, nên thử lại thường có ích. Nếu vẫn lỗi, bạn có thể nhập thông tin thủ công, tuy nhiên khóa không thể đọc được từ máy — bạn sẽ cần lấy từ lần cài đặt trước (Cấu hình lại → “Hiển thị khóa cục bộ”) hoặc từ bản sao lưu.",
         "menu_options": {
           "key_retry": "Thử lấy khóa lại",
           "manual": "Tự nhập thông tin thay thế"
@@ -81,7 +81,8 @@
         "description": "Thay đổi cách Home Assistant kết nối tới máy này mà không phải xóa đi và mất lịch sử của nó.",
         "menu_options": {
           "reconfigure_host": "Đổi địa chỉ IP",
-          "reconfigure_cloud": "Thêm tài khoản Haier của tôi, để khóa tự làm mới"
+          "reconfigure_cloud": "Thêm tài khoản Haier của tôi, để khóa tự làm mới",
+          "reconfigure_local_key": "Hiển thị khóa cục bộ"
         }
       },
       "reconfigure_host": {
@@ -105,6 +106,10 @@
         "data_description": {
           "zone_info": "Quốc gia nơi tài khoản được tạo, có thể không phải nơi bạn sống hay nơi lắp đặt thiết bị."
         }
+      },
+      "reconfigure_local_key": {
+        "title": "Khóa cục bộ",
+        "description": "Bất kỳ ai trong mạng của bạn có khóa này đều có thể điều khiển thiết bị, vì vậy hãy giữ bí mật. Khóa được lưu trong mục này, nên mọi bản sao lưu của Home Assistant đều đã có sẵn nó.\n\n- Khóa cục bộ: `{local_key}` (phiên bản {localkey_version})\n- ID thiết bị: `{device_id}`\n- Địa chỉ IP: `{host}`\n- Mã model: `{uplus_id}`\n\nĐể thêm lại thiết bị mà không cần tài khoản Haier, hãy nhập khóa này khi quá trình thiết lập yêu cầu. Đóng cửa sổ này không thay đổi gì cả."
       },
       "reauth": {
         "title": "Thiết bị này cần một khóa mới",
@@ -174,7 +179,8 @@
       "unknown": "Lỗi ngoài dự kiến — không hiểu được thông báo tự giới thiệu của thiết bị.",
       "no_devices": "Đã đăng nhập với tên {username}, nhưng tài khoản Haier này không có thiết bị nào. Nếu bạn đăng nhập ứng dụng bằng Google hoặc Facebook, hãy chia sẻ thiết bị sang tài khoản này trong ứng dụng trước, rồi thử lại.",
       "already_in_progress": "Thiết bị này đang trong quá trình thiết lập.",
-      "account_no_devices": "Tài khoản Haier đã thiết lập ở đây không còn liệt kê thiết bị nào. Hãy kiểm tra máy thiết bị vẫn nằm trong ứng dụng Haier với tài khoản này, rồi thử lại."
+      "account_no_devices": "Tài khoản Haier đã thiết lập ở đây không còn liệt kê thiết bị nào. Hãy kiểm tra máy thiết bị vẫn nằm trong ứng dụng Haier với tài khoản này, rồi thử lại.",
+      "local_key_shown": "Không có gì thay đổi."
     }
   },
   "options": {
@@ -184,12 +190,14 @@
         "data": {
           "scan_interval": "Chu kỳ đọc trạng thái (giây)",
           "appliance_kind": "Thiết bị",
-          "laundry_controls": "Bật điều khiển máy giặt và máy sấy"
+          "laundry_controls": "Bật điều khiển máy giặt và máy sấy",
+          "appliance_controls": "Bật điều khiển (chưa xác nhận)"
         },
         "data_description": {
           "scan_interval": "Tần suất hỏi trạng thái của thiết bị. Mỗi lần đọc là một phiên cục bộ đầy đủ, và chỉ nhằm phát hiện những thay đổi thực hiện bằng điều khiển từ xa hoặc ứng dụng — các lệnh bạn gửi từ Home Assistant vẫn cập nhật ngay lập tức.",
           "appliance_kind": "Chỉ hiển thị với thiết bị không tự nhận dạng. Máy giặt, máy sấy hoặc máy giặt sấy sẽ có cảm biến chỉ đọc và không bao giờ có bộ điều nhiệt máy điều hòa.",
-          "laundry_controls": "Thêm các nút bắt đầu, tạm dừng và hủy cho từng lồng, cùng với các cài đặt tùy chọn mà máy cho phép thay đổi từng mục một. Bản thân chương trình được chọn trên bảng điều khiển của máy. Tắt theo mặc định. Mọi lệnh vẫn cần bật điều khiển từ xa cho lồng đó trên bảng điều khiển của máy, và không có lệnh nào được gửi khi chế độ này tắt."
+          "laundry_controls": "Thêm các nút bắt đầu, tạm dừng và hủy cho từng lồng, cùng với các cài đặt tùy chọn mà máy cho phép thay đổi từng mục một. Bản thân chương trình được chọn trên bảng điều khiển của máy. Tắt theo mặc định. Mọi lệnh vẫn cần bật điều khiển từ xa cho lồng đó trên bảng điều khiển của máy, và không có lệnh nào được gửi khi chế độ này tắt.",
+          "appliance_controls": "Thêm công tắc, danh sách chọn và ô số cho các cài đặt mà model của thiết bị này công bố là có thể thay đổi. Chưa có lệnh nào tới loại thiết bị này được xác nhận là hoạt động, nên tùy chọn này tắt theo mặc định và một cài đặt có thể bị từ chối. Không bao giờ cung cấp bất cứ thứ gì đánh lửa, làm nóng hay nấu nướng."
         }
       }
     }
@@ -240,9 +248,6 @@
       },
       "last_self_clean": {
         "name": "Lần tự làm sạch gần nhất"
-      },
-      "local_key": {
-        "name": "Khóa cục bộ"
       },
       "occupancy": {
         "name": "Sự hiện diện",

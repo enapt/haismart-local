@@ -2003,42 +2003,59 @@ async def test_model_valuerange_still_enforced_when_writable_bypassed(
     assert mock_uss.send.await_count == 0
 
 
-async def test_localkey_backup_sensor_disabled_by_default(
-    hass: HomeAssistant, mock_uss
-) -> None:
-    """The localKey backup sensor exists but is diagnostic + disabled (it's a secret)."""
-    from homeassistant.const import EntityCategory
+async def test_the_local_key_is_never_an_entity(hass: HomeAssistant, mock_uss) -> None:
+    """The localKey controls the appliance from anywhere on the network, and an entity's state is
+    visible to every user and kept by the recorder -- so no entity carries it, as its state or in
+    an attribute, enabled or not."""
     from homeassistant.helpers import entity_registry as er
 
     await _setup(hass)
-    reg = er.async_get(hass)
-    eid = reg.async_get_entity_id("sensor", DOMAIN, "A1B2C3D4E5F6_local_key")
-    assert eid is not None
-    ent = reg.entities[eid]
-    assert ent.disabled_by is not None                       # opt-in
-    assert ent.entity_category == EntityCategory.DIAGNOSTIC
-    assert hass.states.get(eid) is None                      # no state while disabled
+    registry = er.async_get(hass)
+    rows = [e.entity_id for e in registry.entities.values() if e.unique_id.endswith("_local_key")]
+    assert not rows, rows
+    key = "00112233445566778899aabbccddeeff"
+    carrying = [
+        state.entity_id for state in hass.states.async_all()
+        if key in state.state or key in str(state.attributes)
+    ]
+    assert not carrying, carrying
 
 
-async def test_localkey_backup_sensor_exposes_key_when_enabled(
+async def test_an_install_that_had_the_key_sensor_loses_it_and_its_history(
     hass: HomeAssistant, mock_uss
 ) -> None:
-    """Enabled, it exposes the key + the manual-onboarding fields for backup."""
+    """An install that enabled the localKey sensor has the key in its recorder. Removing the
+    registry row alone would leave it there, so its recorded states are purged too."""
+    from homeassistant.core import ServiceCall
     from homeassistant.helpers import entity_registry as er
 
-    entry = await _setup(hass)
-    reg = er.async_get(hass)
-    eid = reg.async_get_entity_id("sensor", DOMAIN, "A1B2C3D4E5F6_local_key")
-    reg.async_update_entity(eid, disabled_by=None)           # user enables it
-    await hass.config_entries.async_reload(entry.entry_id)
-    await hass.async_block_till_done()
+    purged: list[dict] = []
 
-    st = hass.states.get(eid)
-    assert st is not None
-    assert st.state == "00112233445566778899aabbccddeeff"    # the localKey
-    assert st.attributes["device_id"] == "A1B2C3D4E5F6"
-    assert st.attributes[CONF_HOST] == "192.168.1.50"
-    assert st.attributes[CONF_LOCALKEY_VERSION] == 4
+    async def purge_entities(call: ServiceCall) -> None:
+        purged.append(dict(call.data))
+
+    hass.services.async_register("recorder", "purge_entities", purge_entities)
+    registry = er.async_get(hass)
+    old = registry.async_get_or_create(
+        "sensor", DOMAIN, "A1B2C3D4E5F6_local_key", suggested_object_id="downstairs_ac_local_key"
+    )
+    await _setup(hass)
+
+    assert registry.async_get(old.entity_id) is None
+    assert purged == [{"entity_id": [old.entity_id], "keep_days": 0}]
+
+
+async def test_without_a_recorder_the_key_sensor_row_is_still_removed(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """No recorder, nothing to purge -- and the row goes regardless."""
+    from homeassistant.helpers import entity_registry as er
+
+    registry = er.async_get(hass)
+    old = registry.async_get_or_create("sensor", DOMAIN, "A1B2C3D4E5F6_local_key")
+    await _setup(hass)
+
+    assert registry.async_get(old.entity_id) is None
 
 
 async def test_unknown_report_layout_degrades_and_reports(hass: HomeAssistant, mock_uss) -> None:
@@ -2607,30 +2624,6 @@ async def test_firmware_learned_late_still_reaches_the_device_page(
     assert device.sw_version == "e_4.3.00 / R_6.0.01"
 
 
-async def test_localkey_backup_sensor_carries_the_uplus_id(
-    hass: HomeAssistant, mock_uss, entity_registry
-) -> None:
-    """The backup sensor is the one-stop cloud-independent record: with the key AND the uPlusId, a
-    manual re-add decodes the unit exactly as a cloud-onboarded one would."""
-    from haismart_hrdp.udiscovery import DeviceInfo
-
-    uplus = "2008610800820324021200118012560000000000000000000000000000000040"
-    mock_uss.cloud.return_value = DeviceInfo(
-        device_id="A1B2C3D4E5F6", host="192.168.1.50", uplus_id=uplus, cloud_state=1000
-    )
-    await _setup(hass)
-    entity_registry.async_update_entity(
-        "sensor.downstairs_ac_local_key", disabled_by=None
-    )
-    entries = hass.config_entries.async_entries(DOMAIN)
-    await hass.config_entries.async_reload(entries[0].entry_id)
-    await hass.async_block_till_done()
-
-    state = hass.states.get("sensor.downstairs_ac_local_key")
-    assert state is not None
-    assert state.attributes[CONF_UPLUS_ID] == uplus
-
-
 async def test_ac_that_moved_on_dhcp_is_followed_automatically(
     hass: HomeAssistant, mock_uss, freezer
 ) -> None:
@@ -2764,11 +2757,11 @@ def test_the_temperature_members_are_the_ones_this_core_defines() -> None:
         assert not any(name in own for name in absent), (entity.__name__, absent)
 
 
-async def test_model_id_sensor_is_enabled_and_independent_of_the_key_sensor(
+async def test_model_id_sensor_is_enabled_by_default(
     hass: HomeAssistant, mock_uss
 ) -> None:
-    """The uPlusId is a model identifier, not a secret — reading it must not require enabling the
-    entity whose state is your localKey. It is what a bug report about an undecoded model needs."""
+    """The uPlusId is a model identifier, not a secret, and it is what a bug report about an
+    undecoded model needs -- so it is an entity, enabled, unlike the localKey, which is none."""
     from haismart_hrdp.udiscovery import DeviceInfo
 
     uplus = "2008610800820324021200118012560000000000000000000000000000000040"
@@ -2784,7 +2777,6 @@ async def test_model_id_sensor_is_enabled_and_independent_of_the_key_sensor(
     assert state.state == "2008610800820324\u20260040"
     assert state.attributes[CONF_UPLUS_ID] == uplus
     assert state.attributes["product_code"] == "AAC1UKZ01"
-    # the key sensor stays disabled: the two are no longer coupled
     assert hass.states.get("sensor.downstairs_ac_local_key") is None
 
 

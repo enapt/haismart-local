@@ -17,6 +17,7 @@ from custom_components.haismart.const import (
     CONF_LOCALKEY_VERSION,
     CONF_PRODUCT_CODE,
     CONF_SCAN_INTERVAL,
+    CONF_UPLUS_ID,
     CONF_ZONE_INFO,
     DOMAIN,
 )
@@ -810,6 +811,57 @@ async def test_reconfigure_changes_the_host_only_after_validating(
     await hass.async_block_till_done()
     assert good["type"] == FlowResultType.ABORT
     assert entry.data[CONF_HOST] == "192.168.1.77"
+
+
+async def test_reconfigure_shows_the_local_key_and_changes_nothing(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The key's one place in the interface: a config flow, which only an administrator can open.
+
+    Beside it, everything a manual re-add can use, so the screen is a complete record. Closing it
+    changes nothing on the entry.
+    """
+    entry = _entry()
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    before = dict(entry.data)
+
+    result = await entry.start_reconfigure_flow(hass)
+    assert "reconfigure_local_key" in result["menu_options"]
+    shown = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "reconfigure_local_key"}
+    )
+    assert shown["step_id"] == "reconfigure_local_key"
+    placeholders = shown["description_placeholders"]
+    assert placeholders[CONF_LOCAL_KEY] == entry.data[CONF_LOCAL_KEY]
+    assert placeholders[CONF_DEVICE_ID] == entry.data[CONF_DEVICE_ID]
+    assert placeholders[CONF_HOST] == entry.data[CONF_HOST]
+    assert set(placeholders) == {
+        CONF_LOCAL_KEY, CONF_LOCALKEY_VERSION, CONF_DEVICE_ID, CONF_HOST, CONF_UPLUS_ID
+    }
+
+    done = await hass.config_entries.flow.async_configure(shown["flow_id"], {})
+    assert done["type"] == FlowResultType.ABORT
+    assert done["reason"] == "local_key_shown"
+    assert dict(entry.data) == before
+
+
+def test_the_key_screen_shows_every_value_it_is_given() -> None:
+    """Each language's description must use every placeholder the step passes, or the key itself
+    could be the one a translation drops."""
+    import json
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1] / "custom_components" / "haismart"
+    needed = {"{local_key}", "{localkey_version}", "{device_id}", "{host}", "{uplus_id}"}
+    missing = {}
+    for path in [root / "strings.json", *sorted((root / "translations").glob("*.json"))]:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        text = data["config"]["step"]["reconfigure_local_key"]["description"]
+        if gone := {p for p in needed if p not in text}:
+            missing[path.name] = sorted(gone)
+    assert not missing, missing
 
 
 def test_dhcp_discovery_covers_haier_appliance_ouis_only() -> None:

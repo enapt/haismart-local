@@ -12,7 +12,7 @@ write frame (same group command, zero displacement) to be confirmed there.
 """
 from __future__ import annotations
 
-from haismart_hrdp.laundry import DRUMS, Drum
+from haismart_hrdp.laundry import Drum
 from homeassistant.components.button import ButtonEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -33,12 +33,13 @@ async def async_setup_entry(
     # follow: a button that fires an op the family cannot place would silently do nothing.
     if coordinator.uses_curated_ac_entities and coordinator.supports_field(_SELF_CLEAN_FIELD):
         async_add_entities([HaismartSelfCleanButton(coordinator)])
-    if coordinator.laundry_controls_enabled:
+    layout = coordinator.laundry_layout
+    if coordinator.laundry_controls_enabled and layout is not None:
         async_add_entities(
             LaundryDrumButton(coordinator, drum, action)
-            for drum in DRUMS.values()
+            for drum in layout.drums.values()
             for action in ("start", "pause", "cancel")
-            if action != "cancel" or drum.return_standby in coordinator.laundry_actions
+            if action != "cancel" or drum.return_standby in layout.actions
         )
 
 

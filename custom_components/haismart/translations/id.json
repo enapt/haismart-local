@@ -34,7 +34,7 @@
       },
       "manual": {
         "title": "Detail perangkat",
-        "description": "Satu-satunya yang Anda perlukan adalah kunci lokal unit ini — dari sensor “Kunci lokal” pemasangan sebelumnya, atau dari cadangan. Home Assistant mencari perangkat di jaringan Anda dan menanyakan sisanya langsung kepada perangkat.\n\nKunci tidak dapat dibaca dari unit itu sendiri. Jika Anda tidak menyimpannya, kembali dan masuk — dengan begitu kunci diambilkan untuk Anda.",
+        "description": "Satu-satunya yang Anda perlukan adalah kunci lokal unit ini — dari pemasangan sebelumnya (Konfigurasi ulang → “Tampilkan kunci lokal”), atau dari cadangan. Home Assistant mencari perangkat di jaringan Anda dan menanyakan sisanya langsung kepada perangkat.\n\nKunci tidak dapat dibaca dari unit itu sendiri. Jika Anda tidak menyimpannya, kembali dan masuk — dengan begitu kunci diambilkan untuk Anda.",
         "data": {
           "host": "Alamat IP",
           "device_id": "ID perangkat",
@@ -55,7 +55,7 @@
           "local_key": "Kunci lokal (32 karakter heksadesimal)"
         },
         "data_description": {
-          "local_key": "Aktifkan sensor diagnostik Kunci lokal di halaman perangkat untuk membaca kunci saat ini, atau tambahkan ulang perangkat dengan akun Haier Anda agar diambil secara otomatis."
+          "local_key": "Kunci baru perangkat. Kunci yang tersimpan di sini sudah tidak berfungsi; jika Anda tidak memiliki yang baru, kembali dan masuk agar kunci diambilkan."
         }
       },
       "host": {
@@ -70,7 +70,7 @@
       },
       "key_failed": {
         "title": "Tidak dapat mengambil kunci secara otomatis",
-        "description": "Home Assistant berhasil masuk, tetapi tidak dapat mengambil kunci lokal perangkat ini dari server Haier — atau kunci yang didapat tidak dapat mendekripsi status unit.{note}\n\nIni sering bersifat sementara, jadi mencoba lagi biasanya sepadan. Jika terus gagal, Anda dapat memasukkan detailnya secara manual, meski kunci tidak dapat dibaca dari unit — Anda memerlukannya dari sensor “Kunci lokal” pemasangan sebelumnya atau dari cadangan.",
+        "description": "Home Assistant berhasil masuk, tetapi tidak dapat mengambil kunci lokal perangkat ini dari server Haier — atau kunci yang didapat tidak dapat mendekripsi status unit.{note}\n\nIni sering bersifat sementara, jadi mencoba lagi biasanya sepadan. Jika terus gagal, Anda dapat memasukkan detailnya secara manual, meski kunci tidak dapat dibaca dari unit — Anda memerlukannya dari pemasangan sebelumnya (Konfigurasi ulang → “Tampilkan kunci lokal”) atau dari cadangan.",
         "menu_options": {
           "key_retry": "Coba ambil kunci lagi",
           "manual": "Masukkan detailnya secara manual saja"
@@ -81,7 +81,8 @@
         "description": "Ubah cara Home Assistant menjangkau unit ini, tanpa menghapusnya dan kehilangan riwayatnya.",
         "menu_options": {
           "reconfigure_host": "Ubah alamat IP",
-          "reconfigure_cloud": "Tambahkan akun Haier saya, agar kuncinya diperbarui sendiri"
+          "reconfigure_cloud": "Tambahkan akun Haier saya, agar kuncinya diperbarui sendiri",
+          "reconfigure_local_key": "Tampilkan kunci lokal"
         }
       },
       "reconfigure_host": {
@@ -105,6 +106,10 @@
         "data_description": {
           "zone_info": "Negara tempat akun dibuat, yang mungkin berbeda dari tempat tinggal Anda atau lokasi pemasangan perangkat."
         }
+      },
+      "reconfigure_local_key": {
+        "title": "Kunci lokal",
+        "description": "Siapa pun di jaringan Anda yang memiliki kunci ini dapat mengendalikan perangkat, jadi rahasiakan. Kunci ini tersimpan di entri ini, sehingga setiap cadangan Home Assistant sudah memuatnya.\n\n- Kunci lokal: `{local_key}` (versi {localkey_version})\n- ID perangkat: `{device_id}`\n- Alamat IP: `{host}`\n- ID model: `{uplus_id}`\n\nUntuk menambahkan perangkat lagi tanpa akun Haier, masukkan kunci ini saat penyiapan memintanya. Menutup ini tidak mengubah apa pun."
       },
       "reauth": {
         "title": "Perangkat ini memerlukan kunci baru",
@@ -174,7 +179,8 @@
       "unknown": "Kesalahan tak terduga — pengumuman perangkat tidak dapat dipahami.",
       "no_devices": "Masuk sebagai {username}, tetapi akun Haier ini tidak memiliki perangkat. Jika Anda masuk ke aplikasi dengan Google atau Facebook, bagikan perangkat ke akun ini terlebih dahulu di aplikasi, lalu coba lagi.",
       "already_in_progress": "Perangkat ini sedang dalam proses penyiapan.",
-      "account_no_devices": "Akun Haier yang sudah disiapkan di sini tidak lagi mencantumkan perangkat apa pun. Periksa apakah perangkat masih ada di aplikasi Haier dengan akun ini, lalu coba lagi."
+      "account_no_devices": "Akun Haier yang sudah disiapkan di sini tidak lagi mencantumkan perangkat apa pun. Periksa apakah perangkat masih ada di aplikasi Haier dengan akun ini, lalu coba lagi.",
+      "local_key_shown": "Tidak ada yang diubah."
     }
   },
   "options": {
@@ -184,12 +190,14 @@
         "data": {
           "scan_interval": "Interval pemeriksaan status (detik)",
           "appliance_kind": "Perangkat",
-          "laundry_controls": "Aktifkan kontrol mesin cuci dan pengering"
+          "laundry_controls": "Aktifkan kontrol mesin cuci dan pengering",
+          "appliance_controls": "Aktifkan kontrol (belum dikonfirmasi)"
         },
         "data_description": {
           "scan_interval": "Seberapa sering menanyakan status perangkat. Setiap pemeriksaan adalah satu sesi lokal penuh, dan tujuannya hanya untuk mendeteksi perubahan yang dibuat lewat remote atau aplikasi — perintah yang Anda kirim dari Home Assistant tetap langsung diperbarui.",
           "appliance_kind": "Hanya ditampilkan untuk perangkat yang tidak mengidentifikasi dirinya. Mesin cuci, pengering, atau mesin cuci-pengering mendapatkan sensor hanya-baca dan tidak akan pernah mendapatkan termostat AC.",
-          "laundry_controls": "Menambahkan tombol mulai, jeda, dan batal untuk setiap tabung, serta pengaturan opsi yang diizinkan mesin untuk diubah satu per satu. Programnya sendiri dipilih di panel mesin. Nonaktif secara default. Setiap perintah tetap memerlukan kontrol jarak jauh untuk tabung tersebut diaktifkan di panel mesin, dan tidak ada perintah yang dikirim selama kontrol itu nonaktif."
+          "laundry_controls": "Menambahkan tombol mulai, jeda, dan batal untuk setiap tabung, serta pengaturan opsi yang diizinkan mesin untuk diubah satu per satu. Programnya sendiri dipilih di panel mesin. Nonaktif secara default. Setiap perintah tetap memerlukan kontrol jarak jauh untuk tabung tersebut diaktifkan di panel mesin, dan tidak ada perintah yang dikirim selama kontrol itu nonaktif.",
+          "appliance_controls": "Menambahkan sakelar, pilihan, dan angka untuk pengaturan yang oleh model perangkat ini dinyatakan dapat diubah. Belum ada perintah ke jenis perangkat ini yang dipastikan berfungsi, jadi ini nonaktif secara bawaan dan suatu pengaturan dapat ditolak. Apa pun yang menyalakan api, memanaskan, atau memasak tidak pernah ditawarkan."
         }
       }
     }
@@ -240,9 +248,6 @@
       },
       "last_self_clean": {
         "name": "Pembersihan otomatis terakhir"
-      },
-      "local_key": {
-        "name": "Kunci lokal"
       },
       "occupancy": {
         "name": "Keberadaan orang",

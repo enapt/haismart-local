@@ -43,8 +43,12 @@ label — see [`docs/appliances.md`](../../docs/appliances.md).
   - **"What kind of appliance is this?"** is asked only when the appliance identified itself and
     nothing recognised it (`haismart_hrdp.appliance.asks_owner`): laundry, not an air conditioner, or
     decide from its reports. A class the catalogue names is never re-typed by the answer.
-  - The **options flow** sets the poll interval, that answer where it can still decide, and — on a
-    laundry appliance — whether its controls are offered (off by default).
+  - The **options flow** sets the poll interval, that answer where it can still decide, and whether
+    controls are offered (off by default): on a laundry appliance whose class has a layout
+    (`haismart_hrdp.laundry.LAYOUTS` — `0501`, `0504`), and on any other appliance whose class Haier
+    names and is not a heat source (`haismart_hrdp.appliance.controls_can_be_offered`). A gas hob, an
+    oven or a sterilising cabinet is never offered controls, and no appliance a control for an
+    attribute that lights, heats or cooks (`heats_or_ignites`).
 - **Polling coordinator** (`coordinator.py`): one `DataUpdateCoordinator` per AC. Each refresh is one
   short-lived uSS session (`async_read_status`); control ops (`async_send_control`) are seeded from the
   latest status so a group-set preserves every unchanged attribute. A rotation is caught in the same
@@ -91,19 +95,19 @@ label — see [`docs/appliances.md`](../../docs/appliances.md).
     functions and the remaining optional features. Membership comes from the device's own model,
     position from the published map; an attribute the model marks as hardware the unit lacks gets no
     entity at all, and a probe reading nothing reads *unknown* rather than a fabricated zero.
-  - `sensor` — **Model ID** (diagnostic): the `uPlusId` that selects the report layout. Its own entity
-    rather than an attribute of the localKey sensor, because it is a model identifier and not a secret —
-    reading it should not require enabling an entity whose state is your key. The state is shortened
+  - `sensor` — **Model ID** (diagnostic): the `uPlusId` that selects the report layout. Enabled by
+    default: it is a model identifier, not a secret. The state is shortened
     (the identifier is 64 characters and overflows an entity row; HA has no string equivalent of
     `suggested_display_precision`), with the exact value on the `uplus_id` attribute.
   - `binary_sensor` — **Cloud connection**: whether the AC itself can still reach Haier, asked over a
     key-free local query (UDP `:7083`) that never contacts Haier. Verifies a firewall block; reads
     *unknown*, never a fabricated "disconnected", on a unit that doesn't answer it.
-  - `sensor` — **Local key** (backup/export): the AC's current localKey, **diagnostic + disabled by
-    default** (it's a secret). Enable it to see/copy the key — it then rides along in HA backups, and its
-    attributes carry everything the **manual** onboarding path needs (host + deviceId + version +
-    `uPlusId`, also its own **Model ID** sensor), so you stay Haier-independent even if the account/cloud ever disappears. Stays current
-    across key rotation.
+  - The **localKey is never an entity** (an entity's state is visible to every user and kept by the
+    recorder). **Reconfigure → Show the local key** shows it to an administrator with everything the
+    **manual** onboarding path needs (host + deviceId + version + `uPlusId`), changing nothing; it is
+    current across key rotation, since the coordinator writes a fetched key into the entry. A
+    `<deviceId>_local_key` sensor left in the entity registry is removed at setup and its recorded
+    states purged (`sensor._async_retire_local_key_sensor`).
 - **Finds a unit that moved**: these modules change address on DHCP, which otherwise looks exactly like
   an AC that died. After a failed read the coordinator looks the unit up by its deviceId (= MAC) via
   ARP/DHCP, falling back to a `:7083` broadcast, and updates the entry to follow it — normally within

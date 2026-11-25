@@ -34,7 +34,7 @@
       },
       "manual": {
         "title": "Informations de l'appareil",
-        "description": "La seule chose dont vous avez besoin est la clé locale de cet appareil — depuis le capteur « Clé locale » d'une installation précédente, ou une sauvegarde. Home Assistant recherche l'appareil sur votre réseau et lui demande tout le reste.\n\nIl est impossible de lire la clé sur l'appareil lui-même. Si vous n'en avez pas de sauvegardée, revenez en arrière et connectez-vous — cela la récupère pour vous.",
+        "description": "La seule chose dont vous avez besoin est la clé locale de cet appareil — depuis une installation précédente (Reconfigurer → « Afficher la clé locale »), ou une sauvegarde. Home Assistant recherche l'appareil sur votre réseau et lui demande tout le reste.\n\nIl est impossible de lire la clé sur l'appareil lui-même. Si vous n'en avez pas de sauvegardée, revenez en arrière et connectez-vous — cela la récupère pour vous.",
         "data": {
           "host": "Adresse IP",
           "device_id": "Identifiant de l'appareil",
@@ -55,7 +55,7 @@
           "local_key": "Clé locale (32 caractères hexadécimaux)"
         },
         "data_description": {
-          "local_key": "Activez le capteur de diagnostic « Clé locale » sur la page de l'appareil pour lire la clé actuelle, ou rajoutez l'appareil avec votre compte Haier pour qu'elle soit récupérée automatiquement."
+          "local_key": "La nouvelle clé de l'appareil. Celle enregistrée ici ne fonctionne plus ; si vous n'avez pas la nouvelle, revenez en arrière et connectez-vous pour qu'elle soit récupérée."
         }
       },
       "host": {
@@ -70,7 +70,7 @@
       },
       "key_failed": {
         "title": "Impossible de récupérer la clé automatiquement",
-        "description": "Home Assistant s'est connecté, mais n'a pas pu récupérer la clé locale de cet appareil auprès des serveurs de Haier — ou la clé obtenue ne déchiffre pas l'état de l'appareil.{note}\n\nC'est souvent temporaire, il vaut donc généralement la peine de réessayer. Si l'échec persiste, vous pouvez saisir les informations à la main, mais la clé ne peut pas être lue sur l'appareil — il vous la faudrait depuis le capteur « Clé locale » d'une installation précédente ou depuis une sauvegarde.",
+        "description": "Home Assistant s'est connecté, mais n'a pas pu récupérer la clé locale de cet appareil auprès des serveurs de Haier — ou la clé obtenue ne déchiffre pas l'état de l'appareil.{note}\n\nC'est souvent temporaire, il vaut donc généralement la peine de réessayer. Si l'échec persiste, vous pouvez saisir les informations à la main, mais la clé ne peut pas être lue sur l'appareil — il vous la faudrait depuis une installation précédente (Reconfigurer → « Afficher la clé locale ») ou depuis une sauvegarde.",
         "menu_options": {
           "key_retry": "Réessayer de récupérer la clé",
           "manual": "Saisir plutôt les informations à la main"
@@ -81,7 +81,8 @@
         "description": "Modifiez la façon dont Home Assistant joint cet appareil, sans le supprimer ni perdre son historique.",
         "menu_options": {
           "reconfigure_host": "Changer l'adresse IP",
-          "reconfigure_cloud": "Ajouter mon compte Haier, pour que la clé se renouvelle toute seule"
+          "reconfigure_cloud": "Ajouter mon compte Haier, pour que la clé se renouvelle toute seule",
+          "reconfigure_local_key": "Afficher la clé locale"
         }
       },
       "reconfigure_host": {
@@ -105,6 +106,10 @@
         "data_description": {
           "zone_info": "Le pays dans lequel le compte a été créé, qui peut différer de votre lieu de résidence ou du lieu d'installation de l'appareil."
         }
+      },
+      "reconfigure_local_key": {
+        "title": "Clé locale",
+        "description": "Toute personne de votre réseau qui possède cette clé peut commander l'appareil : gardez-la confidentielle. Elle est enregistrée dans cette entrée, donc chaque sauvegarde de Home Assistant la contient déjà.\n\n- Clé locale: `{local_key}` (version {localkey_version})\n- Identifiant de l'appareil: `{device_id}`\n- Adresse IP: `{host}`\n- Identifiant du modèle: `{uplus_id}`\n\nPour ajouter à nouveau l'appareil sans compte Haier, saisissez cette clé lorsque la configuration la demande. Fermer cette fenêtre ne change rien."
       },
       "reauth": {
         "title": "Cet appareil a besoin d'une nouvelle clé",
@@ -174,7 +179,8 @@
       "unknown": "Erreur inattendue — l'annonce de l'appareil n'a pas été comprise.",
       "no_devices": "Connecté en tant que {username}, mais ce compte Haier ne possède aucun appareil. Si vous vous connectez à l'application avec Google ou Facebook, partagez d'abord l'appareil avec ce compte dans l'application, puis réessayez.",
       "already_in_progress": "Cet appareil est déjà en cours de configuration.",
-      "account_no_devices": "Le compte Haier déjà configuré ici ne liste plus aucun appareil. Vérifiez que l'appareil figure toujours dans l'application Haier sous ce compte, puis réessayez."
+      "account_no_devices": "Le compte Haier déjà configuré ici ne liste plus aucun appareil. Vérifiez que l'appareil figure toujours dans l'application Haier sous ce compte, puis réessayez.",
+      "local_key_shown": "Rien n'a été modifié."
     }
   },
   "options": {
@@ -184,12 +190,14 @@
         "data": {
           "scan_interval": "Intervalle d'interrogation de l'état (secondes)",
           "appliance_kind": "Appareil",
-          "laundry_controls": "Activer les commandes du lave-linge et du sèche-linge"
+          "laundry_controls": "Activer les commandes du lave-linge et du sèche-linge",
+          "appliance_controls": "Activer les commandes (non confirmées)"
         },
         "data_description": {
           "scan_interval": "À quelle fréquence demander son état à l'appareil. Chaque interrogation est une session locale complète, et elle ne sert qu'à détecter les changements faits depuis la télécommande ou l'application — les commandes envoyées depuis Home Assistant se répercutent immédiatement de toute façon.",
           "appliance_kind": "Affiché uniquement pour un appareil qui ne s'est pas identifié. Un lave-linge, un sèche-linge ou un lave-linge séchant dispose de capteurs en lecture seule et jamais d'un thermostat de climatiseur.",
-          "laundry_controls": "Ajoute des boutons de démarrage, de pause et d'annulation pour chaque tambour, ainsi que les réglages d'options que la machine permet de modifier un par un. Le programme lui-même se choisit sur le panneau de la machine. Désactivé par défaut. Chaque commande exige toujours que le contrôle à distance soit activé sur le panneau de la machine pour ce tambour, et rien n'est envoyé tant qu'il est désactivé."
+          "laundry_controls": "Ajoute des boutons de démarrage, de pause et d'annulation pour chaque tambour, ainsi que les réglages d'options que la machine permet de modifier un par un. Le programme lui-même se choisit sur le panneau de la machine. Désactivé par défaut. Chaque commande exige toujours que le contrôle à distance soit activé sur le panneau de la machine pour ce tambour, et rien n'est envoyé tant qu'il est désactivé.",
+          "appliance_controls": "Ajoute des interrupteurs, des listes de choix et des champs numériques pour les réglages que le modèle de cet appareil déclare modifiables. Aucune commande vers ce type d'appareil n'a été confirmée comme fonctionnelle : c'est donc désactivé par défaut et un réglage peut être refusé. Rien de ce qui allume une flamme, chauffe ou cuit n'est jamais proposé."
         }
       }
     }
@@ -240,9 +248,6 @@
       },
       "last_self_clean": {
         "name": "Dernier auto-nettoyage"
-      },
-      "local_key": {
-        "name": "Clé locale"
       },
       "occupancy": {
         "name": "Occupation",

@@ -34,7 +34,7 @@
       },
       "manual": {
         "title": "Cihaz bilgileri",
-        "description": "İhtiyacınız olan tek şey bu cihazın yerel anahtarı — önceki bir kurulumun “Yerel anahtar” sensöründen veya bir yedekten. Home Assistant cihazı ağınızda arar ve geri kalan her şeyi doğrudan ona sorar.\n\nAnahtar cihazın kendisinden okunamaz. Kayıtlı bir anahtarınız yoksa geri dönüp oturum açın — böylece sizin için alınır.",
+        "description": "İhtiyacınız olan tek şey bu cihazın yerel anahtarı — önceki bir kurulumdan (Yeniden yapılandır → “Yerel anahtarı göster”) veya bir yedekten. Home Assistant cihazı ağınızda arar ve geri kalan her şeyi doğrudan ona sorar.\n\nAnahtar cihazın kendisinden okunamaz. Kayıtlı bir anahtarınız yoksa geri dönüp oturum açın — böylece sizin için alınır.",
         "data": {
           "host": "IP adresi",
           "device_id": "Cihaz kimliği",
@@ -55,7 +55,7 @@
           "local_key": "Yerel anahtar (32 karakterlik onaltılık)"
         },
         "data_description": {
-          "local_key": "Güncel anahtarı okumak için cihaz sayfasındaki «Yerel anahtar» tanılama sensörünü etkinleştirin veya otomatik alınması için cihazı Haier hesabınızla yeniden ekleyin."
+          "local_key": "Cihazın yeni anahtarı. Burada kayıtlı olan artık çalışmıyor; yenisi sizde yoksa geri dönüp oturum açın, böylece alınsın."
         }
       },
       "host": {
@@ -70,7 +70,7 @@
       },
       "key_failed": {
         "title": "Anahtar otomatik olarak alınamadı",
-        "description": "Home Assistant oturum açtı ancak bu cihazın yerel anahtarını Haier sunucularından alamadı — ya da aldığı anahtar cihazın durumunu çözemiyor.{note}\n\nBu çoğu zaman geçicidir, bu yüzden yeniden denemek genellikle işe yarar. Sorun devam ederse bilgileri elle girebilirsiniz; ancak anahtar cihaz üzerinden okunamaz — önceki bir kurulumun “Yerel anahtar” sensöründen veya bir yedekten almanız gerekir.",
+        "description": "Home Assistant oturum açtı ancak bu cihazın yerel anahtarını Haier sunucularından alamadı — ya da aldığı anahtar cihazın durumunu çözemiyor.{note}\n\nBu çoğu zaman geçicidir, bu yüzden yeniden denemek genellikle işe yarar. Sorun devam ederse bilgileri elle girebilirsiniz; ancak anahtar cihaz üzerinden okunamaz — önceki bir kurulumdan (Yeniden yapılandır → “Yerel anahtarı göster”) veya bir yedekten almanız gerekir.",
         "menu_options": {
           "key_retry": "Anahtarı almayı yeniden dene",
           "manual": "Bunun yerine bilgileri elle gir"
@@ -81,7 +81,8 @@
         "description": "Home Assistant'ın bu cihaza nasıl ulaştığını, cihazı kaldırıp geçmişini kaybetmeden değiştirin.",
         "menu_options": {
           "reconfigure_host": "IP adresini değiştir",
-          "reconfigure_cloud": "Haier hesabımı ekle, böylece anahtar kendini yenilesin"
+          "reconfigure_cloud": "Haier hesabımı ekle, böylece anahtar kendini yenilesin",
+          "reconfigure_local_key": "Yerel anahtarı göster"
         }
       },
       "reconfigure_host": {
@@ -105,6 +106,10 @@
         "data_description": {
           "zone_info": "Hesabın oluşturulduğu ülke; yaşadığınız yer veya cihazın kurulu olduğu yer olmayabilir."
         }
+      },
+      "reconfigure_local_key": {
+        "title": "Yerel anahtar",
+        "description": "Ağınızda bu anahtara sahip olan herkes cihazı kontrol edebilir; bu yüzden gizli tutun. Bu kayıtta saklanır, dolayısıyla her Home Assistant yedeği onu zaten içerir.\n\n- Yerel anahtar: `{local_key}` (sürüm {localkey_version})\n- Cihaz kimliği: `{device_id}`\n- IP adresi: `{host}`\n- Model kimliği: `{uplus_id}`\n\nCihazı Haier hesabı olmadan yeniden eklemek için, kurulum istediğinde bu anahtarı girin. Bunu kapatmak hiçbir şeyi değiştirmez."
       },
       "reauth": {
         "title": "Bu cihazın yeni bir anahtara ihtiyacı var",
@@ -174,7 +179,8 @@
       "unknown": "Beklenmeyen hata — cihazın duyurusu anlaşılamadı.",
       "no_devices": "{username} olarak oturum açıldı, ancak bu Haier hesabında hiç cihaz yok. Uygulamaya Google veya Facebook ile giriyorsanız, önce uygulamada cihazı bu hesapla paylaşın, sonra yeniden deneyin.",
       "already_in_progress": "Bu cihaz zaten kuruluyor.",
-      "account_no_devices": "Burada zaten kurulu olan Haier hesabı artık hiçbir cihaz listelemiyor. Cihazın Haier uygulamasında hâlâ bu hesapta olduğunu kontrol edip tekrar deneyin."
+      "account_no_devices": "Burada zaten kurulu olan Haier hesabı artık hiçbir cihaz listelemiyor. Cihazın Haier uygulamasında hâlâ bu hesapta olduğunu kontrol edip tekrar deneyin.",
+      "local_key_shown": "Hiçbir şey değiştirilmedi."
     }
   },
   "options": {
@@ -184,12 +190,14 @@
         "data": {
           "scan_interval": "Durum sorgulama aralığı (saniye)",
           "appliance_kind": "Cihaz",
-          "laundry_controls": "Çamaşır ve kurutma makinesi kontrollerini etkinleştir"
+          "laundry_controls": "Çamaşır ve kurutma makinesi kontrollerini etkinleştir",
+          "appliance_controls": "Kontrolleri etkinleştir (doğrulanmamış)"
         },
         "data_description": {
           "scan_interval": "Cihaza durumunun ne sıklıkla sorulacağı. Her sorgulama tam bir yerel oturumdur ve yalnızca kumandayla veya uygulamayla yapılan değişiklikleri fark etmek için vardır — Home Assistant'tan gönderdiğiniz komutlar zaten anında yansır.",
           "appliance_kind": "Yalnızca kendini tanıtmayan cihazlarda gösterilir. Çamaşır makinesi, kurutma makinesi veya kurutmalı çamaşır makinesi salt okunur sensörler alır ve asla klima termostatı almaz.",
-          "laundry_controls": "Her tambur için başlat, duraklat ve iptal düğmelerinin yanı sıra makinenin tek tek değiştirilmesine izin verdiği seçenek ayarlarını ekler. Programın kendisi makinenin panelinden seçilir. Varsayılan olarak kapalıdır. Her komut için yine de makinenin panelinden o tambur için uzaktan kontrolün açılmış olması gerekir; kapalıyken hiçbir komut gönderilmez."
+          "laundry_controls": "Her tambur için başlat, duraklat ve iptal düğmelerinin yanı sıra makinenin tek tek değiştirilmesine izin verdiği seçenek ayarlarını ekler. Programın kendisi makinenin panelinden seçilir. Varsayılan olarak kapalıdır. Her komut için yine de makinenin panelinden o tambur için uzaktan kontrolün açılmış olması gerekir; kapalıyken hiçbir komut gönderilmez.",
+          "appliance_controls": "Bu cihazın modelinin değiştirilebilir olarak yayımladığı ayarlar için anahtarlar, seçim listeleri ve sayı alanları ekler. Bu tür bir cihaza gönderilen hiçbir komutun çalıştığı doğrulanmadı; bu yüzden varsayılan olarak kapalıdır ve bir ayar reddedilebilir. Ateşleyen, ısıtan veya pişiren hiçbir şey asla sunulmaz."
         }
       }
     }
@@ -240,9 +248,6 @@
       },
       "last_self_clean": {
         "name": "Son kendi kendini temizleme"
-      },
-      "local_key": {
-        "name": "Yerel anahtar"
       },
       "occupancy": {
         "name": "Doluluk",

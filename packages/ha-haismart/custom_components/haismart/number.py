@@ -3,7 +3,9 @@
 Air conditioners have one numeric control and it is the thermostat's. Everything else has several:
 a water heater's reservation temperatures and off-peak windows, a washing machine's spin speed and
 temperature, a fridge's compartment setpoints. Each is a published attribute with a published range
-and a published write id, so none of it is hand-written per appliance.
+and a published write id, so none of it is hand-written per appliance -- and each is a control only
+where ``model_write_fields`` offers it: always on a water heater, on laundry and most other classes
+once their owner turns controls on, never on a heat source.
 """
 from __future__ import annotations
 

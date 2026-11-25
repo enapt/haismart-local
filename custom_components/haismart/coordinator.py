@@ -1478,6 +1478,19 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
     @property
+    def known_not_air_conditioner(self) -> bool:
+        """Whether this appliance is positively identified as something other than an AC.
+
+        Any kind but ``AIR_CONDITIONER`` and an unidentified ``OTHER`` -- the one that keeps the AC
+        paths while its report reads as an AC's, because some uncatalogued classes are working air
+        conditioners. Such an appliance is written only through its own map's commands.
+        """
+        kind = self.appliance_kind
+        if kind is ApplianceKind.AIR_CONDITIONER:
+            return False
+        return kind is not ApplianceKind.OTHER or self.ruled_out_air_conditioner
+
+    @property
     def device_model(self) -> DeviceModel | None:
         """Haier's own byte map for this device's typeid.
 
@@ -2225,10 +2238,11 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     },
                 )
             await self._async_check_laundry_write(changes)
-        elif self.ruled_out_air_conditioner and not writes_by_model:
-            # ⛔ The same for an appliance known not to be an air conditioner: only its own map's
-            # commands, and only the ones `model_write_fields` offers. Nothing else here can
-            # describe it, and an AC group set read off its report could carry anything.
+        elif self.known_not_air_conditioner and not writes_by_model:
+            # ⛔ The same for every appliance known not to be an air conditioner -- a water heater,
+            # a named class, one its owner said is not an AC: only its own map's commands, and only
+            # the ones `model_write_fields` offers. Nothing else here can describe it, and an AC
+            # group set read off its report could carry anything.
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="control_rejected",

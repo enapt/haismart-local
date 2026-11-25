@@ -33,8 +33,10 @@ hob that is each burner's ignition, on an oven a bake temperature up to 300 °C.
 * **Laundry** — the `0504` and now the `0501` front loader, which is laundry by its class — is
   read-only until its owner turns its controls on, and every command is gated on the machine's own
   remote-control flag, the child lock and, for power-off, an idle phase (`laundry.LAYOUTS`). All 15
-  bundled `0501` maps publish `remoteCtrValid`, `runningMode`, `cyclePhase` and `returnStandby`
-  (`5D24`) identically.
+  bundled `0501` maps place `remoteCtrValid`, `runningMode` and `cyclePhase` at the same 6D01 word
+  and bit, with start/pause on `5D21` and cancel `returnStandby` on `5D24`; the phase table has 20,
+  25 or 27 entries, and its idle phases (0, 14, 18, 19) are the same in all of them. (Haier also
+  publishes seven `0501` profiles in the V2 text format, which is not carried.)
 * **Every other class** is read-only until its owner turns on *Enable controls (unconfirmed)*, which
   is offered only for a class Haier names (`appliance.controls_can_be_offered`).
 * **A heat source never gets a control** — `HEAT_SOURCE_CLASSES`: the `1d01` gas hob, the `1a01` and

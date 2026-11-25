@@ -71,9 +71,10 @@ async def async_setup_entry(
         )
         for field in (coordinator.panel_switch_fields() if curated else ())
     )
-    # Everything else: an appliance that is not an air conditioner gets a switch for every boolean
-    # its own model declares and the manufacturer publishes a write id for. `specs_of` is empty for
-    # an AC, so the curated set above stays the whole story there.
+    # Everything else: an appliance that is not an air conditioner gets a switch for each boolean
+    # its own model declares that `model_write_fields` offers -- a water heater's; laundry's and
+    # most other classes' once their owner turns controls on; never a heat source's. `specs_of` is
+    # empty for an AC, so the curated set above stays the whole story there.
     entities.extend(
         HaismartGenericSwitch(coordinator, spec)
         for spec in specs_of(coordinator, Control.SWITCH)

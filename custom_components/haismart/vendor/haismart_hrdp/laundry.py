@@ -156,10 +156,11 @@ LAYOUTS: Mapping[str, LaundryLayout] = MappingProxyType({
         }),
         lock_drum="dryer",
     ),
-    # The front loader: one drum, everything in 6D01/7D01. All 15 bundled configFiles of the class
-    # publish these five attributes at the same report and the same values -- `runningMode` 1 start
-    # / 2 pause (epp 1 / 0), `returnStandby` 5D24 with the single value 1, and `cyclePhase` with the
-    # washer phase table above.
+    # The front loader: one drum, everything in 6D01/7D01. All 15 bundled maps of the class place
+    # these attributes at the same 6D01 word and bit, and their configFiles agree on the commands:
+    # `runningMode` 1 start / 2 pause (epp 1 / 0) on 5D21, `returnStandby` 5D24 with the single value
+    # 1. `laundryCycle` lists each model's own programmes, and `cyclePhase` has 20 phases on 13 of
+    # them and 25 and 27 on the other two -- every one carries 0, 14, 18 and 19 (see `_WASHER_IDLE`).
     "0501": LaundryLayout(
         drums=MappingProxyType({
             "washer": Drum(

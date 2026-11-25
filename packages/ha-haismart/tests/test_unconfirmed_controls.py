@@ -202,6 +202,24 @@ async def test_a_heat_source_refuses_a_command_whatever_sends_it(
     mock_uss.send.assert_not_called()
 
 
+@pytest.mark.parametrize("device_class", ["0612", "2001", "0121", "0501"])
+async def test_an_appliance_known_not_to_be_an_ac_is_never_sent_an_ac_command(
+    hass: HomeAssistant, mock_uss, device_class: str
+) -> None:
+    """Only its own map's offered commands: an air-conditioner group set read off a water heater's
+    or a fridge's report could carry anything, so a change no map write covers is refused -- by
+    this rule itself, before anything asks whether the report's length is an AC layout's (the
+    0504 dryer's 165-byte report is)."""
+    entry = await _setup(hass, mock_uss, _BY_CLASS[device_class])
+    coordinator = entry.runtime_data
+    assert coordinator.known_not_air_conditioner
+    mock_uss.send.reset_mock()
+    match = "not a laundry control" if device_class == "0501" else "not a control of this appliance"
+    with pytest.raises(HomeAssistantError, match=match):
+        await coordinator.async_send_control({"windSpeed": 2})
+    mock_uss.send.assert_not_called()
+
+
 async def test_a_named_class_gets_its_controls_once_turned_on_but_nothing_that_heats(
     hass: HomeAssistant, mock_uss
 ) -> None:
@@ -402,3 +420,40 @@ async def test_a_0501_is_not_switched_off_mid_cycle(hass: HomeAssistant, mock_us
     with pytest.raises(HomeAssistantError, match="cycle in progress"):
         await entry.runtime_data.async_send_control({"onOffStatus": False})
     mock_uss.send.assert_not_called()
+
+
+# --- an install that had the old controls ---------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("device_class", "domain", "attribute"),
+    [
+        ("0121", "switch", "quickFreezingMode"),       # a refrigerator, controls not turned on
+        ("0501", "select", "runningMode"),             # the front loader's old ungated start
+        ("1d01", "switch", "leftIgnitionStatus"),      # a gas hob's burner
+        ("3e01", "number", "bakeTargetTemperature"),   # an oven's bake temperature
+    ],
+)
+async def test_an_old_control_is_removed_on_update(
+    hass: HomeAssistant, mock_uss, device_class: str, domain: str, attribute: str
+) -> None:
+    """Home Assistant keeps a registry row after its platform stops creating the entity; left
+    there, the old control would sit on the device page and in automations. It is removed, and the
+    reading it covered comes back as a sensor."""
+    typeid = _BY_CLASS[device_class]
+    report = _report(typeid)
+    mock_uss.read.return_value = [report]
+    mock_uss.send.baseline = report
+    entry = _entry(typeid)
+    entry.add_to_hass(hass)
+    registry = er.async_get(hass)
+    old = registry.async_get_or_create(
+        domain, DOMAIN, f"A1B2C3D4E5F6_{attribute}", config_entry=entry
+    )
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert registry.async_get(old.entity_id) is None, old.entity_id
+    assert not _controls(hass, entry)
+    readings = {e.unique_id.removeprefix("A1B2C3D4E5F6_") for e in _rows(hass, entry)}
+    assert attribute in readings

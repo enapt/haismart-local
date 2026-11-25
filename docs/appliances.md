@@ -36,9 +36,11 @@ water heater's setpoint, accepted by the appliance and read back (2026-09-14). E
 every other class is *published, not proven*, so what you can command depends on the kind:
 
 * a **water heater** gets its controls;
-* a **washing machine or washer-dryer** is read-only until you turn on **Configure → Enable washer
-  and dryer controls**, and every command is then gated on the machine's own panel (see
-  [below](#controls-off-by-default));
+* a **washing machine or washer-dryer** of a class with a laundry layout (`0501`, `0504`) is
+  read-only until you turn on **Configure → Enable washer and dryer controls**, and every command is
+  then gated on the machine's own panel (see [below](#controls-off-by-default)); any other laundry
+  appliance — a `05xx` class with no layout, or one that is laundry only by its cloud label or your
+  answer — stays read-only;
 * **any other appliance** is read-only until you turn on **Configure → Enable controls
   (unconfirmed)**. The option is offered only for a class Haier names; an appliance of a class
   nobody here can name stays read-only. Even with it on, nothing that lights, heats or cooks is
@@ -47,8 +49,8 @@ every other class is *published, not proven*, so what you can command depends on
 * a **gas hob, an oven or a sterilising cabinet never gets a control**, whatever the option says.
   Their readings are all there.
 
-The controls there are use the same single-parameter mechanism that works on air conditioners, with
-the command ids Haier publishes for that class. If your appliance refuses a command, Home Assistant
+Where there are controls, they use the same single-parameter mechanism that works on air
+conditioners, with the command ids Haier publishes for that class. If your appliance refuses a command, Home Assistant
 shows the reason from your appliance's own model, and a diagnostics download records the refusal.
 
 If you own any appliance below that is not an air conditioner, **please
@@ -179,8 +181,10 @@ the child lock off, and power off only at standby or a finished cycle (`cyclePha
 Cancel is its return-to-standby command, `5D24`. The programme (`laundryCycle`), the child lock and
 the factory reset (`resetOpt`) are never offered.
 
-All 15 `0501` configurations Haier publishes place these attributes at the same positions with the
-same values. The decode is validated against a real unit's board traffic — an HW90-B14959U1's,
+All 15 `0501` maps the integration ships place these attributes at the same positions, with the
+same start, pause and cancel commands; the cycle-phase table has 20, 25 or 27 entries, and standby,
+end and the two finished phases are the same in each. (Haier publishes seven more `0501` profiles
+in an older text format that the integration does not carry.) The decode is validated against a real unit's board traffic — an HW90-B14959U1's,
 recovered from the esphome-haier issue tracker; no command to a `0501` has been seen accepted.
 
 ## How an appliance is identified, and what happens when it is not

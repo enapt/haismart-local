@@ -864,6 +864,24 @@ def test_the_key_screen_shows_every_value_it_is_given() -> None:
     assert not missing, missing
 
 
+def test_the_setup_text_names_the_key_screen_as_the_menu_shows_it() -> None:
+    """Manual setup, the failed key fetch and the manual re-key all send the owner to the key
+    screen; each must quote that menu item exactly, in every language, as its own menu shows it."""
+    import json
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1] / "custom_components" / "haismart"
+    files = [root / "strings.json", *sorted((root / "translations").glob("*.json"))]
+    wrong = {}
+    for path in files:
+        steps = json.loads(path.read_text(encoding="utf-8"))["config"]["step"]
+        label = steps["reconfigure"]["menu_options"]["reconfigure_local_key"]
+        texts = (steps["manual"]["description"], steps["key_failed"]["description"])
+        if not all(label in text for text in texts):
+            wrong[path.name] = label
+    assert len(files) == 32 and not wrong, wrong
+
+
 def test_dhcp_discovery_covers_haier_appliance_ouis_only() -> None:
     """The DHCP matcher must cover Haier's appliance OUIs, and only those.
 

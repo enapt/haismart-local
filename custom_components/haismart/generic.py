@@ -7,8 +7,11 @@ places, classified by :mod:`haismart_hrdp.entity_spec`.
 
 ⛔ **Nothing here is speculative.** An attribute becomes an entity only where the device's own
 digital model declares it, and a *control* only where the manufacturer publishes a single-parameter
-write id for it. The appliance remains the only authority on whether that write is accepted — a
-refusal is raised with the reason the appliance's own model gives, and recorded for diagnostics.
+write id for it AND the coordinator offers it (``model_write_fields``): always on a water heater, on
+laundry and most other classes only once their owner turns controls on, never on a heat source or
+for an attribute that lights, heats or cooks there. The appliance remains the only authority on
+whether a write is accepted — a refusal is raised with the reason the appliance's own model gives,
+and recorded for diagnostics.
 """
 from __future__ import annotations
 

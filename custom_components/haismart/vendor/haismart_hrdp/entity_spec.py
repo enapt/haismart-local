@@ -10,6 +10,11 @@ device we hold three things already, and between them they decide every entity.
   phantom entities: the map lists what the *platform* can carry, and a device declares a subset.
 * **Whether a write id is published** for it.
 
+Which of the published writes become CONTROLS is not decided here: :func:`specs_for` makes a
+control only of a name the caller passes in ``writable``, and the integration narrows that by policy
+(``HaismartCoordinator.model_write_fields``) -- laundry and most classes only once their owner turns
+controls on, a heat source never. Everything else is a reading.
+
 This module turns those into a neutral :class:`EntitySpec` — neutral so it can be tested without
 Home Assistant, and so the mapping from "a writable two-value enum" to "a switch" is stated once
 rather than in five platform modules.
@@ -625,9 +630,10 @@ def specs_for(
     """Every entity this device should have, from what it declares and what the map places.
 
     ``declared`` is the device's own model attributes (``digital_model["attributes"]``) and is the
-    gate: **nothing not in it becomes an entity**. ``exclude`` is for attributes a hero platform has
-    already claimed -- a water heater's setpoint belongs to its `water_heater` entity, not to a
-    second `number` beside it.
+    gate: **nothing not in it becomes an entity**. ``writable`` is the caller's decision about which
+    of them may be controls; a published write id the caller leaves out is a reading. ``exclude`` is
+    for attributes a hero platform has already claimed -- a water heater's setpoint belongs to its
+    `water_heater` entity, not to a second `number` beside it.
 
     ⛔ Returns nothing at all when the device has declared nothing. That is the safe direction: a
     device whose model has not been fetched yet gets no entities rather than the whole class map,

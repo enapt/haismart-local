@@ -82,6 +82,8 @@ table without anyone here owning one.
 > A washing machine (class `0501`) has also had its traffic decoded correctly — 93 attributes, from
 > a board-level capture published by another project — but it has never been driven through Home
 > Assistant and never commanded. It is not listed above because nothing here has run against one.
+> Like the washer-dryer it is read-only by default, and its opt-in controls go through the same gates
+> ([the appliance notes](docs/appliances.md#washing-machine-0501)).
 
 > **"Report" is the status layout, not just a length.** Most models share the *classic* family (the
 > setpoint/mode/fan/power in a leading control-word block, sensors after it); the length only varies

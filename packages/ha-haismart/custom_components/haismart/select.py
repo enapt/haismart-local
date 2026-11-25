@@ -89,7 +89,8 @@ async def async_setup_entry(
     for field in (coordinator.panel_select_fields() if curated else ()):
         entities.append(HaismartPanelSelect(coordinator, field))
     # Everything else: a multi-value setting an appliance that is not an air conditioner declares
-    # and publishes a write id for. Empty for an AC, whose selects are the curated ones above.
+    # and `model_write_fields` offers (see the switch platform). Empty for an AC, whose selects are
+    # the curated ones above.
     entities.extend(
         HaismartGenericSelect(coordinator, spec)
         for spec in specs_of(coordinator, Control.SELECT)

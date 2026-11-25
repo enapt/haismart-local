@@ -1755,8 +1755,11 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     @property
     def laundry_controls_available(self) -> bool:
-        """Whether this appliance's controls CAN be turned on: laundry with a known layout."""
-        return self.laundry_layout is not None
+        """Whether this appliance's controls CAN be turned on: laundry with a known layout, and a
+        byte map that layout describes (:meth:`~haismart_hrdp.laundry.LaundryLayout.fits`) -- so a
+        twin-drum unit of a class laid out for one drum stays read-only."""
+        layout, model = self.laundry_layout, self.device_model
+        return layout is not None and model is not None and layout.fits(model.fields)
 
     @property
     def laundry_controls_enabled(self) -> bool:

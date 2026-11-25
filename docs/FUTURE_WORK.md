@@ -36,7 +36,10 @@ hob that is each burner's ignition, on an oven a bake temperature up to 300 °C.
   bundled `0501` maps place `remoteCtrValid`, `runningMode` and `cyclePhase` at the same 6D01 word
   and bit, with start/pause on `5D21` and cancel `returnStandby` on `5D24`; the phase table has 20,
   25 or 27 entries, and its idle phases (0, 14, 18, 19) are the same in all of them. (Haier also
-  publishes seven `0501` profiles in the V2 text format, which is not carried.)
+  publishes seven `0501` profiles in the V2 text format, which is not carried.) A map is used only
+  if it fits its layout (`LaundryLayout.fits`): every write on a drum the layout knows, with that
+  drum's `0x80` bit. A twin-drum `0501` — prior art drives one — fetched on demand would not, and
+  stays read-only; laying out its second drum needs its map and one of its reports.
 * **Every other class** is read-only until its owner turns on *Enable controls (unconfirmed)*, which
   is offered only for a class Haier names (`appliance.controls_can_be_offered`).
 * **A heat source never gets a control** — `HEAT_SOURCE_CLASSES`: the `1d01` gas hob, the `1a01` and

@@ -286,3 +286,36 @@ def test_without_a_layout_or_its_gate_fields_nothing_is_offered() -> None:
     assert laundry_writable(None, model.fields, declared) == frozenset()
     without_flag = [f for f in model.fields if f.name != "remoteCtrValid"]
     assert laundry_writable(layout_for("0501"), without_flag, declared) == frozenset()
+
+
+def _twin_drum(model):
+    """``model`` with one more writable attribute on a second drum: a ``0x80`` write id, as a
+    twin-drum unit's second drum carries."""
+    import dataclasses
+
+    base = model.field("spinSpeed")
+    extra = dataclasses.replace(base, name="subSpinSpeed", epp_cmd="5DA5")
+    return dataclasses.replace(model, fields=(*model.fields, extra))
+
+
+def test_every_shipped_laundry_map_fits_its_layout() -> None:
+    from haismart_hrdp.laundry import layout_for
+
+    for typeid in [*_front_loaders(), TYPEID]:
+        model = model_for(typeid)
+        assert model is not None
+        layout = layout_for(model.device_class)
+        assert layout is not None and layout.fits(model.fields), typeid
+
+
+def test_a_second_drum_the_layout_does_not_know_gets_no_controls() -> None:
+    """A twin-drum unit of a class laid out for one drum: its second drum would be commanded with
+    no phase gate of its own, so nothing is offered at all."""
+    from haismart_hrdp.laundry import laundry_writable, layout_for
+
+    model = _twin_drum(model_for(_front_loaders()[0]))
+    layout = layout_for("0501")
+    assert layout is not None and not layout.fits(model.fields)
+    declared = [{"name": f.name, "writable": True, "operationType": "I"}
+                for f in model.writable_fields()]
+    assert laundry_writable(layout, model.fields, declared) == frozenset()

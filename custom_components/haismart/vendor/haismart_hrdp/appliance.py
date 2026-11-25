@@ -154,8 +154,8 @@ HEAT_SOURCE_CLASSES = frozenset({"1d01", "1a01", "3e01", "0b11", "0b12"})
 
 # Attribute names that light, heat or cook, for the classes whose controls are an owner's opt-in
 # (`controls_can_be_offered`) -- laundry has its own gated list and a water heater's heating is what
-# it is for. Matched
-# loosely on purpose, because the cost is lopsided: a false match only leaves a setting read-only.
+# it is for. Matched loosely on purpose, because the cost is lopsided: a false match only leaves a
+# setting read-only.
 # On the shipped catalogue it withholds a cooker hood's heated self-clean (`meltWashStatus`) and its
 # cooking reminder, and matches nothing on a refrigerator.
 _HEATS_OR_IGNITES = re.compile(

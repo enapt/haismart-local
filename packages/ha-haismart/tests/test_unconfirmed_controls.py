@@ -457,3 +457,29 @@ async def test_an_old_control_is_removed_on_update(
     assert not _controls(hass, entry)
     readings = {e.unique_id.removeprefix("A1B2C3D4E5F6_") for e in _rows(hass, entry)}
     assert attribute in readings
+
+
+async def test_a_twin_drum_unit_of_a_one_drum_class_gets_no_controls(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Prior art commands a twin-drum 0501-class washer whose second drum's write ids carry 0x80.
+    No shipped 0501 map has one, but a map fetched for an unshipped product could: its second drum
+    would have no phase gate of its own, so with controls on it still gets none."""
+    import dataclasses
+    from unittest.mock import patch
+
+    model = model_for(WASHER)
+    assert model is not None
+    extra = dataclasses.replace(model.field("spinSpeed"), name="subSpinSpeed", epp_cmd="5DA5")
+    twin = dataclasses.replace(model, fields=(*model.fields, extra))
+    with patch("custom_components.haismart.coordinator.model_for", return_value=twin):
+        entry = await _setup(hass, mock_uss, WASHER, _washer(remote=True),
+                             **{CONF_LAUNDRY_CONTROLS: True})
+        coordinator = entry.runtime_data
+        assert coordinator.laundry_layout is not None
+        assert not coordinator.laundry_controls_available
+        assert not _controls(hass, entry)
+        mock_uss.send.reset_mock()
+        with pytest.raises(HomeAssistantError):
+            await coordinator.async_send_control({"runningMode": 1})
+        mock_uss.send.assert_not_called()

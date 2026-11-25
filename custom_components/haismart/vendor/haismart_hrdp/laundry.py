@@ -65,6 +65,7 @@ class Drum:
     return_standby: str         # write-only: abandon the cycle and return to standby
     phase: str                  # where in a cycle the drum is
     idle_phases: frozenset[int]  # the phases with nothing in progress: standby, or finished
+    command_bit: int = 0        # 0x80 on every single-parameter write id of a second drum
 
 
 #: The washer's phases with nothing in progress: 0 待机/未启动 standby · 14 结束 end · 18/19 the
@@ -124,6 +125,30 @@ class LaundryLayout:
             for name in (drum.remote_valid, drum.running_mode, drum.phase)
         )
 
+    def fits(self, fields: Iterable[Any]) -> bool:
+        """Whether a class map is one this layout describes, so its gates are the whole story.
+
+        Every attribute the gates read must be there, and every single-parameter write must sit
+        on a drum the layout knows, carrying that drum's command bit. A map that also writes a
+        drum the layout does not know -- a twin-drum unit of a class laid out for one, whose
+        second drum's ids carry ``0x80`` -- would have that drum commanded with no phase gate of
+        its own, so it gets no controls at all. Every map the integration ships fits its layout.
+        """
+        fields = tuple(fields)
+        if not self.gate_fields() <= {f.name for f in fields}:
+            return False
+        for field in fields:
+            if not (field.writable and field.epp_cmd):
+                continue
+            key = self.drum_of(field.status_cmd)
+            try:
+                bit = int(str(field.epp_cmd)[-2:], 16) & 0x80
+            except ValueError:
+                return False
+            if key is None or bit != self.drums[key].command_bit:
+                return False
+        return True
+
 
 #: Per device class. ``running_mode`` 2 is 暂停 ("pause") in the model, but the machine reports it in
 #: standby too -- the idle 0504 dryer of the capture reads 2 at phase 0 -- so it cannot tell "paused
@@ -138,7 +163,7 @@ LAYOUTS: Mapping[str, LaundryLayout] = MappingProxyType({
             "washer": Drum(
                 "washer", "6D02", "washerRemoteCtrValid", "washerRunningMode",
                 "washerUnifiedProgramSettings", "washerReturnStandby",
-                "laundryCyclePhase", _WASHER_IDLE,
+                "laundryCyclePhase", _WASHER_IDLE, command_bit=0x80,
             ),
             "dryer": Drum(
                 "dryer", "6D01", "dryerRemoteCtrValid", "dryerRunningMode",
@@ -246,11 +271,12 @@ def laundry_writable(
     publishes a single-parameter write id for it in a status report it also reads back from, AND
     the unit declares it writable, individually (``operationType`` containing ``I``), and visible.
 
-    ⛔ Nothing at all without a layout, or where the map lacks one of the attributes the gates read
-    (:meth:`LaundryLayout.gate_fields`): a control no gate can ever allow is not offered.
+    ⛔ Nothing at all without a layout, or where the map is not one the layout describes
+    (:meth:`LaundryLayout.fits`): a control no gate can ever allow, or one whose drum no gate
+    watches, is not offered.
     """
     fields = tuple(fields)
-    if layout is None or not layout.gate_fields() <= {f.name for f in fields}:
+    if layout is None or not layout.fits(fields):
         return frozenset()
     withheld = _NOT_OFFERED | {
         name for drum in layout.drums.values() for name in (drum.running_mode, drum.programme)

@@ -179,7 +179,9 @@ drum — **Start or resume**, **Pause** and **Cancel**, and the options its conf
 writable on their own — behind the same gates: the panel's remote-control flag (`remoteCtrValid`),
 the child lock off, and power off only at standby or a finished cycle (`cyclePhase` 0, 14, 18 or 19).
 Cancel is its return-to-standby command, `5D24`. The programme (`laundryCycle`), the child lock and
-the factory reset (`resetOpt`) are never offered.
+the factory reset (`resetOpt`) are never offered. Haier also makes twin-drum `0501` washers, whose
+second drum's commands carry the `0x80` drum bit; no shipped map has one, and a map fetched for one
+gets no controls at all, because its second drum would have no phase gate of its own.
 
 All 15 `0501` maps the integration ships place these attributes at the same positions, with the
 same start, pause and cancel commands; the cycle-phase table has 20, 25 or 27 entries, and standby,

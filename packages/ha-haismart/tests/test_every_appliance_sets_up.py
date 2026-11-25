@@ -18,7 +18,7 @@ import json
 
 import pytest
 from ha_compat import MockConfigEntry
-from haismart_hrdp.appliance import CLASS_LABELS
+from haismart_hrdp.appliance import CLASS_LABELS, ApplianceKind, kind_for
 from haismart_hrdp.device_model import ATTR_BASE, known_typeids, model_for
 from haismart_hrdp.entity_spec import specs_for
 from homeassistant.config_entries import ConfigEntryState
@@ -55,7 +55,11 @@ def _report(typeid: str) -> bytes:
     body = bytes((i * 7 + 3) & 0xFF for i in range(2 * words + 2))
     head = bytearray(ATTR_BASE)
     head[2:4] = b"\x27\x15"                   # the uSS status-container marker
-    head[ATTR_BASE - 4 : ATTR_BASE] = b"\x06\x6d\x01\x00"
+    # The EPP frame it carries, as a real report has it: FF FF at 80, the type (06, a report) at 89
+    # and the command (6D01) at 90. A laundry appliance reads a report only when its command says
+    # which one it is.
+    head[80:82] = b"\xff\xff"
+    head[89:92] = b"\x06\x6d\x01"
     return bytes(head) + body
 
 
@@ -66,6 +70,9 @@ def _entry(typeid: str) -> MockConfigEntry:
     digital_model = {
         "attributes": [{"name": f.name, "writable": f.writable} for f in model.fields],
         "alarms": [{"name": n} for n, _ in model.alarms],
+        # Present, even empty, says the unit's feature set is KNOWN. Without it nothing counts as
+        # declared, so no class decoded at all and every entity but the model ID read unknown.
+        "invisible_attributes": [],
     }
     return MockConfigEntry(
         domain=DOMAIN,
@@ -136,15 +143,22 @@ async def test_every_entity_holds_a_state_home_assistant_accepts(
 
     # And the appliance is actually furnished: for a class whose map places anything, at least one
     # entity must hold a real value rather than every one reading unknown.
+    # Counted: entities built from the class's own map, by the attribute their unique id ends in.
+    # Anything else -- the model ID, the fault sensor -- reads a value whatever the report says,
+    # and passed this check for every class while no class but the air conditioners decoded.
+    model = model_for(typeid)
+    attributes = {f"A1B2C3D4E5F6_{f.name}" for f in model.fields}
     states = [
         hass.states.get(e.entity_id)
         for e in er.async_get(hass).entities.values()
         if e.config_entry_id == entry.entry_id and e.disabled_by is None
+        and e.unique_id in attributes
     ]
     live = [s for s in states if s and s.state not in ("unknown", "unavailable")]
-    model = model_for(typeid)
-    if specs_for(model, [{"name": f.name} for f in model.fields]):
-        assert live, f"{device_class}: every entity read unknown"
+    if kind_for(typeid) is not ApplianceKind.AIR_CONDITIONER and specs_for(
+        model, [{"name": f.name} for f in model.fields]
+    ):
+        assert live, f"{device_class}: no entity built from its map holds a value"
 
 
 @pytest.mark.parametrize(("device_class", "typeid"), SAMPLE, ids=[c for c, _ in SAMPLE])

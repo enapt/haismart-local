@@ -108,6 +108,7 @@ from haismart_hrdp.appliance import (
     class_of,
     controls_can_be_offered,
     heats_or_ignites,
+    housekeeping,
     identified_not_air_conditioner,
     kind_for,
 )
@@ -1622,8 +1623,12 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return frozenset(
             f.name for f in model.writable_fields()
             if (not declared or f.name in declared)
-            # Nothing that lights, heats or cooks, whatever the class (a hood's heated self-clean).
-            and not (kind is ApplianceKind.OTHER and heats_or_ignites(f.name))
+            # In this tier, nothing that lights, heats or cooks (a hood's heated self-clean), and
+            # nothing that is housekeeping rather than a setting (firmware, credentials, pairing,
+            # the clock). A water heater's own heating is what it is for, and is not filtered.
+            and not (kind is ApplianceKind.OTHER and (
+                heats_or_ignites(f.name) or housekeeping(f.name)
+            ))
         )
 
     @property
@@ -2941,12 +2946,6 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         "error": reason,
                     },
                 )
-
-    @property
-    def local_key(self) -> str:
-        """The AC's current localKey (kept fresh across gateway auto-refresh). For the opt-in backup
-        sensor — it's a secret, so that entity is diagnostic + disabled by default."""
-        return self._local_key
 
     @property
     def withheld_readings(self) -> frozenset[str]:

@@ -57,9 +57,8 @@ setiap perkakas, sebaliknya peta bait rasmi Haier bagi jenis produk itu, ditapis
 unit anda sendiri tentang ciri yang benar-benar ada padanya.
 
 Kawalan pada perkakas ini, kecuali pemanas air, dimatikan secara lalai; hidupkannya dalam
-**Configure** integrasi. Dapur gas, ketuhar dan kabinet pensteril tidak sekali-kali diberi kawalan,
-dan tiada perkakas diberi kawalan bagi apa-apa yang menyalakan api, memanaskan atau memasak — semua
-bacaan kekal ada.
+**Configure** integrasi. Dapur gas, ketuhar dan kabinet pensteril tidak sekali-kali diberi kawalan —
+semua bacaan kekal ada.
 
 ⚠️ Petanya datang daripada pengeluar, **tetapi kebanyakan kategori itu belum pernah diuji pada
 perkakas sebenar di sini**. Setakat ini hanya **satu** tetapan pada perkakas selain penghawa dingin

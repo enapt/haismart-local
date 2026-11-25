@@ -47,8 +47,9 @@ label — see [`docs/appliances.md`](../../docs/appliances.md).
     controls are offered (off by default): on a laundry appliance whose class has a layout
     (`haismart_hrdp.laundry.LAYOUTS` — `0501`, `0504`), and on any other appliance whose class Haier
     names and is not a heat source (`haismart_hrdp.appliance.controls_can_be_offered`). A gas hob, an
-    oven or a sterilising cabinet is never offered controls, and no appliance a control for an
-    attribute that lights, heats or cooks (`heats_or_ignites`).
+    oven or a sterilising cabinet is never offered controls. In that second tier no attribute that
+    lights, heats or cooks (`heats_or_ignites`) or is upkeep — firmware, credentials, pairing, the
+    clock (`housekeeping`) — becomes one; laundry's own options sit on its gated list instead.
 - **Polling coordinator** (`coordinator.py`): one `DataUpdateCoordinator` per AC. Each refresh is one
   short-lived uSS session (`async_read_status`); control ops (`async_send_control`) are seeded from the
   latest status so a group-set preserves every unchanged attribute. A rotation is caught in the same

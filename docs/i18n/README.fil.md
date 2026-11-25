@@ -58,8 +58,7 @@ unit kung alin sa mga iyon ang talagang mayroon ito.
 
 Naka-off bilang default ang mga kontrol ng mga appliance na ito, maliban sa water heater; i-on ang mga
 ito sa **Configure** ng integration. Hindi kailanman binibigyan ng kontrol ang gas stove, oven at
-sterilising cabinet, at walang appliance na binibigyan ng kontrol para sa anumang nagsisindi,
-nagpapainit o nagluluto — nananatili ang lahat ng pagbasa.
+sterilising cabinet — nananatili ang lahat ng pagbasa.
 
 ⚠️ Sa gumawa nanggaling ang mga mapa, **ngunit karamihan sa mga kategoryang iyon ay hindi pa
 nasusubukan sa tunay na kagamitan dito**. Sa ngayon ay **isang** setting pa lamang sa appliance na

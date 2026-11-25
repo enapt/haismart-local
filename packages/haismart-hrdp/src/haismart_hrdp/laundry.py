@@ -68,8 +68,10 @@ class Drum:
 
 
 #: The washer's phases with nothing in progress: 0 待机/未启动 standby · 14 结束 end · 18/19 the
-#: post-wash dry / detangle finished. One table: the 0504's washer drum (``laundryCyclePhase``) and
-#: the 0501 (``cyclePhase``) publish the same twenty phases with the same descriptions.
+#: post-wash dry / detangle finished. The 0504's washer drum (``laundryCyclePhase``) and every 0501
+#: (``cyclePhase``) give these four the same descriptions. Most 0501 models publish 20 phases (0-19);
+#: one publishes 27, and its 20-26 are all mid-cycle (care, the pre-wash stages, air-drying, a
+#: cloth-jam check), so leaving them out of this set refuses a power-off during them, as it should.
 _WASHER_IDLE = frozenset({0, 14, 18, 19})
 
 

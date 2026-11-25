@@ -54,9 +54,8 @@ perangkat, melainkan peta byte resmi Haier untuk tipe produk itu, disaring oleh 
 sendiri tentang fitur apa yang benar-benar dimilikinya.
 
 Kontrol pada perangkat-perangkat ini, kecuali pemanas air, mati secara bawaan; nyalakan di
-**Configure** integrasi. Kompor gas, oven, dan lemari sterilisasi tidak pernah mendapat kontrol, dan
-tidak ada perangkat yang mendapat kontrol untuk apa pun yang menyalakan api, memanaskan, atau
-memasak — semua pembacaan tetap ada.
+**Configure** integrasi. Kompor gas, oven, dan lemari sterilisasi tidak pernah mendapat kontrol —
+semua pembacaan tetap ada.
 
 ⚠️ Petanya berasal dari pabrikan, **tetapi sebagian besar kategori tersebut belum pernah diuji pada
 perangkat nyata di sini**. Sejauh ini hanya **satu** pengaturan pada perangkat selain AC yang pernah

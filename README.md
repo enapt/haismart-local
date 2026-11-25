@@ -176,9 +176,10 @@ control only where that is a reasonable risk:
   and dryer controls**, and each command then needs remote control turned on at the machine's own
   panel;
 * **anything else** — a refrigerator, a cooker hood, an air purifier — is read-only until you turn on
-  **Configure → Enable controls (unconfirmed)**, and a setting may be refused;
-* a **gas hob, an oven or a sterilising cabinet never gets a control**, and no appliance gets one for
-  a setting that lights, heats or cooks. Every reading is still there.
+  **Configure → Enable controls (unconfirmed)**, and a setting may be refused. Even then nothing that
+  lights, heats or cooks is offered (a hood's heated self-clean, for one), nor upkeep such as a
+  firmware update, network pairing or the clock;
+* a **gas hob, an oven or a sterilising cabinet never gets a control**. Every reading is still there.
 
 [Appliance support](docs/appliances.md#what-is-actually-proven-and-what-is-not) has the detail.
 

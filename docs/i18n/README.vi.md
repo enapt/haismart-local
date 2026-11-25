@@ -52,8 +52,7 @@ thức của Haier cho loại sản phẩm đó, lọc qua phần khai báo củ
 thực sự có.
 
 Điều khiển trên các thiết bị này, trừ máy nước nóng, tắt theo mặc định; bật trong **Configure** của
-tích hợp. Bếp gas, lò nướng và tủ tiệt trùng không bao giờ có điều khiển, và không thiết bị nào có
-điều khiển cho thứ đánh lửa, làm nóng hay nấu nướng — mọi giá trị đọc vẫn còn đủ.
+tích hợp. Bếp gas, lò nướng và tủ tiệt trùng không bao giờ có điều khiển — mọi giá trị đọc vẫn còn đủ.
 
 ⚠️ Bản đồ đó là của nhà sản xuất, **nhưng phần lớn các danh mục chưa từng được thử trên máy thật ở
 đây**. Cho đến nay chỉ **một** thiết lập trên thiết bị không phải điều hòa từng được gửi thành công

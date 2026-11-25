@@ -38,9 +38,12 @@ hob that is each burner's ignition, on an oven a bake temperature up to 300 °C.
 * **Every other class** is read-only until its owner turns on *Enable controls (unconfirmed)*, which
   is offered only for a class Haier names (`appliance.controls_can_be_offered`).
 * **A heat source never gets a control** — `HEAT_SOURCE_CLASSES`: the `1d01` gas hob, the `1a01` and
-  `3e01` steam ovens, the `0b11`/`0b12` sterilising cabinets — and no appliance gets one for an
-  attribute whose name says it lights, heats or cooks (`appliance.heats_or_ignites`; on the shipped
-  catalogue that withholds a cooker hood's heated self-clean and cooking reminder). The coordinator
+  `3e01` steam ovens, the `0b11`/`0b12` sterilising cabinets. In the opt-in tier no attribute whose
+  name says it lights, heats or cooks is offered (`appliance.heats_or_ignites`; on the shipped
+  catalogue a cooker hood's heated self-clean and cooking reminder), nor upkeep — firmware,
+  credentials, pairing, the clock (`appliance.housekeeping`; the voice assistant's `otaControl`,
+  `token`, `clientId`, the hoods' clock and Wi-Fi binding). Laundry's options — a wash temperature,
+  a steam wash, drying — are on its own gated list, and a water heater's heating is its job. The coordinator
   also refuses, before anything is sent, any command to an appliance known not to be an air
   conditioner that is not one of its own offered writes.
 

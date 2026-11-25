@@ -238,6 +238,22 @@ def test_controls_are_offered_only_for_a_named_class_that_is_not_a_heat_source()
         assert not controls_can_be_offered(_with_class(device_class)), device_class
 
 
+def test_the_housekeeping_rule_withholds_upkeep_and_no_refrigerator_setting() -> None:
+    from haismart_hrdp.appliance import housekeeping
+    from haismart_hrdp.device_model import known_typeids, model_for
+
+    for name in ("otaControl", "token", "clientId", "wifiBindingStatus", "currentTimeHH",
+                 "messageVersion", "resetOpt"):
+        assert housekeeping(name), name
+    for name in ("totalWashCycle", "rotateStatus", "timerStatus", "windSpeedLevel"):
+        assert not housekeeping(name), name
+    for typeid in (t for t in known_typeids() if t[16:18] == "01"):
+        model = model_for(typeid)
+        assert model is not None
+        caught = [f.name for f in model.writable_fields() if housekeeping(f.name)]
+        assert not caught, (typeid, caught)
+
+
 def test_the_heat_name_rule_withholds_heating_and_nothing_on_a_refrigerator() -> None:
     from haismart_hrdp.appliance import heats_or_ignites
     from haismart_hrdp.device_model import known_typeids, model_for

@@ -41,6 +41,7 @@ __all__ = [
     "class_of",
     "controls_can_be_offered",
     "heats_or_ignites",
+    "housekeeping",
     "identified_not_air_conditioner",
     "kind_for",
     "label_for",
@@ -151,7 +152,9 @@ CLASS_LABELS: Mapping[str, str] = MappingProxyType({
 # accepted. Their readings are unaffected.
 HEAT_SOURCE_CLASSES = frozenset({"1d01", "1a01", "3e01", "0b11", "0b12"})
 
-# Attribute names that light, heat or cook, for the classes that may have controls at all. Matched
+# Attribute names that light, heat or cook, for the classes whose controls are an owner's opt-in
+# (`controls_can_be_offered`) -- laundry has its own gated list and a water heater's heating is what
+# it is for. Matched
 # loosely on purpose, because the cost is lopsided: a false match only leaves a setting read-only.
 # On the shipped catalogue it withholds a cooker hood's heated self-clean (`meltWashStatus`) and its
 # cooking reminder, and matches nothing on a refrigerator.
@@ -164,6 +167,23 @@ _HEATS_OR_IGNITES = re.compile(
 def heats_or_ignites(name: str) -> bool:
     """Whether an attribute's name says it lights, heats or cooks -- never offered as a control."""
     return bool(_HEATS_OR_IGNITES.search(name))
+
+
+# Writable in the map, but housekeeping rather than a setting anybody would want as a control: a
+# firmware update, credentials and identifiers, network and Bluetooth pairing, the clock and version
+# stamps, a reset. On the shipped catalogue: the voice assistant's `otaControl`, `token`, `clientId`,
+# `vboxId`, clock and version stamps, the cooker hoods' clock, Bluetooth and `wifiBindingStatus`,
+# and the scale's Bluetooth.
+_HOUSEKEEPING = re.compile(
+    r"^ota|token|clientid|vboxid|binding|netcfg|bluetooth|ircode|version$|^currenttime|^timesyn"
+    r"|^(?:date|time|location)$|reset",
+    re.IGNORECASE,
+)
+
+
+def housekeeping(name: str) -> bool:
+    """Whether an attribute is upkeep (firmware, credentials, pairing, clock) -- never a control."""
+    return bool(_HOUSEKEEPING.search(name))
 
 
 def controls_can_be_offered(uplus_id: str | None) -> bool:

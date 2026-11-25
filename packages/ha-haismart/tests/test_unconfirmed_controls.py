@@ -217,6 +217,24 @@ async def test_a_named_class_gets_its_controls_once_turned_on_but_nothing_that_h
     assert heating <= readings, "withheld as a control, still read"
 
 
+@pytest.mark.parametrize(
+    ("device_class", "upkeep"),
+    [
+        ("3b01", {"otaControl", "token", "clientId", "vboxId", "time", "date", "location"}),
+        ("0901", {"wifiBindingStatus", "bluetoothStatus", "currentTimeHH", "currentTimeMM"}),
+    ],
+)
+async def test_housekeeping_is_never_a_control(
+    hass: HomeAssistant, mock_uss, device_class: str, upkeep: set
+) -> None:
+    """A firmware update, a credential, pairing or the clock is published writable, and is not a
+    setting anybody wants on a dashboard -- so even with controls on, none becomes one."""
+    entry = await _setup(hass, mock_uss, _BY_CLASS[device_class], **{CONF_APPLIANCE_CONTROLS: True})
+    controls = _controls(hass, entry)
+    assert controls, device_class
+    assert not upkeep & set(controls), upkeep & set(controls)
+
+
 async def test_turning_controls_off_again_removes_them(hass: HomeAssistant, mock_uss) -> None:
     typeid = _BY_CLASS["0121"]
     entry = await _setup(hass, mock_uss, typeid, **{CONF_APPLIANCE_CONTROLS: True})

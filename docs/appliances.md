@@ -41,10 +41,11 @@ every other class is *published, not proven*, so what you can command depends on
   [below](#controls-off-by-default));
 * **any other appliance** is read-only until you turn on **Configure → Enable controls
   (unconfirmed)**. The option is offered only for a class Haier names; an appliance of a class
-  nobody here can name stays read-only;
-* a **gas hob, an oven or a sterilising cabinet never gets a control**, whatever the option says,
-  and no appliance gets a control for a setting that lights, heats or cooks — a cooker hood's heated
-  self-clean, for one. Their readings are all there.
+  nobody here can name stays read-only. Even with it on, nothing that lights, heats or cooks is
+  offered — a cooker hood's heated self-clean, for one — and no upkeep: a firmware update,
+  credentials, network or Bluetooth pairing, the clock;
+* a **gas hob, an oven or a sterilising cabinet never gets a control**, whatever the option says.
+  Their readings are all there.
 
 The controls there are use the same single-parameter mechanism that works on air conditioners, with
 the command ids Haier publishes for that class. If your appliance refuses a command, Home Assistant

@@ -21,6 +21,30 @@ keeps its own when it moves between the two sections. Expect the sequence to hav
 
 ## Open items
 
+### 81. The installed copy puts its two helper libraries on the whole of Home Assistant's import path
+
+**2026-11-26 (the approving review of hacs/default#13895, a suggestion for a future release).** The
+generated `custom_components/haismart/__init__.py` inserts its `vendor/` folder at the front of
+`sys.path` (the shim is written by `scripts/build-hacs.sh`), so `haismart_hrdp` and
+`haismart_extractor` become top-level modules for the whole Home Assistant process: a copy installed
+there shadows ours, and ours shadows any other package of those names. Importing them relatively
+from `.vendor` avoids it in both directions.
+
+**What it takes, measured:** the two libraries already import within themselves relatively (43
+relative imports; the one absolute `import haismart_hrdp` is in a docstring), and nothing refers to
+them by a module-name string, so only the integration's own 15 modules need rewriting, and only in
+the generated copy — `packages/` keeps the absolute imports its tests run against. The build rewrites
+`from haismart_hrdp` / `from haismart_extractor` to the `.vendor` form and drops the shim;
+`check-hacs-build.sh` then has to prove the generated copy imports with no `haismart_hrdp` on the
+path.
+
+**The cost to watch:** the libraries log under `__name__`, so their logger names become
+`custom_components.haismart.vendor.haismart_hrdp…`. The debug-logging recipe in
+`TROUBLESHOOTING.md` names `haismart_hrdp` and `haismart_extractor` and needs changing with it — to
+just `custom_components.haismart`, which would then cover all three. The manifest declares no
+`loggers`, so Home Assistant's own *Enable debug logging* switch covers only
+`custom_components.haismart` today and would cover the libraries afterwards.
+
 ### 80. Controls on appliances no command has been confirmed on — off until their owner turns them on; heat sources never
 
 **2026-11-25 (the review of the HACS default-catalog submission, hacs/default#13895).** Only one

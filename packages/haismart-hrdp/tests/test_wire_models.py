@@ -133,9 +133,11 @@ def test_the_generated_map_reproduces_every_verified_position() -> None:
         "target_temperature": (20, 8, 8), "operation_mode": (21, 13, 3), "power": (22, 0, 1),
         "health": (22, 1, 1), "strong": (22, 3, 1), "quiet": (22, 4, 1),
         "sleep": (22, 5, 1), "lamp": (22, 9, 1),
-        # The two the published map names but does not place HERE: they answer from the inserted
-        # block, against a cloud record that agrees with this report on everything else.
-        "swing_vertical": (25, 0, 4), "wind_speed": (26, 9, 3),
+        # The two the shared map names but does not place HERE: they answer from the inserted
+        # block, against a cloud record that agrees with this report on everything else. The fan
+        # is where this PRODUCT's own byte map puts it, bit 8 -- the captures (high 2, low 6 there)
+        # fit bit 8 and bit 9 alike, and only the product's map tells them apart.
+        "swing_vertical": (25, 0, 4), "wind_speed": (26, 8, 3),
         "current_temperature": (35, 8, 8), "heat_capable": (36, 7, 1),
         "outdoor_temperature": (36, 8, 8), "last_changed_by": (37, 0, 2),
         "error_code": (37, 8, 8), "energy_wh": (45, 0, 32),

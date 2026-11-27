@@ -143,7 +143,11 @@ WRITE_OVERRIDES: Mapping[str, Mapping[str, tuple[int, int, int]]] = {
 #   2. its published group-set order is **byte-identical** through the two anchor positions;
 #   3. every attribute preceding them in the tail publishes an **identical value set**, so the
 #      packing that puts the anchors at those bits is the same packing;
-#   4. the destination bits are confirmed on the sibling, not derived here.
+#   4. the destination bits are confirmed on the sibling, not derived here -- and each listed
+#      family's own byte map places its fan exactly there too (report word 26 bit 8, three bits,
+#      high 2 / medium 4 / low 6 / auto 0). The ENCODING comes with the position: a tail field is
+#      written with extended-46's own ``WriteField`` (``frame_write_fields``), never the shared
+#      frame's identity table.
 #
 # ⚠️ ``windDirectionHorizontal`` is deliberately absent: it is in the tail too, but no family has a
 # confirmed position for it -- ``EXTENDED46`` does not carry one either -- so it stays unoffered.
@@ -154,12 +158,12 @@ TAIL_POSITIONS: Mapping[str, Mapping[str, tuple[int, int, int]]] = {
     # 108 products. Order identical to extended-46's through position 67; the anchors are at 47/50.
     "20086108008203240212001180133000": {
         "windDirectionVertical": (6, 0, 4),
-        "windSpeed": (7, 9, 3),
+        "windSpeed": (7, 8, 3),
     },
     # 1 product. Order identical through position 53.
     "20086108008203240312001180204042": {
         "windDirectionVertical": (6, 0, 4),
-        "windSpeed": (7, 9, 3),
+        "windSpeed": (7, 8, 3),
     },
 }
 

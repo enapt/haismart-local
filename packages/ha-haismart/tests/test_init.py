@@ -3017,7 +3017,11 @@ async def test_fan_only_substitutes_a_concrete_speed_on_the_209_family(
     wf = wm.write_fields["windSpeed"]
     off = (wf.word - 1) * 2
     speed = ((sent[off] << 8) | sent[off + 1]) >> wf.bit & ((1 << wf.length) - 1)
-    assert speed == 3 and speed != 5      # low, and specifically not the auto the unit drops
+    # The wire carries the code this family's byte map gives a speed, not the speed's own number
+    # (low is 6 here, auto 0), so translate back before asking which speed was sent.
+    sent_speed = {epp: std for std, epp in wf.std_to_epp.items()}[speed]
+    assert sent_speed == 3                # low, and specifically not the auto the unit drops
+    assert speed != wf.std_to_epp[5]
 
 
 async def test_controls_the_unit_ignores_stay_readable_and_refuse_the_command(

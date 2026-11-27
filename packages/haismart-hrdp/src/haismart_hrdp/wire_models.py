@@ -901,13 +901,14 @@ _EXT36_MODE = {
 # refused `windSpeed` control on other grounds (its order refutes the frame, or the bit-reuse gate
 # takes its fan), so nothing is lost that was otherwise reachable. See `docs/FUTURE_WORK.md` item 41.
 _EXT36_FAN = {
-    # ⚠️ **0 is deliberately absent, and so is 超强风 / "Boost" with it.** 0 is what the fan field
-    # reads on a real 209-byte report from a unit that is switched OFF -- so at this layer a raw 0
-    # is "no speed reported", and it is indistinguishable from the Boost code that 23 other products
-    # declare. No capture from any of those products exists to separate the two, and a fan speed
-    # that cannot be read back must not be offered (a control whose state never moves looks to its
-    # owner like a command that did nothing). `profiles._FAN_KEYWORDS` therefore does not name
-    # 超强风 either, so it never reaches a fan list. `docs/FUTURE_WORK.md` item 41.
+    # ⚠️ **0 is deliberately absent, and so is 超强风 / "Boost" with it.** A raw 0 here cannot be told
+    # from "no speed reported" -- it is the Boost code 23 products declare, and no capture from any of
+    # them exists to separate the two -- and a fan speed that cannot be read back must not be offered
+    # (a control whose state never moves looks to its owner like a command that did nothing).
+    # `profiles._FAN_KEYWORDS` therefore does not name 超强风 either, so it never reaches a fan list.
+    # `docs/FUTURE_WORK.md` item 41. (⛔ The reason first given here, "0 is what the 209-byte family
+    # reads on an OFF unit", does not hold: on that family 0 is auto, by its own byte map, and it
+    # reads `_EXT46_FAN`, not this table.)
     1: "1",   # 高风    high
     2: "2",   # 中风    medium
     3: "3",   # 低风    low
@@ -915,6 +916,19 @@ _EXT36_FAN = {
     5: "5",   # 自动    auto
     6: "6",   # 静音风 OR 快速风 -- ⚠️ the code does NOT determine the speed on this attribute; the
     7: "7",   # 中高风 OR 快速风 -- product's own description does. See `profiles._FAN_KEYWORDS`.
+}
+
+_EXT46_FAN = {
+    # The 209-byte family's fan, as Haier's byte map for its typeid publishes it: report word 26,
+    # bit 8, three bits, the map's code -> the std code. Exactly the four speeds all 44 products of
+    # the family declare (default 5, auto). 0 is AUTO here -- not "no reading": a running, cooling
+    # unit reports it as surely as an off one, and an off unit keeps its fan setting like any other.
+    # `tests/test_uss.py::test_the_209_family_fan_is_haiers_own_map_for_the_product` holds this
+    # table and the write's to the bundled map, so they cannot drift from it.
+    2: "1",   # 高    high
+    4: "2",   # 中    medium
+    6: "3",   # 低    low
+    0: "5",   # 自动  auto
 }
 
 # --- fields from the published map ------------------------------------------
@@ -1296,7 +1310,10 @@ _EXT46_WRITE = {
     "screenDisplayStatus": WriteField(3, 9, 1, "passthrough"),
     # The appliance's own vane and fan, in the inserted block (group-set words 6/7 = report w25/w26).
     "windDirectionVertical": WriteField(6, 0, 4, "passthrough", max_epp=0x0C),
-    "windSpeed": WriteField(7, 9, 3, "std_enum", std_to_epp={1: 1, 2: 2, 3: 3, 5: 5}),
+    # The fan exactly as Haier's byte map for this product publishes it: grSetDAC word 7, bit 8,
+    # three bits, std high 1 / medium 2 / low 3 / auto 5 -> 2 / 4 / 6 / 0 (`_EXT46_FAN`). Bit 11-12
+    # beside it is `oxgyenSupplyMode`, seeded from the report and left alone.
+    "windSpeed": WriteField(7, 8, 3, "std_enum", std_to_epp={1: 2, 2: 4, 3: 6, 5: 0}),
     # The panel's frame-positioned control surface — same words as every grSetDAC family, in this
     # family's first five words (all ≤ w5, within word_count). Offered per device; the bit-reuse
     # guard keeps a family that puts a different attribute at one of these positions from writing it.
@@ -1440,9 +1457,16 @@ EXTENDED46 = WireModel(
         # voice module, probes this unit does not have, tempUnit -- so it agrees by construction and
         # can never detect staleness. See `test_the_209_family_reads_its_fan_speed`.
         #
-        # `enum` and not `raw`: an unlisted code yields NO reading. So the idle-unit 0 and the
-        # constant 6 both surface as absence, never as an invented speed.
-        "wind_speed": WireField(26, 9, 3, kind="enum", enum=_EXT36_FAN),
+        # `enum` and not `raw`: an unlisted code yields NO reading, so a code none of the products
+        # declares (1, 3, 5, 7 at bit 8) surfaces as absence, never as an invented speed.
+        #
+        # ★★ And the FOURTH, on Haier's own byte map for this product: the field is word 26 BIT 8,
+        # three bits, high 2 / medium 4 / low 6 / auto 0. Bit 9 agreed with it on high and low --
+        # 1 and 3 are 2 and 6 shifted -- the only speeds any capture was taken on, so nothing
+        # here could tell them apart; the map can, and it reads the 0 above as auto. Reading it at
+        # bit 9 had the write send auto as 5 there, which by the map is high with
+        # `oxgyenSupplyMode` switched on. `_EXT46_FAN`.
+        "wind_speed": WireField(26, 8, 3, kind="enum", enum=_EXT46_FAN),
         # Cumulative energy in watt-hours, 32 bits whose low half sits at word 45 and high half at
         # word 44 -- the published map states this register one word past the indoor temperature,
         # and both anchors land ten words later on this family, which puts it exactly here.
@@ -2194,7 +2218,16 @@ def frame_write_fields(
             continue
         if spelled in known and spelled not in corroborated:
             continue
-        out[name] = WriteField(*pos, **spec)  # type: ignore[arg-type]
+        if name in tail:
+            # The ENCODING travels with the position. A tail position is the confirmed family's own
+            # (`TAIL_POSITIONS`: extended-46's), and so is the code its byte map gives each value
+            # there; the shared frame's identity table does not describe the append region. For the
+            # fan that table would send auto as 5 at word 7 bit 9 -- high, with `oxgyenSupplyMode`
+            # switched on -- where every listed family's own map, like extended-46's, says 0 at
+            # bit 8. `test_append_region.py` holds both families to it.
+            out[name] = _EXT46_WRITE[name]
+        else:
+            out[name] = WriteField(*pos, **spec)  # type: ignore[arg-type]
     return out
 
 

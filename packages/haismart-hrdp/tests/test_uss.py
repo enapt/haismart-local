@@ -1071,6 +1071,20 @@ STATUS_209_RUNNING_CLOUD = {
     "healthMode": "false", "rapidMode": "false", "muteStatus": "false",
     "silentSleepStatus": "false", "screenDisplayStatus": "true",
 }
+#   A FIFTH report, the first owner's unit RUNNING with its fan field at 0: power on, cooling,
+#   setpoint 24. Haier's byte map for this product reads that 0 as auto, the default every one of
+#   the family's 44 products declares. (Its file's cloud record is the onboarding snapshot -- it
+#   says off at 19 C -- so it is not evidence for this report, only for the owner's usual setting,
+#   which it gives as windSpeed 5, auto.)
+STATUS_209_RUNNING_FAN0 = bytes.fromhex(
+    "00002715000000004e5601000003020000040100000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "00000000000000000000000000000081ffff7e000000000000066d0120640000"
+    "0000000000000000000000000000000000000000000000000000000000000100"
+    "00003000260f0203000000000000000000000000000000000000000000000000"
+    "343c65100003000000000000000000000000000bdca900000000000000000000"
+    "0000000000000000000000000000000059"
+)
 
 
 def test_extended46_decodes_the_real_reports():
@@ -1096,6 +1110,9 @@ def test_extended46_decodes_the_real_reports():
         # unit whose word 22 agrees bit for bit with the manufacturer's own record of the same six
         # attributes, including the two that were set.
         "health": False, "strong": False, "quiet": False, "sleep": False, "lamp": True,
+        # An off unit keeps its fan setting; this one's is auto, the 0 Haier's map gives it (word 26
+        # bit 8) and the default every product of the family declares.
+        "wind_speed": "5", "fan_mode": "auto",
     }
     cool = uss.parse_full_status(STATUS_209_COOL, prof)
     assert cool["power"] is True and cool["target_temperature"] == 22.0 and cool["mode"] == "cool"
@@ -1130,20 +1147,75 @@ def test_the_209_family_reads_its_fan_speed():
     from haismart_hrdp.wire_models import WireField
 
     prof = profile_for("AAC1UKZ01")
-    speeds = {c: uss.parse_full_status(c, prof).get("fan_mode")
-              for c in (STATUS_209_COOL, STATUS_209_FAN, STATUS_209_OFF, STATUS_209_RUNNING)}
+    captures = (STATUS_209_COOL, STATUS_209_FAN, STATUS_209_OFF, STATUS_209_RUNNING,
+                STATUS_209_RUNNING_FAN0)
+    speeds = {c: uss.parse_full_status(c, prof).get("fan_mode") for c in captures}
     assert speeds[STATUS_209_COOL] == "low"        # capture taken on low
     assert speeds[STATUS_209_FAN] == "high"        # capture taken on high
     assert speeds[STATUS_209_RUNNING] == "high"    # cloud record for this report: windSpeed 1
-    # An idle or off appliance reads 0 there, which is not a code its model declares, so it
-    # surfaces as NO reading. That is the whole reason the field is an enum and not a raw int: the
-    # failure this position was withdrawn for -- showing a stopped fan as a speed -- cannot occur.
-    assert speeds[STATUS_209_OFF] is None
-    assert WireField(26, 9, 3, kind="raw").read(STATUS_209_OFF) == 0
+    # The fourth decision, on Haier's own byte map for this product (word 26 bit 8, 3 bits): a 0
+    # there is AUTO, not "no reading". It was read as nothing because 0 appeared on an off unit --
+    # but it appears just the same on a running, cooling one, and auto is the default all 44
+    # products of the family declare. An off unit keeps its fan setting, like every other family.
+    assert speeds[STATUS_209_OFF] == "auto"
+    assert speeds[STATUS_209_RUNNING_FAN0] == "auto"
+    assert WireField(26, 8, 3, kind="raw").read(STATUS_209_RUNNING_FAN0) == 0
 
     # The map's own position, constant across every capture from both appliances.
     for capture in (STATUS_209_COOL, STATUS_209_FAN, STATUS_209_OFF, STATUS_209_RUNNING):
         assert WireField(21, 8, 3, kind="raw").read(capture) == 6
+
+
+def test_the_209_family_fan_is_haiers_own_map_for_the_product():
+    """Read and written as Haier's byte map for THIS product publishes it, not as a guess.
+
+    The bundled map for the family's typeid places ``windSpeed`` at report word 26, bit 8, three
+    bits, with high 2, medium 4, low 6 and auto 0 (and its group-set ``grSetDAC`` at word 7 bit 8,
+    three bits -- report word 26 by ``write_base_word``). That table reproduces every capture held
+    from two appliances. The read had been taken one bit up (word 26 bit 9), which agrees with it on
+    high and low -- the only speeds ever captured -- and the write sent auto as 5 there, which by
+    the map is HIGH with ``oxgyenSupplyMode`` (bit 11) switched on.
+    """
+    from haismart_hrdp.device_model import model_for
+    from haismart_hrdp.wire_models import EXTENDED46 as m
+
+    haier = next(f for f in model_for(EXT46_UPLUS_ID).fields
+                 if f.name == "windSpeed" and f.status_cmd == "6D01")
+    published = {v["stdValue"]: v["eppValue"] for v in haier.variants}
+    declared = {1, 2, 3, 5}   # every one of the family's 44 products declares exactly these
+
+    read = m.fields["wind_speed"]
+    assert (read.word, read.bit, read.length) == (haier.word, haier.bit, haier.length)
+    assert {epp: int(std) for epp, std in read.enum.items()} == {
+        published[std]: std for std in declared
+    }
+
+    write = m.write_fields["windSpeed"]
+    assert m.write_base_word + write.word - 1 == haier.word
+    assert (write.bit, write.length) == (haier.bit, haier.length)
+    assert write.std_to_epp == {std: published[std] for std in declared}
+
+
+def test_the_209_family_fan_write_touches_only_the_fan_bits():
+    """Each speed lands in group-set word 7 bits 8..10 as the map's code, and nothing beside it
+    moves: bit 11-12 is ``oxgyenSupplyMode`` on this product, and auto must not switch it on (the
+    earlier encoding did), nor a speed switch it off."""
+    wm = uss.select_wire_model(209)
+    base = wm.baseline_words(STATUS_209_COOL)
+
+    def word7(words):
+        return words[12] << 8 | words[13]
+
+    for std, code in ((1, 2), (2, 4), (3, 6), (5, 0)):
+        words = wm.encode_control(bytearray(base), {"windSpeed": std})
+        assert word7(words) >> 8 & 0x07 == code
+        assert word7(words) & ~0x0700 == word7(base) & ~0x0700   # every other bit as reported
+
+    oxygen_on = bytearray(base)
+    oxygen_on[12] |= 0x08                                       # word 7 bit 11
+    for std in (1, 2, 3, 5):
+        words = wm.encode_control(bytearray(oxygen_on), {"windSpeed": std})
+        assert word7(words) >> 11 & 0x03 == 1
 
 
 def test_the_209_family_reads_the_appliance_vane_not_a_tower():
@@ -1221,9 +1293,9 @@ def test_extended46_control_extends_the_group_set_to_the_appliance_vane():
     assert words[0] == base[0]                        # setpoint untouched
 
     # Fan speed and the up-down vane at the APPLIANCE's own positions: group-set word 7 (report
-    # w26.b9) and word 6 (report w25.b0) -- where the read map reads them back, not the shared slots.
+    # w26.b8) and word 6 (report w25.b0) -- where the read map reads them back, not the shared slots.
     fan = wm.encode_control(bytearray(base), {"windSpeed": 3})
-    assert (fan[12] << 8 | fan[13]) >> 9 & 0x07 == 3  # windSpeed group-set word7 b9 -> low
+    assert (fan[12] << 8 | fan[13]) >> 8 & 0x07 == 6  # windSpeed group-set word7 b8 -> low (6)
     assert fan[2] == base[2] and fan[3] == base[3]    # word 2 (the tower fan slot) untouched
     vane = wm.encode_control(bytearray(base), {"windDirectionVertical": 0x0C})
     assert (vane[10] << 8 | vane[11]) & 0x0F == 0x0C  # windDirectionVertical group-set word6 b0

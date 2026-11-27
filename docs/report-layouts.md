@@ -187,7 +187,7 @@ It is **not offered** on extended-46.
 
 On **extended-46** the flag has two candidate homes and the captures cannot choose between them.
 That family confirms w20/w21/w22 unmoved, w35/w36 at +10, and a vane at w25 with fan speed at
-w26.b9 inside the inserted block — so the ten-word block starts after w22 and at or before w25.
+w26.b8 inside the inserted block — so the ten-word block starts after w22 and at or before w25.
 If it starts at w25 the flag is at report w24; if it starts at w23 or w24 the flag is at report
 w34. Every reading predicts indoor temperature at w35, so that cannot separate them, and w23, w24,
 w33 and w34 read zero in **every** 209-byte report this project holds.
@@ -295,12 +295,14 @@ carry directly:
   (the vane is sweeping only on its auto codes, bits 2 and 3 both set);
 - the cumulative **energy register at words 44+45 works** on this family and is published as the
   Energy sensor, in watt-hours: two readings of one unit five days apart rule out any other unit;
-- ★ **fan speed is placed at word 26 bit 9**, and the evidence on every side is in the tests. Word 21 bit 8, where every other family keeps it, reads a
-  **constant 6** in all seven captures held from two different appliances — including between one
-  owner's stated *high* and stated *low*. Word 26 bit 9 reads 1 on high, 3 on low, 0 with the unit
-  off, and 1 where a fresh cloud record for that same report says `windSpeed` is 1. It is decoded as
-  an **enum**, so a code the model does not declare — the idle 0, the constant 6 — surfaces as *no
-  reading* rather than an invented speed.
+- ★ **fan speed is word 26 bit 8, three bits** — where this product's own byte map puts it, with
+  high 2, medium 4, low 6 and auto 0 — and the evidence on every side is in the tests. Word 21 bit 8,
+  where every other family keeps it, reads a **constant 6** in all seven captures held from two
+  different appliances — including between one owner's stated *high* and stated *low*. Word 26 reads
+  high on a capture taken on high, low on one taken on low, high where a fresh cloud record for that
+  same report says `windSpeed` is 1, and auto (0) on a running unit and an off one alike: auto is
+  the default every product of the family declares. It is decoded as an **enum**, so a code none of
+  the products declares surfaces as *no reading* rather than an invented speed.
 
 So this family reads its fan speed and its up-down vane, and **writes both** — at the appliance's own
 positions, settled from the published data (`FUTURE_WORK.md` item 29).
@@ -311,8 +313,8 @@ w1.b4–7 and w2.b8–10 — to the **per-tower** vanes and fan (`…VerticalL` 
 not to the appliance. The appliance's own vane and fan sit in the appended tail of the list, at
 group-set **words 6 and 7**, which map (by `write_base_word + write_word − 1`) to report **w25 and
 w26** — exactly where the read map reads them back. So the controls write group-set word 6
-(report w25.b0) for the vane and word 7 (report w26.b9) for the fan, with the frame extended to seven
-words to reach them. Three independent lines agree (the published order, the captures, and the
+(report w25.b0) for the vane and word 7 (report w26.b8, with the map's codes) for the fan, with the
+frame extended to seven words to reach them. Three independent lines agree (the published order, the captures, and the
 write↔read relation), so no reporter test is needed to place them; the only thing a live write would
 add is confirmation the appliance honours a seven-word frame (Rule 8).
 
@@ -363,7 +365,7 @@ for bit. Against that record:
 | w20.b0 (the map's vane) = **0** | `windDirectionVertical` = **2** |
 | w25 (inserted block) = **2** | `windDirectionVerticalL` / `R` = 0 / 0 |
 | w21.b8 (the map's fan) = **6** | `windSpeed` = **1** |
-| w26.b9 (inserted block) = **1** | `windSpeedL` / `R` = 3 / 5 |
+| w26.b8 (inserted block) = **2** (high) | `windSpeedL` / `R` = 3 / 5 |
 
 Words 25 and 26 are the **appliance's own** vane and fan, not a tower register: a tower register
 cannot read the appliance's value when the towers are published beside it as 3 / 5 and 0 / 0.

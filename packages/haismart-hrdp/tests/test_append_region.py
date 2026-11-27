@@ -99,6 +99,30 @@ def test_a_listed_position_is_the_confirmed_family_s_own(family: str) -> None:
         assert (confirmed.word, confirmed.bit, confirmed.length) == position
 
 
+@pytest.mark.parametrize("family", sorted(TAIL_POSITIONS))
+def test_a_listed_family_writes_its_fan_with_its_own_map_s_codes(family: str) -> None:
+    """The encoding travels with the position. Each listed family's own byte map puts the fan at
+    report word 26 bit 8, three bits, high 2 / medium 4 / low 6 / auto 0 -- extended-46's exactly.
+    The shared frame's identity table, which a tail field used to be written with, sent auto as 5
+    one bit up: high, with ``oxgyenSupplyMode`` (bit 11) switched on."""
+    from haismart_hrdp.device_model import model_for
+
+    uplus = family + "0" * 30 + "40"
+    haier = next(f for f in model_for(uplus).fields
+                 if f.name == "windSpeed" and f.status_cmd == "6D01")
+    published = {v["stdValue"]: v["eppValue"] for v in haier.variants}
+    product = model_rules.products_for_uplus_id(uplus)[0]
+    model = related_wire_model(209, 0, order=_order(product), uplus_id=_uplus(product))
+    fan = model.write_fields["windSpeed"]
+    assert (model.write_base_word + fan.word - 1, fan.bit, fan.length) == (
+        haier.word, haier.bit, haier.length
+    )
+    # every product of both families declares exactly these four speeds
+    assert {std: fan.std_to_epp[std] for std in (1, 2, 3, 5)} == {
+        std: published[std] for std in (1, 2, 3, 5)
+    }
+
+
 def test_the_confirmed_family_is_not_itself_listed() -> None:
     """Extended-46 carries these positions in its registered map; listing it too would be two
     sources for one fact, and they could drift apart."""

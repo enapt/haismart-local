@@ -949,7 +949,7 @@ family alone, because that family's ten-word insert point is not pinned and the 
 candidate homes.
 
 What its captures confirm: w20/w21/w22 (setpoint, mode, power) unmoved; w35/w36 (indoor, outdoor)
-+10; w25 a vane and w26.b9 the fan, both inside the inserted block. So the block starts after w22 and
++10; w25 a vane and w26.b8 the fan (the product's own map; item 13), both inside the inserted block. So the block starts after w22 and
 at or before w25 — and w23, w24 or w25 place canonical w24 at report w24 or w34, disagreeing. Indoor
 temperature cannot separate them (all three predict canonical w25 → report w35) and every capture
 reads w23/w24/w33/w34 as zero, because nothing was switched on.
@@ -1106,11 +1106,17 @@ that every config id is accounted for):
   distinct device class with no single-parameter support here at all. Adding it is its own item (a
   `0d21` capture, its own decode), not a spelling alias on `0d12`. ⚠️ An earlier note here wrongly
   filed those 20 as a `0d12` 商空 spelling gap; they are a different class.
-* **Not louvre-related but surfaced in the same sweep:** the ext-46 family reads/writes its inserted
-  `windSpeed` at `w26.b9` with an identity enum, where its config puts it at `w26.b8` with a
-  non-identity enum, and `b9`'s span reaches the bit of `oxgyenSupplyMode` (the vendor's spelling).
-  The read at `w26.b9` is settled against captures (see the `wind_speed` field of `EXTENDED46`); the
-  config's `w26.b8` and its fan codes are not what this family's units answer with.
+* **Not louvre-related but surfaced in the same sweep — ✅ settled 2026-11-27:** the ext-46 family
+  read and wrote its inserted `windSpeed` at `w26.b9` with an identity enum, where its config puts it
+  at `w26.b8` with high 2 / medium 4 / low 6 / auto 0, and `b9`'s span reaches the bit of
+  `oxgyenSupplyMode` (the vendor's spelling). It now reads and writes the config's field. ⛔
+  **Withdrawn: "the config's `w26.b8` and its fan codes are not what this family's units answer
+  with."** Every capture fits `b8` exactly as well as `b9` — the only speeds ever captured were high
+  and low, and their `b9` values 1 and 3 are `b8`'s 2 and 6 — so the captures could not choose; the
+  config can, and it reads a running, cooling unit's 0 as auto, the default all 44 products of the
+  family declare. The `b9` write sent auto as 5: by the config, fan high with `oxgyenSupplyMode`
+  switched on. The two tail families (item 39) wrote the same. Still no write to this family has
+  been seen accepted (item 29's residue).
 
 ### 19. The still-unpositioned settings — counted per lineage, and classified by *why*
 
@@ -1411,7 +1417,18 @@ rather than re-derived, and they are carried in a family-keyed table
 (`family_write.TAIL_POSITIONS`). Measured over the whole catalogue: **109 products gain exactly two
 controls, none loses one and no position moves.**
 
-⚠️ Two things this did **not** fix, and both are honest residue:
+The fan is written with extended-46's own encoding, not just its position: each listed family's own
+byte map gives `windSpeed` at report word 26 bit 8 the same codes (high 2 / medium 4 / low 6 / auto
+0). Until 2026-11-27 a tail field took its position from here and its codes from the shared frame's
+identity table, which sent auto as 5 one bit up — high, with `oxgyenSupplyMode` on (item 13).
+
+⚠️ Three things this did **not** fix, and all are honest residue:
+
+* **The fan's read-back.** These families decode as a related layout, which reads `wind_speed` at
+  the shared map's word 21 bit 8 — on extended-46 that position reads a constant 6 — while the
+  control writes report word 26. So a fan command here is not read back from where it was written.
+  Measured 2026-11-27 (`related_wire_model(209, 0, …)`); no report from any of the 109 products
+  exists to say where these units carry their fan, so the read is not moved blind.
 
 * **`windDirectionHorizontal` is still absent on all of them.** It is in the tail too, but
   extended-46 has no confirmed position for it either, so there was nothing to copy. Worse, it is
@@ -1463,9 +1480,11 @@ a code table.
 
 **What is deliberately still out, and why each:**
 
-* ⛔ **超强风 / "Boost" (code 0, 23 products).** Its wire value is 0, and 0 is what the fan field
-  reads on a real 209-byte report from a unit that is switched **off** — so it cannot be told apart
-  from "no speed reported". No report from any Boost-declaring product exists to separate them.
+* ⛔ **超强风 / "Boost" (code 0, 23 products).** Its wire value is 0, and a 0 in a fan field cannot
+  be told apart from "no speed reported" without a report from a unit set to it. (⛔ The reason first
+  given here — "0 is what the fan field reads on a real 209-byte report from a unit that is switched
+  off" — does not hold: on that family a 0 is auto, by its own byte map, and a running unit reads it
+  too; item 13.) No report from any Boost-declaring product exists to separate them.
   Withheld in **both** layers (no wire code, no keyword), because offering a speed in one layer and
   not the other is the actual hazard. **What settles it:** one report from a unit declaring 超强风,
   taken while it is running at that speed.

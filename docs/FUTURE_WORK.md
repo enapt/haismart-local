@@ -126,8 +126,9 @@ carries.
 * Whether this module answers `4D01` over the LAN is unknown (it is answered on `e_4.3.00`); the
   read does not depend on it.
 * One command has been seen on this unit, a setpoint change; the other settings in the same
-  group set have not been changed on it. A command that fails at the connection is not recorded
-  in diagnostics at all, so a failed one would need the error Home Assistant showed.
+  group set have not been changed on it. A command that fails at the connection is recorded in
+  diagnostics too (since 2026-11-27, `recent_controls` with an `error`, the frame if one was built,
+  and an empty reply); before, it left no trace and needed the error Home Assistant showed.
 * Reading the status out of a big-data report is this integration's step, not Haier's app's: the
   app asks `getAllProperty` every time it connects, repeating it until it has the attributes, and
   does not read a big-data report on the local channel. The step rests on the family's own map, on
@@ -517,12 +518,15 @@ for the first time.** This unit **refuses** the `4DFE` telemetry query rather th
 ⚠️ Reason code `0x0006` is **unexplained** — this product publishes **no `invalid_reasons` table at
 all**, so the code is the board's and is in no catalogue we hold.
 
-⚠️ **Diagnostic residue, not a defect:** `data.state` still carries the hand-derived AC decoder's
+✅ **Diagnostic residue — settled 2026-11-27.** `data.state` carried the hand-derived AC decoder's
 speculative reading of the 167-byte frame (`target_temperature 63.0` where the real setpoint is 51,
-plus `mode: auto` / `fan_mode: high`), under `layout: "unknown", partial: true`. It **cannot reach an
-entity** — `water_heater.py` reads `model_state` exclusively and `climate` is not in this appliance
-kind's platform list — but a reader diffing two diagnostics files would otherwise chase a
-twelve-degree discrepancy that does not exist.
+plus `mode: auto` / `fan_mode: high`), under `layout: "unknown", partial: true`. It **could not reach
+an entity** — `water_heater.py` reads `model_state` exclusively and `climate` is not in this
+appliance kind's platform list — but a reader diffing two diagnostics files would chase a
+twelve-degree discrepancy that does not exist. For an appliance known not to be an air conditioner,
+diagnostics now set those fields aside under `state.air_conditioner_decoder_unused`
+(`diagnostics._state`; the coordinator's own data is unchanged). Maintainer tools: only
+`settle_ext46_vane.py` reads `state`, and only for an air-conditioner family.
 
 
 ### 64. Group-command writes are decoded but not offered — one capture of one exists, none sent from here
@@ -953,11 +957,19 @@ they have never been observed apart. Our encoder maps `healthMode` to its own bi
 commanded from its handset sets the other two itself, so a single-bit write most likely suffices.
 That is an assumption. One write from our side, with the report watched, settles it.
 
-### 3. Self-clean reporting on the 209-byte family
+### 3. ✅ SETTLED — Self-clean reporting on the 209-byte family: the family has no such flag
 
-Shipped on the classic, 165/175-byte and (this round) 117-byte families; still open on the 209-byte
-family alone, because that family's ten-word insert point is not pinned and the flag has two
-candidate homes.
+**Settled 2026-11-27, from the product's own byte map** (the configFile for its typeid, shipped in
+the bundle). It pins the insert point — w24 carries `lightStatus` / `freshAirStatus` at their
+shared-map positions and w25 the vane, so the ten words begin at w25 — and it declares **no
+`selfCleaningStatus` at all**: only `selfCleaning56Status` (w22.b15), which all 44 products of the
+family mark invisible. None of the 44 declares `selfCleaningStatus`. So there is no flag to report
+here. ⛔ Withdrawn: "the insert point is not pinned" and "the flag has two candidate homes" (below,
+kept as the record).
+
+Shipped on the classic, 165/175-byte and 117-byte families; it was held open on the 209-byte family
+alone, because that family's ten-word insert point was not pinned and the flag had two candidate
+homes.
 
 What its captures confirm: w20/w21/w22 (setpoint, mode, power) unmoved; w35/w36 (indoor, outdoor)
 +10; w25 a vane and w26.b8 the fan (the product's own map; item 13), both inside the inserted block. So the block starts after w22 and
@@ -993,6 +1005,14 @@ descriptions that *do* carry a timer — none of them air conditioners — say
 **`timingPowerOnHH` / `timingPowerOnMM`**, hours and minutes as **separate one-byte fields**.
 ★ So the prediction for the first air conditioner that reports one is **two bytes, not a minute
 count**. Anyone testing this should look for the pair before concluding the attribute is absent.
+
+★ **2026-11-27 — the 209-byte family's own byte map places all three.** The "eight bundled
+descriptions" above are the app's profiles; the configFile bundle (166 typeids) is another source,
+and for that family it gives `timingPowerOn` / `timingPowerOff` at report w28 / w29 (16 bits,
+minutes 0–1440) and group-set w9 / w10, and `timingStatus` at group-set w8.b0 (2 bits, not in the
+report) — the write↔read relation holds. All 44 products of the family mark all three invisible,
+and every capture, like the one fresh cloud record, reads 0. Published and consistent, never seen
+set: a timer entity there still needs one report with a timer running.
 
 ### 6. The energy total on the classic family — one unit's magnitude is unchecked
 
@@ -1069,8 +1089,17 @@ captures, at w4.b3–5) and the 165/175-byte family (two level bits at w23.b3–
 — off/L1/L2/L3 measured at 1969/1951/1798/1205 W). Both are written and read in the classic
 representation so nothing above the family map knows which it is.
 
-Open on the 209-byte family, because **the shared map carries no `generatorMode` at all** and cannot
-place it. The published order *brackets* it — declared by 566 products, it falls between two placed
+★ **2026-11-27 — placed, and the read confirmed against ground truth.** The 209-byte family's own
+byte map gives `generatorMode` at report **w30.b8** (3 bits, codes 0–3) and group-set w11.b8, and the
+one report from that family with a fresh cloud record — the file that settled its vane and fan
+(`STATUS_209_RUNNING`) — reads **1 at w30.b8 where that record says `generatorMode` 1**. All 44
+products declare it visible. Not shipped yet: the levels' meaning on this family is unmeasured
+beyond 0/1, and writing it needs the group set to reach word 11 (the frame stops at word 7), on a
+family where no write has been seen accepted. The bracket below (w4 in the shared order, report w23)
+does not apply to this family.
+
+It was open on the 209-byte family because **the shared map carries no `generatorMode` at all** and
+cannot place it. The published order *brackets* it — declared by 566 products, it falls between two placed
 attributes, narrowing it to w4.b1–5, which contains the classic family's measured w4.b3–5 without
 having been told it — but a bracket with spare bits is not a placement. Four captures (Eco off, then
 each level, one download per state) settle it. (⚠️ Off and L1 were only 18 W apart on the 165/175
@@ -1286,6 +1315,15 @@ to get one.
   model we hold, so the remaining 179 are unmeasured, not known to agree. Settling it needs the value
   sets for those, or a report placing the field's real width.
 
+  ★ **Measured 2026-11-27 — all 195 raw models are now on disk** (`published_models_raw.json`):
+  **152** publish `{0,1,2,4}`, **41** `{0,1,2,3}`, one `{0,1,2}` and one `{1,2,4,5}`; **194 of 195**
+  mark the attribute invisible. And ⛔ **"code 4 does not fit two bits" is withdrawn where a byte map
+  speaks for the product:** every one of the ten shipped configFiles that carries `freshWindSpeed`
+  gives it **2 bits**, and they ENCODE rather than copy — seven identity, the two `0D16`
+  photovoltaic wall families std 4 → wire 3, the `0D17` photovoltaic cabinet std 5 → wire 0. So the
+  published std code is not the wire value, and the slot holds every one of them. Still not
+  offerable: invisible on 194 of 195, and no write of it has been seen accepted.
+
 ### 38. The AQUA/JAA wall units publish a frame of their own — read and commanded through it; power confirmed on hardware both ways, on two units; the residue is below (30 products)
 
 A catalogue-wide audit — every product's published group-set order checked against the shared
@@ -1441,13 +1479,15 @@ identity table, which sent auto as 5 one bit up — high, with `oxgyenSupplyMode
   Measured 2026-11-27 (`related_wire_model(209, 0, …)`); no report from any of the 109 products
   exists to say where these units carry their fan, so the read is not moved blind.
 
-* **`windDirectionHorizontal` is still absent on all of them.** It is in the tail too, but
-  extended-46 has no confirmed position for it either, so there was nothing to copy. Worse, it is
-  now known to be *underivable*: between the two confirmed anchors the order leaves a **4-bit run**
-  for `windDirectionHorizontal` (irreducibly 3 bits) and `oxgyenSupplyMode` (2 bits, because its
-  published code set starts at 0 and such sets keep their codes in 1,082 of 1,082 measured cases).
-  Five bits into four. The residue is a reserved bit or an attribute the frame does not carry, and
-  **published data cannot tell those apart.** One capture settles it; nothing else will.
+* **`windDirectionHorizontal` is still absent on all of them** — but no longer for want of a
+  position. ⛔ **Withdrawn 2026-11-27: "underivable … a 4-bit run … five bits into four … published
+  data cannot tell those apart."** The run was counted from the fan at bit 9; the fan is at bit 8
+  (item 13), which leaves bits 11–15 — five bits — exactly `oxgyenSupplyMode` (11–12) and
+  `windDirectionHorizontal` (13–15), where every one of these families' own maps puts them (report
+  w26.b13, group-set w7.b13). On extended-46 the fresh cloud record's `windDirectionHorizontal` 6
+  reads 6 at w26.b13 (item 9's file). On extended-46 it can now be offered on the same terms as
+  the vane and fan (read back where written, the write unconfirmed) and has not been yet; on the
+  tail families it also lacks a read (they read at the shared positions, below).
 * **8 products still lose all three controls.** One family inserts `waterWindSpeed` before the
   anchors so its positions shift by that field's width, and two `0d21` families diverge earlier
   still. Each needs its own solve or one report.
@@ -2438,8 +2478,11 @@ separately as 3/5 and 0/0, refuting the per-tower explanation they were withdraw
 a fact that is overturned takes its dependents with it — a `digital_model` frozen at onboarding and a
 staleness-blind agreement count cost two releases here. Open residue: `write_base_word + write_word −
 1` fails for two bit-fields (listed in `_WRITE_READ_EXCEPTIONS`); only a live write settles which way,
-and the readback is restored so the owner can. `windDirectionHorizontal` stays out — published like
-the others but with no report position that reads it back.
+and the readback is restored so the owner can. `windDirectionHorizontal` stays out. (⛔ The reason first
+given — "no report position that reads it back" — no longer holds: the product's own map gives
+w26.b13, and a fresh cloud record agrees, 6 = 6; item 39. So it can now be offered on the same
+terms as this family's vane and fan — written where it reads back, the write itself unconfirmed —
+and simply has not been yet.)
 
 **29. The 209-family group-set writes its own vane/fan, not the tower — settled from source, fixed.**
 The shared frame's vane/fan slots (w1/w2.b8) are the twin **towers** on this cabinet; the appliance's

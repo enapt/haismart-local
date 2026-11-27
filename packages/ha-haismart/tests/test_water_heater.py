@@ -626,3 +626,48 @@ async def test_a_generic_control_writes_the_published_command(
     assert frame is not None
     # 5D05 is `dualHeaterMode`'s published single-parameter id, and the payload is its epp value.
     assert b"\x5d\x05" in frame and b"\x00\x01" in frame
+
+
+async def test_diagnostics_do_not_present_an_air_conditioner_reading_as_its_state(
+    hass: HomeAssistant, water_heater
+) -> None:
+    """Every report also goes through the air-conditioner decoder, and for a water heater that
+    reading is used by nothing -- but diagnostics showed it as the appliance's `state`: a 63 C
+    setpoint, an auto mode and a high fan on a unit whose own map, in the same file, said 51 C. A
+    reader takes `state` at its word. So for an appliance known not to be an air conditioner, the
+    decoder's fields are set aside under a key that says what they are, and `state` carries what
+    the integration actually uses."""
+    from custom_components.haismart.diagnostics import async_get_config_entry_diagnostics
+
+    entry = await _setup(hass)
+    state = (await async_get_config_entry_diagnostics(hass, entry))["state"]
+    unused = state["air_conditioner_decoder_unused"]
+    assert {"target_temperature", "operation_mode", "partial"} <= set(unused)
+    assert not {"target_temperature", "operation_mode", "wind_speed", "fan_mode", "mode"} & set(
+        state
+    )
+    assert state["model_state"]["targetTemperature"] != unused["target_temperature"]
+
+
+async def test_an_air_conditioner_s_diagnostics_state_is_unchanged(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The set-aside is for appliances known not to be air conditioners only."""
+    from conftest import make_status_frame
+
+    from custom_components.haismart.diagnostics import async_get_config_entry_diagnostics
+
+    mock_uss.read.return_value = [make_status_frame()]
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="AC", unique_id="A1B2C3D4E5F7",
+        data={
+            CONF_HOST: "192.168.1.51", CONF_DEVICE_ID: "A1B2C3D4E5F7",
+            CONF_LOCAL_KEY: "00112233445566778899aabbccddeeff", CONF_LOCALKEY_VERSION: 4,
+        },
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    state = (await async_get_config_entry_diagnostics(hass, entry))["state"]
+    assert "air_conditioner_decoder_unused" not in state
+    assert "target_temperature" in state

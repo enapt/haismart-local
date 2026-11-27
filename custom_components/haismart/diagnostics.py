@@ -20,7 +20,7 @@ from .vendor.haismart_hrdp import (
 )
 from .vendor.haismart_hrdp.features import raw_enum_values
 from .vendor.haismart_hrdp.udiscovery import CLOUD_STATES
-from .vendor.haismart_hrdp.uss import EXTENDED_STATUS_FRAME_TYPES
+from .vendor.haismart_hrdp.uss import EXTENDED_STATUS_FRAME_TYPES, parse_full_status
 from homeassistant.components.diagnostics import REDACTED, async_redact_data
 from homeassistant.core import HomeAssistant
 
@@ -123,6 +123,30 @@ async def _async_handshake_reply(hass: HomeAssistant, coordinator) -> dict[str, 
     }
 
 
+def _state(coordinator: Any) -> dict[str, Any] | None:
+    """The coordinator's state, as diagnostics present it.
+
+    Every status report also goes through the air-conditioner decoder, and for an appliance known
+    NOT to be an air conditioner that reading is used by nothing -- its entities read the byte map
+    (`model_state`). Shown as `state` it read as the appliance's own: a water heater at a 63 C
+    setpoint in auto with a high fan, beside its map's 51 C. So for such an appliance the fields
+    that decoder produces for the last report are set aside under `air_conditioner_decoder_unused`,
+    and `state` keeps what the integration uses. The coordinator's own data is not touched.
+    """
+    data = coordinator.data
+    if not data or not coordinator.known_not_air_conditioner or not coordinator.last_raw_status:
+        return data
+    decoded = parse_full_status(
+        coordinator.last_raw_status, coordinator.profile, coordinator.digital_model,
+        uplus_id=coordinator.uplus_id, order=coordinator.declared_group_order,
+    ) or {}
+    out = dict(data)
+    unused = {key: out.pop(key) for key in decoded if key in out}
+    if unused:
+        out["air_conditioner_decoder_unused"] = unused
+    return out
+
+
 async def async_get_config_entry_diagnostics(
     hass: HomeAssistant, entry: HaismartConfigEntry
 ) -> dict[str, Any]:
@@ -165,7 +189,7 @@ async def async_get_config_entry_diagnostics(
         "localkey_version_reported": (handshake or {}).get("localkey_version"),
         "handshake_reply": handshake,
         "last_update_success": coordinator.last_update_success,
-        "state": coordinator.data,
+        "state": _state(coordinator),
         # raw report bytes (post-decrypt) — carries no secrets, invaluable for offset bugs
         "last_raw_status": (
             coordinator.last_raw_status.hex() if coordinator.last_raw_status else None
@@ -387,8 +411,8 @@ def _declared_readings(coordinator) -> dict[str, Any] | None:
     """What this unit's own declared attributes read, beyond the fields its family map carries.
 
     ``None`` when there is no report, no model, or the family has no confirmed displacement -- the
-    last of which is deliberate rather than a shortfall: extended-46 carries an insert whose start
-    is not pinned, so placing its attributes from the map would be guesswork wearing a decode.
+    last of which is deliberate rather than a shortfall: placing attributes from the map onto a
+    layout whose displacement is unconfirmed would be guesswork wearing a decode.
     """
     blob = coordinator.last_raw_status
     model = coordinator.digital_model

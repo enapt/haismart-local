@@ -2455,6 +2455,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     # loop against an appliance rotating faster than we can follow, and an
                     # exception raised from inside an `except` block escapes the clauses below --
                     # so it would leave this method by a route with no message for the owner.
+                    self._record_control_failure(changes, again, built_frames)
                     raise HomeAssistantError(
                         translation_domain=DOMAIN,
                         translation_key="control_failed",
@@ -2468,6 +2469,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 # re-fetches (see `_raise_rotation_unhealed`). Read-only: the poll owns the clock.
                 if not self._outage_grace_holds():
                     self._raise_stale_localkey_issue(err.held_version, err.device_version)
+                self._record_control_failure(changes, err, built_frames)
                 raise HomeAssistantError(
                     translation_domain=DOMAIN,
                     translation_key="control_failed",
@@ -2476,12 +2478,14 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     },
                 ) from err
         except (ValueError, KeyError) as err:
+            self._record_control_failure(changes, err, built_frames)
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="control_rejected",
                 translation_placeholders={"name": self.config_entry.title, "error": str(err)},
             ) from err
         except (OSError, RuntimeError, TimeoutError) as err:
+            self._record_control_failure(changes, err, built_frames)
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="control_failed",
@@ -2647,6 +2651,34 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # command can be read from diagnostics byte for byte.
             "frame": frame.hex() if frame is not None else None,
             "reply": [blob.hex() for blob in reply],
+            "error": None,
+        }
+        self.control_log.append(self.last_control)
+
+    def _record_control_failure(
+        self, changes: Mapping[str, int], err: BaseException, built_frames: list[bytes]
+    ) -> None:
+        """Keep a command that ended without an answer -- a dropped connection, a key that would
+        not refresh, a value the encoder refused -- in the same log, with the error.
+
+        It is the command an owner most needs to see in a diagnostics download, and the path that
+        records an answered one is never reached for it. ``frame`` is the frame if one was built
+        before the failure (it may or may not have been sent); ``reply`` is empty.
+        """
+        from datetime import UTC, datetime
+
+        self.last_control = {
+            "at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "changes": dict(changes),
+            "reply_frame_types": [],
+            "refused": False,
+            "refusal_code": None,
+            "reason": None,
+            "provisional": [],
+            "withdrawn": [],
+            "frame": built_frames[-1].hex() if built_frames else None,
+            "reply": [],
+            "error": f"{type(err).__name__}: {err}",
         }
         self.control_log.append(self.last_control)
 

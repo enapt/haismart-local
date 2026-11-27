@@ -1331,14 +1331,13 @@ _EXT46_WRITE = {
 # 1, while the same record published `windDirectionVerticalL`/`R` as 0 / 0 and `windSpeedL`/`R` as
 # 3 / 5. Whatever the other eight words are, those two are not per-tower.
 #
-# ⚠️ **Where the block BEGINS is not pinned, and it matters for anything read from words 23..24.**
-# The captures confirm w20/w21/w22 unmoved, w35/w36 at +10, and a vane at w25 with the fan speed at
-# w26.b9 inside the block — so it starts after w22 and at or before w25, i.e. at w23, w24 or w25.
-# Every one of those predicts indoor temperature at w35, so that cannot separate them, and w23, w24,
-# w33 and w34 all read zero in every capture. Anything mapped into that gap would be a guess: the
-# flag word carrying `selfCleaningStatus` lands at report w24 under one reading and w34 under the
-# other two, which is why this family gets no self-clean field. A single capture with any flag-word
-# feature switched on (health, ambient light, fresh air) pins it.
+# Where the block BEGINS: at w25, by this product's own byte map (the configFile for its typeid, in
+# the bundle), which keeps `lightStatus` / `freshAirStatus` at their shared-map word 24 and puts the
+# vane at w25 and the fan at w26.b8 (`_EXT46_FAN`). The captures alone could only say "after w22 and
+# at or before w25": w23, w24, w33 and w34 read zero in every one, and every start predicts indoor
+# temperature at w35. The same map declares no `selfCleaningStatus` -- only `selfCleaning56Status`
+# (w22.b15), invisible on all 44 products -- so this family has no self-clean flag to read.
+# (`docs/FUTURE_WORK.md` item 3; ⛔ "the start is not pinned" withdrawn 2026-11-27.)
 #
 # Because the report begins with that media module, the classic partial decode misfires here exactly
 # as it does on extended-36: byte 92 is the high byte of the media block's first word, which reads

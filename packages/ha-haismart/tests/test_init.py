@@ -5882,3 +5882,43 @@ async def test_diagnostics_keeps_every_lan_frame(hass: HomeAssistant, mock_uss) 
     assert "poll" in kept["sessions"]
     assert diag["uss_messages"] == []          # the mocked read opens no socket
     assert isinstance(diag["feature_raw"], dict)
+
+
+async def test_a_command_that_fails_at_the_connection_is_kept_for_diagnostics(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A command that never got an answer is the one an owner most needs to see in a diagnostics
+    download, and it left no trace: the connection error was raised before the command was
+    recorded. Kept now, with the error, the frame if one was built, and no reply -- before it was
+    sent and after, since a dropped connection can come at either point."""
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data
+
+    mock_uss.send.side_effect = OSError("connection refused")
+    with pytest.raises(HomeAssistantError):
+        await coordinator.async_send_control({"onOffStatus": 0})
+
+    def _drop_after_building(*args, **kwargs):  # noqa: ANN002, ANN003, ANN202
+        kwargs["build_frame"](mock_uss.send.baseline)
+        raise OSError("connection reset by peer")
+
+    mock_uss.send.side_effect = _drop_after_building
+    with pytest.raises(HomeAssistantError):
+        await coordinator.async_send_control({"onOffStatus": 0})
+
+    before, after = list(coordinator.control_log)[-2:]
+    for record in (before, after):
+        assert record["changes"] == {"onOffStatus": 0}
+        assert record["reply"] == [] and record["refused"] is False
+    assert "connection refused" in before["error"] and before["frame"] is None
+    assert "connection reset by peer" in after["error"] and after["frame"].startswith("ffff")
+
+
+async def test_a_command_that_got_an_answer_records_no_error(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Every record has the same shape, so a reader can tell the two apart by the field."""
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data
+    await coordinator.async_send_control({"onOffStatus": 0})
+    assert list(coordinator.control_log)[-1]["error"] is None

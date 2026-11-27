@@ -99,20 +99,35 @@ def test_a_listed_position_is_the_confirmed_family_s_own(family: str) -> None:
         assert (confirmed.word, confirmed.bit, confirmed.length) == position
 
 
+def _report_length(uplus: str) -> int:
+    """A full status report's length by the product's own map: base 92, two bytes a word, checksum."""
+    from haismart_hrdp.device_model import model_for
+
+    words = max(f.word for f in model_for(uplus).fields if (f.status_cmd or "").upper() == "6D01")
+    return 92 + 2 * words + 1
+
+
 @pytest.mark.parametrize("family", sorted(TAIL_POSITIONS))
 def test_a_listed_family_writes_its_fan_with_its_own_map_s_codes(family: str) -> None:
-    """The encoding travels with the position. Each listed family's own byte map puts the fan at
-    report word 26 bit 8, three bits, high 2 / medium 4 / low 6 / auto 0 -- extended-46's exactly.
-    The shared frame's identity table, which a tail field used to be written with, sent auto as 5
-    one bit up: high, with ``oxgyenSupplyMode`` (bit 11) switched on."""
+    """Through the model each family's report ACTUALLY selects. Each listed family's own byte map
+    puts the fan at report word 26 bit 8, three bits, high 2 / medium 4 / low 6 / auto 0 --
+    extended-46's exactly. The 209-byte family (``…133000…``, 108 products) is matched to
+    extended-46 itself by its length; only the 231-byte one (``…204042…``) takes a related layout,
+    where the tail position applies -- with extended-46's encoding, not the shared frame's identity
+    table, which sent auto as 5 one bit up (high, with ``oxgyenSupplyMode`` on)."""
     from haismart_hrdp.device_model import model_for
+    from haismart_hrdp.wire_models import select_wire_model
 
     uplus = family + "0" * 30 + "40"
     haier = next(f for f in model_for(uplus).fields
                  if f.name == "windSpeed" and f.status_cmd == "6D01")
     published = {v["stdValue"]: v["eppValue"] for v in haier.variants}
     product = model_rules.products_for_uplus_id(uplus)[0]
-    model = related_wire_model(209, 0, order=_order(product), uplus_id=_uplus(product))
+    length = _report_length(uplus)
+    # The map's climate block starts at word 20 on both, so a related layout sits at displacement 0.
+    model = select_wire_model(length, uplus) or related_wire_model(
+        length, 0, order=_order(product), uplus_id=_uplus(product)
+    )
     fan = model.write_fields["windSpeed"]
     assert (model.write_base_word + fan.word - 1, fan.bit, fan.length) == (
         haier.word, haier.bit, haier.length
@@ -120,6 +135,22 @@ def test_a_listed_family_writes_its_fan_with_its_own_map_s_codes(family: str) ->
     # every product of both families declares exactly these four speeds
     assert {std: fan.std_to_epp[std] for std in (1, 2, 3, 5)} == {
         std: published[std] for std in (1, 2, 3, 5)
+    }
+
+
+def test_which_listed_family_actually_uses_the_tail_positions() -> None:
+    """Measured, because the record once said all 109 products did: the 209-byte family's reports
+    select extended-46 by length (its read included), and only the one 231-byte product decodes as a
+    related layout."""
+    from haismart_hrdp.wire_models import EXTENDED46, select_wire_model
+
+    by_length = {
+        family: select_wire_model(_report_length(family + "0" * 30 + "40"), family + "0" * 30 + "40")
+        for family in TAIL_POSITIONS
+    }
+    assert by_length == {
+        "20086108008203240212001180133000": EXTENDED46,
+        "20086108008203240312001180204042": None,
     }
 
 

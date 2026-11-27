@@ -642,11 +642,32 @@ async def test_diagnostics_do_not_present_an_air_conditioner_reading_as_its_stat
     entry = await _setup(hass)
     state = (await async_get_config_entry_diagnostics(hass, entry))["state"]
     unused = state["air_conditioner_decoder_unused"]
-    assert {"target_temperature", "operation_mode", "partial"} <= set(unused)
+    assert {"target_temperature", "operation_mode"} <= set(unused)
     assert not {"target_temperature", "operation_mode", "wind_speed", "fan_mode", "mode"} & set(
         state
     )
     assert state["model_state"]["targetTemperature"] != unused["target_temperature"]
+    # What the integration DOES read from that decode stays where it is: the layout bookkeeping
+    # reads `partial` / `layout` / `writable`, and the fault sensor shows `error_code`.
+    assert not {"partial", "layout", "writable", "error_code"} & set(unused)
+    assert "partial" in state and "layout" in state
+
+
+async def test_diagnostics_download_survives_a_decoder_that_raises(
+    hass: HomeAssistant, water_heater, monkeypatch
+) -> None:
+    """Diagnostics must always download. The set-aside re-decodes the last report; if that ever
+    raises, the state is given as it is instead."""
+    from custom_components.haismart import diagnostics
+
+    entry = await _setup(hass)
+
+    def _boom(*args, **kwargs):  # noqa: ANN002, ANN003, ANN202
+        raise RuntimeError("decoder exploded")
+
+    monkeypatch.setattr(diagnostics, "parse_full_status", _boom)
+    state = (await diagnostics.async_get_config_entry_diagnostics(hass, entry))["state"]
+    assert state == entry.runtime_data.data
 
 
 async def test_an_air_conditioner_s_diagnostics_state_is_unchanged(

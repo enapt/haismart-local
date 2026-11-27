@@ -5922,3 +5922,52 @@ async def test_a_command_that_got_an_answer_records_no_error(
     coordinator = entry.runtime_data
     await coordinator.async_send_control({"onOffStatus": 0})
     assert list(coordinator.control_log)[-1]["error"] is None
+
+
+async def test_a_failed_command_s_record_does_not_carry_the_appliance_s_address(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """A connection error names the address it dialled -- "Connect call failed ('192.168.1.50',
+    56800)" -- and diagnostics redact the host everywhere else on purpose: a download attached to a
+    public issue must not carry it here either."""
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data
+    host, device = entry.data["host"], entry.data["device_id"]
+    mock_uss.send.side_effect = OSError(f"Connect call failed ('{host}', 56800) for {device}")
+    with pytest.raises(HomeAssistantError):
+        await coordinator.async_send_control({"onOffStatus": 0})
+    error = list(coordinator.control_log)[-1]["error"]
+    assert host not in error and device.lower() not in error.lower()
+    assert "Connect call failed" in error and "REDACTED" in error
+
+
+async def test_a_command_refused_before_it_is_sent_is_recorded_too(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """Refusals raised while the frame is being built -- here, no status to seed it from -- end
+    the command as surely as a dropped connection, and are kept the same way."""
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data
+    coordinator.last_raw_status = None
+    mock_uss.send.baseline = None
+    with pytest.raises(HomeAssistantError):
+        await coordinator.async_send_control({"onOffStatus": 0})
+    record = list(coordinator.control_log)[-1]
+    assert record["changes"] == {"onOffStatus": 0} and "no_status" in record["error"]
+
+
+async def test_a_repeated_failure_is_counted_rather_than_logged_again(
+    hass: HomeAssistant, mock_uss
+) -> None:
+    """The log keeps the last few commands. An automation retrying an unreachable unit would
+    otherwise fill it with one failure and push out the attempts worth reading."""
+    entry = await _setup(hass)
+    coordinator = entry.runtime_data
+    await coordinator.async_send_control({"onOffStatus": 0})          # one that worked
+    mock_uss.send.side_effect = OSError("host down")
+    for _ in range(15):
+        with pytest.raises(HomeAssistantError):
+            await coordinator.async_send_control({"onOffStatus": 1})
+    log = list(coordinator.control_log)
+    assert log[-1]["repeats"] == 15 and log[-1]["error"].endswith("host down")
+    assert log[-2]["error"] is None                                  # still there

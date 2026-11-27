@@ -138,7 +138,7 @@ WRITE_OVERRIDES: Mapping[str, Mapping[str, tuple[int, int, int]]] = {
 # correctly -- and had nowhere else to be offered from, losing swing and fan speed entirely.
 #
 # The transfer is corroborated four ways for each family listed, and a family is listed ONLY when
-# all four hold (``tools/re/tail_transfer_audit.py`` re-checks them):
+# all four hold (``tests/test_append_region.py`` re-checks them):
 #   1. same device class as the confirmed family;
 #   2. its published group-set order is **byte-identical** through the two anchor positions;
 #   3. every attribute preceding them in the tail publishes an **identical value set**, so the

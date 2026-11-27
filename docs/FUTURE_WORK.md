@@ -1155,8 +1155,9 @@ that every config id is accounted for):
   and low, and their `b9` values 1 and 3 are `b8`'s 2 and 6 — so the captures could not choose; the
   config can, and it reads a running, cooling unit's 0 as auto, the default all 44 products of the
   family declare. The `b9` write sent auto as 5: by the config, fan high with `oxgyenSupplyMode`
-  switched on. The two tail families (item 39) wrote the same. Still no write to this family has
-  been seen accepted (item 29's residue).
+  switched on. The 108-product twin-tower family whose 209-byte reports select extended-46 by length
+  read and wrote the same; the one 231-byte product of item 39 wrote the same through the tail
+  positions. Still no write to this family has been seen accepted (item 29's residue).
 
 ### 19. The still-unpositioned settings — counted per lineage, and classified by *why*
 
@@ -1466,18 +1467,25 @@ rather than re-derived, and they are carried in a family-keyed table
 (`family_write.TAIL_POSITIONS`). Measured over the whole catalogue: **109 products gain exactly two
 controls, none loses one and no position moves.**
 
-The fan is written with extended-46's own encoding, not just its position: each listed family's own
-byte map gives `windSpeed` at report word 26 bit 8 the same codes (high 2 / medium 4 / low 6 / auto
-0). Until 2026-11-27 a tail field took its position from here and its codes from the shared frame's
-identity table, which sent auto as 5 one bit up — high, with `oxgyenSupplyMode` on (item 13).
+⚠️ **Which products the table actually governs — measured 2026-11-27** (an independent review caught
+this record saying "all 109"): the 108-product family (`…133000…`) reports **209 bytes**, so its
+reports select **extended-46 itself** by length, and its reads and writes are extended-46's
+(`test_append_region.py::test_which_listed_family_actually_uses_the_tail_positions`). Only the one
+**231-byte** product (`…204042…`) decodes as a related layout, where these positions apply. Each
+family's own byte map gives `windSpeed` at report word 26 bit 8 with high 2 / medium 4 / low 6 /
+auto 0 — extended-46's — so since 2026-11-27 both are right: the 108 through extended-46's own
+fields (item 13), the one because a tail field is written with extended-46's `WriteField`. Before,
+that tail field took its codes from the shared frame's identity table, which sent auto as 5 one bit
+up — high, with `oxgyenSupplyMode` on.
 
 ⚠️ Three things this did **not** fix, and all are honest residue:
 
-* **The fan's read-back.** These families decode as a related layout, which reads `wind_speed` at
-  the shared map's word 21 bit 8 — on extended-46 that position reads a constant 6 — while the
-  control writes report word 26. So a fan command here is not read back from where it was written.
-  Measured 2026-11-27 (`related_wire_model(209, 0, …)`); no report from any of the 109 products
-  exists to say where these units carry their fan, so the read is not moved blind.
+* **The 231-byte product's reads.** It decodes as a related layout, which reads `wind_speed` at the
+  shared map's word 21 bit 8 while its own map puts the fan at word 26 bit 8 — and its indoor
+  temperature at word 45, a twenty-word insert the related layouts do not model, so its readings
+  past word 24 are unconfirmed generally. One product, no report from it; not moved blind. (⛔ This
+  bullet first said all 109 products read the fan at word 21: the 108 read it through extended-46,
+  at word 26 bit 8, where they write it.)
 
 * **`windDirectionHorizontal` is still absent on all of them** — but no longer for want of a
   position. ⛔ **Withdrawn 2026-11-27: "underivable … a 4-bit run … five bits into four … published

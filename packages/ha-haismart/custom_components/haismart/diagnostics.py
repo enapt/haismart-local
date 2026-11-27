@@ -123,25 +123,38 @@ async def _async_handshake_reply(hass: HomeAssistant, coordinator) -> dict[str, 
     }
 
 
+#: Fields the air-conditioner decoder produces that the integration reads for EVERY appliance, so
+#: they stay in a non-air-conditioner's `state`: the layout bookkeeping reads the first three, and
+#: the fault sensor shows `error_code`.
+_DECODER_FIELDS_IN_USE = frozenset({"partial", "layout", "writable", "error_code"})
+
+
 def _state(coordinator: Any) -> dict[str, Any] | None:
     """The coordinator's state, as diagnostics present it.
 
-    Every status report also goes through the air-conditioner decoder, and for an appliance known
-    NOT to be an air conditioner that reading is used by nothing -- its entities read the byte map
-    (`model_state`). Shown as `state` it read as the appliance's own: a water heater at a 63 C
-    setpoint in auto with a high fan, beside its map's 51 C. So for such an appliance the fields
-    that decoder produces for the last report are set aside under `air_conditioner_decoder_unused`,
-    and `state` keeps what the integration uses. The coordinator's own data is not touched.
+    Every status report also goes through the air-conditioner decoder. For an appliance known NOT
+    to be an air conditioner, its climate readings are used by nothing -- the entities read the
+    byte map (`model_state`) -- yet shown as `state` they read as the appliance's own: a water
+    heater at a 63 C setpoint in auto with a high fan, beside its map's 51 C. So they are set aside
+    under `air_conditioner_decoder_unused`; what the integration does read from the decode
+    (`_DECODER_FIELDS_IN_USE`) stays. The coordinator's own data is not touched, and a re-decode
+    that fails leaves the state as it is: a diagnostics download must never fail.
     """
     data = coordinator.data
     if not data or not coordinator.known_not_air_conditioner or not coordinator.last_raw_status:
         return data
-    decoded = parse_full_status(
-        coordinator.last_raw_status, coordinator.profile, coordinator.digital_model,
-        uplus_id=coordinator.uplus_id, order=coordinator.declared_group_order,
-    ) or {}
+    try:
+        decoded = parse_full_status(
+            coordinator.last_raw_status, coordinator.profile, coordinator.digital_model,
+            uplus_id=coordinator.uplus_id, order=coordinator.declared_group_order,
+        ) or {}
+    except Exception:  # noqa: BLE001 - diagnostics must download whatever the decoder does
+        _LOGGER.debug("re-decoding the last report for diagnostics failed", exc_info=True)
+        return data
     out = dict(data)
-    unused = {key: out.pop(key) for key in decoded if key in out}
+    unused = {
+        key: out.pop(key) for key in decoded if key in out and key not in _DECODER_FIELDS_IN_USE
+    }
     if unused:
         out["air_conditioner_decoder_unused"] = unused
     return out

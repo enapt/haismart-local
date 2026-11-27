@@ -2434,7 +2434,10 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     # being discovered as noise one step later and reported as a refused setting.
                     expect_localkey_version=self.localkey_version or None,
                 )
-        except HomeAssistantError:
+        except HomeAssistantError as err:
+            # Raised while the frame was being built -- nothing to seed it from, a laundry guard,
+            # an encoding the attribute refuses: the command ended here, so it is kept like any.
+            self._record_control_failure(changes, err, built_frames)
             raise
         except LocalKeyRotated as err:
             # Not a rejected setting and not a broken network: the key changed under us, which is
@@ -2664,11 +2667,32 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         It is the command an owner most needs to see in a diagnostics download, and the path that
         records an answered one is never reached for it. ``frame`` is the frame if one was built
         before the failure (it may or may not have been sent); ``reply`` is empty.
+
+        The error text is the exception's own, so a connection error names the address it dialled
+        ("Connect call failed ('192.168.1.50', 56800)"): the host, the device ID and the key are
+        replaced, because diagnostics redact those everywhere else and a download gets attached to
+        public issues. And a failure that repeats the last one exactly -- an automation retrying an
+        unreachable unit -- is counted on that record (``repeats``) rather than logged again, so it
+        cannot push the attempts worth reading out of the short log.
         """
+        import re
         from datetime import UTC, datetime
 
+        # A Home Assistant error carries its translation key, which says which refusal it was in
+        # any language; the message after it is what the owner was shown.
+        key = getattr(err, "translation_key", None)
+        error = f"{type(err).__name__}{f'[{key}]' if key else ''}: {err}"
+        for secret in {self.host, self.device_id, self._local_key} - {None, ""}:
+            error = re.sub(re.escape(str(secret)), "**REDACTED**", error, flags=re.IGNORECASE)
+        now = datetime.now(UTC).isoformat(timespec="seconds")
+        last = self.control_log[-1] if self.control_log else None
+        if last is not None and last.get("error") == error and last.get("changes") == dict(changes):
+            last["repeats"] = last.get("repeats", 1) + 1
+            last["last_at"] = now
+            self.last_control = last
+            return
         self.last_control = {
-            "at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "at": now,
             "changes": dict(changes),
             "reply_frame_types": [],
             "refused": False,
@@ -2678,7 +2702,8 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "withdrawn": [],
             "frame": built_frames[-1].hex() if built_frames else None,
             "reply": [],
-            "error": f"{type(err).__name__}: {err}",
+            "error": error,
+            "repeats": 1,
         }
         self.control_log.append(self.last_control)
 
@@ -2893,8 +2918,9 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         Skipped too when the family cannot write the field at all -- not a detail. A rule is a
         property of the product; the write map is a property of the report layout, and they are
         published separately, so a rule can perfectly well ask for a setting its own family's
-        group-set has no room for. The 209-byte family's array stops at word 24 and has no economy
-        setting or fan speed in it, while its rules ask for both alongside dry, auto and fan-only.
+        group-set has no room for. The 209-byte family's frame reaches word 7, which carries its fan
+        but not its economy setting (group-set word 11), while its rules ask for economy alongside
+        dry, auto and fan-only.
         Passing those on raised out of the encoder and took the *whole* command with it, so a unit
         that would have accepted the mode change simply refused to change mode (issue #6). A
         co-command is an addition made on the model's behalf, not something the user asked for, so

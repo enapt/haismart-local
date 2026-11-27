@@ -22,6 +22,10 @@ import sys
 import textwrap
 from pathlib import Path
 
+# Not used here: the probe imports Home Assistant in an interpreter of its own. This line is what
+# tells conftest.py that the file needs Home Assistant, so a run without it leaves the file out
+# of collection like every other one instead of erroring in the probe.
+import homeassistant  # noqa: F401
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]

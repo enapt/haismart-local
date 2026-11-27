@@ -58,6 +58,50 @@ except ImportError:
                 session.exitstatus = pytest.ExitCode.OK
 
 
+# Home Assistant's deprecation reports are collected from the moment this file is imported, not
+# from `pytest_configure`: Home Assistant logs a deprecated name once, when it is first used, and
+# this file (in either mode below) imports the integration while it loads -- a report raised then
+# would otherwise be lost for the whole run. `scripts/test.sh` checks this with
+# HAISMART_DEPRECATION_GATE_SELFTEST, which logs one such report here and expects the run to fail.
+if _HA_AVAILABLE:
+    import logging
+
+    # Home Assistant's own reports that this integration uses something deprecated: the lines a
+    # user finds in their log, with a date after which it stops working. They are warnings, so a
+    # suite that triggers them still passes; collected here, they fail the run instead, on every
+    # core CI tests -- which is how a deprecation is seen before the release that removes it.
+    # Home Assistant words them several ways, and not every one names the integration in its text:
+    # a report it cannot attribute says "Detected code that ..." and either logs on the entity's
+    # own module logger (`custom_components.haismart.climate`) or attaches the stack, which runs
+    # through our code. So "haismart" is looked for in the message, the logger name and the stack.
+    _DEPRECATION_PHRASES = (
+        "Detected that custom integration",
+        "Detected code that",
+        "provides the deprecated",
+        "The deprecated ",
+        "please report it to",
+        "please create a bug report",
+    )
+    _DEPRECATION_REPORTS: list[str] = []
+
+    class _DeprecationReports(logging.Handler):
+        def emit(self, record: logging.LogRecord) -> None:
+            message = record.getMessage()
+            if not any(p in message for p in _DEPRECATION_PHRASES):
+                return
+            where = f"{message}\n{record.name}\n{record.stack_info or ''}".lower()
+            if "haismart" in where:
+                _DEPRECATION_REPORTS.append(f"[{record.name}] {message}")
+
+    _DEPRECATION_HANDLER = _DeprecationReports(level=logging.WARNING)
+
+    logging.getLogger().addHandler(_DEPRECATION_HANDLER)
+    if os.environ.get("HAISMART_DEPRECATION_GATE_SELFTEST"):
+        logging.getLogger("homeassistant.const").warning(
+            "The deprecated constant GATE_SELFTEST was used from haismart (gate self-test)"
+        )
+
+
 # WHICH COPY OF THE INTEGRATION THIS RUN TESTS. By default the SOURCE copy
 # (packages/ha-haismart/custom_components/haismart, with both libraries from their packages).
 # `scripts/test.sh` runs the suite a second time with HAISMART_TEST_TREE=generated against the copy
@@ -417,38 +461,6 @@ if _HA_AVAILABLE:
     import custom_components.haismart.diagnostics  # noqa: F401
 
     LOCALKEY_VERSION = 4
-
-    # Home Assistant's own reports that this integration uses something deprecated: the lines a
-    # user finds in their log, with a date after which it stops working. They are warnings, so a
-    # suite that triggers them still passes; collected here, they fail the run instead, on every
-    # core CI tests -- which is how a deprecation is seen before the release that removes it.
-    # Home Assistant words them several ways, and not every one names the integration in its text:
-    # a report it cannot attribute says "Detected code that ..." and either logs on the entity's
-    # own module logger (`custom_components.haismart.climate`) or attaches the stack, which runs
-    # through our code. So "haismart" is looked for in the message, the logger name and the stack.
-    _DEPRECATION_PHRASES = (
-        "Detected that custom integration",
-        "Detected code that",
-        "provides the deprecated",
-        "The deprecated ",
-        "please report it to",
-        "please create a bug report",
-    )
-    _DEPRECATION_REPORTS: list[str] = []
-
-    class _DeprecationReports(logging.Handler):
-        def emit(self, record: logging.LogRecord) -> None:
-            message = record.getMessage()
-            if not any(p in message for p in _DEPRECATION_PHRASES):
-                return
-            where = f"{message}\n{record.name}\n{record.stack_info or ''}".lower()
-            if "haismart" in where:
-                _DEPRECATION_REPORTS.append(f"[{record.name}] {message}")
-
-    _DEPRECATION_HANDLER = _DeprecationReports(level=logging.WARNING)
-
-    def pytest_configure(config):  # noqa: ANN001, ANN201
-        logging.getLogger().addHandler(_DEPRECATION_HANDLER)
 
     def pytest_sessionfinish(session, exitstatus):  # noqa: ANN001, ANN201
         logging.getLogger().removeHandler(_DEPRECATION_HANDLER)

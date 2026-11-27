@@ -26,8 +26,19 @@ trap 'rm -rf "$tmp"' EXIT
 cp -r "$dest" "$tmp/actual"
 
 # QUIET_BUILD keeps the build's own "discarded local changes" advice out of a check that is about to
-# put those same changes back.
-QUIET_BUILD=1 "$root/scripts/build-hacs.sh" >/dev/null 2>&1
+# put those same changes back. A build that FAILS is a failed check, whatever the tree then looks
+# like: the build stops part way through (for instance on an absolute import of a bundled library it
+# refuses to ship), and comparing what it left behind would report a tree it never finished as in
+# sync.
+if ! QUIET_BUILD=1 "$root/scripts/build-hacs.sh" >"$tmp/build.log" 2>&1; then
+  rm -rf "$dest"
+  cp -r "$tmp/actual" "$dest"
+  {
+    echo "scripts/build-hacs.sh FAILED, so custom_components/ cannot be checked:"
+    sed 's/^/  /' "$tmp/build.log" | tail -20
+  } >&2
+  exit 1
+fi
 cp -r "$dest" "$tmp/expected"
 
 # Restore what was there before, whatever the verdict — a check must not mutate the tree.

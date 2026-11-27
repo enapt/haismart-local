@@ -42,6 +42,20 @@ echo
 # rather than letting CI be the first thing that notices.
 echo "=== HACS build in sync ==="
 "$root/scripts/check-hacs-build.sh" || fail=1
+# The deprecation gate (tests/conftest.py) against a known answer: one report logged while the
+# conftest loads -- before anything imports the integration, which is when Home Assistant reports a
+# deprecated name -- must fail the run. A gate attached too late passes it, and would pass a real one.
+# Only where Home Assistant is installed: without it the gate does not exist and nothing runs.
+if ( cd "$root/packages/ha-haismart" && "$py" -c "import homeassistant" ) 2>/dev/null; then
+  echo "=== deprecation gate catches a report raised at import ==="
+  if ( cd "$root/packages/ha-haismart" && HAISMART_DEPRECATION_GATE_SELFTEST=1 \
+      "$py" -m pytest -q -p no:cacheprovider tests/test_entities.py >/dev/null 2>&1 ); then
+    echo "FAIL: a deprecation report logged at conftest import did not fail the run"
+    fail=1
+  else
+    echo "deprecation gate selftest: the planted report failed the run, as it must"
+  fi
+fi
 # The skip gate CI runs on the Home Assistant suite's report, checked against known answers: a gate
 # that accepted everything would look exactly like a suite that ran.
 echo "=== skip gate ==="

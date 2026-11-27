@@ -55,8 +55,11 @@ PY
 #    shadow ours, and ours would shadow it) and nothing is added to sys.path. The source keeps its
 #    absolute imports, which its tests and a source install (scripts/install-dev.sh) resolve against
 #    the pip-installed libraries; only this generated copy is rewritten. The libraries themselves
-#    import within themselves relatively already; the check below fails the build if that stops
-#    being true, or if an import form appears that the rewrite does not handle.
+#    import within themselves relatively already. The check below fails the build on any `import`
+#    or `from` STATEMENT naming either library left anywhere in the copy, the libraries included.
+#    A module path written as a string (importlib.import_module, mock.patch) is not a statement and
+#    is not seen; none exists in the shipped code, and test_generated_copy.py's probe would fail on
+#    one that runs at import.
 #    packages/ha-haismart/tests/test_generated_copy.py tests the result.
 printf '"""The two helper libraries, bundled with the integration: haismart_hrdp and haismart_extractor."""\n' \
   > "$DEST/vendor/__init__.py"

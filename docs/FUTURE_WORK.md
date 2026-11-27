@@ -629,7 +629,7 @@ to the cloud. The design notes and the discovery tools are kept with the maintai
 rather than here, because they map the module's Bluetooth surface, which is not something this
 repository publishes.
 
-### 58. The end-anchored telemetry decode assumes a tail block — five published families put it elsewhere
+### 58. The end-anchored telemetry decode assumes a tail block — twelve published families put words after it; guarded, the layout waits on a capture
 
 `parse_extended_status` has two paths. A frame whose word count matches a family in `BIGDATA_MAPS`
 (20, 21, 23, 43 words) is read from the manufacturer's own field map. **Anything else at least 141
@@ -676,8 +676,14 @@ The three newly-found telemetry families do **not** extend the risk set, because
 | `…0d21…1916…` | 31 | 31 | **0** — safe |
 | `…0212…1890…` | 48 | 48 | **0** — safe |
 
-⇒ **the at-risk set stays exactly the five in the table above**, now positively confirmed rather than
-assumed complete. The 商空 `0d12` family is also safe on this axis (block ends at word 27 of 27),
+⇒ ~~**the at-risk set stays exactly the five in the table above**, now positively confirmed rather than
+assumed complete.~~ ⛔ **Withdrawn 2026-11-27: the set is TWELVE.** This sweep enumerated field
+NAMES (`pv…`, `光伏`), so it could only find families whose extra words are photovoltaic. Measured by
+structure instead — over every shipped map, the families whose `7D01` fields run past
+`expansionValveOpenDegree` — it is twelve: the five above, the two `0D15` cabinet families
+(`…0312…1737…`, `…0d21…064847…`, twelve words after the block), two window-unit families and one
+split (two to eight words), and the two `japan-wall` families (two words; read from their own map
+first). `tests/test_uss.py::BLOCK_NOT_AT_THE_TAIL` holds the list. The 商空 `0d12` family is also safe on this axis (block ends at word 27 of 27),
 though it remains divergent for the reasons in item 13.
 
 ⚠️ Scope: this is a statement about **what the configFiles declare**, not about hardware. It cannot
@@ -699,11 +705,16 @@ no `7d01`. So this is a latent risk with a named test, not an observed defect.
 `lan_frames["06/7d01"]` present. If its payload is 78 words, the end-anchored path is wrong for it;
 if the unit sends a short block instead, the convention holds and this item closes.
 
-**The cheap guard, if it is wanted before that arrives:** the configFile says, per family, whether
-anything sits after the engineering block. Restricting the end-anchored path to lengths already
-confirmed (141 and 147), or consulting that fact, both close it without inventing a layout. Neither
-is done here: changing decode behaviour is a gated change (the oracle sweep and the stored-capture
-regression), and no user is known to be affected yet.
+**✅ The guard, shipped 2026-11-27 (owner's choice):** `uss.telemetry_follows_the_block(uplus_id)` —
+true where the product's own map places `7D01` words after `expansionValveOpenDegree` — and
+`parse_extended_status` does not take the end-anchored path for those products: they yield no
+telemetry rather than numbers read up to twelve words off. Consulted per product, not by length, so
+every other family decodes exactly as before (a test pins the classic family; the decoder-equivalence
+A/B over the 44 stored air-conditioner captures is unchanged apart from item 13's fan). ⚠️ Only the
+map's STRUCTURE is used, never a word number: map words are not frame positions in general — this
+project's own box family's map ends its block at word 24, while its units send 64-word frames. The
+cost, stated: a unit of one of these families that sends a short, classic-shaped block would have
+been read correctly from its end and now shows no telemetry. No such unit has reported.
 
 ⚠️ Note also that the PV telemetry itself is **not shipped and should not be shipped blind**: the
 one real unit of these families whose model we hold (issue #6) declares 82 attributes and **none of

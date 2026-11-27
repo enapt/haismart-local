@@ -1571,6 +1571,27 @@ def _own_telemetry_map(uplus_id: str | None, payload: bytes) -> tuple[BigdataFie
     return fields if fields and len(payload) // 2 == extent else ()
 
 
+@functools.lru_cache(maxsize=64)
+def telemetry_follows_the_block(uplus_id: str | None) -> bool:
+    """Whether this Model ID's own byte map places telemetry (``7D01``) words AFTER its engineering
+    block, which ends on ``expansionValveOpenDegree``.
+
+    The end-anchored decode in :func:`parse_extended_status` reads that block from the frame's end,
+    which is right only where nothing follows it -- every family confirmed on hardware. Twelve of the
+    shipped maps (photovoltaic telemetry on the wall, cabinet and ceiling units, and some cabinets,
+    window units and splits) put up to twelve words after it, so a frame from one of them would be
+    read that many words off. Whether a given unit sends those words is not known (no capture of any
+    of them carries a ``7d01``), so for them the end-anchored path is not taken. ``docs/FUTURE_WORK.md``
+    item 58. Only the map's structure is used -- never a word number, which numbers the block from its
+    own start on some families and the frame's on others.
+    """
+    if not uplus_id or (model := model_for(uplus_id)) is None:
+        return False
+    published = [f for f in model.fields if (f.status_cmd or "").upper() == "7D01"]
+    block_end = [f.word for f in published if f.name == "expansionValveOpenDegree"]
+    return bool(block_end) and max(f.word for f in published) > block_end[0]
+
+
 def parse_extended_status(data: bytes, *, uplus_id: str | None = None) -> dict[str, Any]:
     """Decode the running power / compressor figures from an extended-status report.
 
@@ -1591,7 +1612,9 @@ def parse_extended_status(data: bytes, *, uplus_id: str | None = None) -> dict[s
     the manufacturer's own published field map; any other frame at least the classic 141 bytes long
     is read END-ANCHORED -- the engineering block sits at the tail, so its offsets are taken from
     the frame's length (the classic wall units at 141 bytes and the 0d012 cabinets at 147 decode
-    from the same table, six bytes apart). A shorter unrecognised frame is not decoded.
+    from the same table, six bytes apart). A shorter unrecognised frame is not decoded, and neither
+    is any frame from a product whose own map puts telemetry after the block
+    (:func:`telemetry_follows_the_block`).
 
     Keys (each temperature omitted when the unit does not carry that probe):
       ``power_w``, ``compressor_current_a``, ``compressor_frequency_hz``,
@@ -1632,6 +1655,10 @@ def parse_extended_status(data: bytes, *, uplus_id: str | None = None) -> dict[s
     # not decoded from its tail -- its block need not be there -- so it yields nothing and is still
     # captured for a layout to be added, rather than read against offsets that may not apply.
     if len(data) < _EXT_STATUS_LEN:
+        return {}
+    # And never for a product whose own map says the block is NOT the tail: reading it from the end
+    # would read it off by the words that follow it -- no reading, rather than a confident wrong one.
+    if telemetry_follows_the_block(uplus_id):
         return {}
     shift = len(data) - _EXT_STATUS_LEN
     out: dict[str, Any] = {}

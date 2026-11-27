@@ -1685,6 +1685,61 @@ def test_extended_status_frame_is_a_read_only_query():
     assert frame[10:12] == uss.EPP_CMD_EXTENDED_STATUS
 
 
+#: Every Model ID in the shipped byte maps whose OWN map places telemetry (``7D01``) words after its
+#: engineering block, which ends on ``expansionValveOpenDegree`` (FUTURE_WORK 58). Enumerated from the
+#: bundle's structure, not from field names: the item's first sweep looked for photovoltaic names and
+#: found five of these twelve. Each line: the block's last word < the last word the map describes.
+BLOCK_NOT_AT_THE_TAIL = {
+    "2008610800820324021200118013300000000000000000000000000000000040",  # w65 < w77
+    "2008610800820324021200118015970000000000000000000000000000000040",  # w24 < w30
+    "2008610800820324021200118017740000000000000000000000000000000040",  # w65 < w77
+    "2008610800820324021200118018500000000000000000000000000000000040",  # w16 < w18
+    "2008610800820324021200118018504200000000000000000000000000000040",  # w16 < w18
+    "2008610800820324031200118017370000000000000000000000000000000040",  # w52 < w64
+    "2008610800820324031200118020404200000000000000000000000000000040",  # w76 < w88
+    "20086108008203240d2100118018944800000000000000000000000000000040",  # w62 < w74
+    "20086108008203240d2101518006484700000000000000000000000000000040",  # w52 < w64
+    "2008610800820324391200118019024500000000000000000000000000000040",  # w16 < w24
+    "201c12002400081002111169c9cf44a02ea320b9520d1c18e042f62c18420c40",  # w16 < w20
+    "201c120024000810391286e28c62e450083e48910b475b0921da284d3b25e440",  # w16 < w24
+}
+
+
+def test_the_families_whose_own_map_puts_telemetry_after_the_block_are_these_twelve():
+    """The guard's set, enumerated: a bundle change that adds or removes one shows up here."""
+    import gzip
+    import json
+
+    from haismart_hrdp import device_model
+
+    bundled = json.loads(gzip.open(device_model.MODELS_PATH).read())["models"]
+    assert {u for u in bundled if uss.telemetry_follows_the_block(u)} == BLOCK_NOT_AT_THE_TAIL
+
+
+@pytest.mark.parametrize("uplus_id", sorted(BLOCK_NOT_AT_THE_TAIL))
+def test_no_end_anchored_telemetry_where_the_unit_s_own_map_puts_words_after_the_block(
+    uplus_id: str,
+) -> None:
+    """The end-anchored decode assumes the engineering block is the frame's tail. These products'
+    own maps say it is not -- up to twelve words follow it -- so a frame from one of them, read from
+    its end, would be read that many words off, and the compressor frequency has no plausibility
+    veto to catch it. The decoder yields nothing for them instead: no reading, never a confident
+    wrong one. A frame exactly as long as a family's own published map is still read from that map
+    where the family has one (japan-wall), which this classic-length frame is not."""
+    assert uss.parse_extended_status(EXT_COOLING, uplus_id=uplus_id) == {}
+
+
+def test_a_family_whose_block_is_at_the_tail_still_reads_from_its_end():
+    """The guard is per product: the classic wall units -- this box's own family, whose map ends on
+    the expansion valve -- decode exactly as they always have."""
+    classic = "2008610800820324021200118012560000000000000000000000000000000040"
+    assert not uss.telemetry_follows_the_block(classic)
+    assert uss.parse_extended_status(EXT_COOLING, uplus_id=classic) == uss.parse_extended_status(
+        EXT_COOLING
+    )
+    assert uss.parse_extended_status(EXT_COOLING, uplus_id=classic)["power_w"] == 690
+
+
 def test_parse_extended_status_decodes_a_running_unit():
     got = uss.parse_extended_status(EXT_COOLING)
     assert got["power_w"] == 690

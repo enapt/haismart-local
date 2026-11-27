@@ -98,23 +98,31 @@ mendapat entiti `water_heater` tersendiri, lengkap dengan julat suhu dan mod ope
 
 ## Pemasangan
 
+Haismart ada dalam katalog lalai HACS, jadi tiada repositori yang perlu ditambah dahulu dan tiada
+akaun GitHub diperlukan.
+
 **Home Assistant 2026.11 dan lebih baharu (Marketplace):**
 
-1. **Settings → Marketplace → Add from link** (penjuru kanan atas).
-1. GitHub link: `https://github.com/enapt/haismart-local` → **Add**. Kali pertama, Marketplace meminta
-   anda menyambungkan GitHub.
-1. Muat turun, kemudian **mulakan semula Home Assistant.**
+1. **Settings → Marketplace**, kemudian cari **Haismart**.
+1. Pilih **Haismart (Haier local)** → **Install**, kemudian **Install** sekali lagi dalam dialog.
+1. Jika boleh, Marketplace terus membuka persediaan; ia memberitahu anda jika Home Assistant perlu
+   dimulakan semula dahulu.
 
 **Home Assistant 2026.10 dan lebih lama (HACS):**
 
 1. Pastikan [HACS](https://hacs.xyz/) sudah dipasang.
-1. HACS → menu tiga titik → **Custom repositories** → `https://github.com/enapt/haismart-local`,
-   jenis **Integration** → **Add**.
-1. Cari **Haismart** → **Download**.
-1. **Mulakan semula Home Assistant.** Kod integrasi tersuai hanya dimuatkan semasa permulaan.
+1. Dalam HACS, cari **Haismart** → **Download**.
+1. **Mulakan semula Home Assistant.** Kod yang dipasang oleh HACS hanya dimuatkan semasa permulaan.
+
+Tidak dijumpai dalam carian? Tambahkannya melalui pautan: **Settings → Marketplace → Add from link** →
+`https://github.com/enapt/haismart-local` → **Add** (cara ini memerlukan sambungan GitHub), atau HACS →
+menu tiga titik → **Custom repositories**, jenis **Integration**.
+
+Selepas kemas kini, mulakan semula Home Assistant; pada 2026.11 dan lebih baharu, satu repair
+mengingatkan anda dan boleh memulakannya semula untuk anda.
 
 Sudah dipasang dengan HACS? Tiada apa yang perlu dilakukan apabila naik taraf ke Home Assistant
-2026.11: ia memindahkan pemasangan HACS ke Marketplace secara automatik.
+2026.11: ia memindahkan pemasangan HACS ke Marketplace secara automatik, dan kemas kini terus tiba.
 
 **Pasang satu salinan sahaja.** Fork repositori ini memasang integrasi `haismart` yang sama ke dalam
 folder yang sama. Untuk bertukar daripada fork, buang fork itu dahulu, kemudian pasang repositori ini

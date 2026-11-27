@@ -85,8 +85,9 @@ the last ten commands with the frame sent and every reply. For the `0501`, settl
 read-only and that is the intended direction of error. Water heaters still get every control their
 map and model publish; only the `2001` setpoint is confirmed (item 63). The gas classes
 `1812`–`1817` publish power, setpoints, flows and modes, and no ignition or flame attribute — but
-power on a gas water heater does enable its burner, so this is the next place to look if the review
-asks for more.
+power on a gas water heater does enable its burner, so this is the next place to look if the
+controls on heat sources are questioned again. (The review that prompted this item approved it
+2026-11-26: the integration is in the HACS default catalog.)
 
 ### 79. A wall unit whose sessions often carry no status report — read from the status its big-data report carries; the read and a command confirmed on the unit
 

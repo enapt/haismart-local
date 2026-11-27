@@ -86,23 +86,28 @@ Haier สำหรับสินค้าชนิดนั้น แล้ว�
 
 ## การติดตั้ง
 
+Haismart อยู่ในแค็ตตาล็อกหลัก (default) ของ HACS จึงไม่ต้องเพิ่มรีโพก่อน และไม่ต้องใช้บัญชี GitHub
+
 **Home Assistant 2026.11 ขึ้นไป (Marketplace):**
 
-1. **Settings → Marketplace → Add from link** (มุมขวาบน)
-1. GitHub link: `https://github.com/enapt/haismart-local` → **Add** ครั้งแรก Marketplace
-   จะขอให้เชื่อมต่อ GitHub
-1. ดาวน์โหลด แล้ว**รีสตาร์ท Home Assistant**
+1. **Settings → Marketplace** แล้วค้นหา **Haismart**
+1. เลือก **Haismart (Haier local)** → **Install** แล้วกด **Install** อีกครั้งในหน้าต่างที่เปิดขึ้น
+1. ถ้าทำได้ Marketplace จะเปิดหน้าตั้งค่าให้ทันที และจะแจ้งหากต้องรีสตาร์ท Home Assistant ก่อน
 
 **Home Assistant 2026.10 และก่อนหน้า (HACS):**
 
 1. ตรวจสอบว่าติดตั้ง [HACS](https://hacs.xyz/) แล้ว
-1. HACS → เมนูสามจุด → **Custom repositories** → `https://github.com/enapt/haismart-local`
-   ประเภท **Integration** → **Add**
-1. ค้นหา **Haismart** → **Download**
-1. **รีสตาร์ท Home Assistant** โค้ดของอินทิเกรชันแบบกำหนดเองจะโหลดตอนเริ่มระบบเท่านั้น
+1. ใน HACS ค้นหา **Haismart** → **Download**
+1. **รีสตาร์ท Home Assistant** โค้ดที่ HACS ติดตั้งจะโหลดตอนเริ่มระบบเท่านั้น
+
+ค้นหาไม่เจอ? เพิ่มด้วยลิงก์: **Settings → Marketplace → Add from link** →
+`https://github.com/enapt/haismart-local` → **Add** (วิธีนี้ต้องเชื่อมต่อ GitHub) หรือ HACS →
+เมนูสามจุด → **Custom repositories** ประเภท **Integration**
+
+หลังอัปเดต ให้รีสตาร์ท Home Assistant ใน 2026.11 ขึ้นไปจะมี repair แจ้งเตือนและรีสตาร์ทให้ได้
 
 ติดตั้งผ่าน HACS อยู่แล้ว? ไม่ต้องทำอะไรเมื่ออัปเกรดเป็น Home Assistant 2026.11
-ระบบจะย้ายสิ่งที่ติดตั้งด้วย HACS ไปยัง Marketplace ให้โดยอัตโนมัติ
+ระบบจะย้ายสิ่งที่ติดตั้งด้วย HACS ไปยัง Marketplace ให้โดยอัตโนมัติ และยังได้รับอัปเดตต่อไป
 
 **ติดตั้งเพียงชุดเดียว** ฟอร์กของรีโพนี้ติดตั้งอินทิเกรชัน `haismart` ตัวเดียวกันลงในโฟลเดอร์เดียวกัน
 หากจะเปลี่ยนจากฟอร์ก ให้ลบฟอร์กออกก่อน แล้วติดตั้งรีโพนี้และรีสตาร์ท อุปกรณ์ของคุณจะยังอยู่ครบ

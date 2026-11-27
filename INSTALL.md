@@ -8,7 +8,7 @@ real use/testing.
 > conditioners because that is what most readers have. Which appliance categories are supported, and
 > how far each has been verified, is [`docs/appliances.md`](docs/appliances.md).
 
-> **HACS and the manual copy are self-contained.** The two helper libraries (`haismart-hrdp`,
+> **The Marketplace / HACS install and the manual copy are self-contained.** The two helper libraries (`haismart-hrdp`,
 > `haismart-extractor`) are not on PyPI, so the installable component at the repo root carries them
 > vendored inside it — nothing to pip-install, on any install type including Home Assistant OS. The
 > pip route below (`scripts/install-dev.sh`) is for running the packages from a source checkout.
@@ -26,13 +26,21 @@ real use/testing.
 
 ### The Marketplace or HACS (recommended)
 
-On Home Assistant 2026.11 and later, open **Settings → Marketplace → Add from link**, enter
-`https://github.com/enapt/haismart-local` and select **Add** (the first time, the Marketplace asks you
-to connect GitHub). On earlier releases, in **HACS → ⋮ → Custom repositories**, add the same URL with
-category **Integration**. Install **Haismart (Haier local)**, then **restart Home Assistant**. The
-component is self-contained (the two helper libraries are vendored into it), so there is **no pip
-step**. An install made with HACS moves into the Marketplace by itself when Home Assistant 2026.11
-first starts.
+The integration is in the HACS default catalog, so there is nothing to add first and no GitHub
+account is needed. On Home Assistant 2026.11 and later, open **Settings → Marketplace**, search for
+**Haismart**, select **Haismart (Haier local)** and **Install**; the Marketplace opens the setup
+straight away when it can, and tells you when a restart is needed first. On earlier releases, search
+**HACS** for **Haismart**, **Download** it, then **restart Home Assistant**. The component is
+self-contained (the two helper libraries are vendored into it), so there is **no pip step**. An
+install made with HACS moves into the Marketplace by itself when Home Assistant 2026.11 first starts.
+
+If a search does not find it, add the repository by link: **Settings → Marketplace → Add from link**
+with `https://github.com/enapt/haismart-local` (adding by link needs a GitHub connection, which the
+Marketplace asks for the first time), or in **HACS → ⋮ → Custom repositories** with the same URL and
+category **Integration**.
+
+After an update, restart Home Assistant; on 2026.11 and later a repair reminds you and can do it for
+you.
 
 Install one copy: forks of this repository install the same `haismart` integration into the same
 folder. To switch from one, remove it first, then install this repository and restart; the

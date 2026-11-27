@@ -95,23 +95,31 @@ entitas `water_heater` tersendiri, lengkap dengan rentang suhu dan mode kerjanya
 
 ## Pemasangan
 
+Haismart ada di katalog default HACS, jadi tidak perlu menambahkan repositori terlebih dahulu dan
+tidak perlu akun GitHub.
+
 **Home Assistant 2026.11 dan yang lebih baru (Marketplace):**
 
-1. **Settings → Marketplace → Add from link** (pojok kanan atas).
-1. GitHub link: `https://github.com/enapt/haismart-local` → **Add**. Pertama kali, Marketplace meminta
-   Anda menghubungkan GitHub.
-1. Unduh, lalu **mulai ulang Home Assistant.**
+1. **Settings → Marketplace**, lalu cari **Haismart**.
+1. Pilih **Haismart (Haier local)** → **Install**, lalu **Install** lagi di dialog.
+1. Bila bisa, Marketplace langsung membuka penyiapan; jika Home Assistant perlu dimulai ulang
+   terlebih dahulu, Marketplace akan memberi tahu.
 
 **Home Assistant 2026.10 dan sebelumnya (HACS):**
 
 1. Pastikan [HACS](https://hacs.xyz/) sudah terpasang.
-1. HACS → menu tiga titik → **Custom repositories** → `https://github.com/enapt/haismart-local`,
-   tipe **Integration** → **Add**.
-1. Cari **Haismart** → **Download**.
-1. **Mulai ulang Home Assistant.** Kode integrasi khusus hanya dimuat saat startup.
+1. Di HACS, cari **Haismart** → **Download**.
+1. **Mulai ulang Home Assistant.** Kode yang dipasang HACS hanya dimuat saat startup.
+
+Tidak muncul di pencarian? Tambahkan lewat tautan: **Settings → Marketplace → Add from link** →
+`https://github.com/enapt/haismart-local` → **Add** (cara ini memerlukan koneksi GitHub), atau HACS →
+menu tiga titik → **Custom repositories**, tipe **Integration**.
+
+Setelah pembaruan, mulai ulang Home Assistant; di 2026.11 dan yang lebih baru, sebuah repair
+mengingatkan Anda dan dapat memulai ulangnya untuk Anda.
 
 Sudah memasang lewat HACS? Tidak perlu melakukan apa pun saat memperbarui ke Home Assistant
-2026.11: instalasi HACS dipindahkan ke Marketplace secara otomatis.
+2026.11: instalasi HACS dipindahkan ke Marketplace secara otomatis, dan pembaruan tetap datang.
 
 **Pasang satu salinan saja.** Fork repositori ini memasang integrasi `haismart` yang sama ke folder
 yang sama. Untuk beralih dari fork, hapus fork itu terlebih dahulu, lalu pasang repositori ini dan

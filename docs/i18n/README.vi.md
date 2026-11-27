@@ -91,23 +91,31 @@ nó.
 
 ## Cài đặt
 
+Haismart có trong danh mục mặc định của HACS, nên không cần thêm kho trước và không cần tài khoản
+GitHub.
+
 **Home Assistant 2026.11 trở lên (Marketplace):**
 
-1. **Settings → Marketplace → Add from link** (góc trên bên phải).
-1. GitHub link: `https://github.com/enapt/haismart-local` → **Add**. Lần đầu, Marketplace sẽ yêu cầu
-   bạn kết nối GitHub.
-1. Tải về, rồi **khởi động lại Home Assistant.**
+1. **Settings → Marketplace**, rồi tìm **Haismart**.
+1. Chọn **Haismart (Haier local)** → **Install**, rồi **Install** lần nữa trong hộp thoại.
+1. Khi có thể, Marketplace mở ngay phần thiết lập; nếu cần khởi động lại Home Assistant trước, nó sẽ
+   báo cho bạn.
 
 **Home Assistant 2026.10 trở về trước (HACS):**
 
 1. Bảo đảm đã cài [HACS](https://hacs.xyz/).
-1. HACS → menu ba chấm → **Custom repositories** → `https://github.com/enapt/haismart-local`,
-   loại **Integration** → **Add**.
-1. Tìm **Haismart** → **Download**.
-1. **Khởi động lại Home Assistant.** Mã của tích hợp tùy chỉnh chỉ được nạp lúc khởi động.
+1. Trong HACS, tìm **Haismart** → **Download**.
+1. **Khởi động lại Home Assistant.** Mã do HACS cài chỉ được nạp lúc khởi động.
+
+Không tìm thấy? Thêm bằng liên kết: **Settings → Marketplace → Add from link** →
+`https://github.com/enapt/haismart-local` → **Add** (cách này cần kết nối GitHub), hoặc HACS → menu
+ba chấm → **Custom repositories**, loại **Integration**.
+
+Sau khi cập nhật, hãy khởi động lại Home Assistant; từ 2026.11, một mục repair sẽ nhắc bạn và có thể
+khởi động lại giúp bạn.
 
 Đã cài qua HACS? Không cần làm gì khi nâng cấp lên Home Assistant 2026.11: bản cài HACS được tự động
-chuyển sang Marketplace.
+chuyển sang Marketplace và vẫn tiếp tục nhận bản cập nhật.
 
 **Chỉ cài một bản.** Các bản fork của kho này cài cùng tích hợp `haismart` vào cùng thư mục. Để chuyển
 từ một bản fork, hãy gỡ bản fork trước, rồi cài kho này và khởi động lại. Thiết bị của bạn vẫn được

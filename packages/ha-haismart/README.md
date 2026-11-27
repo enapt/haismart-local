@@ -153,12 +153,12 @@ scripts/install-dev.sh --config ~/.homeassistant --python /srv/homeassistant/bin
 `haismart-hrdp` and `haismart-extractor` into HA's Python env, restart HA, then add **Haismart (Haier
 local)** from the UI.
 
-**HACS:** HACS custom repositories require the integration at the *repository root* (root-level
-`custom_components/` + `hacs.json`). This package is the source of truth; the repo root carries a
-generated, ready-to-install copy with the helper libraries vendored inside it (produced by
-[`scripts/build-hacs.sh`](../../scripts/build-hacs.sh) — re-run it after changing anything here). Install
-from the repo root as a custom repository — in the Marketplace on Home Assistant 2026.11 and later,
-in HACS before that — or use the manual copy above.
+**Marketplace / HACS:** the repository is in the HACS default catalog — search for **Haismart** in the
+Marketplace (Home Assistant 2026.11 and later) or in HACS (earlier releases). Both install the
+integration from the *repository root* (root-level `custom_components/` + `hacs.json`). This package
+is the source of truth; the repo root carries a generated, ready-to-install copy with the helper
+libraries vendored inside it (produced by [`scripts/build-hacs.sh`](../../scripts/build-hacs.sh) —
+re-run it after changing anything here). Or use the manual copy above.
 
 ## Develop / test
 

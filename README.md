@@ -1,6 +1,6 @@
 # Haismart Local — Haier appliances in Home Assistant, with no cloud
 
-[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+[![HACS Default](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=enapt&repository=haismart-local&category=integration)
 [![Release](https://img.shields.io/github/v/release/enapt/haismart-local?color=green)](https://github.com/enapt/haismart-local/releases/latest)
 [![Validate](https://img.shields.io/github/actions/workflow/status/enapt/haismart-local/validate.yml?branch=main&label=validate)](https://github.com/enapt/haismart-local/actions/workflows/validate.yml)
 [![License](https://img.shields.io/github/license/enapt/haismart-local)](LICENSE)
@@ -12,10 +12,14 @@ LAN. Everything else it needs ships with it — the published details of **every
 the range**, and the byte-level model of **every other appliance category Haier documents**. Keep a
 copy of that key and setup works with no internet at all._
 
+**In the HACS default catalog** — on Home Assistant 2026.11 and later, search for **Haismart** under
+**Settings → Marketplace**; on earlier releases, in HACS. No GitHub account is needed to install it.
+[Installation](#installation) has the steps.
+
 > **This is the home of the project.** Releases are cut and issues answered at
-> [`enapt/haismart-local`](https://github.com/enapt/haismart-local). Copies exist elsewhere, with
-> version numbers of their own; if you arrived from one, check what you are running against
-> [the releases](https://github.com/enapt/haismart-local/releases).
+> [`enapt/haismart-local`](https://github.com/enapt/haismart-local), and it is the copy the catalog
+> lists. Copies exist elsewhere, with version numbers of their own; if you arrived from one, check
+> what you are running against [the releases](https://github.com/enapt/haismart-local/releases).
 
 **🌐 Getting started in your language:** [Bahasa Indonesia](docs/i18n/README.id.md) ·
 [ไทย](docs/i18n/README.th.md) · [Tiếng Việt](docs/i18n/README.vi.md) ·
@@ -234,39 +238,48 @@ accepted by the appliance.
 
 ### Option 1 — the Marketplace or HACS (recommended)
 
-Home Assistant 2026.11 and later have the **Marketplace** built in; earlier releases use
-[HACS](https://hacs.xyz/). The button opens this repository in whichever yours has.
+Haismart is in the HACS default catalog. Home Assistant 2026.11 and later list that catalog in the
+**Marketplace** they have built in; earlier releases use [HACS](https://hacs.xyz/). Installing from
+the catalog needs no GitHub account.
 
-1. On Home Assistant 2026.10 or earlier, make sure HACS is installed.
-1. Open this repository:\
-   [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=enapt&repository=haismart-local&category=integration)
-1. Download it (in HACS: **Download**, then **Download** again in the version dialog).
-1. **Restart Home Assistant.** A custom integration's code is only loaded at startup — reloading the
-   entry is not enough.
+The quickest way is the button, which opens this repository in whichever yours has:\
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=enapt&repository=haismart-local&category=integration)
 
-<details>
-<summary>The button didn't work — add it by hand</summary>
+Or find it yourself:
 
 **Marketplace (Home Assistant 2026.11 and later):**
 
-1. **Settings** → **Marketplace** → **Add from link**, top right.
-1. GitHub link: `https://github.com/enapt/haismart-local` → **Add**. The first time, the Marketplace
-   asks you to connect GitHub.
-1. Download it, then restart Home Assistant.
+1. **Settings** → **Marketplace**, and search for **Haismart**.
+1. Select **Haismart (Haier local)** → **Install**, then **Install** again in the dialog.
+1. The Marketplace opens the setup straight away when it can, and tells you when Home Assistant has
+   to restart first.
 
 **HACS (Home Assistant 2026.10 and earlier):**
 
-1. Open **HACS** from the sidebar.
-1. Three-dot menu, top right → **Custom repositories**.
-1. Repository: `https://github.com/enapt/haismart-local`, type **Integration** → **Add**.
-1. Search HACS for **Haismart** → **Download**.
-1. Restart Home Assistant.
+1. Open **HACS** from the sidebar and search for **Haismart**.
+1. Open **Haismart (Haier local)** → **Download**, then **Download** again in the version dialog.
+1. **Restart Home Assistant.** Code installed by HACS loads only at startup — reloading the entry is
+   not enough.
+
+<details>
+<summary>Search doesn't find it — add it by link</summary>
+
+**Marketplace:** **Settings** → **Marketplace** → **Add from link**, top right → GitHub link
+`https://github.com/enapt/haismart-local` → **Add**. Adding a repository by link needs a GitHub
+connection; the Marketplace asks for one the first time.
+
+**HACS:** three-dot menu, top right → **Custom repositories** → repository
+`https://github.com/enapt/haismart-local`, type **Integration** → **Add**, then search for
+**Haismart** again.
 
 </details>
 
+**Updating.** New releases arrive under **Settings** → **Updates**. Restart Home Assistant after
+installing one — on 2026.11 and later a repair reminds you, and can restart it for you.
+
 **Installed it with HACS already?** There is nothing to do on upgrading to Home Assistant 2026.11: it
-moves what HACS installed into the Marketplace when it first starts, and new releases keep arriving
-under **Settings** → **Updates**.
+moves what HACS installed into the Marketplace when it first starts, including a copy you added as a
+custom repository, and updates keep arriving.
 
 **Install one copy.** Forks of this repository install the same `haismart` integration into the
 same folder, so a second copy overwrites the first one's files while both keep offering updates. To

@@ -19,8 +19,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from haismart_hrdp import OPTIONAL_ENUM_FEATURES, vane_position_name
-from haismart_hrdp.entity_spec import Control
+from .vendor.haismart_hrdp import OPTIONAL_ENUM_FEATURES, vane_position_name
+from .vendor.haismart_hrdp.entity_spec import Control
 from homeassistant.components.sensor import (
     DOMAIN as SENSOR_DOMAIN,
 )

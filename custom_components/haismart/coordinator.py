@@ -25,7 +25,7 @@ from datetime import timedelta
 from functools import partial
 from typing import Any, NoReturn
 
-from haismart_extractor import (
+from .vendor.haismart_extractor import (
     GatewayConnectionError,
     GatewayCreds,
     GatewayError,
@@ -33,14 +33,14 @@ from haismart_extractor import (
     async_fetch_device_config,
     get_localkey_via_gateway,
 )
-from haismart_extractor.cloud import (
+from .vendor.haismart_extractor.cloud import (
     SEA_APP_CREDENTIALS,
     CloudError,
     Domains,
     cloud_unreachable,
     get_public_device_config,
 )
-from haismart_hrdp import (
+from .vendor.haismart_hrdp import (
     EXTENDED_STATUS_FRAME_TYPES,
     GRSETDAC_ENUMS,
     GRSETDAC_FIELDS,
@@ -99,10 +99,10 @@ from haismart_hrdp import (
     vane_model_code,
     with_rules,
 )
-from haismart_hrdp import (
+from .vendor.haismart_hrdp import (
     declared_numeric_readings as numeric_reading_names,
 )
-from haismart_hrdp.appliance import (
+from .vendor.haismart_hrdp.appliance import (
     ApplianceKind,
     answer_applies,
     class_of,
@@ -112,7 +112,7 @@ from haismart_hrdp.appliance import (
     identified_not_air_conditioner,
     kind_for,
 )
-from haismart_hrdp.device_model import (
+from .vendor.haismart_hrdp.device_model import (
     STATUS_ALL,
     STATUS_BIGDATA,
     DeviceModel,
@@ -120,15 +120,15 @@ from haismart_hrdp.device_model import (
     model_from_record,
     project_config,
 )
-from haismart_hrdp.entity_spec import EntitySpec, specs_for
-from haismart_hrdp.laundry import (
+from .vendor.haismart_hrdp.entity_spec import EntitySpec, specs_for
+from .vendor.haismart_hrdp.laundry import (
     LAUNDRY_REFUSALS,
     LaundryAction,
     LaundryLayout,
     laundry_writable,
     layout_for,
 )
-from haismart_hrdp.uss import epp_command, epp_frame_type, frame_key
+from .vendor.haismart_hrdp.uss import epp_command, epp_frame_type, frame_key
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
@@ -1198,7 +1198,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return None
         from datetime import UTC, datetime
 
-        from haismart_hrdp.uss import epp_frame_type
+        from .vendor.haismart_hrdp.uss import epp_frame_type
 
         self.status_checks["count"] += 1
         record: dict[str, Any] = {
@@ -2611,7 +2611,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         available while the unit is off", a fault, the wrong mode) describes the state the unit is
         in, and a derived number must not be thrown away for having been tried at the wrong moment.
         """
-        from haismart_hrdp.profiles import REASON_NOT_SUPPORTED
+        from .vendor.haismart_hrdp.profiles import REASON_NOT_SUPPORTED
 
         code = refusal_code(reply)
         if code is None:
@@ -2629,7 +2629,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Keep what was sent and what came back, for diagnostics (:attr:`last_control`)."""
         from datetime import UTC, datetime
 
-        from haismart_hrdp.uss import epp_frame_type
+        from .vendor.haismart_hrdp.uss import epp_frame_type
 
         refused = reply_refused(reply)
         self.last_control = {
@@ -3079,7 +3079,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         sensor is not this gate but the write itself -- the id is provisional and reads back from
         w23.b6/2 (:func:`_async_settle_provisional`).
         """
-        from haismart_hrdp.features import CARRIED_BLOCKED_BY, CLASS_CARRIED_ENUM_FEATURES
+        from .vendor.haismart_hrdp.features import CARRIED_BLOCKED_BY, CLASS_CARRIED_ENUM_FEATURES
 
         carried = CLASS_CARRIED_ENUM_FEATURES.get(uplus_class(self.uplus_id), frozenset())
         declared = declared_attribute_names(self.digital_model)
@@ -3248,7 +3248,7 @@ class HaismartCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         ``uss`` decodes inline, else the registry model. ``model_fields`` on it yields nothing
         unless the family has a confirmed displacement, which is the safety gate."""
         if length in STATUS_LAYOUTS:
-            from haismart_hrdp.wire_models import _CLASSIC_PROBE
+            from .vendor.haismart_hrdp.wire_models import _CLASSIC_PROBE
             return _CLASSIC_PROBE
         return self._wire_model or select_wire_model(length, self.uplus_id)
 

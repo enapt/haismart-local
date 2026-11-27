@@ -5,8 +5,10 @@
 # install them if you are touching the integration:
 #   pip install homeassistant pytest-homeassistant                  # Home Assistant 2026.11+
 #   pip install homeassistant pytest-homeassistant-custom-component # earlier cores
-# CI tests several cores and sets HA_JUNIT, which writes that suite's JUnit report;
-# scripts/check-junit.py then fails the job on any skip.
+# The integration suite runs twice: against the source copy, then against the generated copy users
+# install (below). CI tests several cores and sets HA_JUNIT, which writes a JUnit report for each
+# run (the second beside the first, `-generated.xml`); scripts/check-junit.py then fails the job on
+# any skip in either.
 set -u
 root="$(cd "$(dirname "$0")/.." && pwd)"
 py="${PYTHON:-python3}"
@@ -21,6 +23,20 @@ for pkg in haismart-hrdp haismart-extractor ha-haismart; do
   ( cd "$root/packages/$pkg" && "$py" -m pytest -q -p no:cacheprovider ${junit[@]+"${junit[@]}"} ) || fail=1
   echo
 done
+# The suites above test the SOURCE copy of the integration. What users install is the generated copy
+# at the repo root, which imports the two bundled libraries differently (relatively, from vendor/),
+# so the integration suite runs again against that copy. It runs from the repo root with the repo
+# root as its only pythonpath, so the source copy is not importable; tests/conftest.py refuses to
+# start if it finds the wrong one. With HA_JUNIT set, its report goes beside the first.
+echo "=== ha-haismart, against the generated copy users install ==="
+junit=()
+if [ -n "${HA_JUNIT:-}" ]; then
+  junit=(--junitxml="${HA_JUNIT%.xml}-generated.xml")
+fi
+( cd "$root" && HAISMART_TEST_TREE=generated "$py" -m pytest -q -p no:cacheprovider \
+    -c packages/ha-haismart/pyproject.toml --rootdir packages/ha-haismart -o pythonpath=../.. \
+    ${junit[@]+"${junit[@]}"} packages/ha-haismart/tests ) || fail=1
+echo
 # custom_components/ is generated from packages/ and committed for HACS. The suites above import
 # the packages/ copy, so a stale or hand-edited generated tree passes them all. Check it here too,
 # rather than letting CI be the first thing that notices.

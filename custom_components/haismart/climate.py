@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from haismart_hrdp import GRSETDAC_ENUMS
+from .vendor.haismart_hrdp import GRSETDAC_ENUMS
 from homeassistant.components.climate import (
     ATTR_HVAC_MODE,
     PRESET_BOOST,

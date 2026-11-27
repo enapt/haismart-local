@@ -92,15 +92,22 @@ reach, rather than a setting that does not apply right now.
 <details>
 <summary><b>Turn on debug logging</b></summary>
 
+Use **Enable debug logging** on the integration's page (**Settings → Devices & Services →
+Haismart**, three-dot menu), or set it in `configuration.yaml`:
+
 ```yaml
 # configuration.yaml
 logger:
   default: info
   logs:
     custom_components.haismart: debug
-    haismart_hrdp: debug
-    haismart_extractor: debug
 ```
+
+Either covers everything, the protocol library included: on an install from the Marketplace, HACS or
+the manual copy, the two helper libraries are bundled inside the integration and log under its
+name (`custom_components.haismart.vendor.haismart_hrdp…`). Running from a source checkout
+(`scripts/install-dev.sh`), they are packages of their own — add `haismart_hrdp: debug` and
+`haismart_extractor: debug` there.
 
 Each failed read cycle then logs which cause it is, and the wording tells them apart:
 

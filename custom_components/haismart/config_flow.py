@@ -29,8 +29,8 @@ from functools import partial
 from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
-from haismart_extractor import GatewayCreds, GatewayError, get_localkey_via_gateway
-from haismart_extractor.cloud import (
+from .vendor.haismart_extractor import GatewayCreds, GatewayError, get_localkey_via_gateway
+from .vendor.haismart_extractor.cloud import (
     SEA_APP_CREDENTIALS,
     CloudError,
     Domains,
@@ -38,19 +38,19 @@ from haismart_extractor.cloud import (
     cloud_unreachable,
     get_public_device_config,
 )
-from haismart_hrdp import (
+from .vendor.haismart_hrdp import (
     async_read_status,
     invisible_attributes,
     merge_rules,
     probe_localkey_version,
     udiscovery,
 )
-from haismart_hrdp.model_rules import (
+from .vendor.haismart_hrdp.model_rules import (
     known_products,
     models_for_uplus_id,
     product_for_model,
 )
-from haismart_hrdp.model_rules import (
+from .vendor.haismart_hrdp.model_rules import (
     preload as _preload_model_rules,
 )
 from homeassistant import config_entries
@@ -86,7 +86,7 @@ if TYPE_CHECKING:
     # The DHCP component does not re-export this; its own module has it from HA 2025.2 on.
     from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 
-from haismart_hrdp.appliance import (
+from .vendor.haismart_hrdp.appliance import (
     ApplianceKind,
     answer_applies,
     asks_owner,
@@ -95,7 +95,7 @@ from haismart_hrdp.appliance import (
     kind_for,
     label_for,
 )
-from haismart_hrdp.laundry import layout_for
+from .vendor.haismart_hrdp.laundry import layout_for
 
 from .cloud_transport import async_cloud_transport
 from .const import (

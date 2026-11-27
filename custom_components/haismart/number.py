@@ -9,7 +9,7 @@ once their owner turns controls on, never on a heat source.
 """
 from __future__ import annotations
 
-from haismart_hrdp.entity_spec import Control
+from .vendor.haismart_hrdp.entity_spec import Control
 from homeassistant.components.number import NumberEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback

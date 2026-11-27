@@ -19,7 +19,7 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from haismart_hrdp import udiscovery
+from .vendor.haismart_hrdp import udiscovery
 from homeassistant.core import HomeAssistant
 
 from .const import HAIER_OUIS

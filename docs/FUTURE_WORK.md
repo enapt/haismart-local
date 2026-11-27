@@ -21,30 +21,6 @@ keeps its own when it moves between the two sections. Expect the sequence to hav
 
 ## Open items
 
-### 81. The installed copy puts its two helper libraries on the whole of Home Assistant's import path
-
-**2026-11-26 (the approving review of hacs/default#13895, a suggestion for a future release).** The
-generated `custom_components/haismart/__init__.py` inserts its `vendor/` folder at the front of
-`sys.path` (the shim is written by `scripts/build-hacs.sh`), so `haismart_hrdp` and
-`haismart_extractor` become top-level modules for the whole Home Assistant process: a copy installed
-there shadows ours, and ours shadows any other package of those names. Importing them relatively
-from `.vendor` avoids it in both directions.
-
-**What it takes, measured:** the two libraries already import within themselves relatively (43
-relative imports; the one absolute `import haismart_hrdp` is in a docstring), and nothing refers to
-them by a module-name string, so only the integration's own 15 modules need rewriting, and only in
-the generated copy — `packages/` keeps the absolute imports its tests run against. The build rewrites
-`from haismart_hrdp` / `from haismart_extractor` to the `.vendor` form and drops the shim;
-`check-hacs-build.sh` then has to prove the generated copy imports with no `haismart_hrdp` on the
-path.
-
-**The cost to watch:** the libraries log under `__name__`, so their logger names become
-`custom_components.haismart.vendor.haismart_hrdp…`. The debug-logging recipe in
-`TROUBLESHOOTING.md` names `haismart_hrdp` and `haismart_extractor` and needs changing with it — to
-just `custom_components.haismart`, which would then cover all three. The manifest declares no
-`loggers`, so Home Assistant's own *Enable debug logging* switch covers only
-`custom_components.haismart` today and would cover the libraries afterwards.
-
 ### 80. Controls on appliances no command has been confirmed on — off until their owner turns them on; heat sources never
 
 **2026-11-25 (the review of the HACS default-catalog submission, hacs/default#13895).** Only one
@@ -1916,6 +1892,40 @@ standard states that a multi-appliance system *must* use the interactive convers
 those cabinets use the simpler one where the module asks and the appliance only answers — which
 their own refusals confirm. So an appliance of that class is not one of these systems, however many
 indoor units a building has. This needs hardware that actually talks the interactive mode.
+
+### 81. ✅ SETTLED — the installed copy imports its two helper libraries relatively; nothing is added to `sys.path`
+
+**Raised 2026-11-26** in the approving review of hacs/default#13895, as a suggestion for a future
+release: the generated `__init__.py` put `vendor/` at the front of `sys.path`, so `haismart_hrdp`
+and `haismart_extractor` became top-level modules for the whole Home Assistant process — a copy
+installed there would shadow ours, and ours would shadow it.
+
+**What the build does now** (`scripts/build-hacs.sh`, step 5): the generated copy reaches the
+libraries as `custom_components.haismart.vendor.*`. The build writes `vendor/__init__.py`, rewrites
+the integration's `from haismart_hrdp …` / `from haismart_extractor …` to `from .vendor.… import …`
+(48 statements, in 15 modules, some inside functions), and fails if any absolute import of either
+library is left anywhere in the generated copy — read from the syntax tree, the libraries included,
+which import within themselves relatively. The source under `packages/` keeps its absolute imports:
+its tests and a source install (`scripts/install-dev.sh`) resolve them against the packages.
+
+**How it is checked:**
+* `tests/test_generated_copy.py` (six tests) imports every module of the generated copy in a fresh
+  interpreter with a finder that refuses any top-level import of the two libraries, and checks that
+  nothing is added to `sys.path`, that both libraries load under the integration, and that every
+  relative import resolves — including the ones that run only inside a function. All six fail
+  against the earlier, shimmed build; a missing lazy-import target and a `sys.path` append put back
+  under another name are each caught (mutation checks, 2026-11-27).
+* `scripts/test.sh` runs the whole integration suite a second time, against the generated copy
+  (`HAISMART_TEST_TREE=generated`, the repo root as the only pythonpath; `tests/conftest.py` refuses
+  to start if it finds the source copy instead, and points the tests' own library imports at the
+  bundled modules). CI gates the second report for skips like the first.
+
+**What users see:** the libraries log under the integration's name
+(`custom_components.haismart.vendor.haismart_hrdp…`), so Home Assistant's *Enable debug logging*
+switch and a single `custom_components.haismart: debug` line now cover them; `TROUBLESHOOTING.md`
+and the bug-report template say so. Before, that switch left the protocol library's lines out,
+because the manifest declares no `loggers` and Home Assistant adds only the integration's own
+package. A source install still logs them as `haismart_hrdp` / `haismart_extractor`.
 
 ### 67. ✅ SETTLED — air temperatures use one plausibility band in every family
 

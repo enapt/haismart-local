@@ -61,12 +61,12 @@ body:
     attributes:
       label: Debug logs
       description: |
-        Enable debug logging, reproduce, then paste the relevant lines.
+        Enable debug logging (Settings -> Devices & Services -> Haismart -> three dots -> Enable
+        debug logging, or the YAML below), reproduce, then paste the relevant lines.
         ```yaml
         logger:
           logs:
             custom_components.haismart: debug
-            haismart_hrdp: debug
         ```
       render: text
     validations:

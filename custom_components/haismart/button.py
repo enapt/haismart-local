@@ -12,7 +12,7 @@ write frame (same group command, zero displacement) to be confirmed there.
 """
 from __future__ import annotations
 
-from haismart_hrdp.laundry import Drum
+from .vendor.haismart_hrdp.laundry import Drum
 from homeassistant.components.button import ButtonEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback

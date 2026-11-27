@@ -25,9 +25,9 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import dataclass
 
-from haismart_hrdp import GRSETDAC_ENUMS, PANEL_ENUM_CONTROLS
-from haismart_hrdp.entity_spec import Control
-from haismart_hrdp.wire_models import VANE_V_EPP_TO_MODEL, vane_position_name
+from .vendor.haismart_hrdp import GRSETDAC_ENUMS, PANEL_ENUM_CONTROLS
+from .vendor.haismart_hrdp.entity_spec import Control
+from .vendor.haismart_hrdp.wire_models import VANE_V_EPP_TO_MODEL, vane_position_name
 from homeassistant.components.select import SelectEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback

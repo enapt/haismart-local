@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from haismart_hrdp.entity_spec import Control, EntitySpec
+from .vendor.haismart_hrdp.entity_spec import Control, EntitySpec
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import EntityCategory
 from homeassistant.helpers.entity import EntityDescription

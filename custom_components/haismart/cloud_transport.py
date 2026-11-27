@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import logging
 
-from haismart_extractor.cloud import Transport, httpx_transport
+from .vendor.haismart_extractor.cloud import Transport, httpx_transport
 from homeassistant.core import HomeAssistant, callback
 
 _LOGGER = logging.getLogger(__name__)

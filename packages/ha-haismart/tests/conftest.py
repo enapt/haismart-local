@@ -16,6 +16,7 @@ by `unreachable_handshake_probe`, both below, for every test.
 """
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 
@@ -55,6 +56,41 @@ except ImportError:
                         "=", "Home Assistant is not installed: no ha-haismart test ran", yellow=True
                     )
                 session.exitstatus = pytest.ExitCode.OK
+
+
+# WHICH COPY OF THE INTEGRATION THIS RUN TESTS. By default the SOURCE copy
+# (packages/ha-haismart/custom_components/haismart, with both libraries from their packages).
+# `scripts/test.sh` runs the suite a second time with HAISMART_TEST_TREE=generated against the copy
+# users install: custom_components/haismart at the repository root, with the libraries bundled under
+# vendor/ and imported relatively (`scripts/build-hacs.sh`). In that run the tests' own
+# `from haismart_hrdp ...` (fixtures, expected values) must reach the bundled modules — the very
+# objects the integration uses — or every enum and class would exist twice and compare unequal. So
+# the bundled modules are entered in sys.modules under their top-level names before any test imports
+# them. The integration never sees those names (its imports are relative); test_generated_copy.py
+# checks that in an interpreter of its own.
+TEST_TREE = os.environ.get("HAISMART_TEST_TREE", "source")
+if TEST_TREE not in ("source", "generated"):
+    raise RuntimeError(f"HAISMART_TEST_TREE must be 'source' or 'generated', not {TEST_TREE!r}")
+if TEST_TREE == "generated" and _HA_AVAILABLE:
+    import importlib
+    import pkgutil
+    import sys
+
+    _generated = Path(__file__).resolve().parents[3] / "custom_components" / "haismart"
+    for _lib in ("haismart_hrdp", "haismart_extractor"):
+        if _lib in sys.modules:
+            raise RuntimeError(f"{_lib} was imported from {sys.modules[_lib].__file__} before the "
+                               "generated copy's bundled one could stand in for it")
+    _shipped = importlib.import_module("custom_components.haismart")
+    if Path(_shipped.__path__[0]).resolve() != _generated:
+        raise RuntimeError(f"HAISMART_TEST_TREE=generated, but custom_components.haismart is "
+                           f"{_shipped.__path__[0]}; run with the repository root as the only "
+                           f"pythonpath (scripts/test.sh does)")
+    for _lib in ("haismart_hrdp", "haismart_extractor"):
+        _base = f"custom_components.haismart.vendor.{_lib}"
+        sys.modules[_lib] = importlib.import_module(_base)
+        for _info in pkgutil.walk_packages(sys.modules[_lib].__path__, prefix=_base + "."):
+            sys.modules[_lib + _info.name[len(_base):]] = importlib.import_module(_info.name)
 
 
 def find_device(hass, device_id: str = "A1B2C3D4E5F6"):
@@ -370,6 +406,15 @@ if _HA_AVAILABLE:
 
     import pytest
     from haismart_hrdp.udiscovery import CLOUD_STATE_CONNECTED, DeviceInfo
+
+    # The autouse patches below name modules of the integration, and `patch` resolves a dotted
+    # target through attributes, so it finds them only once something has imported them. Every
+    # test file that exercises the integration does; one that inspects the shipped tree from
+    # outside (`test_generated_copy.py`) does not, and run on its own it errored at setup. Imported
+    # here, the patches no longer depend on which file runs first.
+    import custom_components.haismart.config_flow  # noqa: F401
+    import custom_components.haismart.coordinator  # noqa: F401
+    import custom_components.haismart.diagnostics  # noqa: F401
 
     LOCALKEY_VERSION = 4
 

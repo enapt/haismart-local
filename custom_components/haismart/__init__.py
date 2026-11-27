@@ -1,24 +1,14 @@
 """The Haismart local integration — fully-local uSS control of Haier ACs (no cloud, no MQTT)."""
 from __future__ import annotations
 
-# HACS/vendored build: bundled helper libs live in ./vendor (no pip step needed). This runs
-# before any submodule import, so their top-level `from haismart_hrdp import ...` resolve.
-# ruff: noqa: E402 - the sys.path shim below must precede the submodule imports by design.
-import os as _os
-import sys as _sys
-
-_vendor = _os.path.join(_os.path.dirname(__file__), "vendor")
-if _vendor not in _sys.path:
-    _sys.path.insert(0, _vendor)
-
 import asyncio
 import contextlib
 import logging
 
-from haismart_hrdp import declared_attribute_names
-from haismart_hrdp import preload as _preload_model_rules
-from haismart_hrdp.appliance import ApplianceKind
-from haismart_hrdp.device_model import preload as _preload_device_models
+from .vendor.haismart_hrdp import declared_attribute_names
+from .vendor.haismart_hrdp import preload as _preload_model_rules
+from .vendor.haismart_hrdp.appliance import ApplianceKind
+from .vendor.haismart_hrdp.device_model import preload as _preload_device_models
 from homeassistant.const import ATTR_RESTORED
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er

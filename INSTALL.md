@@ -10,7 +10,8 @@ real use/testing.
 
 > **The Marketplace / HACS install and the manual copy are self-contained.** The two helper libraries (`haismart-hrdp`,
 > `haismart-extractor`) are not on PyPI, so the installable component at the repo root carries them
-> vendored inside it — nothing to pip-install, on any install type including Home Assistant OS. The
+> vendored inside it, imported from there and never as top-level modules — nothing to pip-install,
+> on any install type including Home Assistant OS. The
 > pip route below (`scripts/install-dev.sh`) is for running the packages from a source checkout.
 
 ## Prerequisites

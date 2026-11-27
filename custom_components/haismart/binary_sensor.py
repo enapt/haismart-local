@@ -9,9 +9,9 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from haismart_hrdp import OPTIONAL_BOOL_FEATURES
-from haismart_hrdp.entity_spec import Control
-from haismart_hrdp.udiscovery import CLOUD_STATES
+from .vendor.haismart_hrdp import OPTIONAL_BOOL_FEATURES
+from .vendor.haismart_hrdp.entity_spec import Control
+from .vendor.haismart_hrdp.udiscovery import CLOUD_STATES
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,

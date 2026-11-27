@@ -6,7 +6,7 @@ import logging
 from functools import partial
 from typing import Any
 
-from haismart_hrdp import (
+from .vendor.haismart_hrdp import (
     STATUS_LAYOUTS,
     declared_attribute_names,
     declared_order,
@@ -18,9 +18,9 @@ from haismart_hrdp import (
     select_wire_model,
     uplus_class,
 )
-from haismart_hrdp.features import raw_enum_values
-from haismart_hrdp.udiscovery import CLOUD_STATES
-from haismart_hrdp.uss import EXTENDED_STATUS_FRAME_TYPES
+from .vendor.haismart_hrdp.features import raw_enum_values
+from .vendor.haismart_hrdp.udiscovery import CLOUD_STATES
+from .vendor.haismart_hrdp.uss import EXTENDED_STATUS_FRAME_TYPES
 from homeassistant.components.diagnostics import REDACTED, async_redact_data
 from homeassistant.core import HomeAssistant
 
@@ -427,7 +427,7 @@ def _controls_summary(coordinator) -> dict[str, Any]:
     declaring them, with the declared attributes that blocked one where its bits belong to something
     else on this product.
     """
-    from haismart_hrdp.features import CARRIED_BLOCKED_BY, CLASS_CARRIED_ENUM_FEATURES
+    from .vendor.haismart_hrdp.features import CARRIED_BLOCKED_BY, CLASS_CARRIED_ENUM_FEATURES
 
     wm = coordinator._wire_model  # noqa: SLF001 - no public accessor; the registry entry is the fact
     single = {
@@ -457,7 +457,7 @@ def _controls_summary(coordinator) -> dict[str, Any]:
 
 def _classic_probe_for(length: int):
     """The classic family's map, for the report lengths ``select_wire_model`` leaves to ``uss``."""
-    from haismart_hrdp.wire_models import _CLASSIC_PROBE
+    from .vendor.haismart_hrdp.wire_models import _CLASSIC_PROBE
 
     return _CLASSIC_PROBE if length in STATUS_LAYOUTS else None
 

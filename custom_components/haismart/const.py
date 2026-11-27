@@ -1,7 +1,7 @@
 """Constants for the Haismart local integration."""
 from __future__ import annotations
 
-from haismart_hrdp.appliance import ApplianceKind
+from .vendor.haismart_hrdp.appliance import ApplianceKind
 from homeassistant import config_entries
 from homeassistant.const import Platform
 

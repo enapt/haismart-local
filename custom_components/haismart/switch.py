@@ -9,8 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from haismart_hrdp import PANEL_BOOL_CONTROLS
-from haismart_hrdp.entity_spec import Control
+from .vendor.haismart_hrdp import PANEL_BOOL_CONTROLS
+from .vendor.haismart_hrdp.entity_spec import Control
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback

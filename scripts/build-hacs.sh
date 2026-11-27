@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Regenerate the HACS-installable integration at the repo root: custom_components/haismart/, with the
 # two helper libraries vendored inside it (so `requirements` can be empty — HACS/HA needs no pip step
-# for the non-PyPI libs). Run this after changing anything under packages/ and commit the result.
+# for the non-PyPI libs) and imported relatively from there (step 5). Run this after changing
+# anything under packages/ and commit the result.
 #
 #   scripts/build-hacs.sh
 #
@@ -49,29 +50,54 @@ json.dump(m, open(p, "w"), indent=2)
 open(p, "a").write("\n")
 PY
 
-# 5. __init__: add the vendor path shim (before any submodule import) so the bundled libs import
-python3 - "$DEST/__init__.py" <<'PY'
-import sys
-p = sys.argv[1]
-t = open(p, encoding="utf-8").read()
-shim = (
-    "\n# HACS/vendored build: bundled helper libs live in ./vendor (no pip step needed). This runs\n"
-    "# before any submodule import, so their top-level `from haismart_hrdp import ...` resolve.\n"
-    "# ruff: noqa: E402 - the sys.path shim below must precede the submodule imports by design.\n"
-    "import os as _os\n"
-    "import sys as _sys\n\n"
-    "_vendor = _os.path.join(_os.path.dirname(__file__), \"vendor\")\n"
-    "if _vendor not in _sys.path:\n"
-    "    _sys.path.insert(0, _vendor)\n"
-)
-anchor = "from __future__ import annotations\n"
-if "_vendor" in t:
-    pass  # already shimmed
-elif anchor in t:
-    t = t.replace(anchor, anchor + shim, 1)
-else:
-    t = shim + t
-open(p, "w", encoding="utf-8").write(t)
+# 5. the integration reaches the bundled libraries RELATIVELY, as custom_components.haismart.vendor.*,
+#    so they never become top-level modules of the Home Assistant process (one installed there would
+#    shadow ours, and ours would shadow it) and nothing is added to sys.path. The source keeps its
+#    absolute imports, which its tests and a source install (scripts/install-dev.sh) resolve against
+#    the pip-installed libraries; only this generated copy is rewritten. The libraries themselves
+#    import within themselves relatively already; the check below fails the build if that stops
+#    being true, or if an import form appears that the rewrite does not handle.
+#    packages/ha-haismart/tests/test_generated_copy.py tests the result.
+printf '"""The two helper libraries, bundled with the integration: haismart_hrdp and haismart_extractor."""\n' \
+  > "$DEST/vendor/__init__.py"
+python3 - "$DEST" <<'PY'
+import ast, re, sys
+from pathlib import Path
+
+dest = Path(sys.argv[1])
+libs = ("haismart_hrdp", "haismart_extractor")
+# `from haismart_hrdp[.sub] import ...` is the only form the integration uses. The component is one
+# flat package, so `.vendor` is right for every module in it.
+pattern = re.compile(r"^([ \t]*)from (haismart_hrdp|haismart_extractor)([. ])", re.M)
+rewritten = 0
+for path in sorted(dest.glob("*.py")):
+    text = path.read_text(encoding="utf-8")
+    new, n = pattern.subn(r"\1from .vendor.\2\3", text)
+    if n:
+        path.write_text(new, encoding="utf-8")
+        rewritten += n
+
+problems = []
+for path in sorted(dest.rglob("*.py")):
+    if "__pycache__" in path.parts:
+        continue
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"), str(path))):
+        if isinstance(node, ast.Import):
+            names = [a.name for a in node.names]
+        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+            names = [node.module]
+        else:
+            continue
+        for name in names:
+            if name.split(".")[0] in libs:
+                problems.append(f"{path.relative_to(dest)}:{node.lineno}: {name}")
+if problems:
+    sys.exit(
+        "build-hacs: absolute imports of a bundled library are left in the generated copy "
+        "(the rewrite handles only `from haismart_hrdp[.x] import ...` in the integration's own "
+        "modules; a library must import within itself relatively):\n  " + "\n  ".join(problems)
+    )
+print(f"==> {rewritten} imports of the bundled libraries made relative")
 PY
 
 # Report anything the regeneration threw away, so an edit made in the wrong place is caught here

@@ -61,15 +61,23 @@ deviceIds/keys — never a real device `localKey`, MAC, or LAN address (see [SEC
   **unit** is unestablished: a total with the wrong unit settles permanently into a user's history.
 - **Never commit secrets.** Local keys, account tokens and anything matching `*.local.json` are
   git-ignored; keep them that way. A local key grants ongoing control of someone's appliance.
-- **`custom_components/` at the repo root is generated** — the HACS-installable build with the two
-  libraries vendored in. Don't edit it directly: change the source under `packages/`, then run
-  `scripts/build-hacs.sh` and commit the regenerated component.
+- **`custom_components/` at the repo root is generated** — the installable build, with the two
+  libraries bundled under `vendor/`. Don't edit it directly: change the source under `packages/`,
+  then run `scripts/build-hacs.sh` and commit the regenerated component.
 
-  This is easy to get wrong, so three things catch it. `scripts/build-hacs.sh` prints what it
-  discarded if you had edited the generated tree; `scripts/check-hacs-build.sh` (also run by
-  `scripts/test.sh`) fails if the committed tree does not match what the build would produce; and CI
-  runs the same comparison. The suites alone will not catch it — they import the `packages/` copy, so
-  a stale or hand-edited generated tree keeps them green.
+  In the generated copy the integration imports the libraries relatively
+  (`from .vendor.haismart_hrdp import …`), so they never become top-level modules of the Home
+  Assistant process and nothing is added to `sys.path`. The source keeps absolute imports (its tests
+  and a source install resolve them against the packages); the build rewrites them, and fails if a
+  library imports itself by its top-level name — keep imports inside a library relative.
+  `scripts/test.sh` runs the integration suite against the source copy and then again against the
+  generated copy, and `tests/test_generated_copy.py` checks the property itself.
+
+  Editing the generated tree is easy to get wrong, so three things catch it. `scripts/build-hacs.sh`
+  prints what it discarded if you had edited the generated tree; `scripts/check-hacs-build.sh` (also
+  run by `scripts/test.sh`) fails if the committed tree does not match what the build would produce;
+  and CI runs the same comparison. The suite run against the source copy will not catch it on its
+  own — a stale or hand-edited generated tree keeps it green.
 
   **On a merge conflict inside `custom_components/`, do not hand-resolve it.** It is a generated
   file, so a hand-merge produces a tree matching neither side. Take either version
